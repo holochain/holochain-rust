@@ -10,7 +10,7 @@ There are two components needed currently to run Holochain applications, the cor
 
 There are three approaches to building and testing Holochain: using `nix-shell`, `make`, `docker`:
 
-### Nix Shell (Supported: Ubuntu, Debian, Mac OS X & Nix OS)
+### Nix Shell (Supported: Ubuntu, Debian, Mac OS X, Vagrant & Nix OS)
 
 The `nix-shell` command from the nixos team is the preferred way to work with Holochain.
 
@@ -49,6 +49,21 @@ The `nix-shell` approach offers unique benefits:
 - NixOS runs on HoloPorts so `nix-shell` provides similar behaviour/environment
 
 If you have a nix friendly system, this is the fastest and most reliable way to develop and test.
+
+We also offer `nix-shell` support virtualised through [Vagrant](https://www.vagrantup.com/).
+
+This is the easiest way to use `nix-shell` on Windows (docker requires a Windows Pro/Enterprise/Education license).
+
+First install [Vagrant](https://www.vagrantup.com/) and [VirtualBox](https://www.virtualbox.org/).
+
+```
+cd /path/to/holochain-rust
+vagrant plugin install vagrant-disksize
+vagrant up
+vagrant ssh
+cd /vagrant
+nix-shell
+```
 
 Once in a `nix-shell` the `hc-*` prefixed bash commands support tab completion.
 
@@ -138,7 +153,7 @@ It is very important to be using the correct nightly version.
 
 Currently this is:
 
-`nightly-2019-01-24-x86_64-pc-windows-msvc`
+`nightly-2019-07-14-x86_64-pc-windows-msvc`
 
 The nightly version we test/develop against can always be found in the .travis.yml file.
 

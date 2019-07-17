@@ -1,6 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::{cas::content::Address, json::JsonString};
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 
 /// Call an exposed function from another zome or another (bridged) instance running
@@ -12,7 +13,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// This first zome is the "callee"; i.e., the zome that receives the call, and is named `summer`.
 /// because the call sums two numbers.
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;
@@ -20,7 +20,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
-/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_json_api::json::JsonString;
+/// # use hdk::holochain_json_api::error::JsonError;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
@@ -38,8 +39,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// # #[no_mangle]
-/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -72,10 +73,12 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -109,7 +112,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///
 /// This second zome is the "caller" that makes the call into the `summer` Zome.
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;
@@ -118,16 +120,17 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_json_derive;
 ///
-/// # use hdk::holochain_core_types::hash::HashString;
-/// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_persistence_api::hash::HashString;
+/// # use hdk::holochain_json_api::error::JsonError;
+/// # use hdk::holochain_json_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
-/// # use hdk::holochain_core_types::cas::content::Address;
+/// # use hdk::holochain_persistence_api::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -142,8 +145,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// # #[no_mangle]
-/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -176,10 +179,12 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///

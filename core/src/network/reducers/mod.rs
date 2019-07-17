@@ -8,9 +8,13 @@ pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
+pub mod respond_authoring_list;
+pub mod respond_fetch;
 pub mod respond_get;
 pub mod respond_get_links;
+pub mod respond_gossip_list;
 pub mod send_direct_message;
+pub mod shutdown;
 
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
@@ -27,41 +31,51 @@ use crate::{
             init::reduce_init,
             publish::reduce_publish,
             resolve_direct_connection::reduce_resolve_direct_connection,
-            respond_get::reduce_respond_fetch_data,
+            respond_authoring_list::reduce_respond_authoring_list,
+            respond_fetch::reduce_respond_fetch_data,
+            respond_get::reduce_respond_get,
             respond_get_links::reduce_respond_get_links,
+            respond_gossip_list::reduce_respond_gossip_list,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
+            shutdown::reduce_shutdown,
         },
         state::NetworkState,
     },
     state::State,
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
 use holochain_net::connection::{
     json_protocol::{JsonProtocol, MessageData},
     net_connection::NetSend,
 };
+use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::FetchEntry(_) => Some(reduce_get_entry),
+        Action::GetEntry(_) => Some(reduce_get_entry),
         Action::GetEntryTimeout(_) => Some(reduce_get_entry_timeout),
         Action::GetLinks(_) => Some(reduce_get_links),
         Action::GetLinksTimeout(_) => Some(reduce_get_links_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleFetchResult(_) => Some(reduce_handle_get_result),
+        Action::HandleGetResult(_) => Some(reduce_handle_get_result),
         Action::HandleGetLinksResult(_) => Some(reduce_handle_get_links_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
+        Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
+        Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
+        Action::RespondGet(_) => Some(reduce_respond_get),
         Action::RespondGetLinks(_) => Some(reduce_respond_get_links),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
+        Action::ShutdownNetwork => Some(reduce_shutdown),
         _ => None,
     }
 }
@@ -90,11 +104,11 @@ pub fn send(
 ) -> Result<(), HolochainError> {
     network_state
         .network
+        .lock()
+        .unwrap()
         .as_mut()
         .map(|network| {
             network
-                .lock()
-                .unwrap()
                 .send(json_message.into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
@@ -114,12 +128,15 @@ pub fn send_message(
 ) -> Result<(), HolochainError> {
     let id = ProcessUniqueId::new().to_string();
 
+    let content_json_string: JsonString = message.to_owned().into();
+    let content = content_json_string.to_bytes();
+
     let data = MessageData {
         request_id: id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
-        to_agent_id: to_agent_id.to_string(),
-        from_agent_id: network_state.agent_id.clone().unwrap(),
-        content: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
+        to_agent_id: to_agent_id.clone(),
+        from_agent_id: network_state.agent_id.clone().unwrap().into(),
+        content,
     };
 
     let _ = send(network_state, JsonProtocol::SendMessage(data))?;

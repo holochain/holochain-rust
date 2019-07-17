@@ -2,11 +2,8 @@ use crate::{
     action::Action, context::Context, entry::CanPublish,
     network::entry_with_header::EntryWithHeader,
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
-    entry::Entry,
-    link::Link,
-};
+use holochain_core_types::{entry::Entry, link::link_data::LinkData};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone)]
@@ -65,8 +62,8 @@ pub enum ConsistencyEvent {
     Hold(Address),                                        // <- Publish
     UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
-    AddLink(Link),                                        // <- Publish, entry_type=LinkAdd
-    RemoveLink(Link),                                     // <- Publish, entry_type=LinkRemove
+    AddLink(LinkData),                                    // <- Publish, entry_type=LinkAdd
+    RemoveLink(Entry),                                    // <- Publish, entry_type=LinkRemove
     RemovePendingValidation(Address),                     // <- AddPendingValidation
     ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
@@ -105,9 +102,10 @@ impl ConsistencyModel {
                     let meta = crud_link.clone().and_then(|crud| match entry {
                         Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
                         Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
-                        Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone().link)),
-                        Entry::LinkRemove(link_data) => Some(RemoveLink(link_data.clone().link)),
+                        Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
+                        Entry::LinkRemove(_) => Some(RemoveLink(entry.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
+                        // as of now, link data contains more information than just the link
                         _ => None,
                     });
                     let mut pending = vec![hold];
@@ -144,8 +142,8 @@ impl ConsistencyModel {
             Action::AddLink(link) => Some(ConsistencySignal::new_terminal(
                 ConsistencyEvent::AddLink(link.clone()),
             )),
-            Action::RemoveLink(link) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::RemoveLink(link.clone()),
+            Action::RemoveLink(entry) => Some(ConsistencySignal::new_terminal(
+                ConsistencyEvent::RemoveLink(entry.clone()),
             )),
 
             Action::AddPendingValidation(validation) => {

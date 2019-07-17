@@ -1,4 +1,5 @@
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use lib3h::engine::RealEngineConfig;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 
@@ -9,7 +10,8 @@ use std::{fs::File, io::prelude::*, str::FromStr};
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
     MEMORY,
-    IPC,
+    N3H,
+    LIB3H,
 }
 
 impl FromStr for P2pBackendKind {
@@ -17,7 +19,8 @@ impl FromStr for P2pBackendKind {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "MEMORY" => Ok(P2pBackendKind::MEMORY),
-            "IPC" => Ok(P2pBackendKind::IPC),
+            "N3H" => Ok(P2pBackendKind::N3H),
+            "LIB3H" => Ok(P2pBackendKind::LIB3H),
             _ => Err(()),
         }
     }
@@ -27,7 +30,8 @@ impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
             P2pBackendKind::MEMORY => "MEMORY",
-            P2pBackendKind::IPC => "IPC",
+            P2pBackendKind::N3H => "N3H",
+            P2pBackendKind::LIB3H => "LIB3H",
         })
     }
 }
@@ -49,9 +53,15 @@ impl From<&'static str> for P2pBackendKind {
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
+pub enum BackendConfig {
+    Json(serde_json::Value),
+    Lib3h(RealEngineConfig),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct P2pConfig {
     pub backend_kind: P2pBackendKind,
-    pub backend_config: serde_json::Value,
+    pub backend_config: BackendConfig,
     pub maybe_end_user_config: Option<serde_json::Value>,
 }
 
@@ -74,13 +84,12 @@ impl P2pConfig {
 impl P2pConfig {
     pub fn new(
         backend_kind: P2pBackendKind,
-        backend_config: &str,
+        backend_config: BackendConfig,
         maybe_end_user_config: Option<serde_json::Value>,
     ) -> Self {
         P2pConfig {
             backend_kind,
-            backend_config: serde_json::from_str(backend_config)
-                .expect("Invalid backend_config json on P2pConfig creation."),
+            backend_config,
             maybe_end_user_config,
         }
     }
@@ -92,8 +101,13 @@ impl P2pConfig {
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
 
+    pub fn default_lib3h() -> Self {
+        P2pConfig::from_str(P2pConfig::DEFAULT_LIB3H_CONFIG)
+            .expect("Invalid backend_config json on P2pConfig creation.")
+    }
+
     pub fn default_ipc_spawn() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_SPAWN_CONFIG)
+        P2pConfig::from_str(P2pConfig::DEFAULT_N3H_SPAWN_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
@@ -102,16 +116,15 @@ impl P2pConfig {
         bootstrap_nodes: &Vec<String>,
         maybe_end_user_config_filepath: Option<String>,
     ) -> Self {
-        let backend_config = json!({
+        let backend_config = BackendConfig::Json(json!({
             "socketType": "ws",
             "blockConnect": false,
             "bootstrapNodes": bootstrap_nodes,
             "ipcUri": maybe_ipc_binding
-        })
-        .to_string();
+        }));
         P2pConfig::new(
-            P2pBackendKind::IPC,
-            &backend_config,
+            P2pBackendKind::N3H,
+            backend_config,
             Some(P2pConfig::load_end_user_config(
                 maybe_end_user_config_filepath,
             )),
@@ -120,18 +133,17 @@ impl P2pConfig {
 
     pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
         match maybe_ipc_binding {
-            None => P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
+            None => P2pConfig::from_str(P2pConfig::DEFAULT_N3H_URI_CONFIG)
                 .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
-                let backend_config = json!({
+                let backend_config = BackendConfig::Json(json!({
                     "socketType": "ws",
                     "blockConnect": false,
                     "ipcUri": ipc_binding
-                })
-                .to_string();
+                }));
                 P2pConfig::new(
-                    P2pBackendKind::IPC,
-                    &backend_config,
+                    P2pBackendKind::N3H,
+                    backend_config,
                     Some(P2pConfig::default_end_user_config()),
                 )
             }
@@ -141,7 +153,7 @@ impl P2pConfig {
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            &Self::memory_backend_string(server_name),
+            BackendConfig::Json(Self::memory_backend_json(server_name)),
             None,
         )
     }
@@ -153,20 +165,15 @@ impl P2pConfig {
         ))
     }
 
-    pub fn unique_memory_backend_string() -> String {
-        Self::memory_backend_string(&format!(
+    pub fn unique_memory_backend_json() -> serde_json::Value {
+        Self::memory_backend_json(&format!(
             "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
-    pub fn memory_backend_string(server_name: &str) -> String {
-        format!(
-            r#"{{
-            "serverName": "{}"
-            }}"#,
-            server_name
-        )
+    pub fn memory_backend_json(server_name: &str) -> serde_json::Value {
+        json!({ "serverName": server_name })
     }
 }
 
@@ -210,9 +217,18 @@ impl P2pConfig {
 
 /// statics
 impl P2pConfig {
-    pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
+    pub const DEFAULT_LIB3H_CONFIG: &'static str = r#"
     {
-      "backend_kind": "IPC",
+      "backend_kind": "LIB3H",
+      "backend_config": {
+        "socketType": "ws",
+        "logLevel": "i"
+      }
+    }"#;
+
+    pub const DEFAULT_N3H_SPAWN_CONFIG: &'static str = r#"
+    {
+      "backend_kind": "N3H",
       "backend_config": {
         "socketType": "ws",
         "spawn": {
@@ -226,9 +242,9 @@ impl P2pConfig {
       }
     }"#;
 
-    pub const DEFAULT_IPC_URI_CONFIG: &'static str = r#"
+    pub const DEFAULT_N3H_URI_CONFIG: &'static str = r#"
     {
-      "backend_kind": "IPC",
+      "backend_kind": "N3H",
       "backend_config": {
         "socketType": "ws",
         "ipcUri": "tcp://127.0.0.1:0",

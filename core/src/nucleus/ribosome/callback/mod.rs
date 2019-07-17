@@ -19,11 +19,14 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    entry::Entry,
-    error::{HolochainError, RibosomeEncodedValue},
-    json::{default_to_json, JsonString},
-    validation::ValidationPackageDefinition,
+    entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
 };
+
+use holochain_json_api::{
+    error::JsonError,
+    json::{default_to_json, JsonString},
+};
+
 use holochain_wasm_utils::{
     api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
 };

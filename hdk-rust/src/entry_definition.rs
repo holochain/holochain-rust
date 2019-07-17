@@ -10,11 +10,11 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 use std::convert::TryFrom;
 
-pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
+pub type PackageCreator = Box<dyn FnMut() -> ValidationPackageDefinition + Sync>;
 
-pub type Validator = Box<FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
+pub type Validator = Box<dyn FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
 
-pub type LinkValidator = Box<FnMut(LinkValidationData) -> Result<(), String> + Sync>;
+pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
@@ -88,21 +88,27 @@ pub struct ValidatingLinkDefinition {
 /// The following is a standalone Rust file that exports a function which can be called
 /// to get a `ValidatingEntryType` of a "post".
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate boolinator;
 /// # extern crate serde_json;
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
+/// # extern crate holochain_json_derive;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # use boolinator::*;
 /// # use hdk::entry_definition::ValidatingEntryType;
-/// # use hdk::holochain_core_types::{
+/// # use holochain_persistence_api::{
 /// #   cas::content::Address,
-/// #   dna::entry_types::Sharing,
+/// # };
+/// # use holochain_json_api::{
 /// #   json::JsonString,
+/// #   error::JsonError,
+/// # };
+/// # use hdk::holochain_core_types::{
+/// #   dna::entry_types::Sharing,
 /// #   error::HolochainError,
 /// #   validation::EntryValidationData
 /// # };
@@ -130,8 +136,8 @@ pub struct ValidatingLinkDefinition {
 ///              {
 ///              EntryValidationData::Create{entry:test_entry,validation_data:_} =>
 ///              {
-///                        
-///                        
+///
+///
 ///                        (test_entry.content != "FAIL")
 ///                        .ok_or_else(|| "FAIL content is not allowed".to_string())
 ///                }
@@ -165,7 +171,7 @@ pub struct ValidatingLinkDefinition {
 macro_rules! entry {
     (
         name: $name:expr,
-        description: $description:expr,
+        description: $properties:expr,
         sharing: $sharing:expr,
        // $(native_type: $native_type:ty,)*
 
@@ -183,7 +189,7 @@ macro_rules! entry {
 
         {
             let mut entry_type = hdk::holochain_core_types::dna::entry_types::EntryTypeDef::new();
-            entry_type.description = String::from($description);
+            entry_type.properties = JsonString::from($properties);
             entry_type.sharing = $sharing;
 
             $($(

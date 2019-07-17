@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -6,7 +5,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 extern crate boolinator;
 
@@ -15,15 +14,10 @@ use boolinator::Boolinator;
 
 use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
-    error::HolochainError,
-    json::{JsonString},
     validation::EntryValidationData
 };
 
-
-
- 
-
+use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug,Clone)]
 struct TestEntryType {
@@ -72,7 +66,6 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -80,7 +73,7 @@ define_zome! {
                        Err("Failed to validate with wrong entry type".to_string())
                    }
                 }
-               
+
             }
         ),
 
@@ -98,7 +91,7 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
+
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -123,7 +116,7 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
+
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }
@@ -148,7 +141,7 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        
+
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }

@@ -4,11 +4,9 @@ use crate::{
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
-use holochain_core_types::{cas::content::Address, error::HolochainError, time::Timeout};
+use futures::{future::Future, task::Poll};
+use holochain_core_types::{error::HolochainError, time::Timeout};
+use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -33,11 +31,14 @@ pub async fn custom_send(
     dispatch_action(context.action_channel(), action_wrapper);
     let context_inner = context.clone();
     let id_inner = id.clone();
-    let _ = thread::spawn(move || {
-        thread::sleep(timeout.into());
-        let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
-        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    thread::Builder::new()
+        .name(format!("custom_send_timeout/{}", id))
+        .spawn(move || {
+            thread::sleep(timeout.into());
+            let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
+            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+        })
+        .expect("Could not spawn thread for custom_send timeout");
 
     await!(SendResponseFuture {
         context: context.clone(),
@@ -54,7 +55,10 @@ pub struct SendResponseFuture {
 impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
+            return Poll::Ready(Err(err));
+        }
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));
@@ -63,7 +67,7 @@ impl Future for SendResponseFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().clone().wake();
         match state.custom_direct_message_replys.get(&self.id) {
             Some(result) => Poll::Ready(result.clone()),
             _ => Poll::Pending,

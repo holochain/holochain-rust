@@ -1,6 +1,6 @@
 [package]
 name = "holochain_wasm_utils"
-version = "0.0.17-alpha2"
+version = "0.0.24-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -8,11 +8,12 @@ serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 holochain_core_types = { path = "../core_types" }
-holochain_core_types_derive = { path = "../core_types_derive" }
+holochain_json_derive = "=0.0.15"
+holochain_persistence_api = "=0.0.6"
+holochain_json_api = "=0.0.15"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
-holochain_cas_implementations= {path="../cas_implementations"}
 tempfile = "=3.0.7"

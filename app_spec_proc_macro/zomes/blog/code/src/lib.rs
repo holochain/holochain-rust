@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #![feature(proc_macro_hygiene)]
 
@@ -13,7 +12,7 @@ extern crate boolinator;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 pub mod blog;
 pub mod post;
@@ -23,10 +22,14 @@ use hdk::{
     error::ZomeApiResult,
     entry_definition::ValidatingEntryType,
     holochain_core_types::{
-        cas::content::Address,
         entry::Entry,
-        json::JsonString,
         signature::Provenance,
+    },
+    holochain_persistence_api::{
+        cas::content::Address,
+    },
+    holochain_json_api::{
+        json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
 };
@@ -66,7 +69,7 @@ pub mod blog {
     }
 
     #[zome_fn("hc_public")]
-    pub fn check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
+    pub fn check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
         blog::handle_check_sum(num1, num2)
     }
 
@@ -158,6 +161,11 @@ pub mod blog {
     #[zome_fn("hc_public")]
     pub fn my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
         blog::handle_my_posts(tag)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_posts_with_load(tag: Option<String>) -> ZomeApiResult<Vec<post::Post>> {
+        blog::handle_my_posts_with_load(tag)
     }
 
     #[zome_fn("hc_public")]

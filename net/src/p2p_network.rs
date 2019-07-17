@@ -11,11 +11,12 @@ use crate::{
     },
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
+    lib3h_worker::Lib3hWorker,
     p2p_config::*,
     tweetlog::*,
 };
 use crossbeam_channel;
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
@@ -31,30 +32,47 @@ pub struct P2pNetwork {
 impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module
-    /// `handler` is the closure for handling Protocol messages received from the network.
-    pub fn new(mut handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
+    /// `handler` is the closure for handling Protocol messages received from the network module.
+    pub fn new(mut handler: NetHandler, p2p_config: P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        let backend_config = JsonString::from_json(&p2p_config.backend_config.to_string());
+        let backend_config_str = match &p2p_config.backend_config {
+            BackendConfig::Json(ref json) => JsonString::from_json(&json.to_string()),
+            _ => JsonString::from(""),
+        };
 
+        let p2p_config_str = p2p_config.as_str();
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
-            P2pBackendKind::IPC => {
+            P2pBackendKind::N3H => {
                 let enduser_config = p2p_config
                     .maybe_end_user_config
                     .clone()
-                    .expect("P2pConfig for IPC networking is missing an end-user config")
+                    .expect("P2pConfig for N3H networking is missing an end-user config")
                     .to_string();
                 Box::new(move |h| {
-                    Ok(
-                        Box::new(IpcNetWorker::new(h, &backend_config, enduser_config)?)
-                            as Box<NetWorker>,
-                    )
+                    Ok(Box::new(IpcNetWorker::new(
+                        h,
+                        &backend_config_str,
+                        enduser_config.clone(),
+                    )?) as Box<dyn NetWorker>)
+                })
+            }
+            // Create a Lib3hWorker
+            P2pBackendKind::LIB3H => {
+                let backend_config = match p2p_config.backend_config {
+                    BackendConfig::Lib3h(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
+                };
+
+                Box::new(move |h| {
+                    Ok(Box::new(Lib3hWorker::new(h, backend_config.clone())?)
+                        as Box<dyn NetWorker>)
                 })
             }
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
-                Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)
+                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
             }),
         };
 
@@ -82,8 +100,8 @@ impl P2pNetwork {
         let connection =
             NetConnectionThread::new(wrapped_handler, worker_factory, None).map_err(|e| {
                 format_err!(
-                    "Failed to obtain a connection to a p2p network module w/ config: {}: {}",
-                    p2p_config.as_str(),
+                    "Failed to obtain a connection to a p2p network module w/ config: {}: {} ",
+                    p2p_config_str,
                     e
                 )
             })?;
@@ -138,11 +156,8 @@ mod tests {
 
     #[test]
     fn it_should_create_memory_network() {
-        let mut res = P2pNetwork::new(
-            NetHandler::new(Box::new(|_r| Ok(()))),
-            &P2pConfig::new_with_unique_memory_backend(),
-        )
-        .unwrap();
+        let p2p = P2pConfig::new_with_unique_memory_backend();
+        let mut res = P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), p2p).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

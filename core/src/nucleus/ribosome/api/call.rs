@@ -6,13 +6,11 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{
-    error::HolochainError,
-    json::{JsonString, RawString},
-};
+use holochain_core_types::error::HolochainError;
+use holochain_json_api::json::JsonString;
+
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
-use serde_json::Value;
 use snowflake::ProcessUniqueId;
 use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -45,7 +43,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let zome_call_data = runtime.zome_call_data()?;
+    let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
@@ -53,7 +51,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_call failed to deserialize: {:?}",
                 args_str
             ));
@@ -63,15 +61,23 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let result = if input.instance_handle == String::from(THIS_INSTANCE) {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input.clone());
+        let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
-        // Don't allow recursive calls
-        if zome_call.same_fn_as(&zome_call_data.call) {
-            return ribosome_error_code!(RecursiveCallForbidden);
+        if let Ok(zome_call_data) = runtime.zome_call_data() {
+            // Don't allow recursive calls
+            if zome_call.same_fn_as(&zome_call_data.call) {
+                return ribosome_error_code!(RecursiveCallForbidden);
+            }
         }
-        local_call(runtime, input)
+        local_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            error
+        })
     } else {
-        bridge_call(runtime, input)
+        bridge_call(runtime, input.clone()).map_err(|error| {
+            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            error
+        })
     };
 
     runtime.store_result(result)
@@ -85,7 +91,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     })?;
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(context.clone(), input);
-    context.block_on(call_zome_function(zome_call, &context))
+    context.block_on(call_zome_function(zome_call, context.clone()))
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -118,9 +124,6 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 
     match response {
         JsonRpc::Success(_) => {
-            // The response contains a serialized ZomeApiResult which we need to map the native
-            // Result that this function returns..
-
             // First we try to unwrap a potential stringification:
             let value_response = response.get_result().unwrap().to_owned();
             let string_response = value_response.to_string();
@@ -131,32 +134,8 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
                 Err(_) => string_response,
             };
             // Below, sanitized_response is the same response but guaranteed without quotes.
-
-            // Now we unwrap the Result by parsing it into a Result<Value, _>:
-            let maybe_parsed_result: Result<
-                Result<Value, HolochainError>,
-                serde_json::error::Error,
-            > = serde_json::from_str(&sanitized_response);
-            maybe_parsed_result
-                .map_err(|e| HolochainError::SerializationError(e.to_string()))
-                .and_then(|result| match result {
-                    Ok(value) => Ok(JsonString::from(value)),
-                    Err(error) => Err(error),
-                })
-                .or_else(|_| {
-                    // If we could not parse the result into a Result, well then the called
-                    // zome function maybe returns a plain return value.
-                    // We don't want to make this impossible so we just return that as
-                    // JsonString.
-                    // We just need to make sure it is valid JSON, so we do try to parse
-                    // one last time:
-                    let maybe_parsed_value: Result<Value, serde_json::error::Error> =
-                        serde_json::from_str(&sanitized_response);
-                    match maybe_parsed_value {
-                        Ok(parsed_value) => Ok(JsonString::from(parsed_value)),
-                        Err(_) => Ok(JsonString::from(RawString::from(sanitized_response))),
-                    }
-                })
+            // This should be returned as a JsonString for handling in the zome code.
+            Ok(JsonString::from_json(&sanitized_response))
         }
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
             serde_json::to_string(&response.get_error().unwrap()).unwrap(),
@@ -196,7 +175,6 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
         dna::{
             capabilities::CapabilityRequest,
             fn_declarations::{FnDeclaration, TraitFns},
@@ -208,9 +186,10 @@ pub mod tests {
             Entry,
         },
         error::{DnaError, HolochainError},
-        json::JsonString,
         signature::Signature,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
     use std::{
@@ -271,9 +250,9 @@ pub mod tests {
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
-
-        let context = &test_setup.context;
-        let result = context.block_on(call_zome_function(zome_call, context));
+        let result = test_setup
+            .context
+            .block_on(call_zome_function(zome_call, test_setup.context.clone()));
         assert_eq!(expected, Ok(result));
     }
 

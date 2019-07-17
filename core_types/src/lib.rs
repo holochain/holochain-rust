@@ -3,11 +3,6 @@
 //! The reason for having this crate is to have a minimal but
 //! complete set of types that are used in most other Holochain
 //! crates, but that don't include Holochain itself.
-//!
-//! Note: This is already quite big. Maybe break the CAS and EAV traits
-//! out into their separate crate as well since those are generic and not
-//! necessarily bound to Holochain.
-#![feature(try_from)]
 #![feature(try_trait)]
 #![feature(never_type)]
 #![warn(unused_extern_crates)]
@@ -18,7 +13,6 @@ extern crate futures;
 #[macro_use]
 extern crate lazy_static;
 extern crate multihash;
-extern crate rust_base58;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
@@ -26,17 +20,17 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate snowflake;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
 extern crate lib3h_crypto_api;
 extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
 extern crate hcid;
-extern crate uuid;
 extern crate wasmi;
 
-pub mod cas;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
@@ -48,11 +42,10 @@ pub mod agent;
 pub mod bits_n_pieces;
 pub mod chain_migrate;
 pub mod dna;
-pub mod hash;
-pub mod json;
 pub mod link;
 pub mod signature;
 pub mod time;
+pub mod ugly;
 pub mod validation;
 
 pub const GIT_HASH: &str = env!(

@@ -1,25 +1,21 @@
 use crate::{
-    action::ActionWrapper,
+    action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
-    state::State,
 };
-use futures::{
-    task::{noop_local_waker_ref, Poll},
-    Future,
-};
+use crossbeam_channel::{unbounded, Receiver, Sender};
+use futures::{task::Poll, Future};
+
+use crate::state::StateWrapper;
+use futures::task::noop_waker_ref;
 use holochain_core_types::{
     agent::AgentId,
-    cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
-    },
     dna::{wasm::DnaWasm, Dna},
-    eav::EntityAttributeValueStorage,
+    eav::Attribute,
     entry::{
         cap_entries::{CapabilityType, ReservedCapabilityId},
         entry_type::EntryType,
@@ -28,12 +24,16 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
+use holochain_persistence_api::{
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    eav::EntityAttributeValueStorage,
+};
 use jsonrpc_core::{self, IoHandler};
 use std::{
-    sync::{
-        mpsc::{channel, Receiver, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
 };
@@ -47,22 +47,21 @@ use test_utils::mock_signing::mock_conductor_api;
 #[derive(Clone)]
 pub struct Context {
     pub agent_id: AgentId,
-    pub logger: Arc<Mutex<Logger>>,
-    pub persister: Arc<Mutex<Persister>>,
-    state: Option<Arc<RwLock<State>>>,
-    pub action_channel: Option<SyncSender<ActionWrapper>>,
-    pub observer_channel: Option<SyncSender<Observer>>,
-    pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    pub logger: Arc<Mutex<dyn Logger>>,
+    pub persister: Arc<Mutex<dyn Persister>>,
+    state: Option<Arc<RwLock<StateWrapper>>>,
+    pub action_channel: Option<Sender<ActionWrapper>>,
+    pub observer_channel: Option<Sender<Observer>>,
+    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub(crate) signal_tx: Option<Sender<Signal>>,
+    pub(crate) instance_is_alive: Arc<Mutex<bool>>,
 }
 
 impl Context {
-    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
-
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
     // There are two different implementations of this function below which get pulled
@@ -91,11 +90,11 @@ impl Context {
 
     pub fn new(
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
-        persister: Arc<Mutex<Persister>>,
-        chain_storage: Arc<RwLock<ContentAddressableStorage>>,
-        dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        logger: Arc<Mutex<dyn Logger>>,
+        persister: Arc<Mutex<dyn Persister>>,
+        chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
@@ -116,18 +115,19 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
+            instance_is_alive: Arc::new(Mutex::new(true)),
         }
     }
 
     pub fn new_with_channels(
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
-        persister: Arc<Mutex<Persister>>,
-        action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
-        observer_channel: Option<SyncSender<Observer>>,
-        cas: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage>>,
+        logger: Arc<Mutex<dyn Logger>>,
+        persister: Arc<Mutex<dyn Persister>>,
+        action_channel: Option<Sender<ActionWrapper>>,
+        signal_tx: Option<Sender<Signal>>,
+        observer_channel: Option<Sender<Observer>>,
+        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
@@ -143,6 +143,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
+            instance_is_alive: Arc::new(Mutex::new(true)),
         })
     }
 
@@ -156,11 +157,11 @@ impl Context {
         logger.log(msg.into());
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<State>> {
+    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 
@@ -207,20 +208,41 @@ impl Context {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    pub fn action_channel(&self) -> &Sender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
+    pub fn is_action_channel_open(&self) -> bool {
+        self.action_channel
+            .clone()
+            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
+            .unwrap_or(false)
+    }
+
+    pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
+        match &self.action_channel {
+            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
+                Ok(()) => None,
+                Err(_) => Some(HolochainError::LifecycleError(msg.into())),
+            },
+            None => Some(HolochainError::InitializationFailed(msg.into())),
+        }
+    }
+
+    pub fn signal_tx(&self) -> Option<&Sender<Signal>> {
         self.signal_tx.as_ref()
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &Sender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
+    }
+
+    pub fn instance_still_alive(&self) -> bool {
+        *self.instance_is_alive.lock().unwrap()
     }
 
     /// This creates an observer for the instance's redux loop and installs it.
@@ -228,7 +250,7 @@ impl Context {
     /// got mutated.
     /// This enables blocking/parking the calling thread until the application state got changed.
     pub fn create_observer(&self) -> Receiver<()> {
-        let (tick_tx, tick_rx) = channel();
+        let (tick_tx, tick_rx) = unbounded();
         self.observer_channel()
             .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");
@@ -242,16 +264,20 @@ impl Context {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
+        let mut cx = std::task::Context::from_waker(noop_waker_ref());
+
         loop {
-            let _ = match future.as_mut().poll(noop_local_waker_ref()) {
+            let _ = match future.as_mut().poll(&mut cx) {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
+            if !self.instance_still_alive() {
+                panic!("Context::block_on() waiting for future but instance is not alive anymore => we gotta let this thread panic!")
+            }
+            if let Some(err) = self.action_channel_error("Context::block_on") {
+                panic!("Context::block_on() waiting for future but Redux loop got stopped => we gotta let this thread panic!\nError was: {:?}", err)
+            }
         }
-    }
-
-    pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
-        self.conductor_api.sign(payload)
     }
 
     /// returns the public capability token (if any)
@@ -323,16 +349,11 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister, state::State};
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use crate::{logger::test_logger, persister::SimplePersister};
     use holochain_core_types::agent::AgentId;
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
-
-    #[test]
-    fn default_buffer_size_test() {
-        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
-    }
 
     #[test]
     fn state_test() {
@@ -356,7 +377,9 @@ pub mod tests {
 
         assert!(maybe_context.state().is_none());
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(
+            maybe_context.clone(),
+        ))));
         maybe_context.set_state(global_state.clone());
 
         {
@@ -387,7 +410,7 @@ pub mod tests {
             None,
         );
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

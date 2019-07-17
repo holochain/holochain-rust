@@ -1,47 +1,68 @@
+# This is an example of what downstream consumers of holonix should do
+# This is also used to dogfood as many commands as possible for holonix
+# For example the release process for holonix uses this file
 let
 
-  pkgs = import ./holonix/nixpkgs/nixpkgs.nix;
-  darwin = import ./holonix/darwin/config.nix;
-  openssl = import ./holonix/openssl/config.nix;
-  rust = import ./holonix/rust/config.nix;
+ # point this to your local config.nix file for this project
+ # example.config.nix shows and documents a lot of the options
+ config = import ./config.nix;
+
+ # START HOLONIX IMPORT BOILERPLATE
+ holonix = import (
+  if ! config.holonix.use-github
+  then config.holonix.local.path
+  else fetchTarball {
+   url = "https://github.com/${config.holonix.github.owner}/${config.holonix.github.repo}/tarball/${config.holonix.github.ref}";
+   sha256 = config.holonix.github.sha256;
+  }
+ ) { config = config; };
+ # END HOLONIX IMPORT BOILERPLATE
 
 in
-with pkgs;
+with holonix.pkgs;
 {
- holonix-shell =
-  stdenv.mkDerivation rec {
-    name = "holonix-shell";
+ dev-shell = stdenv.mkDerivation (holonix.shell // {
+  name = "dev-shell";
 
-    buildInputs = import ./holonix/build.nix;
+  buildInputs = [ ]
+   ++ holonix.shell.buildInputs
 
-    # non-nixos OS can have a "dirty" setup with rustup installed for the current
-    # user.
-    # `nix-shell` can inherit this e.g. through sourcing `.bashrc`.
-    # even `nix-shell --pure` will still source some files and inherit paths.
-    # for those users we can at least give the OS a clue that we want our pinned
-    # rust version through this environment variable.
-    # https://github.com/rust-lang/rustup.rs#environment-variables
-    # https://github.com/NixOS/nix/issues/903
-    RUSTUP_TOOLCHAIN = rust.nightly.version;
-    RUSTFLAGS = rust.compile.flags;
-    CARGO_INCREMENTAL = rust.compile.incremental;
-    RUST_LOG = rust.log;
-    NUM_JOBS = rust.compile.jobs;
+   ++ (holonix.pkgs.callPackage ./app_spec {
+    pkgs = holonix.pkgs;
+   }).buildInputs
 
-    OPENSSL_STATIC = openssl.static;
+   ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {
+    pkgs = holonix.pkgs;
+   }).buildInputs
 
-    shellHook = ''
-     # cargo should install binaries into this repo rather than globally
-     # https://github.com/rust-lang/rustup.rs/issues/994
-     export CARGO_HOME=`pwd`/.cargo
-     export CARGO_INSTALL_ROOT=`pwd`/.cargo
-     export PATH="$PATH:$CARGO_INSTALL_ROOT/bin"
+   ++ (holonix.pkgs.callPackage ./conductor_wasm {
+    pkgs = holonix.pkgs;
+   }).buildInputs
 
-     export HC_TARGET_PREFIX=~/nix-holochain/
-     export NIX_LDFLAGS="${darwin.ld-flags}$NIX_LDFLAGS"
-    '';
-  };
+   ++ (holonix.pkgs.callPackage ./cli {
+    pkgs = holonix.pkgs;
+    config = config;
+   }).buildInputs
 
-  hc = import ./holonix/dist/cli/build.nix;
-  holochain = import ./holonix/dist/conductor/build.nix;
+   # qt specific testing
+   ++ (holonix.pkgs.callPackage ./qt {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   # release hooks
+   ++ (holonix.pkgs.callPackage ./release {
+    pkgs = holonix.pkgs;
+    config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./rust {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   # main test script
+   ++ (holonix.pkgs.callPackage ./test {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+  ;
+ });
 }

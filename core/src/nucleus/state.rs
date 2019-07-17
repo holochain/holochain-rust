@@ -1,15 +1,15 @@
 use crate::{
     nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
-    state::State,
 };
-use holochain_core_types::{
-    cas::content::{Address, AddressableContent, Content},
-    dna::Dna,
-    error::HolochainError,
+use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
+
+use crate::state::StateWrapper;
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
     json::JsonString,
-    validation::ValidationPackage,
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom};
 
@@ -114,8 +114,8 @@ pub struct NucleusStateSnapshot {
     pub pending_validations: HashMap<PendingValidationKey, PendingValidation>,
 }
 
-impl From<&State> for NucleusStateSnapshot {
-    fn from(state: &State) -> Self {
+impl From<&StateWrapper> for NucleusStateSnapshot {
+    fn from(state: &StateWrapper) -> Self {
         NucleusStateSnapshot {
             status: state.nucleus().status(),
             pending_validations: state.nucleus().pending_validations.clone(),
@@ -146,7 +146,7 @@ impl AddressableContent for NucleusStateSnapshot {
         self.to_owned().into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
         Self::try_from(content.to_owned())
     }
 }

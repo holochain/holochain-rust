@@ -26,7 +26,7 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
   setTimeout(async () => {
     if (!enteringShutdown) {
       enteringShutdown = true
-      console.log('after 5 seconds, all nodes should be holding all entries and all links')
+      console.log('after 10 seconds, all nodes should be holding all entries and all links')
       console.log(`There are only ${countHolding} after 5 seconds.`)
       // done this way because cluster.shutdown() was causing
       // errors on CircleCI
@@ -38,12 +38,13 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
         })
       }
     }
-  }, 5000)
+  }, 10000)
 
   let countHolding = 0
   cluster.batch(conductor => conductor.onSignal(async signal => {
     if (signal.action_type === "Hold") {
       countHolding++
+      console.log("Nodes holding so far:" + countHolding)
     }
     // 2 Holds for each nodes ... one for the App entry and one for a LinkAdd entry
     if (countHolding === numConductors * 2 && !enteringShutdown) {

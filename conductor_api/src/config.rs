@@ -11,12 +11,21 @@ use crate::logger::LogRules;
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
+use conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
-    dna::Dna,
+    dna::{
+        bridges::{BridgePresence, BridgeReference},
+        Dna,
+    },
     error::{HcResult, HolochainError},
-    json::JsonString,
 };
+//use logging::rule::Rule;
+
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h::engine::RealEngineConfig;
+
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -26,6 +35,7 @@ use std::{
     fs::File,
     io::prelude::*,
     path::PathBuf,
+    sync::Arc,
 };
 use toml;
 
@@ -49,6 +59,7 @@ pub struct Configuration {
     /// List of interfaces any UI can use to access zome functions. Optional.
     #[serde(default)]
     pub interfaces: Vec<InterfaceConfiguration>,
+
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
@@ -61,7 +72,7 @@ pub struct Configuration {
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
-    /// Configuration options for the network module n3h. Optional.
+    /// Configuration options for the network module. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
     /// where to persist the config file and DNAs. Optional.
@@ -73,6 +84,18 @@ pub struct Configuration {
     /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
     /// over this websocket.
     pub signing_service_uri: Option<String>,
+
+    /// Optional URI for a websocket connection to an outsourced encryption service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub encryption_service_uri: Option<String>,
+
+    /// Optional URI for a websocket connection to an outsourced decryption service.
+    /// Bootstrapping step for Holo closed-alpha.
+    /// If set, all agents with holo_remote_key = true will be emulated by asking for signatures
+    /// over this websocket.
+    pub decryption_service_uri: Option<String>,
 
     /// Optional DPKI configuration if conductor is using a DPKI app to initalize and manage
     /// keys for new instances
@@ -134,10 +157,13 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
-    pub fn check_consistency<'a>(&'a self) -> Result<(), String> {
+    pub fn check_consistency(&self, mut dna_loader: &mut DnaLoader) -> Result<(), String> {
         detect_dupes("agent", self.agents.iter().map(|c| &c.id))?;
         detect_dupes("dna", self.dnas.iter().map(|c| &c.id))?;
+
         detect_dupes("instance", self.instances.iter().map(|c| &c.id))?;
+        self.check_instances_storage()?;
+
         detect_dupes("interface", self.interfaces.iter().map(|c| &c.id))?;
 
         for ref instance in self.instances.iter() {
@@ -147,13 +173,35 @@ impl Configuration {
                     instance.agent, instance.id
                 )
             })?;
-            self.dna_by_id(&instance.dna).is_some().ok_or_else(|| {
+            let dna_config = self.dna_by_id(&instance.dna);
+            dna_config.is_some().ok_or_else(|| {
                 format!(
                     "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
                     instance.dna, instance.id
                 )
             })?;
+            let dna_config = dna_config.unwrap();
+            let dna =
+                Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone()))
+                    .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
+
+            for zome in dna.zomes.values() {
+                for bridge in zome.bridges.iter() {
+                    if bridge.presence == BridgePresence::Required {
+                        let handle = bridge.handle.clone();
+                        let _ = self
+                            .bridges
+                            .iter()
+                            .find(|b| b.handle == handle)
+                            .ok_or(format!(
+                                "Required bridge '{}' for instance '{}' missing",
+                                handle, instance.id
+                            ))?;
+                    }
+                }
+            }
         }
+
         for ref interface in self.interfaces.iter() {
             for ref instance in interface.instances.iter() {
                 self.instance_by_id(&instance.id).is_some().ok_or_else(|| {
@@ -165,23 +213,8 @@ impl Configuration {
             }
         }
 
-        for ref bridge in self.bridges.iter() {
-            self.instance_by_id(&bridge.callee_id)
-                .is_some()
-                .ok_or_else(|| {
-                    format!(
-                        "Instance configuration \"{}\" not found, mentioned in bridge",
-                        bridge.callee_id
-                    )
-                })?;
-            self.instance_by_id(&bridge.caller_id)
-                .is_some()
-                .ok_or_else(|| {
-                    format!(
-                        "Instance configuration \"{}\" not found, mentioned in bridge",
-                        bridge.caller_id
-                    )
-                })?;
+        for bridge in self.bridges.iter() {
+            self.check_bridge_requirements(bridge, dna_loader)?;
         }
 
         for ref ui_interface in self.ui_interfaces.iter() {
@@ -205,7 +238,6 @@ impl Configuration {
                     })?;
             }
         }
-
         if let Some(ref dpki_config) = self.dpki {
             self.instance_by_id(&dpki_config.instance_id)
                 .is_some()
@@ -219,6 +251,139 @@ impl Configuration {
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
+        Ok(())
+    }
+
+    fn check_bridge_requirements(
+        &self,
+        bridge_config: &Bridge,
+        mut dna_loader: &mut DnaLoader,
+    ) -> Result<(), String> {
+        //
+        // Get caller's config. DNA config, and DNA:
+        //
+        let caller_config = self
+            .instance_by_id(&bridge_config.caller_id)
+            .ok_or(format!(
+                "Instance configuration \"{}\" not found, mentioned in bridge",
+                bridge_config.caller_id
+            ))?;
+
+        let caller_dna_config = self.dna_by_id(&caller_config.dna).ok_or_else(|| {
+            format!(
+                "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                caller_config.dna, caller_config.id
+            )
+        })?;
+
+        let caller_dna_file = caller_dna_config.file.clone();
+        let caller_dna =
+            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
+                .map_err(|err| {
+                    format!(
+                        "Could not load DNA file \"{}\"; error was: {}",
+                        caller_dna_file, err
+                    )
+                })?;
+
+        //
+        // Get callee's config. DNA config, and DNA:
+        //
+        let callee_config = self
+            .instance_by_id(&bridge_config.callee_id)
+            .ok_or(format!(
+                "Instance configuration \"{}\" not found, mentioned in bridge",
+                bridge_config.callee_id
+            ))?;
+
+        let callee_dna_config = self.dna_by_id(&callee_config.dna).ok_or_else(|| {
+            format!(
+                "DNA configuration \"{}\" not found, mentioned in instance \"{}\"",
+                callee_config.dna, callee_config.id
+            )
+        })?;
+
+        let callee_dna_file = callee_dna_config.file.clone();
+        let callee_dna =
+            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
+                .map_err(|err| {
+                    format!(
+                        "Could not load DNA file \"{}\"; error was: {}",
+                        callee_dna_file, err
+                    )
+                })?;
+
+        //
+        // Get matching bridge definition from caller's DNA:
+        //
+        let mut maybe_bridge = None;
+        for zome in caller_dna.zomes.values() {
+            for bridge_def in zome.bridges.iter() {
+                if bridge_def.handle == bridge_config.handle {
+                    maybe_bridge = Some(bridge_def.clone());
+                }
+            }
+        }
+
+        let bridge = maybe_bridge.ok_or(format!(
+            "No bridge definition with handle '{}' found in {}'s DNA",
+            bridge_config.handle, bridge_config.caller_id,
+        ))?;
+
+        match bridge.reference {
+            BridgeReference::Address { ref dna_address } => {
+                if *dna_address != callee_dna.address() {
+                    return Err(format!(
+                        "Bridge '{}' of caller instance '{}' requires callee to be DNA with hash '{}', but the configured instance '{}' runs DNA with hash '{}'.",
+                        bridge.handle,
+                        bridge_config.caller_id,
+                        dna_address,
+                        callee_config.id,
+                        callee_dna.address(),
+                    ));
+                }
+            }
+            BridgeReference::Trait { ref traits } => {
+                for (expected_trait_name, expected_trait) in traits {
+                    let mut found = false;
+                    for (_zome_name, zome) in callee_dna.zomes.iter() {
+                        for (zome_trait_name, zome_trait_functions) in zome.traits.iter() {
+                            if zome_trait_name == expected_trait_name {
+                                let mut has_all_fns_exported = true;
+                                for fn_def in expected_trait.functions.iter() {
+                                    if !zome_trait_functions.functions.contains(&fn_def.name) {
+                                        has_all_fns_exported = false;
+                                    }
+                                }
+
+                                let mut has_matching_signatures = true;
+                                if has_all_fns_exported {
+                                    for fn_def in expected_trait.functions.iter() {
+                                        if !zome.fn_declarations.contains(&fn_def) {
+                                            has_matching_signatures = false;
+                                        }
+                                    }
+                                }
+
+                                if has_all_fns_exported && has_matching_signatures {
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if !found {
+                        return Err(format!(
+                            "Bridge '{}' of instance '{}' requires callee to to implement trait '{}' with functions: {:?}",
+                            bridge.handle,
+                            bridge_config.caller_id,
+                            expected_trait_name,
+                            expected_trait.functions,
+                        ));
+                    }
+                }
+            }
+        };
         Ok(())
     }
 
@@ -351,6 +516,37 @@ impl Configuration {
 
         self
     }
+
+    /// This function checks if there is duplicated file storage from the instances section of a provided
+    /// TOML configuration file. For efficiency purposes, we short-circuit on the first encounter of a
+    /// duplicated values.
+    fn check_instances_storage(&self) -> Result<(), String> {
+        let storage_paths: Vec<&str> = self
+            .instances
+            .iter()
+            .filter_map(|stg_config| match stg_config.storage {
+                StorageConfiguration::File { ref path }
+                | StorageConfiguration::Pickle { ref path } => Some(path.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        // Here we don't use the already implemented 'detect_dupes' function because we don't need
+        // to keep track of all the duplicated values of storage instances. But instead we use the
+        // return value of 'HashSet.insert()' conbined with the short-circuiting propriety of
+        // 'iter().all()' so we don't iterate on all the possible value once we found a duplicated
+        // storage entry.
+        let mut path_set: HashSet<&str> = HashSet::new();
+        let has_uniq_values = storage_paths.iter().all(|&x| path_set.insert(x));
+
+        if !has_uniq_values {
+            Err(String::from(
+                "Forbidden duplicated file storage value encountered.",
+            ))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
@@ -378,8 +574,7 @@ impl From<AgentConfiguration> for AgentId {
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
-    #[serde(default)]
-    pub hash: Option<String>,
+    pub hash: String,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -388,7 +583,7 @@ impl TryFrom<DnaConfiguration> for Dna {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents))
+        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 }
 
@@ -501,7 +696,15 @@ pub struct UiInterfaceConfiguration {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct NetworkConfig {
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type")]
+pub enum NetworkConfig {
+    N3h(N3hConfig),
+    Lib3h(RealEngineConfig),
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct N3hConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
     #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
@@ -509,14 +712,8 @@ pub struct NetworkConfig {
     #[serde(default = "default_n3h_log_level")]
     pub n3h_log_level: String,
     /// Overall mode n3h operates in.
-    /// Should be one of
-    /// * REAL
-    /// * MOCK
-    /// * HACK
-    /// REAL is the default and what should be used in all production cases.
-    /// MOCK is for using n3h only as a local hub that apps connect to directly, i.e. n3h will
-    /// not connect to any other n3h instance.
-    /// HACK is Deprecated. Used by n3h developers only. Will get removed soon.
+    /// Should be 'REAL'
+    /// REAL is the only one and what should be used in all production cases.
     #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
     /// Absolute path to the directory that n3h uses to store persisted data.
@@ -560,14 +757,17 @@ where
     T: Deserialize<'a>,
 {
     toml::from_str::<T>(toml).map_err(|e| {
-        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+        HolochainError::IoError(format!("Error loading configuration: {}", e.to_string()))
     })
 }
 
 pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
     // see https://github.com/alexcrichton/toml-rs/issues/142
     let config_toml = toml::Value::try_from(config).map_err(|e| {
-        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+        HolochainError::IoError(format!(
+            "Could not serialize configuration: {}",
+            e.to_string()
+        ))
     })?;
     toml::to_string_pretty(&config_toml).map_err(|e| {
         HolochainError::IoError(format!(
@@ -596,6 +796,7 @@ pub struct SignalConfig {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
+    use conductor::tests::test_dna_loader;
     use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {
@@ -656,7 +857,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.dna.json");
-        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
+        assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
     }
 
     #[test]
@@ -706,6 +907,7 @@ pub mod tests {
         id = "app spec instance"
 
     [network]
+    type = "n3h"
     bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
@@ -714,12 +916,12 @@ pub mod tests {
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
-        assert_eq!(config.check_consistency(), Ok(()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Ok(()));
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.dna.json");
-        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
+        assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
@@ -729,7 +931,7 @@ pub mod tests {
         assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(
             config.network.unwrap(),
-            NetworkConfig {
+            NetworkConfig::N3h(N3hConfig {
                 bootstrap_nodes: vec![String::from(
                     "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
                 )],
@@ -740,7 +942,7 @@ pub mod tests {
                 networking_config_file: Some(String::from(
                     "/Users/cnorris/.holochain/network_config.json"
                 )),
-            }
+            })
         );
     }
 
@@ -810,12 +1012,12 @@ pub mod tests {
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
-        assert_eq!(config.check_consistency(), Ok(()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Ok(()));
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.dna.json");
-        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
+        assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
@@ -826,6 +1028,57 @@ pub mod tests {
         assert_eq!(config.logger.rules.rules.len(), 1);
 
         assert_eq!(config.network, None);
+    }
+
+    #[test]
+    fn test_load_bad_network_config() {
+        let base_toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    keystore_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.dna.json"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+        [instances.storage]
+        type = "file"
+        path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+        [interfaces.driver]
+        type = "websocket"
+        port = 8888
+        [[interfaces.instances]]
+        id = "app spec instance"
+    "#;
+
+        let toml = format!(
+            "{}{}",
+            base_toml,
+            r#"
+    [network]
+    type = "lib3h"
+    "#
+        );
+        if let Err(e) = load_configuration::<Configuration>(toml.as_str()) {
+            assert!(
+                true,
+                e.to_string().contains(
+                    "Error loading configuration: missing field `socket_type` for key `network`"
+                )
+            )
+        } else {
+            panic!("Should have failed!")
+        }
     }
 
     #[test]
@@ -854,7 +1107,7 @@ pub mod tests {
         let config: Configuration =
             load_configuration(toml).expect("Failed to load config from toml string");
 
-        assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
     }
 
     #[test]
@@ -891,7 +1144,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err(
                 "Instance configuration \"WRONG INSTANCE ID\" not found, mentioned in interface"
                     .to_string()
@@ -953,33 +1206,33 @@ pub mod tests {
     keystore_file = "holo_tester.key"
 
     [[dnas]]
-    id = "app spec rust"
-    file = "app-spec-rust.dna.json"
+    id = "bridge caller"
+    file = "bridge/caller_without_required.dna"
     hash = "Qm328wyq38924y"
 
     [[instances]]
     id = "app1"
-    dna = "app spec rust"
+    dna = "bridge caller"
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app1_spec_storage"
 
     [[instances]]
     id = "app2"
-    dna = "app spec rust"
+    dna = "bridge caller"
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app2_spec_storage"
 
     [[instances]]
     id = "app3"
-    dna = "app spec rust"
+    dna = "bridge caller"
     agent = "test agent"
         [instances.storage]
         type = "file"
-        path = "app_spec_storage"
+        path = "app3_spec_storage"
 
     {}
     "#, bridges)
@@ -1002,7 +1255,7 @@ pub mod tests {
         );
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
-        assert_eq!(config.check_consistency(), Ok(()));
+        assert_eq!(config.check_consistency(&mut test_dna_loader()), Ok(()));
 
         // "->": calls
         // app1 -> app2 -> app3
@@ -1036,13 +1289,13 @@ pub mod tests {
     [[bridges]]
     caller_id = "app3"
     callee_id = "app1"
-    handle = "something"
+    handle = "test-callee"
     "#,
         );
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err("Cyclic dependency in bridge configuration".to_string())
         );
     }
@@ -1070,7 +1323,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
         );
     }
@@ -1174,7 +1427,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err("DNA Interface configuration \"<not existant>\" not found, mentioned in UI interface \"ui-interface-1\"".to_string())
         );
     }
@@ -1208,11 +1461,93 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
         assert_eq!(
-            config.check_consistency(),
+            config.check_consistency(&mut test_dna_loader()),
             Err(
                 "Instance configuration \"bogus instance\" not found, mentioned in dpki"
                     .to_string()
             )
         );
+    }
+
+    #[test]
+    fn test_check_instances_storage() -> Result<(), String> {
+        let toml = r#"
+        [[agents]]
+        id = "test agent 1"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 1"
+        public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+        [[agents]]
+        id = "test agent 2"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 2"
+        public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+        [[instances]]
+        agent = "test agent 1"
+        dna = "app spec rust"
+        id = "app spec instance 1"
+
+            [instances.storage]
+            path = "example-config/tmp-storage-1"
+            type = "file"
+
+        [[instances]]
+        agent = "test agent 2"
+        dna = "app spec rust"
+        id = "app spec instance 2"
+
+            [instances.storage]
+            path = "example-config/tmp-storage-2"
+            type = "file"
+        "#;
+
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+
+        assert_eq!(config.check_instances_storage(), Ok(()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_check_instances_storage_err() -> Result<(), String> {
+        // Here we have a forbidden duplicated 'instances.storage'
+        let toml = r#"
+        [[agents]]
+        id = "test agent 1"
+        keystore_file = "holo_tester.key"
+        name = "Holo Tester 1"
+        public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+        [[instances]]
+        agent = "test agent 1"
+        dna = "app spec rust"
+        id = "app spec instance 1"
+
+            [instances.storage]
+            path = "forbidden-duplicated-storage-file-path"
+            type = "file"
+
+        [[instances]]
+        agent = "test agent 2"
+        dna = "app spec rust"
+        id = "app spec instance 2"
+
+            [instances.storage]
+            path = "forbidden-duplicated-storage-file-path"
+            type = "file"
+        "#;
+
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+
+        assert_eq!(
+            config.check_instances_storage(),
+            Err(String::from(
+                "Forbidden duplicated file storage value encountered."
+            ))
+        );
+        Ok(())
     }
 }

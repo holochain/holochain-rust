@@ -12,14 +12,16 @@ use self::{
     deletion_entry::DeletionEntry,
 };
 use agent::{test_agent_id, AgentId};
-use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
 use chain_migrate::ChainMigrate;
 use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
-use error::{HcResult, HolochainError};
-use json::{default_to_json, default_try_from_json, JsonString, RawString};
+use holochain_json_api::{
+    error::{JsonError, JsonResult},
+    json::{JsonString, RawString},
+};
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
@@ -68,25 +70,13 @@ pub enum Entry {
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
-    LinkRemove(LinkData),
+    #[allow(clippy::large_enum_variant)]
+    LinkRemove((LinkData, Vec<Address>)),
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
     CapTokenClaim(CapTokenClaim),
     CapTokenGrant(CapTokenGrant),
-}
-
-impl From<Option<Entry>> for JsonString {
-    fn from(maybe_entry: Option<Entry>) -> Self {
-        default_to_json(maybe_entry)
-    }
-}
-
-impl TryFrom<JsonString> for Option<Entry> {
-    type Error = HolochainError;
-    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
-        default_try_from_json(j)
-    }
 }
 
 impl Entry {
@@ -125,7 +115,7 @@ impl AddressableContent for Entry {
         self.into()
     }
 
-    fn try_from_content(content: &Content) -> HcResult<Entry> {
+    fn try_from_content(content: &Content) -> JsonResult<Entry> {
         Entry::try_from(content.to_owned())
     }
 }
@@ -237,12 +227,10 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        cas::{
-            content::{AddressableContent, AddressableContentTestSuite},
-            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
-        },
-        entry::{expected_entry_address, Entry},
+    use crate::entry::{expected_entry_address, Entry};
+    use holochain_persistence_api::cas::{
+        content::{AddressableContent, AddressableContentTestSuite},
+        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
 
     #[test]

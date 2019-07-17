@@ -1,12 +1,12 @@
-#![feature(try_from)]
-extern crate holochain_cas_implementations;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
 extern crate tempfile;
@@ -16,8 +16,13 @@ use holochain_conductor_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
     bits_n_pieces::U16_MAX,
     error::{CoreError, HolochainError},
+};
+
+use holochain_json_api::{
+    error::JsonError,
     json::{JsonString, RawString},
 };
+
 use holochain_wasm_utils::{memory::MemoryInt, wasm_target_dir};
 use std::{convert::TryFrom, path::PathBuf};
 use test_utils::hc_setup_and_call_zome_fn;

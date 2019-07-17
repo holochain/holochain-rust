@@ -1,6 +1,7 @@
 use super::Dispatch;
 use error::ZomeApiResult;
-use holochain_core_types::{cas::content::Address, time::Timeout};
+use holochain_core_types::time::Timeout;
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 
 /// Sends a node-to-node message to the given agent, specified by their address.
@@ -12,18 +13,20 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # extern crate serde;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_core_types::cas::content::Address;
-/// # use holochain_core_types::json::JsonString;
+/// # use holochain_persistence_api::cas::content::Address;
+/// # use holochain_json_api::error::JsonError;
+/// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # use holochain_core_types::error::RibosomeEncodedValue;
@@ -42,7 +45,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -53,6 +56,8 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// /// # #[no_mangle]
+/// # pub fn hc_encrypt(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -75,10 +80,12 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {

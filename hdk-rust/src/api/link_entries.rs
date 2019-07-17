@@ -1,6 +1,6 @@
 use super::Dispatch;
 use error::ZomeApiError;
-use holochain_core_types::cas::content::Address;
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// Adds a named, tagged, directed link between two entries on the DHT.
@@ -17,19 +17,21 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_persistence_api;
+/// # extern crate holochain_json_api;
 /// # #[macro_use]
-/// # extern crate holochain_core_types_derive;
-/// # use holochain_core_types::json::JsonString;
+/// # extern crate holochain_json_derive;
+/// # use holochain_json_api::json::JsonString;
+/// # use holochain_json_api::error::JsonError;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::cas::content::Address;
+/// # use holochain_persistence_api::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
 /// # use hdk::error::ZomeApiResult;
 /// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;

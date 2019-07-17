@@ -45,13 +45,14 @@ mod test_super {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{cas::content::AddressableContent, json::JsonString};
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     fn test_zome_api_function_verify() {
         let (call_result, context) = test_zome_api_function(
-            ZomeApiFunction::Sign.as_str(),
-            r#"{ "payload": "this is data" }"#.as_bytes().to_vec(),
+            ZomeApiFunction::Crypto.as_str(),
+            r#"{ "payload": "this is data", "method":"Sign" }"#.as_bytes().to_vec(),
         );
         assert_eq!(JsonString::from_json(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
 

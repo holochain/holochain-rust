@@ -4,11 +4,9 @@ use crate::{
     instance::dispatch_action,
     network::actions::ActionResponse,
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
-use holochain_core_types::{cas::content::Address, error::HcResult};
+use futures::{future::Future, task::Poll};
+use holochain_core_types::error::HcResult;
+use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
 /// Publish Action Creator
@@ -35,7 +33,10 @@ pub struct PublishFuture {
 impl Future for PublishFuture {
     type Output = HcResult<Address>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("PublishFuture") {
+            return Poll::Ready(Err(err));
+        }
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));
@@ -44,7 +45,7 @@ impl Future for PublishFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().clone().wake();
         match state.actions().get(&self.action) {
             Some(ActionResponse::Publish(result)) => match result {
                 Ok(address) => Poll::Ready(Ok(address.to_owned())),

@@ -1,30 +1,41 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
+    chain_header::ChainHeader,
+    crud_status::CrudStatus,
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
+    entry::Entry,
+    error::HolochainError,
+};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
-    chain_header::ChainHeader,
-    eav::{
-        Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
-        IndexFilter,
-    },
-    entry::Entry,
-    error::HolochainError,
+    eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
 };
+use regex::Regex;
 
+use crate::state::StateWrapper;
+use holochain_json_api::error::JsonResult;
+use holochain_persistence_api::cas::content::Content;
 use std::{
     collections::{BTreeSet, HashMap},
+    convert::TryFrom,
     sync::{Arc, RwLock},
 };
 
 /// The state-slice for the DHT.
-/// Holds the agent's local shard and interacts with the network module
+/// Holds the CAS and EAVi that's used for the agent's local shard
+/// as well as the holding list, i.e. list of all entries held for the DHT.
 #[derive(Clone, Debug)]
 pub struct DhtStore {
     // Storages holding local shard data
-    content_storage: Arc<RwLock<ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+
+    /// All the entries that the network has told us to hold
+    holding_list: Vec<Address>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -42,51 +53,125 @@ impl PartialEq for DhtStore {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
+pub struct DhtStoreSnapshot {
+    pub holding_list: Vec<Address>,
+}
+
+impl From<&StateWrapper> for DhtStoreSnapshot {
+    fn from(state: &StateWrapper) -> Self {
+        DhtStoreSnapshot {
+            holding_list: state.dht().holding_list.clone(),
+        }
+    }
+}
+
+pub static DHT_STORE_SNAPSHOT_ADDRESS: &'static str = "DhtStore";
+impl AddressableContent for DhtStoreSnapshot {
+    fn content(&self) -> Content {
+        self.to_owned().into()
+    }
+
+    fn try_from_content(content: &Content) -> JsonResult<Self> {
+        Self::try_from(content.to_owned())
+    }
+
+    fn address(&self) -> Address {
+        DHT_STORE_SNAPSHOT_ADDRESS.into()
+    }
+}
+
+pub fn create_get_links_eavi_query<'a>(
+    address: Address,
+    link_type: String,
+    tag: String,
+) -> Result<EaviQuery<'a>, HolochainError> {
+    let link_type_regex = Regex::new(&link_type)
+        .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
+    let tag_regex =
+        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
+    Ok(EaviQuery::new(
+        Some(address).into(),
+        EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+            Attribute::LinkTag(query_link_type, query_tag)
+            | Attribute::RemovedLink(query_link_type, query_tag) => {
+                link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
+            }
+            _ => false,
+        }),
+        None.into(),
+        IndexFilter::LatestByAttribute,
+        Some(EavFilter::single(Attribute::RemovedLink(
+            link_type.clone(),
+            tag.clone(),
+        ))),
+    ))
+}
+
 impl DhtStore {
     // LifeCycle
     // =========
     pub fn new(
-        content_storage: Arc<RwLock<ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
     ) -> Self {
         DhtStore {
             content_storage,
             meta_storage,
+            holding_list: Vec::new(),
             actions: HashMap::new(),
         }
     }
 
+    pub fn new_with_holding_list(
+        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        holding_list: Vec<Address>,
+    ) -> Self {
+        let mut new_dht_store = Self::new(content_storage, meta_storage);
+        new_dht_store.holding_list = holding_list;
+        new_dht_store
+    }
+
+    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
+    ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
+    ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
+    ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
     pub fn get_links(
         &self,
         address: Address,
-        link_type: Option<String>,
-        tag: Option<String>,
+        link_type: String,
+        tag: String,
+    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
+        let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
+        let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
+        Ok(filtered
+            .into_iter()
+            .map(|s| match s.attribute() {
+                Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
+                _ => (s, CrudStatus::Deleted),
+            })
+            .collect())
+    }
+
+    pub fn get_all_metas(
+        &self,
+        address: &Address,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
-            Some(address).into(),
-            EavFilter::predicate(move |attr| match attr {
-                Attribute::LinkTag(query_link_type, query_tag)
-                | Attribute::RemovedLink(query_link_type, query_tag) => match (&link_type, &tag) {
-                    (Some(link_type), Some(tag)) => {
-                        link_type == &query_link_type && tag == &query_tag
-                    }
-                    (Some(link_type), None) => link_type == &query_link_type,
-                    (None, Some(tag)) => tag == &query_tag,
-                    (None, None) => true,
-                },
+        let query = EaviQuery::new(
+            Some(address.to_owned()).into(),
+            EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+                Attribute::LinkTag(_, _)
+                | Attribute::RemovedLink(_, _)
+                | Attribute::CrudLink
+                | Attribute::CrudStatus => true,
                 _ => false,
             }),
             None.into(),
             IndexFilter::LatestByAttribute,
-        ))?;
-
-        Ok(filtered
-            .into_iter()
-            .filter(|eav| match eav.attribute() {
-                Attribute::LinkTag(_, _) => true,
-                _ => false,
-            })
-            .collect())
+            None,
+        );
+        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store
@@ -101,6 +186,7 @@ impl DhtStore {
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
                 IndexFilter::LatestByAttribute,
+                None,
             ))?
             .into_iter()
             // get the header addresses
@@ -116,6 +202,10 @@ impl DhtStore {
                     .map(|content| ChainHeader::try_from_content(&content))
                     .collect::<Result<Vec<_>, _>>()
             })?
+            .map_err(|err| {
+                let hc_error: HolochainError = err.into();
+                hc_error
+            })
     }
 
     /// Add an entry and header to the CAS and EAV, respectively
@@ -134,12 +224,20 @@ impl DhtStore {
         Ok(())
     }
 
+    pub fn mark_entry_as_held(&mut self, entry: &Entry) {
+        self.holding_list.push(entry.address());
+    }
+
+    pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
+        &self.holding_list
+    }
+
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+    pub(crate) fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
+    pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
@@ -155,9 +253,10 @@ impl DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_core_types::{
-        cas::storage::ExampleContentAddressableStorage, chain_header::test_chain_header_with_sig,
-        eav::ExampleEntityAttributeValueStorage, entry::test_entry,
+    use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::test_entry};
+
+    use holochain_persistence_api::{
+        cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
     };
 
     #[test]

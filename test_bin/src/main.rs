@@ -1,11 +1,14 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 
 #[macro_use]
 extern crate failure;
-extern crate holochain_core_types;
+extern crate url;
+
+extern crate holochain_persistence_api;
+
 #[macro_use]
 extern crate holochain_net;
+extern crate lib3h_protocol;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
@@ -21,6 +24,7 @@ pub mod predicate;
 pub mod basic_workflows;
 pub mod connection_workflows;
 pub mod constants;
+pub mod lib3h_workflows;
 pub mod multidna_workflows;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
@@ -52,27 +56,29 @@ lazy_static! {
         basic_workflows::untrack_billy_test,
         basic_workflows::retrack_test,
         basic_workflows::dht_test,
-        basic_workflows::meta_test,
-        basic_workflows::no_meta_test,
-        basic_workflows::shutdown_test,
+        basic_workflows::dht_two_aspects_test,
+        basic_workflows::two_authors_test,
+//        basic_workflows::shutdown_test,
+        basic_workflows::no_aspect_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,
         publish_hold_workflows::publish_entry_list_test,
-        publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_meta_list_test,
         publish_hold_workflows::double_publish_entry_list_test,
-        publish_hold_workflows::double_publish_meta_list_test,
-        publish_hold_workflows::many_meta_test,
+        publish_hold_workflows::hold_list_test,
+        publish_hold_workflows::many_aspects_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::hold_and_publish_test,
-        three_workflows::publish_entry_stress_test,
+        // // Stress test disabled by default
+        // three_workflows::publish_entry_stress_test,
         multidna_workflows::send_test,
         multidna_workflows::dht_test,
-        multidna_workflows::meta_test,
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
+    ];
+    pub static ref TWO_NODES_LIB3H_TEST_FNS: Vec<TwoNodesTestFn> = vec![
+        lib3h_workflows::send_test,
     ];
 }
 
@@ -165,17 +171,13 @@ fn main() {
         if config["modes"]["IN_MEMORY"].as_bool().unwrap() {
             launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         }
-        if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
-            launch_two_nodes_test_with_ipc_mock(
-                "test_bin/data/mock_ipc_network_config.json",
-                None,
-                test_fn,
-            )
-            .unwrap();
+        if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
+            launch_two_nodes_test_with_mock("test_bin/data/lib3h_mock_config.json", None, test_fn)
+                .unwrap();
         }
-        if config["modes"]["HACK_MODE"].as_bool().unwrap() {
+        if config["modes"]["N3H"].as_bool().unwrap() {
             launch_two_nodes_test(
-                "test_bin/data/network_config.json",
+                "test_bin/data/n3h_config.json",
                 Some("test_bin/data/end_user_net_config.json".to_string()),
                 test_fn,
             )
@@ -183,23 +185,34 @@ fn main() {
         }
     }
 
+    // Launch LIB3H tests
+    if config["modes"]["LIB3H"].as_bool().unwrap() {
+        for test_fn in TWO_NODES_LIB3H_TEST_FNS.iter() {
+            launch_two_nodes_test_with_lib3h(
+                "test_bin/data/lib3h_config.json",
+                Some("test_bin/data/end_user_net_config.json".to_string()),
+                *test_fn,
+            )
+            .unwrap();
+        }
+    }
     // Launch THREE_WORKFLOWS tests on each setup
     if config["suites"]["THREE_WORKFLOWS"].as_bool().unwrap() {
         for test_fn in THREE_NODES_TEST_FNS.clone() {
             if config["modes"]["IN_MEMORY"].as_bool().unwrap() {
                 launch_three_nodes_test_with_memory_network(test_fn).unwrap();
             }
-            if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
-                launch_three_nodes_test_with_ipc_mock(
-                    "test_bin/data/mock_ipc_network_config.json",
+            if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
+                launch_three_nodes_test_with_mock(
+                    "test_bin/data/lib3h_mock_config.json",
                     None,
                     test_fn,
                 )
                 .unwrap();
             }
-            if config["modes"]["HACK_MODE"].as_bool().unwrap() {
+            if config["modes"]["N3H"].as_bool().unwrap() {
                 launch_three_nodes_test(
-                    "test_bin/data/network_config.json",
+                    "test_bin/data/n3h_config.json",
                     Some("test_bin/data/end_user_net_config.json".to_string()),
                     test_fn,
                 )
@@ -209,24 +222,23 @@ fn main() {
     }
 
     // CONNECTION_WORKFLOWS
-    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap()
-        && config["modes"]["HACK_MODE"].as_bool().unwrap()
-    {
-        connection_workflows::two_nodes_disconnect_test(
-            "test_bin/data/network_config.json",
-            Some("test_bin/data/end_user_net_config.json".to_string()),
-            basic_workflows::dht_test,
-        )
-        .unwrap();
+    if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap() {
+        if config["modes"]["N3H"].as_bool().unwrap() {
+            connection_workflows::two_nodes_disconnect_test(
+                "test_bin/data/n3h_config.json",
+                Some("test_bin/data/end_user_net_config.json".to_string()),
+                basic_workflows::dht_test,
+            )
+            .unwrap();
 
-        connection_workflows::three_nodes_disconnect_test(
-            "test_bin/data/network_config.json",
-            Some("test_bin/data/end_user_net_config.json".to_string()),
-            three_workflows::hold_and_publish_test,
-        )
-        .unwrap();
+            connection_workflows::three_nodes_disconnect_test(
+                "test_bin/data/n3h_config.json",
+                Some("test_bin/data/end_user_net_config.json".to_string()),
+                three_workflows::hold_and_publish_test,
+            )
+            .unwrap();
+        }
     }
-
     // Wait a bit before closing
     for i in (0..4).rev() {
         println!("tick... {}", i);
@@ -241,8 +253,8 @@ fn main() {
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string());
-    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.to_string(), &alex.config, None);
+    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.clone());
+    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.clone(), &alex.config, None);
 
     log_i!("");
     print_two_nodes_test_name("IN-MEMORY TWO NODE TEST: ", test_fn);
@@ -257,23 +269,22 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
     Ok(())
 }
 
-// do general test with hackmode
+// do general test in a mocked mode
 #[cfg_attr(tarpaulin, skip)]
-fn launch_two_nodes_test_with_ipc_mock(
+fn launch_two_nodes_test_with_mock(
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy =
-        TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.to_string(), &alex.endpoint());
+    let mut billy = TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.clone(), &alex.endpoint());
 
     log_i!("");
     print_two_nodes_test_name("IPC-MOCK TWO NODE TEST: ", test_fn);
@@ -297,14 +308,14 @@ fn launch_two_nodes_test(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        BILLY_AGENT_ID.to_string(),
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -324,6 +335,41 @@ fn launch_two_nodes_test(
     Ok(())
 }
 
+/// Do test with default lib3hcd ..
+#[cfg_attr(tarpaulin, skip)]
+fn launch_two_nodes_test_with_lib3h(
+    config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
+    test_fn: TwoNodesTestFn,
+) -> NetResult<()> {
+    // Create two nodes
+    let mut alex = TestNode::new_with_lib3h(
+        ALEX_AGENT_ID.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
+    );
+    let mut billy = TestNode::new_with_lib3h(
+        BILLY_AGENT_ID.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
+    );
+    log_i!("");
+    print_two_nodes_test_name("LIB3H TWO NODE TEST: ", test_fn);
+    log_i!("=======================");
+    test_fn(&mut alex, &mut billy, false)?;
+    log_i!("==================");
+    print_two_nodes_test_name("LIB3H TEST END: ", test_fn);
+    // Kill nodes
+    alex.stop();
+    billy.stop();
+
+    Ok(())
+}
+
 //--------------------------------------------------------------------------------------------------
 // THREE NODES LAUNCHERS
 //--------------------------------------------------------------------------------------------------
@@ -332,9 +378,9 @@ fn launch_two_nodes_test(
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> NetResult<()> {
     // Create nodes
-    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string());
-    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.to_string(), &alex.config, None);
-    let mut camille = TestNode::new_with_config(CAMILLE_AGENT_ID.to_string(), &alex.config, None);
+    let mut alex = TestNode::new_with_unique_memory_network(ALEX_AGENT_ID.clone());
+    let mut billy = TestNode::new_with_config(BILLY_AGENT_ID.clone(), &alex.config, None);
+    let mut camille = TestNode::new_with_config(CAMILLE_AGENT_ID.clone(), &alex.config, None);
 
     // Launch test
     log_i!("");
@@ -353,25 +399,24 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     Ok(())
 }
 
-// do general test with hackmode
+// do general test with a mocked mode
 #[cfg_attr(tarpaulin, skip)]
-fn launch_three_nodes_test_with_ipc_mock(
+fn launch_three_nodes_test_with_mock(
     config_filepath: &str,
     maybe_end_user_config_filepath: Option<String>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
-    let mut billy =
-        TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.to_string(), &alex.endpoint());
+    let mut billy = TestNode::new_with_uri_ipc_network(BILLY_AGENT_ID.clone(), &alex.endpoint());
     let mut camille =
-        TestNode::new_with_uri_ipc_network(CAMILLE_AGENT_ID.to_string(), &alex.endpoint());
+        TestNode::new_with_uri_ipc_network(CAMILLE_AGENT_ID.clone(), &alex.endpoint());
 
     log_i!("");
     print_three_nodes_test_name("IPC-MOCK THREE NODE TEST: ", test_fn);
@@ -396,21 +441,21 @@ fn launch_three_nodes_test(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
-        ALEX_AGENT_ID.to_string(),
+        ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
-        BILLY_AGENT_ID.to_string(),
+        BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
         None,
     );
     let mut camille = TestNode::new_with_spawn_ipc_network(
-        CAMILLE_AGENT_ID.to_string(),
+        CAMILLE_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -423,6 +468,52 @@ fn launch_three_nodes_test(
     test_fn(&mut alex, &mut billy, &mut camille, true)?;
     log_i!("============");
     print_three_nodes_test_name("N3H TEST END: ", test_fn);
+    // Kill nodes
+    alex.stop();
+    billy.stop();
+    camille.stop();
+
+    // Done
+    Ok(())
+}
+
+// Do general test with config
+#[cfg_attr(tarpaulin, skip)]
+#[allow(dead_code)]
+fn launch_three_nodes_test_with_lib3h(
+    config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
+    test_fn: ThreeNodesTestFn,
+) -> NetResult<()> {
+    // Create two nodes
+    let mut alex = TestNode::new_with_lib3h(
+        ALEX_AGENT_ID.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
+    );
+    let mut billy = TestNode::new_with_lib3h(
+        BILLY_AGENT_ID.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
+    );
+    let mut camille = TestNode::new_with_lib3h(
+        CAMILLE_AGENT_ID.clone(),
+        Some(config_filepath),
+        maybe_end_user_config_filepath,
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        None,
+    );
+
+    log_i!("");
+    print_three_nodes_test_name("LIB3H THREE NODE TEST: ", test_fn);
+    log_i!("===================");
+    test_fn(&mut alex, &mut billy, &mut camille, true)?;
+    log_i!("============");
+    print_three_nodes_test_name("LIB3H TEST END: ", test_fn);
     // Kill nodes
     alex.stop();
     billy.stop();

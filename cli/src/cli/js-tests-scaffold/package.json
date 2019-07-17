@@ -1,7 +1,10 @@
 {
+  "devDependencies": {},
   "dependencies": {
-    "@holochain/holochain-nodejs": "0.4.16-alpha2",
+    "@holochain/diorama": "^0.1.2",
+    "faucet": "0.0.1",
     "json3": "*",
+    "sleep": "^5.2.3",
     "tape": "^4.9.1"
   }
 }

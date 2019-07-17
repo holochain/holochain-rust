@@ -62,7 +62,7 @@ impl ConductorUiAdmin for Conductor {
 
         let mut new_config = self.config.clone();
         new_config.ui_bundles.push(new_bundle.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         notify(format!(
@@ -99,7 +99,7 @@ impl ConductorUiAdmin for Conductor {
             self.remove_ui_interface(&bundle_interface.id)?;
         }
 
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         Ok(())
@@ -111,7 +111,7 @@ impl ConductorUiAdmin for Conductor {
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.ui_interfaces.push(new_interface.clone());
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
         self.static_servers.insert(
@@ -143,7 +143,7 @@ impl ConductorUiAdmin for Conductor {
             .into_iter()
             .filter(|ui_interface| ui_interface.id != *id)
             .collect();
-        new_config.check_consistency()?;
+        new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
 
@@ -177,7 +177,7 @@ pub mod tests {
 
     pub fn test_ui_copier() -> UiDirCopier {
         let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
-            as Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
         Arc::new(copier)
     }
 

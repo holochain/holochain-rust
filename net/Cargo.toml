@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.17-alpha2"
+version = "0.0.24-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -9,11 +9,17 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
+lib3h = "=0.0.7"
+lib3h_protocol = "=0.0.7"
+lib3h_crypto_api = "=0.0.7"
+lib3h_sodium = "=0.0.7"
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
-holochain_core_types_derive = { path = "../core_types_derive" }
+holochain_json_derive = "=0.0.15"
+holochain_json_api = "=0.0.15"
+holochain_persistence_api = "=0.0.6"
 lazy_static = "=1.2.0"
-libc = "=0.2.50"
+libc = "=0.2.58"
 reqwest = "=0.9.11"
 sha2 = "=0.8.0"
 serde = "=1.0.89"

@@ -1,7 +1,9 @@
 pub mod actions;
 pub mod direct_message;
+pub mod entry_aspect;
 pub mod entry_with_header;
 pub mod handler;
+pub mod query;
 pub mod reducers;
 pub mod state;
 #[cfg(test)]
@@ -22,12 +24,14 @@ pub mod tests {
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
-        cas::content::{Address, AddressableContent},
+        agent::test_agent_id,
+        chain_header::test_chain_header,
         crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMetaAndHeader},
-        json::JsonString,
         link::link_data::LinkData,
     };
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use test_utils::*;
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
@@ -37,9 +41,9 @@ pub mod tests {
         let netname = Some("get_entry_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
         // Create Entry & metadata
@@ -91,9 +95,9 @@ pub mod tests {
         let netname = Some("get_entry_results_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alex", netname).unwrap();
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "billy", netname).unwrap();
 
         // Create Entry & crud-status metadata, and store it.
@@ -134,8 +138,9 @@ pub mod tests {
         let netname = Some("get_non_existant_entry");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
-        let (_, context2) =
+        let (_instance1, _) =
+            test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob2", netname).unwrap();
 
         let entry = test_entry();
@@ -159,7 +164,7 @@ pub mod tests {
         let netname = Some("get_when_alone");
         let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "bob3", netname).unwrap();
 
         // Create Entry
@@ -187,6 +192,7 @@ pub mod tests {
             CrudStatus::Live
         );
     }
+
     #[test]
     fn get_validation_package_roundtrip() {
         let netname = Some("get_validation_package_roundtrip");
@@ -194,7 +200,7 @@ pub mod tests {
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = netname.unwrap().to_string();
 
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
         let entry = test_entry();
@@ -207,11 +213,11 @@ pub mod tests {
             .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
 
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
         let result = context2.block_on(get_validation_package(header.clone(), &context2));
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "actual result: {:?}", result);
         let maybe_validation_package = result.unwrap();
         assert!(maybe_validation_package.is_some());
         let validation_package = maybe_validation_package.unwrap();
@@ -226,9 +232,9 @@ pub mod tests {
         let wat = &test_wat_always_valid();
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = netname.unwrap().to_string();
-        let (_, context1) =
+        let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alex2", netname).unwrap();
-        let (_, context2) =
+        let (_instance2, context2) =
             test_instance_and_context_by_name(dna.clone(), "billy2", netname).unwrap();
 
         let mut entry_addresses: Vec<Address> = Vec::new();
@@ -249,14 +255,18 @@ pub mod tests {
         let link1 = LinkData::new_add(
             &entry_addresses[0],
             &entry_addresses[1],
-            "test-link",
             "test-tag",
+            "test-link",
+            test_chain_header(),
+            test_agent_id(),
         );
         let link2 = LinkData::new_add(
             &entry_addresses[0],
             &entry_addresses[2],
-            "test-link",
             "test-tag",
+            "test-link",
+            test_chain_header(),
+            test_agent_id(),
         );
 
         // Store link1 on the network
@@ -282,8 +292,8 @@ pub mod tests {
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             entry_addresses[0].clone(),
-            Some("test-link".into()),
-            Some("test-tag".into()),
+            "test-link".into(),
+            "test-tag".into(),
             Default::default(),
         ));
 
@@ -292,8 +302,10 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            (links[0] == entry_addresses[1] || links[0] == entry_addresses[2])
-                && (links[1] == entry_addresses[1] || links[1] == entry_addresses[2])
+            (links[0] == (entry_addresses[1].clone(), CrudStatus::Live)
+                || links[0] == (entry_addresses[2].clone(), CrudStatus::Live))
+                && (links[1] == (entry_addresses[1].clone(), CrudStatus::Live)
+                    || links[1] == (entry_addresses[2].clone(), CrudStatus::Live))
         );
     }
 }

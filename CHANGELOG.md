@@ -1,6 +1,183 @@
 # Changelog
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.0.24-alpha2] - 2019-07-15
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.24-alpha1] - 2019-07-15
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.23-alpha1] - 2019-07-11
+
+### Added
+- Discrepancy between DNA hashes are now checked and reported to the user through logs [#1335](https://github.com/holochain/holochain-rust/pull/1335).
+
+### Changed
+
+- *Breaking Change* Validation callback now shows consistent behavior when called on the authoring node during entry commit time, and when called by validating nodes being requested to hold the entry.  In both cases the a FullChain validation package now does NOT include the about-to-be-added entry.  Some validation functions were relying on the behavior of having the entry be at the top of the chain in the Hold case, and using the EntryLifecycle flag value to distinguish the two cases.   Please note that in the future this flag may be going away! [#1563](https://github.com/holochain/holochain-rust/pull/1563)
+- *Breaking Change* Format of `.hcbuild` files that are run by `hc` changed: `steps` is now an array so we have deterministic ordering of build steps. - In order to apply WASM size optimizations to our app-spec test suite, we had to make more sophisticated use of the `.hcbuild` files with a sequence of consecutive steps. The former implementation with a map had to changed to an array. [#1577](https://github.com/holochain/holochain-rust/pull/1577)
+### Deprecated
+
+- The EntryLifecycle flags in validation may be going away.  If you have a use-case that requires this, please tell us.
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.22-alpha1] - 2019-07-04
+
+### Added
+- Added `properties` to entry definitions (not to the entries themselved). These can be retrieved using the `entry_type_properties` HDK function [#1337](https://github.com/holochain/holochain-rust/pull/1337)
+- *Breaking Change* Added type field to conductor network configuration.  You must add `type="n3h"` for current config files to work.  [#1540](https://github.com/holochain/holochain-rust/pull/1540)
+- Added `Encryption` and `Decryption` methods in the HDK [#1534](https://github.com/holochain/holochain-rust/pull/1534)
+- Adds `hc hash` CLI subcommand. Can be used to compute the hash of the DNA in the current dist directory or passed a path to a DNA with the --path flag [#1562](https://github.com/holochain/holochain-rust/pull/1562)
+- Adds a --dna flag to the CLI so `hc run` can run DNAs outside the standard ./dist/ directory [1561](https://github.com/holochain/holochain-rust/pull/1561)
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.21-alpha1] - 2019-06-26
+
+### Added
+- Added `Crud Status` information to link data in get_links as well as query through `LinkStatusRequest` [#1337](https://github.com/holochain/holochain-rust/pull/1337)
+- The `hc` tool can now generate template zomes that use the new proc macro HDK [#1511](https://github.com/holochain/holochain-rust/pull/1511)
+- Added a MVP implementation of [Signals](https://github.com/holochain/holochain-rust/blob/develop/doc/architecture/decisions/0013-signals-listeners-model-and-api.md) that introduces `hdk::emit_signal(name, payload)` [#1516](https://github.com/holochain/holochain-rust/pull/1516)
+
+### Changed
+- The barebones tests produced by `hc init` now use the Diorama testing framework rather than holochain-nodejs [#1532](https://github.com/holochain/holochain-rust/pull/1532)
+
+- **Breaking change** - `holochain_core_types_derive` and `holochain_core_types` are split into `holochain_json_derive`, `holochain_json_api`, `holochain_persistence_api` [#1505](https://github.com/holochain/holochain-rust/pull/1505)
+
+- Fix dangling references of `core_types_derive` and related imports [#1551](https://github.com/holochain/holochain-rust/pull/1551)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.20-alpha3] - 2019-06-17
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.20-alpha2] - 2019-06-17
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.20-alpha1] - 2019-06-16
+
+### Added
+
+- **Breaking change** - renames `emit_trace_signals` to `signals.trace` in conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
+- "Consistency" signals added, which aid determinism in end-to-end tests, configurable through `signals.consistency` conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
+- Uses regex matching for `get_links` tags and type. Probably not a breaking change but be careful of subset matching (e.g. `some` will match against `some-tag` but `^some$` will not.) [#1453](https://github.com/holochain/holochain-rust/pull/1453)
+- `Tombstone` functionality added on eaviquery, this makes sure that the delete links is not determined by order but determined by a `tombstone set` which takes precedence over everything. [#1363](https://github.com/holochain/holochain-rust/pull/1363)
+
+### Deprecated
+
+### Removed
+
+- **Breaking change** - migrates nodejs_conductor and nodejs_waiter to holochain-nodejs repo [#1510](https://github.com/holochain/holochain-rust/pull/1510)
+
+### Fixed
+
+### Security
+
+## [0.0.19-alpha1] - 2019-06-10
+
+### Added
+- Error log output added for errors occurring during `hdk::call`, including bridge call errors [#1448](https://github.com/holochain/holochain-rust/pull/1448).
+- New `uuid` parameter for `admin/dna/install_from_file`, to set the UUID of the installed DNA, changing its hash [#1425](https://github.com/holochain/holochain-rust/pull/1425)
+- **BREAKING:** Conductor configuration checks for bridges added [#1461](https://github.com/holochain/holochain-rust/pull/1461). Conductor will bail with an error message if the configuration of bridges between instances does not match the bridge requirements defined in the caller instance's DNA (required bridge missing, DNA hash mismatch, trait mismatch) or if a bridge with the handle specified in the config can not be found in the caller's DNA.
+
+### Changed
+- Added a Vagrant file to support nix-shell compatible VMs on windows etc. [#1433](https://github.com/holochain/holochain-rust/pull/1433)
+- Adds TryInto implementation from JsonString to generic result types. This makes bridge calls much easier to implement safely [#1464](https://github.com/holochain/holochain-rust/pull/1464)
+- Changes the responses when using `hdk::call` to call across a bridge to make it consistent with calling between zomes  [#1487](https://github.com/holochain/holochain-rust/pull/1487)
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Adding bridges dynamically via an admin interface works now without rebooting the conductor. [#1476](https://github.com/holochain/holochain-rust/pull/1476)
+- `hdk::query` results are filtered now to not contain DNA entries since they can easily be several MBs of size which breaks our current limitation of 640k of WASM memory. [#1490](https://github.com/holochain/holochain-rust/pull/1490)   
+
+### Security
+
+## [0.0.18-alpha1] - 2019-06-03
+
+### Added
+
+### Changed
+
+- **Breaking change** - renames `emit_trace_signals` to `signals.trace` in conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
+- "Consistency" signals added, which aid determinism in end-to-end tests, configurable through `signals.consistency` conductor config [#1431](https://github.com/holochain/holochain-rust/pull/1431)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
 
 ## [0.0.17-alpha2] - 2019-05-27
 
@@ -103,6 +280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds hdk::grant_capability() for zome functions to be able to create [capability grant](doc/architecture/decisions/0017-capabilities.md)  [#1285](https://github.com/holochain/holochain-rust/pull/1285)
 - `nix-shell` includes latest `hc` and `holochain` binaries [#1306](https://github.com/holochain/holochain-rust/pull/1306)
 - Adds `hc-cli-uninstall` and `hc-conductor-rust-uninstall` to drop local development installations of these binaries that would override dist binaries [#1351](https://github.com/holochain/holochain-rust/pull/1351)
+
 ### Changed
 - changed JSON-RPC Zome call `params` key to `args` for clarity (due to confusion between JSON-RPC `params` and Holochain `params` keys): see [#1203](https://github.com/holochain/holochain-rust/pull/1203) and [#1271](https://github.com/holochain/holochain-rust/pull/1271)
 - Remove sleeps during network initialization, block until P2pReady event is received [#1284](https://github.com/holochain/holochain-rust/pull/1284).
@@ -394,7 +572,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - hc command-line tool: [#831](https://github.com/holochain/holochain-rust/pull/831)
     - `run --persist` flag for keeping state across runs [#729](https://github.com/holochain/holochain-rust/pull/729/files)
     - Added env variables to activate real networking [#826](https://github.com/holochain/holochain-rust/pull/826)
-- Groundwork for: capabilities & signals [#762](https://github.com/holochain/holochain-rust/pull/826) & [#732](https://github.com/holochain/holochain-rust/pull/732)
+- Groundwork for: capabilities & signals [#762](https://github.com/holochain/holochain-rust/pull/762) & [#732](https://github.com/holochain/holochain-rust/pull/732)
 - Improved debug logging with log rules and colorization [#819](https://github.com/holochain/holochain-rust/pull/819)
 - This change log! [#831](https://github.com/holochain/holochain-rust/pull/831)
 

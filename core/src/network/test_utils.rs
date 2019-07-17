@@ -2,7 +2,8 @@ use crate::{
     context::Context,
     instance::{tests::test_context, Instance},
 };
-use holochain_core_types::{cas::content::Address, dna::Dna};
+use holochain_core_types::dna::Dna;
+use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// create a test instance
@@ -21,7 +22,7 @@ pub fn test_instance_with_spoofed_dna(
     assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
     assert!(instance.state().nucleus().has_initialized());
 
-    /// fair warning... use test_instance_blank() if you want a minimal instance
+    // fair warning... use test_instance_blank() if you want a minimal instance
     assert!(
         !dna.zomes.clone().is_empty(),
         "Empty zomes = No genesis = infinite loops below!"

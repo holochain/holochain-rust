@@ -1,4 +1,5 @@
-pub mod dna_store;
-pub mod ipc_config;
-pub mod meta_store;
+extern crate lib3h;
+pub mod chain_store;
+pub mod create_config;
+pub mod entry_store;
 pub mod test_node;

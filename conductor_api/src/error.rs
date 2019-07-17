@@ -9,18 +9,22 @@ pub enum HolochainInstanceError {
     InternalFailure(HolochainError),
     InstanceNotActiveYet,
     InstanceAlreadyActive,
+    InstanceNotInitialized,
     NoSuchInstance,
+    RequiredBridgeMissing(String),
 }
 
 impl Error for HolochainInstanceError {
     // not sure how to test this because dyn reference to the Error is not implementing PartialEq
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match self {
             HolochainInstanceError::InternalFailure(ref err)  => Some(err),
             HolochainInstanceError::InstanceNotActiveYet => None,
             HolochainInstanceError::InstanceAlreadyActive => None,
+            HolochainInstanceError::InstanceNotInitialized => None,
             HolochainInstanceError::NoSuchInstance => None,
+            HolochainInstanceError::RequiredBridgeMissing(_) => None,
         }
     }
 }
@@ -36,9 +40,17 @@ impl fmt::Display for HolochainInstanceError {
             HolochainInstanceError::InstanceAlreadyActive => {
                 write!(f, "{}: Holochain instance is already active.", prefix)
             }
+            HolochainInstanceError::InstanceNotInitialized => {
+                write!(f, "{}: Holochain instance is not initialized.", prefix)
+            }
             HolochainInstanceError::NoSuchInstance => {
                 write!(f, "{}: Instance does not exist", prefix)
             }
+            HolochainInstanceError::RequiredBridgeMissing(handle) => write!(
+                f,
+                "{}: Required bridge is not present/started: {}",
+                prefix, handle
+            ),
         }
     }
 }
@@ -72,6 +84,10 @@ pub mod tests {
     fn holochain_instance_error_to_string_test() {
         for (i, o) in vec![
             (
+                HolochainInstanceError::InstanceNotInitialized,
+                "Holochain instance is not initialized.",
+            ),
+            (
                 HolochainInstanceError::InstanceNotActiveYet,
                 "Holochain instance is not active yet.",
             ),
@@ -86,6 +102,10 @@ pub mod tests {
             (
                 HolochainInstanceError::NoSuchInstance,
                 "Instance does not exist",
+            ),
+            (
+                HolochainInstanceError::RequiredBridgeMissing(String::from("handle")),
+                &format!("Required bridge is not present/started: handle"),
             ),
         ] {
             assert_eq!(

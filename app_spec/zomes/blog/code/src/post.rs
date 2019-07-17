@@ -2,9 +2,13 @@ use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
-    dna::entry_types::Sharing, error::HolochainError, json::JsonString,
+    dna::entry_types::Sharing,
     validation::EntryValidationData,
 };
+use hdk::holochain_json_api::{
+    error::JsonError, json::JsonString,
+};
+
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -124,6 +128,7 @@ mod tests {
             },
             validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
         },
+        holochain_json_api::json::JsonString,
         holochain_wasm_utils::api_serialization::validation::LinkDirection,
     };
     use std::convert::TryInto;
@@ -148,7 +153,7 @@ mod tests {
         assert_eq!(expected_name, post_definition.name.clone());
 
         let expected_definition = EntryTypeDef {
-            description: "blog entry post".to_string(),
+            properties: JsonString::from("blog entry post"),
             linked_from: vec![
                 LinkedFrom {
                     base_type: "%agent_id".to_string(),

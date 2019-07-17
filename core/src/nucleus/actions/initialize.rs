@@ -8,12 +8,8 @@ use crate::{
         state::NucleusStatus,
     },
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{
-    cas::content::Address,
     dna::{traits::ReservedTraitNames, Dna},
     entry::{
         cap_entries::{CapFunctions, CapTokenGrant, CapabilityType, ReservedCapabilityId},
@@ -21,6 +17,8 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
+use holochain_persistence_api::cas::content::Address;
+
 use std::{pin::Pin, sync::Arc, time::*};
 
 /// Initialization is the value returned by successful initialization of a DNA instance
@@ -220,12 +218,15 @@ pub struct InitializationFuture {
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("InitializationFuture") {
+            return Poll::Ready(Err(err));
+        }
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().clone().wake();
 
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)

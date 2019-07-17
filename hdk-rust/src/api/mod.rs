@@ -2,20 +2,19 @@
 //! HDK exposed functions to access powerful Holochain functions.
 
 use crate::error::{ZomeApiError, ZomeApiResult};
+use holochain_json_api::json::{default_to_json, JsonString, RawString};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
+
 use holochain_core_types::{
-    cas::content::Address,
     dna::capabilities::CapabilityRequest,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::ZomeApiGlobals,
-    holochain_core_types::{
-        hash::HashString,
-        json::{JsonString, RawString},
-    },
     memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
+
 use init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};
 
@@ -24,7 +23,11 @@ mod call;
 mod capability;
 mod commit_entry;
 mod debug;
+mod decrypt;
+mod emit_signal;
+mod encrypt;
 mod entry_address;
+mod entry_type_properties;
 mod get_entry;
 mod get_links;
 mod keystore;
@@ -43,7 +46,11 @@ pub use self::{
     capability::{commit_capability_claim, commit_capability_grant},
     commit_entry::{commit_entry, commit_entry_result},
     debug::debug,
+    decrypt::decrypt,
+    emit_signal::emit_signal,
+    encrypt::encrypt,
     entry_address::entry_address,
+    entry_type_properties::entry_type_properties,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
     get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
     keystore::{
@@ -110,7 +117,7 @@ macro_rules! def_api_fns {
                 if result.ok {
                     JsonString::from_json(&result.value)
                         .try_into()
-                        .map_err(|_| ZomeApiError::from(String::from("Failed to deserialize return value")))
+                        .map_err(|_| ZomeApiError::from(format!("Failed to deserialize return value: {}", result.value)))
                 } else {
                     Err(ZomeApiError::from(result.error))
                 }
@@ -165,7 +172,7 @@ def_api_fns! {
     hc_send, Send;
     hc_debug, Debug;
     hc_call, Call;
-    hc_sign, Sign;
+    hc_crypto,Crypto;
     hc_sign_one_time, SignOneTime;
     hc_verify_signature, VerifySignature;
     hc_link_entries, LinkEntries;
@@ -180,6 +187,7 @@ def_api_fns! {
     hc_keystore_get_public_key, KeystoreGetPublicKey;
     hc_commit_capability_grant, CommitCapabilityGrant;
     hc_commit_capability_claim, CommitCapabilityClaim;
+    hc_emit_signal, EmitSignal;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -223,7 +231,7 @@ lazy_static! {
     pub static ref PUBLIC_TOKEN: &'static Address = &GLOBALS.public_token;
 
     /// The CapabilityRequest under which this wasm function is executing
-    pub static ref CAPABILITY_REQ: &'static CapabilityRequest = &GLOBALS.cap_request;
+    pub static ref CAPABILITY_REQ: &'static Option<CapabilityRequest> = &GLOBALS.cap_request;
 
     /// The json string from the DNA top level properties field.
     /// Deserialize this into a serde_json::Value or a zome specific struct to access the fields
@@ -275,7 +283,7 @@ impl From<PUBLIC_TOKEN> for JsonString {
 
 impl From<CAPABILITY_REQ> for JsonString {
     fn from(cap_request: CAPABILITY_REQ) -> JsonString {
-        JsonString::from(*cap_request)
+        default_to_json(*cap_request)
     }
 }
 

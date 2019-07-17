@@ -1,6 +1,6 @@
 [package]
-name = "code"
-version = "0.0.17-alpha2"
+name = "summer"
+version = "0.0.24-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

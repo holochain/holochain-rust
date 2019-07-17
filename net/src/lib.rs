@@ -1,7 +1,5 @@
-#![feature(fnbox)]
-#![feature(try_from)]
 #![feature(vec_remove_item)]
-#![allow(clippy::all)] // As per the request of the networking subteam
+#![allow(clippy::all)] // As per the request of the networking team
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface
@@ -11,9 +9,14 @@
 extern crate failure;
 extern crate holochain_common;
 #[macro_use]
-pub extern crate holochain_core_types_derive;
+pub extern crate holochain_json_derive;
+
+extern crate holochain_json_api;
+extern crate holochain_persistence_api;
+
 #[macro_use]
 extern crate lazy_static;
+extern crate lib3h_sodium;
 extern crate libc;
 extern crate reqwest;
 extern crate sha2;
@@ -37,5 +40,6 @@ pub mod error;
 pub mod in_memory;
 pub mod ipc;
 pub mod ipc_net_worker;
+pub mod lib3h_worker;
 pub mod p2p_config;
 pub mod p2p_network;

@@ -7,7 +7,7 @@
 ### Properties
 
 #### `n3h_persistence_path`: `string`
-Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-removing directory for this transient data will be used.
+Absolute path to the directory that n3h uses to store persisted data. Each Conductor should have a separate folder that `n3h_persistence_path` should be set to, because each should be assigned a custom network ID which will be persisted within that folder, thus they need to be distinct.
 
 #### `bootstrap_nodes`: `array of string` Optional
 List of URIs that point to other nodes to bootstrap p2p connections.
@@ -23,6 +23,9 @@ Conductor. If this is set the Conductor does not spawn n3h itself and ignores th
 ### Example
 ```toml
 [network]
-n3h_persistence_path = "/tmp"
+type = "n3h"
+n3h_persistence_path = "./c1_network_files"
 bootstrap_nodes = []
 ```
+
+

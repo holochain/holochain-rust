@@ -1,6 +1,6 @@
 //! provides a NetWorker implementation for backend IPC p2p connections
 
-use holochain_core_types::json::JsonString;
+use holochain_json_api::json::JsonString;
 
 use crate::ipc::{
     spawn, transport::TransportId, util::get_millis, Transport, TransportEvent, TransportWss,
@@ -138,12 +138,10 @@ impl NetWorker for IpcNetWorker {
         if self.last_known_state == "terminated" {
             return Ok(());
         }
-        // Tell sub-process to shutdown
-        self.receive(Protocol::Shutdown)?;
         let _ = self.tick();
         // Close connection and kill process
         self.wss_socket.close_all()?;
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         // Done

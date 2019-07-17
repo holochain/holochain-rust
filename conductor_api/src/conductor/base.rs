@@ -2,7 +2,7 @@ use crate::{
     conductor::broadcaster::Broadcaster,
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
-        StorageConfiguration,
+        NetworkConfig, StorageConfiguration,
     },
     context_builder::ContextBuilder,
     dpki_instance::DpkiInstance,
@@ -18,9 +18,14 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId, cas::content::AddressableContent, dna::Dna, error::HolochainError,
-    json::JsonString,
+    agent::AgentId,
+    dna::Dna,
+    error::{HcResult, HolochainError},
 };
+
+use holochain_json_api::json::JsonString;
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
+
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
@@ -36,10 +41,15 @@ use std::{
     time::Duration,
 };
 
+use boolinator::Boolinator;
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
+use config::AgentConfiguration;
+use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
+    connection::net_connection::NetHandler,
     ipc::spawn::{ipc_spawn, SpawnResult},
-    p2p_config::P2pConfig,
+    p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
+    p2p_network::P2pNetwork,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use signal_wrapper::SignalWrapper;
@@ -96,23 +106,33 @@ pub struct Conductor {
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
+    // TODO: remove this when n3h gets deprecated
+    n3h_keepalive_network: Option<P2pNetwork>, // hack needed so that n3h process stays alive even if all instances get shutdown.
 }
 
 impl Drop for Conductor {
     fn drop(&mut self) {
         if let Some(ref mut network_spawn) = self.network_spawn {
-            if let Some(kill) = network_spawn.kill.take() {
+            if let Some(mut kill) = network_spawn.kill.take() {
                 kill();
             }
         }
         self.shutdown();
+        if let Some(network) = self.n3h_keepalive_network.take() {
+            if let Err(err) = network.stop() {
+                println!("ERROR stopping network thread: {:?}", err);
+            } else {
+                println!("Network thread successfully stopped");
+            }
+            self.n3h_keepalive_network = None;
+        };
     }
 }
 
 type SignalSender = Sender<Signal>;
 pub type KeyLoader = Arc<
     Box<
-        FnMut(
+        dyn FnMut(
                 &PathBuf,
                 Arc<PassphraseManager>,
                 Option<PwHashConfig>,
@@ -121,9 +141,9 @@ pub type KeyLoader = Arc<
             + Sync,
     >,
 >;
-pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
+pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
-    Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
+    Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
 // preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -134,6 +154,7 @@ impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -154,6 +175,7 @@ impl Conductor {
                 PassphraseServiceCmd {},
             )))),
             hash_config: None,
+            n3h_keepalive_network: None,
         }
     }
 
@@ -186,6 +208,7 @@ impl Conductor {
     /// Starts a new thread which monitors each instance's signal channel and pushes signals out
     /// all interfaces the according instance is part of.
     pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
+        self.stop_signal_multiplexer();
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
@@ -194,72 +217,91 @@ impl Conductor {
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
         self.log("starting signal loop".into());
-        thread::spawn(move || loop {
-            {
-                for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter() {
-                    if let Ok(signal) = receiver.try_recv() {
-                        signal_tx.clone().map(|s| s.send(signal.clone()));
-                        let broadcasters = broadcasters.read().unwrap();
-                        let interfaces_with_instance: Vec<&InterfaceConfiguration> = match signal {
-                            // Send internal signals only to admin interfaces, if signals.trace is set:
-                            Signal::Trace(_) => {
-                                if config.signals.trace {
-                                    config
-                                        .interfaces
-                                        .iter()
-                                        .filter(|interface_config| interface_config.admin)
-                                        .collect()
-                                } else {
-                                    Vec::new()
-                                }
+        thread::Builder::new()
+            .name("signal_multiplexer".to_string())
+            .spawn(move || loop {
+                {
+                    for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter()
+                    {
+                        if let Ok(signal) = receiver.try_recv() {
+                            signal_tx.clone().map(|s| s.send(signal.clone()));
+                            let broadcasters = broadcasters.read().unwrap();
+                            let interfaces_with_instance: Vec<&InterfaceConfiguration> =
+                                match signal {
+                                    // Send internal signals only to admin interfaces, if signals.trace is set:
+                                    Signal::Trace(_) => {
+                                        if config.signals.trace {
+                                            config
+                                                .interfaces
+                                                .iter()
+                                                .filter(|interface_config| interface_config.admin)
+                                                .collect()
+                                        } else {
+                                            Vec::new()
+                                        }
+                                    }
+
+                                    // Send internal signals only to admin interfaces, if signals.consistency is set:
+                                    Signal::Consistency(_) => {
+                                        if config.signals.consistency {
+                                            config
+                                                .interfaces
+                                                .iter()
+                                                .filter(|interface_config| interface_config.admin)
+                                                .collect()
+                                        } else {
+                                            Vec::new()
+                                        }
+                                    }
+
+                                    // Pass through user-defined  signals to the according interfaces
+                                    // in which the source instance is exposed:
+                                    Signal::User(_) => {
+                                        println!(
+                                            "SIGNAL for instance[{}]: {:?}",
+                                            instance_id, signal
+                                        );
+                                        let interfaces = config
+                                            .interfaces
+                                            .iter()
+                                            .filter(|interface_config| {
+                                                interface_config
+                                                    .instances
+                                                    .iter()
+                                                    .find(|instance| instance.id == *instance_id)
+                                                    .is_some()
+                                            })
+                                            .collect();
+                                        println!("INTERFACEs for SIGNAL: {:?}", interfaces);
+                                        interfaces
+                                    }
+                                };
+
+                            for interface in interfaces_with_instance {
+                                broadcasters.get(&interface.id).map(|broadcaster| {
+                                    if let Err(error) = broadcaster.send(SignalWrapper {
+                                        signal: signal.clone(),
+                                        instance_id: instance_id.clone(),
+                                    }) {
+                                        notify(error.to_string());
+                                    }
+                                });
                             }
-
-                            // Send internal signals only to admin interfaces, if signals.consistency is set:
-                            Signal::Consistency(_) => {
-                                if config.signals.consistency {
-                                    config
-                                        .interfaces
-                                        .iter()
-                                        .filter(|interface_config| interface_config.admin)
-                                        .collect()
-                                } else {
-                                    Vec::new()
-                                }
-                            }
-
-                            // Pass through user-defined  signals to the according interfaces
-                            // in which the source instance is exposed:
-                            Signal::User(_) => config
-                                .interfaces
-                                .iter()
-                                .filter(|interface_config| {
-                                    interface_config
-                                        .instances
-                                        .iter()
-                                        .find(|instance| instance.id == *instance_id)
-                                        .is_some()
-                                })
-                                .collect(),
-                        };
-
-                        for interface in interfaces_with_instance {
-                            broadcasters.get(&interface.id).map(|broadcaster| {
-                                if let Err(error) = broadcaster.send(SignalWrapper {
-                                    signal: signal.clone(),
-                                    instance_id: instance_id.clone(),
-                                }) {
-                                    notify(error.to_string());
-                                }
-                            });
                         }
                     }
                 }
-            }
-            if kill_switch_rx.try_recv().is_ok() {
-                break;
-            }
-            thread::sleep(Duration::from_millis(1));
-        })
+                if kill_switch_rx.try_recv().is_ok() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(1));
+            })
+            .expect("Must be able to spawn thread")
+    }
+
+    pub fn stop_signal_multiplexer(&self) {
+        self.signal_multiplexer_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -313,20 +355,69 @@ impl Conductor {
         self.static_servers.iter_mut().for_each(|(id, server)| {
             server
                 .start()
-                .expect(&format!("Couldnt start server {}", id));
+                .expect(&format!("Couldn't start server {}", id));
             notify(format!("Server started for \"{}\"", id))
         });
         Ok(())
     }
 
+    pub fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let mut instance = self.instances.get(id)?.write().unwrap();
+        notify(format!("Starting instance \"{}\"...", id));
+
+        // Get instance DNA so we can read out required bridge definitions:
+        let dna =
+            instance
+                .state()?
+                .nucleus()
+                .dna()
+                .ok_or(HolochainInstanceError::InternalFailure(
+                    HolochainError::DnaMissing,
+                ))?;
+
+        // Make sure required bridges are configured and started:
+        for zome in dna.zomes.values() {
+            for bridge in zome.bridges.iter() {
+                if bridge.presence == BridgePresence::Required {
+                    let handle = bridge.handle.clone();
+                    let bridge_config = self
+                        .config
+                        .bridges
+                        .iter()
+                        .find(|b| b.handle == handle)
+                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
+                            handle.clone(),
+                        ))?;
+                    self.instances
+                        .get(&bridge_config.callee_id)
+                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
+                            handle.clone(),
+                        ))?
+                        .read()
+                        .unwrap()
+                        .active()
+                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(handle))?;
+                }
+            }
+        }
+        instance.start()
+    }
+
+    pub fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let instance = self.instances.get(id)?;
+        notify(format!("Stopping instance \"{}\"...", id));
+        instance.write().unwrap().stop()
+    }
+
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        self.instances
-            .iter_mut()
-            .map(|(id, hc)| {
-                notify(format!("Starting instance \"{}\"...", id));
-                hc.write().unwrap().start()
-            })
+        self.config
+            .instances
+            .iter()
+            .map(|instance_config| instance_config.id.clone())
+            .collect::<Vec<String>>()
+            .iter()
+            .map(|id| self.start_instance(&id))
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())
     }
@@ -376,31 +467,38 @@ impl Conductor {
                 "attempt to spawn network when not configured".to_string(),
             ))?;
 
-        println!(
-            "Spawning network with working directory: {}",
-            network_config.n3h_persistence_path
-        );
-        let spawn_result = ipc_spawn(
-            network_config.n3h_persistence_path.clone(),
-            P2pConfig::load_end_user_config(network_config.networking_config_file).to_string(),
-            hashmap! {
-                String::from("N3H_MODE") => network_config.n3h_mode.clone(),
-                String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
-                String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
-                String::from("N3H_LOG_LEVEL") => network_config.n3h_log_level.clone(),
-            },
-            2000,
-            true,
-        )
-        .map_err(|error| {
-            println!("Error while spawning network process: {:?}", error);
-            HolochainError::ErrorGeneric(error.to_string())
-        })?;
-        println!(
-            "Network spawned with bindings:\n\t - ipc: {}\n\t - p2p: {:?}",
-            spawn_result.ipc_binding, spawn_result.p2p_bindings
-        );
-        Ok(spawn_result)
+        match network_config {
+            NetworkConfig::N3h(config) => {
+                println!(
+                    "Spawning network with working directory: {}",
+                    config.n3h_persistence_path
+                );
+                let spawn_result = ipc_spawn(
+                    config.n3h_persistence_path.clone(),
+                    P2pConfig::load_end_user_config(config.networking_config_file).to_string(),
+                    hashmap! {
+                        String::from("N3H_MODE") => config.n3h_mode.clone(),
+                        String::from("N3H_WORK_DIR") => config.n3h_persistence_path.clone(),
+                        String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
+                        String::from("N3H_LOG_LEVEL") => config.n3h_log_level.clone(),
+                    },
+                    2000,
+                    true,
+                )
+                .map_err(|error| {
+                    println!("Error while spawning network process: {:?}", error);
+                    HolochainError::ErrorGeneric(error.to_string())
+                })?;
+                println!(
+                    "Network spawned with bindings:\n\t - ipc: {}\n\t - p2p: {:?}",
+                    spawn_result.ipc_binding, spawn_result.p2p_bindings
+                );
+                Ok(spawn_result)
+            }
+            NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
+                "Lib3h Network not implemented".to_string(),
+            )),
+        }
     }
 
     fn get_p2p_config(&self) -> P2pConfig {
@@ -421,23 +519,37 @@ impl Conductor {
         // if there is a config then either we need to spawn a process and get
         // the ipc_uri for it and save it for future calls to `load_config` or
         // we use a (non-empty) uri value that was created from previous calls!
-        let net_config = self.config.network.clone().unwrap();
-        let uri = net_config
-            .n3h_ipc_uri
-            .clone()
-            .and_then(|v| if v == "" { None } else { Some(v) })
-            .or_else(|| {
-                self.network_spawn = self.spawn_network().ok();
-                self.network_spawn
-                    .as_ref()
-                    .map(|spawn| spawn.ipc_binding.clone())
-            });
-
-        P2pConfig::new_ipc_uri(
-            uri,
-            &net_config.bootstrap_nodes,
-            net_config.networking_config_file,
-        )
+        match self.config.network.clone().unwrap() {
+            NetworkConfig::N3h(config) => {
+                let uri = config
+                    .n3h_ipc_uri
+                    .clone()
+                    .and_then(|v| if v == "" { None } else { Some(v) })
+                    .or_else(|| {
+                        self.network_spawn = self.spawn_network().ok();
+                        self.network_spawn
+                            .as_ref()
+                            .map(|spawn| spawn.ipc_binding.clone())
+                    });
+                let config = P2pConfig::new_ipc_uri(
+                    uri,
+                    &config.bootstrap_nodes,
+                    config.networking_config_file,
+                );
+                // create an empty network with this config just so the n3h process doesn't
+                // kill itself in the case that all instances are closed down (as happens in app-spec)
+                let network =
+                    P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), config.clone())
+                        .expect("unable to create conductor keepalive P2pNetwork");
+                self.n3h_keepalive_network = Some(network);
+                config
+            }
+            NetworkConfig::Lib3h(config) => P2pConfig {
+                backend_kind: P2pBackendKind::LIB3H,
+                backend_config: BackendConfig::Lib3h(config),
+                maybe_end_user_config: None,
+            },
+        }
     }
 
     /// Tries to create all instances configured in the given Configuration object.
@@ -445,7 +557,7 @@ impl Conductor {
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
     pub fn boot_from_config(&mut self) -> Result<(), String> {
-        let _ = self.config.check_consistency()?;
+        let _ = self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
@@ -458,7 +570,7 @@ impl Conductor {
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config)
+                .instantiate_from_config(&id, Some(&config))
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -504,9 +616,11 @@ impl Conductor {
     pub fn instantiate_from_config(
         &mut self,
         id: &String,
-        config: &Configuration,
+        maybe_config: Option<&Configuration>,
     ) -> Result<Holochain, String> {
-        let _ = config.check_consistency()?;
+        let self_config = self.config.clone();
+        let config = maybe_config.unwrap_or(&self_config);
+        let _ = config.check_consistency(&mut self.dna_loader)?;
 
         config
             .instance_by_id(&id)
@@ -517,16 +631,7 @@ impl Conductor {
 
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-                let agent_id = if let Some(true) = agent_config.holo_remote_key {
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    // Holo closed-alpha hack:
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    AgentId::new(&agent_config.name, agent_config.public_address)
-                } else {
-                    let keybundle_arc = self.get_keybundle_for_agent(&instance_config.agent)?;
-                    let keybundle = keybundle_arc.lock().unwrap();
-                    AgentId::new(&agent_config.name, keybundle.get_id())
-                };
+                let agent_id = self.agent_config_to_id(&agent_config)?;
 
                 context_builder = context_builder.with_agent(agent_id.clone());
 
@@ -568,50 +673,8 @@ impl Conductor {
                 }
 
                 // Conductor API
-                let mut api_builder = ConductorApiBuilder::new();
-                // Signing callback:
-                if let Some(true) = agent_config.holo_remote_key {
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    // Holo closed-alpha hack:
-                    // !!!!!!!!!!!!!!!!!!!!!!!
-                    api_builder = api_builder.with_outsource_signing_callback(
-                        agent_id.clone(),
-                        self.config
-                            .signing_service_uri
-                            .clone()
-                            .expect("holo_remote_key needs signing_service_uri set"),
-                    );
-                } else {
-                    api_builder = api_builder.with_agent_signature_callback(
-                        self.get_keybundle_for_agent(&instance_config.agent)?,
-                    );
-
-                    let keystore = self
-                        .get_keystore_for_agent(&instance_config.agent)
-                        .map_err(|err| format!("{}", err))?;
-                    api_builder = api_builder.with_agent_keystore_functions(keystore);
-                }
-
-                // Bridges:
-                let id = instance_config.id.clone();
-                for bridge in config.bridge_dependencies(id.clone()) {
-                    assert_eq!(bridge.caller_id, id.clone());
-                    let callee_config = config
-                        .instance_by_id(&bridge.callee_id)
-                        .expect("config.check_consistency()? jumps out if config is broken");
-                    let callee_instance = self.instances.get(&bridge.callee_id).expect(
-                        r#"
-                    We have to create instances ordered by bridge dependencies such that we
-                    can expect the callee to be present here because we need it to create
-                    the bridge API"#,
-                    );
-
-                    api_builder = api_builder
-                        .with_named_instance(bridge.handle.clone(), callee_instance.clone());
-                    api_builder = api_builder
-                        .with_named_instance_config(bridge.handle.clone(), callee_config);
-                }
-                context_builder = context_builder.with_conductor_api(api_builder.spawn());
+                let api = self.build_conductor_api(instance_config.id, config)?;
+                context_builder = context_builder.with_conductor_api(api);
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -625,6 +688,50 @@ impl Conductor {
                         dna_config.file
                     ))
                 })?;
+
+                // This is where we are checking the consistency between DNAs: for now we compare
+                // the hash provided in the TOML Conductor config file with the computed hash of
+                // the loaded dna.
+                {
+                    let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
+                    let dna_hash_computed = &dna.address();
+
+                    match Arc::get_mut(&mut self.dna_loader)
+                        .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
+                        // If the file is correctly loaded, meaning it exists in the file system,
+                        // we can operate on its computed DNA hash
+                        Ok(dna) => {
+                            let dna_hash_computed_from_file = HashString::from(dna.address());
+                            Conductor::check_dna_consistency_from_all_sources(
+                                &context,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file, &dna_file)?;
+                        },
+                        Err(_) => {
+                            let msg = format!("err/Conductor: Could not load DNA file {:?}.", &dna_file);
+                            context.log(msg);
+
+                            // If something is wrong with the DNA file, we only
+                            // check the 2 primary sources of DNA's hashes
+                            match Conductor::check_dna_consistency(
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed) {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    let msg = format!("\
+                                    err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                    '{}' != '{}'",
+                                    &dna_hash_from_conductor_config,
+                                    &dna_hash_computed);
+                                    context.log(msg);
+
+                                    return Err(e.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
 
                 let context = Arc::new(context);
                 Holochain::load(context.clone())
@@ -653,6 +760,97 @@ impl Conductor {
             })
     }
 
+    pub fn build_conductor_api(
+        &mut self,
+        instance_id: String,
+        config: &Configuration,
+    ) -> Result<IoHandler, HolochainError> {
+        let instance_config = config.instance_by_id(&instance_id)?;
+        let agent_id = instance_config.agent.clone();
+        let agent_config = config.agent_by_id(&agent_id)?;
+        let mut api_builder = ConductorApiBuilder::new();
+        // Signing callback:
+        if let Some(true) = agent_config.holo_remote_key {
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            // Holo closed-alpha hack:
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            api_builder = api_builder.with_outsource_signing_callback(
+                self.agent_config_to_id(&agent_config)?,
+                self.config
+                    .signing_service_uri
+                    .clone()
+                    .expect("holo_remote_key needs signing_service_uri set"),
+            );
+            api_builder = api_builder.with_outsource_signing_callback(
+                self.agent_config_to_id(&agent_config)?,
+                self.config
+                    .encryption_service_uri
+                    .clone()
+                    .expect("holo_remote_key needs encryption_service_uri set"),
+            );
+            api_builder = api_builder.with_outsource_signing_callback(
+                self.agent_config_to_id(&agent_config)?,
+                self.config
+                    .decryption_service_uri
+                    .clone()
+                    .expect("holo_remote_key needs decryption_service_uri set"),
+            );
+        } else {
+            api_builder = api_builder.with_agent_signature_callback(
+                self.get_keybundle_for_agent(&instance_config.agent)?,
+            );
+
+            api_builder = api_builder.with_agent_encryption_callback(
+                self.get_keybundle_for_agent(&instance_config.agent)?,
+            );
+            api_builder = api_builder.with_agent_decryption_callback(
+                self.get_keybundle_for_agent(&instance_config.agent)?,
+            );
+            let keystore = self
+                .get_keystore_for_agent(&instance_config.agent)
+                .map_err(|err| format!("{}", err))?;
+            api_builder = api_builder.with_agent_keystore_functions(keystore);
+        }
+
+        // Bridges:
+        let id = instance_config.id.clone();
+        for bridge in config.bridge_dependencies(id.clone()) {
+            assert_eq!(bridge.caller_id, id.clone());
+            let callee_config = config
+                .instance_by_id(&bridge.callee_id)
+                .expect("config.check_consistency()? jumps out if config is broken");
+            let callee_instance = self.instances.get(&bridge.callee_id).expect(
+                r#"
+                    We have to create instances ordered by bridge dependencies such that we
+                    can expect the callee to be present here because we need it to create
+                    the bridge API"#,
+            );
+
+            api_builder =
+                api_builder.with_named_instance(bridge.handle.clone(), callee_instance.clone());
+            api_builder =
+                api_builder.with_named_instance_config(bridge.handle.clone(), callee_config);
+        }
+
+        Ok(api_builder.spawn())
+    }
+
+    pub fn agent_config_to_id(
+        &mut self,
+        agent_config: &AgentConfiguration,
+    ) -> Result<AgentId, HolochainError> {
+        Ok(if let Some(true) = agent_config.holo_remote_key {
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            // Holo closed-alpha hack:
+            // !!!!!!!!!!!!!!!!!!!!!!!
+            AgentId::new(&agent_config.name, agent_config.public_address.clone())
+        } else {
+            let keybundle_arc = self.get_keybundle_for_agent(&agent_config.id)?;
+            let keybundle = keybundle_arc.lock().unwrap();
+            AgentId::new(&agent_config.name, keybundle.get_id())
+        })
+    }
+
     /// Checks if the key for the given agent can be loaded or was already loaded.
     /// Will trigger loading if key is not loaded yet.
     /// Meant to be used in conductor executable to first try to load all keys (which will trigger
@@ -671,6 +869,84 @@ impl Conductor {
         }
         self.get_keystore_for_agent(agent_id)?;
         Ok(())
+    }
+
+    /// Checks DNA's hashes from all sources:
+    /// - dna_hash_from_conductor_config: from the Conductor configuration
+    /// - dna_hash_computed: from the hash computed based on the loaded DNA
+    /// and
+    /// - dna_hash_computed_from_file: from the hash computed from the loaded DNA of the file.dna
+    fn check_dna_consistency_from_all_sources(
+        ctx: &holochain_core::context::Context,
+        dna_hash_from_conductor_config: &HashString,
+        dna_hash_computed: &HashString,
+        dna_hash_computed_from_file: &HashString,
+        dna_file: &PathBuf,
+    ) -> Result<(), HolochainError> {
+        match Conductor::check_dna_consistency(&dna_hash_from_conductor_config, &dna_hash_computed)
+        {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                '{}' != '{}'",
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed);
+                ctx.log(msg);
+
+                return Err(e);
+            }
+        }
+
+        match Conductor::check_dna_consistency(
+            &dna_hash_from_conductor_config,
+            &dna_hash_computed_from_file,
+        ) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_from_conductor_config,
+                                &dna_hash_computed_from_file);
+                ctx.log(msg);
+
+                return Err(e);
+            }
+        }
+
+        match Conductor::check_dna_consistency(&dna_hash_computed, &dna_hash_computed_from_file) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = format!("\
+                                err/Conductor: DNA hashes mismatch: 'Conductor instance' != 'Hash computed from the file {:?}': \
+                                '{}' != '{}'",
+                                &dna_file,
+                                &dna_hash_computed,
+                                &dna_hash_computed_from_file);
+                ctx.log(msg);
+
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
+
+    /// This is where we check for DNA's hashes consistency.
+    /// Only a simple equality check between DNA hashes is currently performed.
+    fn check_dna_consistency(
+        dna_hash_a: &HashString,
+        dna_hash_b: &HashString,
+    ) -> Result<(), HolochainError> {
+        if *dna_hash_a == *dna_hash_b {
+            Ok(())
+        } else {
+            Err(HolochainError::DnaHashMismatch(
+                dna_hash_a.clone(),
+                dna_hash_b.clone(),
+            ))
+        }
     }
 
     /// Get reference to keystore for given agent ID.
@@ -748,12 +1024,12 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
+    pub fn load_dna(file: &PathBuf) -> HcResult<Dna> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents))
+        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 
     /// Default KeyLoader that actually reads files from the filesystem
@@ -944,7 +1220,7 @@ impl Conductor {
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
-fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
+fn make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interface> {
     use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
@@ -972,8 +1248,9 @@ pub mod tests {
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
-    use holochain_core_types::{cas::content::Address, dna, json::RawString};
+    use holochain_core_types::dna;
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
     use std::{
@@ -983,6 +1260,11 @@ pub mod tests {
     };
 
     use self::tempfile::tempdir;
+    use holochain_core_types::dna::{
+        bridges::{Bridge, BridgeReference},
+        fn_declarations::{FnDeclaration, Trait, TraitFns},
+    };
+    use std::collections::BTreeMap;
     use test_utils::*;
 
     //    commented while test_signals_through_admin_websocket is broken
@@ -995,10 +1277,13 @@ pub mod tests {
             Ok(match path.to_str().unwrap().as_ref() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
+                "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
+                "bridge/caller_bogus_trait_ref.dna" => caller_dna_with_bogus_trait_reference(),
+                "bridge/caller_without_required.dna" => caller_dna_without_required(),
                 _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
-            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -1017,7 +1302,7 @@ pub mod tests {
             },
         )
             as Box<
-                FnMut(
+                dyn FnMut(
                         &PathBuf,
                         Arc<PassphraseManager>,
                         Option<PwHashConfig>,
@@ -1062,80 +1347,80 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
-    public_address = "{}"
+    public_address = "{tkb1}"
     keystore_file = "holo_tester1.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
-    public_address = "{}"
+    public_address = "{tkb2}"
     keystore_file = "holo_tester2.key"
 
     [[agents]]
     id = "test-agent-3"
     name = "Holo Tester 3"
-    public_address = "{}"
+    public_address = "{tkb3}"
     keystore_file = "holo_tester3.key"
 
     [[dnas]]
     id = "test-dna"
     file = "app_spec.dna.json"
-    hash = "Qm328wyq38924y"
+    hash = "QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"
 
     [[dnas]]
     id = "bridge-callee"
     file = "bridge/callee.dna"
-    hash = "Qm328wyq38924y"
+    hash = "{bridge_callee_hash}"
 
     [[dnas]]
     id = "bridge-caller"
     file = "bridge/caller.dna"
-    hash = "Qm328wyq38924y"
+    hash = "{bridge_caller_hash}"
 
     [[instances]]
     id = "test-instance-1"
     dna = "bridge-callee"
     agent = "test-agent-1"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[instances]]
     id = "test-instance-2"
     dna = "test-dna"
     agent = "test-agent-2"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[instances]]
     id = "bridge-caller"
     dna = "bridge-caller"
     agent = "test-agent-3"
-    [instances.storage]
-    type = "memory"
+        [instances.storage]
+        type = "memory"
 
     [[interfaces]]
     id = "test-interface-1"
     admin = true
-    [interfaces.driver]
-    type = "websocket"
-    port = {}
-    [[interfaces.instances]]
-    id = "test-instance-1"
-    [[interfaces.instances]]
-    id = "test-instance-2"
+        [interfaces.driver]
+        type = "websocket"
+        port = {ws_port}
+        [[interfaces.instances]]
+        id = "test-instance-1"
+        [[interfaces.instances]]
+        id = "test-instance-2"
 
     [[interfaces]]
     id = "test-interface-2"
     [interfaces.driver]
     type = "http"
-    port = {}
-    [[interfaces.instances]]
-    id = "test-instance-1"
-    [[interfaces.instances]]
-    id = "test-instance-2"
+    port = {http_port}
+        [[interfaces.instances]]
+        id = "test-instance-1"
+        [[interfaces.instances]]
+        id = "test-instance-2"
 
     [[bridges]]
-    caller_id = "test-instance-2"
+    caller_id = "bridge-caller"
     callee_id = "test-instance-1"
     handle = "DPKI"
 
@@ -1149,11 +1434,13 @@ pub mod tests {
     callee_id = "test-instance-1"
     handle = "test-callee"
     "#,
-            test_keybundle(1).get_id(),
-            test_keybundle(2).get_id(),
-            test_keybundle(3).get_id(),
-            websocket_port,
-            http_port,
+            tkb1 = test_keybundle(1).get_id(),
+            tkb2 = test_keybundle(2).get_id(),
+            tkb3 = test_keybundle(3).get_id(),
+            ws_port = websocket_port,
+            http_port = http_port,
+            bridge_callee_hash = callee_dna().address(),
+            bridge_caller_hash = caller_dna().address(),
         )
     }
 
@@ -1218,7 +1505,16 @@ pub mod tests {
                         ],
                         "code": {
                             "code": "AAECAw=="
-                        }
+                        },
+                        "bridges": [
+                            {
+                                "presence": "optional",
+                                "handle": "my favourite instance!",
+                                "reference": {
+                                    "traits": {}
+                                }
+                            }
+                        ]
                     }
                 }
             }"#
@@ -1247,6 +1543,127 @@ pub mod tests {
         conductor.start_all_instances().unwrap();
         conductor.start_all_interfaces();
         conductor.stop_all_instances().unwrap();
+    }
+
+    #[test]
+    /// Here we test if we correctly check for consistency in DNA hashes: possible sources are:
+    /// - DNA hash from Conductor configuration
+    /// - computed DNA hash from loaded instance
+    fn test_check_dna_consistency() {
+        let toml = test_toml(10041, 10042);
+
+        let config = load_configuration::<Configuration>(&toml).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        assert_eq!(
+            conductor.boot_from_config(),
+            Ok(()),
+            "Conductor failed to boot from config"
+        );
+
+        // Tests equality
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Ok(()),
+            "DNA consistency check Fail."
+        );
+
+        // Tests INequality
+        let b = HashString::from("QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a");
+        assert_ne!(
+            Conductor::check_dna_consistency(&a, &b),
+            Ok(()),
+            "DNA consistency check Fail."
+        );
+    }
+
+    #[test]
+    /// This is supposed to fail to show if we are properly bailing when there is
+    /// a decrepency btween DNA hashes.
+    fn test_check_dna_consistency_err() {
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from("QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR");
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Err(HolochainError::DnaHashMismatch(a, b)),
+            "DNA consistency check Fail."
+        );
+
+        let a = HashString::from("QmYRM4rh8zmSLaxyShYtv9PBDdQkXuyPieJTZ1e5GZqeeh");
+        let b = HashString::from(String::default());
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&a, &b),
+            Err(HolochainError::DnaHashMismatch(a, b)),
+            "DNA consistency check Fail."
+        )
+    }
+
+    #[test]
+    fn test_check_dna_consistency_from_dna_file() {
+        let fixture = String::from(
+            r#"{
+                "name": "my dna",
+                "description": "",
+                "version": "",
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "dna_spec_version": "2.0",
+                "properties": {},
+                "zomes": {
+                    "": {
+                        "description": "",
+                        "config": {},
+                        "entry_types": {
+                            "": {
+                                "description": "",
+                                "sharing": "public"
+                            }
+                        },
+                        "traits": {
+                            "test": {
+                                "functions": ["test"]
+                             }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [
+                                    {
+                                        "name": "post",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
+                                    }
+                                ]
+                            }
+                        ],
+                        "code": {
+                            "code": "AAECAw=="
+                        }
+                    }
+                }
+            }"#,
+        );
+        let dna_hash_from_file = HashString::from(
+            Dna::try_from(JsonString::from_json(&fixture))
+                .expect(&format!("Fail to load DNA from raw string: {}", fixture))
+                .address(),
+        );
+        let dna_hash_computed = HashString::from("QmNPCDBhr6BDBBVWG4mBEVFfhyjsScURYdZoV3fDpzjzgb");
+
+        assert_eq!(
+            Conductor::check_dna_consistency(&dna_hash_from_file, &dna_hash_computed),
+            Ok(()),
+            "DNA consistency from DNA file check Fail."
+        );
     }
 
     //#[test]
@@ -1396,26 +1813,39 @@ pub mod tests {
         .to_string()
     }
 
+    fn bridge_call_fn_declaration() -> FnDeclaration {
+        FnDeclaration {
+            name: String::from("hello"),
+            inputs: vec![],
+            outputs: vec![dna::fn_declarations::FnParameter {
+                name: String::from("greeting"),
+                parameter_type: String::from("String"),
+            }],
+        }
+    }
+
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
         let mut dna = create_test_dna_with_wat("greeter", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
-        dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
-            String::from("hello"),
-            vec![],
-            vec![dna::fn_declarations::FnParameter {
-                name: String::from("greeting"),
-                parameter_type: String::from("String"),
-            }],
-        );
-        dna.zomes
-            .get_mut("greeter")
-            .unwrap()
-            .traits
-            .get_mut("hc_public")
-            .unwrap()
-            .functions
-            .push("hello".into());
+        let fn_declaration = bridge_call_fn_declaration();
+
+        {
+            let zome = dna.zomes.get_mut("greeter").unwrap();
+            zome.fn_declarations.push(fn_declaration.clone());
+            zome.traits
+                .get_mut("hc_public")
+                .unwrap()
+                .functions
+                .push(fn_declaration.name.clone());
+            zome.traits.insert(
+                String::from("greetable"),
+                TraitFns {
+                    functions: vec![fn_declaration.name.clone()],
+                },
+            );
+        }
+
         dna
     }
 
@@ -1436,9 +1866,41 @@ pub mod tests {
         path.push(wasm_path_component);
 
         let wasm = create_wasm_from_file(&path);
-        let defs = create_test_defs_with_fn_name("call_bridge");
+        let defs = create_test_defs_with_fn_names(vec![
+            "call_bridge".to_string(),
+            "call_bridge_error".to_string(),
+        ]);
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
+        {
+            let zome = dna.zomes.get_mut("test_zome").unwrap();
+            zome.bridges.push(Bridge {
+                presence: BridgePresence::Required,
+                handle: String::from("test-callee"),
+                reference: BridgeReference::Trait {
+                    traits: btreemap! {
+                        String::from("greetable") => Trait{
+                            functions: vec![bridge_call_fn_declaration()]
+                        }
+                    },
+                },
+            });
+            zome.bridges.push(Bridge {
+                presence: BridgePresence::Optional,
+                handle: String::from("DPKI"),
+                reference: BridgeReference::Trait {
+                    traits: BTreeMap::new(),
+                },
+            });
+            zome.bridges.push(Bridge {
+                presence: BridgePresence::Optional,
+                handle: String::from("happ-store"),
+                reference: BridgeReference::Trait {
+                    traits: BTreeMap::new(),
+                },
+            });
+        }
+
         dna
     }
 
@@ -1458,7 +1920,7 @@ pub mod tests {
         let mut instance = caller_instance.write().unwrap();
 
         let cap_call = {
-            let context = instance.context();
+            let context = instance.context().unwrap();
             make_cap_request_for_call(
                 context.clone(),
                 Address::from(context.clone().agent_id.address()),
@@ -1471,7 +1933,199 @@ pub mod tests {
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
-        assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+        assert_eq!(result, JsonString::from("Holo World"));
+    }
+
+    #[test]
+    fn basic_bridge_call_error() {
+        let config = load_configuration::<Configuration>(&test_toml(10041, 10042)).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        conductor
+            .boot_from_config()
+            .expect("Test config must be sane");
+        conductor
+            .start_all_instances()
+            .expect("Instances must be spawnable");
+        let caller_instance = conductor.instances["bridge-caller"].clone();
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context().unwrap();
+            make_cap_request_for_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.address()),
+                "call_bridge_error",
+                JsonString::empty_object(),
+            )
+        };
+        let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().to_string().contains("Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
+    }
+
+    #[test]
+    fn error_if_required_bridge_missing() {
+        let mut config = load_configuration::<Configuration>(&test_toml(10061, 10062)).unwrap();
+        config.bridges.clear();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+
+        let result = conductor.boot_from_config();
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap(),
+            "Required bridge \'test-callee\' for instance \'bridge-caller\' missing",
+        );
+    }
+
+    fn caller_dna_with_dna_reference() -> Dna {
+        let mut dna = caller_dna();
+        {
+            let bridge = dna
+                .zomes
+                .get_mut("test_zome")
+                .unwrap()
+                .bridges
+                .get_mut(0)
+                .unwrap();
+            bridge.reference = BridgeReference::Address {
+                dna_address: Address::from("fake bridge reference"),
+            };
+        }
+        dna
+    }
+
+    fn caller_dna_with_bogus_trait_reference() -> Dna {
+        let mut dna = caller_dna();
+        {
+            let bridge = dna
+                .zomes
+                .get_mut("test_zome")
+                .unwrap()
+                .bridges
+                .get_mut(0)
+                .unwrap();
+            let mut fn_declaration = bridge_call_fn_declaration();
+            fn_declaration
+                .inputs
+                .push(dna::fn_declarations::FnParameter {
+                    name: String::from("additional_parameter"),
+                    parameter_type: String::from("String"),
+                });
+            bridge.reference = BridgeReference::Trait {
+                traits: btreemap! {
+                    String::from("greetable") => Trait{
+                        functions: vec![fn_declaration]
+                    }
+                },
+            };
+        }
+        dna
+    }
+
+    fn caller_dna_without_required() -> Dna {
+        let mut dna = caller_dna();
+        {
+            let bridge = dna
+                .zomes
+                .get_mut("test_zome")
+                .unwrap()
+                .bridges
+                .get_mut(0)
+                .unwrap();
+            bridge.presence = BridgePresence::Optional;
+            bridge.reference = BridgeReference::Trait {
+                traits: BTreeMap::new(),
+            };
+        }
+        dna
+    }
+
+    pub fn bridge_dna_ref_test_toml(caller_dna: &str, callee_dna: &str) -> String {
+        format!(
+            r#"
+    [[agents]]
+    id = "test-agent-1"
+    name = "Holo Tester 1"
+    public_address = "{}"
+    keystore_file = "holo_tester1.key"
+
+    [[dnas]]
+    id = "bridge-callee"
+    file = "{}"
+    hash = "Qm328wyq38924y"
+
+    [[dnas]]
+    id = "bridge-caller"
+    file = "{}"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "bridge-callee"
+    dna = "bridge-callee"
+    agent = "test-agent-1"
+    [instances.storage]
+    type = "memory"
+
+    [[instances]]
+    id = "bridge-caller"
+    dna = "bridge-caller"
+    agent = "test-agent-1"
+    [instances.storage]
+    type = "memory"
+
+    [[bridges]]
+    caller_id = "bridge-caller"
+    callee_id = "bridge-callee"
+    handle = "test-callee"
+    "#,
+            test_keybundle(1).get_id(),
+            callee_dna,
+            caller_dna,
+        )
+    }
+
+    #[test]
+    fn error_if_bridge_reference_dna_mismatch() {
+        let config = load_configuration::<Configuration>(&bridge_dna_ref_test_toml(
+            "bridge/caller_dna_ref.dna",
+            "bridge/callee_dna.dna",
+        ))
+        .unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        let result = conductor.boot_from_config();
+
+        assert!(result.is_err());
+        println!("{:?}", result);
+        assert!(result.err().unwrap().starts_with(
+            "Bridge \'test-callee\' of caller instance \'bridge-caller\' requires callee to be DNA with hash \'fake bridge reference\', but the configured instance \'bridge-callee\' runs DNA with hash"
+        ));
+    }
+
+    #[test]
+    fn error_if_bridge_reference_trait_mismatch() {
+        let config = load_configuration::<Configuration>(&bridge_dna_ref_test_toml(
+            "bridge/caller_bogus_trait_ref.dna",
+            "bridge/callee_dna.dna",
+        ))
+        .unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        let result = conductor.boot_from_config();
+
+        assert!(result.is_err());
+        println!("{:?}", result);
+        assert_eq!(
+            result.err().unwrap(),
+            "Bridge \'test-callee\' of instance \'bridge-caller\' requires callee to to implement trait \'greetable\' with functions: [FnDeclaration { name: \"hello\", inputs: [FnParameter { parameter_type: \"String\", name: \"additional_parameter\" }], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]",
+        );
     }
 
     #[test]
@@ -1488,14 +2142,14 @@ pub mod tests {
                 [[dnas]]
                 id = "test-dna"
                 file = "app_spec.dna.json"
-                hash = "Qm328wyq38924y"
+                hash = "QmZAQkpkXhfRcSgBJX4NYyqWCyMnkvuF7X2RkPgqihGMrR"
 
                 [[instances]]
                 id = "test-instance-1"
                 dna = "test-dna"
                 agent = "test-agent-1"
-                [instances.storage]
-                type = "memory"
+                    [instances.storage]
+                    type = "memory"
                 "#
         ).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
@@ -1574,5 +2228,30 @@ pub mod tests {
         assert!(received_signals[2].starts_with(
             "{\"signal\":{\"Trace\":\"ReturnZomeFunctionResult(ExecuteZomeFnResponse {"
         ));
+    }
+
+    #[test]
+    fn test_start_stop_instance() {
+        let mut conductor = test_conductor(10051, 10052);
+        assert_eq!(
+            conductor.start_instance(&String::from("test-instance-1")),
+            Ok(()),
+        );
+        assert_eq!(
+            conductor.start_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceAlreadyActive),
+        );
+        assert_eq!(
+            conductor.start_instance(&String::from("non-existant-id")),
+            Err(HolochainInstanceError::NoSuchInstance),
+        );
+        assert_eq!(
+            conductor.stop_instance(&String::from("test-instance-1")),
+            Ok(())
+        );
+        assert_eq!(
+            conductor.stop_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceNotActiveYet),
+        );
     }
 }

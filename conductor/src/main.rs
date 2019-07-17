@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 /// Holochain Conductor executable
 ///
@@ -21,11 +20,11 @@ extern crate lib3h_sodium;
 extern crate structopt;
 
 use holochain_conductor_api::{
-    conductor::{mount_conductor_from_config, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf, thread::sleep, time::Duration};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc, thread::sleep, time::Duration};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -49,7 +48,7 @@ fn main() {
         Ok(()) => {
             {
                 let mut conductor_guard = CONDUCTOR.lock().unwrap();
-                let mut conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+                let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
                 println!(
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
@@ -80,7 +79,7 @@ fn main() {
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
-        .check_consistency()
+        .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
         .map_err(|string| HolochainError::ConfigError(string))?;
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();

@@ -4,10 +4,11 @@ use crate::{
 };
 use boolinator::*;
 use holochain_core_types::{
-    cas::content::Address, entry::EntryWithMetaAndHeader, error::HolochainError,
+    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
     validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
+use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     collections::HashMap,
@@ -27,7 +28,7 @@ type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, Holo
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<Vec<Address>, HolochainError>>;
+type GetLinksResult = Option<Result<Vec<(Address, CrudStatus)>, HolochainError>>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
@@ -43,7 +44,7 @@ pub struct NetworkState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub actions: Actions,
-    pub network: Option<Arc<Mutex<P2pNetwork>>>,
+    pub network: Arc<Mutex<Option<P2pNetwork>>>,
     pub dna_address: Option<Address>,
     pub agent_id: Option<String>,
 
@@ -81,7 +82,7 @@ impl NetworkState {
     pub fn new() -> Self {
         NetworkState {
             actions: HashMap::new(),
-            network: None,
+            network: Arc::new(Mutex::new(None)),
             dna_address: None,
             agent_id: None,
 
@@ -100,8 +101,11 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.is_some() && self.dna_address.is_some() && self.agent_id.is_some()).ok_or(
-            HolochainError::ErrorGeneric("Network not initialized".to_string()),
-        )
+        (self.network.lock().unwrap().is_some()
+            && self.dna_address.is_some()
+            && self.agent_id.is_some())
+        .ok_or(HolochainError::ErrorGeneric(
+            "Network not initialized".to_string(),
+        ))
     }
 }

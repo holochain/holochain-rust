@@ -16,7 +16,7 @@ jobs:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-   - run: nix-shell --run hc-rust-fmt-check
+   - run: nix-shell --run hc-test-fmt
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
@@ -70,24 +70,19 @@ jobs:
    - checkout
 
    - run:
-       name: install cli
-       command: nix-shell --run hc-cli-install
-
-   - run:
-       name: install node conductor
-       command: nix-shell --run hc-conductor-node-install
-
-   - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test
+
+ app-spec-proc-tests:
+  docker:
+   - image: holochain/holonix:latest
+  resource_class: xlarge
+  steps:
+   - checkout
 
    - run:
        name: proc macro app spec tests
        command: nix-shell --run hc-app-spec-test-proc
-
-   - run:
-       name: nodejs conductor tests
-       command: nix-shell --run hc-conductor-node-test
 
  cluster-tests:
   docker:
@@ -123,49 +118,6 @@ jobs:
    - run:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
-
- # https://circleci.com/docs/2.0/building-docker-images/
- docker.start:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile..start -t holochain/holochain-rust:circle..start .
-   - run: docker push holochain/holochain-rust:circle..start
- docker.01:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker pull holochain/holochain-rust:circle..start
-   - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
-   - run: docker push holochain/holochain-rust:circle.01.warm.nix
- docker.02:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker pull holochain/holochain-rust:circle.01.warm.nix
-   - run: docker build -f .circleci/Dockerfile.02.warm.tests -t holochain/holochain-rust:circle.02.warm.tests .
-   - run: docker push holochain/holochain-rust:circle.02.warm.tests
- docker.03:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker pull holochain/holochain-rust:circle.02.warm.tests
-   - run: docker build -f .circleci/Dockerfile.03.warm.tools -t holochain/holochain-rust:circle.03.warm.tools .
-   - run: docker push holochain/holochain-rust:circle.03.warm.tools
- docker.end:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker pull holochain/holochain-rust:circle.03.warm.tools
-   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop -t holochain/holochain-rust:latest .
-   - run: docker push holochain/holochain-rust:circle.zz.end
-   - run: docker push holochain/holochain-rust:develop
-   - run: docker push holochain/holochain-rust:latest
 
  cold.ubuntu.bionic.auto:
   docker:
@@ -221,6 +173,9 @@ workflows:
    - build
    - fmt
    - app-spec-tests
+   # @todo reimplement proc tests properly
+   # i.e. don't copy and paste app spec and expec it to work with stale state
+   # - app-spec-proc-tests
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
@@ -262,26 +217,3 @@ workflows:
        branches:
         only:
          - develop
- dockers:
-  # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
-  triggers:
-   - schedule:
-      cron: "0 0 * * *"
-      filters:
-       branches:
-        only:
-         - develop
-  jobs:
-   - docker.start
-   - docker.01:
-      requires:
-       - docker.start
-   - docker.02:
-      requires:
-       - docker.01
-   - docker.03:
-      requires:
-       - docker.02
-   - docker.end:
-      requires:
-       - docker.03

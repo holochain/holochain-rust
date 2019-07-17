@@ -38,6 +38,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 
 #[cfg(test)]
 pub mod tests {
+    use crate::instance::Instance;
     use std::sync::Arc;
     use test_utils;
 
@@ -52,24 +53,26 @@ pub mod tests {
         },
     };
     use holochain_core_types::{
-        cas::content::Address,
+        agent::test_agent_id,
+        chain_header::test_chain_header,
         entry::{entry_type::test_app_entry_type, Entry},
-        json::{JsonString, RawString},
-        link::Link,
+        link::{link_data::LinkData, Link, LinkMatch},
     };
+    use holochain_json_api::json::{JsonString, RawString};
+    use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(
         base: &Address,
-        link_type: Option<String>,
-        tag: Option<String>,
+        link_type: LinkMatch<String>,
+        tag: LinkMatch<String>,
     ) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            link_type,
-            tag,
+            link_type: link_type.to_regex_string().unwrap(),
+            tag: tag.to_regex_string().unwrap(),
             options: Default::default(),
         };
         serde_json::to_string(&args)
@@ -92,24 +95,31 @@ pub mod tests {
         entry_addresses
     }
 
-    fn initialize_context(netname: &str) -> Arc<Context> {
+    fn initialize_context(netname: &str) -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-
         let netname = Some(netname);
         let instance = test_instance(dna, netname).expect("Could not create test instance");
 
         let (context, _) = test_context_and_logger("joan", netname);
-        instance.initialize_context(context)
+        let arc_context = instance.initialize_context(context);
+        (instance, arc_context)
     }
 
     fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context //commit the AddLink entry first
-                .block_on(commit_entry(link.add_entry(), None, &initialized_context))
+                .block_on(commit_entry(
+                    link.add_entry(test_chain_header(), test_agent_id()),
+                    None,
+                    &initialized_context
+                ))
                 .is_ok());
             assert!(initialized_context
-                .block_on(add_link(&link, &initialized_context))
+                .block_on(add_link(
+                    &LinkData::add_from_link(&link, test_chain_header(), test_agent_id()),
+                    &initialized_context
+                ))
                 .is_ok());
         });
     }
@@ -117,8 +127,8 @@ pub mod tests {
     fn get_links(
         initialized_context: Arc<Context>,
         base: &Address,
-        link_type: Option<String>,
-        tag: Option<String>,
+        link_type: LinkMatch<String>,
+        tag: LinkMatch<String>,
     ) -> JsonString {
         test_zome_api_function_call(
             initialized_context.clone(),
@@ -129,7 +139,7 @@ pub mod tests {
     #[test]
     fn returns_list_of_links() {
         // setup the instance and links
-        let initialized_context = initialize_context("returns_list_of_links");
+        let (_instance, initialized_context) = initialize_context("returns_list_of_links");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
             Link::new(
@@ -151,18 +161,18 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("test-tag".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("test-tag".into()),
         );
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag", entry_addresses[2], "test-tag",
             ) + "\u{0}"),
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
@@ -177,7 +187,7 @@ pub mod tests {
 
     #[test]
     fn get_links_with_non_existent_type_returns_nothing() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("get_links_with_non_existent_type_returns_nothing");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
@@ -200,8 +210,8 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("other-type".into()),
-            Some("test-tag".into()),
+            LinkMatch::Exactly("other-type".into()),
+            LinkMatch::Exactly("test-tag".into()),
         );
         assert_eq!(
             call_result,
@@ -214,7 +224,7 @@ pub mod tests {
 
     #[test]
     fn get_links_with_non_existent_tag_returns_nothing() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("get_links_with_non_existent_tag_returns_nothing");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
@@ -237,8 +247,8 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("other-tag".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("other-tag".into()),
         );
         assert_eq!(
             call_result,
@@ -252,7 +262,8 @@ pub mod tests {
     #[test]
     fn can_get_all_links_of_any_tag_or_type() {
         // setup the instance and links
-        let initialized_context = initialize_context("can_get_all_links_of_any_tag_or_type");
+        let (_instance, initialized_context) =
+            initialize_context("can_get_all_links_of_any_tag_or_type");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
             Link::new(
@@ -270,16 +281,21 @@ pub mod tests {
         ];
         add_links(initialized_context.clone(), links);
 
-        let call_result = get_links(initialized_context.clone(), &entry_addresses[0], None, None);
+        let call_result = get_links(
+            initialized_context.clone(),
+            &entry_addresses[0],
+            LinkMatch::Any,
+            LinkMatch::Any,
+        );
         let expected_1 = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag1", entry_addresses[2], "test-tag2",
             ) + "\u{0}"),
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[2], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
@@ -294,7 +310,7 @@ pub mod tests {
 
     #[test]
     fn get_links_with_exact_tag_match_returns_only_that_link() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("get_links_with_exact_tag_match_returns_only_that");
         let entry_addresses = add_test_entries(initialized_context.clone());
         let links = vec![
@@ -316,12 +332,12 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("test-tag1".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("test-tag1".into()),
         );
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
@@ -330,7 +346,8 @@ pub mod tests {
 
     #[test]
     fn test_with_same_target_and_tag_dedup() {
-        let initialized_context = initialize_context("test_with_same_target_and_tag_dedup");
+        let (_instance, initialized_context) =
+            initialize_context("test_with_same_target_and_tag_dedup");
         let entry_addresses = add_test_entries(initialized_context.clone());
         // links have same tag, same base and same tag. Are the same
         let links = vec![
@@ -351,12 +368,12 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            Some("test-tag".into()),
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Exactly("test-tag".into()),
         );
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
@@ -365,7 +382,7 @@ pub mod tests {
 
     #[test]
     fn test_with_same_target_different_tag_dont_dedup() {
-        let initialized_context =
+        let (_instance, initialized_context) =
             initialize_context("test_with_same_target_different_tag_dont_dedup");
         let entry_addresses = add_test_entries(initialized_context.clone());
         // same target and type, different tag
@@ -387,12 +404,12 @@ pub mod tests {
         let call_result = get_links(
             initialized_context.clone(),
             &entry_addresses[0],
-            Some("test-type".into()),
-            None,
+            LinkMatch::Exactly("test-type".into()),
+            LinkMatch::Any,
         );
         let expected = JsonString::from_json(
             &(format!(
-                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
             ) + "\u{0}"),
         );

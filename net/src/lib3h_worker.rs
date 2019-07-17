@@ -10,6 +10,7 @@ use lib3h::{
     engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
 };
+
 use lib3h_protocol::network_engine::NetworkEngine;
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -31,7 +32,12 @@ impl Lib3hWorker {
         Ok(Lib3hWorker {
             handler,
             can_send_P2pReady: true,
-            net_engine: RealEngine::new(real_config, "FIXME", MirrorDht::new_with_config)?,
+            net_engine: RealEngine::new(
+                Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
+                real_config,
+                "FIXME",
+                MirrorDht::new_with_config,
+            )?,
         })
     }
 }
@@ -41,12 +47,6 @@ impl NetWorker for Lib3hWorker {
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         println!("Lib3hWorker.receive(): {:?}", data);
-        // Handle 'Shutdown' directly
-        if data == Protocol::Shutdown {
-            self.net_engine.terminate()?;
-            self.handler.handle(Ok(Protocol::Terminated))?;
-            return Ok(());
-        }
         // Post Lib3hClient messages only
         if let Protocol::Lib3hClient(msg) = data {
             self.net_engine.post(msg.clone())?;
@@ -73,21 +73,9 @@ impl NetWorker for Lib3hWorker {
         Ok(did_something)
     }
 
-    /// Stop the NetworkEngine
-    fn stop(self: Box<Self>) -> NetResult<()> {
-        self.net_engine.stop()
-    }
-
     /// Set the advertise as worker's endpoint
     fn endpoint(&self) -> Option<String> {
-        Some(self.net_engine.advertise())
-    }
-}
-
-/// Terminate on Drop
-impl Drop for Lib3hWorker {
-    fn drop(&mut self) {
-        self.net_engine.terminate().ok();
+        Some(self.net_engine.advertise().to_string())
     }
 }
 

@@ -1,26 +1,21 @@
-{ pkgs, release, pulse }:
+{ pkgs, config }:
 let
  name = "hc-release-audit";
 
  script = pkgs.writeShellScriptBin name
  ''
  echo
- echo "Current git:"
+ echo "Current status of git"
+ echo "This should be the latest develop commit, not necessarily the target commit below"
  echo
- git show --pretty=oneline
+ echo "The important vars in ./config.nix:"
  echo
- echo "All the important release vars:"
+ echo "~HEAD~ commit: $( git rev-parse --verify HEAD )"
+ echo "CONFIG commit: ${config.release.commit}"
+ echo "The target commit is the most recent commit on develop that passes test and starts with 'Merge pull request #XXX'"
  echo
- echo "Target commit: ${release.commit}"
- echo
- echo "Dev pulse URL hash: ${pulse.url-hash}"
- echo "Dev pulse version: ${pulse.version}"
- echo "Dev pulse URL (derived): ${pulse.url}"
- echo
- echo "New core version: ${release.version.current}"
- echo "Previous core version: ${release.version.previous}"
- echo
- echo "Release process url: ${release.process-url}"
+ echo "New core version: ${config.release.version.current}"
+ echo "Previous core version: ${config.release.version.previous}"
  '';
 in
 {

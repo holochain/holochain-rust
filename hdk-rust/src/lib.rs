@@ -14,7 +14,6 @@
 //! the most useful places to start reading are the [define_zome! macro](macro.define_zome.html), and the list of exposed functions
 //! that Holochain offers: [the API](api/index.html).
 #![warn(unused_extern_crates)]
-#![feature(try_from)]
 #![feature(never_type)]
 pub extern crate serde;
 extern crate serde_json;

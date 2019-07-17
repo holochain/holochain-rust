@@ -1,8 +1,8 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 
 #[macro_use]
 extern crate failure;
+extern crate url;
 
 extern crate holochain_persistence_api;
 

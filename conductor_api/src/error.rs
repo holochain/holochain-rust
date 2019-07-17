@@ -9,6 +9,7 @@ pub enum HolochainInstanceError {
     InternalFailure(HolochainError),
     InstanceNotActiveYet,
     InstanceAlreadyActive,
+    InstanceNotInitialized,
     NoSuchInstance,
     RequiredBridgeMissing(String),
 }
@@ -16,11 +17,12 @@ pub enum HolochainInstanceError {
 impl Error for HolochainInstanceError {
     // not sure how to test this because dyn reference to the Error is not implementing PartialEq
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         match self {
             HolochainInstanceError::InternalFailure(ref err)  => Some(err),
             HolochainInstanceError::InstanceNotActiveYet => None,
             HolochainInstanceError::InstanceAlreadyActive => None,
+            HolochainInstanceError::InstanceNotInitialized => None,
             HolochainInstanceError::NoSuchInstance => None,
             HolochainInstanceError::RequiredBridgeMissing(_) => None,
         }
@@ -37,6 +39,9 @@ impl fmt::Display for HolochainInstanceError {
             }
             HolochainInstanceError::InstanceAlreadyActive => {
                 write!(f, "{}: Holochain instance is already active.", prefix)
+            }
+            HolochainInstanceError::InstanceNotInitialized => {
+                write!(f, "{}: Holochain instance is not initialized.", prefix)
             }
             HolochainInstanceError::NoSuchInstance => {
                 write!(f, "{}: Instance does not exist", prefix)
@@ -78,6 +83,10 @@ pub mod tests {
     /// show ToString for HolochainInstanceError
     fn holochain_instance_error_to_string_test() {
         for (i, o) in vec![
+            (
+                HolochainInstanceError::InstanceNotInitialized,
+                "Holochain instance is not initialized.",
+            ),
             (
                 HolochainInstanceError::InstanceNotActiveYet,
                 "Holochain instance is not active yet.",

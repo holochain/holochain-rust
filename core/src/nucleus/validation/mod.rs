@@ -35,7 +35,7 @@ pub enum ValidationError {
     NotImplemented,
 
     /// An error occurred that is out of the scope of validation (no state?, I/O errors..)
-    Error(String),
+    Error(HolochainError),
 }
 
 /// Result of validating an entry.
@@ -53,7 +53,7 @@ impl From<ValidationError> for HolochainError {
             ValidationError::NotImplemented => {
                 HolochainError::NotImplemented("Validation not implemented".to_string())
             }
-            ValidationError::Error(e) => HolochainError::ErrorGeneric(e),
+            ValidationError::Error(e) => e,
         }
     }
 }
@@ -93,25 +93,19 @@ pub async fn validate_entry(
             validation_data
         )),
 
-        EntryType::LinkAdd => await!(link_entry::validate_link_entry(
-            entry.clone(),
-            validation_data,
-            context
-        )),
+        EntryType::LinkAdd => {
+            await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))
+        }
 
-        EntryType::LinkRemove => await!(link_entry::validate_link_entry(
-            entry.clone(),
-            validation_data,
-            context
-        )),
+        EntryType::LinkRemove => {
+            await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))
+        }
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => await!(remove_entry::validate_remove_entry(
-            entry.clone(),
-            validation_data,
-            context
-        )),
+        EntryType::Deletion => {
+            await!(remove_entry::validate_remove_entry(entry.clone(), validation_data, context))
+        }
 
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),

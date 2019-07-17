@@ -1,10 +1,10 @@
 use crate::{
     nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
-    state::State,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 
+use crate::state::StateWrapper;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
@@ -114,8 +114,8 @@ pub struct NucleusStateSnapshot {
     pub pending_validations: HashMap<PendingValidationKey, PendingValidation>,
 }
 
-impl From<&State> for NucleusStateSnapshot {
-    fn from(state: &State) -> Self {
+impl From<&StateWrapper> for NucleusStateSnapshot {
+    fn from(state: &StateWrapper) -> Self {
         NucleusStateSnapshot {
             status: state.nucleus().status(),
             pending_validations: state.nucleus().pending_validations.clone(),

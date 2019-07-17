@@ -115,10 +115,11 @@ pub(crate) fn create_lib3h_config(
             backend_kind: P2pBackendKind::LIB3H,
             backend_config: BackendConfig::Lib3h(RealEngineConfig {
                 socket_type: "ws".into(),
+                tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
                 bootstrap_nodes: bootstrap_nodes,
                 work_dir: dir.clone(),
                 log_level: 'd',
-                bind_url: format!("FIXME"),
+                bind_url: url::Url::parse("fixme://bind_url").unwrap(),
                 dht_custom_config: vec![],
             }),
             maybe_end_user_config: None,

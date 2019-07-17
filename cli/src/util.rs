@@ -41,7 +41,8 @@ pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
     let dist_path = path.join(&DIST_DIR_NAME);
 
     if !dist_path.exists() {
-        fs::create_dir(dist_path.as_path())?;
+        fs::create_dir(dist_path.as_path())
+            .map_err(|e| format_err!("Couldn't create path {:?}; {}", dist_path, e))?;
     }
     Ok(dist_path)
 }
@@ -75,10 +76,10 @@ pub fn check_for_cargo(use_case: &str, extra_help: Option<Vec<&str>>) -> Default
                     println!("This command requires the `cargo` command, which is part of the Rust toolchain.");
                     println!("{}", use_case);
                     println!("As a first step, get Rust installed by using rustup https://rustup.rs/.");
-                    println!("Holochain requires you use the nightly-2019-01-24 toolchain.");
+                    println!("Holochain requires you use the nightly-2019-07-14 toolchain.");
                     println!("With Rust already installed switch to it by running the following commands:");
-                    println!("$ rustup toolchain install nightly-2019-01-24");
-                    println!("$ rustup default nightly-2019-01-24");
+                    println!("$ rustup toolchain install nightly-2019-07-14");
+                    println!("$ rustup default nightly-2019-07-14");
                     match extra_help {
                         Some(messages) => {
                             for message in messages {

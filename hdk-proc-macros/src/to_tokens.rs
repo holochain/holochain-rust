@@ -14,7 +14,7 @@ impl ToTokens for ZomeFunction {
             .inputs
             .clone()
             .into_iter()
-            .map(|param| syn::Field::from(param));
+            .map(syn::Field::from);
 
         let input_param_names = self
             .declaration

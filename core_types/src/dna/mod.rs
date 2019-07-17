@@ -6,7 +6,6 @@
 //! # Examples
 //!
 //! ```
-//! #![feature(try_from)]
 //! extern crate holochain_core_types;
 //! extern crate holochain_persistence_api;
 //! extern crate holochain_json_api;
@@ -483,7 +482,7 @@ pub mod tests {
                         "config": {},
                         "entry_types": {
                             "test": {
-                                "description": "test",
+                                "properties": "test",
                                 "sharing": "public",
                                 "links_to": [
                                     {
@@ -665,7 +664,7 @@ pub mod tests {
                     "zome1": {
                         "entry_types": {
                             "test": {
-                                "description": 42
+                                "properties": 42
                             }
                         }
                     }

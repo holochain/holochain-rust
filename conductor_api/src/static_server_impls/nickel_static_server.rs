@@ -7,6 +7,7 @@ use static_file_server::{dna_connections_response, ConductorStaticFileServer, DN
 use std::{
     net::SocketAddr,
     sync::mpsc::{self, Sender},
+    thread,
 };
 
 use nickel::{
@@ -75,14 +76,22 @@ impl ConductorStaticFileServer for NickelStaticServer {
                 &self.bundle_config.root_dir, &addr
             ));
 
-            server
-                .listen(addr)
-                .map_err(|e| notify(format!("server error: {}", e)))
-                .expect("Could not start static file server");
-
-            notify(format!("Listening on http://{}", addr));
-            // block waiting for a shutdown signal after which the server goes out of scope
-            rx.recv().unwrap();
+            thread::Builder::new()
+                .name("conductor_api::static_file_server".to_string())
+                .spawn(move || {
+                    let _server_thread = thread::Builder::new()
+                        .name("conductor_api::static_file_server_inner".to_string())
+                        .spawn(move || {
+                            server
+                                .listen(addr)
+                                .map_err(|e| notify(format!("server error: {}", e)))
+                                .expect("Could not start static file server");
+                        });
+                    notify(format!("Listening on http://{}", addr));
+                    // block waiting for a shutdown signal after which the server thread goes out of scope
+                    rx.recv().unwrap();
+                })
+                .unwrap();
         };
 
         Ok(())

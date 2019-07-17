@@ -463,7 +463,8 @@ root_dir = '.'"#,
     #[test]
     fn test_start_ui_interface() {
         let test_name = "test_start_ui_interface";
-        let mut conductor = create_test_conductor(test_name, 3004);
+        let mut conductor =
+            create_test_conductor_from_toml(&barebones_test_toml(test_name), test_name);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -478,7 +479,7 @@ root_dir = '.'"#,
         assert_eq!(
             conductor.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 4000,
+                port: 4100,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,
@@ -496,7 +497,8 @@ root_dir = '.'"#,
     #[test]
     fn test_stop_ui_interface() {
         let test_name = "test_stop_ui_interface";
-        let mut conductor = create_test_conductor(test_name, 3005);
+        let mut conductor =
+            create_test_conductor_from_toml(&barebones_test_toml(test_name), test_name);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -511,7 +513,7 @@ root_dir = '.'"#,
         assert_eq!(
             conductor.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 4001,
+                port: 4101,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,

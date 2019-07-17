@@ -124,9 +124,6 @@ This means that to determine the address, the content is passed through a crypto
 
 Only Entries may be retrieved by their address, not Headers.
 
-So there is data that lives on your device
-
-
 
 ### Get an Entry
 
@@ -139,7 +136,6 @@ So there is data that lives on your device
 
 
 ### hdk::commit_entry
-
 
 
 ### hdk::update_entry

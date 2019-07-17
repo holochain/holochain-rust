@@ -190,6 +190,7 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
         } else {
             LogRules::new()
         },
+        state_dump: true,
     }
 }
 

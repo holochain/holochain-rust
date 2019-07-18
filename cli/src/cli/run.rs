@@ -3,13 +3,14 @@ use colored::*;
 use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
-    conductor::{mount_conductor_from_config, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::*,
     key_loaders::{test_keystore, test_keystore_loader},
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -118,13 +119,17 @@ fn agent_configuration() -> AgentConfiguration {
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
+    let dna = Conductor::load_dna(dna_path).expect(&format!(
+        "Could not load DNA file {}",
+        dna_path.to_str().expect("No DNA file path given")
+    ));
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: dna_path
             .to_str()
             .expect("Expected DNA path to be valid unicode")
             .to_string(),
-        hash: String::from("DNA Hash"),
+        hash: dna.address().to_string(),
     }
 }
 

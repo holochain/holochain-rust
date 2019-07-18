@@ -8,7 +8,6 @@ module.exports = scenario => {
     console.log("get invalid response", get_self_result)
     t.ok(get_self_result.Ok, "Should be able to retrieve own agent entry")
     t.notOk(get_other_result.Ok, "Should not be able to retrieve agent entry for invalid agent")
-    t.end()
   })
 
 }

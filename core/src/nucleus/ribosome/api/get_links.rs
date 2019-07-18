@@ -106,7 +106,7 @@ pub mod tests {
         (instance, arc_context)
     }
 
-    fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
+    pub fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context //commit the AddLink entry first
                 .block_on(commit_entry(
@@ -124,7 +124,7 @@ pub mod tests {
         });
     }
 
-    fn get_links(
+    pub fn get_links(
         initialized_context: Arc<Context>,
         base: &Address,
         link_type: LinkMatch<String>,

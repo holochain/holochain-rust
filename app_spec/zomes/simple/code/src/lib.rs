@@ -14,6 +14,8 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     entry::Entry,
     link::LinkMatch,
+    agent::AgentId,
+    validation::EntryValidationData,
 };
 use hdk::holochain_persistence_api::{
     cas::content::Address,
@@ -25,7 +27,7 @@ use hdk::holochain_json_api::{
 };
 
 
-use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions};
+use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount};
 
 
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
@@ -53,13 +55,25 @@ fn simple_entry(content: String) -> Entry {
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", "")?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", "tag")?;
+    Ok(())
+}
+
+pub fn handle_create_my_link_with_tag(base: Address,target : String, tag : String) -> ZomeApiResult<()> {
+    let address = hdk::commit_entry(&simple_entry(target))?;
+    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", &tag)?;
     Ok(())
 }
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts", "")?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts","tag")?;
+    Ok(())
+}
+
+pub fn handle_delete_my_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()> {
+    let address = hdk::entry_address(&simple_entry(target))?;
+    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts",&tag)?;
     Ok(())
 }
 
@@ -71,6 +85,24 @@ pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequ
         ..GetLinksOptions::default()
     };
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+}
+
+pub fn handle_get_my_links_with_tag(agent : Address,status_request:LinksStatusRequestKind,tag:String) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        status_request,
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Exactly(&*tag),options)
+}
+
+pub fn handle_get_my_links_count(agent : Address,status_request : LinksStatusRequestKind,tag:String) ->ZomeApiResult<GetLinksResultCount>
+{
+    let options = GetLinksOptions{
+        status_request,
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"),LinkMatch::Exactly(&*tag),options)
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
@@ -120,6 +152,10 @@ pub fn definition() -> ValidatingEntryType {
     )
 }
 
+fn get_entry_handler(address: Address) -> ZomeApiResult<Option<Entry>> {
+    hdk::get_entry(&address)
+}
+
 define_zome! {
 
     entries: [
@@ -130,24 +166,59 @@ define_zome! {
         Ok(())
     }
 
-
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {{
+        if let EntryValidationData::Create{entry, ..} = validation_data {
+            let agent = entry as AgentId;
+            if agent.nick == "reject_agent::app" {
+                Err("This agent will always be rejected".into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Err("Cannot update or delete an agent at this time".into())
+        }
+    }}
 
     functions: [
-
+        get_entry: {
+            inputs: |address: Address|,
+            outputs: |result: ZomeApiResult<Option<Entry>>|,
+            handler: get_entry_handler
+        }
         create_link: {
             inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_create_my_link
+        }
+        create_link_with_tag: {
+            inputs: |base : Address,target:String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_create_my_link_with_tag
         }
         delete_link: {
             inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_delete_my_link
         }
+        delete_link_with_tag: {
+            inputs: |base : Address,target:String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_delete_my_link_with_tag
+        }
         get_my_links: {
             inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
+        }
+        get_my_links_with_tag: {
+            inputs: |base: Address,status_request:LinksStatusRequestKind,tag:String|,
+            outputs: |result: ZomeApiResult<GetLinksResult>|,
+            handler: handle_get_my_links_with_tag
+        }
+        get_my_links_count: {
+            inputs: |base: Address,status_request:LinksStatusRequestKind,tag:String|,
+            outputs: |result: ZomeApiResult<GetLinksResultCount>|,
+            handler: handle_get_my_links_count
         }
         encrypt :{
             inputs : |payload: String|,
@@ -167,6 +238,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_link, delete_link, get_my_links, test_emit_signal, encrypt, decrypt]
+        hc_public [get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
     }
 }

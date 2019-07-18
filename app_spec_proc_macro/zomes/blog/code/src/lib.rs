@@ -53,6 +53,11 @@ pub mod blog {
         Ok(())
     }
 
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        Ok(())
+    }
+
     #[receive]
     pub fn receive(from: Address, msg_json: String) {
         blog::handle_receive(from, JsonString::from_json(&msg_json))

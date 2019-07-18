@@ -65,6 +65,8 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -98,6 +100,10 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 ///    entries: []
 ///
 ///    genesis: || { Ok(()) }
+///    
+///    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+///        Ok(())
+///    }
 ///
 ///    receive: |from, payload| {
 ///        // if you want to serialize data as json to pass, use the json! serde macro

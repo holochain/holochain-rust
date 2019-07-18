@@ -111,6 +111,8 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -183,6 +185,10 @@ macro_rules! load_string {
 ///     genesis: || {
 ///         Ok(())
 ///     }
+///     
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+///         Ok(())
+///     }
 ///
 ///     receive: |from, payload| {
 ///       // just return what was received, but modified
@@ -220,6 +226,12 @@ macro_rules! define_zome {
             $genesis_expr:expr
         }
 
+
+        validate_agent: |$agent_validation_param:ident : EntryValidationData::<AgentId>| {
+            $agent_validation_expr:expr
+        }
+
+
         $(
             receive : |$receive_from:ident, $receive_param:ident| {
                 $receive_expr:expr
@@ -252,6 +264,12 @@ macro_rules! define_zome {
             $(
                 zd.define($entry_expr);
             )*
+
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
+                let $agent_validation_param = validation_data;
+                $agent_validation_expr
+            });
+            zd.define_agent_validator(validator);
         }
 
         #[no_mangle]

@@ -32,12 +32,10 @@ impl NetWorker for InMemoryWorker {
     /// forward to our in-memory server
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         // InMemoryWorker doesn't have to do anything on shutdown
-        // TODO BLOCKER add shutdown to lib3h protocol client
-        /* if data == Protocol::Shutdown {
-                                // TODO add Terminated to lib3h protocol server
-            self.handler.handle(Ok(Protocol::Terminated))?;
+         if data == Lib3hClientProtocol::Shutdown {
+            self.handler.handle(Ok(Lib3hServerProtocol::Terminated))?;
             return Ok(());
-        }*/
+        }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
         let mut server = server_map
             .get(&self.server_name)

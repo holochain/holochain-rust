@@ -58,24 +58,25 @@ pub fn publish_entry_list_test(
         2000,
     );
 
-    log_i!("Billy got res: {:?}", res);
+    println!("[1] Billy got res: {:?}", res);
     // billy asks for reported authored data.
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
     let res = billy.reply_to_HandleQueryEntry(&query_data);
+    println!("[2] Billy got res: {:?}", res);
     // #fullsync
     // Billy answers its own request
     // let has_received = billy.wait_HandleQueryEntry_and_reply();
     assert!(res.is_ok());
     // Billy should receive the entry data
-    let mut result = billy.find_recv_json_msg(
+    let mut result = billy.find_recv_lib3h_msg(
         0,
         Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))),
     );
     if result.is_none() {
         result = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))))
     }
-    let json = result.unwrap();
-    log_i!("got result: {:?}", json);
+    let response = result.unwrap();
+    log_i!("got result: {:?}", response);
     // Done
     Ok(())
 }
@@ -105,7 +106,7 @@ pub fn double_publish_entry_list_test(
     // Billy receives and replies to its own query
     //let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data back
-    let mut result = billy.find_recv_json_msg(
+    let mut result = billy.find_recv_lib3h_msg(
         0,
         Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))),
     );
@@ -147,7 +148,7 @@ pub fn hold_list_test(
     // billy replies to own query
     // let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data
-    let mut result = billy.find_recv_json_msg(
+    let mut result = billy.find_recv_lib3h_msg(
         0,
         Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))),
     );

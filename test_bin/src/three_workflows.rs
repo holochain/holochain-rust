@@ -219,7 +219,7 @@ pub fn hold_and_publish_test(
 
     // Camille should receive the data
     let req_id = query_entry.request_id.clone();
-    let mut result = camille.find_recv_json_msg(
+    let mut result = camille.find_recv_lib3h_msg(
         0,
         Box::new(one_is_where!(
             Lib3hServerProtocol::QueryEntryResult(entry_data),
@@ -249,7 +249,7 @@ pub fn hold_and_publish_test(
 
     // Camille should receive the data
     let req_id = query_data.request_id.clone();
-    let mut result = camille.find_recv_json_msg(
+    let mut result = camille.find_recv_lib3h_msg(
         0,
         Box::new(one_is_where!(
             Lib3hServerProtocol::QueryEntryResult(entry_data),
@@ -344,7 +344,7 @@ pub fn publish_entry_stress_test(
     // Camille should receive the data
     log_i!("Waiting for fetch result...\n\n");
 
-    let mut result = camille.find_recv_json_msg(
+    let mut result = camille.find_recv_lib3h_msg(
         0,
         Box::new(one_is_where!(
             Lib3hServerProtocol::QueryEntryResult(entry_data),

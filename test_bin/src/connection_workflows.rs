@@ -196,7 +196,7 @@ pub(crate) fn three_nodes_disconnect_test(
 
     // Alex should receive the data
     let req_id = query_entry.request_id.clone();
-    let mut result = alex.find_recv_json_msg(
+    let mut result = alex.find_recv_lib3h_msg(
         0,
         Box::new(one_is_where!(
             Lib3hServerProtocol::QueryEntryResult(entry_data),

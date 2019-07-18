@@ -40,9 +40,9 @@ impl P2pNetwork {
             _ => JsonString::from(""),
         };
 
-        let p2p_config_str = p2p_config.as_str();
+        let p2p_config_str = p2p_config.clone().as_str();
         // Provide worker factory depending on backend kind
-        let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
+        let worker_factory: NetWorkerFactory = match p2p_config.clone().backend_kind {
             // Create an IpcNetWorker with the passed backend config
             P2pBackendKind::N3H => {
                 let enduser_config = p2p_config
@@ -60,7 +60,7 @@ impl P2pNetwork {
             }
             // Create a Lib3hWorker
             P2pBackendKind::LIB3H => {
-                let backend_config = match p2p_config.backend_config {
+                let backend_config = match p2p_config.clone().backend_config {
                     BackendConfig::Lib3h(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
                 };
@@ -78,15 +78,11 @@ impl P2pNetwork {
 
         let (t, rx) = crossbeam_channel::unbounded();
         let tx = t.clone();
-        let wrapped_handler = NetHandler::new(Box::new(move |message| {
+        let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
+            NetHandler::new(Box::new(move |message| {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
             match Lib3hServerProtocol::try_from(unwrapped.clone()) {
-                // TODO discuss with @neonphog
-                Ok(Lib3hServerProtocol::Connected(d)) => {
-                    tx.send(Lib3hServerProtocol::Connected(d)).unwrap();
-                    log_d!("net/p2p_network: sent Connected event")
-                }
                 Ok(Lib3hServerProtocol::P2pReady) => {
                     tx.send(Lib3hServerProtocol::P2pReady).ok();
                     log_d!("net/p2p_network: sent P2pReady event")
@@ -98,7 +94,10 @@ impl P2pNetwork {
                 }
             };
             handler.handle(Ok(message))
-        }));
+        }))
+        } else {
+            handler
+        };
 
         // Create NetConnectionThread with appropriate worker factory.  Indicate *what*
         // configuration failed to produce a connection.
@@ -110,18 +109,24 @@ impl P2pNetwork {
                     e
                 )
             })?;
-        P2pNetwork::wait_p2p_ready(&rx);
+        if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
+            P2pNetwork::wait_p2p_ready(&rx);
+        }
 
         // Done
         Ok(P2pNetwork { connection })
     }
 
+    fn should_wait_for_p2p_ready(p2p_config : &P2pConfig) -> bool {
+        match p2p_config.backend_kind {
+            P2pBackendKind::N3H => true,
+            P2pBackendKind::MEMORY | P2pBackendKind::LIB3H => false
+        }
+    }
+
     fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Lib3hServerProtocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Lib3hServerProtocol::Connected(_)) => {
-                log_d!("net/p2p_network: received Connected event")
-            }
             Ok(Lib3hServerProtocol::P2pReady) => {
                 log_d!("net/p2p_network: received P2pReady event")
             }
@@ -174,13 +179,15 @@ mod tests {
     #[test]
     fn it_should_create_memory_network() {
         let p2p = P2pConfig::new_with_unique_memory_backend();
-        let mut res = P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), p2p).unwrap();
-
+        let handler = NetHandler::new(Box::new(|_r| Ok(())));
+        let mut res = P2pNetwork::new(handler.clone(), p2p).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
             peer_uri: url::Url::parse("mem://test".into()).expect("well formed memory network url"),
             network_id: "test_net_id".into(),
         };
+
+        handler.to_owned().handle(Ok(Lib3hServerProtocol::P2pReady)).unwrap();
         res.send(Lib3hClientProtocol::Connect(connect_data))
             .unwrap();
         res.stop().unwrap();

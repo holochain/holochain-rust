@@ -19,7 +19,7 @@ pub fn setup_one_node(
     alex: &mut TestNode,
     _billy: &mut TestNode,
     dna_address: &Address,
-    can_connect: bool,
+    _can_connect: bool,
 ) -> NetResult<()> {
     // Send TrackDna message on both nodes
     alex.track_dna(dna_address, true)
@@ -29,25 +29,6 @@ pub fn setup_one_node(
         .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
         .unwrap();
     log_i!("self connected result 1: {:?}", connect_result_1);
-
-    // get ipcServer IDs for each node from the IpcServer's state
-    if can_connect {
-        let mut _node1_binding = String::new();
-        /*
-        alex.send(Lib3hServerProtocol::GetState.into())
-            .expect("Failed sending RequestState on alex");
-        let alex_state = alex
-            .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
-            .unwrap();
-
-        one_let!(Lib3hServerProtocol::GetStateResult(state) = alex_state {
-            _node1_binding = state.id
-        });
-
-        // Connect nodes between them
-        log_i!("node1_binding = {}", _node1_binding);
-        */
-    }
 
     // Make sure we received everything we needed from network module
     // TODO: Make a more robust function that waits for certain messages in msg log (with timeout that panics)
@@ -94,37 +75,15 @@ pub fn setup_two_nodes(
     if can_connect {
         let mut _node1_id = String::new();
         let node2_binding = billy.p2p_binding.clone();
-        /*
-                alex.send(Lib3hServerProtocol::GetState.into())
-                    .expect("Failed sending RequestState on alex");
-                let alex_state = alex
-                    .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
-                    .unwrap();
-                billy
-                    .send(Lib3hServerProtocol::GetState.into())
-                    .expect("Failed sending RequestState on billy");
-                let billy_state = billy
-                    .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::GetStateResult(_))))
-                    .unwrap();
-
-                one_let!(Lib3hServerProtocol::GetStateResult(state) = alex_state {
-                    _node1_id = state.id
-                });
-                one_let!(Lib3hServerProtocol::GetStateResult(state) = billy_state {
-                    if !state.bindings.is_empty() {
-                        node2_binding = state.bindings[0].clone();
-                    }
-                });
-        */
         // Connect nodes between them
         log_i!("connect: node2_binding = {}", node2_binding);
         alex.send(
             Lib3hClientProtocol::Connect(ConnectData {
                 request_id: "alex_send_connect".into(),
-                peer_uri: url::Url::parse(node2_binding.as_str()).expect("malformed node2 url"),
+                peer_uri: url::Url::parse(node2_binding.as_str())
+                    .expect(format!("malformed node2 url: {:?}", node2_binding).as_str()),
                 network_id: "alex_to_node2".into(),
             })
-            .into(),
         )?;
 
         // Make sure Peers are connected

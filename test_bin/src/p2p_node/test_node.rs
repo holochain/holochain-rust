@@ -21,7 +21,6 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::TryInto,
 };
 
 use super::{
@@ -61,7 +60,6 @@ pub struct TestNode {
 
     is_network_ready: bool,
     pub p2p_binding: String,
-    is_json: bool,
 }
 
 /// Query logs
@@ -71,8 +69,8 @@ impl TestNode {
         self.recv_msg_log.len()
     }
 
-    /// Return the ith JSON message that this node has received and fullfills predicate
-    pub fn find_recv_json_msg(
+    /// Return the ith message that this node has received and fullfills predicate
+    pub fn find_recv_lib3h_msg(
         &self,
         ith: usize,
         predicate: Box<dyn Fn(&Lib3hServerProtocol) -> bool>,
@@ -106,21 +104,12 @@ impl TestNode {
             return Ok(());
         }
         let agent_id = self.agent_id.clone();
-        let protocol_msg: Lib3hClientProtocol = if self.is_json {
-            let track_dna_msg = SpaceData {
-                request_id: snowflake::ProcessUniqueId::new().to_string(),
-                space_address: dna_address.clone(),
-                agent_id,
-            };
-            Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
-        } else {
-            let track_dna_msg = lib3h_protocol::data_types::SpaceData {
-                request_id: snowflake::ProcessUniqueId::new().to_string(),
-                space_address: dna_address.clone(),
-                agent_id: agent_id.to_string().into(),
-            };
-            Lib3hClientProtocol::JoinSpace(track_dna_msg).into()
+        let track_dna_msg = lib3h_protocol::data_types::SpaceData {
+            request_id: snowflake::ProcessUniqueId::new().to_string(),
+            space_address: dna_address.clone(),
+            agent_id: agent_id.to_string().into(),
         };
+        let protocol_msg = Lib3hClientProtocol::JoinSpace(track_dna_msg);
         println!("TestNode.track_dna(): {:?}", protocol_msg);
         let res = self.send(protocol_msg);
         if res.is_ok() {
@@ -151,20 +140,13 @@ impl TestNode {
             return Ok(());
         }
         let agent_id = self.agent_id.clone();
-        let protocol_msg: Lib3hClientProtocol = if self.is_json {
+        let protocol_msg: Lib3hClientProtocol = {
             let track_dna_msg = SpaceData {
                 request_id: "untrack_dna_req".into(),
-                space_address: dna_address.clone().try_into().unwrap(),
-                agent_id: agent_id.clone().try_into().unwrap(),
+                space_address: dna_address.clone(),
+                agent_id: agent_id.clone(),
             };
-            Lib3hClientProtocol::LeaveSpace(track_dna_msg).into()
-        } else {
-            let leave_space_msg = lib3h_protocol::data_types::SpaceData {
-                request_id: "leave_space_req".to_string(),
-                space_address: dna_address.clone().into(),
-                agent_id: agent_id.to_string().into(),
-            };
-            Lib3hClientProtocol::LeaveSpace(leave_space_msg).into()
+            Lib3hClientProtocol::LeaveSpace(track_dna_msg)
         };
         let res = self.send(protocol_msg);
         if res.is_ok() {
@@ -416,26 +398,15 @@ impl TestNode {
         let request_id = self.generate_request_id();
         let from_agent_id = self.agent_id.to_string();
 
-        let p = if self.is_json {
-            let msg_data = DirectMessageData {
-                space_address: dna_address.into(),
-                from_agent_id: self.agent_id.clone().into(),
-                request_id: self.generate_request_id(),
-                to_agent_id: to_agent_id.clone().into(),
-                content,
-            };
-            Lib3hClientProtocol::SendDirectMessage(msg_data.clone()).into()
-        } else {
-            let msg_data = DirectMessageData {
-                space_address: dna_address.to_string().into(),
-                request_id: request_id.clone(),
-                to_agent_id: to_agent_id.to_string().into(),
-                from_agent_id: from_agent_id.to_string().into(),
-                content,
-            };
-            Lib3hClientProtocol::SendDirectMessage(msg_data.clone()).into()
+        let msg_data = DirectMessageData {
+            space_address: dna_address,
+            request_id: request_id.clone(),
+            to_agent_id: to_agent_id.to_string().into(),
+            from_agent_id: from_agent_id.to_string().into(),
+            content,
         };
-        self.send(p).expect("Sending SendMessage failed");
+        self.send(Lib3hClientProtocol::SendDirectMessage(msg_data))
+            .expect("Sending SendMessage failed");
         request_id
     }
 
@@ -515,7 +486,7 @@ impl TestNode {
     /// Look for the first HandleGetAuthoringEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetAuthoringEntryList(&mut self) {
         let request = self
-            .find_recv_json_msg(
+            .find_recv_lib3h_msg(
                 0,
                 Box::new(one_is!(Lib3hServerProtocol::HandleGetAuthoringEntryList(_))),
             )
@@ -558,7 +529,7 @@ impl TestNode {
     /// Look for the first HandleGetHoldingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetHoldingEntryList(&mut self) {
         let request = self
-            .find_recv_json_msg(
+            .find_recv_lib3h_msg(
                 0,
                 Box::new(one_is!(Lib3hServerProtocol::HandleGetGossipingEntryList(_))),
             )
@@ -616,7 +587,6 @@ impl TestNode {
             logger: TweetProxy::new("p2pnode"),
             is_network_ready: false,
             p2p_binding,
-            is_json: config.backend_kind != P2pBackendKind::LIB3H,
         }
     }
 

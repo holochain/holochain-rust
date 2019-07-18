@@ -48,38 +48,39 @@ const orchestratorMultiDna = new Orchestrator({
   callbacksPort: 8888,
 })
 
-require('./regressions')(orchestratorSimple.registerScenario)
-require('./test')(orchestratorSimple.registerScenario)
-require('./multi-dna')(orchestratorMultiDna.registerScenario)
+// require('./regressions')(orchestratorSimple.registerScenario)
+// require('./test')(orchestratorSimple.registerScenario)
+// require('./multi-dna')(orchestratorMultiDna.registerScenario)
+require('./validate-agent-test')(dnaPath)
 
-const run = async () => {
-  const alice = await spawnConductor('alice', 3000)
-  await orchestratorSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
-  const bob = await spawnConductor('bob', 4000)
-  await orchestratorSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
-  const carol = await spawnConductor('carol', 5000)
-  await orchestratorSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
+// const run = async () => {
+//   const alice = await spawnConductor('alice', 3000)
+//   await orchestratorSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
+//   const bob = await spawnConductor('bob', 4000)
+//   await orchestratorSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
+//   const carol = await spawnConductor('carol', 5000)
+//   await orchestratorSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-  console.log("Waiting for conductors to settle...")
-  await delay(5000)
-  console.log("Ok, starting tests!")
+//   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+//   console.log("Waiting for conductors to settle...")
+//   await delay(5000)
+//   console.log("Ok, starting tests!")
 
-  await orchestratorSimple.run()
-  alice.kill()
-  bob.kill()
-  carol.kill()
+//   await orchestratorSimple.run()
+//   alice.kill()
+//   bob.kill()
+//   carol.kill()
 
-  // Multi instance tests where n3h is the network connecting them currently fails with the 2nd instance
-  // waiting for and not receiving the agent entry of the first one.
-  // I believe this is due to n3h not sending a peer connected message for a local instance
-  // and core has not implented the authoring list yet...
-  //const conductor = await spawnConductor('conductor', 6000)
-  //await orchestratorMultiDna.registerConductor({name: 'conductor', url: 'http://0.0.0.0:6000'})
-  //await orchestratorMultiDna.run()
-  //conductor.kill()
+//   // Multi instance tests where n3h is the network connecting them currently fails with the 2nd instance
+//   // waiting for and not receiving the agent entry of the first one.
+//   // I believe this is due to n3h not sending a peer connected message for a local instance
+//   // and core has not implented the authoring list yet...
+//   //const conductor = await spawnConductor('conductor', 6000)
+//   //await orchestratorMultiDna.registerConductor({name: 'conductor', url: 'http://0.0.0.0:6000'})
+//   //await orchestratorMultiDna.run()
+//   //conductor.kill()
 
-  process.exit()
-}
+//   process.exit()
+// }
 
-run()
+// run()

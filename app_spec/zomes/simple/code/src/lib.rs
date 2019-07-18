@@ -14,6 +14,8 @@ use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     entry::Entry,
     link::LinkMatch,
+    agent::AgentId,
+    validation::EntryValidationData,
 };
 use hdk::holochain_persistence_api::{
     cas::content::Address,
@@ -150,6 +152,10 @@ pub fn definition() -> ValidatingEntryType {
     )
 }
 
+fn get_entry_handler(address: Address) -> ZomeApiResult<Option<Entry>> {
+    hdk::get_entry(&address)
+}
+
 define_zome! {
 
     entries: [
@@ -160,10 +166,25 @@ define_zome! {
         Ok(())
     }
 
-
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {{
+        if let EntryValidationData::Create{entry, ..} = validation_data {
+            let agent = entry as AgentId;
+            if agent.nick == "reject_agent::app" {
+                Err("This agent will always be rejected".into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Err("Cannot update or delete an agent at this time".into())
+        }
+    }}
 
     functions: [
-
+        get_entry: {
+            inputs: |address: Address|,
+            outputs: |result: ZomeApiResult<Option<Entry>>|,
+            handler: get_entry_handler
+        }
         create_link: {
             inputs: |base : Address,target:String|,
             outputs: |result: ZomeApiResult<()>|,
@@ -217,7 +238,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
-
+        hc_public [get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
     }
 }

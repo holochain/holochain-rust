@@ -96,6 +96,10 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///         Ok(())
 ///     }
 ///
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+///         Ok(())
+///     }
+///     
 ///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
@@ -209,6 +213,10 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     entries: []
 ///
 ///     genesis: || {
+///         Ok(())
+///     }
+///     
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
 ///

@@ -17,7 +17,9 @@ use hdk::{
     holochain_core_types::{
         entry::Entry,
         dna::entry_types::Sharing,
-        link::LinkMatch
+        link::LinkMatch,
+        agent::AgentId,
+        validation::EntryValidationData,
     },
     holochain_persistence_api::{
         cas::content::Address,
@@ -99,7 +101,25 @@ pub mod simple {
         Ok(())
     }
 
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        if let EntryValidationData::Create{entry, ..} = validation_data {
+            let agent = entry as AgentId;
+            if agent.nick == "reject_agent::app" {
+                Err("This agent will always be rejected".into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Err("Cannot update or delete an agent at this time".into())
+        }
+    }
+
     #[zome_fn("hc_public")]
+    fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+        hdk::get_entry(&address)
+    }
+
     pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
     {
         let address = hdk::commit_entry(&simple_entry(target))?;

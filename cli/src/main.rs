@@ -21,6 +21,7 @@ extern crate toml;
 extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
+extern crate tempfile;
 
 mod cli;
 mod config_files;

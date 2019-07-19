@@ -238,7 +238,10 @@ mod tests {
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
     use holochain_conductor_api::config::*;
-    use std::path::PathBuf;
+    use holochain_core_types::dna::Dna;
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use std::fs::{create_dir, File};
+    use tempfile::tempdir;
 
     #[test]
     // flagged as broken for:
@@ -289,14 +292,22 @@ mod tests {
 
     #[test]
     fn test_dna_configuration() {
-        let dna_path = PathBuf::from("/test/path");
-        let dna = super::dna_configuration(&dna_path);
+        let dna = Dna::new();
+        let temp_path = tempdir()
+            .expect("Could not get tempdir")
+            .path()
+            .join("test_dna.json");
+        create_dir(temp_path.parent().unwrap()).expect("Could not create temporary directory");
+        let out_file = File::create(&temp_path).expect("Could not create temp file for test DNA");
+        serde_json::to_writer_pretty(&out_file, &dna).expect("Could not write test DNA to file");
+
+        let dna_config = super::dna_configuration(&temp_path);
         assert_eq!(
-            dna,
+            dna_config,
             DnaConfiguration {
                 id: "hc-run-dna".to_string(),
-                file: "/test/path".to_string(),
-                hash: String::from("DNA Hash"),
+                file: temp_path.to_str().unwrap().to_string(),
+                hash: dna.address().to_string(),
             }
         )
     }

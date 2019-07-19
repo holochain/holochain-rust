@@ -654,57 +654,6 @@ impl TestNode {
     }
 
     /// See if there is a message to receive, and log it
-    /// return a Lib3hServerProtocol if the received message is of that type
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv_json(&mut self) -> NetResult<Lib3hServerProtocol> {
-        let data = self.try_recv()?;
-
-        // logging depending on received type
-        /*        match data {
-            Protocol::NamedBinary(_) => {
-                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
-                self.logger.d(&dbg_msg);
-            }
-            Protocol::Json(_) => {
-                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
-                self.logger.d(&dbg_msg);
-            }
-            Protocol::P2pReady => {
-                let dbg_msg = format!("<< ({}) recv ** P2pReady **", self.agent_id);
-                self.logger.d(&dbg_msg);
-                self.is_network_ready = true;
-                bail!("received P2pReady");
-            }
-            Protocol::Terminated => {
-                let dbg_msg = format!("<< ({}) recv ** Terminated **", self.agent_id);
-                self.logger.d(&dbg_msg);
-                self.is_network_ready = false;
-                bail!("received Terminated");
-            }
-            _ => {
-                let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
-                self.logger.t(&dbg_msg);
-            }
-        };*/
-
-        //        match Lib3hServerProtocol::try_from(&data) {
-        self.handle_lib3h(data.clone());
-        Ok(data)
-        /*Ok(r)
-            };
-            Err(e) => {
-                let s = format!("{:?}", e);
-                if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    self.logger.e(&format!(
-                        "({}) ###### Received parse error: {} | data = {:?}",
-                        self.agent_id, s, data,
-                    ));
-                }
-                Err(e)
-            }
-        }*/
-    }
-
     /// See if there is a message to receive, and log it
     /// return a Lib3hServerProtocol if the received message is of that type
     #[cfg_attr(tarpaulin, skip)]
@@ -713,23 +662,14 @@ impl TestNode {
 
         self.recv_msg_log.push(data.clone());
 
-        // logging depending on received type
-        /*        match data {
-            Protocol::NamedBinary(_) => {
-                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
-                self.logger.d(&dbg_msg);
-            }
-            Protocol::Json(_) => {
-                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
-                self.logger.d(&dbg_msg);
-            }
-            Protocol::P2pReady => {
+        match data {
+            Lib3hServerProtocol::P2pReady => {
                 let dbg_msg = format!("<< ({}) recv ** P2pReady **", self.agent_id);
                 self.logger.d(&dbg_msg);
                 self.is_network_ready = true;
                 bail!("received P2pReady");
             }
-            Protocol::Terminated => {
+            Lib3hServerProtocol::Terminated => {
                 let dbg_msg = format!("<< ({}) recv ** Terminated **", self.agent_id);
                 self.logger.d(&dbg_msg);
                 self.is_network_ready = false;
@@ -739,7 +679,7 @@ impl TestNode {
                 let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);
             }
-        };*/
+        };
 
         self.handle_lib3h(data.clone());
         Ok(data)
@@ -806,44 +746,6 @@ impl TestNode {
         self.reply_to_HandleQueryEntry(&query_data)
             .expect("Reply to HandleFetchEntry should work");
         true
-    }
-
-    /// Wait for receiving a message corresponding to predicate until timeout is reached
-    pub fn wait_json_with_timeout(
-        &mut self,
-        predicate: Box<dyn Fn(&Lib3hServerProtocol) -> bool>,
-        timeout_ms: usize,
-    ) -> Option<Lib3hServerProtocol> {
-        let mut time_ms: usize = 0;
-        loop {
-            let mut did_something = false;
-
-            if let Ok(p2p_msg) = self.try_recv_json() {
-                self.logger.i(&format!(
-                    "({})::wait_json() - received: {:?}",
-                    self.agent_id, p2p_msg
-                ));
-                did_something = true;
-                if predicate(&p2p_msg) {
-                    self.logger
-                        .i(&format!("({})::wait_json() - match", self.agent_id));
-                    return Some(p2p_msg);
-                } else {
-                    self.logger
-                        .i(&format!("({})::wait_json() - NO match", self.agent_id));
-                }
-            }
-
-            if !did_something {
-                std::thread::sleep(std::time::Duration::from_millis(10));
-                time_ms += 10;
-                if time_ms > timeout_ms {
-                    self.logger
-                        .i(&format!("({})::wait_json() has TIMEOUT", self.agent_id));
-                    return None;
-                }
-            }
-        }
     }
 
     /// Wait for receiving a message corresponding to predicate

@@ -520,7 +520,7 @@ pub fn retrack_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool
     Ok(())
 }
 
-/// Send Protocol::Shutdown
+/// Send Lib3hClientProtocol::Shutdown
 // TODO @neonphog make sure passes in context of IPC net worker
 pub fn shutdown_test(
     alex: &mut TestNode,
@@ -537,8 +537,7 @@ pub fn shutdown_test(
     let _ = alex.listen(200);
 
     // kill alex manually
-    // TODO BLOCKER
-    //    alex.send(Protocol::Shutdown.into())?;
+    alex.send(Lib3hClientProtocol::Shutdown)?;
 
     // alex should receive 'Terminated' which should set `is_network_ready` to false
     let _ = alex.wait_lib3h_with_timeout(Box::new(|_| true), 200);

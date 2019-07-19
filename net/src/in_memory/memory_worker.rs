@@ -7,7 +7,7 @@ use crate::connection::{
 };
 
 use lib3h_protocol::{
-    data_types::ConnectedData, protocol_client::Lib3hClientProtocol,
+    protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
 };
 
@@ -81,14 +81,7 @@ impl NetWorker for InMemoryWorker {
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            // TODO BLOCKER use P2pReady or ConnectedData?
-            let d = ConnectedData {
-                request_id: snowflake::ProcessUniqueId::new().to_string(),
-                uri: url::Url::parse(
-                    format!("mem://{}", self.server_name.replace(":", "_")).replace(" ", "_").as_str())
-                    .expect(format!("in memory server name as url: {:?}", self.server_name).as_str()),
-            };
-            self.handler.handle(Ok(Lib3hServerProtocol::Connected(d)))?;
+            self.handler.handle(Ok(Lib3hServerProtocol::P2pReady))?;
         }
         // check for messages from our InMemoryServer
         let mut did_something = false;
@@ -198,7 +191,7 @@ mod tests {
         memory_worker_1.tick().unwrap();
         let message = handler_recv_1.recv().unwrap();
         assert!(match message {
-            Lib3hServerProtocol::Connected(_) => true,
+            Lib3hServerProtocol::P2pReady => true,
             _ => false,
         });
         // First Track

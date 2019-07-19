@@ -234,14 +234,15 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
 
 #[cfg(test)]
 mod tests {
+    extern crate tempfile;
     // use crate::cli::init::{init, tests::gen_dir};
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
+    use self::tempfile::tempdir;
     use holochain_conductor_api::config::*;
     use holochain_core_types::dna::Dna;
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::fs::{create_dir, File};
-    use tempfile::tempdir;
 
     #[test]
     // flagged as broken for:

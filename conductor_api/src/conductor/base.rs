@@ -450,7 +450,7 @@ impl Conductor {
 
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        let _ = self.stop_all_instances()?;
+        self.stop_all_instances()?;
         self.stop_all_interfaces();
         self.signal_multiplexer_kill_switch
             .as_ref()

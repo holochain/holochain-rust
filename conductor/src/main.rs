@@ -78,7 +78,7 @@ fn main() {
                     println!("Gracefully shutting down conductor...");
                 } else {
                     println!(
-                        "Explicitly shutting down conductor. {} other threads are referencing it.",
+                        "Explicitly shutting down conductor. {} other threads were referencing it, so if unwrap errors follow, that might be why.",
                         refs - 1
                     );
                     conductor

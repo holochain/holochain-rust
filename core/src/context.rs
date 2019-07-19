@@ -378,6 +378,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         assert!(maybe_context.state().is_none());
@@ -413,6 +414,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

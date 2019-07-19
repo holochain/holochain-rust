@@ -249,7 +249,7 @@ impl InMemoryServer {
                 self.priv_send_one(
                     &dna_address,
                     &to_agent_id,
-                    Lib3hServerProtocol::FailureResult(msg.clone()).into(),
+                    Lib3hServerProtocol::FailureResult(msg.clone()),
                 )?;
             }
             Lib3hClientProtocol::JoinSpace(msg) => {

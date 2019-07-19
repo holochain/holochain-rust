@@ -107,7 +107,7 @@ impl TestNode {
         let track_dna_msg = lib3h_protocol::data_types::SpaceData {
             request_id: snowflake::ProcessUniqueId::new().to_string(),
             space_address: dna_address.clone(),
-            agent_id: agent_id.to_string().into(),
+            agent_id: agent_id
         };
         let protocol_msg = Lib3hClientProtocol::JoinSpace(track_dna_msg);
         println!("TestNode.track_dna(): {:?}", protocol_msg);
@@ -225,7 +225,7 @@ impl TestNode {
                 provider_agent_id: self.agent_id.clone(),
                 entry: entry.clone(),
             };
-            return self.send(Lib3hClientProtocol::PublishEntry(msg_data).into());
+            return self.send(Lib3hClientProtocol::PublishEntry(msg_data));
         }
         // Done
         Ok(())
@@ -283,7 +283,7 @@ impl TestNode {
             requester_agent_id: self.agent_id.clone(),
             query: vec![], // empty means give me the EntryData,
         };
-        self.send(Lib3hClientProtocol::QueryEntry(query_data.clone()).into())
+        self.send(Lib3hClientProtocol::QueryEntry(query_data.clone()))
             .expect("Sending Query failed");
         query_data
     }
@@ -366,8 +366,11 @@ impl TestNode {
         // Get Entry
         let maybe_store = self.chain_store_list.get(&fetch.space_address);
         let maybe_entry = match maybe_store {
-            None => None,
-            Some(chain_store) => chain_store.get_entry(&fetch.entry_address),
+            None => { println!("did not find chain store for space address: {}", fetch.space_address); None }
+            Some(chain_store) => {
+                println!("found chain store for space address: {}", fetch.space_address);
+                chain_store.get_entry(&fetch.entry_address)
+            }
         };
         // No entry, send failure
         if maybe_entry.is_none() {
@@ -855,6 +858,8 @@ impl TestNode {
                         msg.entry_aspect.aspect_address,
                         res.is_ok()
                     ));
+                } else {
+                    panic!("not tracking this space address: {:?}", msg);
                 }
             }
 

@@ -49,6 +49,7 @@ impl NetWorker for InMemoryWorker {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
                         let (tx, rx) = mpsc::channel();
+                        println!("register_chain: {}::{}", dna_address, track_msg.agent_id);
                         server.register_chain(&dna_address, &track_msg.agent_id, tx)?;
                         e.insert(rx);
                     }
@@ -202,7 +203,6 @@ mod tests {
                     space_address: example_dna_address(),
                     agent_id: HashString::from(AGENT_ID_1),
                 })
-                .into(),
             )
             .unwrap();
 
@@ -218,7 +218,6 @@ mod tests {
                     space_address: example_dna_address(),
                     agent_id: HashString::from(AGENT_ID_1),
                 })
-                .into(),
             )
             .unwrap();
 

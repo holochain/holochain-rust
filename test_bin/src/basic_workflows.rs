@@ -62,21 +62,21 @@ pub fn setup_two_nodes(
     let connect_result_1 = alex
         .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
-    log_i!("self connected result 1: {:?}", connect_result_1);
+    println!("self connected result 1: {:?}", connect_result_1);
     billy
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
         .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
-    log_i!("self connected result 2: {:?}", connect_result_2);
+    println!("self connected result 2: {:?}", connect_result_2);
 
     // get ipcServer IDs for each node from the IpcServer's state
     if can_connect {
         let mut _node1_id = String::new();
         let node2_binding = billy.p2p_binding.clone();
         // Connect nodes between them
-        log_i!("connect: node2_binding = {}", node2_binding);
+        println!("connect: node2_binding = {}", node2_binding);
         alex.send(
             Lib3hClientProtocol::Connect(ConnectData {
                 request_id: "alex_send_connect".into(),
@@ -90,7 +90,7 @@ pub fn setup_two_nodes(
         let result_a = alex
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
             .unwrap();
-        log_i!("got connect result A: {:?}", result_a);
+        println!("got connect result A: {:?}", result_a);
         one_let!(Lib3hServerProtocol::Connected(d) = result_a {
            assert_eq!(d.request_id, "alex_send_connect");
            assert_eq!(d.uri.to_string(), node2_binding);
@@ -98,11 +98,13 @@ pub fn setup_two_nodes(
         let result_b = billy
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
             .unwrap();
-        log_i!("got connect result B: {:?}", result_b);
+        println!("got connect result B: {:?}", result_b);
         one_let!(Lib3hServerProtocol::Connected(d) = result_b {
            assert_eq!(d.request_id, "alex_send_connect");
            assert_eq!(d.uri.to_string(), node2_binding);
         });
+    } else {
+        println!("can connect is false")
     }
 
     // Make sure we received everything we needed from network module

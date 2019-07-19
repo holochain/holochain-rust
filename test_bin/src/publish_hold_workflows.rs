@@ -48,14 +48,14 @@ pub fn publish_entry_list_test(
     // Reply to the publish_list request received from network module
     alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module after receiving list
-    let _ = alex.wait_HandleFetchEntry_and_reply();
+    assert!(alex.wait_HandleFetchEntry_and_reply());
     //    // Should receive a HandleFetchEntry request from network module for gossip
     //    let _ = alex.wait_HandleFetchEntry_and_reply();
 
     // billy might receive HandleStoreEntryAspect
     let res = billy.wait_lib3h_with_timeout(
         Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
-        2000,
+        0,
     );
 
     println!("[1] Billy got res: {:?}", res);

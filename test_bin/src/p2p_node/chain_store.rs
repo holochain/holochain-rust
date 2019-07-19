@@ -1,7 +1,7 @@
 use super::entry_store::EntryStore;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::{EntryAspectData, EntryData};
-use std::{collections::HashMap, convert::TryInto};
+use std::{collections::HashMap};
 /// Holds DNA-specific data
 pub struct ChainStore {
     dna_address: Address,
@@ -21,7 +21,7 @@ impl ChainStore {
     pub fn get_entry(&self, entry_address: &Address) -> Option<EntryData> {
         let mut has_aspects = false;
         let mut entry = EntryData {
-            entry_address: entry_address.clone().try_into().expect("entry address"),
+            entry_address: entry_address.clone(),
             aspect_list: vec![],
         };
         // Append what we have in `authored_entry_store`
@@ -56,6 +56,7 @@ impl ChainStore {
         if self.has(&entry.entry_address) {
             return Err(());
         }
+        println!("CHAIN STORE HOLD ENTRY: {:?}", entry.clone());
         self.stored_entry_store.insert_entry(entry);
         Ok(())
     }
@@ -114,7 +115,7 @@ impl ChainStore {
     ) -> Option<EntryAspectData> {
         let maybe_entry = self.get_entry(entry_address);
         if let Some(entry) = maybe_entry {
-            return entry.get(&aspect_address.clone().try_into().unwrap());
+            return entry.get(&aspect_address.clone());
         }
         None
     }

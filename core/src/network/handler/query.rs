@@ -3,7 +3,9 @@ use crate::{
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::query::{NetworkQuery, NetworkQueryResult},
+    network::query::{
+        GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+    },
     nucleus,
 };
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
@@ -17,12 +19,13 @@ fn get_links(
     base: Address,
     link_type: String,
     tag: String,
+    crud_status: Option<CrudStatus>,
 ) -> Vec<(Address, CrudStatus)> {
     context
         .state()
         .unwrap()
         .dht()
-        .get_links(base, link_type, tag)
+        .get_links(base, link_type, tag, crud_status)
         .unwrap_or(BTreeSet::new())
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
@@ -69,16 +72,22 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json = JsonString::from_json(&String::from_utf8(query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
-        Ok(NetworkQuery::GetLinks(link_type, tag)) => {
+        Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             let links = get_links(
                 &context,
                 query_data.entry_address.clone(),
                 link_type.clone(),
                 tag.clone(),
+                options,
             );
+            let links_result = match query {
+                GetLinksNetworkQuery::Links => GetLinksNetworkResult::Links(links),
+                GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
+            };
+
             ActionWrapper::new(Action::RespondGetLinks((
                 query_data,
-                links,
+                links_result,
                 link_type.clone(),
                 tag.clone(),
             )))
@@ -113,9 +122,9 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                 },
             )))
         }
-        Ok(NetworkQueryResult::Links(links, link_type, tag)) => {
+        Ok(NetworkQueryResult::Links(links_result, link_type, tag)) => {
             ActionWrapper::new(Action::HandleGetLinksResult((
-                links,
+                links_result,
                 GetLinksKey {
                     base_address: query_result_data.entry_address.clone(),
                     link_type: link_type.clone(),

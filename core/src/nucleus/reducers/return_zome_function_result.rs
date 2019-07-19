@@ -29,7 +29,6 @@ pub fn reduce_signal_zome_function(
     let action = action_wrapper.action();
     let call = unwrap_to!(action => Action::SignalZomeFunctionCall);
     state.zome_calls.insert(call.clone(), None);
-    println!("debug/reduce_signal_zome_function: zome call started: {:?}", call);
 }
 
 #[cfg(test)]

@@ -301,7 +301,7 @@ impl TestNode {
                 to_agent_id: query.requester_agent_id.clone(),
                 result_info: "Unknown query request".as_bytes().to_vec(),
             };
-            self.send(Lib3hClientProtocol::FailureResult(msg_data.clone()).into())
+            self.send(Lib3hClientProtocol::FailureResult(msg_data.clone()))
                 .expect("Sending FailureResult failed");
             return Err(msg_data);
         }
@@ -316,7 +316,7 @@ impl TestNode {
         // HandleFetchEntry
         let fetch_res = self.reply_to_HandleFetchEntry_inner(&fetch);
         if let Err(res) = fetch_res {
-            self.send(Lib3hClientProtocol::FailureResult(res.clone()).into())
+            self.send(Lib3hClientProtocol::FailureResult(res.clone()))
                 .expect("Sending FailureResult failed");
             return Err(res);
         }
@@ -329,7 +329,7 @@ impl TestNode {
             responder_agent_id: self.agent_id.clone(),
             query_result: bincode::serialize(&fetch_res.unwrap().entry).unwrap(),
         };
-        self.send(Lib3hClientProtocol::HandleQueryEntryResult(query_res.clone()).into())
+        self.send(Lib3hClientProtocol::HandleQueryEntryResult(query_res.clone()))
             .expect("Sending FailureResult failed");
         return Ok(query_res);
     }
@@ -396,13 +396,13 @@ impl TestNode {
         assert!(self.current_dna.is_some());
         let dna_address = self.current_dna.clone().unwrap();
         let request_id = self.generate_request_id();
-        let from_agent_id = self.agent_id.to_string();
+        let from_agent_id = self.agent_id.clone();
 
         let msg_data = DirectMessageData {
             space_address: dna_address,
             request_id: request_id.clone(),
-            to_agent_id: to_agent_id.to_string().into(),
-            from_agent_id: from_agent_id.to_string().into(),
+            to_agent_id : to_agent_id.clone(),
+            from_agent_id,
             content,
         };
         self.send(Lib3hClientProtocol::SendDirectMessage(msg_data))
@@ -414,7 +414,7 @@ impl TestNode {
     pub fn send_response_json(&mut self, msg: DirectMessageData, response_content: Vec<u8>) {
         assert!(self.current_dna.is_some());
         let current_dna = self.current_dna.clone().unwrap();
-        assert_eq!(msg.space_address, current_dna.clone().into());
+        assert_eq!(msg.space_address, current_dna.clone());
         assert_eq!(msg.to_agent_id, self.agent_id);
         let response = DirectMessageData {
             space_address: msg.space_address.clone(),
@@ -423,7 +423,7 @@ impl TestNode {
             from_agent_id: msg.to_agent_id.clone(),
             content: response_content,
         };
-        self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()).into())
+        self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()))
             .expect("Sending HandleSendMessageResult failed");
     }
 
@@ -446,7 +446,7 @@ impl TestNode {
             from_agent_id: self.agent_id.to_string().into(),
             content: response_content.into(),
         };
-        self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()).into())
+        self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(response.clone()))
             .expect("Sending HandleSendMessageResult failed");
     }
 }
@@ -481,7 +481,7 @@ impl TestNode {
                 provider_agent_id: self.agent_id.clone(),
             };
         }
-        self.send(Lib3hClientProtocol::HandleGetAuthoringEntryListResult(msg).into())
+        self.send(Lib3hClientProtocol::HandleGetAuthoringEntryListResult(msg))
     }
     /// Look for the first HandleGetAuthoringEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetAuthoringEntryList(&mut self) {
@@ -524,7 +524,7 @@ impl TestNode {
                 provider_agent_id: self.agent_id.clone(),
             };
         }
-        self.send(Lib3hClientProtocol::HandleGetGossipingEntryListResult(msg).into())
+        self.send(Lib3hClientProtocol::HandleGetGossipingEntryListResult(msg))
     }
     /// Look for the first HandleGetHoldingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetHoldingEntryList(&mut self) {

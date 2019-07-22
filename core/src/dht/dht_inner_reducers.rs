@@ -50,16 +50,21 @@ pub(crate) fn reduce_add_remove_link_inner(
     link_modification: LinkModification,
 ) -> HcResult<Address> {
     if (*store.content_storage().read()?).contains(link.base())? {
-        let attr = match link_modification {
+        match link_modification {
             LinkModification::Add => {
-                Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
+                let attr = Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string());
+                let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
+                store.meta_storage().write()?.add_eavi(&eav)?;
+                //cache data here
+                let target_eav = EntityAttributeValueIndex::new(address,&Attribute::Target,link.target())?;
+                store.meta_storage().write()?.add_eavi(&target_eav)?;
             }
             LinkModification::Remove => {
-                Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+                let attr = Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string());
+                let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
+                store.meta_storage().write()?.add_eavi(&eav)?;
             }
         };
-        let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
-        store.meta_storage().write()?.add_eavi(&eav)?;
         Ok(link.base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(String::from(

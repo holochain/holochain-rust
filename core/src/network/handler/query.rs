@@ -8,11 +8,11 @@ use crate::{
     },
     nucleus,
 };
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader,error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
-use holochain_persistence_api::cas::content::Address;
-use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
+use holochain_persistence_api::{cas::content::Address,eav::Value};
+use std::{convert::TryInto, sync::Arc};
 
 fn get_links(
     context: &Arc<Context>,
@@ -20,16 +20,37 @@ fn get_links(
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-) -> Vec<(Address, CrudStatus)> {
-    context
+) -> Result<Vec<(Address, CrudStatus,Value)>,HolochainError> {
+    //get links
+    let dht_store = context
         .state()
         .unwrap()
-        .dht()
+        .dht();
+    
+    let (get_link ,error) : (Vec<_>,Vec<_>) = dht_store
         .get_links(base, link_type, tag, crud_status)
-        .unwrap_or(BTreeSet::new())
+        .unwrap_or_default()
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
-        .collect::<Vec<_>>()
+        .map(|eav_crud|{
+            dht_store
+            .get_link_targets(eav_crud.0.clone())
+            .map(|targets|{
+                targets.iter().last().map(|last_target|{
+                   Ok((eav_crud.0,eav_crud.1,last_target.value())) 
+                }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
+            }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
+        }).partition(Result::is_ok);
+
+        //if can't find target don't return
+        if error.is_empty()
+        {
+            Err(HolochainError::ErrorGeneric("Could not find targets in local dht".to_string()))
+        }
+        else
+        {
+            Ok(get_link.iter().map(|s|s.clone().unwrap()).collect::<Vec<_>>())
+        }
 }
 
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
@@ -79,7 +100,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
                 options,
-            );
+            ).expect("Could not get_links from dht node");
             let links_result = match query {
                 GetLinksNetworkQuery::Links => GetLinksNetworkResult::Links(links),
                 GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),

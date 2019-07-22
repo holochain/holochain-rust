@@ -1,6 +1,6 @@
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::{cas::content::Address,eav::Value};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum GetLinksNetworkQuery {
@@ -8,10 +8,11 @@ pub enum GetLinksNetworkQuery {
     Links,
 }
 
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum GetLinksNetworkResult {
     Count(usize),
-    Links(Vec<(Address, CrudStatus)>),
+    Links(Vec<(Address, CrudStatus,Value)>),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

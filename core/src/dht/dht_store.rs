@@ -108,6 +108,7 @@ pub fn create_get_links_eavi_query<'a>(
     ))
 }
 
+
 impl DhtStore {
     // LifeCycle
     // =========
@@ -154,6 +155,19 @@ impl DhtStore {
             })
             .filter(|link_crud| crud_filter.map(|crud| crud == link_crud.1).unwrap_or(true))
             .collect())
+    }
+
+
+   
+    pub fn get_link_targets(&self, address:Address) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>
+    {
+        let query = EaviQuery::new(
+            Some(address.to_owned()).into(),
+            EavFilter::single(Attribute::Target),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            None);
+        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
     }
 
     pub fn get_all_metas(

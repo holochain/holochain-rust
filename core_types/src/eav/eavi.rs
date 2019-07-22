@@ -44,6 +44,7 @@ pub enum Attribute {
     LinkTag(String, String),
     RemovedLink(String, String),
     PendingEntry,
+    Target
 }
 
 impl Default for Attribute {
@@ -82,6 +83,7 @@ impl fmt::Display for Attribute {
                 write!(f, "removed_link__{}__{}", link_type, tag)
             }
             Attribute::PendingEntry => write!(f, "pending-entry"),
+            Attribute::Target => write!(f,"target")
         }
     }
 }

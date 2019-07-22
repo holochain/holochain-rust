@@ -99,6 +99,8 @@ pub async fn hold_link_workflow(
     // 3. If valid store the entry in the local DHT shard
     await!(add_link(&link_add, &context))?;
     context.log(format!("debug/workflow/hold_link: added! {:?}", link));
+
+    //4. EAV add target to address where we only have one look up
     Ok(())
 }
 

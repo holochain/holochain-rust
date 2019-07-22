@@ -16,6 +16,12 @@ pub struct ReceiveCallback {
 }
 
 #[derive(Clone, PartialEq, Debug)]
+pub struct ValidateAgentCallback {
+    pub validation_data_param: Ident,
+    pub code: syn::Block,
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct FnParameter {
     pub ident: Ident,
     pub ty: syn::TypePath,
@@ -74,6 +80,7 @@ pub type EntryDefCallbacks = Vec<EntryDefCallback>;
 
 pub struct ZomeCodeDef {
     pub genesis: GenesisCallback,
+    pub validate_agent: ValidateAgentCallback,
     pub zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
     pub entry_def_fns: Vec<syn::ItemFn>,
     pub traits: ZomeTraits,

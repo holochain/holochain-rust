@@ -34,6 +34,7 @@ fn get_links(
         .unwrap_or_default()
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1,eav_crud.0.attribute()))
+        //get tag
         .map(|eav_crud|{
             let tag = match eav_crud.2
             {
@@ -58,18 +59,18 @@ fn get_links(
         .map(|address_crud_target|{
             if headers
             {
-                address_crud_target.map(|a_c_t_t|{
+                address_crud_target.map(|(address,crud_status,target,tag)|{
                   dht_store
-                  .get_headers(a_c_t_t.0.clone())
+                  .get_headers(address.clone())
                   .map(|header|{
-                      Ok(GetLinkData::new(a_c_t_t.0,a_c_t_t.1,a_c_t_t.2,a_c_t_t.3,Some(header)))
+                      Ok(GetLinkData::new(address,crud_status,target,tag,Some(header)))
                   })
                   .unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
               }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
             }
             else
             {
-                address_crud_target.map(|a_c_t_t|{GetLinkData::new(a_c_t_t.0,a_c_t_t.1,a_c_t_t.2,a_c_t_t.3,None)})
+                address_crud_target.map(|(address,crud_status,target,tag)|{GetLinkData::new(address,crud_status,target,tag,None)})
             }
         })
         .partition(Result::is_ok);

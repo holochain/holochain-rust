@@ -253,6 +253,7 @@ impl InMemoryServer {
                 )?;
             }
             Lib3hClientProtocol::JoinSpace(msg) => {
+                println!("JOIN SPACE: {:?}", msg);
                 let dna_address = msg.space_address.clone();
                 let agent_id = msg.agent_id.clone();
 

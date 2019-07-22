@@ -31,7 +31,7 @@ pub fn setup_three_nodes(
     alex.track_dna(dna_address, true)
         .expect("Failed sending TrackDna on alex");
     let connect_result_1 = alex
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
     println!("self connected result 1: {:?}", connect_result_1);
     // billy
@@ -39,7 +39,7 @@ pub fn setup_three_nodes(
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on billy");
     let connect_result_2 = billy
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_2);
     // camille
@@ -47,7 +47,7 @@ pub fn setup_three_nodes(
         .track_dna(dna_address, true)
         .expect("Failed sending TrackDna on camille");
     let connect_result_3 = camille
-        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::P2pReady)))
         .unwrap();
     println!("self connected result 2: {:?}", connect_result_3);
 

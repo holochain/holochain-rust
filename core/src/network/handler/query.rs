@@ -5,13 +5,14 @@ use crate::{
     instance::dispatch_action,
     network::query::{
         GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+        GetLinkData
     },
     nucleus,
 };
 use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader,error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
-use holochain_persistence_api::{cas::content::Address,eav::Value};
+use holochain_persistence_api::{cas::content::Address};
 use std::{convert::TryInto, sync::Arc};
 
 fn get_links(
@@ -20,7 +21,8 @@ fn get_links(
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-) -> Result<Vec<(Address, CrudStatus,Value)>,HolochainError> {
+    headers : bool
+) -> Result<Vec<GetLinkData>,HolochainError> {
     //get links
     let dht_store = context
         .state()
@@ -32,17 +34,40 @@ fn get_links(
         .unwrap_or_default()
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
+        //get targets from dht
         .map(|eav_crud|{
             dht_store
             .get_link_targets(eav_crud.0.clone())
             .map(|targets|{
                 targets.iter().last().map(|last_target|{
-                   Ok((eav_crud.0,eav_crud.1,last_target.value())) 
+                    println!("last target");
+                    Ok((eav_crud.0,eav_crud.1,last_target.value()))
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
-            }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
-        }).partition(Result::is_ok);
+            })
+            .unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
+        })
+        //get address from dht
+        .map(|address_crud_target|{
+            if headers
+            {
+                address_crud_target.map(|a_c_t|{GetLinkData::new(a_c_t.0,a_c_t.1,a_c_t.2,None)})
+            }
+            else
+            {
+              address_crud_target.map(|a_c_t|{
+                  dht_store
+                  .get_headers(a_c_t.0.clone())
+                  .map(|header|{
+                      println!("get headers");
+                      Ok(GetLinkData::new(a_c_t.0,a_c_t.1,a_c_t.2,Some(header)))
+                  })
+                  .unwrap_or(Err(HolochainError::ErrorGeneric("Coult not get headers".to_string())))
+              }).unwrap_or(Err(HolochainError::ErrorGeneric("Coult not get headers".to_string())))
+            }
+        })
+        .partition(Result::is_ok);
 
-        //if can't find target don't return
+        //if can't find target throw error
         if error.is_empty()
         {
             Err(HolochainError::ErrorGeneric("Could not find targets in local dht".to_string()))
@@ -100,9 +125,10 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
                 options,
+                match query{GetLinksNetworkQuery::Links(get_headers) => get_headers, _ => false}
             ).expect("Could not get_links from dht node");
             let links_result = match query {
-                GetLinksNetworkQuery::Links => GetLinksNetworkResult::Links(links),
+                GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
                 GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
             };
 

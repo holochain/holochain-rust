@@ -300,7 +300,7 @@ pub mod tests {
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             &get_links_args,
-            GetLinksNetworkQuery::Links,
+            GetLinksNetworkQuery::Links(true),
         ));
 
         assert!(maybe_links.is_ok());
@@ -309,10 +309,10 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            (links[0] == (entry_addresses[1].clone(), CrudStatus::Live)
-                || links[0] == (entry_addresses[2].clone(), CrudStatus::Live))
-                && (links[1] == (entry_addresses[1].clone(), CrudStatus::Live)
-                    || links[1] == (entry_addresses[2].clone(), CrudStatus::Live))
+            ((links[0].address.clone(),links[0].crud_status.clone()) == (entry_addresses[1].clone(), CrudStatus::Live)
+                || (links[0].address.clone(),links[0].crud_status.clone()) == (entry_addresses[2].clone(), CrudStatus::Live))
+                && ((links[1].address.clone(),links[0].crud_status.clone()) == (entry_addresses[1].clone(), CrudStatus::Live)
+                    || (links[1].address.clone(),links[0].crud_status.clone()) == (entry_addresses[2].clone(), CrudStatus::Live))
         );
     }
 }

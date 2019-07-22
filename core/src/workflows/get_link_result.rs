@@ -4,108 +4,41 @@ use crate::{
         actions::get_links::get_links,
         query::{GetLinksNetworkQuery, GetLinksNetworkResult},
     },
-    workflows::get_entry_result::get_entry_result_workflow,
 };
 
-use holochain_core_types::{
-    chain_header::ChainHeader, crud_status::CrudStatus, entry::Entry, error::HolochainError,
-    link::link_data::LinkData,
-};
-use holochain_wasm_utils::api_serialization::{
-    get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType::Single},
-    get_links::{GetLinksArgs, GetLinksResult, LinksResult},
-};
+use holochain_core_types::error::HolochainError;
+use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult, LinksResult};
 use std::sync::Arc;
 
 pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
-    let links = await!(get_link_add_entries(context, link_args))?;
-    //get links based on status request, all for everything, deleted for deleted links and live for active links
-    let link_results = links
-        .into_iter()
-        .map(|link_entry_crud| LinksResult {
-            address: link_entry_crud.0.link().target().clone(),
-            headers: link_entry_crud.1.clone(),
-            status: link_entry_crud.2.clone(),
-            tag: link_entry_crud.0.link().tag().clone(),
-        })
-        .collect::<Vec<LinksResult>>();
-
-    Ok(GetLinksResult::new(link_results))
-}
-
-pub async fn get_link_add_entries<'a>(
-    context: &'a Arc<Context>,
-    link_args: &'a GetLinksArgs,
-) -> Result<Vec<(LinkData, Vec<ChainHeader>, CrudStatus)>, HolochainError> {
-    //get link add entries
     let links_result = await!(get_links(
         context.clone(),
         link_args,
-        GetLinksNetworkQuery::Links
+        GetLinksNetworkQuery::Links(link_args.options.headers)
     ))?;
 
-    //iterate over link add entries
-    let links_caches = match links_result {
-        GetLinksNetworkResult::Links(links_caches) => Ok(links_caches),
-        _ => Err(HolochainError::ErrorGeneric(
-            "Should only get link caches".to_string(),
-        )),
-    }?;
-    let (links_result, get_links_error): (Vec<_>, Vec<_>) = links_caches
-        .iter()
-        .map(|s| {
-            //create get entry args
-            let get_entry_args = GetEntryArgs {
-                address: s.0.clone(),
-                options: GetEntryOptions {
-                    entry: true,
-                    headers: link_args.options.headers,
-                    timeout: link_args.options.timeout.clone(),
-                    ..GetEntryOptions::default()
-                },
-            };
-            //get entry for the link_add
-            let entry_result =
-                context.block_on(get_entry_result_workflow(&context.clone(), &get_entry_args));
-            entry_result
-                .map(|link_entry_result| match link_entry_result.result {
-                    Single(entry_type) => entry_type
-                        .entry
-                        .clone()
-                        .map(|unwrapped_type| match unwrapped_type {
-                            Entry::LinkAdd(link_data) => {
-                                //return link, header and crud_status
-                                Ok((link_data, entry_type.headers, s.1.clone()))
-                            }
-                            _ => Err(HolochainError::ErrorGeneric(
-                                "Wrong entry type retrieved".to_string(),
-                            )),
-                        })
-                        .unwrap_or(Err(HolochainError::ErrorGeneric(
-                            "Could not obtain Entry".to_string(),
-                        ))),
-                    _ => Err(HolochainError::ErrorGeneric(
-                        "Status Kind Of Lastest Requested".to_string(),
-                    )),
-                })
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "expected entry of type link".to_string(),
-                )))
-        })
-        .partition(Result::is_ok);
-
-    if get_links_error.is_empty() {
-        Ok(links_result
+    match links_result
+    {
+        GetLinksNetworkResult::Links(links) =>
+        {
+            let get_links_result = links
             .into_iter()
-            .map(|s| s.unwrap())
-            .collect::<Vec<_>>())
-    } else {
-        Err(HolochainError::ErrorGeneric(format!(
-            "Could not get links: {:?}",
-            get_links_error
-        )))
+            .map(|get_entry_crud| LinksResult {
+                address: get_entry_crud.target.clone(),
+                headers: get_entry_crud.headers.unwrap_or_default(),
+                status: get_entry_crud.crud_status.clone(),
+                tag: link_args.tag.clone(),
+            })
+            .collect::<Vec<LinksResult>>();
+
+            Ok(GetLinksResult::new(get_links_result))
+
+        },
+        _ => Err(HolochainError::ErrorGeneric("Could not get links".to_string()))
     }
 }
+
+

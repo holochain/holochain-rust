@@ -102,7 +102,7 @@ mod tests {
         let action_wrapper = ActionWrapper::new(Action::GetLinks((
             key.clone(),
             None,
-            GetLinksNetworkQuery::Links,
+            GetLinksNetworkQuery::Links(true),
         )));
 
         let store = store.reduce(action_wrapper);

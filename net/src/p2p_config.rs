@@ -153,8 +153,18 @@ impl P2pConfig {
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            BackendConfig::Json(Self::memory_backend_json(server_name)),
-            None,
+            BackendConfig::Lib3h(
+                RealEngineConfig {
+                    tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
+                    socket_type: "mem".into(),
+                    bootstrap_nodes: vec![],
+                    work_dir: "".into(),
+                    log_level: 'd',
+                    bind_url: url::Url::parse(format!("mem://{}", server_name).as_str())
+                        .expect(format!("invalid memory server url: {}", server_name).as_str()),
+                    dht_custom_config: vec![],
+                }),
+                None,
         )
     }
 

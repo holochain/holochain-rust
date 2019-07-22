@@ -125,9 +125,9 @@ impl P2pNetwork {
 
     fn should_wait_for_p2p_ready(p2p_config : &P2pConfig) -> bool {
         match p2p_config.backend_kind {
-            P2pBackendKind::N3H |
-            P2pBackendKind::MEMORY => true,
-            P2pBackendKind::LIB3H => false
+            P2pBackendKind::LIB3H |
+            P2pBackendKind::MEMORY => false,
+            P2pBackendKind::N3H => true
         }
     }
 

@@ -56,11 +56,13 @@ pub(crate) fn reduce_add_remove_link_inner(
                 let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
                 store.meta_storage().write()?.add_eavi(&eav)?;
                 //cache data here
-                let target_eav = EntityAttributeValueIndex::new(address,&Attribute::Target,link.target())?;
+                let target_eav =
+                    EntityAttributeValueIndex::new(address, &Attribute::Target, link.target())?;
                 store.meta_storage().write()?.add_eavi(&target_eav)?;
             }
             LinkModification::Remove => {
-                let attr = Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string());
+                let attr =
+                    Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string());
                 let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
                 store.meta_storage().write()?.add_eavi(&eav)?;
             }

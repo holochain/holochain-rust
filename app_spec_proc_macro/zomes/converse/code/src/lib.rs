@@ -27,6 +27,11 @@ pub mod converse {
         Ok(())
     }
 
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        Ok(())
+    }
+
     #[zome_fn("hc_public")]
     pub fn sign_message(key_id: String, message: String) -> ZomeApiResult<Signature> {
         if key_id == "" {

@@ -1,25 +1,27 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse, query::NetworkQueryResult, reducers::send, state::NetworkState,
+        actions::ActionResponse,
+        query::{GetLinksNetworkResult, NetworkQueryResult},
+        reducers::send,
+        state::NetworkState,
     },
     state::State,
 };
-use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::{
     data_types::{QueryEntryData, QueryEntryResultData},
     protocol_client::Lib3hClientProtocol,
 };
 
-use holochain_persistence_api::cas::content::Address;
 
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_links_inner(
     network_state: &mut NetworkState,
     query_data: &QueryEntryData,
-    links: &Vec<(Address, CrudStatus)>,
+    links: &GetLinksNetworkResult,
     link_type: String,
     tag: String,
 ) -> Result<(), HolochainError> {

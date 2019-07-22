@@ -3,13 +3,25 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+pub enum GetLinksNetworkQuery {
+    Count,
+    Links,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+pub enum GetLinksNetworkResult {
+    Count(usize),
+    Links(Vec<(Address, CrudStatus)>),
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum NetworkQuery {
     GetEntry,
-    GetLinks(String, String),
+    GetLinks(String, String, Option<CrudStatus>, GetLinksNetworkQuery),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
-    Links(Vec<(Address, CrudStatus)>, String, String),
+    Links(GetLinksNetworkResult, String, String),
 }

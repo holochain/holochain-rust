@@ -204,6 +204,7 @@ fn run() -> HolochainResult<()> {
     let project_path =
         std::env::current_dir().map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
     match args {
+        // If using default path, we'll create if necessary; otherwise, target dir must exist
         Cli::Package { strip_meta, output } => {
             let output = if output.is_some() {
                 output.unwrap()

@@ -21,6 +21,9 @@ use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     sync::{mpsc, Mutex, RwLock},
 };
+use lib3h_protocol::data_types::ConnectedData;
+use url::Url;
+use std::str::FromStr;
 
 type RequestId = String;
 
@@ -256,6 +259,8 @@ impl InMemoryServer {
                 let dna_address = msg.space_address.clone();
                 let agent_id = msg.agent_id.clone();
 
+                println!("JOINING SPACE: dna({}), agent({})", dna_address.to_string(), agent_id.to_string());
+
                 // Check if we are already tracking this dna for this agent
                 let chain_id = into_chain_id(&dna_address, &agent_id);
                 if self.trackdna_book.contains(&chain_id) {
@@ -267,7 +272,15 @@ impl InMemoryServer {
                     return Ok(());
                 }
                 self.trackdna_book.insert(chain_id);
-                // TODO return a success response to join space
+
+                self.priv_send_one(
+                    &dna_address,
+                    &agent_id,
+                    Lib3hServerProtocol::Connected(ConnectedData{
+                        request_id: msg.request_id,
+                        uri: Url::from_str("memory:://0.0.0.0").unwrap(),
+                    }),
+                )?;
                 self.priv_request_all_lists(&dna_address, &agent_id);
             }
 

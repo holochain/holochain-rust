@@ -116,6 +116,7 @@ impl TryFrom<&str> for Attribute {
                 "link" => Ok(Link),
                 "link_remove" => Ok(LinkRemove),
                 "pending-entry" => Ok(PendingEntry),
+                "target" =>Ok(Target),
                 a => Err(AttributeError::Unrecognized(a.to_string())),
             }
         }

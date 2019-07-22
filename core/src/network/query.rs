@@ -14,18 +14,20 @@ pub struct GetLinkData
     pub address : Address,
     pub crud_status : CrudStatus,
     pub target : Value,
+    pub tag : String,
     pub headers : Option<Vec<ChainHeader>>
 }
 
 impl GetLinkData
 {
-    pub fn new(address:Address,crud_status:CrudStatus,target:Value,headers:Option<Vec<ChainHeader>>) -> GetLinkData
+    pub fn new(address:Address,crud_status:CrudStatus,target:Value,tag:String,headers:Option<Vec<ChainHeader>>) -> GetLinkData
     {
         GetLinkData
         {
             address,
             crud_status,
             target,
+            tag,
             headers
         }
     }

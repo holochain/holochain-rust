@@ -9,10 +9,10 @@ use crate::{
     },
     nucleus,
 };
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader,error::HolochainError};
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader,error::HolochainError,eav::Attribute};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
-use holochain_persistence_api::{cas::content::Address};
+use holochain_persistence_api::cas::content::Address;
 use std::{convert::TryInto, sync::Arc};
 
 fn get_links(
@@ -33,15 +33,23 @@ fn get_links(
         .get_links(base, link_type, tag, crud_status)
         .unwrap_or_default()
         .into_iter()
-        .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
+        .map(|eav_crud| (eav_crud.0.value(), eav_crud.1,eav_crud.0.attribute()))
+        .map(|eav_crud|{
+            let tag = match eav_crud.2
+            {
+                Attribute::LinkTag(_,tag) => Ok(tag),
+                Attribute::RemovedLink(_,tag) => Ok(tag),
+                _ =>  Err(HolochainError::ErrorGeneric("Could not get tag".to_string()))
+            }.expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
+            (eav_crud.0,eav_crud.1,tag)
+        })
         //get targets from dht
         .map(|eav_crud|{
             dht_store
             .get_link_targets(eav_crud.0.clone())
             .map(|targets|{
                 targets.iter().last().map(|last_target|{
-                    println!("last target");
-                    Ok((eav_crud.0,eav_crud.1,last_target.value()))
+                    Ok((eav_crud.0,eav_crud.1,last_target.value(),eav_crud.2))
                 }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
             })
             .unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
@@ -50,19 +58,18 @@ fn get_links(
         .map(|address_crud_target|{
             if headers
             {
-                address_crud_target.map(|a_c_t|{GetLinkData::new(a_c_t.0,a_c_t.1,a_c_t.2,None)})
+                address_crud_target.map(|a_c_t_t|{
+                  dht_store
+                  .get_headers(a_c_t_t.0.clone())
+                  .map(|header|{
+                      Ok(GetLinkData::new(a_c_t_t.0,a_c_t_t.1,a_c_t_t.2,a_c_t_t.3,Some(header)))
+                  })
+                  .unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
+              }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
             }
             else
             {
-              address_crud_target.map(|a_c_t|{
-                  dht_store
-                  .get_headers(a_c_t.0.clone())
-                  .map(|header|{
-                      println!("get headers");
-                      Ok(GetLinkData::new(a_c_t.0,a_c_t.1,a_c_t.2,Some(header)))
-                  })
-                  .unwrap_or(Err(HolochainError::ErrorGeneric("Coult not get headers".to_string())))
-              }).unwrap_or(Err(HolochainError::ErrorGeneric("Coult not get headers".to_string())))
+                address_crud_target.map(|a_c_t_t|{GetLinkData::new(a_c_t_t.0,a_c_t_t.1,a_c_t_t.2,a_c_t_t.3,None)})
             }
         })
         .partition(Result::is_ok);
@@ -70,11 +77,11 @@ fn get_links(
         //if can't find target throw error
         if error.is_empty()
         {
-            Err(HolochainError::ErrorGeneric("Could not find targets in local dht".to_string()))
+            Ok(get_link.iter().map(|s|s.clone().unwrap()).collect::<Vec<_>>())
         }
         else
         {
-            Ok(get_link.iter().map(|s|s.clone().unwrap()).collect::<Vec<_>>())
+            Err(HolochainError::ErrorGeneric("Could not find targets in local dht".to_string()))
         }
 }
 

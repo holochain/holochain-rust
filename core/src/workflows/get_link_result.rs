@@ -30,7 +30,7 @@ pub async fn get_link_result_workflow<'a>(
                 address: get_entry_crud.target.clone(),
                 headers: get_entry_crud.headers.unwrap_or_default(),
                 status: get_entry_crud.crud_status.clone(),
-                tag: link_args.tag.clone(),
+                tag: get_entry_crud.tag.clone()
             })
             .collect::<Vec<LinksResult>>();
 

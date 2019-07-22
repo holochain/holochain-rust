@@ -77,14 +77,12 @@ pub fn setup_two_nodes(
         let node2_binding = billy.p2p_binding.clone();
         // Connect nodes between them
         println!("connect: node2_binding = {}", node2_binding);
-        alex.send(
-            Lib3hClientProtocol::Connect(ConnectData {
-                request_id: "alex_send_connect".into(),
-                peer_uri: url::Url::parse(node2_binding.as_str())
-                    .expect(format!("malformed node2 url: {:?}", node2_binding).as_str()),
-                network_id: "alex_to_node2".into(),
-            })
-        )?;
+        alex.send(Lib3hClientProtocol::Connect(ConnectData {
+            request_id: "alex_send_connect".into(),
+            peer_uri: url::Url::parse(node2_binding.as_str())
+                .expect(format!("malformed node2 url: {:?}", node2_binding).as_str()),
+            network_id: "alex_to_node2".into(),
+        }))?;
 
         // Make sure Peers are connected
         let result_a = alex

@@ -1,7 +1,7 @@
 use super::entry_store::EntryStore;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::{EntryAspectData, EntryData};
-use std::{collections::HashMap};
+use std::collections::HashMap;
 /// Holds DNA-specific data
 pub struct ChainStore {
     dna_address: Address,

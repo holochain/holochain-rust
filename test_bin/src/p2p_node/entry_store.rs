@@ -3,7 +3,7 @@ use holochain_net::tweetlog::*;
 use lib3h_protocol::data_types::{EntryAspectData, EntryData};
 
 use holochain_persistence_api::cas::content::Address;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 pub struct EntryStore {
     // TODO: Changed once meta is only Addresses
@@ -29,11 +29,7 @@ impl EntryStore {
 
     ///
     pub fn insert_entry(&mut self, entry: &EntryData) {
-        println!(
-            //"entrystore"
-            "EntryStore: adding content for '{:?}'",
-            entry.entry_address
-        );
+        println!("entrystore" "EntryStore: adding content for '{:?}'", entry.entry_address);
         if self.store.get(&entry.entry_address).is_none() {
             let mut map = HashMap::new();
             log_tt!("entrystore", "  -> first content!");
@@ -53,10 +49,7 @@ impl EntryStore {
     ///
     pub fn insert_aspect(&mut self, entry_address: &Address, aspect: &EntryAspectData) {
         println!(
-            //"entrystore",
-            "EntryStore: adding content for '{}': {:?}",
-            entry_address,
-            aspect.aspect_address,
+            //"entrystore", "EntryStore: adding content for '{}': {:?}", entry_address, aspect.aspect_address,
         );
         if self.store.get(&entry_address).is_none() {
             let mut map = HashMap::new();
@@ -78,7 +71,7 @@ impl EntryStore {
             None
         } else {
             Some(EntryData {
-                entry_address : entry_address.clone(),
+                entry_address: entry_address.clone(),
                 aspect_list,
             })
         };
@@ -94,9 +87,7 @@ impl EntryStore {
         if maybe_entry.is_none() {
             return None;
         }
-        return maybe_entry
-            .unwrap()
-            .get(&aspect_address.clone());
+        return maybe_entry.unwrap().get(&aspect_address.clone());
     }
 
     //    /// Get all values stored

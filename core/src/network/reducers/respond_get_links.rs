@@ -14,11 +14,9 @@ use lib3h_protocol::{
     data_types::{QueryEntryData, QueryEntryResultData},
     protocol_client::Lib3hClientProtocol,
 };
-<<<<<<< HEAD
 
 use holochain_persistence_api::cas::content::Address;
-=======
->>>>>>> fd17b20bbeeb1c98f31443e13029943d84288ae0
+
 
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.

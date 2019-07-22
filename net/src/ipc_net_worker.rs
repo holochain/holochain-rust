@@ -9,9 +9,10 @@ use crate::connection::{
     NetResult,
 };
 
-use lib3h_protocol::data_types::ConnectData;
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
-use lib3h_protocol::protocol_server::Lib3hServerProtocol;
+use lib3h_protocol::{
+    data_types::ConnectData, protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
 
 use std::collections::HashMap;
 
@@ -99,7 +100,13 @@ impl IpcNetWorker {
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;
         // Done
-        IpcNetWorker::priv_new(handler, ipc_binding, Some(spawn_result.p2p_bindings[0].clone()), kill, bootstrap_nodes)
+        IpcNetWorker::priv_new(
+            handler,
+            ipc_binding,
+            Some(spawn_result.p2p_bindings[0].clone()),
+            kill,
+            bootstrap_nodes,
+        )
     }
 
     /// Constructor without config
@@ -232,16 +239,14 @@ impl IpcNetWorker {
                 Ok(uri) => uri,
                 Err(e) => {
                     self.log.w(&format!("{:?}: {:?}", e, bs_node.as_str()));
-                    continue
+                    continue;
                 }
             };
-            self.receive(
-                Lib3hClientProtocol::Connect(ConnectData {
-                    request_id: snowflake::ProcessUniqueId::new().to_string(),
-                    peer_uri: uri,
-                    network_id: "".to_string(),
-                })
-            )?
+            self.receive(Lib3hClientProtocol::Connect(ConnectData {
+                request_id: snowflake::ProcessUniqueId::new().to_string(),
+                peer_uri: uri,
+                network_id: "".to_string(),
+            }))?
         }
 
         Ok(())

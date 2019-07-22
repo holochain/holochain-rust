@@ -80,21 +80,21 @@ impl P2pNetwork {
         let tx = t.clone();
         let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
             NetHandler::new(Box::new(move |message| {
-            let unwrapped = message.unwrap();
-            let message = unwrapped.clone();
-            match Lib3hServerProtocol::try_from(unwrapped.clone()) {
-                Ok(Lib3hServerProtocol::P2pReady) => {
-                    tx.send(Lib3hServerProtocol::P2pReady).ok();
-                    log_d!("net/p2p_network: sent P2pReady event")
-                }
-                Ok(_msg) => {}
-                Err(_protocol_error) => {
-                    // TODO why can't I use the above variable?
-                    // Generates compiler error.
-                }
-            };
-            handler.handle(Ok(message))
-        }))
+                let unwrapped = message.unwrap();
+                let message = unwrapped.clone();
+                match Lib3hServerProtocol::try_from(unwrapped.clone()) {
+                    Ok(Lib3hServerProtocol::P2pReady) => {
+                        tx.send(Lib3hServerProtocol::P2pReady).ok();
+                        log_d!("net/p2p_network: sent P2pReady event")
+                    }
+                    Ok(_msg) => {}
+                    Err(_protocol_error) => {
+                        // TODO why can't I use the above variable?
+                        // Generates compiler error.
+                    }
+                };
+                handler.handle(Ok(message))
+            }))
         } else {
             handler
         };
@@ -117,23 +117,20 @@ impl P2pNetwork {
         Ok(P2pNetwork { connection })
     }
 
-    fn should_wait_for_p2p_ready(p2p_config : &P2pConfig) -> bool {
+    fn should_wait_for_p2p_ready(p2p_config: &P2pConfig) -> bool {
         match p2p_config.backend_kind {
-            P2pBackendKind::N3H |
-            P2pBackendKind::MEMORY => true,
-            P2pBackendKind::LIB3H => false
+            P2pBackendKind::N3H | P2pBackendKind::MEMORY => true,
+            P2pBackendKind::LIB3H => false,
         }
     }
 
     fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Lib3hServerProtocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {
-            Ok(Lib3hServerProtocol::P2pReady) => {
-                log_d!("net/p2p_network: received P2pReady event")
-            }
+            Ok(Lib3hServerProtocol::P2pReady) => log_d!("net/p2p_network: received P2pReady event"),
             Ok(msg) => {
                 log_d!("net/p2p_network: received unexpected event: {:?}", msg);
-            },
+            }
             Err(e) => {
                 log_e!("net/p2p_network: did not receive P2pReady: {:?}", e);
                 panic!(
@@ -188,7 +185,10 @@ mod tests {
             network_id: "test_net_id".into(),
         };
 
-        handler.to_owned().handle(Ok(Lib3hServerProtocol::P2pReady)).unwrap();
+        handler
+            .to_owned()
+            .handle(Ok(Lib3hServerProtocol::P2pReady))
+            .unwrap();
         res.send(Lib3hClientProtocol::Connect(connect_data))
             .unwrap();
         res.stop().unwrap();

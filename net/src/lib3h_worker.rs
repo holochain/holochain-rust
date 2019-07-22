@@ -8,6 +8,7 @@ use lib3h::{
     dht::mirror_dht::MirrorDht,
     engine::{RealEngine, RealEngineConfig},
     transport_wss::TransportWss,
+    transport::{memory_mock::transport_memory::TransportMemory, transport_trait::Transport}
 };
 
 use lib3h_protocol::{protocol_client::Lib3hClientProtocol, network_engine::NetworkEngine};
@@ -18,16 +19,16 @@ use lib3h_protocol::{protocol_client::Lib3hClientProtocol, network_engine::Netwo
 /// TODO: currently uses MirrorDht, will need to expand workers to use different
 /// generics.
 #[allow(non_snake_case)]
-pub struct Lib3hWorker {
+pub struct Lib3hWorker<T:Transport> {
     handler: NetHandler,
     can_send_P2pReady: bool,
-    net_engine: RealEngine<TransportWss<std::net::TcpStream>, MirrorDht>,
+    net_engine: RealEngine<T, MirrorDht>,
 }
 
 /// Constructors
-impl Lib3hWorker {
+impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
     /// Create a new worker connected to the lib3h NetworkEngine
-    pub fn new(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
+    pub fn with_wss_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
             can_send_P2pReady: true,
@@ -41,7 +42,24 @@ impl Lib3hWorker {
     }
 }
 
-impl NetWorker for Lib3hWorker {
+impl Lib3hWorker<TransportMemory> {
+    /// Create a new worker connected to the lib3h NetworkEngine
+    pub fn with_memory_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
+        Ok(Lib3hWorker {
+            handler,
+            can_send_P2pReady: true,
+            net_engine: RealEngine::new_mock(
+                Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
+                real_config,
+                "FIXME",
+                MirrorDht::new_with_config,
+            )?,
+        })
+    }
+}
+
+
+impl<T:Transport> NetWorker for Lib3hWorker<T> {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {

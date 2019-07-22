@@ -8,7 +8,6 @@ use crate::{
         net_connection_thread::NetConnectionThread,
         NetResult,
     },
-    in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
     lib3h_worker::Lib3hWorker,
     p2p_config::*,
@@ -41,8 +40,10 @@ impl P2pNetwork {
         };
 
         let p2p_config_str = p2p_config.clone().as_str();
+        let p2p_config2 = p2p_config.clone();
+
         // Provide worker factory depending on backend kind
-        let worker_factory: NetWorkerFactory = match p2p_config.clone().backend_kind {
+        let worker_factory: NetWorkerFactory = match &p2p_config.clone().backend_kind {
             // Create an IpcNetWorker with the passed backend config
             P2pBackendKind::N3H => {
                 let enduser_config = p2p_config
@@ -60,25 +61,30 @@ impl P2pNetwork {
             }
             // Create a Lib3hWorker
             P2pBackendKind::LIB3H => {
-                let backend_config = match p2p_config.clone().backend_config {
+                let backend_config = match &p2p_config.clone().backend_config {
                     BackendConfig::Lib3h(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
                 };
 
                 Box::new(move |h| {
-                    Ok(Box::new(Lib3hWorker::new(h, backend_config.clone())?)
+                    Ok(Box::new(Lib3hWorker::with_wss_transport(h, backend_config.clone())?)
                         as Box<dyn NetWorker>)
                 })
             }
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
-                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
+                let backend_config = match &p2p_config.clone().backend_config {
+                    BackendConfig::Lib3h(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
+                };
+                Ok(Box::new(Lib3hWorker::with_memory_transport(h, backend_config.clone())?)
+                   as Box<dyn NetWorker>)
             }),
         };
 
         let (t, rx) = crossbeam_channel::unbounded();
         let tx = t.clone();
-        let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
+        let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config2.clone()) {
             NetHandler::new(Box::new(move |message| {
             let unwrapped = message.unwrap();
             let message = unwrapped.clone();
@@ -109,7 +115,7 @@ impl P2pNetwork {
                     e
                 )
             })?;
-        if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
+        if Self::should_wait_for_p2p_ready(&p2p_config2.clone()) {
             P2pNetwork::wait_p2p_ready(&rx);
         }
 

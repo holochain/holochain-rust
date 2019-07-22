@@ -133,7 +133,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 link_type.clone(),
                 tag.clone(),
                 options,
-                match query{GetLinksNetworkQuery::Links(get_headers) => get_headers, _ => false}
+                match query.clone(){GetLinksNetworkQuery::Links(get_headers) => get_headers.headers, _ => false}
             ).expect("Could not get_links from dht node");
             let links_result = match query {
                 GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),

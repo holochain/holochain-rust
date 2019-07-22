@@ -3,9 +3,15 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{cas::content::Address,eav::Value};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+pub struct GetLinksQueryConfiguration
+{
+    pub headers : bool
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum GetLinksNetworkQuery {
     Count,
-    Links(bool)
+    Links(GetLinksQueryConfiguration)
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

@@ -1,7 +1,7 @@
 use crate::{
     network::{
         actions::get_links::get_links,
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry
@@ -65,10 +65,14 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         tag: link.tag().clone(),
         options: GetLinksOptions::default(),
     };
+    let config = GetLinksQueryConfiguration
+    {
+        headers : false
+    };
     let links_result = context.block_on(get_links(
         context.clone(),
         &get_links_args,
-        GetLinksNetworkQuery::Links(false),
+        GetLinksNetworkQuery::Links(config)
     ));
     if links_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");

@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     network::{
         actions::get_links::get_links,
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
     },
 };
 
@@ -14,10 +14,14 @@ pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
+    let config = GetLinksQueryConfiguration
+    {
+        headers : link_args.options.headers
+    };
     let links_result = await!(get_links(
         context.clone(),
         link_args,
-        GetLinksNetworkQuery::Links(link_args.options.headers)
+        GetLinksNetworkQuery::Links(config)
     ))?;
 
     match links_result

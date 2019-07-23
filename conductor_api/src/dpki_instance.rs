@@ -74,7 +74,11 @@ impl DpkiInstance for Holochain {
             DPKI_TRAIT_FN_IS_INITIALIZED,
             params,
         )?;
-        let result: bool = result.try_into()?;
-        Ok(result)
+        let result: Result<bool, HolochainError> = result.try_into()?;
+        match result.to_owned() {
+            Ok(r) => println!("DPKI instance is initialized: {:?}", r),
+            Err(e) => println!("ERROR: DPKI is not initialized: {:?}", e),
+        }
+        result
     }
 }

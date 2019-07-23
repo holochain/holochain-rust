@@ -80,7 +80,7 @@ mod tests {
     use crate::{
         action::{Action, ActionWrapper, GetLinksKey},
         instance::tests::test_context,
-        network::query::{GetLinksNetworkQuery,GetLinksQueryConfiguration}
+        network::query::{GetLinksNetworkQuery,GetLinksQueryConfiguration},
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;

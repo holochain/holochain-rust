@@ -151,6 +151,10 @@ impl P2pConfig {
     }
 
     pub fn new_with_memory_backend(server_name: &str) -> Self {
+
+        let host_name =
+            server_name.replace(":", "_").replace(" ", "_").replace(",", "_");
+
         P2pConfig::new(
             P2pBackendKind::MEMORY,
             BackendConfig::Lib3h(
@@ -160,8 +164,7 @@ impl P2pConfig {
                     bootstrap_nodes: vec![],
                     work_dir: "".into(),
                     log_level: 'd',
-                    bind_url: url::Url::parse(format!("mem://{}",
-                                                      server_name.replace(":", "_").replace(" ", "_")).as_str())
+                    bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())
                         .expect(format!("invalid memory server url: {}", server_name).as_str()),
                     dht_custom_config: vec![],
                 }),

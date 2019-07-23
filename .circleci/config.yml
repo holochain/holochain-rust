@@ -126,7 +126,7 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: make deploy_holochain
 
  cold.ubuntu.xenial.auto:
   docker:
@@ -135,7 +135,7 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: make deploy_holochain
 
  cold.debian.stable.auto:
   docker:
@@ -144,7 +144,7 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: make deploy_holochain
 
  cold.mac.10.auto:
   macos:
@@ -182,18 +182,18 @@ workflows:
 
  cold.ubuntu:
   jobs:
-   - cold.ubuntu.bionic.auto:
-      filters:
-       branches:
-        only:
-         - develop
+   - cold.ubuntu.bionic.auto
+      # filters:
+      #  branches:
+      #   only:
+      #    - develop
    # - cold.ubuntu.bionic.nix
 
-   - cold.ubuntu.xenial.auto:
-      filters:
-       branches:
-        only:
-         - develop
+   - cold.ubuntu.xenial.auto
+      # filters:
+      #  branches:
+      #   only:
+      #    - develop
    # - cold.ubuntu.xenial.nix
 
  cold.debian:

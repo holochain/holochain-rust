@@ -209,6 +209,10 @@ build_cli: core_toolchain ensure_wasm_target
 	@echo -e "\033[0;93m## Building hc command... ##\033[0m"
 	$(CARGO) build -p hc
 
+.PHONY: deploy_holochain
+deploy_holochain: core_toolchain
+	cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto;
+
 .PHONY: build_nodejs
 build_nodejs:
 	@echo -e "\033[0;93m## Building nodejs interface... ##\033[0m"

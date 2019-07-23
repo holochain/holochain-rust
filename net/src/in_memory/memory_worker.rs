@@ -6,10 +6,7 @@ use crate::connection::{
     NetResult,
 };
 
-use lib3h_protocol::{
-    protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
-};
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -32,7 +29,7 @@ impl NetWorker for InMemoryWorker {
     /// forward to our in-memory server
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         // InMemoryWorker doesn't have to do anything on shutdown
-         if data == Lib3hClientProtocol::Shutdown {
+        if data == Lib3hClientProtocol::Shutdown {
             self.handler.handle(Ok(Lib3hServerProtocol::Terminated))?;
             return Ok(());
         }
@@ -49,6 +46,7 @@ impl NetWorker for InMemoryWorker {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
                         let (tx, rx) = mpsc::channel();
+                        println!("register_chain: {}::{}", dna_address, track_msg.agent_id);
                         server.register_chain(&dna_address, &track_msg.agent_id, tx)?;
                         e.insert(rx);
                     }
@@ -196,14 +194,11 @@ mod tests {
         });
         // First Track
         memory_worker_1
-            .receive(
-                Lib3hClientProtocol::JoinSpace(SpaceData {
-                    request_id: "test_req1".to_string(),
-                    space_address: example_dna_address(),
-                    agent_id: HashString::from(AGENT_ID_1),
-                })
-                .into(),
-            )
+            .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
+                request_id: "test_req1".to_string(),
+                space_address: example_dna_address(),
+                agent_id: HashString::from(AGENT_ID_1),
+            }))
             .unwrap();
 
         // Should receive PeerConnected
@@ -212,14 +207,11 @@ mod tests {
 
         // Second Track
         memory_worker_1
-            .receive(
-                Lib3hClientProtocol::JoinSpace(SpaceData {
-                    request_id: "test_req2".to_string(),
-                    space_address: example_dna_address(),
-                    agent_id: HashString::from(AGENT_ID_1),
-                })
-                .into(),
-            )
+            .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
+                request_id: "test_req2".to_string(),
+                space_address: example_dna_address(),
+                agent_id: HashString::from(AGENT_ID_1),
+            }))
             .unwrap();
 
         memory_worker_1.tick().unwrap();

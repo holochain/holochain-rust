@@ -160,7 +160,8 @@ impl P2pConfig {
                     bootstrap_nodes: vec![],
                     work_dir: "".into(),
                     log_level: 'd',
-                    bind_url: url::Url::parse(format!("mem://{}", server_name).as_str())
+                    bind_url: url::Url::parse(format!("mem://{}",
+                                                      server_name.replace(":", "_").replace(" ", "_")).as_str())
                         .expect(format!("invalid memory server url: {}", server_name).as_str()),
                     dht_custom_config: vec![],
                 }),

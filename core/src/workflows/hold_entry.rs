@@ -50,7 +50,7 @@ pub async fn hold_entry_workflow(
         );
         HolochainError::ValidationPending
     })?;
-    context.log(format!("debug/workflow/hold_entry: got validation package"));
+    context.log("debug/workflow/hold_entry: got validation package".to_string());
 
     // 2. Create validation data struct
     let validation_data = ValidationData {

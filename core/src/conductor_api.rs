@@ -25,10 +25,9 @@ pub fn send_json_rpc(
         ProcessUniqueId::new(),
     );
 
-    let response = handler.handle_request_sync(&request).ok_or(format!(
-        "Conductor request agent/{} failed",
-        request_reponse.0
-    ))?;
+    let response = handler
+        .handle_request_sync(&request)
+        .ok_or_else(|| format!("Conductor request agent/{} failed", request_reponse.0))?;
 
     let response = JsonRpc::parse(&response)?;
 

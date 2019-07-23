@@ -30,22 +30,20 @@ pub async fn hold_link_workflow(
     let link = link_add.link().clone();
 
     context.log(format!("debug/workflow/hold_link: {:?}", link));
-    context.log(format!(
-        "debug/workflow/hold_link: getting validation package..."
-    ));
+    context.log("debug/workflow/hold_link: getting validation package...".to_string());
     // 1. Get hold of validation package
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
-         let message = "Could not get validation package from source! -> Add to pending...";
-         context.log(format!("debug/workflow/hold_link: {}", message));
-         context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
-         add_pending_validation(
-             entry_with_header.to_owned(),
-             Vec::new(),
-             ValidatingWorkflow::HoldLink,
-             context.clone(),
-         );
-         HolochainError::ValidationPending
+            let message = "Could not get validation package from source! -> Add to pending...";
+            context.log(format!("debug/workflow/hold_link: {}", message));
+            context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::HoldLink,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
@@ -58,7 +56,7 @@ pub async fn hold_link_workflow(
         );
         HolochainError::ValidationPending
     })?;
-    context.log(format!("debug/workflow/hold_link: got validation package"));
+    context.log("debug/workflow/hold_link: got validation package".to_string());
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -67,7 +65,7 @@ pub async fn hold_link_workflow(
     };
 
     // 3. Validate the entry
-    context.log(format!("debug/workflow/hold_link: validate..."));
+    context.log("debug/workflow/hold_link: validate...".to_string());
     await!(validate_entry(
         entry_with_header.entry.clone(),
         None,
@@ -94,7 +92,7 @@ pub async fn hold_link_workflow(
         }
 
     })?;
-    context.log(format!("debug/workflow/hold_link: is valid!"));
+    context.log("debug/workflow/hold_link: is valid!".to_string());
 
     // 3. If valid store the entry in the local DHT shard
     await!(add_link(&link_add, &context))?;

@@ -75,15 +75,17 @@ pub async fn get_link_add_entries<'a>(
                         .map(|unwrapped_type| match unwrapped_type {
                             Entry::LinkAdd(link_data) => {
                                 //return link, header and crud_status
-                                Ok((link_data, entry_type.headers, s.1.clone()))
+                                Ok((link_data, entry_type.headers, s.1))
                             }
                             _ => Err(HolochainError::ErrorGeneric(
                                 "Wrong entry type retrieved".to_string(),
                             )),
                         })
-                        .unwrap_or(Err(HolochainError::ErrorGeneric(
-                            "Could not obtain Entry".to_string(),
-                        ))),
+                        .unwrap_or_else(|| {
+                            Err(HolochainError::ErrorGeneric(
+                                "Could not obtain Entry".to_string(),
+                            ))
+                        }),
                     _ => Err(HolochainError::ErrorGeneric(
                         "Status Kind Of Lastest Requested".to_string(),
                     )),

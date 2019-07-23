@@ -31,9 +31,7 @@ pub async fn remove_link_workflow(
 
     context.log(format!("debug/workflow/remove_link: {:?}", link));
     // 1. Get hold of validation package
-    context.log(format!(
-        "debug/workflow/remove_link: getting validation package..."
-    ));
+    context.log("debug/workflow/remove_link: getting validation package...".to_string());
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -49,10 +47,8 @@ pub async fn remove_link_workflow(
         })?;
 
     let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
-    context.log(format!(
-        "debug/workflow/remove_link: got validation package!"
-    ));
+        .ok_or_else(|| "Could not get validation package from source".to_string())?;
+    context.log("debug/workflow/remove_link: got validation package!".to_string());
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -61,7 +57,7 @@ pub async fn remove_link_workflow(
     };
 
     // 3. Validate the entry
-    context.log(format!("debug/workflow/remove_link: validate..."));
+    context.log("debug/workflow/remove_link: validate...".to_string());
     await!(validate_entry(
         entry_with_header.entry.clone(),
         None,
@@ -89,7 +85,7 @@ pub async fn remove_link_workflow(
 
     })?;
 
-    context.log(format!("debug/workflow/remove_link: is valid!"));
+    context.log("debug/workflow/remove_link: is valid!".to_string());
 
     // 3. If valid store remove the entry in the local DHT shard
     await!(remove_link(&entry_with_header.entry, &context))?;

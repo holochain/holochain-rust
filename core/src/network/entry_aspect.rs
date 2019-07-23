@@ -106,7 +106,7 @@ impl Into<EntryAspectData> for EntryAspect {
             aspect: aspect_json.to_bytes(),
             publish_ts: ts.timestamp() as u64,
         }
-    }
+     }
 }
 
 fn format_header(header: &ChainHeader) -> String {

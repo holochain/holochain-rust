@@ -213,8 +213,8 @@ mod tests {
         let dht_data = QueryEntryResultData {
             msg_id: new_key.id.clone(),
             address: new_key.address.to_string(),
-            content: serde_json::from_str(
-                &serde_json::to_string(&Some(entry_with_meta.clone())).unwrap(),
+            content:
+                &serde_json::to_value(&Some(entry_with_meta.clone()).unwrap(),
             )
             .unwrap(),
             ..Default::default()

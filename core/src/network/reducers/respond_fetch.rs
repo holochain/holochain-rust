@@ -29,6 +29,7 @@ fn reduce_respond_fetch_data_inner(
             entry: EntryData {
                 entry_address: fetch_data.entry_address.clone(),
                 aspect_list: aspects.iter().map(|a| a.to_owned().into()).collect(),
+
             },
         }),
     )

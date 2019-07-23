@@ -530,7 +530,7 @@ fn launch_three_nodes_test_with_lib3h(
 
 #[cfg(test)]
 mod tests {
-   // use super::*;
+    // use super::*;
 
     // broken since json proto -> lib3h migration but we are phasing
     // out core's in memory worker/server transport.
@@ -544,9 +544,9 @@ mod tests {
 
     // broken since json proto -> lib3h migration but we are phasing
     // out core's in memory worker/server transport.
-     #[test]
+    #[test]
     #[cfg(feature = "broken-tests")]
-     fn run_two_nodes_list_tests_with_in_memory_network() {
+    fn run_two_nodes_list_tests_with_in_memory_network() {
         for test_fn in TWO_NODES_LIST_TEST_FNS.clone() {
             launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         }
@@ -554,9 +554,9 @@ mod tests {
 
     // broken since json proto -> lib3h migration but we are phasing
     // out core's in memory worker/server transport.
-     #[test]
+    #[test]
     #[cfg(feature = "broken-tests")]
-     fn run_three_nodes_tests_with_in_memory_network() {
+    fn run_three_nodes_tests_with_in_memory_network() {
         for test_fn in THREE_NODES_TEST_FNS.clone() {
             launch_three_nodes_test_with_memory_network(test_fn).unwrap();
         }

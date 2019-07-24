@@ -28,10 +28,14 @@ impl Default for NucleusStatus {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct PendingValidationKey(String);
+pub struct PendingValidationKey {
+    pub address: Address,
+    pub workflow: ValidatingWorkflow,
+}
+
 impl PendingValidationKey {
     pub fn new(address: Address, workflow: ValidatingWorkflow) -> Self {
-        PendingValidationKey(format!("{}:{}", workflow, address))
+        PendingValidationKey { address, workflow }
     }
 }
 

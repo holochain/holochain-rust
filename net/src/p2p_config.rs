@@ -167,6 +167,8 @@ impl P2pConfig {
                     bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())
                         .expect(format!("invalid memory server url: {}", server_name).as_str()),
                     dht_custom_config: vec![],
+                    dht_timeout_threshold: 2000,
+                    dht_gossip_interval: 20
                 }),
                 None,
         )

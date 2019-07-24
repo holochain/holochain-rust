@@ -9,10 +9,10 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-lib3h = "=0.0.8"
-lib3h_protocol = "=0.0.8"
-lib3h_crypto_api = "=0.0.8"
-lib3h_sodium = "=0.0.8"
+lib3h = "=0.0.9"
+lib3h_protocol = "=0.0.9"
+lib3h_crypto_api = "=0.0.9"
+lib3h_sodium = "=0.0.9"
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.15"

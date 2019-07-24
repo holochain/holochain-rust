@@ -27,7 +27,7 @@ pub struct Lib3hWorker<T:Transport> {
 
 /// Constructors
 impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
-    /// Create a new worker connected to the lib3h NetworkEngine
+    /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn with_wss_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
@@ -43,7 +43,7 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
 }
 
 impl Lib3hWorker<TransportMemory> {
-    /// Create a new worker connected to the lib3h NetworkEngine
+    /// Create a new memory worker connected to the lib3h NetworkEngine
     pub fn with_memory_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
@@ -73,7 +73,6 @@ impl<T:Transport> NetWorker for Lib3hWorker<T> {
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
         // println!("Lib3hWorker.tick()");
-        // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
         }

@@ -716,6 +716,7 @@ type = 'websocket'"#,
 
     pub fn logger() -> String {
         r#"[logger]
+state_dump = false
 type = ''
 [[logger.rules.rules]]
 color = 'red'

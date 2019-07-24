@@ -30,7 +30,7 @@ fn get_links(
         .dht();
     
     let (get_link ,error) : (Vec<_>,Vec<_>) = dht_store
-        .get_links(base, link_type, tag, crud_status)
+        .get_links(base, link_type.clone(), tag, crud_status)
         .unwrap_or_default()
         .into_iter()
         .map(|eav_crud| (eav_crud.0.value(), eav_crud.1,eav_crud.0.attribute()))
@@ -46,26 +46,28 @@ fn get_links(
         })
         //get targets from dht
         .map(|eav_crud|{
+            let error = format!("Could not find target caches for Address : {}, LinkType : {}, tag: {}",eav_crud.0,link_type.clone(),eav_crud.2);
             dht_store
             .get_link_targets(eav_crud.0.clone())
             .map(|targets|{
                 targets.iter().last().map(|last_target|{
                     Ok((eav_crud.0,eav_crud.1,last_target.value(),eav_crud.2))
-                }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
+                }).unwrap_or(Err(HolochainError::ErrorGeneric(error.clone())))
             })
-            .unwrap_or(Err(HolochainError::ErrorGeneric("Could not find cached target".to_string())))
+            .unwrap_or(Err(HolochainError::ErrorGeneric(error)))
         })
         //get address from dht
         .map(|address_crud_target|{
             if headers
             {
                 address_crud_target.map(|(address,crud_status,target,tag)|{
+                  let error = format!("Could not find meta caches for Address : {}, LinkType : {}, tag: {}",address.clone(),link_type.clone(),tag.clone()); 
                   dht_store
                   .get_headers(address.clone())
                   .map(|header|{
                       Ok(GetLinkData::new(address,crud_status,target,tag,Some(header)))
                   })
-                  .unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
+                  .unwrap_or(Err(HolochainError::ErrorGeneric(error)))
               }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
             }
             else
@@ -82,7 +84,7 @@ fn get_links(
         }
         else
         {
-            Err(HolochainError::ErrorGeneric("Could not find targets in local dht".to_string()))
+            Err(HolochainError::List(error.iter().map(|e|e.clone().unwrap_err()).collect::<Vec<_>>()))
         }
 }
 

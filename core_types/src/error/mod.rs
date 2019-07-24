@@ -118,6 +118,7 @@ pub enum HolochainError {
     DnaHashMismatch(HashString, HashString),
     EntryNotFoundLocally,
     EntryIsPrivate,
+    List(Vec<HolochainError>)
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -161,9 +162,15 @@ impl fmt::Display for HolochainError {
                 f,
                 "The requested entry is private and should not be shared via gossip"
             ),
+            List(list) => {
+                //most windows system know that \n is a newline so we should be good.
+                let error_list = list.iter().map(|s|format!("{}",s)).collect::<Vec<_>>().join("\n");
+                write!(f,"A list of errors has been generated {}",error_list)
+            }
         }
     }
 }
+
 
 impl Error for HolochainError {}
 

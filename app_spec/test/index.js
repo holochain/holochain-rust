@@ -62,6 +62,8 @@ const orchestratorValidateAgent = new Orchestrator({
     valid_agent: { instances: { app: dna } },
     reject_agent: { instances: { app: dna } },
   },
+  genConfig,
+  spawnConductor,
   debugLog: false,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
@@ -72,9 +74,18 @@ const registerAllScenarios = () => {
   // test cases if there is any Promise awaiting in between test declarations.
   let numRegistered = 0
 
-  const registerer = orchestrator => (...info) => {
-    numRegistered += 1
-    return orchestrator.registerScenario(...info)
+  const registerer = orchestrator => {
+    const f = (...info) => {
+      numRegistered += 1
+      return orchestrator.registerScenario(...info)
+    }
+
+    f.only = (...info) => {
+      numRegistered += 1
+      return orchestrator.registerScenario.only(...info)
+    }
+
+    return f
   }
 
   require('./regressions')(registerer(orchestratorSimple))
@@ -85,50 +96,6 @@ const registerAllScenarios = () => {
   return numRegistered
 }
 
-
-const runSimpleTests = async () => {
-  const alice = await spawnConductor('alice', 3000)
-  await orchestratorSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
-  const bob = await spawnConductor('bob', 4000)
-  await orchestratorSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
-  const carol = await spawnConductor('carol', 5000)
-  await orchestratorSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
-
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-  console.log("Waiting for conductors to settle...")
-  await delay(5000)
-  console.log("Ok, starting tests!")
-
-  await orchestratorSimple.run()
-
-}
-
-const runMultiDnaTests = async () => {
-  // Multi instance tests where n3h is the network connecting them currently fails with the 2nd instance
-  // waiting for and not receiving the agent entry of the first one.
-  // I believe this is due to n3h not sending a peer connected message for a local instance
-  // and core has not implented the authoring list yet...
-  const conductor = await spawnConductor('conductor', 6000)
-  await orchestratorMultiDna.registerConductor({name: 'conductor', url: 'http://0.0.0.0:6000'})
-  await orchestratorMultiDna.run()
-  conductor.kill()
-}
-
-const runValidationTests = async () => {
-  const valid_agent = await spawnConductor('valid_agent', 3000)
-  await orchestratorValidateAgent.registerConductor({name: 'valid_agent', url: 'http://0.0.0.0:3000'})
-  const reject_agent = await spawnConductor('reject_agent', 4000)
-  await orchestratorValidateAgent.registerConductor({name: 'reject_agent', url: 'http://0.0.0.0:4000'})
-
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-  console.log("Waiting for conductors to settle...")
-  await delay(5000)
-  console.log("Ok, starting tests!")
-
-  await orchestratorValidateAgent.run()
-  valid_agent.kill()
-  reject_agent.kill()
-}
 
 const run = async () => {
   const num = registerAllScenarios()
@@ -141,9 +108,9 @@ const run = async () => {
     console.log(`Registered ${num} scenarios (at least ${MIN_EXPECTED_SCENARIOS} were expected)`)
   }
 
-  await runSimpleTests()
-  // await runMultiDnaTests()
-  // await runValidationTests()
+  await orchestratorSimple.run()
+  // await orchestratorMultiDna.run()
+  // await orchestratorValidateAgent.run()
   process.exit()
 }
 

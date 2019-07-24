@@ -7,8 +7,8 @@ use std::{fmt, sync::Arc};
 #[derive(Clone, Serialize)]
 pub struct NetHandler {
     #[serde(skip)]
-    closure: Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocol>) ->
-        NetResult<()> + Send + Sync>>>,
+    closure:
+        Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>>>,
 }
 
 impl NetHandler {

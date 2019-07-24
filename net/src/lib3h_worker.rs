@@ -11,7 +11,7 @@ use lib3h::{
     transport::{memory_mock::transport_memory::TransportMemory, transport_trait::Transport}
 };
 
-use lib3h_protocol::{protocol_client::Lib3hClientProtocol, network_engine::NetworkEngine};
+use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.

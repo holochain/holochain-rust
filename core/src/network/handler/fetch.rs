@@ -4,8 +4,8 @@ use crate::{
     instance::dispatch_action,
     network::handler::{get_content_aspect, get_meta_aspects},
 };
-use holochain_net::connection::json_protocol::FetchEntryData;
 use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::data_types::FetchEntryData;
 use std::sync::Arc;
 
 /// The network has requested a DHT entry from us.

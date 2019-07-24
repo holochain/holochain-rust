@@ -5,7 +5,8 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
+use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
+
 fn reduce_get_entry_inner(
     network_state: &mut NetworkState,
     key: &GetEntryKey,
@@ -14,10 +15,10 @@ fn reduce_get_entry_inner(
     let query_json: JsonString = NetworkQuery::GetEntry.into();
     send(
         network_state,
-        JsonProtocol::QueryEntry(QueryEntryData {
+        Lib3hClientProtocol::QueryEntry(QueryEntryData {
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key.id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap(),
             entry_address: key.address.clone(),
             query: query_json.to_string().into_bytes(),
         }),

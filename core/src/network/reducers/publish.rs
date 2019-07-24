@@ -13,6 +13,7 @@ use holochain_core_types::{
     crud_status::CrudStatus,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
+    chain_header::ChainHeader,
 };
 use lib3h_protocol::{
     data_types::{EntryData, ProvidedEntryData},
@@ -36,6 +37,28 @@ fn publish_entry(
                 aspect_list: vec![EntryAspect::Content(
                     entry_with_header.entry.clone(),
                     entry_with_header.header.clone(),
+                )
+                .into()],
+            },
+        }),
+    )
+}
+
+/// Send to network a request to publish a header entry alone
+/// This is similar to publishing a regular entry but has limited aspects
+fn publish_header(
+    network_state: &mut NetworkState,
+    chain_header: &ChainHeader,
+) -> Result<(), HolochainError> {
+    send(
+        network_state,
+        Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
+            space_address: network_state.dna_address.clone().unwrap().into(),
+            provider_agent_id: network_state.agent_id.clone().unwrap().into(),
+            entry: EntryData {
+                entry_address: chain_header.address().clone(),
+                aspect_list: vec![EntryAspect::Header(
+                    chain_header.clone()
                 )
                 .into()],
             },
@@ -129,7 +152,11 @@ fn reduce_publish_inner(
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
-        EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
+        EntryType::App(_) => publish_entry(network_state, &entry_with_header)
+        .and_then(|_|{
+            publish_header(network_state, &entry_with_header.header)
+        })
+        .and_then(|_| {
             match entry_with_header.header.link_update_delete() {
                 Some(modified_entry) => publish_update_delete_meta(
                     network_state,

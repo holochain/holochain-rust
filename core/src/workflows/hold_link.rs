@@ -104,7 +104,7 @@ pub async fn hold_link_workflow(
     await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
     context.log(format!("debug/workflow/hold_entry: added! {:?}", entry_with_header));
 
-    //5. Link has been added to EAV and LinkAddEntry has been stored on the dht
+    //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
 }
 

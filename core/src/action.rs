@@ -198,8 +198,8 @@ pub enum Action {
     // Nucleus actions:
     // ----------------
     /// initialize a chain from Dna
-    /// not the same as genesis
-    /// may call genesis internally
+    /// not the same as init
+    /// may call init internally
     InitializeChain(Dna),
     /// return the result of an InitializeChain action
     /// the result is an initialization structure which include the generated public token if any

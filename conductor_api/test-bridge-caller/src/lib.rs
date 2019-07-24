@@ -25,7 +25,7 @@ fn handle_call_bridge_error() -> JsonString {
 define_zome! {
     entries: []
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 

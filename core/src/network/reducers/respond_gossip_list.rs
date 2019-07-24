@@ -3,7 +3,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_net::connection::json_protocol::JsonProtocol;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 pub fn reduce_respond_gossip_list(
     network_state: &mut NetworkState,
@@ -14,10 +14,10 @@ pub fn reduce_respond_gossip_list(
     let entry_list_data = unwrap_to!(action => crate::action::Action::RespondGossipList);
     if let Err(err) = send(
         network_state,
-        JsonProtocol::HandleGetGossipingEntryListResult(entry_list_data.clone()),
+        Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data.clone()),
     ) {
         println!(
-            "Error sending JsonProtocol::HandleGetGossipEntryListResult: {:?}",
+            "Error sending Lib3hClientProtocol::HandleGetGossipEntryListResult: {:?}",
             err
         )
     }

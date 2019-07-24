@@ -7,22 +7,29 @@ pub mod store;
 use crate::{
     context::Context,
     entry::CanPublish,
-    network::handler::{fetch::*, query::*, send::*, store::*},
+    network::{
+        direct_message::DirectMessage,
+        entry_aspect::EntryAspect,
+        handler::{
+            fetch::*,
+            lists::{handle_get_authoring_list, handle_get_gossip_list},
+            query::*,
+            send::*,
+            store::*,
+        },
+    },
     nucleus,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::*;
-use holochain_net::connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
-
-use crate::network::{
-    direct_message::DirectMessage,
-    entry_aspect::EntryAspect,
-    handler::lists::{handle_get_authoring_list, handle_get_gossip_list},
-};
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{MessageData, StoreEntryAspectData};
+use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::{
+    data_types::{DirectMessageData, StoreEntryAspectData},
+    protocol_server::Lib3hServerProtocol,
+};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -65,7 +72,7 @@ StoreEntryAspectData {{
     }}
 }}"#,
         req_id = data.request_id,
-        dna_adr = data.dna_address,
+        dna_adr = data.space_address,
         provider_agent_id = data.provider_agent_id,
         entry_address = data.entry_address,
         aspect_address = data.entry_aspect.aspect_address,
@@ -75,7 +82,7 @@ StoreEntryAspectData {{
 }
 
 // See comment on fn format_store_data() - same reason for this function.
-fn format_message_data(data: &MessageData) -> String {
+fn format_message_data(data: &DirectMessageData) -> String {
     let message_json = JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
     let message = DirectMessage::try_from(message_json).unwrap();
     format!(
@@ -88,7 +95,7 @@ MessageData {{
     content: {content:?},
 }}"#,
         req_id = data.request_id,
-        dna_adr = data.dna_address,
+        dna_adr = data.space_address,
         to = data.to_agent_id,
         from = data.from_agent_id,
         content = message,
@@ -107,13 +114,13 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
         //   context.agent_id.nick, message
         // ));
 
-        let maybe_json_msg = JsonProtocol::try_from(message);
+        let maybe_json_msg = Lib3hServerProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());
         }
         match maybe_json_msg.unwrap() {
-            JsonProtocol::FailureResult(failure_data) => {
-                if !is_my_dna(&my_dna_address, &failure_data.dna_address.to_string()) {
+            Lib3hServerProtocol::FailureResult(failure_data) => {
+                if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -122,8 +129,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 // TODO: Handle the reception of a FailureResult
             }
-            JsonProtocol::HandleStoreEntryAspect(dht_entry_data) => {
-                if !is_my_dna(&my_dna_address, &dht_entry_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
+                if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -132,8 +139,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_store(dht_entry_data, context.clone())
             }
-            JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_entry_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleFetchEntry(fetch_entry_data) => {
+                if !is_my_dna(&my_dna_address, &fetch_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -142,8 +149,11 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
-            JsonProtocol::HandleFetchEntryResult(fetch_result_data) => {
-                if !is_my_dna(&my_dna_address, &fetch_result_data.dna_address.to_string()) {
+            Lib3hServerProtocol::FetchEntryResult(fetch_result_data) => {
+                if !is_my_dna(
+                    &my_dna_address,
+                    &fetch_result_data.space_address.to_string(),
+                ) {
                     return Ok(());
                 }
 
@@ -152,8 +162,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     fetch_result_data
                 ));
             }
-            JsonProtocol::HandleQueryEntry(query_entry_data) => {
-                if !is_my_dna(&my_dna_address, &query_entry_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleQueryEntry(query_entry_data) => {
+                if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -162,10 +172,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_query_entry_data(query_entry_data, context.clone())
             }
-            JsonProtocol::QueryEntryResult(query_entry_result_data) => {
+            Lib3hServerProtocol::QueryEntryResult(query_entry_result_data) => {
                 if !is_my_dna(
                     &my_dna_address,
-                    &query_entry_result_data.dna_address.to_string(),
+                    &query_entry_result_data.space_address.to_string(),
                 ) {
                     return Ok(());
                 }
@@ -182,8 +192,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_query_entry_result(query_entry_result_data, context.clone())
             }
-            JsonProtocol::HandleSendMessage(message_data) => {
-                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleSendDirectMessage(message_data) => {
+                if !is_my_dna(&my_dna_address, &message_data.space_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -196,8 +206,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_send_message(message_data, context.clone())
             }
-            JsonProtocol::SendMessageResult(message_data) => {
-                if !is_my_dna(&my_dna_address, &message_data.dna_address.to_string()) {
+            Lib3hServerProtocol::SendDirectMessageResult(message_data) => {
+                if !is_my_dna(&my_dna_address, &message_data.space_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -210,8 +220,12 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ));
                 handle_send_message_result(message_data, context.clone())
             }
-            JsonProtocol::HandleGetAuthoringEntryList(get_list_data) => {
-                if !is_my_dna(&my_dna_address, &get_list_data.dna_address.to_string()) {
+            Lib3hServerProtocol::Connected(peer_data) => {
+                context.log(format!("debug/net/handle: Connected: {:?}", peer_data));
+                return Ok(());
+            }
+            Lib3hServerProtocol::HandleGetAuthoringEntryList(get_list_data) => {
+                if !is_my_dna(&my_dna_address, &get_list_data.space_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
@@ -221,8 +235,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 
                 handle_get_authoring_list(get_list_data, context.clone());
             }
-            JsonProtocol::HandleGetGossipingEntryList(get_list_data) => {
-                if !is_my_dna(&my_dna_address, &get_list_data.dna_address.to_string()) {
+            Lib3hServerProtocol::HandleGetGossipingEntryList(get_list_data) => {
+                if !is_my_dna(&my_dna_address, &get_list_data.space_address.to_string()) {
                     return Ok(());
                 }
                 // ignore if it's not addressed to me

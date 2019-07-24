@@ -180,6 +180,8 @@ pub mod tests {
             .unwrap()
             .address();
 
+        thread::sleep(time::Duration::from_millis(500));
+
         // get the header from the top of Jill's chain
         let state = &context1.state().unwrap();
         let header = state.get_headers(entry_address)
@@ -187,7 +189,6 @@ pub mod tests {
             .into_iter()
             .next()
             .expect("No headers were found for this entry in the authors chain");
-        thread::sleep(time::Duration::from_millis(500));
 
         // try and load it by its address as Jack. This means it has been communicated over the network
         let mut json: Option<JsonString> = None;

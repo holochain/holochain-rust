@@ -36,7 +36,6 @@ fn get_links(
         .get_links(base, link_type.clone(), tag, crud_status)
         .unwrap_or_default()
         .into_iter()
-        .map(|(eavi,crud)| (eavi, crud))
         //get tag
         .map(|(eavi,crud)|{
             let tag = match eavi.attribute()

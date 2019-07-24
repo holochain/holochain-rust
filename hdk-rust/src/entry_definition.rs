@@ -3,6 +3,7 @@
 
 use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
+    agent::AgentId,
     dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, AppEntryValue, Entry},
     validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
@@ -14,6 +15,7 @@ pub type PackageCreator = Box<dyn FnMut() -> ValidationPackageDefinition + Sync>
 
 pub type Validator = Box<dyn FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
 
+pub type AgentValidator = Box<dyn FnMut(EntryValidationData<AgentId>) -> Result<(), String> + Sync>;
 pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.

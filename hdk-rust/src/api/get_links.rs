@@ -5,7 +5,7 @@ use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
-    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
+    get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult, GetLinksResultCount},
 };
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links
@@ -51,6 +51,50 @@ pub fn get_links_with_options(
         tag: tag_re,
         options,
     })
+}
+
+/// Similar to the get_links_with_options but it allows the user to get the number of links in the dht
+/// # Examples
+/// ```rust
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # extern crate holochain_wasm_utils;
+/// # extern crate holochain_json_api;
+/// # extern crate holochain_persistence_api;
+/// # use holochain_json_api::json::JsonString;
+/// # use holochain_persistence_api::cas::content::Address;
+/// # use hdk::error::ZomeApiResult;
+/// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResultCount, GetLinksOptions};
+/// # use holochain_core_types::link::LinkMatch;
+///
+/// # fn main() {
+/// pub fn handle_posts_count_by_agent(agent: Address) -> ZomeApiResult<GetLinksResultCount> {
+///     hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any, GetLinksOptions::default())
+/// }
+/// # }
+/// ```
+pub fn get_links_count_with_options(
+    base: &Address,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
+    options: GetLinksOptions,
+) -> ZomeApiResult<GetLinksResultCount> {
+    let type_re = link_type.to_regex_string()?;
+    let tag_re = tag.to_regex_string()?;
+    Dispatch::GetLinksCount.with_input(GetLinksArgs {
+        entry_address: base.clone(),
+        link_type: type_re,
+        tag: tag_re,
+        options,
+    })
+}
+
+pub fn get_links_count(
+    base: &Address,
+    link_type: LinkMatch<&str>,
+    tag: LinkMatch<&str>,
+) -> ZomeApiResult<GetLinksResultCount> {
+    get_links_count_with_options(base, link_type, tag, GetLinksOptions::default())
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.

@@ -1,9 +1,11 @@
 use std::sync::Arc;
 use crate::context::Context;
 use crate::nucleus::ZomeFnCall;
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use crate::action::GetLinksKey;
 use crate::network::direct_message::DirectMessage;
+use std::convert::TryInto;
+use holochain_core_types::entry::Entry;
 
 pub fn state_dump(context: Arc<Context>) {
     let state_lock = context.state().expect("No state?!");
@@ -40,11 +42,37 @@ pub fn state_dump(context: Arc<Context>) {
         .map(|(s, dm)| (s.clone(), dm.clone()))
         .collect();
 
-    let holding_string = state_lock
+    let holding_strings = state_lock
         .dht()
         .get_all_held_entry_addresses()
         .iter()
-        .map(|address| address.to_string())
+        .map(|address| {
+            let raw_content = context.dht_storage.read().unwrap().fetch(address).unwrap().unwrap();
+            let maybe_entry: Result<Entry, _> = raw_content.clone().try_into();
+            let (content_type, content) = if let Ok(entry) = maybe_entry {
+                let mut entry_type = entry.entry_type().to_string();
+                let content = match entry {
+                    Entry::Dna(_)=> String::from("DNA omitted"),
+                    Entry::AgentId(agent_id) => agent_id.nick,
+                    Entry::LinkAdd(link) | Entry::LinkRemove((link, _)) => format!(
+                        "({}#{})\n\t{} => {}",
+                        link.link.link_type(),
+                        link.link.tag(),
+                        link.link.base(),
+                        link.link.target(),
+                    ),
+                    Entry::App(app_type, app_value) => {
+                        entry_type = app_type.to_string();
+                        app_value.to_string()
+                    }
+                    _ => entry.content().to_string(),
+                };
+                (entry_type, content)
+            } else {
+                (String::from("UNKNOWN"), raw_content.to_string())
+            };
+            format!("* {}: [{}] {}", address.to_string(), content_type, content)
+        })
         .collect::<Vec<String>>();
 
     let debug_dump = format!(r#"
@@ -69,7 +97,8 @@ Running DIRECT MESSAGES: {direct_messages:?}
 
 Dht:
 ====
-Holding: {holding_list:?}
+Holding:
+{holding_list}
 --------
     "#,
     calls = running_calls,
@@ -78,7 +107,7 @@ Holding: {holding_list:?}
     links_flows = get_links_flows,
     validation_packages = validation_package_flows,
     direct_messages = direct_message_flows,
-    holding_list = holding_string);
+    holding_list = holding_strings.join("\n"));
 
     context.log(format!("debug/state_dump: {}", debug_dump));
 }

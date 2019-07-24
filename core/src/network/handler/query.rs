@@ -36,16 +36,16 @@ fn get_links(
         .get_links(base, link_type.clone(), tag, crud_status)
         .unwrap_or_default()
         .into_iter()
-        .map(|eav_crud| (eav_crud.0.value(), eav_crud.1,eav_crud.0.attribute()))
+        .map(|(eavi,crud)| (eavi, crud))
         //get tag
-        .map(|eav_crud|{
-            let tag = match eav_crud.2
+        .map(|(eavi,crud)|{
+            let tag = match eavi.attribute()
             {
                 Attribute::LinkTag(_,tag) => Ok(tag),
                 Attribute::RemovedLink(_,tag) => Ok(tag),
                 _ =>  Err(HolochainError::ErrorGeneric("Could not get tag".to_string()))
             }.expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
-            (eav_crud.0,eav_crud.1,tag)
+            (eavi.value(),crud,tag)
         })
         //get targets from dht
         .map(|(link_add_address,crud,tag)|{

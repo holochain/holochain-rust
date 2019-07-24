@@ -7,13 +7,16 @@ use crate::{
         GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
         GetLinkData
     },
+    workflows::get_entry_result::get_entry_result_workflow,
     nucleus,
 };
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader,error::HolochainError,eav::Attribute};
+use holochain_core_types::{crud_status::CrudStatus, entry::{Entry,EntryWithMetaAndHeader},error::HolochainError,eav::Attribute};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
 use holochain_persistence_api::cas::content::Address;
 use std::{convert::TryInto, sync::Arc};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions,GetEntryArgs,GetEntryResultType};
+
 
 fn get_links(
     context: &Arc<Context>,
@@ -45,35 +48,36 @@ fn get_links(
             (eav_crud.0,eav_crud.1,tag)
         })
         //get targets from dht
-        .map(|eav_crud|{
-            let error = format!("Could not find target caches for Address : {}, LinkType : {}, tag: {}",eav_crud.0,link_type.clone(),eav_crud.2);
-            dht_store
-            .get_link_targets(eav_crud.0.clone())
-            .map(|targets|{
-                targets.iter().last().map(|last_target|{
-                    Ok((eav_crud.0,eav_crud.1,last_target.value(),eav_crud.2))
-                }).unwrap_or(Err(HolochainError::ErrorGeneric(error.clone())))
-            })
-            .unwrap_or(Err(HolochainError::ErrorGeneric(error)))
-        })
-        //get address from dht
-        .map(|address_crud_target|{
-            if headers
-            {
-                address_crud_target.map(|(address,crud_status,target,tag)|{
-                  let error = format!("Could not find meta caches for Address : {}, LinkType : {}, tag: {}",address.clone(),link_type.clone(),tag.clone()); 
-                  dht_store
-                  .get_headers(address.clone())
-                  .map(|header|{
-                      Ok(GetLinkData::new(address,crud_status,target,tag,Some(header)))
-                  })
-                  .unwrap_or(Err(HolochainError::ErrorGeneric(error)))
-              }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not get headers".to_string())))
-            }
-            else
-            {
-                address_crud_target.map(|(address,crud_status,target,tag)|{GetLinkData::new(address,crud_status,target,tag,None)})
-            }
+        .map(|(link_add_address,crud,tag)|{
+            let error = format!("Could not find target caches for Address :{}, tag: {}",link_add_address.clone(),tag.clone());
+            let link_add_entry_args = GetEntryArgs{
+            address: link_add_address.clone(),
+            options: GetEntryOptions {
+                headers : headers.clone(),
+                ..Default::default()
+            }};
+
+            context
+            .block_on(get_entry_result_workflow(&context.clone(),&link_add_entry_args))
+            .map(|get_entry_result|{
+                match get_entry_result.result
+                {
+                    GetEntryResultType::Single(entry_with_meta_and_headers) =>
+                    {
+                        let maybe_entry_headers = if headers { Some(entry_with_meta_and_headers.headers)} else {None};
+                        entry_with_meta_and_headers.entry.map(|single_entry|{
+                            match single_entry 
+                            {
+                                Entry::LinkAdd(link_add) => Ok(GetLinkData::new(link_add_address.clone(),crud.clone(),link_add.link().target().clone(),tag.clone(),maybe_entry_headers)),
+                                Entry::LinkRemove(link_remove) =>Ok(GetLinkData::new(link_add_address.clone(),crud.clone(),link_remove.0.link().target().clone(),tag.clone(),maybe_entry_headers)),
+                                _ =>Err(HolochainError::ErrorGeneric("Wrong entry type for Link content".to_string()))
+                            }
+                        }).unwrap_or(Err(HolochainError::ErrorGeneric(error)))
+                        
+                    }
+                    _ => Err(HolochainError::ErrorGeneric("Single Entry required for Get Entry".to_string()))
+                }
+            }).unwrap_or(Err(HolochainError::ErrorGeneric("Could Not Get Entry for Link Data".to_string())))
         })
         .partition(Result::is_ok);
 

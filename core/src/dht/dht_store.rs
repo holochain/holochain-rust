@@ -156,20 +156,6 @@ impl DhtStore {
             .collect())
     }
 
-    pub fn get_link_targets(
-        &self,
-        address: Address,
-    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let query = EaviQuery::new(
-            Some(address.to_owned()).into(),
-            EavFilter::single(Attribute::Target),
-            None.into(),
-            IndexFilter::LatestByAttribute,
-            None,
-        );
-        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
-    }
-
     pub fn get_all_metas(
         &self,
         address: &Address,

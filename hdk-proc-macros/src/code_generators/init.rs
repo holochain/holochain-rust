@@ -3,12 +3,12 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 impl ZomeCodeDef {
-    pub fn genesis(&self) -> TokenStream {
-        let genesis = &self.genesis;
+    pub fn init(&self) -> TokenStream {
+        let init = &self.init;
 
         quote! {
             #[no_mangle]
-            pub extern "C" fn genesis(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+            pub extern "C" fn init(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
                 let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
                 let allocation = match maybe_allocation {
                     Ok(allocation) => allocation,
@@ -22,7 +22,7 @@ impl ZomeCodeDef {
                 }
 
                 fn execute() -> Result<(), String> {
-                    #genesis
+                    #init
                 }
 
                 match execute() {

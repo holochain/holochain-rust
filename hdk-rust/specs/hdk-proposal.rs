@@ -19,8 +19,8 @@ fn validate_blog(entry: BlogEntry, validation_data: ValidationData) -> ZomeApiRe
 
 /////////////////////////////////////////////////////////////////
 
-#[hdk::genesis] // genesis callback
-fn genesis() -> bool {
+#[hdk::init] // init callback
+fn init() -> bool {
 	true
 }
 

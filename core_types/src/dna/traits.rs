@@ -9,7 +9,7 @@ pub enum ReservedTraitNames {
     /// Development placeholder, no production fn should use MissingNo
     MissingNo,
 
-    /// used for declaring functions that will auto-generate a public grant during genesis
+    /// used for declaring functions that will auto-generate a public grant during init
     Public,
 }
 

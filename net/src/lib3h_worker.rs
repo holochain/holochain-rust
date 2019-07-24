@@ -2,7 +2,6 @@
 
 use crate::connection::{
     net_connection::{NetHandler, NetWorker},
-    protocol::Protocol,
     NetResult,
 };
 use lib3h::{
@@ -11,7 +10,7 @@ use lib3h::{
     transport_wss::TransportWss,
 };
 
-use lib3h_protocol::network_engine::NetworkEngine;
+use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
@@ -45,12 +44,10 @@ impl Lib3hWorker {
 impl NetWorker for Lib3hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
-    fn receive(&mut self, data: Protocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         println!("Lib3hWorker.receive(): {:?}", data);
         // Post Lib3hClient messages only
-        if let Protocol::Lib3hClient(msg) = data {
-            self.net_engine.post(msg.clone())?;
-        }
+        self.net_engine.post(data.clone())?;
         // Done
         Ok(())
     }
@@ -61,13 +58,12 @@ impl NetWorker for Lib3hWorker {
         // Send p2pReady on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            self.handler.handle(Ok(Protocol::P2pReady))?;
         }
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
             for msg in output {
-                self.handler.handle(Ok(Protocol::Lib3hServer(msg)))?;
+                self.handler.handle(Ok(msg))?;
             }
         }
         Ok(did_something)

@@ -45,7 +45,7 @@ pub mod tests {
         let netname = Some("init::not_implemented");
         let instance = test_callback_instance(
             zome,
-            // anything other than Init is fine here
+            // anything other than init is fine here
             Callback::Receive.as_str(),
             0,
             netname,
@@ -70,7 +70,10 @@ pub mod tests {
         let instance = test_callback_instance(zome, Callback::Init.as_str(), 1, netname);
         assert!(instance.is_err());
         let error = instance.err().unwrap();
-        assert_eq!("\"".to_string(), error);
+        assert_eq!(
+            "At least one zome init returned error: [(\"test_zome\", \"\\\"\")]".to_string(),
+            error
+        );
     }
 
 }

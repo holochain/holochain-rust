@@ -1,6 +1,6 @@
 extern crate hdk;
 
-fn genesis() {
+fn init() {
     let post_address = hdk::commit_entry(
         "handle",
         json!(

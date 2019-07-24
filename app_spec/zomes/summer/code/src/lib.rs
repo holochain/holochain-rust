@@ -16,7 +16,7 @@ fn handle_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
 define_zome! {
     entries: []
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 

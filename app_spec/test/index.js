@@ -143,7 +143,7 @@ const run = async () => {
 
   await runSimpleTests()
   // await runMultiDnaTests()
-  await runValidationTests()
+  // await runValidationTests()
   process.exit()
 }
 

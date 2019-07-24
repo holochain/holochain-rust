@@ -290,7 +290,7 @@ pub mod tests {
     use holochain_persistence_api::cas::content::Address;
     use std::convert::TryFrom;
 
-    fn test_dna() -> Dna {
+    pub fn test_dna() -> Dna {
         let fixture = String::from(
             r#"{
                 "name": "test",

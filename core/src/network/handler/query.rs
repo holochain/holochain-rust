@@ -49,7 +49,7 @@ fn get_links(
         })
         //get targets from dht
         .map(|(link_add_address,crud,tag)|{
-            let error = format!("Could not find target caches for Address :{}, tag: {}",link_add_address.clone(),tag.clone());
+            let error = format!("Could not find Entries for  Address :{}, tag: {}",link_add_address.clone(),tag.clone());
             let link_add_entry_args = GetEntryArgs{
             address: link_add_address.clone(),
             options: GetEntryOptions {

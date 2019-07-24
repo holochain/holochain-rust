@@ -106,12 +106,9 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
     assert_eq!(ASPECT_CONTENT_1.clone(), msg.content.as_slice(),);
 
     // Send a message back from billy to alex
-    billy.send_reponse_lib3h(
+    billy.send_response_lib3h(
         msg.clone(),
-        json!(format!(
-            "echo: {}",
-            str::from_utf8(msg.content.as_slice()).unwrap()
-        )),
+        format!("echo: {}", str::from_utf8(msg.content.as_slice()).unwrap()).into_bytes(),
     );
     // Check if alex received it
     let res = alex

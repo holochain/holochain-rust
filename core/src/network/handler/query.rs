@@ -12,8 +12,8 @@ use crate::{
 };
 use holochain_core_types::{crud_status::CrudStatus, entry::{Entry,EntryWithMetaAndHeader},error::HolochainError,eav::Attribute};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
 use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions,GetEntryArgs,GetEntryResultType};
 

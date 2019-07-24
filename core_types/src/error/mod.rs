@@ -129,6 +129,12 @@ impl HolochainError {
     }
 }
 
+impl From<rust_base58::base58::FromBase58Error> for HolochainError {
+    fn from(e: rust_base58::base58::FromBase58Error) -> Self {
+        HolochainError::SerializationError(format!("{}", e))
+    }
+}
+
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

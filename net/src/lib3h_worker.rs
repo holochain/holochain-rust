@@ -31,11 +31,12 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
     pub fn with_wss_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
-            can_send_P2pReady: true,
+            can_send_P2pReady: false,
             net_engine: RealEngine::new(
                 Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                 real_config,
-                "test-wss-agent",
+                // TODO generate this automatically in the lib3h api
+                "wss-agent",
                 MirrorDht::new_with_config,
             )?,
         })
@@ -47,11 +48,12 @@ impl Lib3hWorker<TransportMemory> {
     pub fn with_memory_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
-            can_send_P2pReady: true,
+            can_send_P2pReady: false,
             net_engine: RealEngine::new_mock(
                 Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                 real_config,
-                "test-mem-agent",
+                // TODO generate this automatically in the lib3h api
+                "mem-agent",
                 MirrorDht::new_with_config,
             )?,
         })

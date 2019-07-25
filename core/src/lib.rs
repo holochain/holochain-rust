@@ -27,7 +27,6 @@ pub mod context;
 pub mod dht;
 pub mod entry;
 pub mod instance;
-
 #[cfg(test)]
 pub mod link_tests;
 pub mod logger;
@@ -40,3 +39,4 @@ pub mod state;
 pub mod workflows;
 
 mod conductor_api;
+

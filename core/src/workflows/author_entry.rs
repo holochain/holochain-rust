@@ -109,9 +109,22 @@ pub mod tests {
     use holochain_json_api::json::JsonString;
     use std::{thread, time};
 
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
+
     #[test]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
+
+        enable_logging_for_test();
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
         let netname = Some("test_commit_with_dht_publish, the network");

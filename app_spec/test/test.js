@@ -1,5 +1,25 @@
 module.exports = scenario => {
 
+scenario('header publishing', async (s, t, { alice, bob }) => {
+    const publish_result = await alice.app.call("simple", "create_simple_entry", {content: "testing header publish"})
+    console.log(publish_result)
+    t.ok(publish_result.Ok)
+
+    // get the address of the header from Alice
+    const header_addr = await alice.app.call("simple", "get_entry_header_address", { address: publish_result.Ok })
+    t.ok(header_addr.Ok)
+    console.log(header_addr)
+
+    // load the entry from its address as Bob and check it matches the entry
+    const header = await bob.app.call("simple", "get_entry", {address: header_addr.Ok})
+    t.ok(header.Ok)
+    console.log(header)
+    t.equal(
+      header.Ok.entry_address,
+      publish_result.Ok
+    )
+
+})
 scenario('capabilities grant and claim', async (s, t, { alice, bob }) => {
 
     // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)

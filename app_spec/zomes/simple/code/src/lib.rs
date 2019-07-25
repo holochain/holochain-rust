@@ -18,7 +18,7 @@ use hdk::holochain_core_types::{
     validation::EntryValidationData,
 };
 use hdk::holochain_persistence_api::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
     hash::HashString
 };
 use hdk::holochain_json_api::{
@@ -27,7 +27,10 @@ use hdk::holochain_json_api::{
 };
 
 
-use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount};
+use hdk::holochain_wasm_utils::api_serialization::{
+    get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount},
+    get_entry::{GetEntryOptions, GetEntryResultType},
+};
 
 
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
@@ -52,6 +55,9 @@ fn simple_entry(content: String) -> Entry {
     Entry::App("simple".into(), Simple::new(content).into())
 }
 
+pub fn handle_create_simple_entry(content: String) -> ZomeApiResult<Address> {
+    hdk::commit_entry(&simple_entry(content))
+}
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
@@ -156,6 +162,16 @@ fn get_entry_handler(address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&address)
 }
 
+fn handle_get_entry_header_address(address: Address) -> ZomeApiResult<Address> {
+   hdk::get_entry_result(&address, GetEntryOptions{headers: true, ..GetEntryOptions::default()}).map(|result| {
+        if let GetEntryResultType::Single(result) = result.result {
+            result.headers[0].address()
+        } else {
+            panic!("Failed to get headers")
+        }
+    })
+}
+
 define_zome! {
 
     entries: [
@@ -180,10 +196,20 @@ define_zome! {
     }}
 
     functions: [
+        create_simple_entry: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_create_simple_entry
+        }
         get_entry: {
             inputs: |address: Address|,
             outputs: |result: ZomeApiResult<Option<Entry>>|,
             handler: get_entry_handler
+        }
+        get_entry_header_address: {
+            inputs: |address: Address|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_get_entry_header_address
         }
         create_link: {
             inputs: |base : Address,target:String|,
@@ -238,6 +264,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
+        hc_public [create_simple_entry, get_entry_header_address, get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
     }
 }

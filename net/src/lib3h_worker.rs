@@ -35,7 +35,7 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
             net_engine: RealEngine::new(
                 Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                 real_config,
-                "FIXME",
+                "test-wss-agent",
                 MirrorDht::new_with_config,
             )?,
         })
@@ -51,7 +51,7 @@ impl Lib3hWorker<TransportMemory> {
             net_engine: RealEngine::new_mock(
                 Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                 real_config,
-                "FIXME",
+                "test-mem-agent",
                 MirrorDht::new_with_config,
             )?,
         })

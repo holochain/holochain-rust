@@ -104,9 +104,10 @@ pub async fn author_entry<'a>(
 #[cfg(test)]
 pub mod tests {
     use super::author_entry;
+    use crate::nucleus::actions::get_entry::get_entry_from_dht;
     use crate::nucleus::actions::tests::*;
     use holochain_core_types::{
-        entry::test_entry_with_value
+        entry::{test_entry_with_value, Entry}
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_json_api::json::JsonString;
@@ -132,31 +133,23 @@ pub mod tests {
             .address();
         thread::sleep(time::Duration::from_millis(500));
 
-        let mut json: Option<JsonString> = None;
+        let mut entry: Option<Entry> = None;
         let mut tries = 0;
-        while json.is_none() && tries < 120 {
+        while entry.is_none() && tries < 120 {
             tries = tries + 1;
             {
-                let state = &context2.state().unwrap();
-                json = state
-                    .dht()
-                    .content_storage()
-                    .read()
-                    .unwrap()
-                    .fetch(&entry_address)
-                    .expect("could not fetch from CAS");
+                entry = get_entry_from_dht(&context2, &entry_address).expect("Could not retrieve entry from DHT");
             }
-            println!("Try {}: {:?}", tries, json);
-            if json.is_none() {
+            println!("Try {}: {:?}", tries, entry);
+            if entry.is_none() {
                 thread::sleep(time::Duration::from_millis(1000));
             }
         }
 
-        let x: String = json.unwrap().to_string();
+        // let x: String = json.unwrap().to_string();
         assert_eq!(
-            x,
-            "{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"test entry value\\\"}\"]}"
-                .to_string(),
+            entry,
+            Some(test_entry_with_value("{\"stuff\":\"test entry value\"}"))
         );
     }
 
@@ -190,7 +183,7 @@ pub mod tests {
             .next()
             .expect("No headers were found for this entry in the authors chain");
 
-        // try and load it by its address as Jack. This means it has been communicated over the network
+        // try and load it by its address as Jack. This means it has been communicated over the mock network
         let mut json: Option<JsonString> = None;
         let mut tries = 0;
         while json.is_none() && tries < 120 {
@@ -210,11 +203,58 @@ pub mod tests {
                 thread::sleep(time::Duration::from_millis(1000));
             }
         }
-
         assert_eq!(
             json.unwrap(),
             header.into(),
         );
+    }
 
+    #[test]
+    /// test that the header of an entry can be retrieved directly by its hash by another agent connected
+    /// via the in-memory network
+    fn test_2_commit_with_dht_publish_header_is_published() {
+        let mut dna = test_dna();
+        dna.uuid = "test_commit_with_dht_publish_header_is_published_2".to_string();
+        let netname = Some("test_commit_with_dht_publish_header_is_published_2, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
+
+        let entry_address = context1
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context1,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+
+        thread::sleep(time::Duration::from_millis(500));
+
+        // get the header from the top of Jill's chain
+        let state = &context1.state().unwrap();
+        let header = state.get_headers(entry_address)
+            .expect("Could not retrieve headers from authors chain")
+            .into_iter()
+            .next()
+            .expect("No headers were found for this entry in the authors chain");
+
+        // try and load it by its address as Jack. This means it has been communicated over the mock network
+        let mut entry: Option<Entry> = None;
+        let mut tries = 0;
+        while entry.is_none() && tries < 120 {
+            tries = tries + 1;
+            {
+                entry = get_entry_from_dht(&context2, &header.address()).expect("Could not retrieve entry from DHT");
+            }
+            println!("Try {}: {:?}", tries, entry);
+            if entry.is_none() {
+                thread::sleep(time::Duration::from_millis(1000));
+            }
+        }
+        assert_eq!(
+            entry,
+            Some(Entry::ChainHeader(header)),
+        );
     }
 }

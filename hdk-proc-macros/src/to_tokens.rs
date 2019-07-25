@@ -106,7 +106,7 @@ impl ToTokens for FnDeclaration {
 
 impl ToTokens for ZomeCodeDef {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let genesis = self.genesis();
+        let genesis = self.init();
         let zome_setup = self.zome_setup();
         let list_traits = self.list_traits();
         let list_functions = self.list_functions();

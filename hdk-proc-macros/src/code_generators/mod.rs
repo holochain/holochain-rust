@@ -1,4 +1,4 @@
-pub mod genesis;
+pub mod init;
 pub mod list_functions;
 pub mod list_traits;
 pub mod panic_handler;

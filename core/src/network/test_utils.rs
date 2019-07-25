@@ -25,7 +25,7 @@ pub fn test_instance_with_spoofed_dna(
     // fair warning... use test_instance_blank() if you want a minimal instance
     assert!(
         !dna.zomes.clone().is_empty(),
-        "Empty zomes = No genesis = infinite loops below!"
+        "Empty zomes = No init = infinite loops below!"
     );
 
     Ok((instance, context))

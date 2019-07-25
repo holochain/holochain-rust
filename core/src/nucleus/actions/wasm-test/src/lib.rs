@@ -153,7 +153,7 @@ define_zome! {
         )
     ]
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 

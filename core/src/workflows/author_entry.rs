@@ -181,6 +181,7 @@ pub mod tests {
             .into_iter()
             .next()
             .expect("No headers were found for this entry in the authors chain");
+        let header_entry = Entry::ChainHeader(header);
 
         // try and load it by its address as Jack. This means it has been communicated over the mock network
         let mut entry: Option<Entry> = None;
@@ -188,7 +189,7 @@ pub mod tests {
         while entry.is_none() && tries < 5 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &header.address()).expect("Could not retrieve entry from DHT");
+                entry = get_entry_from_dht(&context2, &header_entry.address()).expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
             if entry.is_none() {
@@ -197,7 +198,7 @@ pub mod tests {
         }
         assert_eq!(
             entry,
-            Some(Entry::ChainHeader(header)),
+            Some(header_entry),
         );
     }
 }

@@ -54,3 +54,5 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | $as_root tee /etc/apt/so
 curl -sL https://deb.nodesource.com/setup_11.x | $as_root bash
 $as_root apt-get update && $as_root apt-get install -y nodejs yarn
 npm install -g neon-cli
+
+curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2019-07-14 -y

@@ -91,7 +91,7 @@ mod tests {
     use crate::{
         action::{Action, ActionWrapper, GetLinksKey},
         instance::tests::test_context,
-        network::query::GetLinksNetworkQuery,
+        network::query::{GetLinksNetworkQuery,GetLinksQueryConfiguration},
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
@@ -110,10 +110,14 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
+        let config = GetLinksQueryConfiguration
+        {
+            headers : false
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks((
             key.clone(),
             None,
-            GetLinksNetworkQuery::Links,
+            GetLinksNetworkQuery::Links(config),
         )));
 
         let store = store.reduce(action_wrapper);

@@ -57,7 +57,7 @@ pub struct TestNode {
     pub logger: TweetProxy,
 
     is_network_ready: bool,
-    pub p2p_binding: String,
+    pub p2p_binding: url::Url,
 }
 
 /// Query logs

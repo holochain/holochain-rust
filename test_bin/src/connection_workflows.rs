@@ -88,7 +88,7 @@ pub(crate) fn two_nodes_disconnect_test(
     log_i!("got connect result A: {:?}", result_a);
     one_let!(Lib3hServerProtocol::Connected(d) = result_a {
         assert_eq!(d.request_id, "alex_connect_billy_request_id");
-        assert_eq!(d.uri.to_string(), billy.p2p_binding);
+        assert_eq!(d.uri, billy.p2p_binding);
     });
     let result_b = billy
         .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
@@ -96,7 +96,7 @@ pub(crate) fn two_nodes_disconnect_test(
     log_i!("got connect result B: {:?}", result_b);
     one_let!(Lib3hServerProtocol::Connected(d) = result_b {
         assert_eq!(d.request_id, "alex_connect_billy_request_id");
-        assert_eq!(d.uri.to_string(), alex.p2p_binding);
+        assert_eq!(d.uri, alex.p2p_binding);
     });
 
     // see what alex is receiving
@@ -173,7 +173,7 @@ pub(crate) fn three_nodes_disconnect_test(
         ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec![billy.p2p_binding.clone()],
+        vec![billy.p2p_binding.clone().to_string()],
         Some(alex_dir_path),
     );
     alex.track_dna(&DNA_ADDRESS_A, true)

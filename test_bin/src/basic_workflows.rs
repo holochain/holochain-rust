@@ -91,7 +91,7 @@ pub fn setup_two_nodes(
         println!("got connect result A: {:?}", result_a);
         one_let!(Lib3hServerProtocol::Connected(d) = result_a {
            assert_eq!(d.request_id, "alex_send_connect");
-           assert_eq!(d.uri.to_string(), node2_binding);
+           assert_eq!(d.uri, node2_binding);
         });
         let result_b = billy
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
@@ -99,7 +99,7 @@ pub fn setup_two_nodes(
         println!("got connect result B: {:?}", result_b);
         one_let!(Lib3hServerProtocol::Connected(d) = result_b {
            assert_eq!(d.request_id, "alex_send_connect");
-           assert_eq!(d.uri.to_string(), node2_binding);
+           assert_eq!(d.uri, node2_binding);
         });
     } else {
         println!("can connect is false")

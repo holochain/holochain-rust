@@ -151,12 +151,19 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
+
+    // publish the header for all entries except the DNA entry (which should never be published)
+    if let EntryType::Dna = entry_with_header.entry.entry_type() {
+        return Err(HolochainError::NotImplemented(
+            "reduce_publish_inner is not allowed for Dna entry".into(),
+        ))
+    } else {
+        publish_header(network_state, &entry_with_header.header)?;
+    }
+
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header)
-        .and_then(|_|{
-            publish_header(network_state, &entry_with_header.header)
-        })
         .and_then(|_| {
             match entry_with_header.header.link_update_delete() {
                 Some(modified_entry) => publish_update_delete_meta(
@@ -183,9 +190,7 @@ fn reduce_publish_inner(
                 None => Ok(()),
             }
         }),
-        _ => Err(HolochainError::NotImplemented(
-            format!("reduce_publish_inner for type {}", entry_with_header.entry.entry_type()).into(),
-        )),
+        _ => Ok(()) // do nothing for all non-publishing entry types
     }
 }
 

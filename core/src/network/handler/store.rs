@@ -41,7 +41,6 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     .expect("Could not spawn thread for storing EntryAspect::Content");
             }
             EntryAspect::Header(header) => {
-                // panic!(format!("unimplemented store aspect Header: {:?}", header));
                 context
                     .log("debug/net/handle: handle_store: Got EntryAspect::Header. processing...");
                 thread::Builder::new()

@@ -162,10 +162,10 @@ fn get_entry_handler(address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&address)
 }
 
-fn handle_get_entry_header_address(address: Address) -> ZomeApiResult<Address> {
+fn handle_get_entry_header_address(address: Address) -> ZomeApiResult<Vec<Address>> {
    hdk::get_entry_result(&address, GetEntryOptions{headers: true, ..GetEntryOptions::default()}).map(|result| {
         if let GetEntryResultType::Single(result) = result.result {
-            result.headers[0].address()
+            result.headers.iter().map(|h| Entry::ChainHeader(h.clone()).address()).collect()
         } else {
             panic!("Failed to get headers")
         }
@@ -208,7 +208,7 @@ define_zome! {
         }
         get_entry_header_address: {
             inputs: |address: Address|,
-            outputs: |result: ZomeApiResult<Address>|,
+            outputs: |result: ZomeApiResult<Vec<Address>>|,
             handler: handle_get_entry_header_address
         }
         create_link: {

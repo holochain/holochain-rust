@@ -21,12 +21,13 @@ pub async fn hold_header_workflow(
 
     // 1. No need to validate. Store header in local DHT shard
     // create an entry_with_header to leverage existing functionality. A headers header is itself.
-    let entry_with_header = EntryWithHeader::new(Entry::ChainHeader(chain_header.clone()), chain_header.clone());
+    let chain_header_entry = Entry::ChainHeader(chain_header.clone());
+    let entry_with_header = EntryWithHeader::new(chain_header_entry.clone(), chain_header.clone());
     await!(hold_entry(&entry_with_header, context.clone()))?;
 
     context.log(format!(
         "debug/workflow/hold_header: HOLDING: {}",
-        chain_header.address()
+        chain_header_entry.address()
     ));
 
     Ok(())

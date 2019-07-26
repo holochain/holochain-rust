@@ -50,13 +50,14 @@ fn publish_header(
     network_state: &mut NetworkState,
     chain_header: &ChainHeader,
 ) -> Result<(), HolochainError> {
+    let header_entry = Entry::ChainHeader(chain_header.clone());
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
             space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
-                entry_address: chain_header.address().clone(),
+                entry_address: header_entry.address().clone(),
                 aspect_list: vec![EntryAspect::Header(
                     chain_header.clone()
                 )

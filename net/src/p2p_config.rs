@@ -167,8 +167,7 @@ impl P2pConfig {
                 RealEngineConfig {
                     tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
                     socket_type: "mem".into(),
-                    // TODO BLOCKER remove this when api changes to using a url
-                    bootstrap_nodes : bootstrap_nodes.iter().map(|x| x.to_string()).collect(),
+                    bootstrap_nodes,
                     work_dir: "".into(),
                     log_level: 'd',
                     bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())

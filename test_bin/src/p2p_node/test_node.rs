@@ -631,7 +631,7 @@ impl TestNode {
         agent_id: Address,
         maybe_config_filepath: Option<&str>,
         maybe_end_user_config_filepath: Option<String>,
-        bootstrap_nodes: Vec<String>,
+        bootstrap_nodes: Vec<url::Url>,
         maybe_dir_path: Option<String>,
     ) -> Self {
         let (p2p_config, _maybe_temp_dir) = create_lib3h_config(

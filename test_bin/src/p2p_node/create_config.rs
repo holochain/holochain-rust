@@ -85,7 +85,7 @@ pub(crate) fn create_ipc_config(
 pub(crate) fn create_lib3h_config(
     maybe_config_filepath: Option<&str>,
     maybe_end_user_config_filepath: Option<String>,
-    bootstrap_nodes: Vec<String>,
+    bootstrap_nodes: Vec<url::Url>,
     maybe_dir_path: Option<String>,
 ) -> (P2pConfig, Option<tempfile::TempDir>) {
     // Create temp directory if no dir was provided
@@ -116,7 +116,7 @@ pub(crate) fn create_lib3h_config(
             backend_config: BackendConfig::Lib3h(RealEngineConfig {
                 socket_type: "ws".into(),
                 tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
-                bootstrap_nodes: bootstrap_nodes,
+                bootstrap_nodes,
                 work_dir: dir.clone(),
                 log_level: 'd',
                 bind_url: url::Url::parse("fixme://bind_url").unwrap(),

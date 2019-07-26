@@ -347,14 +347,14 @@ fn launch_two_nodes_test_with_lib3h(
         ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec![url::Url::parse("/ip4/127.0.0.1/tcp/12345/ipfs/blabla").unwrap()],
         None,
     );
     let mut billy = TestNode::new_with_lib3h(
         BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec![url::Url::parse("/ip4/127.0.0.1/tcp/12345/ipfs/blabla").unwrap()],
         None,
     );
     log_i!("");
@@ -491,21 +491,21 @@ fn launch_three_nodes_test_with_lib3h(
         ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec![url::Url::parse("/ip4/127.0.0.1/tcp/12345/ipfs/blabla").unwrap()],
         None,
     );
     let mut billy = TestNode::new_with_lib3h(
         BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec![url::Url::parse("/ip4/127.0.0.1/tcp/12345/ipfs/blabla").unwrap()],
         None,
     );
     let mut camille = TestNode::new_with_lib3h(
         CAMILLE_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath,
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+        vec![url::Url::parse("/ip4/127.0.0.1/tcp/12345/ipfs/blabla").unwrap()],
         None,
     );
 

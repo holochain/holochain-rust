@@ -165,6 +165,12 @@ impl Context {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 
+    pub fn network_state(&self) -> Option<Arc<crate::network::state::NetworkState>> {
+        self.state().map(move |state| {
+            state.network()
+        })
+    }
+
     pub fn get_dna(&self) -> Option<Dna> {
         // In the case of genesis we encounter race conditions with regards to setting the DNA.
         // Genesis gets called asynchronously right after dispatching an action that sets the DNA in

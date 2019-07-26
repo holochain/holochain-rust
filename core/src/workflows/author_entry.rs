@@ -138,8 +138,6 @@ pub mod tests {
                 thread::sleep(time::Duration::from_millis(1000));
             }
         }
-
-        // let x: String = json.unwrap().to_string();
         assert_eq!(
             entry,
             Some(test_entry_with_value("{\"stuff\":\"test entry value\"}"))

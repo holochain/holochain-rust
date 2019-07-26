@@ -384,10 +384,10 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        action::{tests::test_action_wrapper_commit, Action, ActionWrapper},
+        action::{Action, ActionWrapper},
         agent::{
             chain_store::ChainStore,
-            state::{ActionResponse, AgentState},
+            state::{AgentState},
         },
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
@@ -634,54 +634,54 @@ pub mod tests {
         test_instance(dna, None).expect("Blank instance could not be initialized!")
     }
 
-    #[test]
-    /// This tests calling `process_action`
-    /// with an action that dispatches no new ones.
-    /// It tests that the desired effects do happen
-    /// to the state and that no observers or actions
-    /// are sent on the passed channels.
-    pub fn can_process_action() {
-        let netname = Some("can_process_action");
-        let mut instance = Instance::new(test_context("jason", netname));
-        let context = instance.initialize_context(test_context("jane", netname));
-        let (rx_action, rx_observer) = instance.initialize_channels();
+    // #[test]
+    // /// This tests calling `process_action`
+    // /// with an action that dispatches no new ones.
+    // /// It tests that the desired effects do happen
+    // /// to the state and that no observers or actions
+    // /// are sent on the passed channels.
+    // pub fn can_process_action() {
+    //     let netname = Some("can_process_action");
+    //     let mut instance = Instance::new(test_context("jason", netname));
+    //     let context = instance.initialize_context(test_context("jane", netname));
+    //     let (rx_action, rx_observer) = instance.initialize_channels();
 
-        let action_wrapper = test_action_wrapper_commit();
-        let new_observers = instance.process_action(
-            &action_wrapper,
-            Vec::new(), // start with no observers
-            &rx_observer,
-            &context,
-        );
+    //     let action_wrapper = test_action_wrapper_commit();
+    //     let new_observers = instance.process_action(
+    //         &action_wrapper,
+    //         Vec::new(), // start with no observers
+    //         &rx_observer,
+    //         &context,
+    //     );
 
-        // test that the get action added no observers or actions
-        assert!(new_observers.is_empty());
+    //     // test that the get action added no observers or actions
+    //     assert!(new_observers.is_empty());
 
-        let rx_action_is_empty = match rx_action.try_recv() {
-            Err(crossbeam_channel::TryRecvError::Empty) => true,
-            _ => false,
-        };
-        assert!(rx_action_is_empty);
+    //     let rx_action_is_empty = match rx_action.try_recv() {
+    //         Err(crossbeam_channel::TryRecvError::Empty) => true,
+    //         _ => false,
+    //     };
+    //     assert!(rx_action_is_empty);
 
-        let rx_observer_is_empty = match rx_observer.try_recv() {
-            Err(crossbeam_channel::TryRecvError::Empty) => true,
-            _ => false,
-        };
-        assert!(rx_observer_is_empty);
+    //     let rx_observer_is_empty = match rx_observer.try_recv() {
+    //         Err(crossbeam_channel::TryRecvError::Empty) => true,
+    //         _ => false,
+    //     };
+    //     assert!(rx_observer_is_empty);
 
-        // Borrow the state lock
-        let state = instance.state();
-        // Clone the agent Arc
-        let actions = state.agent().actions();
-        let response = actions
-            .get(&action_wrapper)
-            .expect("action and reponse should be added after Get action dispatch");
+    //     // Borrow the state lock
+    //     let state = instance.state();
+    //     // Clone the agent Arc
+    //     let actions = state.agent().actions();
+    //     let response = actions
+    //         .get(&action_wrapper)
+    //         .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(
-            response,
-            &ActionResponse::Commit(Ok(test_chain_header()))
-        );
-    }
+    //     assert_eq!(
+    //         response,
+    //         &ActionResponse::Commit(Ok(test_chain_header()))
+    //     );
+    // }
 
     #[test]
     /// tests that we can dispatch an action and block until it completes

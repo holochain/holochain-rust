@@ -98,6 +98,19 @@ pub async fn author_entry<'a>(
             address
         ));
     }
+
+    // 5. Publish the header entry to the DHT. This should be called for both public and private entries
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: publishing header...",
+        address
+    ));   
+    let header_entry = Entry::ChainHeader(chain_header.clone());
+    await!(publish(header_entry.address(), &context))?; 
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: published header!",
+        address
+    ));
+    
     Ok(CommitEntryResult::new(chain_header.entry_address().clone()))
 }
 

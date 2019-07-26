@@ -149,25 +149,22 @@ fn reduce_publish_inner(
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header)
-        .and_then(|_|{
-            publish_header(network_state, &entry_with_header.header)
-        })
-        .and_then(|_| {
-            match entry_with_header.header.link_update_delete() {
-                Some(modified_entry) => publish_update_delete_meta(
-                    network_state,
-                    modified_entry,
-                    CrudStatus::Modified,
-                    &entry_with_header.clone(),
-                ),
-                None => Ok(()),
-            }
-        }),
+            .and_then(|_| {
+                match entry_with_header.header.link_update_delete() {
+                    Some(modified_entry) => publish_update_delete_meta(
+                        network_state,
+                        modified_entry,
+                        CrudStatus::Modified,
+                        &entry_with_header.clone(),
+                    ),
+                    None => Ok(()),
+                }
+            }),
+        EntryType::ChainHeader => publish_header(network_state, &entry_with_header.header),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
             .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)

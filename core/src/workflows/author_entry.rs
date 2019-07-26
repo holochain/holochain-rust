@@ -109,6 +109,7 @@ pub mod tests {
     use holochain_json_api::json::JsonString;
     use std::{thread, time};
 
+    // TODO do this for all crate tests somehow
     fn enable_logging_for_test() {
         if std::env::var("RUST_LOG").is_err() {
             std::env::set_var("RUST_LOG", "trace");
@@ -129,7 +130,7 @@ pub mod tests {
         dna.uuid = "test_commit_with_dht_publish".to_string();
         let netname = Some("test_commit_with_dht_publish, the network");
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, Some("test_commit_with_dht_publish2"));
 
         let entry_address = context1
             .block_on(author_entry(
@@ -144,7 +145,7 @@ pub mod tests {
 
         let mut json: Option<JsonString> = None;
         let mut tries = 0;
-        while json.is_none() && tries < 120 {
+        while json.is_none() && tries < 5 {
             tries = tries + 1;
             {
                 let state = &context2.state().unwrap();

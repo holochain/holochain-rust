@@ -11,6 +11,8 @@ use lib3h::{
     transport::{memory_mock::transport_memory::TransportMemory, transport_trait::Transport}
 };
 
+//use std::sync::{Arc, Mutex};
+
 use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -43,30 +45,51 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
     }
 }
 
+//lazy_static! {
+//    pub static ref PEERS: Arc<Mutex<Vec<url::Url>>> = Arc::new(Mutex::new(vec![]));
+//}
+
+
 impl Lib3hWorker<TransportMemory> {
+
     /// Create a new memory worker connected to the lib3h NetworkEngine
     pub fn with_memory_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
-        Ok(Lib3hWorker {
+
+        let net_engine = RealEngine::new_mock(
+            Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
+            real_config.clone(),
+            // TODO generate this automatically in the lib3h api
+            format!("mem-agent-{}", snowflake::ProcessUniqueId::new()).as_str(),
+            MirrorDht::new_with_config,
+            )?;
+
+        let worker = Lib3hWorker {
             handler,
             can_send_P2pReady: false,
-            net_engine: RealEngine::new_mock(
-                Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
-                real_config,
-                // TODO generate this automatically in the lib3h api
-                "mem-agent",
-                MirrorDht::new_with_config,
-            )?,
-        })
+            net_engine
+        };
+
+        /*   let mut peers = PEERS.lock().unwrap();
+             peers.push(worker.net_engine.advertise());
+
+             for peer_uri in peers.clone() {
+             worker.receive(Lib3hClientProtocol::Connect(lib3h_protocol::data_types::ConnectData {
+             request_id: format!("connect-{}", snowflake::ProcessUniqueId::new()),
+             peer_uri: peer_uri,
+             network_id: "".into()
+             }))?;
+             }
+        */
+        Ok(worker)
+
     }
 }
-
 
 impl<T:Transport> NetWorker for Lib3hWorker<T> {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         println!("Lib3hWorker.receive(): {:?}", data);
-        // Post Lib3hClient messages only
         self.net_engine.post(data.clone())?;
         // Done
         Ok(())
@@ -92,6 +115,8 @@ impl<T:Transport> NetWorker for Lib3hWorker<T> {
     fn endpoint(&self) -> Option<String> {
         Some(self.net_engine.advertise().to_string())
     }
+
+
 }
 
 #[cfg(test)]

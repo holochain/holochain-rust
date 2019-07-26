@@ -214,6 +214,16 @@ pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    test_context_and_logger_with_bootstrap_nodes
+        (agent_name, network_name, vec![])
+}
+
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_context_and_logger_with_bootstrap_nodes(
+    agent_name: &str,
+    network_name: Option<&str>,
+    bootstrap_nodes: Vec<url::Url>,
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
@@ -225,7 +235,8 @@ pub fn test_context_and_logger_with_network_name(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent));
             if let Some(network_name) = network_name {
-                let config = P2pConfig::new_with_memory_backend(network_name);
+                let config = P2pConfig::new_with_memory_backend_bootstrap_nodes(
+                    network_name, bootstrap_nodes);
                 builder = builder.with_p2p_config(config);
             }
             builder.spawn()

@@ -8,6 +8,7 @@ use crate::{
         state::NetworkState,
     },
     state::State,
+    entry::CanPublish,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -161,6 +162,9 @@ fn reduce_publish_inner(
         publish_header(network_state, &entry_with_header.header)?;
     }
 
+    // for non-publishing entries early return Ok
+    if ! entry_with_header.entry.entry_type().can_publish_from_state(root_state) { return Ok(()); }
+
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header)
@@ -190,7 +194,9 @@ fn reduce_publish_inner(
                 None => Ok(()),
             }
         }),
-        _ => Ok(()) // do nothing for all non-publishing entry types
+        _ => Err(HolochainError::NotImplemented(
+            format!("reduce_publish_inner not implemented for type: {:?}", entry_with_header.entry.entry_type()).into(),
+        )) // do nothing for all non-publishing entry types
     }
 }
 

@@ -1,7 +1,6 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    // entry::CanPublish,
     network::actions::publish::publish,
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,

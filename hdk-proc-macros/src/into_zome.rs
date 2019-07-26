@@ -1,14 +1,14 @@
 extern crate proc_macro2;
 
 use crate::zome_code_def::{
-    EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback,
+    EntryDefCallbacks, FnDeclaration, FnParameter, InitCallback, ReceiveCallback,
     ValidateAgentCallback, ZomeCodeDef, ZomeFunction, ZomeFunctions,
 };
 
 use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};
 use std::collections::BTreeMap;
 
-static GENESIS_ATTRIBUTE: &str = "genesis";
+static INIT_ATTRIBUTE: &str = "init";
 static VALIDATE_AGENT_ATTRIBUTE: &str = "validate_agent";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
@@ -17,7 +17,7 @@ static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
 pub trait IntoZome {
     fn extract_zome_fns(&self) -> ZomeFunctions;
     fn extract_entry_defs(&self) -> EntryDefCallbacks;
-    fn extract_genesis(&self) -> GenesisCallback;
+    fn extract_init(&self) -> InitCallback;
     fn extract_validate_agent(&self) -> ValidateAgentCallback;
     fn extract_traits(&self) -> ZomeTraits;
     fn extract_receive_callback(&self) -> Option<ReceiveCallback>;
@@ -27,7 +27,7 @@ pub trait IntoZome {
         ZomeCodeDef {
             traits: self.extract_traits(),
             entry_def_fns: self.extract_entry_defs(),
-            genesis: self.extract_genesis(),
+            init: self.extract_init(),
             validate_agent: self.extract_validate_agent(),
             receive_callback: self.extract_receive_callback(),
             zome_fns: self.extract_zome_fns(),
@@ -104,27 +104,27 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 }
 
 impl IntoZome for syn::ItemMod {
-    fn extract_genesis(&self) -> GenesisCallback {
-        // find all the functions tagged as the genesis callback
+    fn extract_init(&self) -> InitCallback {
+        // find all the functions tagged as the init callback
         let geneses: Vec<Box<syn::Block>> = funcs_iter(self)
-            .filter(is_tagged_with(GENESIS_ATTRIBUTE))
+            .filter(is_tagged_with(INIT_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, func| {
                 acc.push(func.block);
                 acc
             });
-        // only a single function can be tagged as genesis in a valid Zome.
+        // only a single function can be tagged as init in a valid Zome.
         // Error if there is more than one
-        // Also error if there is no genesis
+        // Also error if there is no init
         match geneses.len() {
             0 => {
                 emit_error(&self.ident,
-                    "No genesis function defined! A zome definition requires a callback tagged with #[genesis]");
+                    "No init function defined! A zome definition requires a callback tagged with #[init]");
                 panic!()
             }
             1 => *geneses[0].clone(),
             _ => {
                 emit_error(&self.ident,
-                    "Multiple functions tagged as genesis callback! Only one is permitted per zome definition.");
+                    "Multiple functions tagged as init callback! Only one is permitted per zome definition.");
                 panic!()
             }
         }
@@ -243,7 +243,7 @@ impl IntoZome for syn::ItemMod {
                         if let syn::Item::Fn(func) = item {
                             // any functions not tagged with a hdk attribute
                             !is_tagged_with(ZOME_FN_ATTRIBUTE)(func)
-                                && !is_tagged_with(GENESIS_ATTRIBUTE)(func)
+                                && !is_tagged_with(INIT_ATTRIBUTE)(func)
                                 && !is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
                                 && !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
                                 && !is_tagged_with(VALIDATE_AGENT_ATTRIBUTE)(func)
@@ -318,11 +318,11 @@ mod tests {
     use syn::parse_quote;
 
     #[test]
-    fn test_extract_genesis_smoke_test() {
+    fn test_extract_init_smoke_test() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -339,8 +339,8 @@ mod tests {
     fn test_extract_single_trait() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -373,8 +373,8 @@ mod tests {
     fn test_multi_function_multi_traits() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -425,8 +425,8 @@ mod tests {
     fn test_extract_function_params_and_return() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -461,8 +461,8 @@ mod tests {
     fn test_extract_function_with_generic_return() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -493,8 +493,8 @@ mod tests {
     fn test_single_entry() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -530,8 +530,8 @@ mod tests {
     fn test_extra_code_in_module() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -563,8 +563,8 @@ mod tests {
     fn test_no_receive_callback() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 
@@ -582,8 +582,8 @@ mod tests {
     fn test_receive_callback() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
                     Ok(())
                 }
 

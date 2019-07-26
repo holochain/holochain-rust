@@ -3,10 +3,7 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     instance::dispatch_action_and_wait,
-    nucleus::{
-        ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
-        state::NucleusStatus,
-    },
+    nucleus::state::NucleusStatus,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{
@@ -52,7 +49,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// instance. It creates both InitializeChain and ReturnInitializationResult actions asynchronously.
 ///
 /// Returns a future that resolves to an Ok(NucleusStatus) or an Err(String) which carries either
-/// the Dna error or errors from the genesis callback.
+/// the Dna error or errors from the init callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
 pub async fn initialize_chain(
@@ -168,31 +165,13 @@ pub async fn initialize_chain(
         None
     };
 
-    // map genesis across every zome
-    let results: Vec<_> = dna
-        .zomes
-        .keys()
-        .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
-        .collect();
-
-    // if there was an error report that as the result
-    let maybe_error = results
-        .iter()
-        .find(|ref r| match r {
-            CallbackResult::Fail(_) => true,
-            _ => false,
-        })
-        .and_then(|result| match result {
-            CallbackResult::Fail(error_string) => Some(error_string.clone()),
-            _ => unreachable!(),
-        });
+    // Note: The calling of the zome init callbacks has been moved to its own action `call_init`
+    // This is now called by the initialize workflow in application.rs
 
     // otherwise return the Initialization struct
-    let initialization_result = maybe_error.map(Err).unwrap_or_else(|| {
-        Ok(Initialization {
-            public_token,
-            payload: None, // no payload for now
-        })
+    let initialization_result = Ok(Initialization {
+        public_token,
+        payload: None, // no payload for now
     });
 
     context_clone

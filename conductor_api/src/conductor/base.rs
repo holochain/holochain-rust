@@ -428,9 +428,32 @@ impl Conductor {
             .map(|instance_config| instance_config.id.clone())
             .collect::<Vec<String>>()
             .iter()
-            .map(|id| self.start_instance(&id))
+            .map(|id| {
+                let start_result = self.start_instance(&id);
+                if Err(HolochainInstanceError::InstanceAlreadyActive) == start_result {
+                    Ok(())
+                } else {
+                    start_result
+                }
+            })
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())
+    }
+
+    /// Starts dpki_happ instances
+    pub fn start_dpki_instance(&mut self) -> Result<(), HolochainInstanceError> {
+        let dpki_instance_id = &self.dpki_instance_id().unwrap();
+        let mut instance = self
+            .instantiate_from_config(dpki_instance_id, None)
+            .map_err(|err| {
+                HolochainInstanceError::InternalFailure(HolochainError::ErrorGeneric(err))
+            })?;
+        instance.start()?;
+        self.instances.insert(
+            dpki_instance_id.to_string(),
+            Arc::new(RwLock::new(instance)),
+        );
+        Ok(())
     }
 
     /// Stops all instances
@@ -576,19 +599,25 @@ impl Conductor {
         self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
+        self.dpki_bootstrap()?;
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
-            let instance = self
-                .instantiate_from_config(&id, Some(&config))
-                .map_err(|error| {
-                    format!(
-                        "Error while trying to create instance \"{}\": {}",
-                        id, error
-                    )
-                })?;
+            // We only try to instantiate the instance if it is not running already,
+            // which will be the case at least for the DPKI instance which got started
+            // specifically in `self.dpki_bootstrap()` above.
+            if !self.instances.contains_key(&id) {
+                let instance =
+                    self.instantiate_from_config(&id, Some(&config))
+                        .map_err(|error| {
+                            format!(
+                                "Error while trying to create instance \"{}\": {}",
+                                id, error
+                            )
+                        })?;
 
-            self.instances
-                .insert(id.clone(), Arc::new(RwLock::new(instance)));
+                self.instances
+                    .insert(id.clone(), Arc::new(RwLock::new(instance)));
+            }
         }
 
         for ui_interface_config in config.ui_interfaces.clone() {
@@ -614,8 +643,6 @@ impl Conductor {
                 ),
             );
         }
-
-        self.dpki_bootstrap()?;
 
         Ok(())
     }
@@ -1214,14 +1241,30 @@ impl Conductor {
 
     /// bootstraps the dpki app if configured
     pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
+        // Checking if there is a dpki instance
         if self.using_dpki() {
-            let dpki_instance_id = self.dpki_instance_id().unwrap();
+            notify("DPKI configured. Starting DPKI instance...".to_string());
+
+            self.start_dpki_instance()
+                .map_err(|err| format!("Error starting DPKI instance: {:?}", err))?;
+            let dpki_instance_id = self
+                .dpki_instance_id()
+                .expect("We assume there is a DPKI instance since we just started it above..");
+
+            notify(format!(
+                "Instance '{}' running as DPKI instance.",
+                dpki_instance_id
+            ));
+
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
+
             if !hc.dpki_is_initialized()? {
+                notify("DPKI is not initialized yet (i.e. running for the first time). Calling 'init'...".to_string());
                 hc.dpki_init(self.dpki_init_params().unwrap())?;
+                notify("DPKI initialization done!".to_string());
             }
         }
         Ok(())

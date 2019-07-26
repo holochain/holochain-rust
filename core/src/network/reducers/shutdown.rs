@@ -3,10 +3,11 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_net::connection::{
-    json_protocol::{JsonProtocol, TrackDnaData},
-    net_connection::NetSend,
-};
+
+use holochain_net::connection::net_connection::NetSend;
+
+use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
+
 use std::{thread::sleep, time::Duration};
 
 pub fn reduce_shutdown(
@@ -17,8 +18,9 @@ pub fn reduce_shutdown(
     let action = action_wrapper.action();
     assert_eq!(*action, Action::ShutdownNetwork);
 
-    let json = JsonProtocol::UntrackDna(TrackDnaData {
-        dna_address: state
+    let json = Lib3hClientProtocol::LeaveSpace(SpaceData {
+        request_id: snowflake::ProcessUniqueId::new().to_string(),
+        space_address: state
             .dna_address
             .as_ref()
             .expect("Tried to shutdown uninitialized network")

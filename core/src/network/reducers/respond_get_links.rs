@@ -10,8 +10,9 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{
-    JsonProtocol, QueryEntryData, QueryEntryResultData,
+use lib3h_protocol::{
+    data_types::{QueryEntryData, QueryEntryResultData},
+    protocol_client::Lib3hClientProtocol,
 };
 
 /// Send back to network a HandleQueryEntryResult, no matter what.
@@ -28,10 +29,10 @@ fn reduce_respond_get_links_inner(
         NetworkQueryResult::Links(links.clone(), link_type, tag).into();
     send(
         network_state,
-        JsonProtocol::HandleQueryEntryResult(QueryEntryResultData {
+        Lib3hClientProtocol::HandleQueryEntryResult(QueryEntryResultData {
             request_id: query_data.request_id.clone(),
             requester_agent_id: query_data.requester_agent_id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap(),
             responder_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry_address: query_data.entry_address.clone().into(),
             query_result: query_result_json.to_string().into_bytes(),

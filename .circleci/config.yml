@@ -122,52 +122,58 @@ jobs:
  cold.ubuntu.bionic.auto:
   docker:
    - image: ubuntu:bionic
-  environment:
-      PATH: $HOME/.cargo/bin:$PATH
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.ubuntu.xenial.auto:
   docker:
    - image: ubuntu:xenial
-  environment:
-      PATH: $HOME/.cargo/bin:$PATH
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.debian.stable.auto:
   docker:
    - image: debian:stable
-  environment:
-      PATH: $HOME/.cargo/bin:$PATH
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.mac.10.auto:
   macos:
    xcode: "10.2.0"
-  environment:
-      PATH: $HOME/.cargo/bin:$PATH
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.mac.10.nix:
   macos:
    xcode: "10.2.0"
-  environment:
-      PATH: $HOME/.cargo/bin:$PATH
   steps:
    - checkout
    - run:

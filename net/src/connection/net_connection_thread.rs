@@ -116,7 +116,7 @@ impl NetConnectionThread {
             .expect("Should have an endpoint address")
             .to_string();
         let p2p_endpoint = p2p_endpoint
-            .expect("Should hav a p2p_endpoint address");
+            .expect("Should have a p2p_endpoint address");
 
         // Done
         Ok(NetConnectionThread {
@@ -153,7 +153,12 @@ mod tests {
 
     struct DefWorker;
 
-    impl NetWorker for DefWorker {}
+    impl NetWorker for DefWorker {
+        fn p2p_endpoint(&self) -> Option<url::Url> {
+            Some(url::Url::parse("test://def-worker").unwrap())
+        }
+    }
+
 
     fn success_server_result(result_info: Vec<u8>) -> Lib3hServerProtocol {
         Lib3hServerProtocol::SuccessResult(GenericResultData {
@@ -205,6 +210,10 @@ mod tests {
                     .handle(Ok(success_server_result(data.result_info))),
                 msg => panic!("unexpected client protocol message in receive: {:?}", msg),
             }
+        }
+
+        fn p2p_endpoint(&self) -> Option<url::Url> {
+            Some(url::Url::parse("test://simple-worker").unwrap())
         }
     }
 

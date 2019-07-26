@@ -227,13 +227,13 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use std::convert::TryInto;
-    use chain_header::test_chain_header;
     use crate::entry::{expected_entry_address, Entry};
+    use chain_header::test_chain_header;
     use holochain_persistence_api::cas::{
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
     };
+    use std::convert::TryInto;
 
     #[test]
     /// tests for PartialEq
@@ -306,20 +306,23 @@ pub mod tests {
         let chain_header = Entry::ChainHeader(test_chain_header());
         let chain_header_json = "{\"ChainHeader\":{\"entry_type\":{\"App\":\"testEntryType\"},\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"provenances\":[[\"HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa\",\"sig\"]],\"link\":null,\"link_same_type\":null,\"link_update_delete\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}";
         let expected = JsonString::from_json(chain_header_json);
-        assert_eq!(expected, JsonString::from(Entry::from(chain_header.clone())));
+        assert_eq!(
+            expected,
+            JsonString::from(Entry::from(chain_header.clone()))
+        );
         assert_eq!(
             &chain_header,
             &Entry::from(Entry::try_from(expected.clone()).unwrap())
         );
-        assert_eq!(&chain_header, &Entry::from(Entry::from(chain_header.clone())),);
+        assert_eq!(
+            &chain_header,
+            &Entry::from(Entry::from(chain_header.clone())),
+        );
         // test the conversion used in get_entry_from_cas
         let entry: Option<Entry> = Some(expected)
             .and_then(|js| js.try_into().ok())
             .map(|s: Entry| s.into());
-        assert_eq!(
-            entry,
-            Some(chain_header)
-        )
+        assert_eq!(entry, Some(chain_header))
     }
 
     #[test]

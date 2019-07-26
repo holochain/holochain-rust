@@ -126,7 +126,8 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.ubuntu.xenial.auto:
   docker:
@@ -135,7 +136,8 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.debian.stable.auto:
   docker:
@@ -144,7 +146,8 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.mac.10.auto:
   macos:
@@ -152,7 +155,8 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run: cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+   - run: cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.mac.10.nix:
   macos:

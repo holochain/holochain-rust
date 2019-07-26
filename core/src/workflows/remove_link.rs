@@ -97,7 +97,7 @@ pub async fn remove_link_workflow(
     context.log(format!("debug/workflow/remove_link: added! {:?}", link));
 
 
-    //4. store link_remove Entry
+    //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
     await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
     context.log(format!("debug/workflow/hold_entry: added! {:?}", entry_with_header));
 

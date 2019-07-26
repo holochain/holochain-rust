@@ -71,7 +71,7 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: committing...",
         address
     ));
-    let addr = await!(commit_entry(
+    let chain_header = await!(commit_entry(
         entry.clone(),
         maybe_link_update_delete,
         &context
@@ -98,7 +98,7 @@ pub async fn author_entry<'a>(
             address
         ));
     }
-    Ok(CommitEntryResult::new(addr))
+    Ok(CommitEntryResult::new(chain_header.entry_address().clone()))
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use crate::{
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
-use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_core_types::{entry::Entry, error::HolochainError, chain_header::ChainHeader};
 use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
@@ -18,7 +18,7 @@ pub async fn commit_entry(
     entry: Entry,
     maybe_link_update_delete: Option<Address>,
     context: &Arc<Context>,
-) -> Result<Address, HolochainError> {
+) -> Result<ChainHeader, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Commit((
         entry.clone(),
         maybe_link_update_delete,
@@ -39,7 +39,7 @@ pub struct CommitFuture {
 }
 
 impl Future for CommitFuture {
-    type Output = Result<Address, HolochainError>;
+    type Output = Result<ChainHeader, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("CommitFuture") {
@@ -59,7 +59,7 @@ impl Future for CommitFuture {
             .get(&self.action)
         {
             Some(ActionResponse::Commit(result)) => match result {
-                Ok(address) => Poll::Ready(Ok(address.clone())),
+                Ok(chain_header) => Poll::Ready(Ok(chain_header.clone())),
                 Err(error) => Poll::Ready(Err(error.clone())),
             },
             Some(_) => unreachable!(),

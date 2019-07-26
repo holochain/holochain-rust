@@ -396,7 +396,7 @@ pub mod tests {
         agent::AgentId,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
-        entry::{entry_type::EntryType, test_entry},
+        entry::{entry_type::EntryType},
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -679,7 +679,7 @@ pub mod tests {
 
         assert_eq!(
             response,
-            &ActionResponse::Commit(Ok(test_entry().address()))
+            &ActionResponse::Commit(Ok(test_chain_header()))
         );
     }
 

@@ -87,10 +87,10 @@ pub mod tests {
                 test_app_entry_type(),
                 JsonString::from(RawString::from(format!("entry{} value", i))),
             );
-            let address = initialized_context
+            let chain_header = initialized_context
                 .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
-            entry_addresses.push(address);
+            entry_addresses.push(chain_header.entry_address().clone());
         }
         entry_addresses
     }

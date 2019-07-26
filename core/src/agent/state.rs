@@ -167,7 +167,7 @@ impl AddressableContent for AgentStateSnapshot {
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
-    Commit(Result<Address, HolochainError>),
+    Commit(Result<ChainHeader, HolochainError>),
     FetchEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
@@ -237,11 +237,8 @@ fn reduce_commit_entry(
         let storage = &agent_state.chain_store.content_storage().clone();
         storage.write().unwrap().add(entry)?;
         storage.write().unwrap().add(&chain_header)?;
-        Ok((chain_header, entry.address()))
-    })
-    .and_then(|(chain_header, address)| {
-        agent_state.top_chain_header = Some(chain_header);
-        Ok(address)
+        agent_state.top_chain_header = Some(chain_header.clone());
+        Ok(chain_header)
     });
 
     agent_state
@@ -305,7 +302,7 @@ pub mod tests {
 
     /// dummy action response for a successful commit as test_entry()
     pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(expected_entry_address()))
+        ActionResponse::Commit(Ok(test_chain_header()))
     }
 
     #[test]
@@ -345,7 +342,7 @@ pub mod tests {
                 "{{\"Commit\":{{\"Ok\":\"{}\"}}}}",
                 expected_entry_address()
             )),
-            JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
+            JsonString::from(ActionResponse::Commit(Ok(test_chain_header()))),
         );
         assert_eq!(
             JsonString::from_json("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),

@@ -153,7 +153,8 @@ pub async fn initialize_chain(
                     "error committing public grant".to_string(),
                 ));
             }
-            Ok(addr) => {
+            Ok(chain_header) => {
+                let addr = chain_header.entry_address().clone();
                 context.log(format!(
                     "debug/initialize: created public token: {:?}",
                     addr

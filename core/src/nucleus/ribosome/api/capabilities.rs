@@ -32,7 +32,7 @@ pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs)
                 Entry::CapTokenGrant(grant.clone()),
                 None,
                 &context.clone(),
-            )),
+            )).map(|header| header.entry_address().clone()),
             Err(err) => Err(HolochainError::ErrorGeneric(format!(
                 "Unable to commit capability grant: {}",
                 err
@@ -56,7 +56,7 @@ pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs)
         Entry::CapTokenClaim(claim.clone()),
         None,
         &context.clone(),
-    ));
+    )).map(|header| header.entry_address().clone());
     runtime.store_result(task_result)
 }
 

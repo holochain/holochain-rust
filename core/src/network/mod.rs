@@ -245,13 +245,13 @@ pub mod tests {
                 test_app_entry_type(),
                 JsonString::from_json(&format!("entry{} value", i)),
             );
-            let address = context1
+            let chain_header = context1
                 .block_on(commit_entry(entry.clone(), None, &context1))
                 .expect("Could not commit entry for testing");
             let _ = context1
                 .block_on(publish(entry.address(), &context1))
                 .expect("Could not publish entry for testing");
-            entry_addresses.push(address);
+            entry_addresses.push(chain_header.entry_address().clone());
         }
 
         let link1 = LinkData::new_add(

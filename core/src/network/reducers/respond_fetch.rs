@@ -6,8 +6,10 @@ use crate::{
     state::State,
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net::connection::json_protocol::{
-    EntryData, FetchEntryData, FetchEntryResultData, JsonProtocol,
+
+use lib3h_protocol::{
+    data_types::{EntryData, FetchEntryData, FetchEntryResultData},
+    protocol_client::Lib3hClientProtocol,
 };
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
@@ -20,9 +22,9 @@ fn reduce_respond_fetch_data_inner(
     network_state.initialized()?;
     send(
         network_state,
-        JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
+        Lib3hClientProtocol::HandleFetchEntryResult(FetchEntryResultData {
             request_id: fetch_data.request_id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: fetch_data.entry_address.clone(),

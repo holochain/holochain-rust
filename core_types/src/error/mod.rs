@@ -44,7 +44,7 @@ pub struct CoreError {
 
 // Error trait by using the inner Error
 impl Error for CoreError {
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         self.kind.source()
     }
 }
@@ -125,6 +125,12 @@ pub type HcResult<T> = Result<T, HolochainError>;
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
+    }
+}
+
+impl From<rust_base58::base58::FromBase58Error> for HolochainError {
+    fn from(e: rust_base58::base58::FromBase58Error) -> Self {
+        HolochainError::SerializationError(format!("{}", e))
     }
 }
 

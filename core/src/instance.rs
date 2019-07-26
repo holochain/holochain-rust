@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
     context::Context,
+    network,
     persister::Persister,
     scheduled_jobs,
     signal::Signal,
@@ -14,6 +15,7 @@ use crate::{
     nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
@@ -23,10 +25,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{
-    sync::{
-        mpsc::{sync_channel, Receiver, Sender, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
     thread,
     time::Duration,
 };
@@ -39,12 +38,12 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: Option<SyncSender<ActionWrapper>>,
-    observer_channel: Option<SyncSender<Observer>>,
+    action_channel: Option<Sender<ActionWrapper>>,
+    observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<Persister>>>,
+    persister: Option<Arc<Mutex<dyn Persister>>>,
     consistency_model: ConsistencyModel,
-    kill_switch: Option<crossbeam_channel::Sender<()>>,
+    kill_switch: Option<Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -55,8 +54,6 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
-
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
@@ -103,14 +100,14 @@ impl Instance {
         let context = self.inner_setup(context);
         context.block_on(
             async {
-                await!(initialize_chain(dna.clone(), &context))?;
-                await!(initialize_network_with_spoofed_dna(
-                    spoofed_dna_address,
-                    &context
-                ))
+              await!(initialize_chain(dna.clone(), &context))?;
+              await!(initialize_network_with_spoofed_dna(
+                  spoofed_dna_address,
+                  &context
+              ))
             },
         )?;
-        Ok(context)
+      Ok(context)
     }
 
     /// Only needed in tests to check that the initialization (and other workflows) fail
@@ -125,13 +122,13 @@ impl Instance {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    fn action_channel(&self) -> &Sender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &Sender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
@@ -148,8 +145,8 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(Self::DEFAULT_CHANNEL_BUF_SIZE);
-        let (tx_observer, rx_observer) = sync_channel::<Observer>(Self::DEFAULT_CHANNEL_BUF_SIZE);
+        let (tx_action, rx_action) = unbounded::<ActionWrapper>();
+        let (tx_observer, rx_observer) = unbounded::<Observer>();
         self.action_channel = Some(tx_action.clone());
         self.observer_channel = Some(tx_observer.clone());
 
@@ -332,10 +329,18 @@ impl Instance {
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
     }
+
+    pub async fn shutdown_network(&self) -> HcResult<()> {
+        await!(network::actions::shutdown::shutdown(
+            self.state.clone(),
+            self.action_channel.as_ref().unwrap().clone(),
+        ))
+    }
 }
 
 impl Drop for Instance {
     fn drop(&mut self) {
+        let _ = self.shutdown_network();
         self.stop_action_loop();
         self.state.write().unwrap().drop_inner_state();
     }
@@ -370,7 +375,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
     lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
@@ -393,7 +398,6 @@ pub mod tests {
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
     };
-    use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
@@ -402,7 +406,7 @@ pub mod tests {
     use crate::persister::SimplePersister;
 
     use std::{
-        sync::{mpsc::channel, Arc, Mutex},
+        sync::{Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
@@ -449,8 +453,8 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
-        action_channel: &SyncSender<ActionWrapper>,
-        observer_channel: &SyncSender<Observer>,
+        action_channel: &Sender<ActionWrapper>,
+        observer_channel: &Sender<Observer>,
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
@@ -532,11 +536,6 @@ pub mod tests {
         Arc::new(context)
     }
 
-    #[test]
-    fn default_buffer_size_test() {
-        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
-    }
-
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna, network_name: Option<&str>) -> Result<Instance, String> {
         test_instance_and_context(dna, network_name).map(|tuple| tuple.0)
@@ -566,10 +565,10 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
 
-        /// fair warning... use test_instance_blank() if you want a minimal instance
+        // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
-            "Empty zomes = No genesis = infinite loops below!"
+            "Empty zomes = No init = infinite loops below!"
         );
 
         // @TODO abstract and DRY this out
@@ -605,7 +604,7 @@ pub mod tests {
             })
             .is_none()
         {
-            println!("Waiting for Commit for genesis");
+            println!("Waiting for Commit for init");
             sleep(Duration::from_millis(10))
         }
 
@@ -658,13 +657,13 @@ pub mod tests {
         assert!(new_observers.is_empty());
 
         let rx_action_is_empty = match rx_action.try_recv() {
-            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(crossbeam_channel::TryRecvError::Empty) => true,
             _ => false,
         };
         assert!(rx_action_is_empty);
 
         let rx_observer_is_empty = match rx_observer.try_recv() {
-            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(crossbeam_channel::TryRecvError::Empty) => true,
             _ => false,
         };
         assert!(rx_observer_is_empty);
@@ -714,10 +713,10 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that an unimplemented genesis allows the nucleus to initialize
+    /// tests that an unimplemented init allows the nucleus to initialize
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
-    fn test_missing_genesis() {
+    fn test_missing_init() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
@@ -728,15 +727,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a valid genesis allows the nucleus to initialize
-    fn test_genesis_ok() {
+    /// tests that a valid init allows the nucleus to initialize
+    fn test_init_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 0
                 )
                 (data (i32.const 0)
@@ -748,7 +747,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna, Some("test_genesis_ok"));
+        let maybe_instance = test_instance(dna, Some("test_init_ok"));
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();
@@ -756,15 +755,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a failed genesis prevents the nucleus from initializing
-    fn test_genesis_err() {
+    /// tests that a failed init prevents the nucleus from initializing
+    fn test_init_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 9
                 )
                 (data (i32.const 0)
@@ -780,7 +779,9 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from(JsonString::from(RawString::from("Genesis")))
+            String::from(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+            )
         );
     }
 
@@ -798,7 +799,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
@@ -830,7 +831,7 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
         instance.process_action(
             &commit_agent_action,

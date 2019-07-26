@@ -12,7 +12,6 @@ use super::Dispatch;
 /// Returns the signature as a string.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]
@@ -43,7 +42,6 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// Returns the signatures of the payloads and the public key that can be used to verify the signatures.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]
@@ -77,7 +75,6 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// Verifies a provenance (public key, signature) against a payload
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # extern crate hdk;
 /// # extern crate serde_json;
 /// # #[macro_use]

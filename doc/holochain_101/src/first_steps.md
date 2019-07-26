@@ -64,7 +64,7 @@ The project structure should now be as follows:
 ```
 
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.18-alpha1/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (genesis).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.18-alpha1/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (init).
 
 Open up `lib.rs` and replace its contents with the following:
 
@@ -76,7 +76,7 @@ define_zome! {
     entries: [
     ]
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 
@@ -117,7 +117,6 @@ You might notice that the `List` struct does not contain a field that holds a co
 Also be sure to add the following to the list of imports:
 
 ```rust
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 #[macro_use]
@@ -282,7 +281,6 @@ define_zome! {
 and there we have it! If you are coding along the full lib.rs should now look like this:
 
 ```rust
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 #[macro_use]
@@ -335,7 +333,7 @@ define_zome! {
         )
     ]
 
-    genesis: || {
+    init: || {
         Ok(())
     }
 

@@ -32,9 +32,9 @@ pub struct ContextBuilder {
     // Persister is currently set to a reasonable default in spawn().
     // TODO: add with_persister() function to ContextBuilder.
     //persister: Option<Arc<Mutex<Persister>>>,
-    chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
-    dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
-    eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage<Attribute>>>>,
+    chain_storage: Option<Arc<RwLock<dyn ContentAddressableStorage>>>,
+    dht_storage: Option<Arc<RwLock<dyn ContentAddressableStorage>>>,
+    eav_storage: Option<Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>>,
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
@@ -83,7 +83,7 @@ impl ContextBuilder {
         fs::create_dir_all(&eav_path)?;
 
         let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-        let eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>> =
+        let eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> =
             Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
         self.chain_storage = Some(file_storage.clone());
         self.dht_storage = Some(file_storage);

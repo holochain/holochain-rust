@@ -1,6 +1,72 @@
 # Changelog
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.0.25-alpha1] - 2019-07-26
+
+### Added
+
+### Changed
+- **Breaking Change** genesis function now renamed to init [#1508](https://github.com/holochain/holochain-rust/pull/1508)
+- **BREAKING:** Zomes must now include a `validate_agent` callback. If this rejects in any zome the DNA will not start. This can be used to enforce membrane requirements. [#1497](https://github.com/holochain/holochain-rust/pull/1497)
+- Added a `get_links_count` method which allows the user to get number of links by base and tag [#1568](https://github.com/holochain/holochain-rust/pull/1568)### Changed
+- The Conductor will shut down gracefully when receiving SIGINT (i.e. Ctrl+C) or SIGKILL, also causing a graceful shutdown of an attached n3h instance, if running [#1599](https://github.com/holochain/holochain-rust/pull/1599)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Fixed problem with `hc run` that was introduced by [Conductor config sanitizing](https://github.com/holochain/holochain-rust/pull/1335) a week ago: The conductor config now needs to include the correct hash of each configured DNA file. [#1603](https://github.com/holochain/holochain-rust/pull/1603) adds the proper hash to the internally created conductor config that `hc run` runs.
+
+### Security
+
+## [0.0.24-alpha2] - 2019-07-15
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.24-alpha1] - 2019-07-15
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.23-alpha1] - 2019-07-11
+
+### Added
+- Discrepancy between DNA hashes are now checked and reported to the user through logs [#1335](https://github.com/holochain/holochain-rust/pull/1335).
+
+### Changed
+
+- *Breaking Change* Validation callback now shows consistent behavior when called on the authoring node during entry commit time, and when called by validating nodes being requested to hold the entry.  In both cases the a FullChain validation package now does NOT include the about-to-be-added entry.  Some validation functions were relying on the behavior of having the entry be at the top of the chain in the Hold case, and using the EntryLifecycle flag value to distinguish the two cases.   Please note that in the future this flag may be going away! [#1563](https://github.com/holochain/holochain-rust/pull/1563)
+- *Breaking Change* Format of `.hcbuild` files that are run by `hc` changed: `steps` is now an array so we have deterministic ordering of build steps. - In order to apply WASM size optimizations to our app-spec test suite, we had to make more sophisticated use of the `.hcbuild` files with a sequence of consecutive steps. The former implementation with a map had to changed to an array. [#1577](https://github.com/holochain/holochain-rust/pull/1577)
+### Deprecated
+
+- The EntryLifecycle flags in validation may be going away.  If you have a use-case that requires this, please tell us.
+
+### Removed
+
+### Fixed
+
+### Security
 
 ## [0.0.22-alpha1] - 2019-07-04
 

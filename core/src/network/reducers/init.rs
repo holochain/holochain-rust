@@ -3,19 +3,13 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_net::{
-    connection::{
-        json_protocol::{JsonProtocol, TrackDnaData},
-        net_connection::NetSend,
-    },
-    p2p_network::P2pNetwork,
-};
-use std::sync::{Arc, Mutex};
+use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
+use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
 
 pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
-    let mut network = P2pNetwork::new(
+    let network = P2pNetwork::new(
         network_settings.handler.clone(),
         network_settings.p2p_config.clone(),
     )
@@ -33,17 +27,22 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
-    let json = JsonProtocol::TrackDna(TrackDnaData {
-        dna_address: network_settings.dna_address.clone(),
+    let json = Lib3hClientProtocol::JoinSpace(SpaceData {
+        request_id: snowflake::ProcessUniqueId::new().to_string(),
+        space_address: network_settings.dna_address.clone(),
         agent_id: network_settings.agent_id.clone().into(),
     });
 
-    let _ = network.send(json.into()).and_then(|_| {
-        state.network = Some(Arc::new(Mutex::new(network)));
-        state.dna_address = Some(network_settings.dna_address.clone());
-        state.agent_id = Some(network_settings.agent_id.clone());
-        Ok(())
-    });
+    let mut network_lock = state.network.lock().unwrap();
+    *network_lock = Some(network);
+    state.dna_address = Some(network_settings.dna_address.clone());
+    state.agent_id = Some(network_settings.agent_id.clone());
+
+    if let Err(err) = network_lock.as_mut().unwrap().send(json.into()) {
+        println!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
+        println!("Failed to initialize network!");
+        let _ = network_lock.take().unwrap().stop();
+    }
 }
 
 #[cfg(test)]
@@ -59,7 +58,7 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use std::sync::{Mutex, RwLock};
+    use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
     fn test_context() -> Arc<Context> {

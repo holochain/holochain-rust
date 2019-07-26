@@ -1,5 +1,3 @@
-#![feature(try_from)]
-
 #[macro_use]
 extern crate hdk;
 #[macro_use]
@@ -50,7 +48,7 @@ pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
 define_zome! {
     entries: []
 
-    genesis: || {
+    init: || {
         {
             hdk::keystore_new_random("app_root_seed", 32)
                 .map_err(|err|
@@ -58,6 +56,10 @@ define_zome! {
                 ).unwrap_or(());
             Ok(())
         }
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
     }
 
     functions: [

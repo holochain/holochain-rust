@@ -9,8 +9,8 @@ use crate::{
 };
 use holochain_core_types::entry::{deletion_entry::DeletionEntry, Entry};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::StoreEntryAspectData;
 use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h_protocol::data_types::StoreEntryAspectData;
 use snowflake::ProcessUniqueId;
 use std::{convert::TryInto, sync::Arc, thread};
 

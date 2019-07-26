@@ -3,7 +3,6 @@
 //! Remember to free all dna objects and returned strings.
 //!
 //! See the associated Qt unit tests in the c_binding_tests directory.
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 extern crate holochain_core_types;
 extern crate holochain_json_api;

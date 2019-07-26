@@ -143,7 +143,7 @@ pub type Index = i64;
 pub type EntityAttributeValueIndex =
     holochain_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
-pub type EntityAttributeValueStorage = GenericStorage<Attribute>;
+pub type EntityAttributeValueStorage = dyn GenericStorage<Attribute>;
 
 fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {

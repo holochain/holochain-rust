@@ -1,8 +1,11 @@
 use crate::{
     agent::state::AgentState,
     network::{
-        direct_message::DirectMessage, entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader, state::NetworkState,
+        direct_message::DirectMessage,
+        entry_aspect::EntryAspect,
+        entry_with_header::EntryWithHeader,
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        state::NetworkState,
     },
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
@@ -24,14 +27,9 @@ use holochain_core_types::{
     signature::Provenance,
     validation::ValidationPackage,
 };
-use holochain_net::{
-    connection::{
-        json_protocol::{EntryListData, FetchEntryData, QueryEntryData},
-        net_connection::NetHandler,
-    },
-    p2p_config::P2pConfig,
-};
+use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -158,10 +156,10 @@ pub enum Action {
 
     /// get links from entry address and link_type name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks(GetLinksKey),
+    GetLinks((GetLinksKey, Option<CrudStatus>, GetLinksNetworkQuery)),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
-    HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
+    RespondGetLinks((QueryEntryData, GetLinksNetworkResult, String, String)),
+    HandleGetLinksResult((GetLinksNetworkResult, GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -200,8 +198,8 @@ pub enum Action {
     // Nucleus actions:
     // ----------------
     /// initialize a chain from Dna
-    /// not the same as genesis
-    /// may call genesis internally
+    /// not the same as init
+    /// may call init internally
     InitializeChain(Dna),
     /// return the result of an InitializeChain action
     /// the result is an initialization structure which include the generated public token if any

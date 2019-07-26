@@ -142,6 +142,7 @@ impl DhtStore {
         address: Address,
         link_type: String,
         tag: String,
+        crud_filter: Option<CrudStatus>,
     ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
@@ -151,6 +152,7 @@ impl DhtStore {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),
             })
+            .filter(|link_crud| crud_filter.map(|crud| crud == link_crud.1).unwrap_or(true))
             .collect())
     }
 

@@ -26,7 +26,7 @@ use hdk::holochain_json_api::{
 };
 
 
-// see https://developer.holochain.org/api/0.0.24-alpha2/hdk/ for info on using the hdk library
+// see https://developer.holochain.org/api/0.0.25-alpha1/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
@@ -66,7 +66,7 @@ define_zome! {
        definition()
     ]
 
-    genesis: || { Ok(()) }
+    init: || { Ok(()) }
 
     functions: [
         create_my_entry: {

@@ -14,3 +14,6 @@ rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~
 curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
 export PATH=$HOME/.yarn/bin:$PATH
 npm install -g neon-cli
+
+curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2019-07-14 -y
+source $HOME/.cargo/env

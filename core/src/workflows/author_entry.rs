@@ -1,7 +1,7 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    entry::CanPublish,
+    // entry::CanPublish,
     network::actions::publish::publish,
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
@@ -82,7 +82,7 @@ pub async fn author_entry<'a>(
     ));
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    if entry.entry_type().can_publish(context) {
+    // if entry.entry_type().can_publish(context) {
         context.log(format!(
             "debug/workflow/authoring_entry/{}: publishing...",
             address
@@ -92,12 +92,12 @@ pub async fn author_entry<'a>(
             "debug/workflow/authoring_entry/{}: published!",
             address
         ));
-    } else {
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: entry is private, no publishing",
-            address
-        ));
-    }
+    // } else {
+    //     context.log(format!(
+    //         "debug/workflow/authoring_entry/{}: entry is private, no publishing",
+    //         address
+    //     ));
+    // }
     Ok(CommitEntryResult::new(addr))
 }
 

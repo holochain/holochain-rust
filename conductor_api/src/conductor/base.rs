@@ -25,7 +25,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use logging::{rule::RuleFilter, FastLoggerBuilder};
+//use logging::{rule::RuleFilter, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -690,18 +690,6 @@ impl Conductor {
                                     format!("Error creating context: {}", hc_err.to_string())
                                 })?
                     }
-                }
-
-                if config.logger.logger_type == "debug" {
-                    let _logger = FastLoggerBuilder::new()
-                        .set_level_from_str("Trace")
-                        .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
-                        .build()
-                        .expect("Fail to instanciate the logging factory.");
-
-                    /*                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
-                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-                    )));*/
                 }
 
                 let instance_name = instance_config.id.clone();

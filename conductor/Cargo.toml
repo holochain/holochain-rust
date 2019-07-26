@@ -12,3 +12,5 @@ signal-hook = "=0.1.9"
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"
+log = "=0.4.6"
+logging = { path = "../logging" }

@@ -43,7 +43,6 @@ base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"
 log = "=0.4.6"
-logging = { path = "../logging" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

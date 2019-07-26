@@ -19,6 +19,7 @@ extern crate holochain_core_types;
 extern crate lib3h_sodium;
 extern crate signal_hook;
 extern crate structopt;
+extern crate logging;
 
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -28,6 +29,7 @@ use holochain_core_types::error::HolochainError;
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
+use logging::{rule::RuleFilter, FastLoggerBuilder};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "holochain")]
@@ -39,6 +41,11 @@ struct Opt {
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
+    let _logger = FastLoggerBuilder::new()
+        .set_level_from_str("Trace")
+        .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
+        .build()
+        .expect("Fail to instanciate the logging factory.");
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
     let config_path = opt

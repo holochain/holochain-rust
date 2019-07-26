@@ -1,4 +1,5 @@
-use super::{protocol::Protocol, NetResult};
+use super::NetResult;
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use parking_lot::RwLock;
 use std::{fmt, sync::Arc};
 
@@ -6,19 +7,20 @@ use std::{fmt, sync::Arc};
 #[derive(Clone, Serialize)]
 pub struct NetHandler {
     #[serde(skip)]
-    closure: Arc<RwLock<Box<dyn FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>>>,
+    closure:
+        Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>>>,
 }
 
 impl NetHandler {
     pub fn new(
-        c: Box<dyn FnMut(NetResult<Protocol>) -> NetResult<()> + Send + Sync>,
+        c: Box<dyn FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>,
     ) -> NetHandler {
         NetHandler {
             closure: Arc::new(RwLock::new(c)),
         }
     }
 
-    pub fn handle(&mut self, message: NetResult<Protocol>) -> NetResult<()> {
+    pub fn handle(&mut self, message: NetResult<Lib3hServerProtocol>) -> NetResult<()> {
         let mut lock = self.closure.write();
         (&mut *lock)(message)
     }
@@ -41,7 +43,7 @@ pub type NetShutdown = Option<Box<dyn FnMut() + Send>>;
 
 ///  Trait for sending a Protocol message to the network
 pub trait NetSend {
-    fn send(&mut self, data: Protocol) -> NetResult<()>;
+    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()>;
 }
 
 /// Trait that represents a worker thread that relays incoming and outgoing protocol messages
@@ -49,7 +51,7 @@ pub trait NetSend {
 pub trait NetWorker {
     /// The receiving method when NetSend's `send()` is called.
     /// It should relay that Protocol message to the p2p module.
-    fn receive(&mut self, _data: Protocol) -> NetResult<()> {
+    fn receive(&mut self, _data: Lib3hClientProtocol) -> NetResult<()> {
         Ok(())
     }
 
@@ -68,6 +70,11 @@ pub trait NetWorker {
 
     /// Getter of the connection's endpoint
     fn endpoint(&self) -> Option<String> {
+        Some(String::new())
+    }
+
+    /// Attempt to retreive the p2p endpoint
+    fn p2p_endpoint(&self) -> Option<String> {
         Some(String::new())
     }
 }

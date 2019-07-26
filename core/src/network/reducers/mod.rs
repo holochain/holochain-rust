@@ -45,10 +45,10 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::{
-    json_protocol::{JsonProtocol, MessageData},
-    net_connection::NetSend,
-};
+use holochain_net::connection::net_connection::NetSend;
+
+use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
+
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
@@ -96,11 +96,11 @@ pub fn reduce(
     }
 }
 
-/// Sends the given JsonProtocol over the network using the network proxy instance
+/// Sends the given Lib3hClientProtocol over the network using the network proxy instance
 /// that lives in the NetworkState.
 pub fn send(
     network_state: &mut NetworkState,
-    json_message: JsonProtocol,
+    json_message: Lib3hClientProtocol,
 ) -> Result<(), HolochainError> {
     network_state
         .network
@@ -130,16 +130,16 @@ pub fn send_message(
 
     let content_json_string: JsonString = message.to_owned().into();
     let content = content_json_string.to_bytes();
-
-    let data = MessageData {
+    let space_address = network_state.dna_address.clone().unwrap();
+    let data = DirectMessageData {
         request_id: id.clone(),
-        dna_address: network_state.dna_address.clone().unwrap(),
+        space_address,
         to_agent_id: to_agent_id.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content,
     };
 
-    let _ = send(network_state, JsonProtocol::SendMessage(data))?;
+    let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

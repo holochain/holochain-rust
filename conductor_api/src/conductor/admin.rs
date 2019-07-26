@@ -424,12 +424,13 @@ impl ConductorAdmin for Conductor {
                     let hc_lock = instance.clone();
                     let hc_lock_inner = hc_lock.clone();
                     let mut hc = hc_lock_inner.write().unwrap();
-                    hc.dpki_create_agent_key(name.clone())?;
+                    hc.dpki_create_agent_key(id.clone())?;
                 }
                 // TODO: how do we clean-up now if this fails? i.e. the dpki dna will have registered
                 // the identity to its DHT, but we failed, for what ever reason, to set up
                 // the agent in the conductor, so we should do something...
-                let dpki_keystore = self.get_keystore_for_agent(&dpki_instance_id)?;
+                let dpki_config = self.config.instance_by_id(&dpki_instance_id)?;
+                let dpki_keystore = self.get_keystore_for_agent(&dpki_config.agent)?;
                 let mut dpki_keystore = dpki_keystore.lock().unwrap();
                 let mut keybundle = dpki_keystore.get_keybundle(&id)?;
                 keystore.add_keybundle(PRIMARY_KEYBUNDLE_ID, &mut keybundle)?;

@@ -3,7 +3,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_net::connection::json_protocol::JsonProtocol;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 pub fn reduce_respond_authoring_list(
     network_state: &mut NetworkState,
@@ -14,7 +14,7 @@ pub fn reduce_respond_authoring_list(
     let entry_list_data = unwrap_to!(action => crate::action::Action::RespondAuthoringList);
     if let Err(err) = send(
         network_state,
-        JsonProtocol::HandleGetAuthoringEntryListResult(entry_list_data.clone()),
+        Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data.clone()),
     ) {
         println!(
             "Error sending JsonProtocol::HandleGetAuthoringEntryListResult: {:?}",

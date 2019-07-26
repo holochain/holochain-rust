@@ -1,13 +1,9 @@
 use basic_workflows::setup_two_nodes;
 use constants::*;
-use holochain_net::{
-    connection::{
-        json_protocol::{EntryData, JsonProtocol},
-        NetResult,
-    },
-    tweetlog::*,
-};
+use holochain_net::{connection::NetResult, tweetlog::*};
 use p2p_node::test_node::TestNode;
+
+use lib3h_protocol::{data_types::EntryData, protocol_server::Lib3hServerProtocol};
 
 ///
 #[cfg_attr(tarpaulin, skip)]
@@ -29,10 +25,10 @@ pub fn empty_publish_entry_list_test(
     assert!(res.is_err());
     // Billy should receive the failureResult back
     let result = billy
-        .wait_json(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::FailureResult(_))))
         .unwrap();
     log_i!("got result: {:?}", result);
-    let gen_res = unwrap_to!(result => JsonProtocol::FailureResult);
+    let gen_res = unwrap_to!(result => Lib3hServerProtocol::FailureResult);
     assert_eq!(res.err().unwrap(), *gen_res);
     // Done
     Ok(())
@@ -52,32 +48,35 @@ pub fn publish_entry_list_test(
     // Reply to the publish_list request received from network module
     alex.reply_to_first_HandleGetAuthoringEntryList();
     // Should receive a HandleFetchEntry request from network module after receiving list
-    let _ = alex.wait_HandleFetchEntry_and_reply();
+    assert!(alex.wait_HandleFetchEntry_and_reply());
     //    // Should receive a HandleFetchEntry request from network module for gossip
     //    let _ = alex.wait_HandleFetchEntry_and_reply();
 
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
-        2000,
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
+        0,
     );
 
-    log_i!("Billy got res: {:?}", res);
+    println!("[1] Billy got res: {:?}", res);
     // billy asks for reported authored data.
     let query_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
     let res = billy.reply_to_HandleQueryEntry(&query_data);
+    println!("[2] Billy got res: {:?}", res);
     // #fullsync
     // Billy answers its own request
     // let has_received = billy.wait_HandleQueryEntry_and_reply();
     assert!(res.is_ok());
     // Billy should receive the entry data
-    let mut result =
-        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_lib3h_msg(
+        0,
+        Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))),
+    );
     if result.is_none() {
-        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        result = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))))
     }
-    let json = result.unwrap();
-    log_i!("got result: {:?}", json);
+    let response = result.unwrap();
+    log_i!("got result: {:?}", response);
     // Done
     Ok(())
 }
@@ -95,8 +94,8 @@ pub fn double_publish_entry_list_test(
     //    // Should receive only one HandleFetchEntry request from network module for Gossip
     //    let _ = alex.wait_HandleFetchEntry_and_reply();
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Billy got res: {:?}", res);
@@ -107,10 +106,12 @@ pub fn double_publish_entry_list_test(
     // Billy receives and replies to its own query
     //let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data back
-    let mut result =
-        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_lib3h_msg(
+        0,
+        Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))),
+    );
     if result.is_none() {
-        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        result = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -135,8 +136,8 @@ pub fn hold_list_test(
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
     // wait for billy to receive HandleStoreEntryAspect via gossip
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Billy got res: {:?}", res);
@@ -147,10 +148,12 @@ pub fn hold_list_test(
     // billy replies to own query
     // let _ = billy.wait_HandleQueryEntry_and_reply();
     // Billy should receive the entry data
-    let mut result =
-        billy.find_recv_json_msg(0, Box::new(one_is!(JsonProtocol::QueryEntryResult(_))));
+    let mut result = billy.find_recv_lib3h_msg(
+        0,
+        Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))),
+    );
     if result.is_none() {
-        result = billy.wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        result = billy.wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))))
     }
     let json = result.unwrap();
     log_i!("got result: {:?}", json);
@@ -175,8 +178,8 @@ pub fn many_aspects_test(
     log_d!("Alex authored and stored Aspects");
 
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Billy got res 0: {:?}", res);
@@ -192,14 +195,14 @@ pub fn many_aspects_test(
     //    log_d!("Alex has_received: {}", has_received);
 
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Billy got res 1: {:?}", res);
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     log_i!("Billy got res 2: {:?}", res);
@@ -215,8 +218,8 @@ pub fn many_aspects_test(
     // assert!(has_received); // n3h doesnt send fetch because gossip already took care of it
 
     // billy might receive HandleStoreEntryAspect
-    let res = billy.wait_json_with_timeout(
-        Box::new(one_is!(JsonProtocol::HandleStoreEntryAspect(_))),
+    let res = billy.wait_lib3h_with_timeout(
+        Box::new(one_is!(Lib3hServerProtocol::HandleStoreEntryAspect(_))),
         2000,
     );
     // assert!(res.is_some()); // n3h doesnt send fetch because gossip already took care of it
@@ -232,10 +235,10 @@ pub fn many_aspects_test(
 
     // Billy should receive requested data
     let result = billy
-        .wait_json(Box::new(one_is!(JsonProtocol::QueryEntryResult(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::QueryEntryResult(_))))
         .unwrap();
     log_i!("got QueryEntryResult: {:?}", result);
-    let query_res_data = unwrap_to!(result => JsonProtocol::QueryEntryResult);
+    let query_res_data = unwrap_to!(result => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_res_data.query_result).unwrap();
     log_i!("got query_result: {:?}", query_result);
     assert_eq!(query_res_data.entry_address, ENTRY_ADDRESS_1.clone());

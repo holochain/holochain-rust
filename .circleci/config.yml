@@ -122,29 +122,41 @@ jobs:
  cold.ubuntu.bionic.auto:
   docker:
    - image: ubuntu:bionic
-  resource_class: xlarge
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.ubuntu.xenial.auto:
   docker:
    - image: ubuntu:xenial
-  resource_class: xlarge
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.debian.stable.auto:
   docker:
    - image: debian:stable
-  resource_class: xlarge
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.mac.10.auto:
   macos:
@@ -152,7 +164,12 @@ jobs:
   steps:
    - checkout
    - run: ./scripts/install/auto.sh
-   - run: make test
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
 
  cold.mac.10.nix:
   macos:

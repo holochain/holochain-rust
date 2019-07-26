@@ -102,6 +102,8 @@ extern crate holochain_persistence_file;
 extern crate holochain_persistence_mem;
 extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;
+#[macro_use]
+extern crate log;
 extern crate logging;
 
 extern crate chrono;

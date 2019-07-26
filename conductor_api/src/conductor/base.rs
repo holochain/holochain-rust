@@ -8,7 +8,6 @@ use crate::{
     dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-    logger::DebugLogger,
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -25,7 +24,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use logging::{rule::RuleFilter, FastLoggerBuilder};
+use logging::{rule::RuleFilter, FastLoggerBuilder, FastLogger};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -99,7 +98,8 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
-    logger: DebugLogger,
+    #[allow(dead_code)]
+    logger: FastLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
@@ -153,8 +153,13 @@ pub fn notify(msg: String) {
 
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
-        let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+        let _rules = config.logger.rules.clone();
+        let logger = FastLoggerBuilder::new()
+            .set_level_from_str("Trace")
+            .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
+            .build()
+            .expect("Fail to instanciate the logging factory.");
 
         Conductor {
             instances: HashMap::new(),
@@ -169,7 +174,7 @@ impl Conductor {
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
-            logger: DebugLogger::new(rules),
+            logger,
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
@@ -217,7 +222,7 @@ impl Conductor {
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
-        self.log("starting signal loop".into());
+        debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
@@ -692,18 +697,6 @@ impl Conductor {
                     }
                 }
 
-                if config.logger.logger_type == "debug" {
-                    let _logger = FastLoggerBuilder::new()
-                        .set_level_from_str("Trace")
-                        .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
-                        .build()
-                        .expect("Fail to instanciate the logging factory.");
-
-                    /*                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
-                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-                    )));*/
-                }
-
                 let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id, config)?;
@@ -1128,17 +1121,11 @@ impl Conductor {
         let (broadcaster, _handle) = iface
             .run(dispatcher, kill_switch_rx)
             .map_err(|error| {
-                self.log(format!(
-                    "err/conductor: Error running interface '{}': {}",
-                    interface_config.id, error
-                ));
+                error!("conductor: Error running interface '{}': {}", interface_config.id, error);
                 error
             })
             .unwrap();
-        self.log(format!(
-            "debug/conductor: adding broadcaster to map {:?}",
-            broadcaster
-        ));
+        debug!("conductor: adding broadcaster to map {:?}", broadcaster);
 
         {
             self.interface_broadcasters
@@ -1148,13 +1135,6 @@ impl Conductor {
         }
 
         kill_switch_tx
-    }
-
-    fn log(&self, msg: String) {
-        self.logger
-            .get_sender()
-            .send(("conductor".to_string(), msg))
-            .unwrap()
     }
 
     pub fn dna_dir_path(&self) -> PathBuf {

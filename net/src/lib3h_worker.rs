@@ -27,6 +27,14 @@ pub struct Lib3hWorker<T:Transport> {
     net_engine: RealEngine<T, MirrorDht>,
 }
 
+
+impl<T:Transport> Lib3hWorker<T> {
+    pub fn advertise(self) -> url::Url {
+        self.net_engine.advertise()
+    }
+
+}
+
 /// Constructors
 impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
@@ -112,9 +120,15 @@ impl<T:Transport> NetWorker for Lib3hWorker<T> {
     }
 
     /// Set the advertise as worker's endpoint
-    fn endpoint(&self) -> Option<String> {
-        Some(self.net_engine.advertise().to_string())
+    fn p2p_endpoint(&self) -> Option<url::Url> {
+        Some(self.net_engine.advertise())
     }
+
+    /// Set the advertise as worker's endpoint
+    fn endpoint(&self) -> Option<String> {
+        Some("".into())
+    }
+
 
 
 }

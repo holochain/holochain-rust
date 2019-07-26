@@ -224,8 +224,9 @@ impl NetWorker for IpcNetWorker {
         Some(self.ipc_uri.clone())
     }
 
-    fn p2p_endpoint(&self) -> Option<String> {
-        Some(self.p2p_uri.clone())
+    fn p2p_endpoint(&self) -> Option<url::Url> {
+        Some(url::Url::parse(self.p2p_uri.clone().as_str())
+             .expect("p2p_endpoint as well formed url"))
     }
 }
 

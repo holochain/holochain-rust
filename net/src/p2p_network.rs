@@ -158,7 +158,7 @@ impl P2pNetwork {
         self.connection.endpoint.clone()
     }
 
-    pub fn p2p_endpoint(&self) -> String {
+    pub fn p2p_endpoint(&self) -> url::Url {
         self.connection.p2p_endpoint.clone()
     }
 }

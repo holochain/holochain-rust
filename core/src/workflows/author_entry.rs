@@ -130,7 +130,9 @@ pub mod tests {
         dna.uuid = "test_commit_with_dht_publish".to_string();
         let netname = Some("test_commit_with_dht_publish, the network");
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, Some("test_commit_with_dht_publish2"));
+        let context1_url = context1.state().unwrap().network().network.lock().unwrap().as_ref().unwrap().p2p_endpoint();
+        let (_instance2, context2) = instance_with_bootstrap_nodes(
+            "jack", dna, Some("test_commit_with_dht_publish2, the network"), vec![context1_url]);
 
         let entry_address = context1
             .block_on(author_entry(

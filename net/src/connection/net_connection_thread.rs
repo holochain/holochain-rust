@@ -21,7 +21,7 @@ pub struct NetConnectionThread {
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
     pub endpoint: String,
-    pub p2p_endpoint: String,
+    pub p2p_endpoint: url::Url,
 }
 
 impl NetSend for NetConnectionThread {
@@ -116,8 +116,7 @@ impl NetConnectionThread {
             .expect("Should have an endpoint address")
             .to_string();
         let p2p_endpoint = p2p_endpoint
-            .expect("Should hav a p2p_endpoint address")
-            .to_string();
+            .expect("Should hav a p2p_endpoint address");
 
         // Done
         Ok(NetConnectionThread {

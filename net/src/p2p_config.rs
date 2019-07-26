@@ -242,6 +242,19 @@ impl P2pConfig {
     }
 }
 
+
+/// Utility functions to extract config elements
+impl P2pConfig {
+
+    pub fn real_engine_config(self) -> Option<RealEngineConfig> {
+        match self.backend_config {
+            BackendConfig::Lib3h(config) =>
+                Some(config),
+            BackendConfig::Json(_) => None
+        }
+    }
+}
+
 /// statics
 impl P2pConfig {
     pub const DEFAULT_LIB3H_CONFIG: &'static str = r#"

@@ -80,23 +80,18 @@ pub async fn author_entry<'a>(
         address
     ));
 
-    // 4. Publish the valid entry to DHT. This will call Hold to itself
-    // if entry.entry_type().can_publish(context) {
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: publishing...",
-            address
-        ));
-        await!(publish(entry.address(), &context))?;
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: published!",
-            address
-        ));
-    // } else {
-    //     context.log(format!(
-    //         "debug/workflow/authoring_entry/{}: entry is private, no publishing",
-    //         address
-    //     ));
-    // }
+    // 4. Publish the valid entry to DHT.
+    // For publishable entires this will publish the entry and the header
+    // For non-publishable entries this will only publish the header
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: publishing...",
+        address
+    ));
+    await!(publish(entry.address(), &context))?;
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: published!",
+        address
+    ));
     Ok(CommitEntryResult::new(addr))
 }
 

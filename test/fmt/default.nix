@@ -29,8 +29,6 @@ let
   echo "checking ''${p}"
   cargo fmt -p $p -- --check
  done
-
- hn-rust-clippy
  '';
 in
 {

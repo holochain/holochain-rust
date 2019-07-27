@@ -46,8 +46,20 @@ use test_utils::mock_signing::mock_conductor_api;
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {
-    pub fn get(&self) -> std::sync::MutexGuard<'_, Option<P2pNetwork>> {
-        return self.0.lock().expect("network accessible")
+    pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
+        return P2pNetworkMutexGuardWrapper(
+            self.0.lock().expect("network accessible"))
+    }
+}
+
+pub struct P2pNetworkMutexGuardWrapper<'a>(std::sync::MutexGuard<'a, Option<P2pNetwork>>);
+
+impl<'a> P2pNetworkMutexGuardWrapper<'a> {
+    pub fn as_ref(&self) -> Result<&P2pNetwork, HolochainError> {
+        match self.0.as_ref() {
+            Some(s) => Ok(s),
+            None => Err(HolochainError::ErrorGeneric("no network".into())),
+        }
     }
 }
 

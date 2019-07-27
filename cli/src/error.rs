@@ -1,4 +1,3 @@
-
 use failure::Error;
 
 #[derive(Debug, Fail)]

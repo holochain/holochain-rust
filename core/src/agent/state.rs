@@ -88,9 +88,7 @@ impl AgentState {
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
             .or_else(|| Some(self.initial_agent_address.clone()))
-            .ok_or_else(|| HolochainError::ErrorGeneric(
-                "Agent entry not found".to_string(),
-            ))
+            .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))
     }
 
     pub fn get_agent(&self) -> HcResult<AgentId> {
@@ -100,9 +98,8 @@ impl AgentState {
             .content_storage()
             .read()?
             .fetch(&agent_entry_address)?;
-        let agent_entry_json = maybe_agent_entry_json.ok_or_else( || HolochainError::ErrorGeneric(
-            "Agent entry not found".to_string(),
-        ))?;
+        let agent_entry_json = maybe_agent_entry_json
+            .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 
         let agent_entry: Entry = agent_entry_json.try_into()?;
         match agent_entry {

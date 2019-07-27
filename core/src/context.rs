@@ -33,14 +33,15 @@ use holochain_persistence_api::{
 };
 use jsonrpc_core::{self, IoHandler};
 use std::{
-    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{
+        atomic::{AtomicBool, Ordering::Relaxed},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
     thread::sleep,
     time::Duration,
 };
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering::Relaxed;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -324,7 +325,7 @@ impl Context {
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
-        .ok_or_else( || "Network::start() could not get application state".to_string())?;
+        .ok_or_else(|| "Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
     let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
@@ -332,7 +333,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     let dna = state
         .nucleus()
         .dna()
-        .ok_or_else( || "Network::start() called without DNA".to_string())?;
+        .ok_or_else(|| "Network::start() called without DNA".to_string())?;
     Ok((dna.address(), agent_id))
 }
 
@@ -346,7 +347,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
-        .unwrap_or_else(||P2pConfig::new_with_unique_memory_backend())
+        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend())
 }
 
 #[cfg(test)]

@@ -13,9 +13,9 @@ use std::{convert::TryFrom, fs, path::PathBuf};
 const DEFAULT_CHAIN_PATH: &str = "TODO";
 
 pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultResult<()> {
-    let storage_path = storage_path.ok_or_else(|| format_err!(
-        "Please specify the path to CAS storage with the --path option."
-    ))?;
+    let storage_path = storage_path.ok_or_else(|| {
+        format_err!("Please specify the path to CAS storage with the --path option.")
+    })?;
     let cas_path = storage_path.join(instance_id).join("cas");
     let chain_store = ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
         FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),

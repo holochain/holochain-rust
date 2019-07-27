@@ -110,7 +110,9 @@ impl ConsistencyModel {
                         _ => None,
                     });
                     let mut pending = vec![hold];
-                    if let Some(m) = meta { pending.push(m) }
+                    if let Some(m) = meta {
+                        pending.push(m)
+                    }
                     let signal = ConsistencySignal::new_pending(
                         Publish(address.clone()),
                         Validators,

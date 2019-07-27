@@ -29,7 +29,7 @@ pub async fn get_link_result_workflow<'a>(
         .map(|link_entry_crud| LinksResult {
             address: link_entry_crud.0.link().target().clone(),
             headers: link_entry_crud.1.clone(),
-            status: link_entry_crud.2.clone(),
+            status: link_entry_crud.2,
             tag: link_entry_crud.0.link().tag().clone(),
         })
         .collect::<Vec<LinksResult>>();
@@ -90,9 +90,10 @@ pub async fn get_link_add_entries<'a>(
                         "Status Kind Of Lastest Requested".to_string(),
                     )),
                 })
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "expected entry of type link".to_string(),
-                )))
+                .unwrap_or_else(|_| Err(HolochainError::ErrorGeneric(
+                     "expected entry of type link".to_string(),
+                 )))
+
         })
         .partition(Result::is_ok);
 

@@ -79,7 +79,7 @@ impl ZomeFnCall {
     }
 
     pub fn id(&self) -> snowflake::ProcessUniqueId {
-        self.id.clone()
+        self.id
     }
 }
 

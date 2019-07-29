@@ -370,7 +370,7 @@ impl LogMessageTrait for LogMessage {
         };
 
         let msg = format!(
-            "{timestamp} | {thread_name}: {tag} {line} - {level} - {args}",
+            "{level}({timestamp})[{tag}] {thread_name}|{line}: {args}",
             args = self.args.color(msg_color),
             tag = tag_name.bold(),
             line = format!("l.{}", self.line).italic(),

@@ -155,9 +155,21 @@ impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
         let _rules = config.logger.rules.clone();
-        let logger = FastLoggerBuilder::new()
-            .set_level_from_str("Trace")
-            .add_rule_filter(RuleFilter::new("Abort", false, "Red"))
+        let mut logger_builder = FastLoggerBuilder::new();
+        logger_builder.set_level_from_str(&config.logger.logger_type.as_str());
+
+        for rule in config.logger.rules.rules.iter() {
+            logger_builder.add_rule_filter(RuleFilter::new(
+                rule.pattern.as_str(),
+                rule.exclude,
+                rule.color
+                    .as_ref()
+                    .unwrap_or(&String::from("White"))
+                    .as_str(),
+            ));
+        }
+
+        let logger = logger_builder
             .build()
             .expect("Fail to instanciate the logging factory.");
 

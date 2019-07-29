@@ -6,7 +6,7 @@ use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-/// ZomeApiFunction::GetLinks function code
+/// ZomeApiFunction::GetLinks function code.
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64

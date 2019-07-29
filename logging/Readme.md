@@ -2,7 +2,7 @@
 
 Idiomatic Rust logging implementation.
 
-This PR is related to [holochain/lib3h#29](https://github.com/holochain/lib3h/issues/29) and implement a more idiomatic logging.
+This PR is related to [holochain/lib3h#29](https://github.com/holochain/lib3h/issues/29) and implements a more idiomatic logging.
 
 Requirements can be found [here](https://hackmd.io/MP5F3UhSTp2iPk37Cwa-fw).
 

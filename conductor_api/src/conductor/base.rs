@@ -747,8 +747,8 @@ impl Conductor {
                                 &dna_hash_computed_from_file, &dna_file)?;
                         },
                         Err(_) => {
-                            let msg = format!("err/Conductor: Could not load DNA file {:?}.", &dna_file);
-                            context.log(msg);
+                            let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
+                            context.log_error(msg);
 
                             // If something is wrong with the DNA file, we only
                             // check the 2 primary sources of DNA's hashes
@@ -758,11 +758,11 @@ impl Conductor {
                                 Ok(_) => (),
                                 Err(e) => {
                                     let msg = format!("\
-                                    err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                    Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                     '{}' != '{}'",
                                     &dna_hash_from_conductor_config,
                                     &dna_hash_computed);
-                                    context.log(msg);
+                                    context.log_error(msg);
 
                                     return Err(e.to_string());
                                 }

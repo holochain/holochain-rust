@@ -217,7 +217,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 handle_send_message_result(message_data, context.clone())
             }
             Lib3hServerProtocol::Connected(peer_data) => {
-                context.log(format!("debug/net/handle: Connected: {:?}", peer_data));
+                context.log_debug(format!("net/handle: Connected: {:?}", peer_data));
                 return Ok(());
             }
             Lib3hServerProtocol::HandleGetAuthoringEntryList(get_list_data) => {
@@ -268,10 +268,10 @@ fn get_content_aspect(
         .get_headers(entry_address.clone())
         .map_err(|error| {
             let err_message = format!(
-                "err/net/fetch/get_content_aspect: Error trying to get headers {:?}",
+                "net/fetch/get_content_aspect: Error trying to get headers {:?}",
                 error
             );
-            context.log(err_message.clone());
+            context.log_error(err_message.clone());
             HolochainError::ErrorGeneric(err_message)
         })?;
 

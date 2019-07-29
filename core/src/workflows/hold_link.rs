@@ -83,7 +83,7 @@ pub async fn hold_link_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log(format!("workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
+            context.log_warn(format!("workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
                 err,
             ));

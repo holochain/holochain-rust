@@ -807,7 +807,9 @@ impl ConductorApiBuilder {
                 id,
                 port,
                 bundle,
-                dna_interface
+                dna_interface,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string(),
             }))?;
             Ok(json!({"success": true}))
         });

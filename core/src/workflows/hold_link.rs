@@ -8,7 +8,7 @@ use crate::{
         actions::add_pending_validation::add_pending_validation, validation::ValidationError,
     },
     scheduled_jobs::pending_validations::ValidatingWorkflow,
-    workflows::validation_package,
+    workflows::{validation_package,hold_entry::hold_entry_workflow}
 };
 use holochain_core_types::{
     entry::Entry,
@@ -99,6 +99,12 @@ pub async fn hold_link_workflow(
     // 3. If valid store the entry in the local DHT shard
     await!(add_link(&link_add, &context))?;
     context.log(format!("debug/workflow/hold_link: added! {:?}", link));
+
+    //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
+    await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
+    context.log(format!("debug/workflow/hold_entry: added! {:?}", entry_with_header));
+
+    //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
 }
 

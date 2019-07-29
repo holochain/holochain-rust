@@ -6,8 +6,8 @@ use crate::{
     network::handler::{get_content_aspect, get_meta_aspects},
 };
 use holochain_core_types::error::HcResult;
-use holochain_net::connection::json_protocol::{EntryListData, GetListData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use lib3h_protocol::data_types::{EntryListData, GetListData};
 use snowflake::ProcessUniqueId;
 use std::{collections::HashMap, sync::Arc, thread};
 
@@ -28,7 +28,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
             }
 
             let action = Action::RespondAuthoringList(EntryListData {
-                dna_address: get_list_data.dna_address,
+                space_address: get_list_data.space_address,
                 provider_agent_id: get_list_data.provider_agent_id,
                 request_id: get_list_data.request_id,
                 address_map,
@@ -81,7 +81,7 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
             }
 
             let action = Action::RespondGossipList(EntryListData {
-                dna_address: get_list_data.dna_address,
+                space_address: get_list_data.space_address,
                 provider_agent_id: get_list_data.provider_agent_id,
                 request_id: get_list_data.request_id,
                 address_map,

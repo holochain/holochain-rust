@@ -3,30 +3,92 @@ use crate::{
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::query::{NetworkQuery, NetworkQueryResult},
+    network::query::{
+        GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+        GetLinkData
+    },
+    workflows::get_entry_result::get_entry_result_workflow,
     nucleus,
 };
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
+use holochain_core_types::{crud_status::CrudStatus, entry::{Entry,EntryWithMetaAndHeader},error::HolochainError,eav::Attribute};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{QueryEntryData, QueryEntryResultData};
 use holochain_persistence_api::cas::content::Address;
-use std::{collections::BTreeSet, convert::TryInto, sync::Arc};
+use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
+use std::{convert::TryInto, sync::Arc};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions,GetEntryArgs,GetEntryResultType};
+
 
 fn get_links(
     context: &Arc<Context>,
     base: Address,
     link_type: String,
     tag: String,
-) -> Vec<(Address, CrudStatus)> {
-    context
+    crud_status: Option<CrudStatus>,
+    headers : bool
+) -> Result<Vec<GetLinkData>,HolochainError> {
+    //get links
+    let dht_store = context
         .state()
         .unwrap()
-        .dht()
-        .get_links(base, link_type, tag)
-        .unwrap_or(BTreeSet::new())
+        .dht();
+    
+    let (get_link ,error) : (Vec<_>,Vec<_>) = dht_store
+        .get_links(base, link_type.clone(), tag, crud_status)
+        .unwrap_or_default()
         .into_iter()
-        .map(|eav_crud| (eav_crud.0.value(), eav_crud.1))
-        .collect::<Vec<_>>()
+        //get tag
+        .map(|(eavi,crud)|{
+            let tag = match eavi.attribute()
+            {
+                Attribute::LinkTag(_,tag) => Ok(tag),
+                Attribute::RemovedLink(_,tag) => Ok(tag),
+                _ =>  Err(HolochainError::ErrorGeneric("Could not get tag".to_string()))
+            }.expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
+            (eavi.value(),crud,tag)
+        })
+        //get targets from dht
+        .map(|(link_add_address,crud,tag)|{
+            let error = format!("Could not find Entries for  Address :{}, tag: {}",link_add_address.clone(),tag.clone());
+            let link_add_entry_args = GetEntryArgs{
+            address: link_add_address.clone(),
+            options: GetEntryOptions {
+                headers : headers.clone(),
+                ..Default::default()
+            }};
+
+            context
+            .block_on(get_entry_result_workflow(&context.clone(),&link_add_entry_args))
+            .map(|get_entry_result|{
+                match get_entry_result.result
+                {
+                    GetEntryResultType::Single(entry_with_meta_and_headers) =>
+                    {
+                        let maybe_entry_headers = if headers { Some(entry_with_meta_and_headers.headers)} else {None};
+                        entry_with_meta_and_headers.entry.map(|single_entry|{
+                            match single_entry 
+                            {
+                                Entry::LinkAdd(link_add) => Ok(GetLinkData::new(link_add_address.clone(),crud.clone(),link_add.link().target().clone(),tag.clone(),maybe_entry_headers)),
+                                Entry::LinkRemove(link_remove) =>Ok(GetLinkData::new(link_add_address.clone(),crud.clone(),link_remove.0.link().target().clone(),tag.clone(),maybe_entry_headers)),
+                                _ =>Err(HolochainError::ErrorGeneric("Wrong entry type for Link content".to_string()))
+                            }
+                        }).unwrap_or(Err(HolochainError::ErrorGeneric(error)))
+                        
+                    }
+                    _ => Err(HolochainError::ErrorGeneric("Single Entry required for Get Entry".to_string()))
+                }
+            }).unwrap_or(Err(HolochainError::ErrorGeneric("Could Not Get Entry for Link Data".to_string())))
+        })
+        .partition(Result::is_ok);
+
+        //if can't find target throw error
+        if error.is_empty()
+        {
+            Ok(get_link.iter().map(|s|s.clone().unwrap()).collect::<Vec<_>>())
+        }
+        else
+        {
+            Err(HolochainError::List(error.iter().map(|e|e.clone().unwrap_err()).collect::<Vec<_>>()))
+        }
 }
 
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
@@ -69,16 +131,23 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json = JsonString::from_json(&String::from_utf8(query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
-        Ok(NetworkQuery::GetLinks(link_type, tag)) => {
+        Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             let links = get_links(
                 &context,
                 query_data.entry_address.clone(),
                 link_type.clone(),
                 tag.clone(),
-            );
+                options,
+                match query.clone(){GetLinksNetworkQuery::Links(get_headers) => get_headers.headers, _ => false}
+            ).expect("Could not get_links from dht node");
+            let links_result = match query {
+                GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
+                GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
+            };
+
             ActionWrapper::new(Action::RespondGetLinks((
                 query_data,
-                links,
+                links_result,
                 link_type.clone(),
                 tag.clone(),
             )))
@@ -113,9 +182,9 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                 },
             )))
         }
-        Ok(NetworkQueryResult::Links(links, link_type, tag)) => {
+        Ok(NetworkQueryResult::Links(links_result, link_type, tag)) => {
             ActionWrapper::new(Action::HandleGetLinksResult((
-                links,
+                links_result,
                 GetLinksKey {
                     base_address: query_result_data.entry_address.clone(),
                     link_type: link_type.clone(),

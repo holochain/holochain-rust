@@ -1,18 +1,19 @@
 use crate::{
-    network::actions::get_links::get_links,
+    network::{
+        actions::get_links::get_links,
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
+    },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+    workflows::author_entry::author_entry
 };
 
 use holochain_core_types::{
-    crud_status::CrudStatus,
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
 use holochain_wasm_utils::api_serialization::{
-    get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResultType},
-    get_links::GetLinksOptions,
+    get_links::{GetLinksArgs, GetLinksOptions},
     link_entries::LinkEntriesArgs,
 };
 use std::convert::TryFrom;
@@ -58,45 +59,34 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         top_chain_header,
         context.agent_id.clone(),
     );
+    let get_links_args = GetLinksArgs {
+        entry_address: link.base().clone(),
+        link_type: link.link_type().clone(),
+        tag: link.tag().clone(),
+        options: GetLinksOptions::default(),
+    };
+    let config = GetLinksQueryConfiguration
+    {
+        headers : false
+    };
     let links_result = context.block_on(get_links(
         context.clone(),
-        link.base().clone(),
-        link.link_type().clone(),
-        link.tag().clone(),
-        GetLinksOptions::default().timeout.clone(),
+        &get_links_args,
+        GetLinksNetworkQuery::Links(config)
     ));
     if links_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)
     } else {
         let links = links_result.expect("This is supposed to not fail");
+        let links = match links {
+            GetLinksNetworkResult::Links(links) => links,
+            _ => return ribosome_error_code!(WorkflowFailed),
+        };
         let filtered_links = links
             .into_iter()
-            .filter(|link_crud| link_crud.1 == CrudStatus::Live)
-            .map(|link_crud| link_crud.0)
-            .filter(|link_address| {
-                context
-                    .block_on(get_entry_result_workflow(
-                        &context,
-                        &GetEntryArgs {
-                            address: link_address.clone().clone(),
-                            options: GetEntryOptions::default(),
-                        },
-                    ))
-                    .map(|get_entry_result| match get_entry_result.result {
-                        GetEntryResultType::Single(single_item) => single_item
-                            .entry
-                            .map(|entry| match entry {
-                                Entry::LinkAdd(link_data) => {
-                                    link_data.link().target() == link.target()
-                                }
-                                _ => false,
-                            })
-                            .unwrap_or(false),
-                        _ => false,
-                    })
-                    .unwrap_or(false)
-            })
+            .filter(|link_for_filter|&link_for_filter.target == link.target())
+            .map(|s|s.address)
             .collect::<Vec<_>>();
 
         let entry = Entry::LinkRemove((link_remove, filtered_links));

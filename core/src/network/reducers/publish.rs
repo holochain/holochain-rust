@@ -7,8 +7,9 @@ use crate::{
         reducers::send,
         state::NetworkState,
     },
-    state::State,
+    state::{State, StateWrapper},
     entry::CanPublish,
+    agent::state::create_new_chain_header,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -46,12 +47,20 @@ fn publish_entry(
 }
 
 /// Send to network a request to publish a header entry alone
-/// This is similar to publishing a regular entry but has limited aspects
+/// This is similar to publishing a regular entry but it is its own special dummy header.
 fn publish_header(
     network_state: &mut NetworkState,
+    root_state: &State,
     chain_header: &ChainHeader,
 ) -> Result<(), HolochainError> {
     let header_entry = Entry::ChainHeader(chain_header.clone());
+    let header_entry_header = create_new_chain_header(
+        &header_entry,
+        &root_state.agent(),
+        &StateWrapper::from(root_state.clone()),
+        &None,
+        &Vec::new(),
+    )?;
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
@@ -59,8 +68,9 @@ fn publish_header(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: header_entry.address().clone(),
-                aspect_list: vec![EntryAspect::Header(
-                    chain_header.clone()
+                aspect_list: vec![EntryAspect::Content(
+                    header_entry.clone(),
+                    header_entry_header,
                 )
                 .into()],
             },
@@ -159,7 +169,7 @@ fn reduce_publish_inner(
             "reduce_publish_inner is not allowed for Dna entry".into(),
         ))
     } else {
-        publish_header(network_state, &entry_with_header.header)?;
+        publish_header(network_state, root_state, &entry_with_header.header)?;
     }
 
     // for non-publishing entries early return Ok

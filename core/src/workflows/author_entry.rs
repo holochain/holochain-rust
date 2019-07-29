@@ -178,7 +178,7 @@ pub mod tests {
         // try and load it by its address as Jack. This means it has been communicated over the mock network
         let mut entry: Option<Entry> = None;
         let mut tries = 0;
-        while entry.is_none() && tries < 5 {
+        while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
                 entry = get_entry_from_dht(&context2, &header_entry.address()).expect("Could not retrieve entry from DHT");

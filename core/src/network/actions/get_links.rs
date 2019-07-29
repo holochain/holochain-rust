@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper, GetLinksKey},
+    action::{Action, ActionWrapper, GetLinksKey,Key,GetPayload},
     context::Context,
     instance::dispatch_action,
     network::query::{GetLinksNetworkQuery, GetLinksNetworkResult},
@@ -30,7 +30,8 @@ pub async fn get_links(
         LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
         LinksStatusRequestKind::Live => Some(CrudStatus::Live),
     };
-    let action_wrapper = ActionWrapper::new(Action::GetLinks((key.clone(), crud_status, query)));
+    let get_action = Action::Get(Key::Links(key),GetPayload::Links(crud_status,query));
+    let action_wrapper = ActionWrapper::new(get_action);
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();
@@ -40,7 +41,8 @@ pub async fn get_links(
         .name(format!("get_links/{:?}", key))
         .spawn(move || {
             thread::sleep(timeout.into());
-            let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key_inner));
+            let get_links_timeout = Action::GetTimeout(Key::Links(key_inner));
+            let action_wrapper = ActionWrapper::new(get_links_timeout);
             dispatch_action(context_inner.action_channel(), action_wrapper.clone());
         })
         .expect("Could not spawn thread for get_links timeout");

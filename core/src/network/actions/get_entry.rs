@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper, GetEntryKey},
+    action::{Action, ActionWrapper, GetEntryKey,Key,GetPayload},
     context::Context,
     instance::dispatch_action,
 };
@@ -26,7 +26,8 @@ pub async fn get_entry(
         id: snowflake::ProcessUniqueId::new().to_string(),
     };
 
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
+    let entry = Action::Get(Key::Entry(key),GetPayload::Entry);
+    let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let key_inner = key.clone();
@@ -35,7 +36,8 @@ pub async fn get_entry(
         .name(format!("get_entry_timeout/{:?}", key))
         .spawn(move || {
             thread::sleep(timeout.into());
-            let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key_inner));
+            let timeout_action = Action::GetTimeout(Key::Entry(key_inner));
+            let action_wrapper = ActionWrapper::new(timeout_action);
             dispatch_action(context_inner.action_channel(), action_wrapper.clone());
         })
         .expect("Could not spawn thread for get_entry timeout");

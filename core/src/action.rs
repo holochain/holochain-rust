@@ -87,6 +87,27 @@ impl Hash for ActionWrapper {
     }
 }
 
+#[derive(Clone, PartialEq, Debug, Serialize)]
+pub enum Key
+{
+    Entry(GetEntryKey),
+    Links(GetLinksKey)
+}
+
+#[derive(Clone, PartialEq, Debug, Serialize)]
+pub enum GetPayload
+{
+    Entry,
+    Links(Option<CrudStatus>, GetLinksNetworkQuery)
+}
+
+#[derive(Clone, PartialEq, Debug, Serialize)]
+pub enum RespondGetPayload
+{
+    Entry(Option<EntryWithMetaAndHeader>),
+    Links(GetLinksNetworkResult, String, String)
+}
+
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug, Serialize)]
 #[serde(tag = "action_type", content = "data")]
@@ -130,36 +151,16 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    /// Get an Entry on the network by address
-    GetEntry(GetEntryKey),
+    Get(Key,GetPayload),
+    GetTimeout(Key),
+    RespondGet(QueryEntryData,RespondGetPayload),
+    HandleGet(RespondGetPayload,Key),
 
-    /// Lets the network module respond to a Get request.
-    /// Triggered from the corresponding workflow after retrieving the
-    /// requested entry from our local DHT shard.
-    RespondGet((QueryEntryData, Option<EntryWithMetaAndHeader>)),
-
-    /// Lets the network module respond to a FETCH request.
-    /// Triggered from the corresponding workflow after retrieving the
-    /// requested entry from our local DHT shard.
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 
-    /// We got a response for our get request which needs to be added to the state.
-    /// Triggered from the network handler.
-    HandleGetResult((Option<EntryWithMetaAndHeader>, GetEntryKey)),
-
-    ///
     UpdateEntry((Address, Address)),
     ///
     RemoveEntry((Address, Address)),
-    ///
-    GetEntryTimeout(GetEntryKey),
-
-    /// get links from entry address and link_type name
-    /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks((GetLinksKey, Option<CrudStatus>, GetLinksNetworkQuery)),
-    GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((QueryEntryData, GetLinksNetworkResult, String, String)),
-    HandleGetLinksResult((GetLinksNetworkResult, GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

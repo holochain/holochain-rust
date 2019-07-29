@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey},
+    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey,RespondGetPayload},
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
@@ -144,17 +144,15 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
                 GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
             };
-
-            ActionWrapper::new(Action::RespondGetLinks((
-                query_data,
-                links_result,
-                link_type.clone(),
-                tag.clone(),
-            )))
+            let respond_links = RespondGetPayload::Links(links_result,link_type.clone(),tag.clone());
+            ActionWrapper::new(Action::RespondGet(
+                query_data,respond_links
+            ))
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
-            ActionWrapper::new(Action::RespondGet((query_data, maybe_entry)))
+            let respond_get = RespondGetPayload::Entry(maybe_entry);
+            ActionWrapper::new(Action::RespondGet(query_data,respond_get)
         }
         err => {
             context.log(format!(

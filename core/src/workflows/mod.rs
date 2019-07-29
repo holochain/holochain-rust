@@ -26,6 +26,7 @@ use crate::{
 use holochain_core_types::{
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition},
+    chain_header::ChainHeader,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
@@ -83,9 +84,19 @@ async fn try_make_local_validation_package(
     }
 }
 
+async fn try_make_validation_package_dht(
+    chain_header: &ChainHeader,
+    context: Arc<Context>,
+) -> Result<ValidationPackage, HolochainError> {
+    context.log(format!("Constructing validation package from DHT for entry with address: {}", chain_header.entry_address()));
+    Err(HolochainError::NotImplemented("DHT constructed validation packages are not implemented".to_string()))
+}
+
 /// Gets hold of the validation package for the given entry.
-/// First tries to create it locally and if that fails will try to get the
-/// validation package from the source.
+/// - First tries to create it locally (if the validaiton package requires the entry only)
+/// - If that fails it will try to get the validation package from the author.
+/// - If that fails (source agent is offline) it will attempt to reconstruct the authors source chain
+///     from their chain headers in the DHT. 
 async fn validation_package(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
@@ -95,12 +106,26 @@ async fn validation_package(
         &entry_with_header,
         context.clone()
     )) {
-        Ok(Some(package))
-    } else {
-        // If that is not possible, get the validation package from source
-        await!(get_validation_package(
-            entry_with_header.header.clone(),
-            &context
-        ))
+        return Ok(Some(package))
     }
+
+    // 2. Try and get it from the author
+    if let Ok(Some(package)) = await!(get_validation_package(
+        entry_with_header.header.clone(),
+        &context
+    )) {
+        return Ok(Some(package))
+    }
+
+    // 3. Build it from the DHT (this may require many network requests (or none of full sync))
+    if let Ok(package) = await!(try_make_validation_package_dht(
+        &entry_with_header.header,
+        context.clone()
+    )) {
+        return Ok(Some(package))
+    }   
+
+    // If all the above failed then returning an error will add this validation request to pending
+    // It will then try all of the above again later
+    Err(HolochainError::ErrorGeneric("Could not get validation package".to_string()))
 }

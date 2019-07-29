@@ -24,7 +24,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use logging::{rule::RuleFilter, FastLoggerBuilder, FastLogger};
+use logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -1133,7 +1133,10 @@ impl Conductor {
         let (broadcaster, _handle) = iface
             .run(dispatcher, kill_switch_rx)
             .map_err(|error| {
-                error!("conductor: Error running interface '{}': {}", interface_config.id, error);
+                error!(
+                    "conductor: Error running interface '{}': {}",
+                    interface_config.id, error
+                );
                 error
             })
             .unwrap();

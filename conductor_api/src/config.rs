@@ -36,6 +36,7 @@ use std::{
     io::prelude::*,
     path::PathBuf,
     sync::Arc,
+    net::Ipv4Addr,
 };
 use toml;
 
@@ -712,7 +713,7 @@ fn default_reroute() -> bool {
 }
 
 fn default_address() -> String {
-    "127.0.0.1".into()
+    Ipv4Addr::LOCALHOST.to_string()
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

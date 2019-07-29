@@ -174,7 +174,7 @@ impl ConductorUiAdmin for Conductor {
 pub mod tests {
     use super::*;
     use conductor::{admin::tests::*, base::UiDirCopier};
-    use std::{fs::File, io::Read};
+    use std::{fs::File, io::Read, net::Ipv4Addr};
 
     pub fn test_ui_copier() -> UiDirCopier {
         let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
@@ -329,7 +329,7 @@ id = 'test-bundle-id'"#,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,
-                bind_address: "127.0.0.1".to_string()
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Err(HolochainError::ErrorGeneric(
                 "UI bundle configuration test-bundle-id not found, mentioned in UI interface test-ui-interface-id".into()
@@ -353,7 +353,7 @@ id = 'test-bundle-id'"#,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,
-                bind_address: "127.0.0.1".to_string()
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );
@@ -422,7 +422,7 @@ reroute_to_root = true"#,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,
-                bind_address: "127.0.0.1".to_string()
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );
@@ -485,7 +485,7 @@ root_dir = '.'"#,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,
-                bind_address: "127.0.0.1".to_string()
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );
@@ -519,7 +519,7 @@ root_dir = '.'"#,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
                 reroute_to_root: true,
-                bind_address: "127.0.0.1".to_string()
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );

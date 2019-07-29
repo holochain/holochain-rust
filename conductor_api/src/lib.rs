@@ -130,16 +130,14 @@ extern crate maplit;
 #[macro_use]
 extern crate lazy_static;
 extern crate hyper;
-extern crate hyper_staticfile;
 extern crate json_patch;
-// #[cfg(test)]
-// extern crate reqwest;
-extern crate tokio;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
 extern crate base64;
 extern crate lib3h;
+#[macro_use]
+extern crate nickel;
 
 pub mod conductor;
 pub mod config;
@@ -155,5 +153,6 @@ pub mod keystore;
 pub mod logger;
 pub mod signal_wrapper;
 pub mod static_file_server;
+pub mod static_server_impls;
 
 pub use crate::holochain::Holochain;

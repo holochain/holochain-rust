@@ -160,6 +160,14 @@ impl Conductor {
         let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
 
+        if config.ui_bundles.len() > 0 || config.ui_interfaces.len() > 0 {
+            println!();
+            println!("{}", std::iter::repeat("!").take(20).collect::<String>());
+            println!("DEPRECATION WARNING - Hosting a static UI via the conductor will not be supported in future releases");
+            println!("{}", std::iter::repeat("!").take(20).collect::<String>());
+            println!();
+        }
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),

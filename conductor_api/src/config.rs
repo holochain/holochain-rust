@@ -64,12 +64,15 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+
+    /// !DEPRECATION WARNING! - Hosting a static UI via the conductor will not be supported in future releases
     /// List of ui bundles (static web dirs) to host on a static interface. Optional.
     #[serde(default)]
     pub ui_bundles: Vec<UiBundleConfiguration>,
     /// List of ui interfaces, includes references to ui bundles and dna interfaces it can call. Optional.
     #[serde(default)]
     pub ui_interfaces: Vec<UiInterfaceConfiguration>,
+
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,

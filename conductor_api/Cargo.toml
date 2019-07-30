@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.24-alpha2"
+version = "0.0.25-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -35,13 +35,12 @@ maplit = "=1.0.1"
 lazy_static = "=1.2.0"
 json-patch = "=0.2.2"
 hyper = "=0.12.25"
-hyper-staticfile = "=0.3.1"
-tokio = "=0.1.17"
 fs_extra = "=1.1.0"
 rpassword = "=2.1.0"
 base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"
+nickel = "=0.11.0"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

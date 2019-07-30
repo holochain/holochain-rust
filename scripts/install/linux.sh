@@ -56,3 +56,4 @@ $as_root apt-get update && $as_root apt-get install -y nodejs yarn
 npm install -g neon-cli
 
 curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain nightly-2019-07-14 -y
+source $HOME/.cargo/env

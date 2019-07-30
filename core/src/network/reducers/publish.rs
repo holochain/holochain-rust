@@ -163,14 +163,8 @@ fn reduce_publish_inner(
 
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
 
-    // publish the header for all entries except the DNA entry (which should never be published)
-    if let EntryType::Dna = entry_with_header.entry.entry_type() {
-        return Err(HolochainError::NotImplemented(
-            "reduce_publish_inner is not allowed for Dna entry".into(),
-        ))
-    } else {
-        publish_header(network_state, root_state, &entry_with_header.header)?;
-    }
+    // publish the header for all entries
+    publish_header(network_state, root_state, &entry_with_header.header)?;
 
     // for non-publishing entries early return Ok
     if ! entry_with_header.entry.entry_type().can_publish_from_state(root_state) { return Ok(()); }

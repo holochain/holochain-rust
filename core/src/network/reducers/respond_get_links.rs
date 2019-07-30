@@ -58,7 +58,7 @@ pub fn reduce_respond_get_links(
 
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::RespondGetLinks(match result {
+        ActionResponse::Respond(match result {
             Ok(_) => Ok(()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         }),

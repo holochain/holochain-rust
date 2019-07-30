@@ -46,7 +46,7 @@ pub fn reduce_respond_get(
 
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::RespondGet(match result {
+        ActionResponse::Respond(match result {
             Ok(_) => Ok(()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         }),

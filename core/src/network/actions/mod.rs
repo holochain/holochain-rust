@@ -12,7 +12,5 @@ use holochain_persistence_api::cas::content::Address;
 #[derive(Clone, Debug)]
 pub enum ActionResponse {
     Publish(HcResult<Address>),
-    RespondGet(HcResult<()>),
-    RespondFetch(HcResult<()>),
-    RespondGetLinks(HcResult<()>),
+    Respond(HcResult<()>),
 }

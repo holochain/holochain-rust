@@ -15,7 +15,10 @@ use std::{pin::Pin, sync::Arc, thread};
 /// This is the network version of get_entry that makes the network module start
 /// a look-up process.
 ///
-/// Returns a future that resolves to an ActionResponse.
+/// Returns a future that resolves to an ActionResponse.]
+
+
+
 pub async fn get_entry(
     context: Arc<Context>,
     address: Address,

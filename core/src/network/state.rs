@@ -56,18 +56,7 @@ pub struct NetworkState {
     // Here are the results of every get action
 
     pub get_results : HashMap<Key,GetResults>,
-
-    /// Here we store the results of GET entry processes.
-    /// None means that we are still waiting for a result from the network.
-    pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
-
-    /// Here we store the results of GET links processes.
-    /// The key of this map contains the base address, link_type and link tag for the link being requested.
-    /// the tag and link_type fields of the key are Options, None means they are waiting to retrieve all
-    /// links of any tag/type
-    /// None means that we are still waiting for a result from the network.
-    pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
-
+    
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
     pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
@@ -95,8 +84,6 @@ impl NetworkState {
             dna_address: None,
             agent_id: None,
             get_results : HashMap::new(),
-            get_entry_with_meta_results: HashMap::new(),
-            get_links_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

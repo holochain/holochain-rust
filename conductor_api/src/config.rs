@@ -36,6 +36,7 @@ use std::{
     io::prelude::*,
     path::PathBuf,
     sync::Arc,
+    net::Ipv4Addr,
 };
 use toml;
 
@@ -63,12 +64,15 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+
+    /// !DEPRECATION WARNING! - Hosting a static UI via the conductor will not be supported in future releases
     /// List of ui bundles (static web dirs) to host on a static interface. Optional.
     #[serde(default)]
     pub ui_bundles: Vec<UiBundleConfiguration>,
     /// List of ui interfaces, includes references to ui bundles and dna interfaces it can call. Optional.
     #[serde(default)]
     pub ui_interfaces: Vec<UiInterfaceConfiguration>,
+
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
@@ -549,7 +553,7 @@ impl Configuration {
     }
 }
 
-/// An agent has a name/ID and is defined by a private key that resides in a file
+/// An agent has a name/ID and is optionally defined by a private key that resides in a file
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct AgentConfiguration {
     pub id: String,
@@ -559,6 +563,8 @@ pub struct AgentConfiguration {
     /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
+    /// If true this agent will use dummy keys rather than a keystore file
+    pub test_agent: Option<bool>,
 }
 
 impl From<AgentConfiguration> for AgentId {
@@ -693,6 +699,26 @@ pub struct UiInterfaceConfiguration {
     /// (Optional)
     #[serde(default)]
     pub dna_interface: Option<String>,
+
+    #[serde(default = "default_reroute")]
+    /// Re-route any failed HTTP Gets to /index.html
+    /// This is required for SPAs using virtual routing
+    /// Default = true
+    pub reroute_to_root: bool,
+
+    #[serde(default = "default_address")]
+    /// Address to bind to
+    /// Can be either ip4 of ip6
+    /// Default = "127.0.0.1"
+    pub bind_address: String,
+}
+
+fn default_reroute() -> bool {
+    true
+}
+
+fn default_address() -> String {
+    Ipv4Addr::LOCALHOST.to_string()
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

@@ -237,7 +237,7 @@ pub mod tests {
             .collect();
         let header = jill_headers.first().expect("Must be at least one header in chain");
 
-        // jack retrieves the header header and reconstructs the Jills local chain by following the header chain
+        // jack retrieves the top header addresss and reconstructs the Jills local chain by following the header back-links
         let mut jack_headers: Vec<ChainHeader> = Vec::new();
         let mut next_header_addr = header.address();
         loop {
@@ -254,10 +254,14 @@ pub mod tests {
                 }
             }   
             if let Some(Entry::ChainHeader(header)) = entry {
-                next_header_addr = header.link().expect("Must be another link");
-                jack_headers.push(header);
+                jack_headers.push(header.clone());
+                if let Some(next_addr) = header.link() {
+                    next_header_addr = next_addr
+                } else {
+                    break // chain has been followed to the genesis entry
+                }
             } else {
-                break
+                panic!(format!("Could not retrieve header at address: {}", next_header_addr))
             }
         }
 

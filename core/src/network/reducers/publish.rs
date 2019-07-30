@@ -7,7 +7,7 @@ use crate::{
         reducers::send,
         state::NetworkState,
     },
-    state::{State, StateWrapper},
+    state::State,
     entry::CanPublish,
     agent::state::create_new_chain_header,
 };
@@ -57,7 +57,7 @@ fn publish_header(
     let header_entry_header = create_new_chain_header(
         &header_entry,
         &root_state.agent(),
-        &StateWrapper::from(root_state.clone()),
+        root_state,
         &None,
         &Vec::new(),
     )?;

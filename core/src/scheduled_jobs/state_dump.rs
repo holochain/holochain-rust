@@ -76,11 +76,9 @@ pub fn state_dump(context: Arc<Context>) {
         .keys()
         .map(|pending_validation_key| {
             let maybe_content = address_to_content_and_type(&pending_validation_key.address, context.clone());
-            if let Ok((content_type, content)) = maybe_content {
-                format!("<{}> [{}] {}: {}", pending_validation_key.workflow.to_string(), content_type, pending_validation_key.address.to_string(), content)
-            } else {
-                format!("<{}> [UNKNOWN] {}: Error trying to get type/content: {}", pending_validation_key.workflow.to_string(), pending_validation_key.address.to_string(), maybe_content.err().unwrap())
-            }
+            maybe_content
+                .map(|(content_type, content)| format!("<{}> [{}] {}: {}", pending_validation_key.workflow.to_string(), content_type, pending_validation_key.address.to_string(), content))
+                .unwrap_or_else(|err| format!("<{}> [UNKNOWN] {}: Error trying to get type/content: {}", pending_validation_key.workflow.to_string(), pending_validation_key.address.to_string(), err))
         })
         .collect::<Vec<String>>();
 
@@ -90,11 +88,9 @@ pub fn state_dump(context: Arc<Context>) {
         .iter()
         .map(|address| {
             let maybe_content = address_to_content_and_type(address, context.clone());
-            if let Ok((content_type, content)) = maybe_content {
-                format!("* [{}] {}: {}", content_type, address.to_string(), content)
-            } else {
-                format!("* [UNKNOWN] {}: Error trying to get type/content: {}", address.to_string(), maybe_content.err().unwrap())
-            }
+            maybe_content
+                .map(|(content_type, content)|format!("* [{}] {}: {}", content_type, address.to_string(), content))
+                .unwrap_or_else(|err| format!("* [UNKNOWN] {}: Error trying to get type/content: {}", address.to_string(), err))
         })
         .collect::<Vec<String>>();
 

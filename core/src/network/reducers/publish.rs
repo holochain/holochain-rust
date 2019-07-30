@@ -162,6 +162,7 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
+    publish_header(network_state, root_state, &entry_with_header.header)?;
 
     // for non-publishing entries early return Ok
     if ! entry_with_header.entry.entry_type().can_publish_from_state(root_state) { return Ok(()); }

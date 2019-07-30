@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate hdk;
@@ -17,6 +16,7 @@ pub mod post;
 
 use blog::Env;
 use hdk::{
+    AGENT_ADDRESS, DNA_ADDRESS, PUBLIC_TOKEN,
     error::ZomeApiResult,
     holochain_persistence_api::{
         cas::content::Address
@@ -41,7 +41,44 @@ define_zome! {
         memo::definition()
     ]
 
-    genesis: || {
+    init: || {{
+        // should be able to commit an entry
+        let entry = Entry::App(
+            "post".into(),
+            post::Post {
+                content: "called from init".into(),
+                date_created: "1234".into(),
+            }
+            .into(),
+        );
+        let addr = hdk::commit_entry(&entry)?;
+
+        // should be able to get the entry
+        let get_result = hdk::get_entry(&addr)?.unwrap();
+        if !(entry == get_result) {
+            return Err("Could not retrieve the same entry in init".into());
+        }
+        
+        // should be able to access globals
+        let agent_addr: Address = AGENT_ADDRESS.to_string().into();
+        let _dna_hash: Address = DNA_ADDRESS.to_string().into();
+
+        // should be able to call hdk::send, will timeout immedietly but that is ok
+        let _send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
+
+        // should be able to call other zome funcs
+        hdk::call(
+            hdk::THIS_INSTANCE,
+            "summer",
+            Address::from(PUBLIC_TOKEN.to_string()),
+            "sum",
+            blog::check_sum_args(1, 2).into(),
+        )?;
+
+        Ok(())
+    }}
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 

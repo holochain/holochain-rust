@@ -7,10 +7,7 @@ use crate::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
 };
-use futures::{
-    future::Future,
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::Poll};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
@@ -130,19 +127,33 @@ pub async fn build_validation_package<'a>(
                             ChainEntries => {
                                 let mut package = ValidationPackage::only_header(entry_header);
                                 package.source_chain_entries =
-                                    Some(all_public_chain_entries(&context));
+                                    Some(public_chain_entries_from_headers(
+                                        &context,
+                                        &all_chain_headers_before_header(
+                                            &context,
+                                            &package.chain_header,
+                                        ),
+                                    ));
                                 package
                             }
                             ChainHeaders => {
                                 let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_headers = Some(all_chain_headers(&context));
+                                package.source_chain_headers =
+                                    Some(all_chain_headers_before_header(
+                                        &context,
+                                        &package.chain_header,
+                                    ));
                                 package
                             }
                             ChainFull => {
                                 let mut package = ValidationPackage::only_header(entry_header);
+                                let headers = all_chain_headers_before_header(
+                                    &context,
+                                    &package.chain_header,
+                                );
                                 package.source_chain_entries =
-                                    Some(all_public_chain_entries(&context));
-                                package.source_chain_headers = Some(all_chain_headers(&context));
+                                    Some(public_chain_entries_from_headers(&context, &headers));
+                                package.source_chain_headers = Some(headers);
                                 package
                             }
                             Custom(string) => {
@@ -172,14 +183,22 @@ pub async fn build_validation_package<'a>(
     })
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
-    let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    chain
-        .iter(&top_header)
+// given a slice of headers return the entries for those marked public
+fn public_chain_entries_from_headers(
+    context: &Arc<Context>,
+    headers: &[ChainHeader],
+) -> Vec<Entry> {
+    headers
+        .iter()
         .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .map(|chain_header| {
-            let storage = chain.content_storage().clone();
+            let storage = context
+                .state()
+                .unwrap()
+                .agent()
+                .chain_store()
+                .content_storage()
+                .clone();
             let json = (*storage.read().unwrap())
                 .fetch(chain_header.entry_address())
                 .expect("Could not fetch from CAS");
@@ -190,10 +209,12 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
         .collect::<Vec<_>>()
 }
 
-fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
+fn all_chain_headers_before_header(
+    context: &Arc<Context>,
+    header: &ChainHeader,
+) -> Vec<ChainHeader> {
     let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
-    chain.iter(&top_header).collect()
+    chain.iter(&Some(header.clone())).skip(1).collect()
 }
 
 /// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.
@@ -206,7 +227,7 @@ pub struct ValidationPackageFuture {
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
             return Poll::Ready(Err(err));
         }
@@ -217,7 +238,7 @@ impl Future for ValidationPackageFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        lw.wake();
+        cx.waker().clone().wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_packages.get(&self.key) {
                 Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),
@@ -237,7 +258,8 @@ mod tests {
     use super::*;
     use crate::nucleus::actions::tests::*;
 
-    use holochain_core_types::validation::ValidationPackage;
+    use holochain_core_types::{time::Iso8601, validation::ValidationPackage};
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
     #[test]
     fn test_building_validation_package_entry() {
@@ -288,8 +310,11 @@ mod tests {
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: chain_header,
-            source_chain_entries: Some(all_public_chain_entries(&context)),
+            chain_header: chain_header.clone(),
+            source_chain_entries: Some(public_chain_entries_from_headers(
+                &context,
+                &all_chain_headers_before_header(&context, &chain_header),
+            )),
             source_chain_headers: None,
             custom: None,
         };
@@ -316,9 +341,9 @@ mod tests {
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: chain_header,
+            chain_header: chain_header.clone(),
             source_chain_entries: None,
-            source_chain_headers: Some(all_chain_headers(&context)),
+            source_chain_headers: Some(all_chain_headers_before_header(&context, &chain_header)),
             custom: None,
         };
 
@@ -343,13 +368,82 @@ mod tests {
         ));
         assert!(maybe_validation_package.is_ok());
 
+        let headers = all_chain_headers_before_header(&context, &chain_header);
+
         let expected = ValidationPackage {
             chain_header: chain_header,
-            source_chain_entries: Some(all_public_chain_entries(&context)),
-            source_chain_headers: Some(all_chain_headers(&context)),
+            source_chain_entries: Some(public_chain_entries_from_headers(&context, &headers)),
+            source_chain_headers: Some(headers),
             custom: None,
         };
 
         assert_eq!(maybe_validation_package.unwrap(), expected);
+    }
+
+    // test can make validation package with empty chain
+    #[test]
+    fn test_all_chain_headers_before_header_empty_chain() {
+        let (_instance, context) = instance(None);
+        let top_header = context
+            .state()
+            .unwrap()
+            .agent()
+            .top_chain_header()
+            .expect("There must be a top chain header");
+        let headers = all_chain_headers_before_header(&context, &top_header);
+        assert_eq!(headers.len(), 1) // includes the DNA entry only (no agent entry)
+    }
+
+    #[test]
+    fn test_all_chain_headers_before_header_entry_local_commit_validation() {
+        let (_instance, context) = instance(None);
+
+        let top_header = context
+            .state()
+            .unwrap()
+            .agent()
+            .top_chain_header()
+            .expect("There must be a top chain header");
+        // new entry header is created so it points to previous top header but not added to the local chain
+        let new_entry_header = ChainHeader::new(
+            &EntryType::from("test-new-entry"),
+            &Address::from("Qmtestaddress"),
+            &Vec::new(),
+            &Some(top_header.address()),
+            &None,
+            &None,
+            &Iso8601::new(0, 0),
+        );
+
+        let headers = all_chain_headers_before_header(&context, &new_entry_header);
+        // entry should not appear in the validating chain
+        assert_eq!(headers.contains(&new_entry_header), false);
+        assert_eq!(headers.len(), 2) // includes the DNA and agent entries
+    }
+
+    #[test]
+    fn test_all_chain_headers_before_header_entry_dht_validation() {
+        let (_instance, context) = instance(None);
+        // entry is added to the local chain
+        let chain_header = commit(test_entry_package_chain_full(), &context);
+        let headers = all_chain_headers_before_header(&context, &chain_header);
+        // entry should not appear in the validating chain
+        assert_eq!(headers.contains(&chain_header), false);
+        assert_eq!(headers.len(), 2) // includes the DNA and agent entries
+    }
+
+    #[test]
+    fn test_later_headers_not_included() {
+        let (_instance, context) = instance(None);
+        // entry is added to the local chain
+        let chain_header = commit(test_entry_package_chain_full(), &context);
+        let pre_commit_headers = all_chain_headers_before_header(&context, &chain_header);
+
+        // commit come more entries
+        commit(test_entry_package_chain_entries(), &context);
+        commit(test_entry_package_entry(), &context);
+
+        let post_commit_headers = all_chain_headers_before_header(&context, &chain_header);
+        assert_eq!(pre_commit_headers, post_commit_headers)
     }
 }

@@ -20,7 +20,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
-pub async fn hold_entry_workflow<'a>(
+pub async fn hold_entry_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
@@ -96,6 +96,7 @@ pub async fn hold_entry_workflow<'a>(
 
     // 3. If valid store the entry in the local DHT shard
     await!(hold_entry(entry_with_header, context.clone()))?;
+
 
     context.log(format!(
         "debug/workflow/hold_entry: HOLDING: {}",

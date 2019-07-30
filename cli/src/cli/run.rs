@@ -3,13 +3,14 @@ use colored::*;
 use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
-    conductor::{mount_conductor_from_config, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::*,
     key_loaders::{test_keystore, test_keystore_loader},
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -120,13 +121,17 @@ fn agent_configuration() -> AgentConfiguration {
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
+    let dna = Conductor::load_dna(dna_path).expect(&format!(
+        "Could not load DNA file {}",
+        dna_path.to_str().expect("No DNA file path given")
+    ));
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: dna_path
             .to_str()
             .expect("Expected DNA path to be valid unicode")
             .to_string(),
-        hash: None,
+        hash: dna.address().to_string(),
     }
 }
 
@@ -231,11 +236,15 @@ fn networking_configuration(networked: bool, agent_unique: &str) -> Option<Netwo
 
 #[cfg(test)]
 mod tests {
+    extern crate tempfile;
     // use crate::cli::init::{init, tests::gen_dir};
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
+    use self::tempfile::tempdir;
     use holochain_conductor_api::config::*;
-    use std::path::PathBuf;
+    use holochain_core_types::dna::Dna;
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use std::fs::{create_dir, File};
 
     #[test]
     // flagged as broken for:
@@ -286,14 +295,22 @@ mod tests {
 
     #[test]
     fn test_dna_configuration() {
-        let dna_path = PathBuf::from("/test/path");
-        let dna = super::dna_configuration(&dna_path);
+        let dna = Dna::new();
+        let temp_path = tempdir()
+            .expect("Could not get tempdir")
+            .path()
+            .join("test_dna.json");
+        create_dir(temp_path.parent().unwrap()).expect("Could not create temporary directory");
+        let out_file = File::create(&temp_path).expect("Could not create temp file for test DNA");
+        serde_json::to_writer_pretty(&out_file, &dna).expect("Could not write test DNA to file");
+
+        let dna_config = super::dna_configuration(&temp_path);
         assert_eq!(
-            dna,
+            dna_config,
             DnaConfiguration {
                 id: "hc-run-dna".to_string(),
-                file: "/test/path".to_string(),
-                hash: None,
+                file: temp_path.to_str().unwrap().to_string(),
+                hash: dna.address().to_string(),
             }
         )
     }

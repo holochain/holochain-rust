@@ -218,6 +218,10 @@ impl Holochain {
         self.check_instance()?;
         self.check_active()?;
 
+        let context = self.context.as_ref().unwrap();
+        if let Err(err) = context.block_on(self.instance.as_ref().unwrap().shutdown_network()) {
+            context.log(format!("Error shutting down network: {:?}", err));
+        }
         self.instance.as_ref().unwrap().stop_action_loop();
         self.active = false;
         Ok(())
@@ -387,14 +391,14 @@ mod tests {
     }
 
     #[test]
-    fn fails_instantiate_if_genesis_fails() {
+    fn fails_instantiate_if_init_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 9
                 )
                 (data (i32.const 0)
@@ -410,22 +414,25 @@ mod tests {
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
-            HolochainInstanceError::from(HolochainError::ErrorGeneric("\"Genesis\"".to_string())),
+            HolochainInstanceError::from(HolochainError::ErrorGeneric(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+                    .to_string()
+            )),
             result.err().unwrap(),
         );
     }
 
     #[test]
     #[cfg(feature = "broken-tests")]
-    fn fails_instantiate_if_genesis_times_out() {
+    fn fails_instantiate_if_init_times_out() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            Callback::Init.capability().as_str(),
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     (loop (br 0))
                     i64.const 0
                 )

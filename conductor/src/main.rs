@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 /// Holochain Conductor executable
 ///
@@ -18,6 +17,7 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core_types;
 extern crate lib3h_sodium;
+extern crate signal_hook;
 extern crate structopt;
 
 use holochain_conductor_api::{
@@ -25,7 +25,8 @@ use holochain_conductor_api::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
-use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc, thread::sleep, time::Duration};
+use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -44,12 +45,14 @@ fn main() {
         .config
         .unwrap_or(config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
+    let termination_signals =
+        Signals::new(&[SIGINT, SIGTERM]).expect("Couldn't create signals list");
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(()) => {
             {
                 let mut conductor_guard = CONDUCTOR.lock().unwrap();
-                let mut conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+                let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
                 println!(
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
@@ -67,9 +70,24 @@ fn main() {
                     .expect("Could not start UI servers!");
             }
 
-            // TODO wait for a SIGKILL or SIGINT instead here.
-            loop {
-                sleep(Duration::from_secs(1))
+            for _sig in termination_signals.forever() {
+                let mut conductor_guard = CONDUCTOR.lock().unwrap();
+                let conductor = std::mem::replace(&mut *conductor_guard, None);
+                let refs = Arc::strong_count(&CONDUCTOR);
+                if refs == 1 {
+                    println!("Gracefully shutting down conductor...");
+                } else {
+                    println!(
+                        "Explicitly shutting down conductor. {} other threads were referencing it, so if unwrap errors follow, that might be why.",
+                        refs - 1
+                    );
+                    conductor
+                        .expect("No conductor running")
+                        .shutdown()
+                        .expect("Error shutting down conductor");
+                }
+                break;
+                // NB: conductor is dropped here and should shut down itself
             }
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),

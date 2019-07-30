@@ -15,7 +15,7 @@ Each capability grant gets recorded as a private entry on the grantor’s chain.
 ## Using Capabilities
 
 ### Public Capabilities
-You can declare some functions as "public"  using the special `hc_public` marker trait in your `define_zome!` call.  Functions in that trait will be added to the public capability grant which gets auto-committed during genesis.  Like this:
+You can declare some functions as "public"  using the special `hc_public` marker trait in your `define_zome!` call.  Functions in that trait will be added to the public capability grant which gets auto-committed during init.  Like this:
 
 ```
 define_zome! {

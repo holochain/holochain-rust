@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![feature(proc_macro_hygiene)]
 extern crate hdk_proc_macros;
 use hdk_proc_macros::zome;
@@ -31,8 +30,13 @@ pub mod someZome {
         stuff: String,
     }
 
-    #[genesis]
-    fn genisis() {
+    #[init]
+    fn init() {
+        Ok(())
+    }
+    
+    #[validate_agent]
+    fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 
@@ -62,7 +66,7 @@ pub mod someZome {
     }
 
     #[receive]
-    fn glerp_glerp(message: String) -> String {
+    fn receive_callback(_from: Address, message: String) -> String {
         message
     }
 

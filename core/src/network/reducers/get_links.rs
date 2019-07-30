@@ -1,28 +1,50 @@
 use crate::{
     action::{ActionWrapper, GetLinksKey},
-    network::{query::NetworkQuery, reducers::send, state::NetworkState},
+    network::{
+        query::{GetLinksNetworkQuery, NetworkQuery},
+        reducers::send,
+        state::NetworkState,
+    },
     state::State,
 };
 
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::json_protocol::{JsonProtocol, QueryEntryData};
+
+use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
+
 use holochain_persistence_api::hash::HashString;
+use std::convert::TryInto;
 
 fn reduce_get_links_inner(
     network_state: &mut NetworkState,
     key: &GetLinksKey,
+    get_links_query: &GetLinksNetworkQuery,
+    crud_status: &Option<CrudStatus>,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let query_json: JsonString =
-        NetworkQuery::GetLinks(key.link_type.clone(), key.tag.clone()).into();
+    let query_json: JsonString = NetworkQuery::GetLinks(
+        key.link_type.clone(),
+        key.tag.clone(),
+        crud_status.clone(),
+        get_links_query.clone(),
+    )
+    .into();
     send(
         network_state,
-        JsonProtocol::QueryEntry(QueryEntryData {
+        Lib3hClientProtocol::QueryEntry(QueryEntryData {
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key.id.clone(),
-            dna_address: network_state.dna_address.clone().unwrap(),
-            entry_address: HashString::from(key.base_address.clone()),
+            // TODO return result these addresses as errors
+            space_address: network_state
+                .dna_address
+                .clone()
+                .unwrap()
+                .try_into()
+                .expect("space address from base58 string"),
+            entry_address: HashString::from(key.base_address.clone())
+                .try_into()
+                .expect("entry adress from base58 string"),
             query: query_json.to_string().into_bytes(),
         }),
     )
@@ -34,9 +56,9 @@ pub fn reduce_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetLinks);
+    let (key, crud_status, query) = unwrap_to!(action => crate::action::Action::GetLinks);
 
-    let result = match reduce_get_links_inner(network_state, &key) {
+    let result = match reduce_get_links_inner(network_state, &key, &query, crud_status) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
@@ -69,6 +91,7 @@ mod tests {
     use crate::{
         action::{Action, ActionWrapper, GetLinksKey},
         instance::tests::test_context,
+        network::query::{GetLinksNetworkQuery,GetLinksQueryConfiguration},
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
@@ -87,7 +110,15 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+        let config = GetLinksQueryConfiguration
+        {
+            headers : false
+        };
+        let action_wrapper = ActionWrapper::new(Action::GetLinks((
+            key.clone(),
+            None,
+            GetLinksNetworkQuery::Links(config),
+        )));
 
         let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store

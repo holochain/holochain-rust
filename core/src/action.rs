@@ -87,7 +87,7 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize)]
+#[derive(Clone, PartialEq, Debug, Serialize,Eq,Hash)]
 pub enum Key
 {
     Entry(GetEntryKey),

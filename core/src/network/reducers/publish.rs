@@ -47,7 +47,7 @@ fn publish_entry(
 }
 
 /// Send to network a request to publish a header entry alone
-/// This is similar to publishing a regular entry but it is its own special dummy header.
+/// This is similar to publishing a regular entry but it has its own special dummy header.
 fn publish_header(
     network_state: &mut NetworkState,
     root_state: &State,
@@ -162,9 +162,6 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
-
-    // publish the header for all entries
-    publish_header(network_state, root_state, &entry_with_header.header)?;
 
     // for non-publishing entries early return Ok
     if ! entry_with_header.entry.entry_type().can_publish_from_state(root_state) { return Ok(()); }

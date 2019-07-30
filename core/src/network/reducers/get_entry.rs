@@ -31,8 +31,8 @@ pub fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetEntry);
-
+    let (key,_) = unwrap_to!(action => crate::action::Action::Get);
+    let key = unwrap_to!(key=> crate::action::Key::Entry);
     let result = match reduce_get_entry_inner(network_state, &key) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
@@ -49,8 +49,8 @@ pub fn reduce_get_entry_timeout(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
-
+    let timeout_type = unwrap_to!(action => crate::action::Action::GetTimeout);
+    let key = unwrap_to!(timeout_type=> crate::action::Key::Entry);
     if network_state.get_entry_with_meta_results.get(key).is_none() {
         return;
     }

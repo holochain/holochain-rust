@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey,RespondGetPayload},
+    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey,RespondGetPayload,Key},
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
@@ -144,15 +144,15 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
                 GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
             };
-            let respond_links = RespondGetPayload::Links(links_result,link_type.clone(),tag.clone());
-            ActionWrapper::new(Action::RespondGet(
+            let respond_links = RespondGetPayload::Links((links_result,link_type.clone(),tag.clone()));
+            ActionWrapper::new(Action::RespondGet((
                 query_data,respond_links
-            ))
+            )))
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone());
             let respond_get = RespondGetPayload::Entry(maybe_entry);
-            ActionWrapper::new(Action::RespondGet(query_data,respond_get)
+            ActionWrapper::new(Action::RespondGet((query_data,respond_get)))
         }
         err => {
             context.log(format!(
@@ -172,24 +172,26 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
         JsonString::from_json(&String::from_utf8(query_result_data.query_result).unwrap());
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
-            ActionWrapper::new(Action::HandleGetResult((
-                maybe_entry,
-                GetEntryKey {
+            let payload = RespondGetPayload::Entry(maybe_entry);
+            ActionWrapper::new(Action::HandleGet((
+                payload,
+                Key::Entry(GetEntryKey {
                     address: query_result_data.entry_address.clone(),
                     id: query_result_data.request_id.clone(),
                 },
-            )))
+            ))))
         }
         Ok(NetworkQueryResult::Links(links_result, link_type, tag)) => {
-            ActionWrapper::new(Action::HandleGetLinksResult((
-                links_result,
-                GetLinksKey {
+            let payload = RespondGetPayload::Links((links_result,link_type.clone(),tag.clone()));
+            ActionWrapper::new(Action::HandleGet((
+                payload,
+                Key::Links(GetLinksKey {
                     base_address: query_result_data.entry_address.clone(),
                     link_type: link_type.clone(),
                     tag: tag.clone(),
                     id: query_result_data.request_id.clone(),
                 },
-            )))
+            ))))
         }
         err => {
             context.log(format!(

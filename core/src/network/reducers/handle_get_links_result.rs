@@ -6,7 +6,9 @@ pub fn reduce_handle_get_links_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (links, key) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
+    let (payload, key) = unwrap_to!(action => crate::action::Action::HandleGet);
+    let key = unwrap_to!(key=>crate::action::Key::Links);
+    let (links,_,_) = unwrap_to!(payload=>crate::action::RespondGetPayload::Links);
 
     network_state
         .get_links_results

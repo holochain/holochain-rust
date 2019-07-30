@@ -17,7 +17,7 @@ pub mod send_direct_message;
 pub mod shutdown;
 
 use crate::{
-    action::{Action, ActionWrapper, NetworkReduceFn},
+    action::{Action, ActionWrapper, NetworkReduceFn,RespondGetPayload,GetPayload,Key},
     network::{
         direct_message::DirectMessage,
         reducers::{
@@ -56,12 +56,11 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::Get(_,payload) =>match payload { GetPayload::Entry => Some(reduce_get_entry),GetPayload::Links(_,_,_) =>Some(reduce_get_links)},
-        Action::GetTimeout(key) => match payload { Key::Entry(_) => Some(reduce_get_entry_timeout), Key::Links(_) = Some(reduce_get_links_timeout)},
+        Action::Get((_,payload)) =>match payload { GetPayload::Entry => Some(reduce_get_entry),GetPayload::Links(_) =>Some(reduce_get_links)},
+        Action::GetTimeout(key) => match key { Key::Entry(_) => Some(reduce_get_entry_timeout), Key::Links(_) => Some(reduce_get_links_timeout)},
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleGetResult(_) => Some(reduce_handle_get_result),
-        Action::HandleGetLinksResult(_) => Some(reduce_handle_get_links_result),
+        Action::HandleGet((payload,_)) => match payload { RespondGetPayload::Entry(_) => Some(reduce_respond_get), RespondGetPayload::Links(_)=>Some(reduce_respond_get_links)},
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
@@ -69,7 +68,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
-        Action::RespondGet(_,payload) => match payload { RespondGetPayload::Entry(_) => Some(reduce_respond_get), RespondGetPayload::Links(_,_,_) => Some(reduce_respond_get_links)},
+        Action::RespondGet((_,payload)) => match payload { RespondGetPayload::Entry(_) => Some(reduce_respond_get), RespondGetPayload::Links(_) => Some(reduce_respond_get_links)},
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         Action::ShutdownNetwork => Some(reduce_shutdown),

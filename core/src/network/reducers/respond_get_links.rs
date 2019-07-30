@@ -46,8 +46,8 @@ pub fn reduce_respond_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, links, link_type, tag) =
-        unwrap_to!(action => crate::action::Action::RespondGetLinks);
+    let (query_data,payload) = unwrap_to!(action=>crate::action::Action::RespondGet);
+    let (links, link_type, tag) = unwrap_to!(payload => crate::action::RespondGetPayload::Links);
     let result = reduce_respond_get_links_inner(
         network_state,
         query_data,

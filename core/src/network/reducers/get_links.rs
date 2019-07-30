@@ -56,7 +56,9 @@ pub fn reduce_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key, crud_status, query) = unwrap_to!(action => crate::action::Action::GetLinks);
+    let (key,payload) = unwrap_to!(action => crate::action::Action::Get);
+    let key = unwrap_to!(key=>crate::action::Key::Links);
+    let (crud_status, query) = unwrap_to!(payload => crate::action::GetPayload::Links);
 
     let result = match reduce_get_links_inner(network_state, &key, &query, crud_status) {
         Ok(()) => None,
@@ -72,8 +74,8 @@ pub fn reduce_get_links_timeout(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetLinksTimeout);
-
+    let key = unwrap_to!(action => crate::action::Action::GetTimeout);
+    let key = unwrap_to!(key=>crate::action::Key::Links);
     if network_state.get_links_results.get(key).is_none() {
         return;
     }

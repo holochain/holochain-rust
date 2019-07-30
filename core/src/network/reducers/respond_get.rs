@@ -40,7 +40,8 @@ pub fn reduce_respond_get(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondGet);
+    let (query_data,payload) = unwrap_to!(action=>crate::action::Action::RespondGet);
+    let maybe_entry = unwrap_to!(payload => crate::action::RespondGetPayload::Entry);
     let result = reduce_respond_get_inner(network_state, query_data, maybe_entry);
 
     network_state.actions.insert(

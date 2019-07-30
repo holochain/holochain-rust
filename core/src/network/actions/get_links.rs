@@ -30,7 +30,7 @@ pub async fn get_links(
         LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
         LinksStatusRequestKind::Live => Some(CrudStatus::Live),
     };
-    let get_action = Action::Get(Key::Links(key),GetPayload::Links(crud_status,query));
+    let get_action = Action::Get((Key::Links(key.clone()),GetPayload::Links((crud_status,query))));
     let action_wrapper = ActionWrapper::new(get_action);
     dispatch_action(context.action_channel(), action_wrapper.clone());
 

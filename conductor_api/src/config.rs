@@ -34,9 +34,9 @@ use std::{
     env,
     fs::File,
     io::prelude::*,
+    net::Ipv4Addr,
     path::PathBuf,
     sync::Arc,
-    net::Ipv4Addr,
 };
 use toml;
 

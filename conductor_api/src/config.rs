@@ -553,7 +553,7 @@ impl Configuration {
     }
 }
 
-/// An agent has a name/ID and is defined by a private key that resides in a file
+/// An agent has a name/ID and is optionally defined by a private key that resides in a file
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct AgentConfiguration {
     pub id: String,
@@ -563,6 +563,8 @@ pub struct AgentConfiguration {
     /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
+    /// If true this agent will use dummy keys rather than a keystore file
+    pub test_agent: Option<bool>,
 }
 
 impl From<AgentConfiguration> for AgentId {

@@ -112,6 +112,7 @@ fn agent_configuration() -> AgentConfiguration {
         public_address: agent_id.pub_sign_key,
         keystore_file: agent_name,
         holo_remote_key: None,
+        test_agent: Some(true),
     }
 }
 
@@ -287,6 +288,7 @@ mod tests {
                     .to_string(),
                 keystore_file: "testAgent".to_string(),
                 holo_remote_key: None,
+                test_agent: Some(true),
             },
         );
     }

@@ -107,6 +107,7 @@ impl AddressableContent for Entry {
     fn address(&self) -> Address {
         match &self {
             Entry::AgentId(agent_id) => agent_id.address(),
+            Entry::ChainHeader(chain_header) => chain_header.address(),
             _ => Address::encode_from_str(&String::from(self.content()), Hash::SHA2256),
         }
     }

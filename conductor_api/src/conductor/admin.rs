@@ -756,8 +756,14 @@ pattern = '.*'"#
         toml
     }
 
-    pub fn create_test_conductor(test_name: &str, port: u32) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml(test_name, port)).unwrap();
+    pub fn barebones_test_toml(test_name: &str) -> String {
+        let mut toml = header_block(test_name);
+        toml = add_block(toml, agent1());
+        toml
+    }
+
+    pub fn create_test_conductor_from_toml(toml: &str, test_name: &str) -> Conductor {
+        let config = load_configuration::<Configuration>(toml).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -765,6 +771,10 @@ pattern = '.*'"#
         conductor.hash_config = test_hash_config();
         conductor.passphrase_manager = mock_passphrase_manager(test_name.to_string());
         conductor
+    }
+
+    pub fn create_test_conductor(test_name: &str, port: u32) -> Conductor {
+        create_test_conductor_from_toml(&test_toml(test_name, port), test_name)
     }
 
     #[test]

@@ -36,6 +36,7 @@ use std::{
     io::prelude::*,
     path::PathBuf,
     sync::Arc,
+    net::Ipv4Addr,
 };
 use toml;
 
@@ -695,6 +696,26 @@ pub struct UiInterfaceConfiguration {
     /// (Optional)
     #[serde(default)]
     pub dna_interface: Option<String>,
+
+    #[serde(default = "default_reroute")]
+    /// Re-route any failed HTTP Gets to /index.html
+    /// This is required for SPAs using virtual routing
+    /// Default = true
+    pub reroute_to_root: bool,
+
+    #[serde(default = "default_address")]
+    /// Address to bind to
+    /// Can be either ip4 of ip6
+    /// Default = "127.0.0.1"
+    pub bind_address: String,
+}
+
+fn default_reroute() -> bool {
+    true
+}
+
+fn default_address() -> String {
+    Ipv4Addr::LOCALHOST.to_string()
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

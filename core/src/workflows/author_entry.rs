@@ -202,8 +202,9 @@ pub mod tests {
         let mut dna = test_dna();
         dna.uuid = "test_reconstruct_chain_via_published_headers".to_string();
         let netname = Some("test_reconstruct_chain_via_published_headers, the network");
+        // the ordering of these is important. Jack will get Jills DNA and AgentId headers but not visa-versa
+        let (_instance2, context2) = instance_by_name("jack", dna.clone(), netname);
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         // Jill publishes an entry
         context1

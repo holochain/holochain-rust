@@ -111,10 +111,13 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 /// examine the query result for its type and dispatch different actions according to variant
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
     let query_result_json =
-        JsonString::from_json(&String::from_utf8(query_result_data.query_result).unwrap());
+        JsonString::from_json(&String::from_utf8(query_result_data.clone().query_result).unwrap());
+    println!("handle_query_entry_result: {:?}", query_result_data);
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
-            ActionWrapper::new(Action::HandleGetResult((
+            println!("action_wrapper: entry: {:?}",
+                     maybe_entry);
+             ActionWrapper::new(Action::HandleGetResult((
                 maybe_entry,
                 GetEntryKey {
                     address: query_result_data.entry_address.clone(),
@@ -123,6 +126,8 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             )))
         }
         Ok(NetworkQueryResult::Links(links_result, link_type, tag)) => {
+            println!("action_wrapper: links: {:?}, {:?}, {:?}",
+                     links_result, link_type, tag);
             ActionWrapper::new(Action::HandleGetLinksResult((
                 links_result,
                 GetLinksKey {
@@ -134,6 +139,7 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             )))
         }
         err => {
+            println!("action_wrapper: err: {:?}", err);
             context.log(format!(
                 "err/net: Error ({:?}) deserializing QueryResult {:?}",
                 err, query_result_json

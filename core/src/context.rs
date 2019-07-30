@@ -6,6 +6,7 @@ use crate::{
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
+    network::state::NetworkState
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{task::Poll, Future};
@@ -23,6 +24,8 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
+
+
 use holochain_net::{
     p2p_config::P2pConfig,
     p2p_network::P2pNetwork,
@@ -61,6 +64,7 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
             None => Err(HolochainError::ErrorGeneric("no network".into())),
         }
     }
+
 }
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
@@ -195,7 +199,7 @@ impl Context {
         })
     }
 
-    pub fn network_state(&self) -> Option<Arc<crate::network::state::NetworkState>> {
+    pub fn network_state(&self) -> Option<Arc<NetworkState>> {
         self.state().map(move |state| {
             state.network()
         })

@@ -11,8 +11,6 @@ use lib3h::{
     transport::{memory_mock::transport_memory::TransportMemory, transport_trait::Transport}
 };
 
-//use std::sync::{Arc, Mutex};
-
 use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -53,11 +51,6 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
     }
 }
 
-//lazy_static! {
-//    pub static ref PEERS: Arc<Mutex<Vec<url::Url>>> = Arc::new(Mutex::new(vec![]));
-//}
-
-
 impl Lib3hWorker<TransportMemory> {
 
     /// Create a new memory worker connected to the lib3h NetworkEngine
@@ -77,17 +70,6 @@ impl Lib3hWorker<TransportMemory> {
             net_engine
         };
 
-        /*   let mut peers = PEERS.lock().unwrap();
-             peers.push(worker.net_engine.advertise());
-
-             for peer_uri in peers.clone() {
-             worker.receive(Lib3hClientProtocol::Connect(lib3h_protocol::data_types::ConnectData {
-             request_id: format!("connect-{}", snowflake::ProcessUniqueId::new()),
-             peer_uri: peer_uri,
-             network_id: "".into()
-             }))?;
-             }
-        */
         Ok(worker)
 
     }

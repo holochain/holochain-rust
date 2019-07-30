@@ -115,7 +115,7 @@ impl AddressableContent for Entry {
     fn content(&self) -> Content {
         match &self {
             Entry::ChainHeader(chain_header) => chain_header.into(),
-            _ => self.into()
+            _ => self.into(),
         }
     }
 

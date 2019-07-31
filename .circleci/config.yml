@@ -73,7 +73,7 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-n3h
 
- app-spec-tests-n3h:
+ app-spec-tests-memory:
   docker:
    - image: holochain/holochain-rust:latest
   resource_class: xlarge

@@ -87,7 +87,6 @@ impl<T:Transport> NetWorker for Lib3hWorker<T> {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        // println!("Lib3hWorker.tick()");
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
         }

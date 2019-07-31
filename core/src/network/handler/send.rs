@@ -29,6 +29,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
     let message = match parse_direct_message(message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
+            println!("could not deserialize direct message");
             context.log(format!(
                 "error/net/handle_send_message: Could not deserialize DirectMessage: {:?}",
                 error,
@@ -86,10 +87,8 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
     };
 
     let initial_message = context
-        .state()
-        .unwrap()
-        .network()
-        .as_ref()
+        .network_state()
+        .expect("network state not initialized")
         .direct_message_connections
         .get(&message_data.request_id)
         .cloned();

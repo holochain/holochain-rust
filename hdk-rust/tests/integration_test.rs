@@ -5,6 +5,7 @@ extern crate holochain_json_api;
 extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
+extern crate url;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
@@ -289,6 +290,14 @@ fn start_holochain_instance<T: Into<String>>(
     uuid: T,
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
+    start_holochain_instance_with_bootstrap_nodes(uuid, agent_name, vec![])
+}
+
+fn start_holochain_instance_with_bootstrap_nodes<T: Into<String>>(
+    uuid: T,
+    agent_name: T,
+    bootstrap_nodes: Vec<url::Url>,
+) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
@@ -367,7 +376,8 @@ fn start_holochain_instance<T: Into<String>>(
     }
 
     let (context, test_logger) =
-        test_context_and_logger_with_network_name(&agent_name.into(), Some(&dna.uuid));
+        test_context_and_logger_with_bootstrap_nodes(
+            &agent_name.into(), Some(&dna.uuid), bootstrap_nodes);
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
@@ -852,11 +862,14 @@ fn can_check_call_with_args() {
 #[test]
 fn can_send_and_receive() {
     let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
+    let endpoint = hc.context().expect("context")
+        .network().lock().as_ref().unwrap().p2p_endpoint();
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
 
-    let (mut hc2, _) = start_holochain_instance("can_send_and_receive", "bob");
+    let (mut hc2, _) = start_holochain_instance_with_bootstrap_nodes(
+        "can_send_and_receive", "bob", vec![endpoint]);
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);

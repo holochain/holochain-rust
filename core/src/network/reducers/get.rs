@@ -1,12 +1,16 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey,GetLinksKey,Key},
-    network::{query::{NetworkQuery,GetLinksNetworkQuery},reducers::send, state::NetworkState},
+    action::{ActionWrapper, GetEntryKey, GetLinksKey, Key},
+    network::{
+        query::{GetLinksNetworkQuery, NetworkQuery},
+        reducers::send,
+        state::NetworkState,
+    },
     state::State,
 };
-use holochain_core_types::{error::HolochainError,crud_status::CrudStatus};
+use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 use holochain_persistence_api::hash::HashString;
+use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 use std::convert::TryInto;
 
 fn reduce_get_entry_inner(
@@ -33,23 +37,19 @@ pub fn reduce_get(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key_type,payload) = unwrap_to!(action => crate::action::Action::Get);
-    let result = match key_type
-    {
+    let (key_type, payload) = unwrap_to!(action => crate::action::Action::Get);
+    let result = match key_type {
         Key::Entry(key) => reduce_get_entry_inner(network_state, key)
-                           .map(|_|None)
-                           .unwrap_or_else(|e|Some(Err(e))),
-        Key::Links(key) =>
-        {
+            .map(|_| None)
+            .unwrap_or_else(|e| Some(Err(e))),
+        Key::Links(key) => {
             let (crud_status, query) = unwrap_to!(payload => crate::action::GetPayload::Links);
             reduce_get_links_inner(network_state, &key, &query, crud_status)
-            .map(|_|None)
-            .unwrap_or_else(|e|Some(Err(e)))
+                .map(|_| None)
+                .unwrap_or_else(|e| Some(Err(e)))
         }
     };
-    network_state
-        .get_results
-        .insert(key_type.clone(), result);
+    network_state.get_results.insert(key_type.clone(), result);
 }
 
 pub fn reduce_get_timeout(
@@ -63,12 +63,7 @@ pub fn reduce_get_timeout(
         return;
     }
 
-    if network_state
-        .get_results
-        .get(key)
-        .unwrap()
-        .is_none()
-    {
+    if network_state.get_results.get(key).unwrap().is_none() {
         network_state
             .get_results
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
@@ -313,10 +308,7 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let config = GetLinksQueryConfiguration
-        {
-            headers : false
-        };
+        let config = GetLinksQueryConfiguration { headers: false };
         let action_wrapper = ActionWrapper::new(Action::GetLinks((
             key.clone(),
             None,

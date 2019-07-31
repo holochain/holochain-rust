@@ -1,8 +1,9 @@
-use crate::{context::Context, 
-network,
-network::actions::get::GetMethod,
-action::RespondGetPayload,
-nucleus};
+use crate::{
+    action::RespondGetPayload,
+    context::Context,
+    network::{self, actions::get::GetMethod},
+    nucleus,
+};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
@@ -23,7 +24,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-        let method = GetMethod::Entry(address.clone());
+    let method = GetMethod::Entry(address.clone());
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
         let response = await!(network::actions::get::get(
@@ -31,10 +32,11 @@ pub async fn get_entry_with_meta_workflow<'a>(
             method.clone(),
             timeout.clone(),
         ))?;
-        match response 
-        {
+        match response {
             RespondGetPayload::Entry(maybe_entry) => Ok(maybe_entry),
-            _ => Err(HolochainError::ErrorGeneric("Wrong respond type for Entry".to_string()))
+            _ => Err(HolochainError::ErrorGeneric(
+                "Wrong respond type for Entry".to_string(),
+            )),
         }
     } else {
         // 3. If we've found the entry locally we also need to get the header from the local state:
@@ -58,10 +60,11 @@ pub async fn get_entry_with_meta_workflow<'a>(
                     method.clone(),
                     timeout.clone(),
                 ))?;
-                match response 
-                {
+                match response {
                     RespondGetPayload::Entry(maybe_entry) => Ok(maybe_entry),
-                    _ => Err(HolochainError::ErrorGeneric("Wrong respond type for Entry".to_string()))
+                    _ => Err(HolochainError::ErrorGeneric(
+                        "Wrong respond type for Entry".to_string(),
+                    )),
                 }
             }
         }

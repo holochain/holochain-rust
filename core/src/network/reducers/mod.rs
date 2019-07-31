@@ -50,7 +50,7 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::Get(_) =>Some(reduce_get),
+        Action::Get(_) => Some(reduce_get),
         Action::GetTimeout(_) => Some(reduce_get_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),

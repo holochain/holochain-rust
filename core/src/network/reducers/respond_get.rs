@@ -1,7 +1,10 @@
 use crate::{
-    action::{ActionWrapper,RespondGetPayload},
+    action::{ActionWrapper, RespondGetPayload},
     network::{
-        actions::ActionResponse, query::{NetworkQueryResult,GetLinksNetworkResult}, reducers::send, state::NetworkState,
+        actions::ActionResponse,
+        query::{GetLinksNetworkResult, NetworkQueryResult},
+        reducers::send,
+        state::NetworkState,
     },
     state::State,
 };
@@ -37,7 +40,6 @@ fn reduce_respond_get_links_inner(
     )
 }
 
-
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_inner(
@@ -66,18 +68,25 @@ pub fn reduce_respond_get(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data,payload) = unwrap_to!(action=>crate::action::Action::RespondGet);
-    let result = match payload
-    {
-        RespondGetPayload::Entry(maybe_entry) => reduce_respond_get_inner(network_state,query_data, maybe_entry),
-        RespondGetPayload::Links((links,link_type,tag)) =>reduce_respond_get_links_inner(network_state,query_data,links,link_type.clone(),tag.clone())
+    let (query_data, payload) = unwrap_to!(action=>crate::action::Action::RespondGet);
+    let result = match payload {
+        RespondGetPayload::Entry(maybe_entry) => {
+            reduce_respond_get_inner(network_state, query_data, maybe_entry)
+        }
+        RespondGetPayload::Links((links, link_type, tag)) => reduce_respond_get_links_inner(
+            network_state,
+            query_data,
+            links,
+            link_type.clone(),
+            tag.clone(),
+        ),
     };
 
-    let result = result.map(|_|Ok(()))
-         .unwrap_or_else(|e|Err(HolochainError::ErrorGeneric(e.to_string())));
- 
-    network_state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::Respond(result),
-    );
+    let result = result
+        .map(|_| Ok(()))
+        .unwrap_or_else(|e| Err(HolochainError::ErrorGeneric(e.to_string())));
+
+    network_state
+        .actions
+        .insert(action_wrapper.clone(), ActionResponse::Respond(result));
 }

@@ -1,13 +1,13 @@
 use crate::{
-    context::Context,
     action::RespondGetPayload,
-    network::actions::get::{GetMethod,get},
+    context::Context,
     network::{
+        actions::get::{get, GetMethod},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult},
     },
 };
 
-use holochain_core_types::{error::HolochainError,time::Timeout};
+use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResultCount};
 use std::sync::Arc;
 
@@ -15,17 +15,14 @@ pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    let method = GetMethod::Link(link_args.clone(),GetLinksNetworkQuery::Count);
-    let response = await!(get(
-        context.clone(),
-        method,
-        Timeout::default()
-    ))?;
+    let method = GetMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
+    let response = await!(get(context.clone(), method, Timeout::default()))?;
 
-    let links_result = match response
-    {
-        RespondGetPayload::Links((link_result,_,_)) => Ok(link_result),
-        RespondGetPayload::Entry(_) => Err(HolochainError::ErrorGeneric("Could not get link".to_string()))
+    let links_result = match response {
+        RespondGetPayload::Links((link_result, _, _)) => Ok(link_result),
+        RespondGetPayload::Entry(_) => Err(HolochainError::ErrorGeneric(
+            "Could not get link".to_string(),
+        )),
     }?;
 
     let links_count = match links_result {

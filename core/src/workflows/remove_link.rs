@@ -1,7 +1,7 @@
 use crate::{
     context::Context, dht::actions::remove_link::remove_link,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    workflows::hold_entry::hold_entry_workflow
+    workflows::hold_entry::hold_entry_workflow,
 };
 
 use crate::{
@@ -96,10 +96,12 @@ pub async fn remove_link_workflow(
     await!(remove_link(&entry_with_header.entry, &context))?;
     context.log(format!("debug/workflow/remove_link: added! {:?}", link));
 
-
     //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
     await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
-    context.log(format!("debug/workflow/hold_entry: added! {:?}", entry_with_header));
+    context.log(format!(
+        "debug/workflow/hold_entry: added! {:?}",
+        entry_with_header
+    ));
 
     Ok(())
 }

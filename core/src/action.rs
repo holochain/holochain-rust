@@ -87,25 +87,22 @@ impl Hash for ActionWrapper {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize,Eq,Hash)]
-pub enum Key
-{
+#[derive(Clone, PartialEq, Debug, Serialize, Eq, Hash)]
+pub enum Key {
     Entry(GetEntryKey),
-    Links(GetLinksKey)
+    Links(GetLinksKey),
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum GetPayload
-{
+pub enum GetPayload {
     Entry,
-    Links((Option<CrudStatus>, GetLinksNetworkQuery))
+    Links((Option<CrudStatus>, GetLinksNetworkQuery)),
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum RespondGetPayload
-{
+pub enum RespondGetPayload {
     Entry(Option<EntryWithMetaAndHeader>),
-    Links((GetLinksNetworkResult, String, String))
+    Links((GetLinksNetworkResult, String, String)),
 }
 
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
@@ -151,10 +148,10 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    Get((Key,GetPayload)),
+    Get((Key, GetPayload)),
     GetTimeout(Key),
-    RespondGet((QueryEntryData,RespondGetPayload)),
-    HandleGet((RespondGetPayload,Key)),
+    RespondGet((QueryEntryData, RespondGetPayload)),
+    HandleGet((RespondGetPayload, Key)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 

@@ -1,18 +1,18 @@
 use crate::{
     action::RespondGetPayload,
     network::{
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
-        actions::get::{get,GetMethod},
+        actions::get::{get, GetMethod},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::author_entry::author_entry
+    workflows::author_entry::author_entry,
 };
 
 use holochain_core_types::{
-    time::Timeout,
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
+    time::Timeout,
 };
 use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions},
@@ -67,28 +67,19 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         tag: link.tag().clone(),
         options: GetLinksOptions::default(),
     };
-    let config = GetLinksQueryConfiguration
-    {
-        headers : false
-    };
-    let method = GetMethod::Link(get_links_args.clone(),GetLinksNetworkQuery::Links(config));
-    let response_result = context.block_on(get(
-        context.clone(),
-        method,
-        Timeout::default()
-    ));
-    if response_result.is_err()
-    {
+    let config = GetLinksQueryConfiguration { headers: false };
+    let method = GetMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+    let response_result = context.block_on(get(context.clone(), method, Timeout::default()));
+    if response_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)
-    }
-    else
-    {
+    } else {
         let response = response_result.expect("Could not get response");
-        let links_result = match response
-        {
-            RespondGetPayload::Links((query,_,_)) => Ok(query),
-            RespondGetPayload::Entry(_) => Err(HolochainError::ErrorGeneric("Could not get links for type".to_string()))
+        let links_result = match response {
+            RespondGetPayload::Links((query, _, _)) => Ok(query),
+            RespondGetPayload::Entry(_) => Err(HolochainError::ErrorGeneric(
+                "Could not get links for type".to_string(),
+            )),
         };
         if links_result.is_err() {
             context.log("err/zome : Could not get links for remove_link method");
@@ -101,8 +92,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             };
             let filtered_links = links
                 .into_iter()
-                .filter(|link_for_filter|&link_for_filter.target == link.target())
-                .map(|s|s.address)
+                .filter(|link_for_filter| &link_for_filter.target == link.target())
+                .map(|s| s.address)
                 .collect::<Vec<_>>();
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));
@@ -115,5 +106,4 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             runtime.store_result(result)
         }
     }
-    
 }

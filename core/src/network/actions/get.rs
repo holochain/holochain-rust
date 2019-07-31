@@ -1,14 +1,14 @@
 use crate::{
-    action::{Action, ActionWrapper, GetEntryKey,GetLinksKey,Key,GetPayload,RespondGetPayload},
+    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, GetPayload, Key, RespondGetPayload},
     context::Context,
     instance::dispatch_action,
-    network::query::GetLinksNetworkQuery
+    network::query::GetLinksNetworkQuery,
 };
 use futures::{future::Future, task::Poll};
 
 use holochain_persistence_api::cas::content::Address;
 
-use holochain_core_types::{error::HcResult, time::Timeout,crud_status::CrudStatus};
+use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -23,44 +23,44 @@ use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStat
 /// Returns a future that resolves to an ActionResponse.]
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum GetMethod
-{
+pub enum GetMethod {
     Entry(Address),
-    Link(GetLinksArgs,GetLinksNetworkQuery)
+    Link(GetLinksArgs, GetLinksNetworkQuery),
 }
 
 pub async fn get(
     context: Arc<Context>,
-    method : GetMethod,
-    timeout: Timeout
+    method: GetMethod,
+    timeout: Timeout,
 ) -> HcResult<RespondGetPayload> {
-
-    let (key,payload) = match method 
-    {
-        GetMethod::Entry(address) =>{
+    let (key, payload) = match method {
+        GetMethod::Entry(address) => {
             let key = GetEntryKey {
-            address: address,
-            id: snowflake::ProcessUniqueId::new().to_string()};
-            (Key::Entry(key),GetPayload::Entry)
-        },
-        GetMethod::Link(link_args,query) =>
-        {
+                address: address,
+                id: snowflake::ProcessUniqueId::new().to_string(),
+            };
+            (Key::Entry(key), GetPayload::Entry)
+        }
+        GetMethod::Link(link_args, query) => {
             let key = GetLinksKey {
-            base_address: link_args.entry_address.clone(),
-            link_type: link_args.link_type.clone(),
-            tag: link_args.tag.clone(),
-            id: ProcessUniqueId::new().to_string(),
+                base_address: link_args.entry_address.clone(),
+                link_type: link_args.link_type.clone(),
+                tag: link_args.tag.clone(),
+                id: ProcessUniqueId::new().to_string(),
             };
             let crud_status = match link_args.options.status_request {
-            LinksStatusRequestKind::All => None,
-            LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
-            LinksStatusRequestKind::Live => Some(CrudStatus::Live),
+                LinksStatusRequestKind::All => None,
+                LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
+                LinksStatusRequestKind::Live => Some(CrudStatus::Live),
             };
-            (Key::Links(key.clone()),GetPayload::Links((crud_status,query)))
+            (
+                Key::Links(key.clone()),
+                GetPayload::Links((crud_status, query)),
+            )
         }
     };
 
-    let entry = Action::Get((key.clone(),payload.clone()));
+    let entry = Action::Get((key.clone(), payload.clone()));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
@@ -78,7 +78,7 @@ pub async fn get(
 
     await!(GetFuture {
         context: context.clone(),
-        key : key.clone(),
+        key: key.clone(),
     })
 }
 

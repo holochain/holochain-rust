@@ -125,10 +125,10 @@ pub async fn build_validation_package<'a>(
                         _ => unreachable!(),
                     })
                     .and_then(|package_definition| {
+                        let mut package = ValidationPackage::only_header(entry_header);
                         Ok(match package_definition {
-                            Entry => ValidationPackage::only_header(entry_header),
+                            Entry => package,
                             ChainEntries => {
-                                let mut package = ValidationPackage::only_header(entry_header);
                                 package.source_chain_entries =
                                     Some(public_chain_entries_from_headers(
                                         &context,
@@ -140,7 +140,6 @@ pub async fn build_validation_package<'a>(
                                 package
                             }
                             ChainHeaders => {
-                                let mut package = ValidationPackage::only_header(entry_header);
                                 package.source_chain_headers =
                                     Some(all_chain_headers_before_header(
                                         &context,
@@ -149,7 +148,6 @@ pub async fn build_validation_package<'a>(
                                 package
                             }
                             ChainFull => {
-                                let mut package = ValidationPackage::only_header(entry_header);
                                 let headers = all_chain_headers_before_header(
                                     &context,
                                     &package.chain_header,
@@ -160,7 +158,6 @@ pub async fn build_validation_package<'a>(
                                 package
                             }
                             Custom(string) => {
-                                let mut package = ValidationPackage::only_header(entry_header);
                                 package.custom = Some(string);
                                 package
                             }

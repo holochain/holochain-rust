@@ -94,7 +94,7 @@ pub (crate) async fn try_make_validation_package_dht(
 
     match validation_package_definition {
         ValidationPackageDefinition::Entry => {
-            // this should never match but it will produce the correct package anyway
+            // this should never happen but it will produce the correct package anyway
         }
         ValidationPackageDefinition::ChainEntries => {
             package.source_chain_entries = Some(await!(public_chain_entries_from_headers_dht(&context, &chain_headers))?);

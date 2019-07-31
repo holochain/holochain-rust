@@ -43,34 +43,31 @@ pub fn state_dump(context: Arc<Context>) {
 
 
     let running_calls: Vec<ZomeFnCall> = nucleus.zome_calls
-        .iter()
+        .into_iter()
         .filter(|(_, result)| result.is_none())
         .map(|(call, _)| call)
-        .cloned()
         .collect();
 
     let get_entry_flows: Vec<Address> = network.get_entry_with_meta_results
-        .iter()
+        .into_iter()
         .filter(|(_, result)| result.is_none())
         .map(|(key, _)| key.address.clone())
         .collect();
 
     let get_links_flows: Vec<GetLinksKey> = network.get_links_results
-        .iter()
+        .into_iter()
         .filter(|(_, result)| result.is_none())
         .map(|(key, _)| key)
-        .cloned()
         .collect();
 
     let validation_package_flows: Vec<Address> = network.get_validation_package_results
-        .iter()
+        .into_iter()
         .filter(|(_, result)| result.is_none())
         .map(|(address, _)| address)
-        .cloned()
         .collect();
 
     let direct_message_flows: Vec<(String, DirectMessage)> = network.direct_message_connections
-        .iter()
+        .into_iter()
         .map(|(s, dm)| (s.clone(), dm.clone()))
         .collect();
 

@@ -34,9 +34,9 @@ use std::{
     env,
     fs::File,
     io::prelude::*,
+    net::Ipv4Addr,
     path::PathBuf,
     sync::Arc,
-    net::Ipv4Addr,
 };
 use toml;
 
@@ -124,6 +124,8 @@ pub struct LoggerConfiguration {
     #[serde(default)]
     pub rules: LogRules,
     //    pub file: Option<String>,
+    #[serde(default)]
+    pub state_dump: bool,
 }
 
 impl Default for LoggerConfiguration {
@@ -131,6 +133,7 @@ impl Default for LoggerConfiguration {
         LoggerConfiguration {
             logger_type: "debug".into(),
             rules: Default::default(),
+            state_dump: false,
         }
     }
 }

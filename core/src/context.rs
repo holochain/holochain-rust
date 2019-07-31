@@ -59,6 +59,7 @@ pub struct Context {
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<Mutex<bool>>,
+    pub state_dump_logging: bool,
 }
 
 impl Context {
@@ -98,6 +99,7 @@ impl Context {
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
+        state_dump_logging: bool,
     ) -> Self {
         Context {
             agent_id: agent_id.clone(),
@@ -116,6 +118,7 @@ impl Context {
                 agent_id,
             )),
             instance_is_alive: Arc::new(Mutex::new(true)),
+            state_dump_logging,
         }
     }
 
@@ -129,6 +132,7 @@ impl Context {
         cas: Arc<RwLock<dyn ContentAddressableStorage>>,
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
+        state_dump_logging: bool,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id: agent_id.clone(),
@@ -144,6 +148,7 @@ impl Context {
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(Mutex::new(true)),
+            state_dump_logging,
         })
     }
 
@@ -373,6 +378,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         assert!(maybe_context.state().is_none());
@@ -408,6 +414,7 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

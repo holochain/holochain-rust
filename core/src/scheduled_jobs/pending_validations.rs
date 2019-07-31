@@ -14,6 +14,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use snowflake::ProcessUniqueId;
 use std::{fmt, sync::Arc, thread};
+use std::convert::TryFrom;
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -24,6 +25,32 @@ pub enum ValidatingWorkflow {
     RemoveLink,
     UpdateEntry,
     RemoveEntry,
+}
+
+impl Into<String> for ValidatingWorkflow {
+    fn into(self) -> String {
+        match self {
+            ValidatingWorkflow::HoldEntry => String::from("HoldEntry"),
+            ValidatingWorkflow::HoldLink => String::from("HoldLink"),
+            ValidatingWorkflow::RemoveLink => String::from("RemoveLink"),
+            ValidatingWorkflow::UpdateEntry => String::from("UpdateEntry"),
+            ValidatingWorkflow::RemoveEntry => String::from("RemoveEntry"),
+        }
+    }
+}
+
+impl TryFrom<String> for ValidatingWorkflow {
+    type Error = HolochainError;
+    fn try_from(s: String) -> Result<ValidatingWorkflow, HolochainError> {
+        match s.as_ref() {
+            "HoldEntry" => Ok(ValidatingWorkflow::HoldEntry),
+            "HoldLink" => Ok(ValidatingWorkflow::HoldLink),
+            "RemoveLink" => Ok(ValidatingWorkflow::RemoveLink),
+            "UpdateEntry" => Ok(ValidatingWorkflow::UpdateEntry),
+            "RemoveEntry" => Ok(ValidatingWorkflow::RemoveEntry),
+            _ => Err(HolochainError::SerializationError(String::from("No ValidatingWorkflow"))),
+        }
+    }
 }
 
 impl fmt::Display for ValidatingWorkflow {

@@ -16,6 +16,7 @@ mod header_address;
 mod link_entry;
 mod provenances;
 mod remove_entry;
+pub mod build_from_dht;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 /// A failed validation.

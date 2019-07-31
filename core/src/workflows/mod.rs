@@ -21,12 +21,12 @@ use crate::{
         ribosome::callback::{
             validation_package::get_validation_package_definition, CallbackResult,
         },
+        validation::build_from_dht::try_make_validation_package_dht,
     },
 };
 use holochain_core_types::{
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition},
-    chain_header::ChainHeader,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
@@ -84,24 +84,13 @@ async fn try_make_local_validation_package(
     }
 }
 
-async fn try_make_validation_package_dht(
-    chain_header: &ChainHeader,
-    context: Arc<Context>,
-) -> Result<ValidationPackage, HolochainError> {
-    context.log(format!("Constructing validation package from DHT for entry with address: {}", chain_header.entry_address()));
-    Err(HolochainError::NotImplemented("DHT constructed validation packages are not implemented".to_string()))
-}
-
-/// Gets hold of the validation package for the given entry.
-/// - First tries to create it locally (if the validaiton package requires the entry only)
-/// - If that fails it will try to get the validation package from the author.
-/// - If that fails (source agent is offline) it will attempt to reconstruct the authors source chain
-///     from their chain headers in the DHT. 
+/// Gets hold of the validation package for the given entry by trying several different methods.
 async fn validation_package(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
-    // 1. Try to construct it locally:
+    // 1. Try to construct it locally. 
+    // This will work if the entry doesn't need a chain to validate or if this agent is the author:
     if let Ok(package) = await!(try_make_local_validation_package(
         &entry_with_header,
         context.clone()
@@ -117,15 +106,15 @@ async fn validation_package(
         return Ok(Some(package))
     }
 
-    // 3. Build it from the DHT (this may require many network requests (or none of full sync))
+    // 3. Build it from the DHT (this may require many network requests (or none if full sync))
     if let Ok(package) = await!(try_make_validation_package_dht(
-        &entry_with_header.header,
+        &entry_with_header,
         context.clone()
     )) {
         return Ok(Some(package))
     }   
 
     // If all the above failed then returning an error will add this validation request to pending
-    // It will then try all of the above again later
+    // It will then try all of the above from the start again later
     Err(HolochainError::ErrorGeneric("Could not get validation package".to_string()))
 }

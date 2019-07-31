@@ -352,6 +352,7 @@ impl LogMessageTrait for LogMessage {
             .to_owned()
             .unwrap_or(format!("{}{}", &self.thread_name, &self.module).to_owned());
         let base_color_on = format!("{}", &tag_name).to_owned();
+        let pseudo_rng_color = pick_color(&base_color_on);
 
         // Let's colorize our logging messages
         let msg_color = match &self.color {
@@ -365,14 +366,14 @@ impl LogMessageTrait for LogMessage {
                 } else {
                     color
                 }
-            }
-            None => pick_color(&base_color_on),
+            },
+            None => pseudo_rng_color,
         };
 
         let msg = format!(
             "{level}({timestamp})[{tag}] {thread_name}|{line}: {args}",
             args = self.args.color(msg_color),
-            tag = tag_name.bold(),
+            tag = tag_name.bold().color(pseudo_rng_color),
             line = format!("l.{}", self.line).italic(),
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical

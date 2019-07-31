@@ -15,7 +15,7 @@ let
   set -euo pipefail
   hc-cli-install
   hc-conductor-rust-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="lib3h" ./build_and_test.sh);
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
   '';
 in
 {

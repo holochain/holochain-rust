@@ -701,6 +701,7 @@ pub struct UiInterfaceConfiguration {
 pub enum NetworkConfig {
     N3h(N3hConfig),
     Lib3h(RealEngineConfig),
+    Memory(RealEngineConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

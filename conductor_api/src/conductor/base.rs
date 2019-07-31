@@ -519,6 +519,7 @@ impl Conductor {
                 );
                 Ok(spawn_result)
             }
+            NetworkConfig::Memory(_) => unimplemented!(),
             NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
                 "Lib3h Network not implemented".to_string(),
             )),
@@ -568,6 +569,11 @@ impl Conductor {
                 self.n3h_keepalive_network = Some(network);
                 config
             }
+            NetworkConfig::Memory(config) => P2pConfig {
+                backend_kind: P2pBackendKind::MEMORY,
+                backend_config: BackendConfig::Memory(config),
+                maybe_end_user_config: None,
+            },
             NetworkConfig::Lib3h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::LIB3H,
                 backend_config: BackendConfig::Lib3h(config),

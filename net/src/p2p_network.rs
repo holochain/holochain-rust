@@ -74,8 +74,8 @@ impl P2pNetwork {
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
                 let backend_config = match &p2p_config.clone().backend_config {
-                    BackendConfig::Lib3h(config) => config.clone(),
-                    _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
+                    BackendConfig::Memory(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting memory")),
                 };
                 Ok(Box::new(Lib3hWorker::with_memory_transport(h, backend_config.clone())?)
                    as Box<dyn NetWorker>)

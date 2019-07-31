@@ -56,6 +56,7 @@ impl From<&'static str> for P2pBackendKind {
 pub enum BackendConfig {
     Json(serde_json::Value),
     Lib3h(RealEngineConfig),
+    Memory(RealEngineConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -249,6 +250,8 @@ impl P2pConfig {
     pub fn real_engine_config(self) -> Option<RealEngineConfig> {
         match self.backend_config {
             BackendConfig::Lib3h(config) =>
+                Some(config),
+            BackendConfig::Memory(config) =>
                 Some(config),
             BackendConfig::Json(_) => None
         }

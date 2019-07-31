@@ -36,42 +36,45 @@ fn address_to_content_and_type(address: &Address, context: Arc<Context>) -> Resu
 }
 
 pub fn state_dump(context: Arc<Context>) {
-    let state_lock = context.state().expect("No state?!");
+    let (nucleus, network, dht) = {
+        let state_lock = context.state().expect("No state?!");
+        ((*state_lock.nucleus()).clone(), (*state_lock.network()).clone(), (*state_lock.dht()).clone())
+    };
 
-    let running_calls: Vec<ZomeFnCall> = state_lock.nucleus().zome_calls
+
+    let running_calls: Vec<ZomeFnCall> = nucleus.zome_calls
         .iter()
         .filter(|(_, result)| result.is_none())
         .map(|(call, _)| call)
         .cloned()
         .collect();
 
-    let get_entry_flows: Vec<Address> = state_lock.network().get_entry_with_meta_results
+    let get_entry_flows: Vec<Address> = network.get_entry_with_meta_results
         .iter()
         .filter(|(_, result)| result.is_none())
         .map(|(key, _)| key.address.clone())
         .collect();
 
-    let get_links_flows: Vec<GetLinksKey> = state_lock.network().get_links_results
+    let get_links_flows: Vec<GetLinksKey> = network.get_links_results
         .iter()
         .filter(|(_, result)| result.is_none())
         .map(|(key, _)| key)
         .cloned()
         .collect();
 
-    let validation_package_flows: Vec<Address> = state_lock.network().get_validation_package_results
+    let validation_package_flows: Vec<Address> = network.get_validation_package_results
         .iter()
         .filter(|(_, result)| result.is_none())
         .map(|(address, _)| address)
         .cloned()
         .collect();
 
-    let direct_message_flows: Vec<(String, DirectMessage)> = state_lock.network().direct_message_connections
+    let direct_message_flows: Vec<(String, DirectMessage)> = network.direct_message_connections
         .iter()
         .map(|(s, dm)| (s.clone(), dm.clone()))
         .collect();
 
-    let pending_validation_strings = state_lock
-        .nucleus()
+    let pending_validation_strings = nucleus
         .pending_validations
         .keys()
         .map(|pending_validation_key| {
@@ -82,8 +85,7 @@ pub fn state_dump(context: Arc<Context>) {
         })
         .collect::<Vec<String>>();
 
-    let holding_strings = state_lock
-        .dht()
+    let holding_strings = dht
         .get_all_held_entry_addresses()
         .iter()
         .map(|address| {

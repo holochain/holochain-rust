@@ -1,5 +1,4 @@
-pub mod get_entry;
-pub mod get_links;
+pub mod get;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
 pub mod handle_get_result;
@@ -10,7 +9,6 @@ pub mod resolve_direct_connection;
 pub mod respond_authoring_list;
 pub mod respond_fetch;
 pub mod respond_get;
-pub mod respond_get_links;
 pub mod respond_gossip_list;
 pub mod send_direct_message;
 pub mod shutdown;
@@ -20,7 +18,7 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         reducers::{
-            get_entry::{reduce_get_entry, reduce_get_entry_timeout},
+            get::{reduce_get, reduce_get_timeout},
             get_validation_package::reduce_get_validation_package,
             handle_custom_send_response::reduce_handle_custom_send_response,
             handle_get_result::reduce_handle_get_result,
@@ -52,11 +50,11 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::Get((_,payload)) =>Some(reduce_get_entry),
-        Action::GetTimeout(key) => Some(reduce_get_entry_timeout),
+        Action::Get(_) =>Some(reduce_get),
+        Action::GetTimeout(key) => Some(reduce_get_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleGet((payload,_)) => Some(reduce_respond_get),
+        Action::HandleGet(_) => Some(reduce_respond_get),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
@@ -64,7 +62,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
-        Action::RespondGet((_,payload)) => Some(reduce_respond_get),
+        Action::RespondGet(_) => Some(reduce_respond_get),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         Action::ShutdownNetwork => Some(reduce_shutdown),

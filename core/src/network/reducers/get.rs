@@ -27,7 +27,7 @@ fn reduce_get_entry_inner(
     )
 }
 
-pub fn reduce_get_entry(
+pub fn reduce_get(
     network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
@@ -52,7 +52,7 @@ pub fn reduce_get_entry(
         .insert(key_type.clone(), result);
 }
 
-pub fn reduce_get_entry_timeout(
+pub fn reduce_get_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
@@ -298,5 +298,144 @@ mod tests {
         let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
         let entry_with_meta = maybe_entry_with_meta.unwrap().unwrap();
         assert_eq!(entry_with_meta.entry, entry);
+    }
+
+    #[test]
+    pub fn reduce_get_links_without_network_initialized() {
+        let context = test_context("alice", None);
+        let store = test_store(context.clone());
+
+        let entry = test_entry();
+        let link_type = String::from("test-link");
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            link_type: link_type,
+            tag: "link-tag".to_string(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
+        let config = GetLinksQueryConfiguration
+        {
+            headers : false
+        };
+        let action_wrapper = ActionWrapper::new(Action::GetLinks((
+            key.clone(),
+            None,
+            GetLinksNetworkQuery::Links(config),
+        )));
+
+        let store = store.reduce(action_wrapper);
+        let maybe_get_links_result = store
+            .network()
+            .get_links_results
+            .get(&key)
+            .map(|result| result.clone());
+        assert_eq!(
+            maybe_get_links_result,
+            Some(Some(Err(HolochainError::ErrorGeneric(
+                "Network not initialized".to_string()
+            ))))
+        );
+    }
+
+    use holochain_core_types::entry::test_entry;
+    use holochain_persistence_api::cas::content::AddressableContent;
+
+    #[test]
+    // This test needs to be refactored.
+    // It is non-deterministically failing with "sending on a closed channel" originating form
+    // within the in-memory network.
+    #[cfg(feature = "broken-tests")]
+    pub fn reduce_get_links_test() {
+        let netname = Some("reduce_get_links_test");
+        let context = test_context("alice", netname);
+        let store = test_store(context.clone());
+
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
+            config: test_memory_network_config(netname),
+            dna_address: "reduce_get_links_test".into(),
+            agent_id: String::from("alice"),
+        }));
+        let store = store.reduce(action_wrapper);
+
+        let entry = test_entry();
+        let link_type = String::from("test-link");
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            link_type: link_type.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
+        let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+
+        let store = store.reduce(action_wrapper);
+        let maybe_get_entry_result = store.network().get_links_results.get(&key).cloned();
+
+        assert_eq!(maybe_get_entry_result, Some(None));
+    }
+
+    #[test]
+    // This test needs to be refactored.
+    // It is non-deterministically failing with "sending on a closed channel" originating form
+    // within the in-memory network.
+    #[cfg(feature = "broken-tests")]
+    pub fn reduce_get_links_timeout_test() {
+        let netname = Some("reduce_get_links_timeout_test");
+        let mut context = test_context("alice", netname);
+        let store = test_store(context.clone());
+        let store = Arc::new(RwLock::new(store));
+
+        Arc::get_mut(&mut context).unwrap().set_state(store.clone());
+
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
+            config: test_memory_network_config(netname),
+            dna_address: "reduce_get_links_timeout_test".into(),
+            agent_id: String::from("alice"),
+        }));
+
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
+
+        let entry = test_entry();
+        let link_type = String::from("test-link");
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            link_type: link_type.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
+        let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
+
+        let maybe_get_entry_result = store
+            .read()
+            .unwrap()
+            .network()
+            .get_links_results
+            .get(&key)
+            .cloned();
+
+        assert_eq!(maybe_get_entry_result, Some(None));
+
+        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
+        let maybe_get_entry_result = store
+            .read()
+            .unwrap()
+            .network()
+            .get_links_results
+            .get(&key)
+            .cloned();
+
+        assert_eq!(
+            maybe_get_entry_result,
+            Some(Some(Err(HolochainError::Timeout)))
+        );
     }
 }

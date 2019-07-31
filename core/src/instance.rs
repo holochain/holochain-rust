@@ -437,6 +437,7 @@ pub mod tests {
                 test_memory_network_config(network_name),
                 None,
                 None,
+                false,
             )),
             logger,
         )
@@ -476,6 +477,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 test_memory_network_config(network_name),
+                false,
             )
             .unwrap(),
         )
@@ -499,6 +501,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
+            false,
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -523,6 +526,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
+            false,
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

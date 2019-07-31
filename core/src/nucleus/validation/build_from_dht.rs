@@ -23,6 +23,7 @@ use holochain_core_types::{
 
 use std::sync::Arc;
 
+const GET_TIMEOUT_MS: usize = 500;
 
 async fn all_chain_headers_before_header_dht(
     context: &Arc<Context>,
@@ -32,12 +33,14 @@ async fn all_chain_headers_before_header_dht(
     let mut headers = Vec::new();
 
     while let Some(next_header_addr) = current_header.link() {
-        let get_entry_result = await!(get_entry(context.clone(), next_header_addr.clone(), Timeout::new(500)));
+        let get_entry_result = await!(get_entry(context.clone(), next_header_addr.clone(), Timeout::new(GET_TIMEOUT_MS)));
         if let Ok(Some(EntryWithMetaAndHeader{entry_with_meta: EntryWithMeta{entry: Entry::ChainHeader(chain_header), ..}, ..})) = get_entry_result {
             headers.push(chain_header.clone());
             current_header = chain_header;
         } else {
-            return Err(HolochainError::ErrorGeneric(format!("When building validation package from DHT, Could not retrieve a header entry at address: {:?}", next_header_addr)))
+            return Err(HolochainError::ErrorGeneric(
+                format!("When building validation package from DHT, Could not retrieve a header entry at address: {:?}", next_header_addr))
+            )
         }
     }
     Ok(headers)
@@ -53,11 +56,13 @@ async fn public_chain_entries_from_headers_dht(
         .collect::<Vec<_>>();
     let mut entries = Vec::new();
     for header in public_headers {
-        let get_entry_result = await!(get_entry(context.clone(), header.entry_address().clone(), Timeout::new(500)));
+        let get_entry_result = await!(get_entry(context.clone(), header.entry_address().clone(), Timeout::new(GET_TIMEOUT_MS)));
         if let Ok(Some(EntryWithMetaAndHeader{entry_with_meta: EntryWithMeta{entry, ..}, ..})) = get_entry_result {
             entries.push(entry.clone());
         } else {
-            return Err(HolochainError::ErrorGeneric(format!("When building validation package from DHT, Could not retrieve entry at address: {:?}", header.entry_address())))
+            return Err(HolochainError::ErrorGeneric(
+                format!("When building validation package from DHT, Could not retrieve entry at address: {:?}", header.entry_address()))
+            )
         }
     }
     Ok(entries)
@@ -72,8 +77,7 @@ pub (crate) async fn try_make_validation_package_dht(
     let entry = &entry_with_header.entry;
     let entry_header = entry_with_header.header.clone();
 
-    let validation_package_definition = get_validation_package_definition(entry, context.clone())
-        .and_then(|callback_result| match callback_result {
+    let validation_package_definition = match get_validation_package_definition(entry, context.clone())? {
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),
         CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
         CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
@@ -82,7 +86,7 @@ pub (crate) async fn try_make_validation_package_dht(
             reason
         ))),
         _ => unreachable!(),
-    })?;
+    }?;
 
     let chain_headers = await!(all_chain_headers_before_header_dht(&context, &entry_header))?;
 

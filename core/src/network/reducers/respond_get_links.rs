@@ -40,27 +40,4 @@ fn reduce_respond_get_links_inner(
     )
 }
 
-pub fn reduce_respond_get_links(
-    network_state: &mut NetworkState,
-    _root_state: &State,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let (query_data,payload) = unwrap_to!(action=>crate::action::Action::RespondGet);
-    let (links, link_type, tag) = unwrap_to!(payload => crate::action::RespondGetPayload::Links);
-    let result = reduce_respond_get_links_inner(
-        network_state,
-        query_data,
-        links,
-        link_type.clone(),
-        tag.clone(),
-    );
 
-    network_state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::Respond(match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
-    );
-}

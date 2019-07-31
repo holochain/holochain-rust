@@ -50,23 +50,6 @@ fn reduce_get_links_inner(
     )
 }
 
-pub fn reduce_get_links(
-    network_state: &mut NetworkState,
-    _root_state: &State,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let (key_type,payload) = unwrap_to!(action => crate::action::Action::Get);
-    let key = unwrap_to!(key_type=>crate::action::Key::Links);
-    let (crud_status, query) = unwrap_to!(payload => crate::action::GetPayload::Links);
-
-    let result = match reduce_get_links_inner(network_state, &key, &query, crud_status) {
-        Ok(()) => None,
-        Err(err) => Some(Err(err)),
-    };
-
-    network_state.get_results.insert(key_type.clone(), result);
-}
 
 
 

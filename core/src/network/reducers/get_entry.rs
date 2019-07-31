@@ -1,11 +1,13 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey},
-    network::{query::NetworkQuery, reducers::send, state::NetworkState},
+    action::{ActionWrapper, GetEntryKey,GetLinksKey,Key},
+    network::{query::{NetworkQuery,GetLinksNetworkQuery,GetLinksNetworkResult},reducers::send, state::NetworkState},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError,crud_status::CrudStatus};
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
+use holochain_persistence_api::hash::HashString;
+use std::convert::TryInto;
 
 fn reduce_get_entry_inner(
     network_state: &mut NetworkState,
@@ -31,13 +33,20 @@ pub fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key_type,_) = unwrap_to!(action => crate::action::Action::Get);
-    let key = unwrap_to!(key_type=> crate::action::Key::Entry);
-    let result = match reduce_get_entry_inner(network_state, &key) {
-        Ok(()) => None,
-        Err(err) => Some(Err(err)),
+    let (key_type,payload) = unwrap_to!(action => crate::action::Action::Get);
+    let result = match key_type
+    {
+        Key::Entry(key) => reduce_get_entry_inner(network_state, key)
+                           .map(|_|None)
+                           .unwrap_or_else(|e|Some(Err(e))),
+        Key::Links(key) =>
+        {
+            let (crud_status, query) = unwrap_to!(payload => crate::action::GetPayload::Links);
+            reduce_get_links_inner(network_state, &key, &query, crud_status)
+            .map(|_|None)
+            .unwrap_or_else(|e|Some(Err(e)))
+        }
     };
-
     network_state
         .get_results
         .insert(key_type.clone(), result);
@@ -64,6 +73,40 @@ pub fn reduce_get_entry_timeout(
             .get_results
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
+}
+
+fn reduce_get_links_inner(
+    network_state: &mut NetworkState,
+    key: &GetLinksKey,
+    get_links_query: &GetLinksNetworkQuery,
+    crud_status: &Option<CrudStatus>,
+) -> Result<(), HolochainError> {
+    network_state.initialized()?;
+    let query_json: JsonString = NetworkQuery::GetLinks(
+        key.link_type.clone(),
+        key.tag.clone(),
+        crud_status.clone(),
+        get_links_query.clone(),
+    )
+    .into();
+    send(
+        network_state,
+        Lib3hClientProtocol::QueryEntry(QueryEntryData {
+            requester_agent_id: network_state.agent_id.clone().unwrap().into(),
+            request_id: key.id.clone(),
+            // TODO return result these addresses as errors
+            space_address: network_state
+                .dna_address
+                .clone()
+                .unwrap()
+                .try_into()
+                .expect("space address from base58 string"),
+            entry_address: HashString::from(key.base_address.clone())
+                .try_into()
+                .expect("entry adress from base58 string"),
+            query: query_json.to_string().into_bytes(),
+        }),
+    )
 }
 
 #[cfg(test)]

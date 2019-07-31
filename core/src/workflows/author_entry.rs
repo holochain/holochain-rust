@@ -267,9 +267,14 @@ pub mod tests {
         }
 
         assert_eq!(
+            jack_headers.len(),
+            4,
+        );
+
+        assert_eq!(
             jack_headers,
             jill_headers,
-        )
+        );
     }
 }
 

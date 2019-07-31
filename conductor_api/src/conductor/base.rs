@@ -714,6 +714,10 @@ impl Conductor {
                 let api = self.build_conductor_api(instance_config.id, config)?;
                 context_builder = context_builder.with_conductor_api(api);
 
+                if self.config.logger.state_dump {
+                    context_builder = context_builder.with_state_dump_logging();
+                }
+
                 // Spawn context
                 let context = context_builder.spawn();
 

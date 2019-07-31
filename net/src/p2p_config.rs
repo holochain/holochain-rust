@@ -164,7 +164,7 @@ impl P2pConfig {
 
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            BackendConfig::Lib3h(
+            BackendConfig::Memory(
                 RealEngineConfig {
                     tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
                     socket_type: "mem".into(),

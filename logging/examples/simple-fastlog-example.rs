@@ -4,6 +4,7 @@ use logging::{rule::RuleFilter, FastLoggerBuilder};
 
 fn main() {
     FastLoggerBuilder::new()
+        .timestamp_format("%Y-%m-%d %H:%M:%S%.6f")
         .set_level_from_str("Trace")
         .add_rule_filter(RuleFilter::new("bug", false, "Magenta"))
         .add_rule_filter(RuleFilter::new("twice", true, "Yellow"))

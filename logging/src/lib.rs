@@ -19,16 +19,25 @@ use std::{
     thread,
 };
 
+/// Global variable definition
+const TIMESTAMP_FMT: &str = "%Y-%m-%d %H:%M:%S";
+
 /// Helper type pointing to a trait object in order to send around a log message.
 type MsgT = Box<dyn LogMessageTrait>;
 
 /// The logging struct where we store everything we need in order to correctly log stuff.
 #[derive(Clone)]
 pub struct FastLogger {
+    /// Log verbosity level.
     level: Level,
+    /// List of filtering [rules](RuleFilter).
     rule_filters: Vec<RuleFilter>,
+    /// Color of the verbosity levels.
     level_colors: ColoredLevelConfig,
+    /// Thread producer.
     sender: Sender<MsgT>,
+    /// Timestamp format.
+    timestamp_format: String,
 }
 
 impl FastLogger {
@@ -101,6 +110,7 @@ impl log::Log for FastLogger {
                     .to_string(),
                 color: should_log,
                 target: Some(String::from(record.target())),
+                timestamp_format: self.timestamp_format.to_owned(),
             };
 
             self.sender
@@ -125,6 +135,8 @@ pub struct FastLoggerBuilder {
     channel_size: usize,
     /// The path of the file where the log will be dump in the optional case we redirect logs to a file.
     file_path: Option<String>,
+    /// Timestamp format.
+    timestamp_format: String,
 }
 
 ///
@@ -201,6 +213,12 @@ impl<'a> FastLoggerBuilder {
         self
     }
 
+    /// Customize our logging timestamp.
+    pub fn timestamp_format(&mut self, timestamp_fmt: &str) -> &mut Self {
+        self.timestamp_format = timestamp_fmt.to_owned();
+        self
+    }
+
     /// Add filtering [rules](rule::RuleFilter) to the logging facility.
     pub fn add_rule_filter(&mut self, rule_filter: RuleFilter) -> &mut Self {
         self.rule_filters.push(rule_filter);
@@ -236,6 +254,7 @@ impl<'a> FastLoggerBuilder {
             rule_filters: self.rule_filters.to_owned(),
             level_colors: self.level_colors,
             sender: s,
+            timestamp_format: self.timestamp_format.to_owned(),
         };
 
         match log::set_boxed_logger(Box::new(logger.clone()))
@@ -302,6 +321,7 @@ impl Default for FastLoggerBuilder {
             level_colors: ColoredLevelConfig::new(),
             channel_size: 512,
             file_path: None,
+            timestamp_format: String::from(TIMESTAMP_FMT)
         }
     }
 }
@@ -334,6 +354,8 @@ struct LogMessage {
     /// The color of the log message defined by the user using [RuleFilter]. Default to color based
     /// on the thread name and the module name if not present.
     color: Option<String>,
+    /// Timestamp format.
+    timestamp_format: String,
 }
 
 /// For performance purpose, we build the logging message in the logging thread instead of the
@@ -378,7 +400,7 @@ impl LogMessageTrait for LogMessage {
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical
             // timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
-            timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+            timestamp = chrono::Local::now().format(&self.timestamp_format),
             level = self.level_to_print.bold(),
             thread_name = self.thread_name.underline(),
         );
@@ -401,6 +423,8 @@ struct Logger {
     file: Option<String>,
     /// List of filtering [rules](RuleFilter).
     rules: Option<Vec<Rule>>,
+    /// Timestamp format.
+    timestamp_format: Option<String>,
 }
 
 impl From<Logger> for FastLoggerBuilder {
@@ -416,6 +440,7 @@ impl From<Logger> for FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             rule_filters,
             file_path: logger.file,
+            timestamp_format: logger.timestamp_format.unwrap_or(String::from(TIMESTAMP_FMT)),
             ..FastLoggerBuilder::default()
         }
     }

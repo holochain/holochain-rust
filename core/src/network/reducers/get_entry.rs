@@ -31,16 +31,16 @@ pub fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key,_) = unwrap_to!(action => crate::action::Action::Get);
-    let key = unwrap_to!(key=> crate::action::Key::Entry);
+    let (key_type,_) = unwrap_to!(action => crate::action::Action::Get);
+    let key = unwrap_to!(key_type=> crate::action::Key::Entry);
     let result = match reduce_get_entry_inner(network_state, &key) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
 
     network_state
-        .get_entry_with_meta_results
-        .insert(key.clone(), result);
+        .get_results
+        .insert(key_type.clone(), result);
 }
 
 pub fn reduce_get_entry_timeout(
@@ -49,20 +49,19 @@ pub fn reduce_get_entry_timeout(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let timeout_type = unwrap_to!(action => crate::action::Action::GetTimeout);
-    let key = unwrap_to!(timeout_type=> crate::action::Key::Entry);
-    if network_state.get_entry_with_meta_results.get(key).is_none() {
+    let key = unwrap_to!(action => crate::action::Action::GetTimeout);
+    if network_state.get_results.get(&key).is_none() {
         return;
     }
 
     if network_state
-        .get_entry_with_meta_results
+        .get_results
         .get(key)
         .unwrap()
         .is_none()
     {
         network_state
-            .get_entry_with_meta_results
+            .get_results
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
 }

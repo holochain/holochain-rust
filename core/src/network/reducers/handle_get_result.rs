@@ -7,10 +7,9 @@ pub fn reduce_handle_get_result(
 ) {
     let action = action_wrapper.action();
     let (payload, key) = unwrap_to!(action => crate::action::Action::HandleGet);
-    let key = unwrap_to!(key=>crate::action::Key::Entry);
-    let maybe_entry = unwrap_to!(payload=>crate::action::RespondGetPayload::Entry);
+    //let maybe_entry = unwrap_to!(payload=>crate::action::RespondGetPayload::Entry);
 
     network_state
-        .get_entry_with_meta_results
-        .insert(key.clone(), Some(Ok(maybe_entry.clone())));
+        .get_results
+        .insert(key.clone(), Some(Ok(payload.clone())));
 }

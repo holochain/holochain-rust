@@ -1,12 +1,13 @@
 use crate::{
     context::Context,
+    action::RespondGetPayload,
     network::{
-        actions::get_links::get_links,
+        actions::get_entry::{GetMethod,get_entry},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
     },
 };
 
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError,time::Timeout};
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult, LinksResult};
 use std::sync::Arc;
 
@@ -18,11 +19,18 @@ pub async fn get_link_result_workflow<'a>(
     {
         headers : link_args.options.headers
     };
-    let links_result = await!(get_links(
+    let method = GetMethod::Link(link_args.clone(),GetLinksNetworkQuery::Links(config));
+    let response = await!(get_entry(
         context.clone(),
-        link_args,
-        GetLinksNetworkQuery::Links(config)
+        method,
+        Timeout::default()
     ))?;
+
+    let links_result = match response
+    {
+        RespondGetPayload::Links((query,_,_)) => Ok(query),
+        _ => Err((HolochainError::ErrorGeneric("Wrong type for response type Entry".to_string())))
+    }?;
 
     match links_result
     {

@@ -1,13 +1,15 @@
 use crate::{
+    action::RespondGetPayload,
     network::{
-        actions::get_links::get_links,
         query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
+        actions::get_entry::{get_entry,GetMethod},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry
 };
 
 use holochain_core_types::{
+    time::Timeout,
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
@@ -69,33 +71,49 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     {
         headers : false
     };
-    let links_result = context.block_on(get_links(
+    let method = GetMethod::Link(get_links_args.clone(),GetLinksNetworkQuery::Links(config));
+    let response_result = context.block_on(get_entry(
         context.clone(),
-        &get_links_args,
-        GetLinksNetworkQuery::Links(config)
+        method,
+        Timeout::default()
     ));
-    if links_result.is_err() {
+    if response_result.is_err()
+    {
         context.log("err/zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)
-    } else {
-        let links = links_result.expect("This is supposed to not fail");
-        let links = match links {
-            GetLinksNetworkResult::Links(links) => links,
-            _ => return ribosome_error_code!(WorkflowFailed),
-        };
-        let filtered_links = links
-            .into_iter()
-            .filter(|link_for_filter|&link_for_filter.target == link.target())
-            .map(|s|s.address)
-            .collect::<Vec<_>>();
-
-        let entry = Entry::LinkRemove((link_remove, filtered_links));
-
-        // Wait for future to be resolved
-        let result: Result<(), HolochainError> = context
-            .block_on(author_entry(&entry, None, &context, &vec![]))
-            .map(|_| ());
-
-        runtime.store_result(result)
     }
+    else
+    {
+        let response = response_result.expect("Could not get response");
+        let links_result = match response
+        {
+            RespondGetPayload::Links((query,_,_)) => Ok(query),
+            RespondGetPayload::Entry(_) => Err(HolochainError::ErrorGeneric("Could not get links for type".to_string()))
+        };
+        if links_result.is_err() {
+            context.log("err/zome : Could not get links for remove_link method");
+            ribosome_error_code!(WorkflowFailed)
+        } else {
+            let links = links_result.expect("This is supposed to not fail");
+            let links = match links {
+                GetLinksNetworkResult::Links(links) => links,
+                _ => return ribosome_error_code!(WorkflowFailed),
+            };
+            let filtered_links = links
+                .into_iter()
+                .filter(|link_for_filter|&link_for_filter.target == link.target())
+                .map(|s|s.address)
+                .collect::<Vec<_>>();
+
+            let entry = Entry::LinkRemove((link_remove, filtered_links));
+
+            // Wait for future to be resolved
+            let result: Result<(), HolochainError> = context
+                .block_on(author_entry(&entry, None, &context, &vec![]))
+                .map(|_| ());
+
+            runtime.store_result(result)
+        }
+    }
+    
 }

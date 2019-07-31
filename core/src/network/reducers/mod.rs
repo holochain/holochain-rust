@@ -22,10 +22,9 @@ use crate::{
         direct_message::DirectMessage,
         reducers::{
             get_entry::{reduce_get_entry, reduce_get_entry_timeout},
-            get_links::{reduce_get_links, reduce_get_links_timeout},
+            get_links::{reduce_get_links},
             get_validation_package::reduce_get_validation_package,
             handle_custom_send_response::reduce_handle_custom_send_response,
-            handle_get_links_result::reduce_handle_get_links_result,
             handle_get_result::reduce_handle_get_result,
             handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
@@ -57,10 +56,10 @@ use std::sync::Arc;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::Get((_,payload)) =>match payload { GetPayload::Entry => Some(reduce_get_entry),GetPayload::Links(_) =>Some(reduce_get_links)},
-        Action::GetTimeout(key) => match key { Key::Entry(_) => Some(reduce_get_entry_timeout), Key::Links(_) => Some(reduce_get_links_timeout)},
+        Action::GetTimeout(key) => Some(reduce_get_entry_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleGet((payload,_)) => match payload { RespondGetPayload::Entry(_) => Some(reduce_respond_get), RespondGetPayload::Links(_)=>Some(reduce_respond_get_links)},
+        Action::HandleGet((payload,_)) => Some(reduce_respond_get),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),

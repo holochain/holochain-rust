@@ -12,6 +12,9 @@ use holochain_json_api::{
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom};
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::de::{Visitor, Error};
+use std::fmt;
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -27,10 +30,51 @@ impl Default for NucleusStatus {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PendingValidationKey {
     pub address: Address,
     pub workflow: ValidatingWorkflow,
+}
+
+impl Serialize for PendingValidationKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let workflow_string: String = self.workflow.to_owned().into();
+        serializer.serialize_str(&format!("{}__{}", self.address, workflow_string))
+    }
+}
+
+struct PendingValidationKeyStringVisitor;
+impl<'de> Visitor<'de> for PendingValidationKeyStringVisitor {
+    type Value = PendingValidationKey;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a PendingValidtionKey in the format '<address>__<workflow>'")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where E: Error {
+        let parts: Vec<String> = value.split("__").map(|s|s.to_string()).collect();
+        let address = parts.first().ok_or(Error::custom("No address found"))?.to_owned();
+        let workflow = parts.last().ok_or(Error::custom("No workflow found"))?.to_owned();
+        Ok(PendingValidationKey::new(
+            address.into(),
+            ValidatingWorkflow::try_from(workflow)
+                .map_err(|e| Error::custom(e.to_string()))?
+        ))
+    }
+
+}
+
+impl<'de> Deserialize<'de> for PendingValidationKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(PendingValidationKeyStringVisitor)
+    }
 }
 
 impl PendingValidationKey {

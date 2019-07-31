@@ -2,7 +2,7 @@ use crate::{
     action::RespondGetPayload,
     network::{
         query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
-        actions::get_entry::{get_entry,GetMethod},
+        actions::get::{get,GetMethod},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry
@@ -72,7 +72,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         headers : false
     };
     let method = GetMethod::Link(get_links_args.clone(),GetLinksNetworkQuery::Links(config));
-    let response_result = context.block_on(get_entry(
+    let response_result = context.block_on(get(
         context.clone(),
         method,
         Timeout::default()

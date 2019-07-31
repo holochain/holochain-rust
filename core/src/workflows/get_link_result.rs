@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     action::RespondGetPayload,
     network::{
-        actions::get_entry::{GetMethod,get_entry},
+        actions::get::{GetMethod,get},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
     },
 };
@@ -20,7 +20,7 @@ pub async fn get_link_result_workflow<'a>(
         headers : link_args.options.headers
     };
     let method = GetMethod::Link(link_args.clone(),GetLinksNetworkQuery::Links(config));
-    let response = await!(get_entry(
+    let response = await!(get(
         context.clone(),
         method,
         Timeout::default()
@@ -29,7 +29,7 @@ pub async fn get_link_result_workflow<'a>(
     let links_result = match response
     {
         RespondGetPayload::Links((query,_,_)) => Ok(query),
-        _ => Err((HolochainError::ErrorGeneric("Wrong type for response type Entry".to_string())))
+        _ => Err(HolochainError::ErrorGeneric("Wrong type for response type Entry".to_string()))
     }?;
 
     match links_result

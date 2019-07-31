@@ -1,6 +1,6 @@
 use crate::{
     action::{ActionWrapper, GetEntryKey,GetLinksKey,Key},
-    network::{query::{NetworkQuery,GetLinksNetworkQuery,GetLinksNetworkResult},reducers::send, state::NetworkState},
+    network::{query::{NetworkQuery,GetLinksNetworkQuery},reducers::send, state::NetworkState},
     state::State,
 };
 use holochain_core_types::{error::HolochainError,crud_status::CrudStatus};

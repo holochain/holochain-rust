@@ -8,7 +8,7 @@ use futures::{future::Future, task::Poll};
 
 use holochain_persistence_api::cas::content::Address;
 
-use holochain_core_types::{entry::EntryWithMetaAndHeader, error::HcResult, time::Timeout,crud_status::CrudStatus};
+use holochain_core_types::{error::HcResult, time::Timeout,crud_status::CrudStatus};
 
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -29,7 +29,7 @@ pub enum GetMethod
     Link(GetLinksArgs,GetLinksNetworkQuery)
 }
 
-pub async fn get_entry(
+pub async fn get(
     context: Arc<Context>,
     method : GetMethod,
     timeout: Timeout

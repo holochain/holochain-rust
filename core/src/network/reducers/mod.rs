@@ -14,7 +14,7 @@ pub mod send_direct_message;
 pub mod shutdown;
 
 use crate::{
-    action::{Action, ActionWrapper, NetworkReduceFn,RespondGetPayload,GetPayload,Key},
+    action::{Action, ActionWrapper, NetworkReduceFn},
     network::{
         direct_message::DirectMessage,
         reducers::{
@@ -51,10 +51,10 @@ use std::sync::Arc;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::Get(_) =>Some(reduce_get),
-        Action::GetTimeout(key) => Some(reduce_get_timeout),
+        Action::GetTimeout(_) => Some(reduce_get_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleGet(_) => Some(reduce_respond_get),
+        Action::HandleGet(_) => Some(reduce_handle_get_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),

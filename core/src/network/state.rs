@@ -1,12 +1,11 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey, GetLinksKey,Key,RespondGetPayload},
+    action::{ActionWrapper, Key,RespondGetPayload},
     network::{
-        actions::ActionResponse, direct_message::DirectMessage, query::GetLinksNetworkResult,
+        actions::ActionResponse, direct_message::DirectMessage
     },
 };
 use boolinator::*;
-use holochain_core_types::{
-    entry::EntryWithMetaAndHeader, error::HolochainError, validation::ValidationPackage,
+use holochain_core_types::{error::HolochainError, validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
@@ -17,19 +16,6 @@ use std::{
 };
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
-
-/// This represents the state of a get_entry network process:
-/// None: process started, but no response yet from the network
-/// Some(Err(_)): there was a problem at some point
-/// Some(Ok(None)): no problem but also no entry -> it does not exist
-/// Some(Ok(Some(entry_with_meta))): we have it
-type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, HolochainError>>;
-
-/// This represents the state of a get_links network process:
-/// None: process started, but no response yet from the network
-/// Some(Err(_)): there was a problem at some point
-/// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<GetLinksNetworkResult, HolochainError>>;
 
 
 /// This represents the state of a get_validation_package network process:

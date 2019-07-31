@@ -1,6 +1,6 @@
 use crate::{context::Context, 
 network,
-network::actions::get_entry::GetMethod,
+network::actions::get::GetMethod,
 action::RespondGetPayload,
 nucleus};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
@@ -26,7 +26,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
         let method = GetMethod::Entry(address.clone());
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
-        let response = await!(network::actions::get_entry::get_entry(
+        let response = await!(network::actions::get::get(
             context.clone(),
             method.clone(),
             timeout.clone(),
@@ -53,7 +53,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
                 headers,
             })),
             Err(_) => {
-                let response = await!(network::actions::get_entry::get_entry(
+                let response = await!(network::actions::get::get(
                     context.clone(),
                     method.clone(),
                     timeout.clone(),

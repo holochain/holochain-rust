@@ -99,7 +99,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
-            instance_name: instance_name.to_string(),
+            instance_name: format!("holochain::{}", instance_name),
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -130,7 +130,7 @@ impl Context {
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            instance_name: instance_name.to_string(),
+            instance_name: format!("holochain::{}", instance_name),
             agent_id: agent_id.clone(),
             persister,
             state: None,

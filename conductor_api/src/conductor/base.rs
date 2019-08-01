@@ -147,7 +147,7 @@ pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> 
 pub type UiDirCopier =
     Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
-// preparing for having conductor notifiers go to one of the log streams
+/// preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
     println!("{}", msg);
 }
@@ -157,7 +157,7 @@ impl Conductor {
         lib3h_sodium::check_init();
         let _rules = config.logger.rules.clone();
         let mut logger_builder = FastLoggerBuilder::new();
-        logger_builder.set_level_from_str(&config.logger.logger_type.as_str());
+        logger_builder.set_level_from_str(&config.logger.logger_level.as_str());
 
         for rule in config.logger.rules.rules.iter() {
             logger_builder.add_rule_filter(RuleFilter::new(
@@ -165,7 +165,7 @@ impl Conductor {
                 rule.exclude,
                 rule.color
                     .as_ref()
-                    .unwrap_or(&String::from("White"))
+                    .unwrap_or(&String::default())
                     .as_str(),
             ));
         }

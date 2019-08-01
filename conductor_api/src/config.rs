@@ -117,7 +117,7 @@ pub fn default_persistence_dir() -> PathBuf {
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
-    pub logger_type: String,
+    pub logger_level: String,
     #[serde(default)]
     pub rules: LogRules,
     //    pub file: Option<String>,
@@ -126,7 +126,7 @@ pub struct LoggerConfiguration {
 impl Default for LoggerConfiguration {
     fn default() -> LoggerConfiguration {
         LoggerConfiguration {
-            logger_type: "debug".into(),
+            logger_level: "debug".into(),
             rules: Default::default(),
         }
     }

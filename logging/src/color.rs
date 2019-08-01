@@ -251,10 +251,10 @@ fn pick_color_test() {
     let text = "main";
     let color = pick_color(text);
 
-    assert_eq!(color, "white");
+    assert_eq!(color, "cyan");
 
     let text = "simple";
     let color = pick_color(text);
 
-    assert_eq!(color, "cyan");
+    assert_eq!(color, "green");
 }

@@ -52,7 +52,7 @@ debug!("What's bugging you today?");
 ```
 ## Filtering
 
-Filtering out every log from dependencies and putting back in everything related to a particular [`target`](../log/struct.Record.html#method.target) is easy:
+Filtering out every log from dependencies and putting back in everything related to a particular [`target`](https://docs.rs/log/0.4.8/log/struct.Record.html#method.target) is easy:
 
 ```rust
 let toml = r#"

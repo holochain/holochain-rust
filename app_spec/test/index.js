@@ -1,7 +1,7 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Orchestrator, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/try-o-rama')
+const { Orchestrator, tapeExecutor, backwardCompatibilityMiddleware, compose } = require('@holochain/try-o-rama')
 const spawnConductor = require('./spawn_conductors')
 
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
@@ -18,6 +18,17 @@ const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Orchestrator.dna(dnaPath, 'app-spec')
 const dna2 = Orchestrator.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
+// map e.g. `alice.app.call` ~> `conductor.alice.call`
+const lib3hInMemoryMiddleware = f => (api, {conductor}) => {
+  const conductorMap = {}
+  conductor.keys.forEach(name => {
+    conductorMap[name] = {
+      app: conductor[name]
+    }
+  })
+  f(api, conductorMap)
+}
+
 const commonConductorConfig = {
   instances: {
     app: dna,
@@ -33,6 +44,22 @@ const orchestratorSimple = new Orchestrator({
   debugLog: false,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
+})
+
+const orchestratorSimpleInMemory = new Orchestrator({
+  conductors: {
+    conductor: {
+      alice: dna,
+      bob: dna,
+      carol: dna,
+    }
+  },
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
+  middleware: compose(
+    backwardCompatibilityMiddleware,
+    lib3hInMemoryMiddleware,
+  ),
 })
 
 const orchestratorMultiDna = new Orchestrator({
@@ -73,6 +100,8 @@ const registerAllScenarios = () => {
     return orchestrator.registerScenario(...info)
   }
 
+  require('./regressions')(registerer(orchestratorSimpleInMemory))
+  require('./test')(registerer(orchestratorSimpleInMemory))
   require('./regressions')(registerer(orchestratorSimple))
   require('./test')(registerer(orchestratorSimple))
   // require('./multi-dna')(registerer(orchestratorMultiDna))
@@ -81,6 +110,19 @@ const registerAllScenarios = () => {
   return numRegistered
 }
 
+
+const runSimpleInMemoryTests = async () => {
+  const conductor = await spawnConductor('conductor', 8000)
+  await orchestratorSimpleInMemory.registerConductor({name: 'conductor', url: 'http://0.0.0.0:3000'})
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+  console.log("Waiting for conductors to settle...")
+  await delay(5000)
+  console.log("Ok, starting tests!")
+
+  await orchestratorSimpleInMemory.run()
+  conductor.kill()
+}
 
 const runSimpleTests = async () => {
   const alice = await spawnConductor('alice', 3000)
@@ -99,7 +141,6 @@ const runSimpleTests = async () => {
   alice.kill()
   bob.kill()
   carol.kill()
-
 }
 
 const runMultiDnaTests = async () => {
@@ -140,7 +181,9 @@ const run = async () => {
     console.log(`Registered ${num} scenarios (at least ${MIN_EXPECTED_SCENARIOS} were expected)`)
   }
 
-  await runSimpleTests()
+  // TODO: selectively run one or the other depending on which networking lib used
+  await runSimpleInMemoryTests()
+  // await runSimpleTests()
   // await runMultiDnaTests()
   // await runValidationTests()
   process.exit()

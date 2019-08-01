@@ -183,9 +183,12 @@ const run = async () => {
     console.log(`Registered ${num} scenarios (at least ${MIN_EXPECTED_SCENARIOS} were expected)`)
   }
 
-  // TODO: selectively run one or the other depending on which networking lib used
-  await runSimpleInMemoryTests()
-  // await runSimpleTests()
+  if(process.env.APP_SPEC_NETWORK_TYPE == 'memory') {
+    await runSimpleInMemoryTests()
+  } else {
+    await runSimpleTests()
+  }
+
   // await runMultiDnaTests()
   // await runValidationTests()
   process.exit()

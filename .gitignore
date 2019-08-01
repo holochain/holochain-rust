@@ -38,5 +38,4 @@ tmp-*-conductor-config.toml
 app_spec_proc_macro/test/*
 **/diorama-storage
 
-Cargo.lock
 dist/**

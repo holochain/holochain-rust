@@ -87,18 +87,21 @@ impl Hash for ActionWrapper {
     }
 }
 
+///This describes a key for the actions
 #[derive(Clone, PartialEq, Debug, Serialize, Eq, Hash)]
 pub enum Key {
     Entry(GetEntryKey),
     Links(GetLinksKey),
 }
 
+///This is a payload for the Get Method
 #[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum GetPayload {
     Entry,
     Links((Option<CrudStatus>, GetLinksNetworkQuery)),
 }
 
+///This is a payload from a response
 #[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum RespondGetPayload {
     Entry(Option<EntryWithMetaAndHeader>),
@@ -148,9 +151,18 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
+    //--------------------
+    // GEt Actions
+    //---------------------
+    ///Performs a Get Action based on the key and payload, used for links and Entries
     Get((Key, GetPayload)),
+    ///Performs a Get Timeout Action which times out based the values given
     GetTimeout(Key),
+
+    ///Holds Query data that responds to a GET
     RespondGet((QueryEntryData, RespondGetPayload)),
+
+    ///Handles new Get Data recieved
     HandleGet((RespondGetPayload, Key)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),

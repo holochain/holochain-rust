@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-use holochain_core_types::{error::HolochainError, time::Timeout};
+use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
@@ -21,7 +21,11 @@ pub async fn get_link_result_workflow<'a>(
         headers: link_args.options.headers,
     };
     let method = GetMethod::Link(link_args.clone(), GetLinksNetworkQuery::Links(config));
-    let response = await!(get(context.clone(), method, Timeout::default()))?;
+    let response = await!(get(
+        context.clone(),
+        method,
+        link_args.options.timeout.clone()
+    ))?;
 
     let links_result = match response {
         RespondGetPayload::Links((query, _, _)) => Ok(query),

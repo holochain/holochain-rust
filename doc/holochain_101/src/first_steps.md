@@ -226,7 +226,7 @@ fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<
 
 At the moment there is no validation done on the link entries. This will be added soon with an additional validation callback.
 
-Finally, `get_list` requires us to use the HDK function `get_links(base_address, link_type, tag)`. As you may have guessed, this will return the addresses of all the entries that are linked to the `base_address` with a given link_type and a given tag. Both `link_type` and `tag` are Option types. Passing `Some("string")` means retrieve links that match the type/tag string exactly and passing `None` to either of them means to retrieve all links regardless of the type/tag. As this only returns the addresses, we must then map over each of then and load the required entry.
+Finally, `get_list` requires us to use the HDK function `get_links(base_address, link_type, tag)`. As you may have guessed, this will return the addresses of all the entries that are linked to the `base_address` with a given link_type and a given tag. Both `link_type` and `tag` are LinkMatch types, which is an enum for matching anything, matching exactly, or matching with a regular expression. Passing `LinkMatch::Exactly("string")` means retrieve links that match the type/tag string exactly and passing `LinkMatch::Any` to either of them means to retrieve all links regardless of the type/tag. As this only returns the addresses, we must then map over each of then and load the required entry.
 
 ```rust
 fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
@@ -235,7 +235,7 @@ fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
     let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
 
     // try and load the list items, filter out errors and collect in a vector
-    let list_items = hdk::get_links(&list_addr, Some("items"), None)?.addresses()
+    let list_items = hdk::get_links(&list_addr, LinkMatch::Exactly("items"), LinkMatch::Any)?.addresses()
         .iter()
         .map(|item_address| {
             hdk::utils::get_as_type::<ListItem>(item_address.to_owned())
@@ -416,7 +416,7 @@ fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
     let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
 
     // try and load the list items, filter out errors and collect in a vector
-    let list_items = hdk::get_links(&list_addr, "items")?.addresses()
+    let list_items = hdk::get_links(&list_addr, LinkMatch::Exactly("items"), LinkMatch::Any)?.addresses()
         .iter()
         .map(|item_address| {
             hdk::utils::get_as_type::<ListItem>(item_address.to_owned())

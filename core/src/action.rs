@@ -151,18 +151,19 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    //--------------------
-    // GEt Actions
-    //---------------------
-    ///Performs a Get Action based on the key and payload, used for links and Entries
+    ///Performs a Network Get Action based on the key and payload, used for links and Entries
     Get((Key, GetPayload)),
+
     ///Performs a Get Timeout Action which times out based the values given
     GetTimeout(Key),
 
-    ///Holds Query data that responds to a GET
+    /// Lets the network module respond to a Get request.
+    /// Triggered from the corresponding workflow after retrieving the
+    /// requested entity or links from DHT shard
     RespondGet((QueryEntryData, RespondGetPayload)),
 
-    ///Handles new Get Data recieved
+    /// We got a response for our get request which needs to be added to the state.
+    /// Triggered from the network handler.
     HandleGet((RespondGetPayload, Key)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),

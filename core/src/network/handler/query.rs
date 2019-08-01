@@ -31,7 +31,7 @@ fn get_links(
         .state()
         .unwrap()
         .dht();
-    
+
     let (get_link ,error) : (Vec<_>,Vec<_>) = dht_store
         .get_links(base, link_type.clone(), tag, crud_status)
         .unwrap_or_default()
@@ -65,14 +65,14 @@ fn get_links(
                     {
                         let maybe_entry_headers = if headers { Some(entry_with_meta_and_headers.headers)} else {None};
                         entry_with_meta_and_headers.entry.map(|single_entry|{
-                            match single_entry 
+                            match single_entry
                             {
                                 Entry::LinkAdd(link_add) => Ok(GetLinkData::new(link_add_address.clone(),crud.clone(),link_add.link().target().clone(),tag.clone(),maybe_entry_headers)),
                                 Entry::LinkRemove(link_remove) =>Ok(GetLinkData::new(link_add_address.clone(),crud.clone(),link_remove.0.link().target().clone(),tag.clone(),maybe_entry_headers)),
                                 _ =>Err(HolochainError::ErrorGeneric("Wrong entry type for Link content".to_string()))
                             }
                         }).unwrap_or(Err(HolochainError::ErrorGeneric(error)))
-                        
+
                     }
                     _ => Err(HolochainError::ErrorGeneric("Single Entry required for Get Entry".to_string()))
                 }
@@ -129,7 +129,7 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
-    let query_json = JsonString::from_json(&String::from_utf8(query_data.query.clone()).unwrap());
+    let query_json = JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             let links = get_links(
@@ -171,7 +171,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 /// examine the query result for its type and dispatch different actions according to variant
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
     let query_result_json =
-        JsonString::from_json(&String::from_utf8(query_result_data.clone().query_result).unwrap());
+        JsonString::from_json(std::str::from_utf8(&*query_result_data.clone().query_result).unwrap());
     println!("handle_query_entry_result: {:?}", query_result_data);
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {

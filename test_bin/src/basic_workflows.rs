@@ -142,7 +142,7 @@ pub fn send_test(alex: &mut TestNode, billy: &mut TestNode, can_connect: bool) -
         Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(ASPECT_CONTENT_1.to_owned(), msg.content);
+    assert_eq!(ASPECT_CONTENT_1.to_owned(), *msg.content);
 
     // Send a message back from billy to alex
     billy.send_response_lib3h(
@@ -269,8 +269,8 @@ pub fn dht_two_aspects_test(
     assert_eq!(store_data_1.entry_address, entry_address_1);
     assert!(aspect_address == *ASPECT_ADDRESS_1 || aspect_address == *ASPECT_ADDRESS_2);
     assert!(
-        store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
-            || store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
+        *store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || *store_data_1.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
     );
     // 2nd store
     let result_a = alex.wait_lib3h(Box::new(one_is!(
@@ -287,8 +287,8 @@ pub fn dht_two_aspects_test(
 
     assert!(aspect_address_2 == *ASPECT_ADDRESS_1 || aspect_address_2 == *ASPECT_ADDRESS_2);
     assert!(
-        store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
-            || store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
+        *store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_1
+            || *store_data_2.entry_aspect.aspect.clone() == *ASPECT_CONTENT_2
     );
     // Gossip might ask us for the data
     let maybe_fetch_a =

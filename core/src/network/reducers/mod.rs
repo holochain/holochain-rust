@@ -136,7 +136,7 @@ pub fn send_message(
         space_address,
         to_agent_id: to_agent_id.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content,
+        content : content.into(),
     };
 
     let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;

@@ -158,12 +158,12 @@ mod tests {
     }
 
 
-    fn success_server_result(result_info: Vec<u8>) -> Lib3hServerProtocol {
+    fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocol {
         Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info,
+            result_info : result_info.clone().into(),
         })
     }
 
@@ -172,7 +172,7 @@ mod tests {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info,
+            result_info : result_info.into(),
         })
     }
 
@@ -197,7 +197,7 @@ mod tests {
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
             self.handler
-                .handle(Ok(success_server_result("tick".to_string().into_bytes())))?;
+                .handle(Ok(success_server_result(&"tick".to_string().into_bytes())))?;
             Ok(true)
         }
 
@@ -205,7 +205,7 @@ mod tests {
             match data {
                 Lib3hClientProtocol::SuccessResult(data) => self
                     .handler
-                    .handle(Ok(success_server_result(data.result_info))),
+                    .handle(Ok(success_server_result(&*data.result_info))),
                 msg => panic!("unexpected client protocol message in receive: {:?}", msg),
             }
         }
@@ -239,7 +239,7 @@ mod tests {
 
             match tmp {
                 Lib3hServerProtocol::SuccessResult(generic_data) => {
-                    if generic_data.result_info == "tick".to_string().into_bytes() {
+                    if generic_data.result_info == "tick".to_string().into_bytes().into() {
                         continue;
                     } else {
                         res = generic_data.result_info;
@@ -250,7 +250,7 @@ mod tests {
             }
         }
 
-        assert_eq!("test".to_string().into_bytes(), res);
+        assert_eq!("test".to_string().into_bytes(), *res);
 
         con.stop().unwrap();
     }
@@ -273,7 +273,7 @@ mod tests {
 
         match res {
             Lib3hServerProtocol::SuccessResult(generic_data) => {
-                assert_eq!("tick".to_string().into_bytes(), generic_data.result_info)
+                assert_eq!("tick".to_string().into_bytes(), *generic_data.result_info)
             }
             msg => panic!("unexpected message received: {:?}", msg),
         }

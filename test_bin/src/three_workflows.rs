@@ -239,7 +239,7 @@ pub fn hold_and_publish_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(query_result.aspect_list[0].aspect, ASPECT_CONTENT_1.clone());
+    assert_eq!(*query_result.aspect_list[0].aspect, ASPECT_CONTENT_1.clone());
 
     // Camille requests 2nd entry
     let query_data = camille.request_entry(ENTRY_ADDRESS_2.clone());
@@ -269,7 +269,7 @@ pub fn hold_and_publish_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_2.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(query_result.aspect_list[0].aspect, ASPECT_CONTENT_2.clone());
+    assert_eq!(*query_result.aspect_list[0].aspect, ASPECT_CONTENT_2.clone());
 
     // Done
     Ok(())
@@ -367,7 +367,7 @@ pub fn publish_entry_stress_test(
     assert_eq!(query_data.entry_address, address_42.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(query_result.aspect_list[0].aspect, entry_42.clone());
+    assert_eq!(*query_result.aspect_list[0].aspect, entry_42.clone());
 
     let time_end = SystemTime::now();
 

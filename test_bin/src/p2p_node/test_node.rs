@@ -176,7 +176,7 @@ impl TestNode {
             aspect_list.push(EntryAspectData {
                 aspect_address: hash,
                 type_hint: "TestNode".to_string(),
-                aspect: aspect_content,
+                aspect: aspect_content.into(),
                 publish_ts: 42,
             });
         }
@@ -279,7 +279,7 @@ impl TestNode {
             entry_address,
             request_id: self.generate_request_id(),
             requester_agent_id: self.agent_id.clone(),
-            query: vec![], // empty means give me the EntryData,
+            query: vec![].into(), // empty means give me the EntryData,
         };
         self.send(Lib3hClientProtocol::QueryEntry(query_data.clone()))
             .expect("Sending Query failed");
@@ -297,7 +297,7 @@ impl TestNode {
                 space_address: query.space_address.clone(),
                 request_id: query.request_id.clone(),
                 to_agent_id: query.requester_agent_id.clone(),
-                result_info: "Unknown query request".as_bytes().to_vec(),
+                result_info: "Unknown query request".as_bytes().into(),
             };
             self.send(Lib3hClientProtocol::FailureResult(msg_data.clone()))
                 .expect("Sending FailureResult failed");
@@ -325,7 +325,7 @@ impl TestNode {
             request_id: query.request_id.clone(),
             requester_agent_id: query.requester_agent_id.clone(),
             responder_agent_id: self.agent_id.clone(),
-            query_result: bincode::serialize(&fetch_res.unwrap().entry).unwrap(),
+            query_result: bincode::serialize(&fetch_res.unwrap().entry).unwrap().into(),
         };
         self.send(Lib3hClientProtocol::HandleQueryEntryResult(
             query_res.clone(),
@@ -359,7 +359,7 @@ impl TestNode {
                 space_address: fetch.space_address.clone(),
                 request_id: fetch.request_id.clone(),
                 to_agent_id: fetch.provider_agent_id.clone(),
-                result_info: "DNA is not tracked".as_bytes().to_vec(),
+                result_info: "DNA is not tracked".as_bytes().into(),
             };
             return Err(msg_data);
         }
@@ -387,7 +387,7 @@ impl TestNode {
                 space_address: fetch.space_address.clone(),
                 request_id: fetch.request_id.clone(),
                 to_agent_id: fetch.provider_agent_id.clone(),
-                result_info: "No entry found".as_bytes().to_vec(),
+                result_info: "No entry found".as_bytes().into(),
             };
             return Err(msg_data);
         }
@@ -415,7 +415,7 @@ impl TestNode {
             request_id: request_id.clone(),
             to_agent_id: to_agent_id.clone(),
             from_agent_id,
-            content,
+            content : content.into(),
         };
         self.send(Lib3hClientProtocol::SendDirectMessage(msg_data))
             .expect("Sending SendMessage failed");
@@ -433,7 +433,7 @@ impl TestNode {
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
             from_agent_id: msg.to_agent_id.clone(),
-            content: response_content,
+            content: response_content.into(),
         };
         self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(
             response.clone(),

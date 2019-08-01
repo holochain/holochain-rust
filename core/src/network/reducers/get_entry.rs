@@ -20,7 +20,7 @@ fn reduce_get_entry_inner(
             request_id: key.id.clone(),
             space_address: network_state.dna_address.clone().unwrap(),
             entry_address: key.address.clone(),
-            query: query_json.to_string().into_bytes(),
+            query: query_json.to_string().into_bytes().into(),
         }),
     )
 }

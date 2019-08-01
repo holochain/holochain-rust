@@ -27,7 +27,7 @@ fn inner(
             .address
             .clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content,
+        content : content.into(),
     };
 
     let protocol_object = if direct_message_data.is_response {

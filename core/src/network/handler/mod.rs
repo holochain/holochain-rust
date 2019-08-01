@@ -56,7 +56,7 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 // and combining it with the top-level fields in a formatted and indented output.
 fn format_store_data(data: &StoreEntryAspectData) -> String {
     let aspect_json =
-        JsonString::from_json(&String::from_utf8(data.entry_aspect.aspect.clone()).unwrap());
+        JsonString::from_json(std::str::from_utf8(&*data.entry_aspect.aspect.clone()).unwrap());
     let aspect = EntryAspect::try_from(aspect_json).unwrap();
     format!(
         r#"
@@ -83,7 +83,7 @@ StoreEntryAspectData {{
 
 // See comment on fn format_store_data() - same reason for this function.
 fn format_message_data(data: &DirectMessageData) -> String {
-    let message_json = JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
+    let message_json = JsonString::from_json(std::str::from_utf8(&*data.content.clone()).unwrap());
     let message = DirectMessage::try_from(message_json).unwrap();
     format!(
         r#"

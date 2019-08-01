@@ -62,7 +62,7 @@ pub fn send_test(
         Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(*ASPECT_CONTENT_1, msg.content);
+    assert_eq!(*ASPECT_CONTENT_1, *msg.content);
     log_i!("Send messages on DNA A COMPLETE \n\n\n");
 
     // Billy should not receive it
@@ -91,7 +91,7 @@ pub fn send_test(
         Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(*ASPECT_CONTENT_2, msg.content);
+    assert_eq!(*ASPECT_CONTENT_2, *msg.content);
 
     // Camille should not receive it
     alex.send_direct_message(&CAMILLE_AGENT_ID, ASPECT_CONTENT_2.clone());
@@ -120,7 +120,7 @@ pub fn send_test(
         Lib3hServerProtocol::HandleSendDirectMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!(*ASPECT_CONTENT_3, msg.content);
+    assert_eq!(*ASPECT_CONTENT_3, *msg.content);
 
     // Alex should not receive it
     camille.send_direct_message(&ALEX_AGENT_ID, ASPECT_CONTENT_3.clone());

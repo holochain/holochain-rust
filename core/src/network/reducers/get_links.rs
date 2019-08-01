@@ -38,7 +38,7 @@ fn reduce_get_links_inner(
                 .clone()
                 .unwrap(),
             entry_address: key.base_address.clone(),
-            query: query_json.to_string().into_bytes(),
+            query: query_json.to_string().into_bytes().into(),
         }),
     )
 }

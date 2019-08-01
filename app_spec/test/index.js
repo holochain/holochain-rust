@@ -21,7 +21,7 @@ const dna2 = Orchestrator.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 // map e.g. `alice.app.call` ~> `conductor.alice.call`
 const lib3hInMemoryMiddleware = f => (api, {conductor}) => {
   const conductorMap = {}
-  conductor.keys.forEach(name => {
+  Object.keys(conductor).forEach(name => {
     conductorMap[name] = {
       app: conductor[name]
     }
@@ -49,9 +49,11 @@ const orchestratorSimple = new Orchestrator({
 const orchestratorSimpleInMemory = new Orchestrator({
   conductors: {
     conductor: {
-      alice: dna,
-      bob: dna,
-      carol: dna,
+      instances: {
+        alice: dna,
+        bob: dna,
+        carol: dna,
+      }
     }
   },
   debugLog: false,

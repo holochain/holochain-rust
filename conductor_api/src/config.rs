@@ -957,7 +957,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.logger_level, "debug");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {
@@ -1053,7 +1053,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.logger_level, "debug");
         assert_eq!(config.logger.rules.rules.len(), 1);
 
         assert_eq!(config.network, None);

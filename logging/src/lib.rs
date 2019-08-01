@@ -52,23 +52,22 @@ impl FastLogger {
     }
 
     /// Returns the color of a log message if the logger should log it, and None other wise.
+    /// We want to return the last match so we can combine rules and filters.
     pub fn should_log_in(&self, args: &str) -> Option<String> {
         if self.rule_filters.is_empty() {
             Some(String::default())
         } else {
-            let mut color = String::default();
+            let mut color = Some(String::default());
             for rule_filter in self.rule_filters.iter() {
                 if rule_filter.is_match(args) {
                     if rule_filter.exclude() {
-                        return None;
+                        color = None;
                     } else {
-                        color = rule_filter.get_color();
-                        // Do we want to return the fist match or the last one?
-                        // return Some(rule_filter.get_color())
+                        color = Some(rule_filter.get_color());
                     }
                 }
             }
-            Some(color)
+            color
         }
     }
 
@@ -95,20 +94,32 @@ impl log::Log for FastLogger {
     /// of formatting and printing the log message.
     fn log(&self, record: &Record) {
         let args = record.args().to_string();
-        let should_log = self.should_log_in(&args);
+        let should_log_args = self.should_log_in(&args);
+        let should_log_target = self.should_log_in(&record.target());
 
-        if self.enabled(record.metadata()) && should_log != None {
+        // Prioritizing the target color rule (if any) over the args one
+        let should_log_in = should_log_target.clone();
+        let should_log_in = match (should_log_args, should_log_target) {
+            (Some(_), Some(target_color)) | (None, Some(target_color)) => Some(target_color),
+            (Some(args_color), None) => Some(args_color),
+            _ => should_log_in,
+        };
+
+
+        if self.enabled(record.metadata()) && should_log_in != None {
             let msg = LogMessage {
                 args,
                 module: record.module_path().unwrap_or("module-name").to_string(),
                 line: record.line().unwrap_or(000),
+                file: record.file().unwrap_or("").to_string(),
                 level: record.level(),
                 level_to_print: self.level_colors.color(record.level()).to_string(),
                 thread_name: std::thread::current()
                     .name()
-                    .unwrap_or("Anonymous-thread")
+                    // .unwrap_or("Anonymous-thread")
+                    .unwrap_or(&String::default())
                     .to_string(),
-                color: should_log,
+                color: should_log_in,
                 target: Some(String::from(record.target())),
                 timestamp_format: self.timestamp_format.to_owned(),
             };
@@ -308,6 +319,25 @@ impl<'a> FastLoggerBuilder {
 
         Ok(logger)
     }
+
+    /// Dull log build, only used for test purposes because it actually doesn't log anything by not
+    /// registering the logger.
+    #[allow(dead_code)]
+    pub(crate) fn build_test(&self) -> Result<FastLogger, SetLoggerError> {
+        // Let's create the logging thread that will be responsable for all the heavy work of
+        // building and printing the log messages
+        let (s, _): (Sender<MsgT>, Receiver<MsgT>) = crossbeam_channel::bounded(self.channel_size);
+
+        let logger = FastLogger {
+            level: self.level,
+            rule_filters: self.rule_filters.to_owned(),
+            level_colors: self.level_colors,
+            sender: s,
+            timestamp_format: self.timestamp_format.to_owned(),
+        };
+
+        Ok(logger)
+    }
 }
 
 impl Default for FastLoggerBuilder {
@@ -345,6 +375,8 @@ struct LogMessage {
     target: Option<String>,
     /// Line number of the issued log message.
     line: u32,
+    /// The source file containing the message.
+    file: String,
     /// Log verbosity level.
     level: Level,
     /// Log verbosity level to print with color.
@@ -380,11 +412,7 @@ impl LogMessageTrait for LogMessage {
         let msg_color = match &self.color {
             Some(color) => {
                 if color.is_empty() {
-                    match self.level {
-                        Level::Error => "Red",
-                        Level::Warn => "Yellow",
-                        _ => "White",
-                    }
+                    pseudo_rng_color
                 } else {
                     color
                 }
@@ -392,14 +420,20 @@ impl LogMessageTrait for LogMessage {
             None => pseudo_rng_color,
         };
 
+        // Force color on "special" log level
+        let msg_color = match self.level {
+            Level::Error => "Red",
+            Level::Warn => "Yellow",
+            _ => msg_color,
+        };
+
         let msg = format!(
-            "{level}({timestamp})[{tag}] {thread_name}|{line}: {args}",
+            "{level} {timestamp} [{tag}] {thread_name} {line} {args}",
             args = self.args.color(msg_color),
             tag = tag_name.bold().color(pseudo_rng_color),
-            line = format!("l.{}", self.line).italic(),
+            line = format!("{}:{}", self.file, self.line).italic(),
             // We might consider retrieving the timestamp once and proceed logging
             // in batch in the future, if this ends up being performance critical
-            // timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
             timestamp = chrono::Local::now().format(&self.timestamp_format),
             level = self.level_to_print.bold(),
             thread_name = self.thread_name.underline(),
@@ -446,17 +480,6 @@ impl From<Logger> for FastLoggerBuilder {
     }
 }
 
-// impl From<Rule> for RuleFilter {
-//     fn from(rule: Rule) -> Self {
-//         let tf = RuleFilter::default();
-//         RuleFilter::new(
-//             &rule.pattern,
-//             rule.exclude.unwrap_or_else(|| tf.exclude()),
-//             &rule.color.unwrap_or_else(|| tf.get_color()),
-//         )
-//     }
-// }
-
 #[test]
 fn should_log_test() {
     use rule::RuleFilterBuilder;
@@ -470,7 +493,7 @@ fn should_log_test() {
                 .set_color("Blue")
                 .build(),
         )
-        .build()
+        .build_test()
         .unwrap();
 
     assert_eq!(logger.should_log_in("bar"), Some(String::from("")));
@@ -479,11 +502,55 @@ fn should_log_test() {
 
     // rule to reject anything with baz
     logger.add_rule_filter(RuleFilter::new("baz", true, "White"));
+    assert_eq!(logger.should_log_in("baz"), None);
+
     // rule to accept anything with b
     logger.add_rule_filter(RuleFilter::new("b", false, "Green"));
-
-    assert_eq!(logger.should_log_in("baz"), None);
     assert_eq!(logger.should_log_in("xboy"), Some(String::from("Green")));
+}
+
+#[test]
+fn filtering_back_log_test() {
+    let toml = r#"
+        [logger]
+        level = "debug"
+
+            [[logger.rules]]
+            pattern = ".*"
+            exclude = true
+
+            [[logger.rules]]
+            pattern = "^holochain"
+            exclude = false
+
+            [[logger.rules]]
+            pattern = "Cyan"
+            exclude = false
+            color = "Cyan"
+
+            [[logger.rules]]
+            pattern = "app-6"
+            exclude = false
+            color = "Green"
+    "#;
+
+    let logger_conf: LoggerConfig =
+        toml::from_str(toml).expect("Fail to deserialize logger from toml.");
+    let logger: Option<Logger> = logger_conf.logger;
+    assert!(logger.is_some());
+
+    let flb: FastLoggerBuilder = logger.unwrap().into();
+    let logger = flb.build_test().unwrap();
+
+    // This log entry should be filtered: 'debug!(target: "rpc", "...")'
+    assert_eq!(logger.should_log_in("rpc"), None);
+
+    // This one should be logged: 'info!(target: "holochain-app-2", "...")' because of 2nd rule
+    assert_ne!(logger.should_log_in("holochain"), None);
+
+    // This next one should be logged in red: 'debug!(target: "holochain-app-6", "...'Red'...")'
+    assert_eq!(logger.should_log_in("app-6"), Some(String::from("Green")));
+
 }
 
 #[test]
@@ -581,7 +648,10 @@ fn configure_log_level_from_env_test() {
     env::set_var("RUST_LOG", "warn");
     let flb = FastLoggerBuilder::new();
 
-    assert_eq!(flb.level(), Level::Warn)
+    assert_eq!(flb.level(), Level::Warn);
+
+    let logger = flb.build_test().unwrap();
+    assert_eq!(logger.level(), Level::Warn)
 }
 
 #[test]

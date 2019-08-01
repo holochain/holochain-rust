@@ -61,7 +61,7 @@ impl Default for RuleFilter {
         Self {
             pattern: Some(String::default()),
             exclude: false,
-            color: Some(String::from("white")),
+            color: None,
             re: Regex::new(&String::default()).expect("Fail to init RuleFilter's regex."),
         }
     }
@@ -92,7 +92,7 @@ impl From<RuleFilter> for Rule {
 pub struct RuleFilterBuilder {
     pattern: String,
     exclude: bool,
-    color: String,
+    color: Option<String>,
 }
 
 impl RuleFilterBuilder {
@@ -111,7 +111,7 @@ impl RuleFilterBuilder {
     }
 
     pub fn set_color(&mut self, color: &str) -> &mut Self {
-        self.color = color.to_owned();
+        self.color = Some(color.to_owned());
         self
     }
 
@@ -124,7 +124,7 @@ impl RuleFilterBuilder {
         RuleFilter {
             pattern,
             exclude: self.exclude,
-            color: Some(self.color.to_owned()),
+            color: self.color.clone(),
             re: Regex::new(&self.pattern).expect("Fail to init RuleFilter's regex."),
         }
     }
@@ -135,7 +135,7 @@ impl Default for RuleFilterBuilder {
         Self {
             pattern: String::default(),
             exclude: false,
-            color: String::from("white"),
+            color: None,
         }
     }
 }

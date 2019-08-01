@@ -30,7 +30,8 @@ impl EntryStore {
     ///
     pub fn insert_entry(&mut self, entry: &EntryData) {
         log_tt!(
-            "entrystore", "EntryStore: adding content for '{:?}'",
+            "entrystore",
+            "EntryStore: adding content for '{:?}'",
             entry.entry_address
         );
         if self.store.get(&entry.entry_address).is_none() {
@@ -52,8 +53,10 @@ impl EntryStore {
     ///
     pub fn insert_aspect(&mut self, entry_address: &Address, aspect: &EntryAspectData) {
         log_tt!(
-            "entrystore", "EntryStore: adding content for '{}': {:?}",
-            entry_address, aspect.aspect_address,
+            "entrystore",
+            "EntryStore: adding content for '{}': {:?}",
+            entry_address,
+            aspect.aspect_address,
         );
         if self.store.get(&entry_address).is_none() {
             let mut map = HashMap::new();

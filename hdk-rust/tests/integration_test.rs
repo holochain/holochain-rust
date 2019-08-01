@@ -376,9 +376,11 @@ fn start_holochain_instance_with_bootstrap_nodes<T: Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger) =
-        test_context_and_logger_with_bootstrap_nodes(
-            &agent_name.into(), Some(net_name.as_str()), bootstrap_nodes);
+    let (context, test_logger) = test_context_and_logger_with_bootstrap_nodes(
+        &agent_name.into(),
+        Some(net_name.as_str()),
+        bootstrap_nodes,
+    );
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
@@ -872,19 +874,28 @@ fn enable_logging_for_test() {
         .try_init();
 }
 
-
 #[test]
 fn can_send_and_receive() {
     enable_logging_for_test();
     let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
-    let endpoint = hc.context().expect("context")
-        .network().lock().as_ref().unwrap().p2p_endpoint();
+    let endpoint = hc
+        .context()
+        .expect("context")
+        .network()
+        .lock()
+        .as_ref()
+        .unwrap()
+        .p2p_endpoint();
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
 
     let (mut hc2, _) = start_holochain_instance_with_bootstrap_nodes(
-        "can_send_and_receive", "can_send_receive_bob".into(), "bob", vec![endpoint]);
+        "can_send_and_receive",
+        "can_send_receive_bob".into(),
+        "bob",
+        vec![endpoint],
+    );
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);

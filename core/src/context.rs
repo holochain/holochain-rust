@@ -3,10 +3,10 @@ use crate::{
     conductor_api::ConductorApi,
     instance::Observer,
     logger::Logger,
+    network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
-    network::state::NetworkState
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{task::Poll, Future};
@@ -25,11 +25,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-
-use holochain_net::{
-    p2p_config::P2pConfig,
-    p2p_network::P2pNetwork,
-};
+use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -50,8 +46,7 @@ pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {
     pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
-        return P2pNetworkMutexGuardWrapper(
-            self.0.lock().expect("network accessible"))
+        return P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"));
     }
 }
 
@@ -64,7 +59,6 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
             None => Err(HolochainError::ErrorGeneric("no network".into())),
         }
     }
-
 }
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
@@ -205,9 +199,7 @@ impl Context {
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
-        self.state().map(move |state| {
-            state.network()
-        })
+        self.state().map(move |state| state.network())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -386,10 +378,15 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_memory_network_config(
     network_name: Option<&str>,
-    bootstrap_nodes: Vec<url::Url>) -> P2pConfig {
+    bootstrap_nodes: Vec<url::Url>,
+) -> P2pConfig {
     network_name
-        .map(|name| P2pConfig::new_with_memory_backend_bootstrap_nodes(name, bootstrap_nodes.clone()))
-        .unwrap_or(P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes))
+        .map(|name| {
+            P2pConfig::new_with_memory_backend_bootstrap_nodes(name, bootstrap_nodes.clone())
+        })
+        .unwrap_or(P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(
+            bootstrap_nodes,
+        ))
 }
 
 #[cfg(test)]

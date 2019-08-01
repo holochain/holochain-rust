@@ -316,7 +316,7 @@ pub struct NetworkSettings {
 pub mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey},
+        action::{Action, ActionWrapper, GetEntryKey, GetPayload, Key},
         nucleus::tests::test_call_response,
     };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
@@ -324,10 +324,13 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(GetEntryKey {
-            address: expected_entry_address(),
-            id: String::from("test-id"),
-        })
+        Action::Get((
+            Key::Entry(GetEntryKey {
+                address: expected_entry_address(),
+                id: String::from("test-id"),
+            }),
+            GetPayload::Entry,
+        ))
     }
 
     /// dummy action wrapper with test_action()
@@ -342,10 +345,13 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(GetEntryKey {
-            address: expected_entry_address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
-        }))
+        ActionWrapper::new(Action::Get((
+            Key::Entry(GetEntryKey {
+                address: expected_entry_address(),
+                id: snowflake::ProcessUniqueId::new().to_string(),
+            }),
+            GetPayload::Entry,
+        )))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

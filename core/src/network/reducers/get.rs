@@ -108,8 +108,9 @@ fn reduce_get_links_inner(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey},
+        action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, GetPayload, Key},
         instance::tests::test_context,
+        network::query::{GetLinksNetworkQuery, GetLinksQueryConfiguration},
         state::test_store,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
@@ -127,13 +128,14 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
+        let action = Action::Get((Key::Entry(key.clone()), GetPayload::Entry));
+        let action_wrapper = ActionWrapper::new(action);
 
         let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_with_meta_results
-            .get(&key)
+            .get_results
+            .get(&Key::Entry(key.clone()))
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
@@ -165,7 +167,8 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
+        let action_wrapper =
+            ActionWrapper::new(Action::Get((Key::Entry(key.clone()), GetPayload::Entry)));
 
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
@@ -205,7 +208,9 @@ mod tests {
             address: entry.address(),
             id: "req_alice_1".to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
+        let key = Key::Entry(key.clone());
+        let action = Action::Get((key, GetPayload::Entry));
+        let action_wrapper = ActionWrapper::new(action);
 
         {
             let mut new_store = store.write().unwrap();
@@ -215,7 +220,7 @@ mod tests {
             .read()
             .unwrap()
             .network()
-            .get_entry_with_meta_results
+            .get_results
             .get(&key)
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
@@ -309,17 +314,16 @@ mod tests {
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let config = GetLinksQueryConfiguration { headers: false };
-        let action_wrapper = ActionWrapper::new(Action::GetLinks((
-            key.clone(),
-            None,
-            GetLinksNetworkQuery::Links(config),
-        )));
+        let get_links_network_query = GetLinksNetworkQuery::Links(config);
+        let payload = GetPayload::Links((None, get_links_network_query));
+        let action = Action::Get((Key::Links(key.clone()), payload));
+        let action_wrapper = ActionWrapper::new(action);
 
         let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store
             .network()
-            .get_links_results
-            .get(&key)
+            .get_results
+            .get(&Key::Links(key))
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_links_result,
@@ -328,9 +332,6 @@ mod tests {
             ))))
         );
     }
-
-    use holochain_core_types::entry::test_entry;
-    use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
     // This test needs to be refactored.
@@ -407,7 +408,7 @@ mod tests {
             .unwrap()
             .network()
             .get_links_results
-            .get(&key)
+            .get(&Key::Links(key))
             .cloned();
 
         assert_eq!(maybe_get_entry_result, Some(None));

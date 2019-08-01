@@ -12,12 +12,14 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod tests {
     use crate::{
+        action::RespondGetPayload,
         agent::actions::commit::commit_entry,
         instance::tests::test_instance_and_context_by_name,
         network::{
             actions::{
-                get_entry::get_entry, get_links::get_links,
-                get_validation_package::get_validation_package, publish::publish,
+                get::{get, GetMethod},
+                get_validation_package::get_validation_package,
+                publish::publish,
             },
             query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
             test_utils::test_wat_always_valid,
@@ -67,13 +69,13 @@ pub mod tests {
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;
             std::thread::sleep(std::time::Duration::from_millis(100));
-            let result = context2.block_on(get_entry(
+            let result = context2.block_on(get(
                 context2.clone(),
-                entry.address(),
+                GetMethod::Entry(entry.address().clone()),
                 Default::default(),
             ));
             assert!(result.is_ok(), "get_entry() result = {:?}", result);
-            maybe_entry_with_meta = result.unwrap();
+            maybe_entry_with_meta = unwrap_to!(result.unwrap()=>RespondGetPayload::Entry).clone();
         }
         assert!(
             maybe_entry_with_meta.is_some(),
@@ -299,14 +301,12 @@ pub mod tests {
         };
 
         let config = GetLinksQueryConfiguration { headers: false };
-        let maybe_links = context2.block_on(get_links(
-            context2.clone(),
-            &get_links_args,
-            GetLinksNetworkQuery::Links(config),
-        ));
+        let method = GetMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+        let maybe_links = context2.block_on(get(context2.clone(), method, Default::default()));
 
         assert!(maybe_links.is_ok());
-        let links = maybe_links.unwrap();
+        let link_results = maybe_links.unwrap();
+        let (links, _, _) = unwrap_to!(link_results=>RespondGetPayload::Links);
         let links = unwrap_to!(links=>GetLinksNetworkResult::Links);
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order

@@ -216,7 +216,10 @@ pub(crate) fn three_nodes_disconnect_test(
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_3.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 1);
-    assert_eq!(*query_result.aspect_list[0].aspect, ASPECT_CONTENT_3.clone());
+    assert_eq!(
+        *query_result.aspect_list[0].aspect,
+        ASPECT_CONTENT_3.clone()
+    );
 
     log_i!("============");
     print_three_nodes_test_name("N3H three_nodes_disconnect_test END: ", test_fn);

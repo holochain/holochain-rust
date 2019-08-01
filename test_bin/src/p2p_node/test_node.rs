@@ -325,7 +325,9 @@ impl TestNode {
             request_id: query.request_id.clone(),
             requester_agent_id: query.requester_agent_id.clone(),
             responder_agent_id: self.agent_id.clone(),
-            query_result: bincode::serialize(&fetch_res.unwrap().entry).unwrap().into(),
+            query_result: bincode::serialize(&fetch_res.unwrap().entry)
+                .unwrap()
+                .into(),
         };
         self.send(Lib3hClientProtocol::HandleQueryEntryResult(
             query_res.clone(),
@@ -415,7 +417,7 @@ impl TestNode {
             request_id: request_id.clone(),
             to_agent_id: to_agent_id.clone(),
             from_agent_id,
-            content : content.into(),
+            content: content.into(),
         };
         self.send(Lib3hClientProtocol::SendDirectMessage(msg_data))
             .expect("Sending SendMessage failed");

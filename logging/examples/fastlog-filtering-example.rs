@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate log;
-use logging::FastLoggerBuilder;
+use logging::prelude::*;
 
 fn main() {
     let toml = r#"

@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate log;
-use logging::{rule::RuleFilter, FastLoggerBuilder};
+use logging::prelude::*;
 
 fn main() {
     FastLoggerBuilder::new()
@@ -20,6 +18,7 @@ fn main() {
     // And this one will be printed in red
     error!("Abort the mission!!");
 
+    // This target value should be skiped
     info!(target: "rpc", "Message from the parity crate.");
     info!(target: "main", "Message from main.");
 

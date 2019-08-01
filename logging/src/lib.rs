@@ -1,9 +1,130 @@
+//! Holochain's log implementation.
+//!
+//! This logger implementation is designed to be fast and to provide useful filtering combination capabilities.
+//!
+//! # Use
+//!
+//! The basic use of the log crate is through the five logging macros: [`error!`],
+//! [`warn!`], [`info!`], [`debug!`] and [`trace!`]
+//! where `error!` represents the highest-priority log messages
+//! and `trace!` the lowest. The log messages are filtered by configuring
+//! the log level to exclude messages with a lower priority.
+//! Each of these macros accept format strings similarly to [`println!`].
+//!
+//! [`error!`]: ../log/macro.error.html
+//! [`warn!`]: ../log/macro.warn.html
+//! [`info!`]: ../log/macro.info.html
+//! [`debug!`]: ..log/macro.debug.html
+//! [`trace!`]: ../log/macro.trace.html
+//! [`println!`]: https://doc.rust-lang.org/stable/std/macro.println.html
+//!
+//! # Quick Start
+//!
+//! To get you started quickly, the easiest and highest-level way to get a working logger is to use
+//! [`init_simple`].
+//!
+//! ```edition2018
+//! use logging::prelude::*;
+//!
+//! logging::init_simple().unwrap();
+//! info!("Here you go champ!");
+//!
+//! // Warning and Error log message have their own color
+//! warn!("You've been warned Sir!");
+//! error!("Oh... something wrong pal.");
+//! ```
+//!
+//! ### Examples
+//!
+//! #### Simple log with Trace verbosity level.
+//!
+//! In order to log everything with at least the [`Debug`](Level::Debug) verbosity level:
+//!
+//! ```edition2018
+//! use logging::prelude::*;
+//!
+//! FastLoggerBuilder::new()
+//!     .timestamp_format("%Y-%m-%d %H:%M:%S%.6f")
+//!     .set_level_from_str("Trace")
+//!     .build()
+//!     .expect("Fail to init the logging factory.");
+//!
+//! trace!("Let's trace what that program is doing.");
+//! ```
+//!
+//! #### Building the logging factory from TOML configuration.
+//!
+//! The logger can be built from a [TOML](https://github.com/toml-lang/toml) configuration file:
+//!
+//! ```edition2018
+//! use logging::prelude::*;
+//! let toml = r#"
+//!    [logger]
+//!    level = "debug"
+//!
+//!         [[logger.rules]]
+//!         pattern = "info"
+//!         exclude = false
+//!         color = "Blue"
+//!     "#;
+//!
+//! FastLoggerBuilder::from_toml(toml)
+//!     .expect("Fail to instantiate the logger from toml.")
+//!      .build()
+//!      .expect("Fail to build logger from toml.");
+//!
+//! // Should NOT be logged because of the verbosity level set to Debug
+//! trace!("Track me if you can.");
+//! debug!("What's bugging you today?");
+//!
+//! // This one is colored in blue because of our rule on 'info' pattern
+//! info!("Some interesting info here");
+//!
+//! ```
+//!
+//! #### Dependency filtering
+//!
+//! Filtering out every log from dependencies and putting back in everything related to a
+//! particular [`target`](../log/struct.Record.html#method.target)
+//!
+//! ```edition2018
+//! use logging::prelude::*;
+//!
+//! let toml = r#"
+//!     [logger]
+//!     level = "debug"
+//!
+//!         [[logger.rules]]
+//!         pattern = ".*"
+//!         exclude = true
+//!
+//!         [[logger.rules]]
+//!         pattern = "^holochain"
+//!         exclude = false
+//!     "#;
+//!
+//! FastLoggerBuilder::from_toml(toml)
+//!     .expect("Fail to instantiate the logger from toml.")
+//!     .build()
+//!     .expect("Fail to build logger from toml.");
+//!
+//! // Should NOT be logged
+//! debug!(target: "rpc", "This is our dependency log filtering.");
+//!
+//! // Should be logged each in different color. We avoid filtering by prefixing using the 'target'
+//! // argument.
+//! info!(target: "holochain", "Log message from Holochain Core.");
+//! info!(target: "holochain-app-2", "Log message from Holochain Core with instance ID 2");
+//! ```
+
+use log;
 use chrono;
 use colored::*;
 use log::{Level, Metadata, Record, SetLoggerError};
 use serde_derive::Deserialize;
 use toml;
 
+pub mod prelude;
 pub mod color;
 pub mod rule;
 
@@ -19,7 +140,7 @@ use std::{
     thread,
 };
 
-/// Global variable definition
+/// Default format of the log's timestamp.
 const TIMESTAMP_FMT: &str = "%Y-%m-%d %H:%M:%S";
 
 /// Helper type pointing to a trait object in order to send around a log message.
@@ -34,9 +155,9 @@ pub struct FastLogger {
     rule_filters: Vec<RuleFilter>,
     /// Color of the verbosity levels.
     level_colors: ColoredLevelConfig,
-    /// Thread producer.
+    /// Thread producer used to send log message to the log consumer.
     sender: Sender<MsgT>,
-    /// Timestamp format.
+    /// Timestamp format of each log.
     timestamp_format: String,
 }
 
@@ -146,7 +267,7 @@ pub struct FastLoggerBuilder {
     channel_size: usize,
     /// The path of the file where the log will be dump in the optional case we redirect logs to a file.
     file_path: Option<String>,
-    /// Timestamp format.
+    /// Timestamp format of each log.
     timestamp_format: String,
 }
 
@@ -161,6 +282,7 @@ pub struct FastLoggerBuilder {
 ///
 /// assert!(logger.is_ok());
 /// ```
+
 impl<'a> FastLoggerBuilder {
     /// It will init a [FastLogger] with the default argument (log level set to
     /// [Info](log::Level::Info) by default).
@@ -323,7 +445,7 @@ impl<'a> FastLoggerBuilder {
     /// Dull log build, only used for test purposes because it actually doesn't log anything by not
     /// registering the logger.
     #[allow(dead_code)]
-    pub(crate) fn build_test(&self) -> Result<FastLogger, SetLoggerError> {
+    pub fn build_test(&self) -> Result<FastLogger, SetLoggerError> {
         // Let's create the logging thread that will be responsable for all the heavy work of
         // building and printing the log messages
         let (s, _): (Sender<MsgT>, Receiver<MsgT>) = crossbeam_channel::bounded(self.channel_size);

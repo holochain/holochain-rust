@@ -28,6 +28,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
+extern crate env_logger;
+
 // wss
 extern crate native_tls;
 extern crate tungstenite;

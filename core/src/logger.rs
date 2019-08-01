@@ -49,7 +49,7 @@ pub struct TestLogger {
 
 impl Logger for TestLogger {
     fn log(&mut self, msg: String) {
-        dbg!(&msg);
+        println!("[test_logger] {:?}", msg);
         self.log.push(msg);
     }
     fn dump(&self) -> String {

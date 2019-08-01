@@ -79,7 +79,7 @@ impl<T:Transport> NetWorker for Lib3hWorker<T> {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        println!("Lib3hWorker.receive(): {:?}", data);
+        let data = dbg!(data);
         self.net_engine.post(data.clone())?;
         // Done
         Ok(())

@@ -286,15 +286,16 @@ fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
-fn start_holochain_instance<T: Into<String>>(
+fn start_holochain_instance<T: Into<String> + Clone>(
     uuid: T,
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
-    start_holochain_instance_with_bootstrap_nodes(uuid, agent_name, vec![])
+    start_holochain_instance_with_bootstrap_nodes(uuid.clone(), uuid.into(), agent_name, vec![])
 }
 
 fn start_holochain_instance_with_bootstrap_nodes<T: Into<String>>(
-    uuid: T,
+    dna_uuid: T,
+    net_name: String,
     agent_name: T,
     bootstrap_nodes: Vec<url::Url>,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
@@ -341,7 +342,7 @@ fn start_holochain_instance_with_bootstrap_nodes<T: Into<String>>(
         "get_entry_properties",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
-    dna.uuid = uuid.into();
+    dna.uuid = dna_uuid.into();
 
     // TODO: construct test DNA using the auto-generated JSON feature
     // The code below is fragile!
@@ -377,7 +378,7 @@ fn start_holochain_instance_with_bootstrap_nodes<T: Into<String>>(
 
     let (context, test_logger) =
         test_context_and_logger_with_bootstrap_nodes(
-            &agent_name.into(), Some(&dna.uuid), bootstrap_nodes);
+            &agent_name.into(), Some(net_name.as_str()), bootstrap_nodes);
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
@@ -859,8 +860,22 @@ fn can_check_call_with_args() {
     //assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
+// TODO do this for all crate tests somehow
+fn enable_logging_for_test() {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "trace");
+    }
+    let _ = env_logger::builder()
+        .default_format_timestamp(false)
+        .default_format_module_path(false)
+        .is_test(true)
+        .try_init();
+}
+
+
 #[test]
 fn can_send_and_receive() {
+    enable_logging_for_test();
     let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
     let endpoint = hc.context().expect("context")
         .network().lock().as_ref().unwrap().p2p_endpoint();
@@ -869,7 +884,7 @@ fn can_send_and_receive() {
     let agent_id = result.unwrap().to_string();
 
     let (mut hc2, _) = start_holochain_instance_with_bootstrap_nodes(
-        "can_send_and_receive", "bob", vec![endpoint]);
+        "can_send_and_receive", "can_send_receive_bob".into(), "bob", vec![endpoint]);
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);

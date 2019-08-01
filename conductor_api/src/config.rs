@@ -64,12 +64,15 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+
+    /// !DEPRECATION WARNING! - Hosting a static UI via the conductor will not be supported in future releases
     /// List of ui bundles (static web dirs) to host on a static interface. Optional.
     #[serde(default)]
     pub ui_bundles: Vec<UiBundleConfiguration>,
     /// List of ui interfaces, includes references to ui bundles and dna interfaces it can call. Optional.
     #[serde(default)]
     pub ui_interfaces: Vec<UiInterfaceConfiguration>,
+
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
@@ -121,6 +124,8 @@ pub struct LoggerConfiguration {
     #[serde(default)]
     pub rules: LogRules,
     //    pub file: Option<String>,
+    #[serde(default)]
+    pub state_dump: bool,
 }
 
 impl Default for LoggerConfiguration {
@@ -128,6 +133,7 @@ impl Default for LoggerConfiguration {
         LoggerConfiguration {
             logger_level: "debug".into(),
             rules: Default::default(),
+            state_dump: false,
         }
     }
 }
@@ -550,7 +556,7 @@ impl Configuration {
     }
 }
 
-/// An agent has a name/ID and is defined by a private key that resides in a file
+/// An agent has a name/ID and is optionally defined by a private key that resides in a file
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct AgentConfiguration {
     pub id: String,
@@ -560,6 +566,8 @@ pub struct AgentConfiguration {
     /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
+    /// If true this agent will use dummy keys rather than a keystore file
+    pub test_agent: Option<bool>,
 }
 
 impl From<AgentConfiguration> for AgentId {

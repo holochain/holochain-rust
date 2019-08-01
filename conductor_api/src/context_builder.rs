@@ -38,6 +38,7 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
+    state_dump_logging: bool,
 }
 
 impl ContextBuilder {
@@ -51,6 +52,7 @@ impl ContextBuilder {
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
+            state_dump_logging: false,
         }
     }
 
@@ -130,6 +132,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_state_dump_logging(mut self) -> Self {
+        self.state_dump_logging = true;
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
@@ -157,6 +164,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
+            self.state_dump_logging,
         )
     }
 }

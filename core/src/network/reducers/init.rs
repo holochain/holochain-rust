@@ -78,6 +78,7 @@ pub mod test {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

@@ -28,6 +28,7 @@ type = "debug"
 ${debugging ? '' : '[[logger.rules.rules]]'}
 ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
+state_dump = true
 
 [network]
 type="n3h"

@@ -22,7 +22,7 @@ pub mod tests {
                 get_entry::get_entry, get_links::get_links,
                 get_validation_package::get_validation_package, publish::publish,
             },
-            query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+            query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
             test_utils::test_wat_always_valid,
         },
         workflows::author_entry::author_entry,
@@ -315,10 +315,15 @@ pub mod tests {
             tag: "test-tag".into(),
             options: Default::default(),
         };
+
+        let config = GetLinksQueryConfiguration
+        {
+            headers : false
+        };
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             &get_links_args,
-            GetLinksNetworkQuery::Links,
+            GetLinksNetworkQuery::Links(config),
         ));
 
         assert!(maybe_links.is_ok());
@@ -327,10 +332,10 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            (links[0] == (entry_addresses[1].clone(), CrudStatus::Live)
-                || links[0] == (entry_addresses[2].clone(), CrudStatus::Live))
-                && (links[1] == (entry_addresses[1].clone(), CrudStatus::Live)
-                    || links[1] == (entry_addresses[2].clone(), CrudStatus::Live))
+            ((links[0].address.clone(),links[0].crud_status.clone()) == (entry_addresses[1].clone(), CrudStatus::Live)
+                || (links[0].address.clone(),links[0].crud_status.clone()) == (entry_addresses[2].clone(), CrudStatus::Live))
+                && ((links[1].address.clone(),links[0].crud_status.clone()) == (entry_addresses[1].clone(), CrudStatus::Live)
+                    || (links[1].address.clone(),links[0].crud_status.clone()) == (entry_addresses[2].clone(), CrudStatus::Live))
         );
     }
 }

@@ -20,7 +20,7 @@ struct ReceiveReturnValue(Result<String, String>);
 pub fn receive(
     context: Arc<Context>,
     zome: &str,
-    // we ignore params for genesis
+    // we ignore params for init
     parameters: &CallbackParams,
 ) -> CallbackResult {
     let params = match parameters {
@@ -63,7 +63,7 @@ pub mod tests {
         let netname = Some("receive_fail test");
         let instance = test_callback_instance(
             zome,
-            // anything other than Genesis is fine here
+            // anything other than Init is fine here
             Callback::MissingNo.as_str(),
             0,
             netname,

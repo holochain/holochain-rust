@@ -398,7 +398,6 @@ pub mod tests {
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
     };
-    use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
@@ -452,6 +451,7 @@ pub mod tests {
                 test_memory_network_config(network_name, bootstrap_nodes),
                 None,
                 None,
+                false,
             )),
             logger,
         )
@@ -499,8 +499,9 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                // TODO BLOCKER should bootstrap nodes be set here?
+                // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name, vec![]),
+                false,
             )
             .unwrap(),
         )
@@ -525,6 +526,7 @@ pub mod tests {
             test_memory_network_config(network_name, vec![]),
             None,
             None,
+            false,
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -550,6 +552,7 @@ pub mod tests {
             test_memory_network_config(network_name, vec![]),
             None,
             None,
+            false,
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -607,7 +610,7 @@ pub mod tests {
         // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
-            "Empty zomes = No genesis = infinite loops below!"
+            "Empty zomes = No init = infinite loops below!"
         );
 
         // @TODO abstract and DRY this out
@@ -643,7 +646,7 @@ pub mod tests {
             })
             .is_none()
         {
-            println!("Waiting for Commit for genesis");
+            println!("Waiting for Commit for init");
             sleep(Duration::from_millis(10))
         }
 
@@ -752,10 +755,10 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that an unimplemented genesis allows the nucleus to initialize
+    /// tests that an unimplemented init allows the nucleus to initialize
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
-    fn test_missing_genesis() {
+    fn test_missing_init() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
@@ -766,15 +769,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a valid genesis allows the nucleus to initialize
-    fn test_genesis_ok() {
+    /// tests that a valid init allows the nucleus to initialize
+    fn test_init_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 0
                 )
                 (data (i32.const 0)
@@ -786,7 +789,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna, Some("test_genesis_ok"));
+        let maybe_instance = test_instance(dna, Some("test_init_ok"));
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();
@@ -794,15 +797,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a failed genesis prevents the nucleus from initializing
-    fn test_genesis_err() {
+    /// tests that a failed init prevents the nucleus from initializing
+    fn test_init_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 9
                 )
                 (data (i32.const 0)
@@ -818,7 +821,9 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from(JsonString::from(RawString::from("Genesis")))
+            String::from(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+            )
         );
     }
 

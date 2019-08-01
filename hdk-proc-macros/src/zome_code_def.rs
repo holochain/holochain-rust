@@ -4,7 +4,7 @@ use crate::into_zome::IntoZome;
 use hdk::holochain_core_types::dna::zome::ZomeTraits;
 use proc_macro2::{Ident, Span, TokenStream};
 
-pub type GenesisCallback = syn::Block;
+pub type InitCallback = syn::Block;
 pub type ZomeFunctionCode = syn::Block;
 pub type EntryDefCallback = syn::ItemFn;
 
@@ -79,7 +79,7 @@ pub type ZomeFunctions = Vec<ZomeFunction>;
 pub type EntryDefCallbacks = Vec<EntryDefCallback>;
 
 pub struct ZomeCodeDef {
-    pub genesis: GenesisCallback,
+    pub init: InitCallback,
     pub validate_agent: ValidateAgentCallback,
     pub zome_fns: ZomeFunctions, // receive: ReceiveCallbacks
     pub entry_def_fns: Vec<syn::ItemFn>,

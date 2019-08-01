@@ -99,7 +99,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// define_zome! {
 ///    entries: []
 ///
-///    genesis: || { Ok(()) }
+///    init: || { Ok(()) }
 ///    
 ///    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///        Ok(())

@@ -218,7 +218,9 @@ where
         .env("NO_CLEANUP", "1")
         .current_dir(dir);
     tlog_d!("EXEC: {:?}", cmd);
-    let res = cmd.output()?;
+    let res = cmd
+        .output()
+        .map_err(|e| format_err!("Failed to execute {:?}: {:?}", cmd, e))?;
     if !ignore_errors && !res.status.success() {
         bail!(
             "bad exit {:?} {:?}",

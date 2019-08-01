@@ -61,6 +61,10 @@ define_zome! {
 
     init: || { Ok(()) }
 
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
+    }
+
     functions: [
         sample_function: {
             inputs: |some_param: String|,

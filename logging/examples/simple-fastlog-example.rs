@@ -20,6 +20,9 @@ fn main() {
     // And this one will be printed in red
     error!("Abort the mission!!");
 
+    // This target value should be skiped
+    info!(target: "rpc", "Message from the parity crate");
+
     // Let's give some time to the working thread to finish logging...
     std::thread::sleep(std::time::Duration::from_millis(10));
 }

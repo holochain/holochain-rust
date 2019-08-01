@@ -16,15 +16,14 @@ fn main() {
         exclude = false
 
         [[logger.rules]]
-        pattern = "Yellow"
+        pattern = "Cyan"
         exclude = false
-        color = "Yellow"
+        color = "Cyan"
 
         [[logger.rules]]
-        pattern = "app-6"
+        pattern = "app-5"
         exclude = false
-        color = "Red"
-
+        color = "Green"
     "#;
 
     FastLoggerBuilder::from_toml(toml)
@@ -32,8 +31,9 @@ fn main() {
         .build()
         .expect("Fail to build logger from toml.");
 
-    debug!("Should be logged 'Yellow' thanks to a rule.");
-    debug!(target: "holochain-app-6", "Should be 'Red' thanks to the last rule.");
+    debug!("Should be logged 'Cyan' thanks to a rule.");
+    debug!(target: "holochain-app-5", "Should be 'Green' thanks to the last rule.");
+    debug!(target: "rpc-app-5", "Should be 'Green' thanks to the last rule as well.");
 
     // Should NOT be logged
     debug!(target: "rpc", "This is our dependency log filtering.");

@@ -163,10 +163,7 @@ impl Conductor {
             logger_builder.add_rule_filter(RuleFilter::new(
                 rule.pattern.as_str(),
                 rule.exclude,
-                rule.color
-                    .as_ref()
-                    .unwrap_or(&String::default())
-                    .as_str(),
+                rule.color.as_ref().unwrap_or(&String::default()).as_str(),
             ));
         }
 

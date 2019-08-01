@@ -24,9 +24,13 @@ impl Default for LogRules {
     fn default() -> LogRules {
         let mut rules = LogRules::new();
         // Filtering out all the logs from our dependencies
-        rules.add_rule(".*", true, None).expect("Invalid logging rule.");
+        rules
+            .add_rule(".*", true, None)
+            .expect("Invalid logging rule.");
         // And logging back all our logs
-        rules.add_rule("^holochain", false, None).expect("Invalid logging rule.");
+        rules
+            .add_rule("^holochain", false, None)
+            .expect("Invalid logging rule.");
         rules
     }
 }

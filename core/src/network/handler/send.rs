@@ -16,7 +16,7 @@ use lib3h_protocol::data_types::DirectMessageData;
 use snowflake::ProcessUniqueId;
 use std::convert::TryFrom;
 
-fn parse_direct_message(content: &Vec<u8>) -> Result<DirectMessage, JsonError> {
+fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
         std::str::from_utf8(content)
             .map_err(|error| JsonError::SerializationError(error.to_string()))?,

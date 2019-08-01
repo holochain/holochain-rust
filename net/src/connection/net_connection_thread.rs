@@ -113,8 +113,7 @@ impl NetConnectionThread {
         let endpoint = endpoint
             .expect("Should have an endpoint address")
             .to_string();
-        let p2p_endpoint = p2p_endpoint
-            .expect("Should have a p2p_endpoint address");
+        let p2p_endpoint = p2p_endpoint.unwrap_or(url::Url::parse("null:").unwrap());
 
         // Done
         Ok(NetConnectionThread {

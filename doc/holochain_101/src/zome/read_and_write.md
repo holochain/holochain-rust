@@ -2,7 +2,7 @@
 
 ## The Local Source Chain: Headers and Entries
 
-At the core of how Holochain is designed is the "local source chain". 
+At the core of how Holochain is designed is the "local source chain".
 It is the data structure that puts Holochain in the family of "distributed ledger technology".
 It functions as an "append-only log", which is a fancy way of saying that data can only ever be written to the log,
 and never modified in place, nor removed, without breaking the integrity of the data that follows it in the log. As has been found for many other projects, this is a critical design choice for a distributed technology.
@@ -36,7 +36,7 @@ The meaning and role of entries is covered next.
 
 Entries are elements of data which get persisted to the same storage as Headers, yet have a different nature. They represent the substance of the data that is of interest to the end users of Holochain, storing records such as transactions, social media posts, or whatever else app developers come up with. The hash of each entry is stored and referenced in its corresponding header. Every local source chain should have exactly one Entry for every Header.
 
-All Entries have a type. Entries can be "system" Entries, or "app" Entries. System Entries are Entries integral to the proper functioning of Holochain. Importantly, there are system Entries written to each local source chain, at the time of its initialization, or "genesis".
+All Entries have a type. Entries can be "system" Entries, or "app" Entries. System Entries are Entries integral to the proper functioning of Holochain. Importantly, there are system Entries written to each local source chain, at the time of its initialization.
 
 #### System Entries
 These include firstly, the DNA itself. The DNA is written as the first entry into each local source chain. Importantly, this is the foundation for establishing confidence in the data of everyone's chains: the fact that you all know you started out by running the same code (otherwise, the hash of the initial DNA entry would be different). There will be more discussion on this later.

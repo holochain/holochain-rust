@@ -12,7 +12,7 @@ pub(crate) struct Rule {
     pub color: Option<String>,
 }
 
-/// This is our main way to filer out or colorize log messages.
+/// This is our main way to filter out or colorize log messages.
 #[derive(Clone, Debug)]
 pub struct RuleFilter {
     pub pattern: Option<String>,

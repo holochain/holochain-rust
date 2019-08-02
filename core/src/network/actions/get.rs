@@ -1,5 +1,8 @@
 use crate::{
-    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, GetPayload, Key, RespondGetPayload},
+    action::{
+        Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload,
+        RespondQueryPayload,
+    },
     context::Context,
     instance::dispatch_action,
     network::query::GetLinksNetworkQuery,
@@ -32,14 +35,14 @@ pub async fn get(
     context: Arc<Context>,
     method: GetMethod,
     timeout: Timeout,
-) -> HcResult<RespondGetPayload> {
+) -> HcResult<RespondQueryPayload> {
     let (key, payload) = match method {
         GetMethod::Entry(address) => {
             let key = GetEntryKey {
                 address: address,
                 id: snowflake::ProcessUniqueId::new().to_string(),
             };
-            (Key::Entry(key), GetPayload::Entry)
+            (QueryKey::Entry(key), QueryPayload::Entry)
         }
         GetMethod::Link(link_args, query) => {
             let key = GetLinksKey {
@@ -54,13 +57,13 @@ pub async fn get(
                 LinksStatusRequestKind::Live => Some(CrudStatus::Live),
             };
             (
-                Key::Links(key.clone()),
-                GetPayload::Links((crud_status, query)),
+                QueryKey::Links(key.clone()),
+                QueryPayload::Links((crud_status, query)),
             )
         }
     };
 
-    let entry = Action::Get((key.clone(), payload.clone()));
+    let entry = Action::Query((key.clone(), payload.clone()));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
@@ -70,7 +73,7 @@ pub async fn get(
         .name(format!("get_timeout/{:?}", key))
         .spawn(move || {
             thread::sleep(timeout.into());
-            let timeout_action = Action::GetTimeout(key_inner);
+            let timeout_action = Action::QueryTimeout(key_inner);
             let action_wrapper = ActionWrapper::new(timeout_action);
             dispatch_action(context_inner.action_channel(), action_wrapper.clone());
         })
@@ -86,11 +89,11 @@ pub async fn get(
 /// Tracks the state of the network module
 pub struct GetFuture {
     context: Arc<Context>,
-    key: Key,
+    key: QueryKey,
 }
 
 impl Future for GetFuture {
-    type Output = HcResult<RespondGetPayload>;
+    type Output = HcResult<RespondQueryPayload>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetEntryFuture") {

@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey, GetLinksKey, Key},
+    action::{ActionWrapper, GetEntryKey, GetLinksKey, QueryKey},
     network::{
         query::{GetLinksNetworkQuery, NetworkQuery},
         reducers::send,
@@ -37,13 +37,13 @@ pub fn reduce_get(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key_type, payload) = unwrap_to!(action => crate::action::Action::Get);
+    let (key_type, payload) = unwrap_to!(action => crate::action::Action::Query);
     let result = match key_type {
-        Key::Entry(key) => reduce_get_entry_inner(network_state, key)
+        QueryKey::Entry(key) => reduce_get_entry_inner(network_state, key)
             .map(|_| None)
             .unwrap_or_else(|e| Some(Err(e))),
-        Key::Links(key) => {
-            let (crud_status, query) = unwrap_to!(payload => crate::action::GetPayload::Links);
+        QueryKey::Links(key) => {
+            let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
             reduce_get_links_inner(network_state, &key, &query, crud_status)
                 .map(|_| None)
                 .unwrap_or_else(|e| Some(Err(e)))
@@ -58,7 +58,7 @@ pub fn reduce_get_timeout(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let key = unwrap_to!(action => crate::action::Action::GetTimeout);
+    let key = unwrap_to!(action => crate::action::Action::QueryTimeout);
     if network_state.get_results.get(&key).is_none() {
         return;
     }
@@ -108,7 +108,7 @@ fn reduce_get_links_inner(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, GetPayload, Key},
+        action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload},
         instance::tests::test_context,
         network::query::{GetLinksNetworkQuery, GetLinksQueryConfiguration},
         state::test_store,
@@ -128,14 +128,14 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action = Action::Get((Key::Entry(key.clone()), GetPayload::Entry));
+        let action = Action::Query((QueryKey::Entry(key.clone()), QueryPayload::Entry));
         let action_wrapper = ActionWrapper::new(action);
 
         let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store
             .network()
             .get_results
-            .get(&Key::Entry(key.clone()))
+            .get(&QueryKey::Entry(key.clone()))
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
@@ -167,8 +167,10 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper =
-            ActionWrapper::new(Action::Get((Key::Entry(key.clone()), GetPayload::Entry)));
+        let action_wrapper = ActionWrapper::new(Action::Query((
+            QueryKey::Entry(key.clone()),
+            QueryPayload::Entry,
+        )));
 
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
@@ -208,8 +210,8 @@ mod tests {
             address: entry.address(),
             id: "req_alice_1".to_string(),
         };
-        let key = Key::Entry(key.clone());
-        let action = Action::Get((key, GetPayload::Entry));
+        let key = QueryKey::Entry(key.clone());
+        let action = Action::Query((key, QueryPayload::Entry));
         let action_wrapper = ActionWrapper::new(action);
 
         {
@@ -225,7 +227,7 @@ mod tests {
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
 
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::QueryEntryTimeout(key.clone()));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);
@@ -262,7 +264,7 @@ mod tests {
             ..Default::default()
         };
 
-        let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
+        let action_wrapper = ActionWrapper::new(Action::HandleQueryResult(dht_data));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);
@@ -281,7 +283,7 @@ mod tests {
         assert_eq!(entry_with_meta.entry, entry.clone());
 
         // Ok we got a positive result in the state
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(new_key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::QueryEntryTimeout(new_key.clone()));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);
@@ -315,15 +317,15 @@ mod tests {
         };
         let config = GetLinksQueryConfiguration { headers: false };
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
-        let payload = GetPayload::Links((None, get_links_network_query));
-        let action = Action::Get((Key::Links(key.clone()), payload));
+        let payload = QueryPayload::Links((None, get_links_network_query));
+        let action = Action::Query((QueryKey::Links(key.clone()), payload));
         let action_wrapper = ActionWrapper::new(action);
 
         let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store
             .network()
             .get_results
-            .get(&Key::Links(key))
+            .get(&QueryKey::Links(key))
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_links_result,
@@ -357,7 +359,7 @@ mod tests {
             link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::QueryLinks(key.clone()));
 
         let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store.network().get_links_results.get(&key).cloned();
@@ -396,7 +398,7 @@ mod tests {
             link_type: link_type.clone(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::QueryLinks(key.clone()));
 
         {
             let mut new_store = store.write().unwrap();
@@ -408,12 +410,12 @@ mod tests {
             .unwrap()
             .network()
             .get_links_results
-            .get(&Key::Links(key))
+            .get(&QueryKey::Links(key))
             .cloned();
 
         assert_eq!(maybe_get_entry_result, Some(None));
 
-        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::QueryLinksTimeout(key.clone()));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);

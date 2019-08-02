@@ -50,11 +50,11 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::Get(_) => Some(reduce_get),
-        Action::GetTimeout(_) => Some(reduce_get_timeout),
+        Action::Query(_) => Some(reduce_get),
+        Action::QueryTimeout(_) => Some(reduce_get_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleGet(_) => Some(reduce_handle_get_result),
+        Action::HandleQuery(_) => Some(reduce_handle_get_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
@@ -62,7 +62,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
-        Action::RespondGet(_) => Some(reduce_respond_get),
+        Action::RespondQuery(_) => Some(reduce_respond_get),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         Action::ShutdownNetwork => Some(reduce_shutdown),

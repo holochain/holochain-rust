@@ -1,5 +1,5 @@
 use crate::{
-    action::{GetLinksKey, Key},
+    action::{GetLinksKey, QueryKey},
     context::Context,
     network::direct_message::DirectMessage,
     nucleus::ZomeFnCall,
@@ -62,12 +62,12 @@ pub fn state_dump(context: Arc<Context>) {
         .iter()
         .filter(|(_, result)| result.is_none())
         .filter(|(key, _)| match key {
-            Key::Entry(_) => true,
+            QueryKey::Entry(_) => true,
             _ => false,
         })
         //this just ensures that we clone what we need
         .map(|(key, _)| match key {
-            Key::Entry(key) => key.address.clone(),
+            QueryKey::Entry(key) => key.address.clone(),
             _ => panic!("Wrong Enum Variant should never be reached"),
         })
         .collect();
@@ -77,11 +77,11 @@ pub fn state_dump(context: Arc<Context>) {
         .iter()
         .filter(|(_, result)| result.is_none())
         .filter(|(key, _)| match key {
-            Key::Links(_) => true,
+            QueryKey::Links(_) => true,
             _ => false,
         })
         .map(|(key, _)| match key {
-            Key::Links(key) => key.clone(),
+            QueryKey::Links(key) => key.clone(),
             _ => panic!("Wrong Enum Variant should never be reached"),
         })
         .collect();

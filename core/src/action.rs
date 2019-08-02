@@ -89,21 +89,21 @@ impl Hash for ActionWrapper {
 
 ///This describes a key for the actions
 #[derive(Clone, PartialEq, Debug, Serialize, Eq, Hash)]
-pub enum Key {
+pub enum QueryKey {
     Entry(GetEntryKey),
     Links(GetLinksKey),
 }
 
 ///This is a payload for the Get Method
 #[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum GetPayload {
+pub enum QueryPayload {
     Entry,
     Links((Option<CrudStatus>, GetLinksNetworkQuery)),
 }
 
 ///This is a payload from a response
 #[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum RespondGetPayload {
+pub enum RespondQueryPayload {
     Entry(Option<EntryWithMetaAndHeader>),
     Links((GetLinksNetworkResult, String, String)),
 }
@@ -151,20 +151,20 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    ///Performs a Network Get Action based on the key and payload, used for links and Entries
-    Get((Key, GetPayload)),
+    ///Performs a Network Query Action based on the key and payload, used for links and Entries
+    Query((QueryKey, QueryPayload)),
 
-    ///Performs a Get Timeout Action which times out based the values given
-    GetTimeout(Key),
+    ///Performs a Query Timeout Action which times out based the values given
+    QueryTimeout(QueryKey),
 
-    /// Lets the network module respond to a Get request.
+    /// Lets the network module respond to a Query request.
     /// Triggered from the corresponding workflow after retrieving the
-    /// requested entity or links from DHT shard
-    RespondGet((QueryEntryData, RespondGetPayload)),
+    /// requested object from the DHT
+    RespondQuery((QueryEntryData, RespondQueryPayload)),
 
     /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleGet((RespondGetPayload, Key)),
+    HandleQuery((RespondQueryPayload, QueryKey)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 
@@ -329,7 +329,7 @@ pub struct NetworkSettings {
 pub mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey, GetPayload, Key},
+        action::{Action, ActionWrapper, GetEntryKey, QueryKey, QueryPayload},
         nucleus::tests::test_call_response,
     };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
@@ -337,12 +337,12 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::Get((
-            Key::Entry(GetEntryKey {
+        Action::Query((
+            QueryKey::Entry(GetEntryKey {
                 address: expected_entry_address(),
                 id: String::from("test-id"),
             }),
-            GetPayload::Entry,
+            QueryPayload::Entry,
         ))
     }
 
@@ -358,12 +358,12 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::Get((
-            Key::Entry(GetEntryKey {
+        ActionWrapper::new(Action::Query((
+            QueryKey::Entry(GetEntryKey {
                 address: expected_entry_address(),
                 id: snowflake::ProcessUniqueId::new().to_string(),
             }),
-            GetPayload::Entry,
+            QueryPayload::Entry,
         )))
     }
 

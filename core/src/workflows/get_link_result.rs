@@ -1,5 +1,5 @@
 use crate::{
-    action::RespondGetPayload,
+    action::RespondQueryPayload,
     context::Context,
     network::{
         actions::get::{get, GetMethod},
@@ -28,7 +28,7 @@ pub async fn get_link_result_workflow<'a>(
     ))?;
 
     let links_result = match response {
-        RespondGetPayload::Links((query, _, _)) => Ok(query),
+        RespondQueryPayload::Links((query, _, _)) => Ok(query),
         _ => Err(HolochainError::ErrorGeneric(
             "Wrong type for response type Entry".to_string(),
         )),

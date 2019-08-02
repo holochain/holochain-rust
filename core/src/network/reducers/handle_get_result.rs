@@ -6,7 +6,7 @@ pub fn reduce_handle_get_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (payload, key) = unwrap_to!(action => crate::action::Action::HandleGet);
+    let (payload, key) = unwrap_to!(action => crate::action::Action::HandleQuery);
 
     network_state
         .get_results

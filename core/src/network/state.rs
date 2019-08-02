@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, Key, RespondGetPayload},
+    action::{ActionWrapper, QueryKey, RespondQueryPayload},
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use boolinator::*;
@@ -22,7 +22,7 @@ type Actions = HashMap<ActionWrapper, ActionResponse>;
 /// Some(Ok(Some(entry))): we have it
 type GetValidationPackageResult = Option<Result<Option<ValidationPackage>, HolochainError>>;
 
-type GetResults = Option<Result<RespondGetPayload, HolochainError>>;
+type GetResults = Option<Result<RespondQueryPayload, HolochainError>>;
 
 #[derive(Clone, Debug)]
 pub struct NetworkState {
@@ -35,7 +35,7 @@ pub struct NetworkState {
     pub agent_id: Option<String>,
 
     // Here are the results of every get action
-    pub get_results: HashMap<Key, GetResults>,
+    pub get_results: HashMap<QueryKey, GetResults>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.

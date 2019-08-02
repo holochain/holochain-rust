@@ -1,5 +1,5 @@
 use crate::{
-    action::RespondGetPayload,
+    action::RespondQueryPayload,
     context::Context,
     network::{self, actions::get::GetMethod},
     nucleus,
@@ -33,7 +33,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
             timeout.clone(),
         ))?;
         match response {
-            RespondGetPayload::Entry(maybe_entry) => Ok(maybe_entry),
+            RespondQueryPayload::Entry(maybe_entry) => Ok(maybe_entry),
             _ => Err(HolochainError::ErrorGeneric(
                 "Wrong respond type for Entry".to_string(),
             )),
@@ -61,7 +61,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
                     timeout.clone(),
                 ))?;
                 match response {
-                    RespondGetPayload::Entry(maybe_entry) => Ok(maybe_entry),
+                    RespondQueryPayload::Entry(maybe_entry) => Ok(maybe_entry),
                     _ => Err(HolochainError::ErrorGeneric(
                         "Wrong respond type for Entry".to_string(),
                     )),

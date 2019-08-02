@@ -12,7 +12,7 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        action::RespondGetPayload,
+        action::RespondQueryPayload,
         agent::actions::commit::commit_entry,
         instance::tests::test_instance_and_context_by_name,
         network::{
@@ -75,7 +75,7 @@ pub mod tests {
                 Default::default(),
             ));
             assert!(result.is_ok(), "get_entry() result = {:?}", result);
-            maybe_entry_with_meta = unwrap_to!(result.unwrap()=>RespondGetPayload::Entry).clone();
+            maybe_entry_with_meta = unwrap_to!(result.unwrap()=>RespondQueryPayload::Entry).clone();
         }
         assert!(
             maybe_entry_with_meta.is_some(),
@@ -306,7 +306,7 @@ pub mod tests {
 
         assert!(maybe_links.is_ok());
         let link_results = maybe_links.unwrap();
-        let (links, _, _) = unwrap_to!(link_results=>RespondGetPayload::Links);
+        let (links, _, _) = unwrap_to!(link_results=>RespondQueryPayload::Links);
         let links = unwrap_to!(links=>GetLinksNetworkResult::Links);
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order

@@ -1,5 +1,5 @@
 use crate::{
-    action::RespondGetPayload,
+    action::RespondQueryPayload,
     network::{
         actions::get::{get, GetMethod},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
@@ -76,8 +76,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     } else {
         let response = response_result.expect("Could not get response");
         let links_result = match response {
-            RespondGetPayload::Links((query, _, _)) => Ok(query),
-            RespondGetPayload::Entry(_) => Err(HolochainError::ErrorGeneric(
+            RespondQueryPayload::Links((query, _, _)) => Ok(query),
+            RespondQueryPayload::Entry(_) => Err(HolochainError::ErrorGeneric(
                 "Could not get links for type".to_string(),
             )),
         };

@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, RespondGetPayload},
+    action::{ActionWrapper, RespondQueryPayload},
     network::{
         actions::ActionResponse,
         query::{GetLinksNetworkResult, NetworkQueryResult},
@@ -68,12 +68,12 @@ pub fn reduce_respond_get(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, payload) = unwrap_to!(action=>crate::action::Action::RespondGet);
+    let (query_data, payload) = unwrap_to!(action=>crate::action::Action::RespondQuery);
     let result = match payload {
-        RespondGetPayload::Entry(maybe_entry) => {
+        RespondQueryPayload::Entry(maybe_entry) => {
             reduce_respond_get_inner(network_state, query_data, maybe_entry)
         }
-        RespondGetPayload::Links((links, link_type, tag)) => reduce_respond_get_links_inner(
+        RespondQueryPayload::Links((links, link_type, tag)) => reduce_respond_get_links_inner(
             network_state,
             query_data,
             links,

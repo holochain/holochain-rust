@@ -165,6 +165,10 @@ impl State {
         Arc::clone(&self.network)
     }
 
+    pub fn conductor_api(&self) -> ConductorApi {
+        self.conductor_api.clone()
+    }
+
     pub fn try_from_snapshots(
         context: Arc<Context>,
         agent_snapshot: AgentStateSnapshot,

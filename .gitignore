@@ -39,3 +39,6 @@ app_spec_proc_macro/test/*
 **/diorama-storage
 
 dist/**
+
+Cargo.lock
+!/Cargo.lock

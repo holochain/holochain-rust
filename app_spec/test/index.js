@@ -1,7 +1,7 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Orchestrator, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/try-o-rama')
+const { Orchestrator, tapeExecutor, backwardCompatibilityMiddleware, compose } = require('@holochain/try-o-rama')
 const spawnConductor = require('./spawn_conductors')
 
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
@@ -18,6 +18,20 @@ const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Orchestrator.dna(dnaPath, 'app-spec')
 const dna2 = Orchestrator.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
+// map e.g. `alice.app.call` ~> `conductor.alice.call`
+const inMemoryMiddleware = f => (api, {conductor}) => {
+  const conductorMap = {}
+  Object.keys(conductor).forEach(name => {
+    const inst = conductor[name]
+    if (name !== '_conductor') {
+      conductorMap[name] = {
+        app: inst
+      }
+    }
+  })
+  return f(api, conductorMap)
+}
+
 const commonConductorConfig = {
   instances: {
     app: dna,
@@ -26,13 +40,20 @@ const commonConductorConfig = {
 
 const orchestratorSimple = new Orchestrator({
   conductors: {
-    alice: commonConductorConfig,
-    bob: commonConductorConfig,
-    carol: commonConductorConfig,
+    conductor: {
+      instances: {
+        alice: dna,
+        bob: dna,
+        carol: dna,
+      }
+    }
   },
   debugLog: false,
   executor: tapeExecutor(require('tape')),
-  middleware: backwardCompatibilityMiddleware,
+  middleware: compose(
+    backwardCompatibilityMiddleware,
+    inMemoryMiddleware,
+  ),
 })
 
 const orchestratorMultiDna = new Orchestrator({
@@ -83,12 +104,8 @@ const registerAllScenarios = () => {
 
 
 const runSimpleTests = async () => {
-  const alice = await spawnConductor('alice', 3000)
-  await orchestratorSimple.registerConductor({name: 'alice', url: 'http://0.0.0.0:3000'})
-  const bob = await spawnConductor('bob', 4000)
-  await orchestratorSimple.registerConductor({name: 'bob', url: 'http://0.0.0.0:4000'})
-  const carol = await spawnConductor('carol', 5000)
-  await orchestratorSimple.registerConductor({name: 'carol', url: 'http://0.0.0.0:5000'})
+  const conductor = await spawnConductor('conductor', 3000, false)
+  await orchestratorSimple.registerConductor({name: 'conductor', url: 'http://0.0.0.0:3000'})
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
   console.log("Waiting for conductors to settle...")
@@ -96,10 +113,7 @@ const runSimpleTests = async () => {
   console.log("Ok, starting tests!")
 
   await orchestratorSimple.run()
-  alice.kill()
-  bob.kill()
-  carol.kill()
-
+  conductor.kill()
 }
 
 const runMultiDnaTests = async () => {
@@ -107,16 +121,16 @@ const runMultiDnaTests = async () => {
   // waiting for and not receiving the agent entry of the first one.
   // I believe this is due to n3h not sending a peer connected message for a local instance
   // and core has not implented the authoring list yet...
-  const conductor = await spawnConductor('conductor', 6000)
+  const conductor = await spawnConductor('conductor', 6000, true)
   await orchestratorMultiDna.registerConductor({name: 'conductor', url: 'http://0.0.0.0:6000'})
   await orchestratorMultiDna.run()
   conductor.kill()
 }
 
 const runValidationTests = async () => {
-  const valid_agent = await spawnConductor('valid_agent', 3000)
+  const valid_agent = await spawnConductor('valid_agent', 3000, true)
   await orchestratorValidateAgent.registerConductor({name: 'valid_agent', url: 'http://0.0.0.0:3000'})
-  const reject_agent = await spawnConductor('reject_agent', 4000)
+  const reject_agent = await spawnConductor('reject_agent', 4000, true)
   await orchestratorValidateAgent.registerConductor({name: 'reject_agent', url: 'http://0.0.0.0:4000'})
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))

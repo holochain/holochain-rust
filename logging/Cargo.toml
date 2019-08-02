@@ -5,7 +5,7 @@ authors = ["dymayday <meidhy.demagny@holo.host>"]
 edition = "2018"
 
 [dependencies]
-log = { version = "=0.4.6", features = ["std", "serde"] }
+log = { version = "=0.4.8", features = ["std", "serde"] }
 chrono = "=0.4.6"
 crossbeam-channel = "=0.3.8"
 regex = "=1.1.2"

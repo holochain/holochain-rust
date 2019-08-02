@@ -114,9 +114,7 @@ pub fn default_persistence_dir() -> PathBuf {
     holochain_common::paths::config_root().join("conductor")
 }
 
-/// There might be different kinds of loggers in the future.
-/// Currently there is a "debug" and "simple" logger.
-/// TODO: make this an enum
+/// This is a config helper structure used to interface with the holochain logging subcrate.
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]

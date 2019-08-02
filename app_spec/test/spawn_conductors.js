@@ -25,23 +25,25 @@ instances = []
 
 [logger]
 type = "debug"
+state_dump = true
+
 ${debugging ? '' : '[[logger.rules.rules]]'}
 ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
-state_dump = true
 
-[network]
-type="n3h"
-n3h_log_level = "${debugging ? 'i' : 'e'}"
-bootstrap_nodes = []
-n3h_mode = "REAL"
-n3h_persistence_path = "${n3hPath}"
-    `
+    ` + (n3hPath ? `
+    [network]
+    type="n3h"
+    n3h_log_level = "${debugging ? 'i' : 'e'}"
+    bootstrap_nodes = []
+    n3h_mode = "REAL"
+    n3h_persistence_path = "${n3hPath}"
+    ` : '')
 
     return config
 }
 
-module.exports = (name, port) => {
+module.exports = (name, port, useNetworking) => {
     let holochainBin = ""
     if(process.env.EMULATION_HOLOCHAIN_BIN_PATH) {
         holochainBin = process.env.EMULATION_HOLOCHAIN_BIN_PATH
@@ -54,7 +56,9 @@ module.exports = (name, port) => {
     fs.mkdirSync(n3hPath)
     const configPath = path.join(tmpPath, `empty-conductor-${name}.toml`)
 
-    const config = genConfig(port, true, tmpPath, n3hPath)
+    const config = useNetworking
+        ? genConfig(port, true, tmpPath, n3hPath)
+        : genConfig(port, true, tmpPath, null)
 
     fs.writeFileSync(configPath, config)
 

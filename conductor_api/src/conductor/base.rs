@@ -1030,13 +1030,17 @@ impl Conductor {
                 .get_keybundle(PRIMARY_KEYBUNDLE_ID)
                 .map_err(|err| format!("{}", err,))?;
 
-            if agent_config.public_address != keybundle.get_id() {
-                return Err(format!(
-                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    agent_config.keystore_file,
-                    keybundle.get_id(),
-                    agent_config.public_address,
-                ));
+            if let Some(true) = agent_config.test_agent {
+                // don't worry about public_address if this is a test_agent
+            } else {
+                if agent_config.public_address != keybundle.get_id() {
+                    return Err(format!(
+                        "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                        agent_config.keystore_file,
+                        keybundle.get_id(),
+                        agent_config.public_address,
+                    ));
+                }
             }
 
             self.agent_keys

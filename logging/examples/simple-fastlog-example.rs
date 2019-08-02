@@ -18,7 +18,6 @@ fn main() {
     // And this one will be printed in red
     error!("Abort the mission!!");
 
-    // This target value should be skiped
     info!(target: "rpc", "Message from the parity crate.");
     info!(target: "main", "Message from main.");
 

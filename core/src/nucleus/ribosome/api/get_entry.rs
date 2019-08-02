@@ -254,7 +254,6 @@ pub mod tests {
             crud_status: CrudStatus::Live,
             maybe_link_update_delete: None,
         };
-        // let header = create_new_chain_header(&entry, context.clone(), &None);
         let entry_result =
             GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(

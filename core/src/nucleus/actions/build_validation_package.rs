@@ -6,6 +6,7 @@ use crate::{
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
+    state::State,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{
@@ -89,11 +90,13 @@ pub async fn build_validation_package<'a>(
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            let state = &context.state()?;
+            let agent_state = &context.state()?.agent();
+            let state = &State::new(context.clone());
+
             agent::state::create_new_chain_header(
                 &entry,
-                &state.agent(),
-                &*state,
+                agent_state,
+                state,
                 &None,
                 provenances,
             )?

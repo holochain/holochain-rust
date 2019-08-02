@@ -1,6 +1,6 @@
 # Logging
 
-This logger implementation has been disigned to be fast and delegates all most of the heavy work to a dedicated thread. It offers nice filtering capability that can be combined together along with an optional and easy to use [TOML](https://github.com/toml-lang/toml) configuration.
+This logger implementation has been designed to be fast. It delegates most of the heavy work to a dedicated thread. It offers nice filtering capability that can be combined with an optional and easy to use [TOML](https://github.com/toml-lang/toml) configuration.
 
 ## Examples
 

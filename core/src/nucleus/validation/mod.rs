@@ -117,6 +117,9 @@ pub async fn validate_entry(
             context,
         )),
 
+        // TODO: Update to use dependent validation so a header will only be held of the entry has been successfully published
+        EntryType::ChainHeader => Ok(()),
+
         _ => Err(ValidationError::NotImplemented),
     }
 }

@@ -34,6 +34,10 @@ define_zome! {
         Ok(())
     }
 
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
+    }
+
     functions: []
 
     traits: {}
@@ -47,6 +51,10 @@ define_zome! {
 
     init: || {
         Err("the error string".to_string())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
     }
 
     functions: []

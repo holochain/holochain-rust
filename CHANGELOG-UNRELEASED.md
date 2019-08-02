@@ -5,7 +5,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
-
+- Adds header publishing. Headers are published as entries to the DHT for all commits to local chain. This will eventually make local chains recoverable. [#1615](https://github.com/holochain/holochain-rust/pull/1615)
+- 
 ### Changed
 - State dump debugging: A new config flag got added that activates dumping of core's redux state every ten seconds in a human readable form: [#1601](https://github.com/holochain/holochain-rust/pull/1601)
 - The static file server has been replaced and now uses the Nickel crate intead of Hyper. It now correctly sets content type headers and can be configured to bind to a different address in the conductor config toml [#1595](https://github.com/holochain/holochain-rust/pull/1595)

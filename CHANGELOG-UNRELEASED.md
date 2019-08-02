@@ -18,7 +18,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Removed
 
 ### Fixed
-- When using agent config with `test_agent = true`, the conductor was checking the `public_address` field against the generated keystore. No longer so. [PR#1629](https://github.com/holochain/holochain-rust/pull/1629)
 
 ### Security
 

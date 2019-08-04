@@ -128,8 +128,7 @@ pub mod tests {
     fn test_get_all_chain_headers_returns_same_as_local_chain() {
         let mut dna = test_dna();
         dna.uuid = "test_get_all_chain_headers_returns_same_as_local_chain".to_string();
-        let netname = Some("test_get_all_chain_headers_returns_same_as_local_chain, the network");
-        let (_instance1, context) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance1, context) = instance_by_name("jill", dna.clone(), None);
 
         let _entry_address = context
             .block_on(author_entry(
@@ -165,19 +164,21 @@ pub mod tests {
     }
 
     #[test]
-    fn test_validation_package_from_dht_same_as_from_author() {
+    fn test_validation_package_same_from_author_and_other_agent() {
         let mut dna = test_dna();
-        dna.uuid = "test_validation_package_from_dht_same_as_from_author".to_string();
-        let netname = Some("test_validation_package_from_dht_same_as_from_author, the network");
-        let (_instance1, context) = instance_by_name("jill", dna.clone(), netname);
+        dna.uuid = "test_validation_package_same_from_author_and_other_agent".to_string();
+        let netname = Some("test_validation_package_same_from_author_and_other_agent, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         let entry = Entry::App("package_chain_full".into(), JsonString::from_json("{\"stuff\":\"test entry value\"}"));
 
-        context
+        // jack authors the entry
+        context2
             .block_on(author_entry(
                 &entry,
                 None,
-                &context,
+                &context2,
                 &vec![],
             ))
             .unwrap()
@@ -185,8 +186,8 @@ pub mod tests {
 
         thread::sleep(time::Duration::from_millis(500));
 
-        // collect the local chain
-        let header = context.state().unwrap()
+        // collect header from jacks local chain
+        let header = context2.state().unwrap()
             .agent()
             .iter_chain()
             .next()
@@ -194,17 +195,19 @@ pub mod tests {
 
         let entry_with_header = EntryWithHeader{entry, header};
 
-        let local_validation_package = context.block_on(
+        // jack (the author) retrieves a local validation package
+        let local_validation_package = context2.block_on(
             try_make_local_validation_package(
                 &entry_with_header,
-                context.clone(),
+                context2.clone(),
             )
         ).expect("Must be able to locally produce a validation package");
 
-        let dht_validation_package = context.block_on(
+        // jill reconstructs one from published headers
+        let dht_validation_package = context1.block_on(
             try_make_validation_package_dht(
                 &entry_with_header,
-                context.clone(),
+                context1.clone(),
             )
         ).expect("Must be able to contruct validation package from published entries");
 

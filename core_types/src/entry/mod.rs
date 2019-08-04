@@ -107,16 +107,21 @@ impl AddressableContent for Entry {
     fn address(&self) -> Address {
         match &self {
             Entry::AgentId(agent_id) => agent_id.address(),
+            Entry::ChainHeader(chain_header) => chain_header.address(),
             _ => Address::encode_from_str(&String::from(self.content()), Hash::SHA2256),
         }
     }
 
     fn content(&self) -> Content {
-        self.into()
+        match &self {
+            Entry::ChainHeader(chain_header) => chain_header.into(),
+            _ => self.into(),
+        }
     }
 
     fn try_from_content(content: &Content) -> JsonResult<Entry> {
         Entry::try_from(content.to_owned())
+            .or_else(|_| ChainHeader::try_from(content).map(|header| Entry::ChainHeader(header)))
     }
 }
 

@@ -112,3 +112,56 @@ pub (crate) async fn try_make_validation_package_dht(
     };
     Ok(package)
 }
+
+#[cfg(test)]
+pub mod tests {
+    
+    use super::*;
+    use holochain_core_types::entry::test_entry_with_value;
+    use crate::workflows::author_entry::author_entry;
+    use crate::nucleus::actions::tests::*;
+    use std::{thread, time};
+    // use holochain_persistence_api::cas::content::AddressableContent;
+
+    #[test]
+    fn test_get_all_chain_headers_returns_same_as_local_chain() {
+        let mut dna = test_dna();
+        dna.uuid = "test_get_all_chain_headers_returns_same_as_local_chain".to_string();
+        let netname = Some("test_get_all_chain_headers_returns_same_as_local_chain, the network");
+        let (_instance1, context) = instance_by_name("jill", dna.clone(), netname);
+
+        let _entry_address = context
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+
+        thread::sleep(time::Duration::from_millis(500));
+
+        // collect the local chain
+        let mut local_chain_headers: Vec<ChainHeader> = context.state().unwrap()
+            .agent()
+            .iter_chain()
+            .collect();
+        let top_header = local_chain_headers.remove(0);
+
+
+        // reconstruct from published headers
+        let reconstructed = context.block_on(
+            all_chain_headers_before_header_dht(&context, &top_header)
+        ).expect("Could not get headers from DHT");
+
+        assert_eq!(local_chain_headers.len(), 2);
+        assert_eq!(reconstructed.len(), 2);
+
+        assert_eq!(
+            local_chain_headers,
+            reconstructed
+        );
+    }
+    
+}

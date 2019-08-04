@@ -121,7 +121,8 @@ pub mod tests {
     use crate::workflows::author_entry::author_entry;
     use crate::nucleus::actions::tests::*;
     use std::{thread, time};
-    // use holochain_persistence_api::cas::content::AddressableContent;
+    use crate::workflows::try_make_local_validation_package;
+    use holochain_json_api::json::JsonString;
 
     #[test]
     fn test_get_all_chain_headers_returns_same_as_local_chain() {
@@ -149,7 +150,6 @@ pub mod tests {
             .collect();
         let top_header = local_chain_headers.remove(0);
 
-
         // reconstruct from published headers
         let reconstructed = context.block_on(
             all_chain_headers_before_header_dht(&context, &top_header)
@@ -162,6 +162,68 @@ pub mod tests {
             local_chain_headers,
             reconstructed
         );
+    }
+
+    #[test]
+    fn test_validation_package_from_dht_same_as_from_author() {
+        let mut dna = test_dna();
+        dna.uuid = "test_validation_package_from_dht_same_as_from_author".to_string();
+        let netname = Some("test_validation_package_from_dht_same_as_from_author, the network");
+        let (_instance1, context) = instance_by_name("jill", dna.clone(), netname);
+
+        let entry = Entry::App("package_chain_full".into(), JsonString::from_json("{\"stuff\":\"test entry value\"}"));
+
+        context
+            .block_on(author_entry(
+                &entry,
+                None,
+                &context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+
+        thread::sleep(time::Duration::from_millis(500));
+
+        // collect the local chain
+        let header = context.state().unwrap()
+            .agent()
+            .iter_chain()
+            .next()
+            .expect("Must be able to get header for just published entry");
+
+        let entry_with_header = EntryWithHeader{entry, header};
+
+        let local_validation_package = context.block_on(
+            try_make_local_validation_package(
+                &entry_with_header,
+                context.clone(),
+            )
+        ).expect("Must be able to locally produce a validation package");
+
+        let dht_validation_package = context.block_on(
+            try_make_validation_package_dht(
+                &entry_with_header,
+                context.clone(),
+            )
+        ).expect("Must be able to contruct validation package from published entries");
+
+
+        assert_eq!(
+            local_validation_package.clone().source_chain_headers.expect("chain headers not in locally generated packagae").len(),
+            2
+        );
+
+        assert_eq!(
+            dht_validation_package.clone().source_chain_headers.expect("chain headers not in dht generated package").len(),
+            2
+        );
+
+        assert_eq!(
+            local_validation_package,
+            dht_validation_package,
+        )
+
     }
     
 }

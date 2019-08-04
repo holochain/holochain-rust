@@ -36,7 +36,7 @@ use std::sync::Arc;
 /// or build it locally if we are the source (one of the sources).
 /// Checks the DNA's validation package definition for the given entry type.
 /// Fails if this entry type needs more than just the header for validation.
-async fn try_make_local_validation_package(
+pub (crate) async fn try_make_local_validation_package(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {

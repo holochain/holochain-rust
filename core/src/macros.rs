@@ -2,6 +2,19 @@
 
 /// Helper macro to automatically fill the log's target expression record. This is how the log
 /// facility we use filter the logs from our dependendies.
+///
+/// Once a logger has been registered you can use those macros like this:
+/// ```rust
+///
+/// // Let's init a new context
+/// let ctx = Context::new(...);
+///
+/// // This will automatically use the instance_name of a context as a log target
+/// log_debug!(ctx, "'{}' log level with Context target.", "Debug");
+///
+/// // Or you can use a custom target (this is used by holochain to filter the log from its dependencies
+/// log_info!(target: "holochain-custom-log-target", "Custom target '{}' log here.", "Info");
+/// ```
 
 #[allow(unused_imports)]
 use logging::prelude::*;

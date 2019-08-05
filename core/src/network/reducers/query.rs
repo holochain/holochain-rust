@@ -1,58 +1,65 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey, GetLinksKey, QueryKey},
+    action::{ActionWrapper,  QueryKey},
     network::{
-        query::{GetLinksNetworkQuery, NetworkQuery},
+        query::NetworkQuery,
         reducers::send,
         state::NetworkState,
     },
     state::State,
 };
-use holochain_core_types::{crud_status::CrudStatus, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
-use std::convert::TryInto;
 
-fn reduce_get_entry_inner(
-    network_state: &mut NetworkState,
-    key: &GetEntryKey,
-) -> Result<(), HolochainError> {
+
+
+fn reduce_query_inner(network_state: &mut NetworkState,key:  QueryKey,network_query : NetworkQuery)-> Result<(), HolochainError>
+{
     network_state.initialized()?;
-    let query_json: JsonString = NetworkQuery::GetEntry.into();
+    let query_json: JsonString = network_query.into();
+    let key_address = match key
+    {
+        QueryKey::Entry(key) => (key.id.clone(),key.address.clone()),
+        QueryKey::Links(key) => (key.id.clone(),HashString::from(key.base_address.clone()))
+    };
     send(
         network_state,
         Lib3hClientProtocol::QueryEntry(QueryEntryData {
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
-            request_id: key.id.clone(),
+            request_id: key_address.0,
             space_address: network_state.dna_address.clone().unwrap(),
-            entry_address: key.address.clone(),
+            entry_address:key_address.1,
             query: query_json.to_string().into_bytes(),
         }),
     )
-}
 
-pub fn reduce_get(
+}
+pub fn reduce_query(
     network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (key_type, payload) = unwrap_to!(action => crate::action::Action::Query);
-    let result = match key_type {
-        QueryKey::Entry(key) => reduce_get_entry_inner(network_state, key)
-            .map(|_| None)
-            .unwrap_or_else(|e| Some(Err(e))),
+    let network_query = match key_type.clone() {
+        QueryKey::Entry(_) =>
+        {
+            NetworkQuery::GetEntry
+        }
         QueryKey::Links(key) => {
             let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
-            reduce_get_links_inner(network_state, &key, &query, crud_status)
-                .map(|_| None)
-                .unwrap_or_else(|e| Some(Err(e)))
+            NetworkQuery::GetLinks(key.link_type.clone(),key.tag.clone(),crud_status.clone(),query.clone())
         }
     };
+
+    let result = reduce_query_inner(network_state, key_type.clone(),network_query)
+            .map(|_| None)
+            .unwrap_or_else(|e| Some(Err(e)));
     network_state.get_results.insert(key_type.clone(), result);
 }
 
-pub fn reduce_get_timeout(
+pub fn reduce_query_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
@@ -70,39 +77,7 @@ pub fn reduce_get_timeout(
     }
 }
 
-fn reduce_get_links_inner(
-    network_state: &mut NetworkState,
-    key: &GetLinksKey,
-    get_links_query: &GetLinksNetworkQuery,
-    crud_status: &Option<CrudStatus>,
-) -> Result<(), HolochainError> {
-    network_state.initialized()?;
-    let query_json: JsonString = NetworkQuery::GetLinks(
-        key.link_type.clone(),
-        key.tag.clone(),
-        crud_status.clone(),
-        get_links_query.clone(),
-    )
-    .into();
-    send(
-        network_state,
-        Lib3hClientProtocol::QueryEntry(QueryEntryData {
-            requester_agent_id: network_state.agent_id.clone().unwrap().into(),
-            request_id: key.id.clone(),
-            // TODO return result these addresses as errors
-            space_address: network_state
-                .dna_address
-                .clone()
-                .unwrap()
-                .try_into()
-                .expect("space address from base58 string"),
-            entry_address: HashString::from(key.base_address.clone())
-                .try_into()
-                .expect("entry adress from base58 string"),
-            query: query_json.to_string().into_bytes(),
-        }),
-    )
-}
+
 
 #[cfg(test)]
 mod tests {

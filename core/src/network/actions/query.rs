@@ -26,25 +26,25 @@ use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStat
 /// Returns a future that resolves to an ActionResponse.]
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum GetMethod {
+pub enum QueryMethod {
     Entry(Address),
     Link(GetLinksArgs, GetLinksNetworkQuery),
 }
 
-pub async fn get(
+pub async fn query(
     context: Arc<Context>,
-    method: GetMethod,
+    method: QueryMethod,
     timeout: Timeout,
 ) -> HcResult<RespondQueryPayload> {
     let (key, payload) = match method {
-        GetMethod::Entry(address) => {
+        QueryMethod::Entry(address) => {
             let key = GetEntryKey {
                 address: address,
                 id: snowflake::ProcessUniqueId::new().to_string(),
             };
             (QueryKey::Entry(key), QueryPayload::Entry)
         }
-        GetMethod::Link(link_args, query) => {
+        QueryMethod::Link(link_args, query) => {
             let key = GetLinksKey {
                 base_address: link_args.entry_address.clone(),
                 link_type: link_args.link_type.clone(),
@@ -79,7 +79,7 @@ pub async fn get(
         })
         .expect("Could not spawn thread for get timeout");
 
-    await!(GetFuture {
+    await!(QueryFuture {
         context: context.clone(),
         key: key.clone(),
     })
@@ -87,12 +87,12 @@ pub async fn get(
 
 /// GetEntryFuture resolves to a HcResult<Entry>.
 /// Tracks the state of the network module
-pub struct GetFuture {
+pub struct QueryFuture {
     context: Arc<Context>,
     key: QueryKey,
 }
 
-impl Future for GetFuture {
+impl Future for QueryFuture {
     type Output = HcResult<RespondQueryPayload>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {

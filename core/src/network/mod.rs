@@ -17,7 +17,7 @@ pub mod tests {
         instance::tests::test_instance_and_context_by_name,
         network::{
             actions::{
-                get::{get, GetMethod},
+                query::{query, QueryMethod},
                 get_validation_package::get_validation_package,
                 publish::publish,
             },
@@ -69,9 +69,9 @@ pub mod tests {
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;
             std::thread::sleep(std::time::Duration::from_millis(100));
-            let result = context2.block_on(get(
+            let result = context2.block_on(query(
                 context2.clone(),
-                GetMethod::Entry(entry.address().clone()),
+                QueryMethod::Entry(entry.address().clone()),
                 Default::default(),
             ));
             assert!(result.is_ok(), "get_entry() result = {:?}", result);
@@ -301,8 +301,8 @@ pub mod tests {
         };
 
         let config = GetLinksQueryConfiguration { headers: false };
-        let method = GetMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
-        let maybe_links = context2.block_on(get(context2.clone(), method, Default::default()));
+        let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+        let maybe_links = context2.block_on(query(context2.clone(), method, Default::default()));
 
         assert!(maybe_links.is_ok());
         let link_results = maybe_links.unwrap();

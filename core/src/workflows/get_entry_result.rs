@@ -1,7 +1,7 @@
 use crate::{
     action::RespondQueryPayload,
     context::Context,
-    network::{self, actions::get::GetMethod},
+    network::{self, actions::query::QueryMethod},
     nucleus,
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
@@ -24,10 +24,10 @@ pub async fn get_entry_with_meta_workflow<'a>(
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-    let method = GetMethod::Entry(address.clone());
+    let method = QueryMethod::Entry(address.clone());
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
-        let response = await!(network::actions::get::get(
+        let response = await!(network::actions::query::query(
             context.clone(),
             method.clone(),
             timeout.clone(),
@@ -55,7 +55,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
                 headers,
             })),
             Err(_) => {
-                let response = await!(network::actions::get::get(
+                let response = await!(network::actions::query::query(
                     context.clone(),
                     method.clone(),
                     timeout.clone(),

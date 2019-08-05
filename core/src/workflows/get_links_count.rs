@@ -2,7 +2,7 @@ use crate::{
     action::RespondQueryPayload,
     context::Context,
     network::{
-        actions::get::{get, GetMethod},
+        actions::query::{query, QueryMethod},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult},
     },
 };
@@ -15,8 +15,8 @@ pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    let method = GetMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
-    let response = await!(get(
+    let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
+    let response = await!(query(
         context.clone(),
         method,
         link_args.options.timeout.clone()

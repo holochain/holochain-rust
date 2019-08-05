@@ -1,7 +1,7 @@
 use crate::{
     action::RespondQueryPayload,
     network::{
-        actions::get::{get, GetMethod},
+        actions::query::{query, QueryMethod},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
@@ -68,8 +68,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         options: GetLinksOptions::default(),
     };
     let config = GetLinksQueryConfiguration { headers: false };
-    let method = GetMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
-    let response_result = context.block_on(get(context.clone(), method, Timeout::default()));
+    let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+    let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
     if response_result.is_err() {
         context.log("err/zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)

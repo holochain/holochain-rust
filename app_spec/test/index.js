@@ -18,16 +18,22 @@ const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Orchestrator.dna(dnaPath, 'app-spec')
 const dna2 = Orchestrator.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
+
 // map e.g. `alice.app.call` ~> `conductor.alice.call`
-const lib3hInMemoryMiddleware = f => (api, {conductor}) => {
+const inMemoryMiddleware = f => (api, {conductor}) => {
   const conductorMap = {}
   Object.keys(conductor).forEach(name => {
-    conductorMap[name] = {
-      app: conductor[name]
+    const inst = conductor[name]
+    if (name !== '_conductor') {
+      conductorMap[name] = {
+        app: inst
+      }
     }
+    console.log('nameo', name)
   })
-  f(api, conductorMap)
+  return f(api, conductorMap)
 }
+
 
 const commonConductorConfig = {
   instances: {
@@ -60,7 +66,7 @@ const orchestratorSimpleInMemory = new Orchestrator({
   executor: tapeExecutor(require('tape')),
   middleware: compose(
     backwardCompatibilityMiddleware,
-    lib3hInMemoryMiddleware,
+    inMemoryMiddleware,
   ),
 })
 
@@ -114,8 +120,9 @@ const registerAllScenarios = () => {
 
 
 const runSimpleInMemoryTests = async () => {
+  console.log("runSimpleInMemoryTests")
   const conductor = await spawnConductor('conductor', 8000)
-  await orchestratorSimpleInMemory.registerConductor({name: 'conductor', url: 'http://0.0.0.0:3000'})
+  await orchestratorSimpleInMemory.registerConductor({name: 'conductor', url: 'http://0.0.0.0:8000'})
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
   console.log("Waiting for conductors to settle...")

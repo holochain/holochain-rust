@@ -1,5 +1,5 @@
 use crate::{
-    action::{GetLinksKey, QueryKey},
+    action::{QueryKey},
     context::Context,
     network::direct_message::DirectMessage,
     nucleus::ZomeFnCall,
@@ -55,36 +55,15 @@ pub fn state_dump(context: Arc<Context>) {
         .map(|(call, _)| call)
         .collect();
 
-    let get_entry_flows: Vec<Address> = network
+    let query_flows: Vec<QueryKey> = network
         .get_results
         //using iter so that we don't copy this again and again if it is a scheduled job that runs everytime
         //it might be slow if copied
         .iter()
-        .filter(|(_, result)| result.is_none())
-        .filter(|(key, _)| match key {
-            QueryKey::Entry(_) => true,
-            _ => false,
-        })
-        //this just ensures that we clone what we need
-        .map(|(key, _)| match key {
-            QueryKey::Entry(key) => key.address.clone(),
-            _ => panic!("Wrong Enum Variant should never be reached"),
-        })
+        .filter(|(_,result)|result.is_none())
+        .map(|(key,_)|key.clone())
         .collect();
 
-    let get_links_flows: Vec<GetLinksKey> = network
-        .get_results
-        .iter()
-        .filter(|(_, result)| result.is_none())
-        .filter(|(key, _)| match key {
-            QueryKey::Links(_) => true,
-            _ => false,
-        })
-        .map(|(key, _)| match key {
-            QueryKey::Links(key) => key.clone(),
-            _ => panic!("Wrong Enum Variant should never be reached"),
-        })
-        .collect();
 
     let validation_package_flows: Vec<Address> = network
         .get_validation_package_results
@@ -159,9 +138,7 @@ Pending validations:
 
 Network:
 --------
-Running GET ENTRY flows: {entry_flows:?}
-------------------------
-Running GET LINKS flows: {links_flows:?}
+Running query flows: {flows:?}
 ------------------------
 Running VALIDATION PACKAGE requests: {validation_packages:?}
 ------------------------------------
@@ -175,8 +152,7 @@ Holding:
     "#,
         calls = running_calls,
         validations = pending_validation_strings.join("\n"),
-        entry_flows = get_entry_flows,
-        links_flows = get_links_flows,
+        flows = query_flows,
         validation_packages = validation_package_flows,
         direct_messages = direct_message_flows,
         holding_list = holding_strings.join("\n")

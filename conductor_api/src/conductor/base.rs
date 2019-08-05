@@ -944,7 +944,6 @@ impl Conductor {
 
                 log_debug!(ctx, "{}", msg);
 
-
                 return Err(e);
             }
         }
@@ -963,7 +962,6 @@ impl Conductor {
                                 &dna_hash_computed_from_file);
 
                 log_debug!(ctx, "{}", msg);
-
 
                 return Err(e);
             }

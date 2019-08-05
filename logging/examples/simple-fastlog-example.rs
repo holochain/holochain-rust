@@ -21,6 +21,8 @@ fn main() {
     info!(target: "rpc", "Message from the parity crate.");
     info!(target: "main", "Message from main.");
 
+    debug!(target: "Level::Debug", "Level::Debug ? {:?}", Level::Debug);
+
     // Let's give some time to the working thread to finish logging...
     std::thread::sleep(std::time::Duration::from_millis(10));
 }

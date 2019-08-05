@@ -248,10 +248,10 @@ impl Instance {
                 e
             ));
         } else {
-            context.log_trace(format!(
+            log_trace!(context,
                 "reduce/process_actions: reducing {:?}",
                 action_wrapper
-            ));
+            );
         }
 
         // Add new observers

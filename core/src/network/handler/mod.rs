@@ -109,9 +109,9 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
         let message = message.unwrap();
-        // context.log_trace(format!("net/handle:({}): {:?}",
+        // log_trace!(context, "net/handle:({}): {:?}",
         //   context.agent_id.nick, message
-        // ));
+        // );
 
         let maybe_json_msg = Lib3hServerProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {

@@ -32,7 +32,7 @@ pub async fn initialize(
             "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
             err
         ));
-        context.log("dna/initialize: Initializing new chain from given DNA...");
+        log_info!(context, "dna/initialize: Initializing new chain from given DNA...");
         await!(initialize_chain(dna.clone(), &instance_context))?;
     }
 

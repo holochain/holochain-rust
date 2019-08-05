@@ -176,7 +176,7 @@ pub enum ActionResponse {
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
-    root_state: &State,
+    root_state: &StateWrapper,
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
@@ -229,7 +229,7 @@ fn reduce_commit_entry(
     let result = create_new_chain_header(
         &entry,
         agent_state,
-        root_state,
+        &StateWrapper::from(root_state.clone()),
         &maybe_link_update_delete,
         provenances,
     )
@@ -420,8 +420,14 @@ pub mod tests {
         let agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
-        let header =
-            create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
+        let header = create_new_chain_header(
+            &test_entry(),
+            &agent_state,
+            &StateWrapper::from(state.clone()),
+            &None,
+            &vec![],
+        )
+        .unwrap();
         let agent_id = context.agent_id.clone();
         assert_eq!(
             header,

@@ -10,7 +10,7 @@ tempfile = "=3.0.7"
 [dependencies]
 failure = "=0.1.5"
 #sim1h = { path = "../../sim1h/crates/sim1h" }
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
+sim1h = { git = "https://github.com/Holo-Host/sim1h", branch = "2019-10-08-holo-nixpkgs" }
 lib3h_sodium = { version = "=0.0.13" }
 lib3h_protocol = { version = "=0.0.13" }
 lib3h = { version = "=0.0.13" }

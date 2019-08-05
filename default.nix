@@ -1,93 +1,50 @@
-# This is an example of what downstream consumers of holonix should do
-# This is also used to dogfood as many commands as possible for holonix
-# For example the release process for holonix uses this file
+{ pkgs ? import ./pkgs.nix {} }:
+
+with pkgs;
+with lib;
+
 let
+  buildHolochain = args:
+    let
+      inherit (rust.packages.nightly) rustPlatform;
+    in
+    (buildRustPackage rustPlatform args).overrideAttrs (super: {
+      nativeBuildInputs = super.nativeBuildInputs ++ (with buildPackages; [
+        nodejs-12_x
+        perl
+      ]);
 
- # point this to your local config.nix file for this project
- # example.config.nix shows and documents a lot of the options
- config = import ./config.nix;
+      buildInputs = optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
+        CoreServices
+        Security
+      ]);
 
- # START HOLONIX IMPORT BOILERPLATE
- holonix = import (
-  if ! config.holonix.use-github
-  then config.holonix.local.path
-  else fetchTarball {
-   url = "https://github.com/${config.holonix.github.owner}/${config.holonix.github.repo}/tarball/${config.holonix.github.ref}";
-   sha256 = config.holonix.github.sha256;
-  }
- ) { config = config; };
- # END HOLONIX IMPORT BOILERPLATE
+      postInstall = (super.postInstall or "") + ''
+        mkdir -p $out/nix-support
+        for f in $out/bin/*; do
+          echo "file binary-dist $f" >> $out/nix-support/hydra-build-products
+        done
+      '';
 
+      stripAllList = [ "bin" ];
+
+      OPENSSL_STATIC = "1";
+      RUST_SODIUM_LIB_DIR = "${libsodium}/lib";
+    } // optionalAttrs (!stdenv ? "static") {
+      RUST_SODIUM_SHARED = "1";
+    });
 in
-with holonix.pkgs;
+
 {
- dev-shell = stdenv.mkDerivation (holonix.shell // {
-  name = "dev-shell";
+  holochain-cli = buildHolochain {
+    name = "holochain-cli";
+    src = gitignoreSource ./.;
+    cargoDir = "cli";
+  };
 
-    shellHook = holonix.pkgs.lib.concatStrings [''
-    # environment variables used by rust tests directly
-    export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-    export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-    # config file used by aws cli tool
-    export AWS_CONFIG_FILE=`pwd`/.aws/config
-    RUST_LOG=sim1h=trace
-    ''
-    holonix.shell.shellHook
-    ];
-
-  buildInputs = [ ]
-   ++ holonix.shell.buildInputs
-
-   ++ (holonix.pkgs.callPackage ./app_spec {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./conductor {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./conductor_wasm {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./cli {
-    pkgs = holonix.pkgs;
-    config = config;
-   }).buildInputs
-
-   # qt specific testing
-   ++ (holonix.pkgs.callPackage ./qt {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   # release hooks
-   ++ (holonix.pkgs.callPackage ./release {
-    pkgs = holonix.pkgs;
-    config = config;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./rust {
-    holonix = holonix;
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   # main test script
-   ++ (holonix.pkgs.callPackage ./test {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./.aws {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-   ++ (holonix.pkgs.callPackage ./dynamodb {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
-  ;
- });
+  holochain-conductor = buildHolochain {
+    name = "holochain-conductor";
+    src = gitignoreSource ./.;
+    cargoDir = "conductor";
+  };
 }

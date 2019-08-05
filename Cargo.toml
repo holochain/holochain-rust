@@ -22,3 +22,9 @@ exclude = [
   "app_spec_proc_macro",
   "nodejs_conductor/native",
 ]
+
+[patch."https://github.com/holochain/holochain-rust"]
+holochain_core_types = { path = "./core_types" }
+
+[patch."https://github.com/holochain/holochain-tracing"]
+holochain_tracing = "=0.0.1"

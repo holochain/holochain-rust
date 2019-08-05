@@ -131,7 +131,7 @@ impl IntoZome for syn::ItemMod {
     }
 
     fn extract_validate_agent(&self) -> ValidateAgentCallback {
-        // find all the functions tagged as the genesis callback
+        // find all the functions tagged as the validate_agent callback
         let callbacks: Vec<syn::ItemFn> = funcs_iter(self)
             .filter(is_tagged_with(VALIDATE_AGENT_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, func| {

@@ -2,7 +2,7 @@ use crate::nucleus::validation::{ValidationError, ValidationResult};
 use boolinator::Boolinator;
 use holochain_core_types::validation::ValidationData;
 use holochain_dpki::utils::Verify;
-#[allow(dead_code)]
+
 pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResult {
     let header = &validation_data.package.chain_header;
     header

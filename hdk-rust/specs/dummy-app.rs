@@ -26,7 +26,7 @@ fn init() {
 
 #[no_mangle]
 pub extern "C" fn posts_by_agent(input: serde_json::Value) -> serde_json::Value {
-    let links = hdk::get_links(input["agent"].to_string(), "authored_posts");
+    let links = hdk::get_links(input["agent"].to_string(), LinkMatch::Exactly("authored_posts"), LinkMatch::Any);
     json!({ "post_addresses": links })
 }
 

@@ -8,7 +8,7 @@ pub mod publish;
 pub mod resolve_direct_connection;
 pub mod respond_authoring_list;
 pub mod respond_fetch;
-pub mod respond_get;
+pub mod respond_query;
 pub mod respond_gossip_list;
 pub mod send_direct_message;
 pub mod shutdown;
@@ -28,7 +28,7 @@ use crate::{
             resolve_direct_connection::reduce_resolve_direct_connection,
             respond_authoring_list::reduce_respond_authoring_list,
             respond_fetch::reduce_respond_fetch_data,
-            respond_get::reduce_respond_get,
+            respond_query::reduce_respond_query,
             respond_gossip_list::reduce_respond_gossip_list,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
             shutdown::reduce_shutdown,
@@ -62,7 +62,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
-        Action::RespondQuery(_) => Some(reduce_respond_get),
+        Action::RespondQuery(_) => Some(reduce_respond_query),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         Action::ShutdownNetwork => Some(reduce_shutdown),

@@ -42,7 +42,7 @@ fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
 // module that aren't really meant for us
 fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
     if agent_id != "" && context.agent_id.pub_sign_key != agent_id {
-        context.log_debug("net/handle: ignoring, same id");
+        log_debug!(context, "net/handle: ignoring, same id");
         return false;
     }
     true
@@ -129,20 +129,20 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log_debug(format!(
+                log_debug!(context,
                     "net/handle: HandleStoreEntryAspect: {}",
                     format_store_data(&dht_entry_data)
-                ));
+                );
                 handle_store(dht_entry_data, context.clone())
             }
             Lib3hServerProtocol::HandleFetchEntry(fetch_entry_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log_debug(format!(
+                log_debug!(context,
                     "net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
-                ));
+                );
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             Lib3hServerProtocol::FetchEntryResult(fetch_result_data) => {
@@ -162,10 +162,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log_debug(format!(
+                log_debug!(context,
                     "net/handle: HandleQueryEntry: {:?}",
                     query_entry_data
-                ));
+                );
                 handle_query_entry_data(query_entry_data, context.clone())
             }
             Lib3hServerProtocol::QueryEntryResult(query_entry_result_data) => {
@@ -182,10 +182,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ) {
                     return Ok(());
                 }
-                context.log_debug(format!(
+                log_debug!(context,
                     "net/handle: HandleQueryEntryResult: {:?}",
                     query_entry_result_data
-                ));
+                );
                 handle_query_entry_result(query_entry_result_data, context.clone())
             }
             Lib3hServerProtocol::HandleSendDirectMessage(message_data) => {
@@ -196,10 +196,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                context.log_debug(format!(
+                log_debug!(context,
                     "net/handle: HandleSendMessage: {}",
                     format_message_data(&message_data)
-                ));
+                );
                 handle_send_message(message_data, context.clone())
             }
             Lib3hServerProtocol::SendDirectMessageResult(message_data) => {
@@ -210,14 +210,14 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                context.log_debug(format!(
+                log_debug!(context,
                     "net/handle: SendMessageResult: {}",
                     format_message_data(&message_data)
-                ));
+                );
                 handle_send_message_result(message_data, context.clone())
             }
             Lib3hServerProtocol::Connected(peer_data) => {
-                context.log_debug(format!("net/handle: Connected: {:?}", peer_data));
+                log_debug!(context, "net/handle: Connected: {:?}", peer_data);
                 return Ok(());
             }
             Lib3hServerProtocol::HandleGetAuthoringEntryList(get_list_data) => {

@@ -941,7 +941,9 @@ impl Conductor {
                                 '{}' != '{}'",
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
+
 
                 return Err(e);
             }
@@ -959,7 +961,9 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
+
 
                 return Err(e);
             }
@@ -974,7 +978,7 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_computed,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }

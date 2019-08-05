@@ -143,12 +143,10 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 err_code.as_str()
             );
             match &runtime.data {
-                WasmCallData::ZomeCall(d) => d
-                    .context
-                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
-                WasmCallData::CallbackCall(d) => d
-                    .context
-                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
+                WasmCallData::ZomeCall(d) =>
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
+                WasmCallData::CallbackCall(d) =>
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
                 _ => {}
             };
         }

@@ -15,24 +15,22 @@ use hdk::{
     error::ZomeApiResult,
     entry_definition::ValidatingEntryType,
     holochain_core_types::{
-        entry::{Entry},
+        entry::Entry,
         dna::entry_types::Sharing,
         link::LinkMatch,
         agent::AgentId,
         validation::EntryValidationData,
     },
     holochain_persistence_api::{
-        cas::content::{Address, AddressableContent},
+        cas::content::Address,
     },
     holochain_json_api::{
        json::JsonString,
        error::JsonError
     },
-    holochain_wasm_utils::api_serialization::{
-        get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount},
-        get_entry::{GetEntryOptions, GetEntryResultType},
-    },
+    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount}
 };
+
 
 
 #[zome]
@@ -183,22 +181,6 @@ pub mod simple {
     pub fn decrypt(payload : String) -> ZomeApiResult<String> 
     {
        hdk::decrypt(payload)
-    }
-
-    #[zome_fn("hc_public")]
-    pub fn get_entry_header_address(address: Address) -> ZomeApiResult<Vec<Address>> {
-       hdk::get_entry_result(&address, GetEntryOptions{headers: true, ..GetEntryOptions::default()}).map(|result| {
-            if let GetEntryResultType::Single(result) = result.result {
-                result.headers.iter().map(|h| Entry::ChainHeader(h.clone()).address()).collect()
-            } else {
-                panic!("Failed to get headers")
-            }
-        })
-    }
-
-    #[zome_fn("hc_public")]
-    pub fn create_simple_entry(content: String) -> ZomeApiResult<Address> {
-        hdk::commit_entry(&simple_entry(content))
     }
 
 }

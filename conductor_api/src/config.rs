@@ -20,7 +20,6 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
-//use logging::rule::Rule;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
@@ -115,6 +114,28 @@ pub fn default_persistence_dir() -> PathBuf {
 }
 
 /// This is a config helper structure used to interface with the holochain logging subcrate.
+/// Custom rules/filter can be applied to logging, in fact they are used by default in Holochain to
+/// filter the logs from its dependencies.
+///
+/// ```rust
+/// use crate::logger::LogRules;
+///
+/// let mut rules = LogRules::new();
+/// // Filtering out all the logs from our dependencies
+/// rules
+///     .add_rule(".*", true, None)
+///     .expect("Invalid logging rule.");
+/// // And logging back all Holochain logs
+/// rules
+///     .add_rule("^holochain", false, None)
+///     .expect("Invalid logging rule.");
+///
+/// let lc = LoggerConfiguration {
+///     logger_level: "debug".to_string(),
+///     rules: rules,
+///     state_dump: true,
+///     }
+/// ```
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]

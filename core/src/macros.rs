@@ -13,7 +13,7 @@ macro_rules! log_trace {
         log!(target: $target, log::Level::Trace, $($arg)+);
     );
     ($ctx:expr, $($arg:tt)+) => (
-        log!(target: &format!("holochain::{}", $ctx.instance_name), log::Level::Trace, $($arg)+);
+        log!(target: &format!("holochain::{}", $ctx.get_instance_name()), log::Level::Trace, $($arg)+);
     );
     ($($arg:tt)+) => (
         log!(target: "holochain", log::Level::Trace, $($arg)+);
@@ -27,7 +27,7 @@ macro_rules! log_debug {
         log!(target: $target, Level::Debug, $($arg)+);
     );
     ($ctx:expr, $($arg:tt)+) => (
-        log!(target: &format!("holochain::{}", $ctx.instance_name), log::Level::Debug, $($arg)+);
+        log!(target: &format!("holochain::{}", $ctx.get_instance_name()), log::Level::Debug, $($arg)+);
     );
     ($($arg:tt)+) => (
         log!(target: "holochain", Level::Debug, $($arg)+);
@@ -41,7 +41,7 @@ macro_rules! log_info {
         log!(target: $target, log::Level::Info, $($arg)+);
     );
     ($ctx:expr, $($arg:tt)+) => (
-        log!(target: &format!("holochain::{}", $ctx.instance_name), log::Level::Info, $($arg)+);
+        log!(target: &format!("holochain::{}", $ctx.get_instance_name()), log::Level::Info, $($arg)+);
     );
     ($($arg:tt)+) => (
         log!(target: "holochain", log::Level::Info, $($arg)+);
@@ -55,7 +55,7 @@ macro_rules! log_warn {
         log!(target: $target, log::Level::Warn, $($arg)+);
     );
     ($ctx:expr, $($arg:tt)+) => (
-        log!(target: &format!("holochain::{}", $ctx.instance_name), log::Level::Warn, $($arg)+);
+        log!(target: &format!("holochain::{}", $ctx.get_instance_name()), log::Level::Warn, $($arg)+);
     );
     ($($arg:tt)+) => (
         log!(target: "holochain", log::Level::Warn, $($arg)+);
@@ -69,7 +69,7 @@ macro_rules! log_error {
         log!(target: $target, log::Level::Error, $($arg)+);
     );
     ($ctx:expr, $($arg:tt)+) => (
-        log!(target: &format!("holochain::{}", $ctx.instance_name), log::Level::Error, $($arg)+);
+        log!(target: &format!("holochain::{}", $ctx.get_instance_name()), log::Level::Error, $($arg)+);
     );
     ($($arg:tt)+) => (
         log!(target: "holochain", log::Level::Error, $($arg)+);

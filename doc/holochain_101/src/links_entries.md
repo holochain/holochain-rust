@@ -6,7 +6,7 @@ A link consists of 4 parts :
 `Tag` - this is a runtime String Value that can be used to set this link to a certain tag
 `Target` - this is a value that the base address with connect to through linking
 
-The process of `linking` in holochain is done through the `LinkEntries` function in the HDK, this will allow the zome developer to connect different kinds of data. All data that is linked is stored in our `EAV storage`(see holochain-persistance-api for more details on how this works). The `EAV` is the backbone of our storage mechanism when it comes to our linking process and addition and retrival of links is done using it. 
+The process of `linking` in holochain is done through the `link_entries` function in the HDK, this will allow the zome developer to connect different kinds of data. All data that is linked is stored in our `EAV storage`(see holochain-persistance-api for more details on how this works). The `EAV` is the backbone of our storage mechanism when it comes to our linking process and addition and retrival of links is done using it. 
 
 # Validation
 

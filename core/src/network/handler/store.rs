@@ -67,7 +67,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     .expect("Could not spawn thread for storing EntryAspect::LinkAdd");
             }
             EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
-                context.log_debug(
+                log_debug!(context, 
                     "net/handle: handle_store: Got EntryAspect::LinkRemove. processing...",
                 );
                 let entry = Entry::LinkRemove((link_data, links_to_remove));
@@ -105,7 +105,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     .expect("Could not spawn thread for storing EntryAspect::Update");
             }
             EntryAspect::Deletion(header) => {
-                context.log_debug(
+                log_debug!(context, 
                     "net/handle: handle_store: Got EntryAspect::Deletion. processing...",
                 );
                 // reconstruct the deletion entry from the header.
@@ -150,7 +150,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     // @TODO: If network crates will switch to using the `Attribute` enum,
     // we can match on the enum directly
     if attr == Attribute::Link.to_string() {
-        context.log_debug("net/handle: HandleStoreMeta: got LINK. processing...");
+        log_debug!(context, "net/handle: HandleStoreMeta: got LINK. processing...");
         // TODO: do a loop on content once links properly implemented
         assert_eq!(dht_meta_data.content_list.len(), 1);
         let entry_with_header: EntryWithHeader = serde_json::from_str(
@@ -165,7 +165,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             }
         });
     } else if attr == Attribute::LinkRemove.to_string() {
-        context.log_debug("net/handle: HandleStoreMeta: got LINK REMOVAL. processing...");
+        log_debug!(context, "net/handle: HandleStoreMeta: got LINK REMOVAL. processing...");
         // TODO: do a loop on content once links properly implemented
         assert_eq!(dht_meta_data.content_list.len(), 1);
         let entry_with_header: EntryWithHeader = serde_json::from_str(
@@ -185,7 +185,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         .expect("Could not convert deleted attribute to CrudStatus")
         == CrudStatus::Deleted
     {
-        context.log_debug("net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
+        log_debug!(context, "net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
 
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
@@ -204,7 +204,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         .expect("Could not convert modified attribute to CrudStatus")
         == CrudStatus::Modified
     {
-        context.log_debug("net/handle: HandleStoreMeta: got CRUD LINK. processing...");
+        log_debug!(context, "net/handle: HandleStoreMeta: got CRUD LINK. processing...");
         let entry_with_header: EntryWithHeader = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])

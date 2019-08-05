@@ -28,10 +28,10 @@ pub async fn author_entry<'a>(
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
-    context.log_debug(format!(
+    log_debug!(context,
         "workflow/authoring_entry: {} with content: {:?}",
         address, entry
-    ));
+    );
 
     // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
     if let Entry::LinkAdd(link_data) = entry {
@@ -53,42 +53,42 @@ pub async fn author_entry<'a>(
     };
 
     // 2. Validate the entry
-    context.log_debug(format!(
+    log_debug!(context,
         "workflow/authoring_entry/{}: validating...",
         address
-    ));
+    );
     await!(validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
         &context
     ))?;
-    context.log_debug(format!("worflow/authoring_entry {}: is valid!", address));
+    log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
-    context.log_debug(format!(
+    log_debug!(context,
         "workflow/authoring_entry/{}: committing...",
         address
-    ));
+    );
     let addr = await!(commit_entry(
         entry.clone(),
         maybe_link_update_delete,
         &context
     ))?;
-    context.log_debug(format!("workflow/authoring_entry/{}: committed", address));
+    log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
     // 4. Publish the valid entry to DHT.
     // For publishable entires this will publish the entry and the header
     // For non-publishable entries this will only publish the header
-    context.log_debug(format!(
+    log_debug!(context,
         "workflow/authoring_entry/{}: publishing...",
         address
-    ));
+    );
     await!(publish(entry.address(), &context))?;
-    context.log_debug(format!(
+    log_debug!(context,
         "workflow/authoring_entry/{}: published!",
         address
-    ));
+    );
 
     Ok(CommitEntryResult::new(addr))
 }

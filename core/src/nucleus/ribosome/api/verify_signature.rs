@@ -26,11 +26,11 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
-    context.log_debug(format!(
+    log_debug!(context,
         "zome: using provenance:{:?} to verify data:{:?}",
         verification_args.provenance.clone(),
         verification_args.payload.clone()
-    ));
+    );
 
     let verification_result = verification_args
         .provenance

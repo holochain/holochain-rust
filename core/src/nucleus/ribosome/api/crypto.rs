@@ -31,10 +31,10 @@ pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult
         .execute(crypto_args.payload.clone(), crypto_args.method.clone())
         .map(|sig| JsonString::from_json(&sig));
 
-    context.log_debug(format!(
+    log_debug!(context,
         "zome: crypto method {:?} of data:{:?} by:{:?} is:{:?}",
         crypto_args.method, crypto_args.payload, context.agent_id, message
-    ));
+    );
 
     runtime.store_result(message)
 }

@@ -26,8 +26,8 @@ pub async fn hold_remove_workflow(
     let maybe_validation_package = await!(validation_package(entry_with_header, context.clone()))
         .map_err(|err| {
         let message = "Could not get validation package from source! -> Add to pending...";
-        context.log_debug(format!("workflow/hold_remove: {}", message));
-        context.log_debug(format!("workflow/hold_remove: Error was: {:?}", err));
+        log_debug!(context, "workflow/hold_remove: {}", message);
+        log_debug!(context, "workflow/hold_remove: Error was: {:?}", err);
         add_pending_validation(
             entry_with_header.to_owned(),
             Vec::new(),
@@ -54,7 +54,7 @@ pub async fn hold_remove_workflow(
     ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            context.log_debug(format!("workflow/hold_remove: Entry removal could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
+            log_debug!(context, "workflow/hold_remove: Entry removal could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),

@@ -126,10 +126,10 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     );
     let string: String = match result {
         Ok(json_string) => {
-            context.log_debug(format!(
+            log_debug!(context,
                 "zome: keystore_add_key_from_seed json_string:{:?}",
                 json_string
-            ));
+            );
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
             value["pub_key"].to_string()
         }
@@ -142,10 +142,10 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         }
     };
 
-    context.log_debug(format!(
+    log_debug!(context,
         "zome: pubkey derive of args:{:?} is:{:?}",
         args_str, string
-    ));
+    );
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
@@ -161,7 +161,7 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     );
     let string: String = match result {
         Ok(json_string) => {
-            context.log_debug(format!("zome: keystore_sign json_string:{:?}", json_string));
+            log_debug!(context, "zome: keystore_sign json_string:{:?}", json_string);
 
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
             value["signature"].as_str().unwrap().to_owned()
@@ -175,10 +175,10 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         }
     };
 
-    context.log_debug(format!(
+    log_debug!(context,
         "zome: signature of args:{:?} is:{:?}",
         args_str, string
-    ));
+    );
 
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }
@@ -195,10 +195,10 @@ pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs)
     );
     let string: String = match result {
         Ok(json_string) => {
-            context.log_debug(format!(
+            log_debug!(context,
                 "zome: keystore_get_public_key json_string:{:?}",
                 json_string
-            ));
+            );
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
             value["pub_key"].to_string()
         }
@@ -211,9 +211,9 @@ pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs)
         }
     };
 
-    context.log_debug(format!(
+    log_debug!(context,
         "zome: pubkey for args:{:?} is:{:?}",
         args_str, string
-    ));
+    );
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }

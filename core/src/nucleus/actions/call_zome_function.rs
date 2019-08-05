@@ -69,18 +69,18 @@ pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-    context.log_debug(format!(
+    log_debug!(context,
         "actions/call_zome_fn: Validating call: {:?}",
         zome_call
-    ));
+    );
 
     // 1. Validate the call (a number of things could go wrong)
     validate_call(context.clone(), &zome_call)?;
 
-    context.log_debug(format!(
+    log_debug!(context,
         "actions/call_zome_fn: executing call: {:?}",
         zome_call
-    ));
+    );
 
     // Clone context and call data for the Ribosome thread
     let context_clone = context.clone();
@@ -121,11 +121,11 @@ pub async fn call_zome_function(
         })
         .expect("Could not spawn thread for call_zome_function");
 
-    context.log_debug(format!(
+    log_debug!(context,
         "actions/call_zome_fn: awaiting for \
          future call result of {:?}",
         zome_call
-    ));
+    );
 
     await!(CallResultFuture {
         context: context.clone(),
@@ -240,26 +240,26 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
     if maybe_zome_grants.is_none() {
-        context.log_debug(format!(
+        log_debug!(context,
             "actions/verify_grant: no grant for zome {:?} in grant {:?}",
             fn_call.zome_name, cap_functions
-        ));
+        );
         return false;
     }
     if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
-        context.log_debug(format!(
+        log_debug!(context,
             "actions/verify_grant: no grant for function {:?} in grant {:?}",
             fn_call.fn_name, maybe_zome_grants
-        ));
+        );
         return false;
     }
 
     if grant.token() != fn_call.cap_token() {
-        context.log_debug(format!(
+        log_debug!(context,
             "actions/verify_grant: grant token doesn't match: expecting {:?} got {:?}",
             grant.token(),
             fn_call.cap_token()
-        ));
+        );
         return false;
     }
 
@@ -268,7 +268,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
         &fn_call.fn_name,
         fn_call.parameters.clone(),
     ) {
-        context.log_debug("actions/verify_grant: call signature did not match");
+        log_debug!(context, "actions/verify_grant: call signature did not match");
         return false;
     }
 
@@ -283,7 +283,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
                 .unwrap()
                 .contains(&fn_call.cap.provenance.source())
             {
-                context.log_debug("actions/verify_grant: caller not one of the assignees");
+                log_debug!(context, "actions/verify_grant: caller not one of the assignees");
                 return false;
             }
             true

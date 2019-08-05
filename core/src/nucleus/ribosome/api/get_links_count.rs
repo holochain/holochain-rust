@@ -13,10 +13,10 @@ pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> Zome
 
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => {
-            context.log_debug(format!(
+            log_debug!(context,
                 "get_links: invoke_get_links called with {:?}",
                 input,
-            ));
+            );
             input
         }
         Err(_) => {

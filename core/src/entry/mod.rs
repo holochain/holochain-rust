@@ -34,7 +34,7 @@ impl CanPublish for EntryType {
 
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
-            context.log_debug(format!("dht/entry {} is not publishable", entry_type_name));
+            log_debug!(context, "dht/entry {} is not publishable", entry_type_name);
             return false;
         }
         true

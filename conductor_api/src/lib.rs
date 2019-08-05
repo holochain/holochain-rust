@@ -90,6 +90,7 @@
 /// }
 /// ```
 extern crate holochain_common;
+#[macro_use]
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]

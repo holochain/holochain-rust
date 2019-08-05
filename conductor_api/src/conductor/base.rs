@@ -603,17 +603,23 @@ impl Conductor {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
 
-        let config = self.config.clone();
+        let mut config = self.config.clone();
         self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
+
+        let mut bootstrap_nodes = Vec::new();
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             // We only try to instantiate the instance if it is not running already,
             // which will be the case at least for the DPKI instance which got started
             // specifically in `self.dpki_bootstrap()` above.
             if !self.instances.contains_key(&id) {
+                let config = config
+                    .with_bootstrap_nodes(&bootstrap_nodes)
+                    .map_err(|err| dbg!(err))
+                    .unwrap_or(config.clone());
                 let instance =
                     self.instantiate_from_config(&id, Some(&config))
                         .map_err(|error| {
@@ -623,6 +629,20 @@ impl Conductor {
                             )
                         })?;
 
+                // TODO should all subsequent nodes connect to the first,
+                // or should we instead have all nodes connect to each other
+                // directly, or something in between?
+                if bootstrap_nodes.is_empty() {
+                    let url = instance
+                        .context()
+                        .map_err(|err| err.to_string())?
+                        .network()
+                        .lock()
+                        .as_ref()
+                        .unwrap()
+                        .p2p_endpoint();
+                    bootstrap_nodes.push(url);
+                }
                 self.instances
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }

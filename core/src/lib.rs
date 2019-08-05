@@ -21,6 +21,8 @@ extern crate holochain_json_derive;
 extern crate pretty_assertions;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate logging;
 
 pub mod action;
 pub mod agent;
@@ -29,6 +31,7 @@ pub mod context;
 pub mod dht;
 pub mod entry;
 pub mod instance;
+pub mod macros;
 
 #[cfg(test)]
 pub mod link_tests;

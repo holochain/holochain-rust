@@ -24,6 +24,8 @@ extern crate log;
 #[macro_use]
 extern crate logging;
 
+#[macro_use]
+pub mod macros;
 pub mod action;
 pub mod agent;
 pub mod consistency;
@@ -31,7 +33,6 @@ pub mod context;
 pub mod dht;
 pub mod entry;
 pub mod instance;
-pub mod macros;
 
 #[cfg(test)]
 pub mod link_tests;

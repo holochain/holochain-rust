@@ -269,20 +269,20 @@ impl Instance {
             // to prevent emitting too many unneeded signals
             let trace_signal = Signal::Trace(action_wrapper.clone());
             tx.send(trace_signal).unwrap_or_else(|e| {
-                context.log_warn(format!(
+                log_warn!(context,
                     "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
-                ));
+                );
             });
 
             self.consistency_model
                 .process_action(action_wrapper.action())
                 .map(|signal| {
                     tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
-                        context.log_warn(format!(
+                        log_warn!(context,
                             "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                             e
-                        ));
+                        );
                     });
                 });
         }

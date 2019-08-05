@@ -63,10 +63,10 @@ pub async fn hold_remove_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log_warn(format!("workflow/hold_remove: Entry removal {:?} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/hold_remove: Entry removal {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
 

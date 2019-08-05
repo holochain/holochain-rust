@@ -122,7 +122,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log_warn(format!("net/handle: FailureResult: {:?}", failure_data));
+                log_warn!(context, "net/handle: FailureResult: {:?}", failure_data);
                 // TODO: Handle the reception of a FailureResult
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {

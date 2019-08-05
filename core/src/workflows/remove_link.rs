@@ -78,10 +78,10 @@ pub async fn remove_link_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log_warn(format!("workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
 

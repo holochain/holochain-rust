@@ -28,10 +28,10 @@ pub async fn initialize(
 
     // 2. Initialize the local chain
     if let Err(err) = await!(get_dna_and_agent(&instance_context)) {
-        context.log_warn(format!(
+        log_warn!(context,
             "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
             err
-        ));
+        );
         log_info!(context, "dna/initialize: Initializing new chain from given DNA...");
         await!(initialize_chain(dna.clone(), &instance_context))?;
     }

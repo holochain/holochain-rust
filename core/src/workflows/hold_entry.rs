@@ -79,10 +79,10 @@ pub async fn hold_entry_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log_warn(format!("workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry.address(),
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
     })?;

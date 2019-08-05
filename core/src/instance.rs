@@ -243,10 +243,10 @@ impl Instance {
         }
 
         if let Err(e) = self.save() {
-            context.log_error(format!(
+            log_error!(context,
                 "instance/process_action: could not save state: {:?}",
                 e
-            ));
+            );
         } else {
             log_trace!(context,
                 "reduce/process_actions: reducing {:?}",

@@ -18,10 +18,10 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         Ok(verify_signature_input) => verify_signature_input,
         // Exit on error
         Err(_) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: invoke_verify_signature failed to deserialize SerializedEntry: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

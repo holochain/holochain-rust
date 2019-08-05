@@ -20,10 +20,10 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
             match get_meta_aspects(&address, context.clone()) {
                 Ok(mut meta_aspects) => aspects.append(&mut meta_aspects),
                 Err(get_meta_error) => {
-                    context.log_error(format!("net/handle_fetch_entry: Error getting meta aspects for entry ({:?}), error: {:?}",
+                    log_error!(context, "net/handle_fetch_entry: Error getting meta aspects for entry ({:?}), error: {:?}",
                         address,
                         get_meta_error,
-                    ));
+                    );
                 }
             }
         }

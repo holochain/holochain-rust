@@ -153,10 +153,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                context.log_error(format!(
+                log_error!(context,
                     "net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
-                ));
+                );
             }
             Lib3hServerProtocol::HandleQueryEntry(query_entry_data) => {
                 if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
@@ -271,7 +271,7 @@ fn get_content_aspect(
                 "net/fetch/get_content_aspect: Error trying to get headers {:?}",
                 error
             );
-            context.log_error(err_message.clone());
+            log_error!(context, "{}", err_message.clone());
             HolochainError::ErrorGeneric(err_message)
         })?;
 

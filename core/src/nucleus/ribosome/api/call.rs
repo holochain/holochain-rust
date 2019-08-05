@@ -51,10 +51,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: invoke_call failed to deserialize: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -70,12 +70,12 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
             }
         }
         local_call(runtime, input.clone()).map_err(|error| {
-            context.log_error(format!("zome-to-zome-call/[{:?}]: {:?}", input, error));
+            log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
         })
     } else {
         bridge_call(runtime, input.clone()).map_err(|error| {
-            context.log_error(format!("bridge-call/[{:?}]: {:?}", input, error));
+            log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })
     };

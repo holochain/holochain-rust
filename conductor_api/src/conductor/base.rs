@@ -759,7 +759,7 @@ impl Conductor {
                         },
                         Err(_) => {
                             let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
-                            context.log_error(msg);
+                            log_error!(context, "{}", msg);
 
                             // If something is wrong with the DNA file, we only
                             // check the 2 primary sources of DNA's hashes
@@ -773,7 +773,7 @@ impl Conductor {
                                     '{}' != '{}'",
                                     &dna_hash_from_conductor_config,
                                     &dna_hash_computed);
-                                    context.log_error(msg);
+                                    log_error!(context, "{}", msg);
 
                                     return Err(e.to_string());
                                 }

@@ -55,10 +55,10 @@ pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeA
     let string_list: Vec<String> = match result {
         Ok(json_array) => serde_json::from_str(&json_array.to_string()).unwrap(),
         Err(err) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: agent/keystore/list callback failed: {:?}",
                 err
-            ));
+            );
             return ribosome_error_code!(CallbackFailed);
         }
     };
@@ -80,10 +80,10 @@ pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     match result {
         Ok(_) => (),
         Err(err) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: agent/keystore/add_random_seed callback failed: {:?}",
                 err
-            ));
+            );
             return ribosome_error_code!(CallbackFailed);
         }
     };
@@ -103,10 +103,10 @@ pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args: &RuntimeArgs) ->
     match result {
         Ok(_) => (),
         Err(err) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: agent/keystore/add_seed_from_seed callback failed: {:?}",
                 err
-            ));
+            );
             return ribosome_error_code!(CallbackFailed);
         }
     };
@@ -134,10 +134,10 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
             value["pub_key"].to_string()
         }
         Err(err) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: agent/keystore/add_key_from_seed callback failed: {:?}",
                 err
-            ));
+            );
             return ribosome_error_code!(CallbackFailed);
         }
     };
@@ -167,10 +167,10 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
             value["signature"].as_str().unwrap().to_owned()
         }
         Err(err) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: agent/keystore/sign callback failed: {:?}",
                 err
-            ));
+            );
             return ribosome_error_code!(CallbackFailed);
         }
     };
@@ -203,10 +203,10 @@ pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs)
             value["pub_key"].to_string()
         }
         Err(err) => {
-            context.log_error(format!(
+            log_error!(context,
                 "zome: agent/keystore/get_public_key callback failed: {:?}",
                 err
-            ));
+            );
             return ribosome_error_code!(CallbackFailed);
         }
     };

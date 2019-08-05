@@ -46,7 +46,6 @@ use test_utils::mock_signing::mock_conductor_api;
 #[derive(Clone)]
 pub struct Context {
     pub(crate) instance_name: String,
-    pub instance_log_target: String,
     pub agent_id: AgentId,
     pub persister: Arc<Mutex<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
@@ -103,7 +102,6 @@ impl Context {
     ) -> Self {
         Context {
             instance_name: instance_name.to_owned(),
-            instance_log_target: format!("holochain::{}", instance_name),
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -137,7 +135,6 @@ impl Context {
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             instance_name: instance_name.to_owned(),
-            instance_log_target: format!("holochain::{}", instance_name),
             agent_id: agent_id.clone(),
             persister,
             state: None,
@@ -154,30 +151,35 @@ impl Context {
         })
     }
 
+    /// Returns the name of this context instance.
+    pub fn get_instance_name(&self) -> String {
+        self.instance_name.clone()
+    }
+
     /// Helper function to make it easier to call the logger. Default to [Info](log::Level::Info)
     /// log level verbosity.
     pub fn log<T: Into<String>>(&self, msg: T) {
-        info!(target: &self.instance_log_target.to_owned(), "{}", msg.into())
+        info!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     /// Helper function to log with [Debug](log::Level::Debug) verbosity.
     pub fn log_debug<T: Into<String>>(&self, msg: T) {
-        debug!(target: &self.instance_log_target.to_owned(), "{}", msg.into())
+        debug!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     /// Helper function to log with [Warning](log::Level::Warn) verbosity.
     pub fn log_warn<T: Into<String>>(&self, msg: T) {
-        warn!(target: &self.instance_log_target.to_owned(), "{}", msg.into())
+        warn!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     /// Helper function to log with [Error](log::Level::Error) verbosity.
     pub fn log_error<T: Into<String>>(&self, msg: T) {
-        error!(target: &self.instance_log_target.to_owned(), "{}", msg.into())
+        error!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     /// Helper function to log with [Trace](log::Level::Trace) verbosity.
     pub fn log_trace<T: Into<String>>(&self, msg: T) {
-        trace!(target: &self.instance_log_target.to_owned(), "{}", msg.into())
+        trace!(target: &self.instance_name.to_owned(), "{}", msg.into())
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {

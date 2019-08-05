@@ -91,32 +91,32 @@ async fn validation_package(
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally. 
     // This will work if the entry doesn't need a chain to validate or if this agent is the author:
-    println!("validation_package:{} - Trying to build locally", entry_with_header.entry.address());
+    context.log(format!("validation_package:{} - Trying to build locally", entry_with_header.entry.address()));
     if let Ok(package) = await!(try_make_local_validation_package(
         &entry_with_header,
         context.clone()
     )) {
-        println!("validation_package:{} - Successfully build locally", entry_with_header.entry.address());
+        context.log(format!("validation_package:{} - Successfully built locally", entry_with_header.entry.address()));
         return Ok(Some(package))
     }
 
     // 2. Try and get it from the author
-    println!("validation_package:{} - Trying to retrieve from author", entry_with_header.entry.address());
+    context.log(format!("validation_package:{} - Trying to retrieve from author", entry_with_header.entry.address()));
     if let Ok(Some(package)) = await!(get_validation_package(
         entry_with_header.header.clone(),
         &context
     )) {
-        println!("validation_package:{} - Successfully retrieved from author", entry_with_header.entry.address());
+        context.log(format!("validation_package:{} - Successfully retrieved from author", entry_with_header.entry.address()));
         return Ok(Some(package))
     }
 
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))
-    println!("validation_package:{} - Trying to build from published headers", entry_with_header.entry.address());
+    context.log(format!("validation_package:{} - Trying to build from published headers", entry_with_header.entry.address()));
     if let Ok(package) = await!(try_make_validation_package_dht(
         &entry_with_header,
         context.clone()
     )) {
-        println!("validation_package:{} - Successfully build from published headers", entry_with_header.entry.address());
+        context.log(format!("validation_package:{} - Successfully built from published headers", entry_with_header.entry.address()));
         return Ok(Some(package))
     }   
 
@@ -136,49 +136,41 @@ pub mod tests {
     use holochain_core_types::entry::Entry;
     use holochain_json_api::json::JsonString;
 
-        #[test]
+    #[test]
     fn test_simulate_author_offline() {
         let mut dna = test_dna();
-        dna.uuid = "test_validation_package_same_from_author_and_other_agent".to_string();
-        let netname = Some("test_validation_package_same_from_author_and_other_agent, the network");
+        dna.uuid = "test_simulate_author_offline".to_string();
+        let netname = Some("test_simulate_author_offline, the network");
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
-        let entry_with_header;
-        {
-            let (_instance2, context2) = instance_by_name("jack", dna, netname);
+        let entry = Entry::App("package_chain_full".into(), JsonString::from_json("{\"stuff\":\"test entry value\"}"));
 
-            let entry = Entry::App("package_chain_full".into(), JsonString::from_json("{\"stuff\":\"test entry value\"}"));
+        // jack authors the entry
+        context2
+            .block_on(author_entry(
+                &entry,
+                None,
+                &context2,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
 
-            // jack authors the entry
-            context2
-                .block_on(author_entry(
-                    &entry,
-                    None,
-                    &context2,
-                    &vec![],
-                ))
-                .unwrap()
-                .address();
+        thread::sleep(time::Duration::from_millis(500));
+        // collect header from jacks local chain
+        let header = context2.state().unwrap()
+            .agent()
+            .iter_chain()
+            .next()
+            .expect("Must be able to get header for just published entry");
 
-            thread::sleep(time::Duration::from_millis(500));
-
-            // collect header from jacks local chain
-            let header = context2.state().unwrap()
-                .agent()
-                .iter_chain()
-                .next()
-                .expect("Must be able to get header for just published entry");
-
-            entry_with_header = EntryWithHeader{entry, header}.clone();
-
-        } // jack goes out of scope and is dropped which is kinda like going offline
+        let entry_with_header = EntryWithHeader{entry, header}.clone();
 
         let validation_package = context1.block_on(
             validation_package(&entry_with_header, context1.clone())
         ).expect("Could not recover a validation package as the non-author");
 
         assert_eq!(validation_package.unwrap().source_chain_headers.unwrap().len(), 2);
-
     }
-
 }

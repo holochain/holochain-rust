@@ -358,7 +358,7 @@ impl Conductor {
 
     pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
         notify(format!("Start interface by id: {}", id));
-         self.config
+        self.config
             .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
@@ -427,7 +427,7 @@ impl Conductor {
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
         notify(format!("Start all instances"));
-         self.config
+        self.config
             .instances
             .iter()
             .map(|instance_config| instance_config.id.clone())
@@ -668,8 +668,10 @@ impl Conductor {
         id: &String,
         maybe_config: Option<&Configuration>,
     ) -> Result<Holochain, String> {
-        notify(format!("conductor: instantiate_from_config id={}, maybe_config={:?}",
-                id, maybe_config));
+        notify(format!(
+            "conductor: instantiate_from_config id={}, maybe_config={:?}",
+            id, maybe_config
+        ));
         let self_config = self.config.clone();
         let config = maybe_config.unwrap_or(&self_config);
         let _ = config.check_consistency(&mut self.dna_loader)?;
@@ -833,8 +835,9 @@ impl Conductor {
         config: &Configuration,
     ) -> Result<IoHandler, HolochainError> {
         notify(format!(
-                "conductor: build_conductor_api instance_id={}, config={:?}",
-                instance_id, config));
+            "conductor: build_conductor_api instance_id={}, config={:?}",
+            instance_id, config
+        ));
         let instance_config = config.instance_by_id(&instance_id)?;
         let agent_id = instance_config.agent.clone();
         let agent_config = config.agent_by_id(&agent_id)?;

@@ -1,4 +1,5 @@
 .qmake.stash
+result*
 target
 .cargo
 .vagrant

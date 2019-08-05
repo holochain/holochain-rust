@@ -431,8 +431,13 @@ impl Configuration {
     ) -> Result<Self, HolochainError> {
         match self.network.to_owned() {
             Some(NetworkConfig::Memory(mut config)) | Some(NetworkConfig::Lib3h(mut config)) => {
-                config.bootstrap_nodes = bootstrap_nodes.clone();
-                Ok(self.to_owned())
+
+                // TODO Ensures we have just one bootstrap node if none were set. Replace this
+                // hack with a discovery service trait
+                if config.bootstrap_nodes.is_empty() {
+                    config.bootstrap_nodes = bootstrap_nodes.clone();
+                }
+               Ok(self.to_owned())
             }
             Some(NetworkConfig::N3h(_)) => Err(HolochainError::ErrorGeneric(format!(
                 "with_bootstrap_nodes not supported by n3h configurations: {:?}",

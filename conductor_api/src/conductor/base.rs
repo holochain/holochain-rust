@@ -357,7 +357,8 @@ impl Conductor {
     }
 
     pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
-        self.config
+        notify(format!("Start interface by id: {}", id));
+         self.config
             .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
@@ -366,6 +367,7 @@ impl Conductor {
     pub fn start_all_static_servers(&mut self) -> Result<(), String> {
         notify("Starting all servers".into());
         self.static_servers.iter_mut().for_each(|(id, server)| {
+            notify(format!("Starting server \"{}|\"", id));
             server
                 .start()
                 .expect(&format!("Couldn't start server {}", id));
@@ -424,7 +426,8 @@ impl Conductor {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        self.config
+        notify(format!("Start all instances"));
+         self.config
             .instances
             .iter()
             .map(|instance_config| instance_config.id.clone())
@@ -493,6 +496,7 @@ impl Conductor {
     }
 
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
+        notify("spawn network".into());
         let network_config = self
             .config
             .clone()
@@ -597,29 +601,25 @@ impl Conductor {
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
     pub fn boot_from_config(&mut self) -> Result<(), String> {
+        notify("conductor: boot_from_config".into());
         let _ = self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
-            self.p2p_config = Some(self.initialize_p2p_config());
+            self.p2p_config = dbg!(Some(self.initialize_p2p_config()));
         }
 
-        let mut config = self.config.clone();
+        let config = dbg!(self.config.clone());
         self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 
-        let mut bootstrap_nodes = Vec::new();
-
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
+            let id = dbg!(id);
             // We only try to instantiate the instance if it is not running already,
             // which will be the case at least for the DPKI instance which got started
             // specifically in `self.dpki_bootstrap()` above.
             if !self.instances.contains_key(&id) {
-                let config = config
-                    .with_bootstrap_nodes(&bootstrap_nodes)
-                    .map_err(|err| dbg!(err))
-                    .unwrap_or(config.clone());
                 let instance =
                     self.instantiate_from_config(&id, Some(&config))
                         .map_err(|error| {
@@ -629,20 +629,6 @@ impl Conductor {
                             )
                         })?;
 
-                // TODO should all subsequent nodes connect to the first,
-                // or should we instead have all nodes connect to each other
-                // directly, or something in between?
-                if bootstrap_nodes.is_empty() {
-                    let url = instance
-                        .context()
-                        .map_err(|err| err.to_string())?
-                        .network()
-                        .lock()
-                        .as_ref()
-                        .unwrap()
-                        .p2p_endpoint();
-                    bootstrap_nodes.push(url);
-                }
                 self.instances
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }
@@ -682,6 +668,8 @@ impl Conductor {
         id: &String,
         maybe_config: Option<&Configuration>,
     ) -> Result<Holochain, String> {
+        notify(format!("conductor: instantiate_from_config id={}, maybe_config={:?}",
+                id, maybe_config));
         let self_config = self.config.clone();
         let config = maybe_config.unwrap_or(&self_config);
         let _ = config.check_consistency(&mut self.dna_loader)?;
@@ -800,7 +788,6 @@ impl Conductor {
                         }
                     }
                 }
-
                 let context = Arc::new(context);
                 Holochain::load(context.clone())
                     .and_then(|hc| {
@@ -808,6 +795,18 @@ impl Conductor {
                             "Successfully loaded instance {} from storage",
                             id.clone()
                         ));
+
+                        notify("bootstrap nodes is empty, populating.".into());
+                        let url = dbg!(context
+                            .network()
+                            .lock()
+                            .as_ref()
+                            .unwrap()
+                            .p2p_endpoint());
+
+                        self.config = self.config.with_bootstrap_nodes(&vec![url])
+                            .map_err(|err| dbg!(err))
+                            .unwrap_or(config.clone());
                         Ok(hc)
                     })
                     .or_else(|loading_error| {
@@ -833,6 +832,9 @@ impl Conductor {
         instance_id: String,
         config: &Configuration,
     ) -> Result<IoHandler, HolochainError> {
+        notify(format!(
+                "conductor: build_conductor_api instance_id={}, config={:?}",
+                instance_id, config));
         let instance_config = config.instance_by_id(&instance_id)?;
         let agent_id = instance_config.agent.clone();
         let agent_config = config.agent_by_id(&agent_id)?;

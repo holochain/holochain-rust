@@ -379,13 +379,15 @@ pub mod tests {
     use tempfile;
 
     #[test]
-    fn state_test() {
+    fn context_log_macro_test_from_context() {
+        use crate::*;
+
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
-        let mut maybe_context = Context::new(
-            "state_test_instance",
-            AgentId::generate_fake("Terence"),
+        let ctx = Context::new(
+            "LOG-TEST-ID",
+            AgentId::generate_fake("Bilbo"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -399,17 +401,23 @@ pub mod tests {
             false,
         );
 
-        assert!(maybe_context.state().is_none());
+        // // Somehow we need to build our own logging instance for this test to show logs
+        // let _ = FastLoggerBuilder::new()
+        //             .set_level_from_str("Trace")
+        //             .build()
+        //             .expect("Fail to init logger.");
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(
-            maybe_context.clone(),
-        ))));
-        maybe_context.set_state(global_state.clone());
+        // Tests if the context logger can be customized by poassing a target value
+        log_info!(target: "holochain-custom-log-target", "Custom target & '{}' log level.", "Info");
 
-        {
-            let _read_lock = global_state.read().unwrap();
-            assert!(maybe_context.state().is_some());
-        }
+        // Tests if the context logger fills its target with the instance ID
+        log_trace!(ctx, "'{}' log level with Context target.", "Trace");
+        log_debug!(ctx, "'{}' log level with Context target.", "Debug");
+        log_info!(ctx, "'{}' log level with Context target.", "Info");
+        log_warn!(ctx, "'{}' log level with Context target.", "Warning");
+        log_error!(ctx, "'{}' log level with Context target.", "Error");
+
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 
     #[test]

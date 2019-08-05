@@ -121,6 +121,7 @@ pub(crate) fn create_lib3h_config(
                 log_level: 'd',
                 bind_url: url::Url::parse("fixme://bind_url").unwrap(),
                 dht_custom_config: vec![],
+                ...,
             }),
             maybe_end_user_config: None,
         },

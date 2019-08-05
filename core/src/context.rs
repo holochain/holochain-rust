@@ -156,32 +156,6 @@ impl Context {
         self.instance_name.clone()
     }
 
-    /// Helper function to make it easier to call the logger. Default to [Info](log::Level::Info)
-    /// log level verbosity.
-    pub fn log<T: Into<String>>(&self, msg: T) {
-        info!(target: &self.instance_name.to_owned(), "{}", msg.into())
-    }
-
-    /// Helper function to log with [Debug](log::Level::Debug) verbosity.
-    pub fn log_debug<T: Into<String>>(&self, msg: T) {
-        debug!(target: &self.instance_name.to_owned(), "{}", msg.into())
-    }
-
-    /// Helper function to log with [Warning](log::Level::Warn) verbosity.
-    pub fn log_warn<T: Into<String>>(&self, msg: T) {
-        warn!(target: &self.instance_name.to_owned(), "{}", msg.into())
-    }
-
-    /// Helper function to log with [Error](log::Level::Error) verbosity.
-    pub fn log_error<T: Into<String>>(&self, msg: T) {
-        error!(target: &self.instance_name.to_owned(), "{}", msg.into())
-    }
-
-    /// Helper function to log with [Trace](log::Level::Trace) verbosity.
-    pub fn log_trace<T: Into<String>>(&self, msg: T) {
-        trace!(target: &self.instance_name.to_owned(), "{}", msg.into())
-    }
-
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }

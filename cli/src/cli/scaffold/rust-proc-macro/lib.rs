@@ -42,8 +42,13 @@ pub struct MyEntry {
 #[zome]
 mod my_zome {
 
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 

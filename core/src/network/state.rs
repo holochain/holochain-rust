@@ -35,7 +35,7 @@ pub struct NetworkState {
     pub agent_id: Option<String>,
 
     // Here are the results of every get action
-    pub get_results: HashMap<QueryKey, GetResults>,
+    pub get_query_results: HashMap<QueryKey, GetResults>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -63,7 +63,7 @@ impl NetworkState {
             network: Arc::new(Mutex::new(None)),
             dna_address: None,
             agent_id: None,
-            get_results: HashMap::new(),
+            get_query_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

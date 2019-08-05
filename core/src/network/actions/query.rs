@@ -118,7 +118,7 @@ impl Future for QueryFuture {
             .state()
             .expect("Could not get state in future")
             .network()
-            .get_results
+            .get_query_results
             .get(&self.key)
         {
             Some(Some(result)) => Poll::Ready(result.clone()),

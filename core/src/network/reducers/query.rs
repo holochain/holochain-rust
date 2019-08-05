@@ -56,7 +56,7 @@ pub fn reduce_query(
     let result = reduce_query_inner(network_state, key_type.clone(),network_query)
             .map(|_| None)
             .unwrap_or_else(|e| Some(Err(e)));
-    network_state.get_results.insert(key_type.clone(), result);
+    network_state.get_query_results.insert(key_type.clone(), result);
 }
 
 pub fn reduce_query_timeout(
@@ -66,13 +66,13 @@ pub fn reduce_query_timeout(
 ) {
     let action = action_wrapper.action();
     let key = unwrap_to!(action => crate::action::Action::QueryTimeout);
-    if network_state.get_results.get(&key).is_none() {
+    if network_state.get_query_results.get(&key).is_none() {
         return;
     }
 
-    if network_state.get_results.get(key).unwrap().is_none() {
+    if network_state.get_query_results.get(key).unwrap().is_none() {
         network_state
-            .get_results
+            .get_query_results
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
 }
@@ -109,7 +109,7 @@ mod tests {
         let store = store.reduce(action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_results
+            .get_query_results
             .get(&QueryKey::Entry(key.clone()))
             .map(|result| result.clone());
         assert_eq!(
@@ -197,7 +197,7 @@ mod tests {
             .read()
             .unwrap()
             .network()
-            .get_results
+            .get_query_results
             .get(&key)
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
@@ -299,7 +299,7 @@ mod tests {
         let store = store.reduce(action_wrapper);
         let maybe_get_links_result = store
             .network()
-            .get_results
+            .get_query_results
             .get(&QueryKey::Links(key))
             .map(|result| result.clone());
         assert_eq!(

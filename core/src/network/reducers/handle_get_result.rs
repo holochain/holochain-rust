@@ -9,6 +9,6 @@ pub fn reduce_handle_get_result(
     let (payload, key) = unwrap_to!(action => crate::action::Action::HandleQuery);
 
     network_state
-        .get_results
+        .get_query_results
         .insert(key.clone(), Some(Ok(payload.clone())));
 }

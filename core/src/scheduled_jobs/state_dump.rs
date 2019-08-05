@@ -56,7 +56,7 @@ pub fn state_dump(context: Arc<Context>) {
         .collect();
 
     let query_flows: Vec<QueryKey> = network
-        .get_results
+        .get_query_results
         //using iter so that we don't copy this again and again if it is a scheduled job that runs everytime
         //it might be slow if copied
         .iter()

@@ -7,6 +7,7 @@ use crate::network::direct_message::DirectMessage;
 use std::convert::TryInto;
 use holochain_core_types::entry::Entry;
 use holochain_core_types::error::HolochainError;
+use holochain_core_types::chain_header::ChainHeader;
 
 fn address_to_content_and_type(address: &Address, context: Arc<Context>) -> Result<(String, String), HolochainError> {
     let raw_content = context.dht_storage.read()?.fetch(address)??;
@@ -31,7 +32,13 @@ fn address_to_content_and_type(address: &Address, context: Arc<Context>) -> Resu
         };
         Ok((entry_type, content))
     } else {
-        Ok((String::from("UNKNOWN"), raw_content.to_string()))
+        let maybe_header: Result<ChainHeader, _> = raw_content.clone().try_into();
+        if maybe_header.is_ok() {
+            Ok((String::from("ChainHeader"), raw_content.to_string()))
+        } else {
+            Ok((String::from("UNKNOWN"), raw_content.to_string()))
+        }
+
     }
 }
 

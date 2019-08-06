@@ -536,8 +536,8 @@ impl LogMessageTrait for LogMessage {
         let tag_name = self
             .target
             .to_owned()
-            .unwrap_or(format!("{}{}", &self.thread_name, &self.module).to_owned());
-        let base_color_on = format!("{}", &tag_name).to_owned();
+            .unwrap_or_else(|| format!("{}{}", &self.thread_name, &self.module).to_owned());
+        let base_color_on = &tag_name.to_owned();
         let pseudo_rng_color = pick_color(&base_color_on);
 
         // Let's colorize our logging messages
@@ -606,7 +606,7 @@ impl From<Logger> for FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             rule_filters,
             file_path: logger.file,
-            timestamp_format: logger.timestamp_format.unwrap_or(String::from(DEFAULT_TIMESTAMP_FMT)),
+            timestamp_format: logger.timestamp_format.unwrap_or_else(|| String::from(DEFAULT_TIMESTAMP_FMT)),
             ..FastLoggerBuilder::default()
         }
     }

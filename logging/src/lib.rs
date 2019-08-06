@@ -419,8 +419,8 @@ impl<'a> FastLoggerBuilder {
                             .open(&file_path)
                             .unwrap_or_else(|_| panic!("Fail to log to {:?}.", &file_path));
                         // We have some strange behavior with BufWriter and file writing: The file
-                        // ends up empty most of the time, so we don't use a buffer at all
-                        // io::BufWriter::new(file_stream)
+                        // ends up empty most of the time during testing, so we don't use a buffer
+                        // at all like : `io::BufWriter::new(file_stream)`
                         file_stream
                     };
                     thread::spawn(move || {
@@ -432,13 +432,14 @@ impl<'a> FastLoggerBuilder {
                         }
                     });
                 } else {
+                    let mut buffer = io::BufWriter::new(io::stderr());
                     thread::spawn(move || {
                         while let Ok(msg) = r.recv() {
                             // Here we use `writeln!` instead of println! in order to avoid
                             // unnecessary flush.
                             // Currently we use `BufWriter` which has a sized buffer of about
                             // 8kb by default
-                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
+                            writeln!(&mut buffer, "{}", msg.build())
                                 .expect("Fail to log to file.")
                         }
                     });

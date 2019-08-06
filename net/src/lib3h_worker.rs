@@ -21,7 +21,6 @@ use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClient
 #[allow(non_snake_case)]
 pub struct Lib3hWorker<T:Transport> {
     handler: NetHandler,
-    can_send_P2pReady: bool,
     net_engine: RealEngine<T, MirrorDht>,
 }
 
@@ -39,7 +38,6 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
     pub fn with_wss_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
-            can_send_P2pReady: false,
             net_engine: RealEngine::new(
                 Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                 real_config,
@@ -66,7 +64,6 @@ impl Lib3hWorker<TransportMemory> {
 
         let worker = Lib3hWorker {
             handler,
-            can_send_P2pReady: false,
             net_engine
         };
 
@@ -87,9 +84,6 @@ impl<T:Transport> NetWorker for Lib3hWorker<T> {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        if self.can_send_P2pReady {
-            self.can_send_P2pReady = false;
-        }
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {

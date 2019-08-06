@@ -38,7 +38,7 @@ holochain_persistence_file = "=0.0.7"
 holochain_persistence_mem = "=0.0.7"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-log = "=0.4.6"
+log = "=0.4.8"
 logging = { path = "../logging" }
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }

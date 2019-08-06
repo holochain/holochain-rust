@@ -113,13 +113,33 @@ pub fn default_persistence_dir() -> PathBuf {
     holochain_common::paths::config_root().join("conductor")
 }
 
-/// There might be different kinds of loggers in the future.
-/// Currently there is a "debug" and "simple" logger.
-/// TODO: make this an enum
+/// This is a config helper structure used to interface with the holochain logging subcrate.
+/// Custom rules/filter can be applied to logging, in fact they are used by default in Holochain to
+/// filter the logs from its dependencies.
+///
+/// ```rust
+/// use crate::logger::LogRules;
+///
+/// let mut rules = LogRules::new();
+/// // Filtering out all the logs from our dependencies
+/// rules
+///     .add_rule(".*", true, None)
+///     .expect("Invalid logging rule.");
+/// // And logging back all Holochain logs
+/// rules
+///     .add_rule("^holochain", false, None)
+///     .expect("Invalid logging rule.");
+///
+/// let lc = LoggerConfiguration {
+///     logger_level: "debug".to_string(),
+///     rules: rules,
+///     state_dump: true,
+///     }
+/// ```
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
-    pub logger_type: String,
+    pub logger_level: String,
     #[serde(default)]
     pub rules: LogRules,
     //    pub file: Option<String>,
@@ -130,7 +150,7 @@ pub struct LoggerConfiguration {
 impl Default for LoggerConfiguration {
     fn default() -> LoggerConfiguration {
         LoggerConfiguration {
-            logger_type: "debug".into(),
+            logger_level: "debug".into(),
             rules: Default::default(),
             state_dump: false,
         }
@@ -980,7 +1000,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.logger_level, "debug");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {
@@ -1076,7 +1096,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.logger_level, "debug");
         assert_eq!(config.logger.rules.rules.len(), 1);
 
         assert_eq!(config.network, None);

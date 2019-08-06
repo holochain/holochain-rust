@@ -42,7 +42,7 @@ fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
 // module that aren't really meant for us
 fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
     if agent_id != "" && context.agent_id.pub_sign_key != agent_id {
-        context.log("debug/net/handle: ignoring, same id");
+        log_debug!(context, "net/handle: ignoring, same id");
         return false;
     }
     true
@@ -112,40 +112,37 @@ fn handle_failure_result(_failure_data: GenericResultData) -> Result<(), Holocha
 pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
-        let message = message.unwrap();
-        let maybe_json_msg = Lib3hServerProtocol::try_from(message);
-        if let Err(_) = maybe_json_msg {
+        if let Err(err) = message {
+            log_warn!(context,
+                "net/handle: received error msg from lib3h server: {:?}", err);
             return Ok(());
         }
-        match maybe_json_msg.unwrap() {
+        match message.unwrap() {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "warning/net/handle: FailureResult: {:?}",
-                    failure_data
-                ));
+                log_warn!(context, "net/handle: FailureResult: {:?}", failure_data);
                 handle_failure_result(failure_data).expect("handle_failure_result")
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleStoreEntryAspect: {}",
+                log_debug!(context,
+                    "net/handle: HandleStoreEntryAspect: {}",
                     format_store_data(&dht_entry_data)
-                ));
+                );
                 handle_store(dht_entry_data, context.clone())
             }
             Lib3hServerProtocol::HandleFetchEntry(fetch_entry_data) => {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleFetchEntry: {:?}",
+                log_debug!(context,
+                    "net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
-                ));
+                );
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             Lib3hServerProtocol::FetchEntryResult(fetch_result_data) => {
@@ -156,19 +153,19 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                context.log(format!(
-                    "err/net/handle: unexpected HandleFetchEntryResult: {:?}",
+                log_error!(context,
+                    "net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
-                ));
+                );
             }
             Lib3hServerProtocol::HandleQueryEntry(query_entry_data) => {
                 if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleQueryEntry: {:?}",
+                log_debug!(context,
+                    "net/handle: HandleQueryEntry: {:?}",
                     query_entry_data
-                ));
+                );
                 handle_query_entry_data(query_entry_data, context.clone())
             }
             Lib3hServerProtocol::QueryEntryResult(query_entry_result_data) => {
@@ -185,10 +182,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleQueryEntryResult: {:?}",
+                log_debug!(context,
+                    "net/handle: HandleQueryEntryResult: {:?}",
                     query_entry_result_data
-                ));
+                );
                 handle_query_entry_result(query_entry_result_data, context.clone())
             }
             Lib3hServerProtocol::HandleSendDirectMessage(message_data) => {
@@ -199,10 +196,10 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: HandleSendMessage: {}",
+                log_debug!(context,
+                    "net/handle: HandleSendMessage: {}",
                     format_message_data(&message_data)
-                ));
+                );
                 handle_send_message(message_data, context.clone())
             }
             Lib3hServerProtocol::SendDirectMessageResult(message_data) => {
@@ -213,14 +210,14 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                context.log(format!(
-                    "debug/net/handle: SendMessageResult: {}",
+                log_debug!(context,
+                    "net/handle: SendMessageResult: {}",
                     format_message_data(&message_data)
-                ));
+                );
                 handle_send_message_result(message_data, context.clone())
             }
             Lib3hServerProtocol::Connected(peer_data) => {
-                context.log(format!("debug/net/handle: Connected: {:?}", peer_data));
+                log_debug!(context, "net/handle: Connected: {:?}", peer_data);
                 return Ok(());
             }
             Lib3hServerProtocol::HandleGetAuthoringEntryList(get_list_data) => {
@@ -271,10 +268,10 @@ fn get_content_aspect(
         .get_headers(entry_address.clone())
         .map_err(|error| {
             let err_message = format!(
-                "err/net/fetch/get_content_aspect: Error trying to get headers {:?}",
+                "net/fetch/get_content_aspect: Error trying to get headers {:?}",
                 error
             );
-            context.log(err_message.clone());
+            log_error!(context, "{}", err_message.clone());
             HolochainError::ErrorGeneric(err_message)
         })?;
 

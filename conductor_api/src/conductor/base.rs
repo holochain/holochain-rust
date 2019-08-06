@@ -8,15 +8,11 @@ use crate::{
     dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-    logger::DebugLogger,
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
-use holochain_core::{
-    logger::{ChannelLogger, Logger},
-    signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -29,6 +25,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -103,7 +100,8 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
-    logger: DebugLogger,
+    #[allow(dead_code)]
+    logger: FastLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
@@ -150,15 +148,29 @@ pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> 
 pub type UiDirCopier =
     Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
-// preparing for having conductor notifiers go to one of the log streams
+/// preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
-        let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+        let _rules = config.logger.rules.clone();
+        let mut logger_builder = FastLoggerBuilder::new();
+        logger_builder.set_level_from_str(&config.logger.logger_level.as_str());
+
+        for rule in config.logger.rules.rules.iter() {
+            logger_builder.add_rule_filter(RuleFilter::new(
+                rule.pattern.as_str(),
+                rule.exclude,
+                rule.color.as_ref().unwrap_or(&String::default()).as_str(),
+            ));
+        }
+
+        let logger = logger_builder
+            .build()
+            .expect("Fail to instanciate the logging factory.");
 
         if config.ui_bundles.len() > 0 || config.ui_interfaces.len() > 0 {
             println!();
@@ -181,7 +193,7 @@ impl Conductor {
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
-            logger: DebugLogger::new(rules),
+            logger,
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
@@ -229,7 +241,7 @@ impl Conductor {
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
-        self.log("starting signal loop".into());
+        debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
@@ -720,12 +732,7 @@ impl Conductor {
                     }
                 }
 
-                if config.logger.logger_type == "debug" {
-                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
-                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-                    )));
-                }
-
+                let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id, config)?;
                 context_builder = context_builder.with_conductor_api(api);
@@ -735,7 +742,7 @@ impl Conductor {
                 }
 
                 // Spawn context
-                let context = context_builder.spawn();
+                let context = context_builder.with_instance_name(&instance_name).spawn();
 
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
@@ -767,8 +774,8 @@ impl Conductor {
                                 &dna_hash_computed_from_file, &dna_file)?;
                         },
                         Err(_) => {
-                            let msg = format!("err/Conductor: Could not load DNA file {:?}.", &dna_file);
-                            context.log(msg);
+                            let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
+                            log_error!(context, "{}", msg);
 
                             // If something is wrong with the DNA file, we only
                             // check the 2 primary sources of DNA's hashes
@@ -778,11 +785,11 @@ impl Conductor {
                                 Ok(_) => (),
                                 Err(e) => {
                                     let msg = format!("\
-                                    err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                    Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                     '{}' != '{}'",
                                     &dna_hash_from_conductor_config,
                                     &dna_hash_computed);
-                                    context.log(msg);
+                                    log_error!(context, "{}", msg);
 
                                     return Err(e.to_string());
                                 }
@@ -965,7 +972,8 @@ impl Conductor {
                                 '{}' != '{}'",
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -983,7 +991,8 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -998,7 +1007,7 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_computed,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -1180,17 +1189,14 @@ impl Conductor {
         let (broadcaster, _handle) = iface
             .run(dispatcher, kill_switch_rx)
             .map_err(|error| {
-                self.log(format!(
-                    "err/conductor: Error running interface '{}': {}",
+                error!(
+                    "conductor: Error running interface '{}': {}",
                     interface_config.id, error
-                ));
+                );
                 error
             })
             .unwrap();
-        self.log(format!(
-            "debug/conductor: adding broadcaster to map {:?}",
-            broadcaster
-        ));
+        debug!("conductor: adding broadcaster to map {:?}", broadcaster);
 
         {
             self.interface_broadcasters
@@ -1200,13 +1206,6 @@ impl Conductor {
         }
 
         kill_switch_tx
-    }
-
-    fn log(&self, msg: String) {
-        self.logger
-            .get_sender()
-            .send(("conductor".to_string(), msg))
-            .unwrap()
     }
 
     pub fn dna_dir_path(&self) -> PathBuf {

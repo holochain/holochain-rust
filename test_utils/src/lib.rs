@@ -230,7 +230,6 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
         Arc::new({
             let mut builder = ContextBuilder::new()
                 .with_agent(agent.clone())
-                .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent));
@@ -239,7 +238,9 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
                     network_name, bootstrap_nodes);
                 builder = builder.with_p2p_config(config);
             }
-            builder.spawn()
+            builder
+                .with_instance_name("test_context_instance")
+                .spawn()
         }),
         logger,
     )
@@ -302,6 +303,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
             .with_conductor_api(mock_signing::mock_conductor_api(agent))
+            .with_instance_name("fake_instance_name")
             .spawn(),
     )
 }

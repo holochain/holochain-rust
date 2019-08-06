@@ -6,12 +6,12 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-holochain_json_derive = "=0.0.15"
-holochain_json_api = "=0.0.15"
-holochain_persistence_api = "=0.0.6"
-holochain_persistence_mem = "=0.0.6"
-holochain_persistence_file = "=0.0.6"
-holochain_persistence_pickle = "=0.0.6"
+holochain_json_derive = "=0.0.17"
+holochain_json_api = "=0.0.17"
+holochain_persistence_api = "=0.0.7"
+holochain_persistence_mem = "=0.0.7"
+holochain_persistence_file = "=0.0.7"
+holochain_persistence_pickle = "=0.0.7"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "bootstrap-connect" }
@@ -40,6 +40,8 @@ rpassword = "=2.1.0"
 base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"
+log = "=0.4.8"
+logging = { path = "../logging" }
 nickel = "=0.11.0"
 url = "=1.7.2"
 [dev-dependencies]

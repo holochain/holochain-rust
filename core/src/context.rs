@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
-    logger::Logger,
     network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
@@ -62,13 +61,13 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
 }
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
-/// This includes components that are injected from the outside like logger and persister
+/// This includes components that are injected from the outside like persister
 /// but also the store of the instance that gets injected before passing on the context
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
+    pub(crate) instance_name: String,
     pub agent_id: AgentId,
-    pub logger: Arc<Mutex<dyn Logger>>,
     pub persister: Arc<Mutex<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<Sender<ActionWrapper>>,
@@ -111,8 +110,8 @@ impl Context {
     }
 
     pub fn new(
+        instance_name: &str,
         agent_id: AgentId,
-        logger: Arc<Mutex<dyn Logger>>,
         persister: Arc<Mutex<dyn Persister>>,
         chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -123,8 +122,8 @@ impl Context {
         state_dump_logging: bool,
     ) -> Self {
         Context {
+            instance_name: instance_name.to_owned(),
             agent_id: agent_id.clone(),
-            logger,
             persister,
             state: None,
             action_channel: None,
@@ -144,8 +143,8 @@ impl Context {
     }
 
     pub fn new_with_channels(
+        instance_name: &str,
         agent_id: AgentId,
-        logger: Arc<Mutex<dyn Logger>>,
         persister: Arc<Mutex<dyn Persister>>,
         action_channel: Option<Sender<ActionWrapper>>,
         signal_tx: Option<Sender<Signal>>,
@@ -156,8 +155,8 @@ impl Context {
         state_dump_logging: bool,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
+            instance_name: instance_name.to_owned(),
             agent_id: agent_id.clone(),
-            logger,
             persister,
             state: None,
             action_channel,
@@ -173,14 +172,9 @@ impl Context {
         })
     }
 
-    // helper function to make it easier to call the logger
-    pub fn log<T: Into<String>>(&self, msg: T) {
-        let mut logger = self
-            .logger
-            .lock()
-            .or(Err(HolochainError::LoggingError))
-            .expect("Logger should work");;
-        logger.log(msg.into());
+    /// Returns the name of this context instance.
+    pub fn get_instance_name(&self) -> String {
+        self.instance_name.clone()
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
@@ -393,20 +387,22 @@ pub fn test_memory_network_config(
 pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister};
+    use crate::persister::SimplePersister;
     use holochain_core_types::agent::AgentId;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
     #[test]
-    fn state_test() {
+    fn context_log_macro_test_from_context() {
+        use crate::*;
+
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
-        let mut maybe_context = Context::new(
-            AgentId::generate_fake("Terence"),
-            test_logger(),
+        let ctx = Context::new(
+            "LOG-TEST-ID",
+            AgentId::generate_fake("Bilbo"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -420,17 +416,23 @@ pub mod tests {
             false,
         );
 
-        assert!(maybe_context.state().is_none());
+        // // Somehow we need to build our own logging instance for this test to show logs
+        // let _ = FastLoggerBuilder::new()
+        //             .set_level_from_str("Trace")
+        //             .build()
+        //             .expect("Fail to init logger.");
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(
-            maybe_context.clone(),
-        ))));
-        maybe_context.set_state(global_state.clone());
+        // Tests if the context logger can be customized by poassing a target value
+        log_info!(target: "holochain-custom-log-target", "Custom target & '{}' log level.", "Info");
 
-        {
-            let _read_lock = global_state.read().unwrap();
-            assert!(maybe_context.state().is_some());
-        }
+        // Tests if the context logger fills its target with the instance ID
+        log_trace!(ctx, "'{}' log level with Context target.", "Trace");
+        log_debug!(ctx, "'{}' log level with Context target.", "Debug");
+        log_info!(ctx, "'{}' log level with Context target.", "Info");
+        log_warn!(ctx, "'{}' log level with Context target.", "Warning");
+        log_error!(ctx, "'{}' log level with Context target.", "Error");
+
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 
     #[test]
@@ -441,8 +443,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test_deadlock_instance",
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),

@@ -31,10 +31,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
+            log_error!(context,
+                "zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -44,10 +44,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
-            context.log(format!(
-                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+            log_error!(context,
+                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -75,7 +75,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         GetLinksNetworkQuery::Links(config)
     ));
     if links_result.is_err() {
-        context.log("err/zome : Could not get links for remove_link method");
+        log_error!(context, "zome : Could not get links for remove_link method");
         ribosome_error_code!(WorkflowFailed)
     } else {
         let links = links_result.expect("This is supposed to not fail");

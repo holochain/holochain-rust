@@ -1,6 +1,6 @@
 use crate::{
-    action::{ActionWrapper, QueryKey, RespondQueryPayload},
-    network::{actions::ActionResponse, direct_message::DirectMessage},
+    action::{ActionWrapper, QueryKey},
+    network::{actions::ActionResponse, direct_message::DirectMessage,query::NetworkQueryResult},
 };
 use boolinator::*;
 use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
@@ -22,7 +22,7 @@ type Actions = HashMap<ActionWrapper, ActionResponse>;
 /// Some(Ok(Some(entry))): we have it
 type GetValidationPackageResult = Option<Result<Option<ValidationPackage>, HolochainError>>;
 
-type GetResults = Option<Result<RespondQueryPayload, HolochainError>>;
+type GetResults = Option<Result<NetworkQueryResult, HolochainError>>;
 
 #[derive(Clone, Debug)]
 pub struct NetworkState {

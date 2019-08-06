@@ -1,8 +1,7 @@
 use crate::{
-    action::RespondQueryPayload,
     network::{
         actions::query::{query, QueryMethod},
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
@@ -76,8 +75,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     } else {
         let response = response_result.expect("Could not get response");
         let links_result = match response {
-            RespondQueryPayload::Links((query, _, _)) => Ok(query),
-            RespondQueryPayload::Entry(_) => Err(HolochainError::ErrorGeneric(
+            NetworkQueryResult::Links(query, _, _) => Ok(query),
+            NetworkQueryResult::Entry(_) => Err(HolochainError::ErrorGeneric(
                 "Could not get links for type".to_string(),
             )),
         };

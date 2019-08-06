@@ -1,11 +1,10 @@
 use crate::{
     action::{
-        Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload,
-        RespondQueryPayload,
+        Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload
     },
     context::Context,
     instance::dispatch_action,
-    network::query::GetLinksNetworkQuery,
+    network::query::{GetLinksNetworkQuery,NetworkQueryResult}
 };
 use futures::{future::Future, task::Poll};
 
@@ -35,7 +34,7 @@ pub async fn query(
     context: Arc<Context>,
     method: QueryMethod,
     timeout: Timeout,
-) -> HcResult<RespondQueryPayload> {
+) -> HcResult<NetworkQueryResult> {
     let (key, payload) = match method {
         QueryMethod::Entry(address) => {
             let key = GetEntryKey {
@@ -93,7 +92,7 @@ pub struct QueryFuture {
 }
 
 impl Future for QueryFuture {
-    type Output = HcResult<RespondQueryPayload>;
+    type Output = HcResult<NetworkQueryResult>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetEntryFuture") {

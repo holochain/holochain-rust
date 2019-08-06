@@ -1,7 +1,6 @@
 use crate::{
-    action::RespondQueryPayload,
     context::Context,
-    network::{self, actions::query::QueryMethod},
+    network::{self, actions::query::{QueryMethod},query::NetworkQueryResult},
     nucleus,
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
@@ -33,7 +32,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
             timeout.clone(),
         ))?;
         match response {
-            RespondQueryPayload::Entry(maybe_entry) => Ok(maybe_entry),
+            NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
             _ => Err(HolochainError::ErrorGeneric(
                 "Wrong respond type for Entry".to_string(),
             )),
@@ -61,7 +60,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
                     timeout.clone(),
                 ))?;
                 match response {
-                    RespondQueryPayload::Entry(maybe_entry) => Ok(maybe_entry),
+                    NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
                     _ => Err(HolochainError::ErrorGeneric(
                         "Wrong respond type for Entry".to_string(),
                     )),

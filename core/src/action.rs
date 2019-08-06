@@ -4,7 +4,7 @@ use crate::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
         entry_with_header::EntryWithHeader,
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        query::{GetLinksNetworkQuery,NetworkQueryResult},
         state::NetworkState,
     },
     nucleus::{
@@ -21,7 +21,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     dna::Dna,
-    entry::{Entry, EntryWithMetaAndHeader},
+    entry::Entry,
     error::HolochainError,
     link::link_data::LinkData,
     signature::Provenance,
@@ -101,13 +101,6 @@ pub enum QueryPayload {
     Links((Option<CrudStatus>, GetLinksNetworkQuery)),
 }
 
-///This is a payload from a response
-#[derive(Clone, PartialEq, Debug, Serialize)]
-pub enum RespondQueryPayload {
-    Entry(Option<EntryWithMetaAndHeader>),
-    Links((GetLinksNetworkResult, String, String)),
-}
-
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug, Serialize)]
 #[serde(tag = "action_type", content = "data")]
@@ -160,11 +153,11 @@ pub enum Action {
     /// Lets the network module respond to a Query request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested object from the DHT
-    RespondQuery((QueryEntryData, RespondQueryPayload)),
+    RespondQuery((QueryEntryData, NetworkQueryResult)),
 
     /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleQuery((RespondQueryPayload, QueryKey)),
+    HandleQuery((NetworkQueryResult, QueryKey)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 

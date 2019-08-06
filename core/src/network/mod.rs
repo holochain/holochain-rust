@@ -12,7 +12,6 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        action::RespondQueryPayload,
         agent::actions::commit::commit_entry,
         instance::tests::test_instance_and_context_by_name,
         network::{
@@ -21,7 +20,7 @@ pub mod tests {
                 get_validation_package::get_validation_package,
                 publish::publish,
             },
-            query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
+            query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
             test_utils::test_wat_always_valid,
         },
         workflows::author_entry::author_entry,
@@ -75,7 +74,7 @@ pub mod tests {
                 Default::default(),
             ));
             assert!(result.is_ok(), "get_entry() result = {:?}", result);
-            maybe_entry_with_meta = unwrap_to!(result.unwrap()=>RespondQueryPayload::Entry).clone();
+            maybe_entry_with_meta = unwrap_to!(result.unwrap()=>NetworkQueryResult::Entry).clone();
         }
         assert!(
             maybe_entry_with_meta.is_some(),
@@ -306,7 +305,7 @@ pub mod tests {
 
         assert!(maybe_links.is_ok());
         let link_results = maybe_links.unwrap();
-        let (links, _, _) = unwrap_to!(link_results=>RespondQueryPayload::Links);
+        let links = match link_results {NetworkQueryResult::Links(query,_,_)=>query,_=>panic!("Could not get query")};
         let links = unwrap_to!(links=>GetLinksNetworkResult::Links);
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order

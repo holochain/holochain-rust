@@ -1,9 +1,8 @@
 use crate::{
-    action::RespondQueryPayload,
     context::Context,
     network::{
         actions::query::{query, QueryMethod},
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
     },
 };
 
@@ -28,7 +27,7 @@ pub async fn get_link_result_workflow<'a>(
     ))?;
 
     let links_result = match response {
-        RespondQueryPayload::Links((query, _, _)) => Ok(query),
+        NetworkQueryResult::Links(query, _, _) => Ok(query),
         _ => Err(HolochainError::ErrorGeneric(
             "Wrong type for response type Entry".to_string(),
         )),

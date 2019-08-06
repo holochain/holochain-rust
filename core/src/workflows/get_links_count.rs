@@ -1,9 +1,8 @@
 use crate::{
-    action::RespondQueryPayload,
     context::Context,
     network::{
         actions::query::{query, QueryMethod},
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult,NetworkQueryResult},
     },
 };
 
@@ -23,8 +22,8 @@ pub async fn get_link_result_count_workflow<'a>(
     ))?;
 
     let links_result = match response {
-        RespondQueryPayload::Links((link_result, _, _)) => Ok(link_result),
-        RespondQueryPayload::Entry(_) => Err(HolochainError::ErrorGeneric(
+        NetworkQueryResult::Links(link_result, _, _) => Ok(link_result),
+        NetworkQueryResult::Entry(_) => Err(HolochainError::ErrorGeneric(
             "Could not get link".to_string(),
         )),
     }?;

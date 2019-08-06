@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 * New logging implementation added as a subcrate : a fast logger with a filtering capability using regex expressions, please so [logging](logging) for more details.
+* Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
 
 ### Changed
 

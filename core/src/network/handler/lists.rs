@@ -5,7 +5,9 @@ use crate::{
     instance::dispatch_action,
     network::handler::{get_content_aspect, get_meta_aspects},
 };
-use holochain_core_types::error::HcResult;
+use holochain_core_types::{
+    error::HcResult,
+};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::data_types::{EntryListData, GetListData};
 use snowflake::ProcessUniqueId;
@@ -27,13 +29,13 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
                 );
             }
 
-            for chain_header_entry in get_all_chain_header_entries(context.clone()) {
-                address_map.insert(
-                    chain_header_entry.clone(),
-                    get_all_aspect_addresses(&chain_header_entry, context.clone())
-                        .expect("Error getting entry aspects of authoring list for chain headers"),
-                );
-            }
+            // for chain_header_entry in get_all_chain_header_entries(context.clone()) {
+            //     address_map.insert(
+            //         chain_header_entry.clone(),
+            //         get_all_aspect_addresses(&chain_header_entry, context.clone())
+            //             .expect("Error getting entry aspects of authoring list for chain headers"),
+            //     );
+            // }
 
             let action = Action::RespondAuthoringList(EntryListData {
                 space_address: get_list_data.space_address,
@@ -54,12 +56,12 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .collect()
 }
 
-fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Address> {
-    let chain = context.state().unwrap().agent().iter_chain();
-    chain
-        .map(|chain_header| chain_header.address())
-        .collect()
-}
+// fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Address> {
+//     let chain = context.state().unwrap().agent().iter_chain();
+//     chain
+//         .map(|chain_header| Entry::ChainHeader(chain_header).address())
+//         .collect()
+// }
 
 fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<Vec<Address>> {
     let mut address_list: Vec<Address> = get_meta_aspects(entry, context.clone())?

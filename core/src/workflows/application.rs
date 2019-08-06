@@ -2,7 +2,7 @@ use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
     network::actions::{
-        publish::publish,
+        publish_header_entry::publish_header_entry,
         initialize_network::initialize_network,
     },
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
@@ -13,8 +13,6 @@ use holochain_core_types::{
     entry::Entry,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
-
-
 use std::sync::Arc;
 
 pub async fn initialize(
@@ -44,12 +42,11 @@ pub async fn initialize(
     await!(initialize_network(&instance_context))?;
 
     if first_initialization {
-        // 4. (first initialization only) Call publish on the agent and DNA entries. 
-        // This is to trigger the fast publishing of their headers not the entries themselves
+        // 4. (first initialization only) Publish the headers of the agent and DNA entries. 
         let dna_entry = Entry::Dna(Box::new(dna.clone()));
-        await!(publish(dna_entry.address(), &context))?;
+        await!(publish_header_entry(dna_entry.address(), &context))?;
         let agent_id_entry = Entry::AgentId(context.agent_id.clone());
-        await!(publish(agent_id_entry.address(), &context))?;
+        await!(publish_header_entry(agent_id_entry.address(), &context))?;
 
         // 5. (first initialization only) Call the init callbacks in the zomes
         await!(call_init(dna, &instance_context))?;

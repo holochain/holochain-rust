@@ -1,7 +1,10 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    network::actions::publish::publish,
+    network::actions::{
+        publish::publish,
+        // publish_header_entry::publish_header_entry,
+    },
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
@@ -80,7 +83,7 @@ pub async fn author_entry<'a>(
         address
     ));
 
-    // 4. Publish the valid entry to DHT.
+    // 4. Publish the valid entry and its header (will be optional in the future) to DHT.
     // For publishable entires this will publish the entry and the header
     // For non-publishable entries this will only publish the header
     context.log(format!(
@@ -92,6 +95,17 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: published!",
         address
     ));
+
+    // context.log(format!(
+    //     "debug/workflow/authoring_entry/{}: publishing header...",
+    //     address
+    // ));
+    // await!(publish_header_entry(entry.address(), &context))?;
+    // context.log(format!(
+    //     "debug/workflow/authoring_entry/{}: header published!",
+    //     address
+    // ));
+    
     Ok(CommitEntryResult::new(addr))
 }
 

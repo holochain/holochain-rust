@@ -118,9 +118,9 @@ pub fn default_persistence_dir() -> PathBuf {
 /// filter the logs from its dependencies.
 ///
 /// ```rust
-/// use crate::logger::LogRules;
-///
-/// let mut rules = LogRules::new();
+/// extern crate holochain_conductor_api;
+/// use holochain_conductor_api::{logger,config};
+/// let mut rules = logger::LogRules::new();
 /// // Filtering out all the logs from our dependencies
 /// rules
 ///     .add_rule(".*", true, None)
@@ -130,11 +130,11 @@ pub fn default_persistence_dir() -> PathBuf {
 ///     .add_rule("^holochain", false, None)
 ///     .expect("Invalid logging rule.");
 ///
-/// let lc = LoggerConfiguration {
+/// let lc = config::LoggerConfiguration {
 ///     logger_level: "debug".to_string(),
 ///     rules: rules,
 ///     state_dump: true,
-///     }
+///     };
 /// ```
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {

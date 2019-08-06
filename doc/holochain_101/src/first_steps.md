@@ -1,7 +1,7 @@
 # First steps writing Holochain hApps with Rust
 
 ___
-This tutorial builds for the 0.0.18-alpha1 release but as the API and HDK are changing it will likely fail under newer releases.
+This tutorial builds for the 0.0.25-alpha1 release. Since the HDK is still in alpha it may break under future releases.
 ___
 
 Holochain hApps are made of compiled WebAssembly that encodes the rules of the hApp, the data it can store and how users will interact with it. This means that [any language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs) can one day be used for Holochain.
@@ -12,9 +12,7 @@ In this article we will walk through the steps of creating a simple hApp using R
 
 ## Requirements
 
-First step is to download the appropriate [dev preview release](https://github.com/holochain/holochain-rust/releases) for your OS. If you decide to build the latest version from source, be warned that the API is undergoing rapid change, so some of the steps in this article may not work. The release contains the binary for the holochain developer command line tool, `hc`, which is used to generate a skeleton app, run tests and build the app package. Follow the installations on [this page](https://developer.holochain.org/start.html) to install the required dependencies.
-
-Ensure that `hc` is available on your path. If you instead decide to [build from source](https://developer.holochain.org/start.html) cargo will ensure the binaries are on your path automatically.
+First step is to follow the quickstart instructions installations on [this page](https://developer.holochain.org/start.html) to install the required dependencies. The nix-shell tool makes it incredibly easy to ensure consistent dev environments between machines. Once you have holonix installed make sure you are inside the nix-shell before running any of the commands in this guide.
 
 If you want to jump ahead to see what the completed project will look like, the [full source code is available on GitHub](https://github.com/willemolding/holochain-rust-todo).
 
@@ -64,7 +62,7 @@ The project structure should now be as follows:
 ```
 
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The most important of which is the [`define_zome!`](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.define_zome.html) macro. Every zome must use this to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (init).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The holochain HDK uses Rust annotations to label parts of the code for special purposes. The most important of which is [`#[zome]`](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.define_zome.html). Every zome must use this annotation on a module in the `lib.rs` to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (init).
 
 Open up `lib.rs` and replace its contents with the following:
 
@@ -72,27 +70,21 @@ Open up `lib.rs` and replace its contents with the following:
 #[macro_use]
 extern crate hdk;
 
-define_zome! {
-    entries: [
-    ]
-
-    init: || {
+#[zome]
+mod todo {
+    #[init]
+    fn init() -> ZomeApiResult<()> {
         Ok(())
     }
 
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+    #[validate_agent]
+    fn validate_agent(validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
         Ok(())
-    }
-
-    functions: [
-    ]
-
-    traits: {
     }
 }
 ```
 
-This is the simplest possible zome with no entries and no exposed functions.
+This is the simplest possible valid zome with no entries and no exposed functions.
 
 ## Adding some Entries
 Unlike in holochain-proto, where you needed to define a JSON schema to validate entries, holochain entries in Rust map to a native struct type. We can define our list and listItem structs as follows:
@@ -146,10 +138,13 @@ The `Serialize` and `Deserialize` derived traits allow the structs to be convert
 These structs on their own are not yet valid Holochain entries. To create these we must include them in the `define_zome!` macro by using the `entry!` macro:
 
 ```rust
-// -- SNIP-- //
 
-define_zome! {
-    entries: [
+#[zome]
+mod todo {
+    // -- snip -- //
+
+    #[entry_def]
+    fn list_entry_def() -> ValidatingEntryType {
         entry!(
             name: "list",
             description: "",
@@ -168,7 +163,11 @@ define_zome! {
                     }
                 )
             ]
-        ),
+        )
+    }
+
+    #[entry_def]
+    fn list_item_entry_def() -> ValidatingEntryType {
         entry!(
             name: "listItem",
             description: "",
@@ -178,12 +177,11 @@ define_zome! {
                 Ok(())
             }
         )
-    ]
-
-// -- SNIP-- //
+    }
+}
 ```
 
-Take note of the `native_type` field of the macro which gives which Rust struct represents the entry type. The `validation_package` field is a function that defines what data should be passed to the validation function through the `ctx` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The validation field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
+Take note of the use of the struct types (`List` and `ListItem`) in the parameters to the validation function. This will automatically add validation to ensure these entries always match the structures. The `validation_package` field is a function that defines what data should be passed to the validation function through the `validation_data` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The validation field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
 
 Take note also of the `links` field. As we will see later links are the main way to encode relational data in holochain. The `links` section of the entry macro defines what other types of entries are allowed to link to and from this type. This also includes a validation function for fine grain control over linking.
 
@@ -191,10 +189,13 @@ Take note also of the `links` field. As we will see later links are the main way
 ## Adding Functions
 Finally we need a way to interact with the hApp. We will define the following functions: `create_list`, `add_item` and `get_list`. get_list will retrieve a list and all the items linked to each list.
 
-For each of these functions we must define a handler, which is a Rust function that will be executed when the conductor calls the function. (For more on conductors, read Nico's recent post.) It is best practice for functions to always return a `ZomeApiResult<T>`, where `T` is the type the function should return if it runs without error. This is an extension of the Rust Result type and allows zome functions to abort early on errors using the `?` operator. At the moment the handler function names cannot be the same as the function itself so we will prefix them with `handle_`. This will be fixed in an upcoming release. The handler for `create_list` could be written as:
+Rust functions inside the zome module can be annotated with `#[zome_fn("hc_public")]` which will expose them to be callable from the conductor. The `"hc_public"` defines the capability required to call this function. This guide will not go in depth on capabilities but just know that hc_public means these functions are callable externally with no added security.
+
+It is best practice for functions to always return a `ZomeApiResult<T>`, where `T` is the type the function should return if it runs without error. This is an extension of the Rust Result type and allows zome functions to abort early on errors using the `?` operator. `create_list` could be written as:
 
 ```rust
-fn handle_create_list(list: List) -> ZomeApiResult<Address> {
+#[zome_fn("hc_public")]
+fn create_list(list: List) -> ZomeApiResult<Address> {
     // define the entry
     let list_entry = Entry::App(
         "list".into(),
@@ -211,7 +212,8 @@ The `hdk::commit_entry` function is how a zome can interact with holochain core 
 The `add_item` function requires the use of holochain links to associate two entries. In holochain-proto this required the use of a commit with a special Links entry but it can now be done using the HDK function `link_entries(address1, address2, link_type, tag)`. The `link_type` must exactly match one of the types of links defined in an `entry!` macro for this base (e.g. `link_type: "items"` in this case). The `tag` can be any string we wish to associate with this individual link. We will just use an empty string for this example. The add item handler accepts a `ListItem` and an address of a list, commits the `ListItem`, then links it to the list address:
 
 ```rust
-fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<Address> {
+#[zome_fn("hc_public")]
+fn add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<Address> {
     // define the entry
     let list_item_entry = Entry::App(
         "listItem".into(),
@@ -229,7 +231,8 @@ At the moment there is no validation done on the link entries. This will be adde
 Finally, `get_list` requires us to use the HDK function `get_links(base_address, link_type, tag)`. As you may have guessed, this will return the addresses of all the entries that are linked to the `base_address` with a given link_type and a given tag. Both `link_type` and `tag` are LinkMatch types, which is an enum for matching anything, matching exactly, or matching with a regular expression. Passing `LinkMatch::Exactly("string")` means retrieve links that match the type/tag string exactly and passing `LinkMatch::Any` to either of them means to retrieve all links regardless of the type/tag. As this only returns the addresses, we must then map over each of then and load the required entry.
 
 ```rust
-fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
+#[zome_fn("hc_public")]
+fn get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
 
     // load the list entry. Early return error if it cannot load or is wrong type
     let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
@@ -251,38 +254,7 @@ fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
 }
 ```
 
-Phew! That is all the handlers set up. Finally the function definitions must be added to the `define_zome!` macro. Before doing that, it is worth briefly discussing a new concept in Holochain, *traits*. Traits allow functions to be grouped to control access and in the future will allow hApps to connect to other hApps that implement a particular trait. At this time the only trait we need to consider is the hc_public trait. This is a special named trait that exposes all of the contained functions to the outside world.
-
-The function field of our zome definition should be updated to:
-
-```
-define_zome! {
-
-	// -- SNIP-- //
-	functions: [
-		create_list: {
-		    inputs: |list: List|,
-		    outputs: |result: ZomeApiResult<Address>|,
-		    handler: handle_create_list
-		}
-		add_item: {
-		    inputs: |list_item: ListItem, list_addr: HashString|,
-		    outputs: |result: ZomeApiResult<Address>|,
-		    handler: handle_add_item
-		}
-		get_list: {
-		    inputs: |list_addr: HashString|,
-		    outputs: |result: ZomeApiResult<GetListResponse>|,
-		    handler: handle_get_list
-		}
-	    ]
-	    traits: {
-		hc_public [create_list, add_item, get_list]
-	    }
-}
-```
-
-and there we have it! If you are coding along the full lib.rs should now look like this:
+Phew! and there we have it! If you are coding along the full lib.rs should now look like this:
 
 ```rust
 #[macro_use]
@@ -305,8 +277,24 @@ use hdk::{
 };
 
 
-define_zome! {
-    entries: [
+#[zome]
+mod todo {
+    
+    #[init]
+    fn init() -> ZomeApiResult<()> {
+        Ok(())
+    }
+
+    #[validate_agent]
+    fn validate_agent(validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
+        Ok(())
+    }
+
+    /*=========================================
+    =            Entry definitions            =
+    =========================================*/
+    #[entry_def]
+    fn list_entry_def() -> ValidatingEntryType {
         entry!(
             name: "list",
             description: "",
@@ -325,7 +313,11 @@ define_zome! {
                     }
                 )
             ]
-        ),
+        )
+    }
+
+    #[entry_def]
+    fn list_item_entry_def() -> ValidatingEntryType {
         entry!(
             name: "listItem",
             description: "",
@@ -335,100 +327,62 @@ define_zome! {
                 Ok(())
             }
         )
-    ]
-
-    init: || {
-        Ok(())
     }
 
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
+    /*=====  End of Entry definitions  ======*/
+
+    /*======================================
+    =            Zome functions            =
+    ======================================*/
+
+    #[zome_fn("hc_public")]
+    fn create_list(list: List) -> ZomeApiResult<Address> {
+        // define the entry
+        let list_entry = Entry::App(
+            "list".into(),
+            list.into()
+        );
+
+        // commit the entry and return the address
+        hdk::commit_entry(&list_entry)
     }
 
-	functions: [
-        create_list: {
-            inputs: |list: List|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: handle_create_list
-        }
-        add_item: {
-            inputs: |list_item: ListItem, list_addr: HashString|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: handle_add_item
-        }
-        get_list: {
-            inputs: |list_addr: HashString|,
-            outputs: |result: ZomeApiResult<GetListResponse>|,
-            handler: handle_get_list
-        }
-    ]
-    traits: {
-        hc_public [create_list, add_item, get_list]
+    #[zome_fn("hc_public")]
+    fn add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<Address> {
+        // define the entry
+        let list_item_entry = Entry::App(
+            "listItem".into(),
+            list_item.into()
+        );
+
+        let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
+        hdk::link_entries(&list_addr, &item_addr, "items", "")?; // if successful, link to list address
+        Ok(item_addr)
     }
-}
 
+    #[zome_fn("hc_public")]
+    fn get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
 
-#[derive(Serialize, Deserialize, Debug, Clone, DefaultJson)]
-struct List {
-    name: String
-}
+        // load the list entry. Early return error if it cannot load or is wrong type
+        let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
 
-#[derive(Serialize, Deserialize, Debug, Clone, DefaultJson)]
-struct ListItem {
-    text: String,
-    completed: bool
-}
+        // try and load the list items, filter out errors and collect in a vector
+        let list_items = hdk::get_links(&list_addr, LinkMatch::Exactly("items"), LinkMatch::Any)?.addresses()
+            .iter()
+            .map(|item_address| {
+                hdk::utils::get_as_type::<ListItem>(item_address.to_owned())
+            })
+            .filter_map(Result::ok)
+            .collect::<Vec<ListItem>>();
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
-struct GetListResponse {
-    name: String,
-    items: Vec<ListItem>
-}
-
-fn handle_create_list(list: List) -> ZomeApiResult<Address> {
-    // define the entry
-    let list_entry = Entry::App(
-        "list".into(),
-        list.into()
-    );
-
-    // commit the entry and return the address
-	hdk::commit_entry(&list_entry)
-}
-
-
-fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<Address> {
-    // define the entry
-    let list_item_entry = Entry::App(
-        "listItem".into(),
-        list_item.into()
-    );
-
-	let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
-	hdk::link_entries(&list_addr, &item_addr, "items")?; // if successful, link to list address
-	Ok(item_addr)
-}
-
-
-fn handle_get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
-
-    // load the list entry. Early return error if it cannot load or is wrong type
-    let list = hdk::utils::get_as_type::<List>(list_addr.clone())?;
-
-    // try and load the list items, filter out errors and collect in a vector
-    let list_items = hdk::get_links(&list_addr, LinkMatch::Exactly("items"), LinkMatch::Any)?.addresses()
-        .iter()
-        .map(|item_address| {
-            hdk::utils::get_as_type::<ListItem>(item_address.to_owned())
+        // if this was successful then return the list items
+        Ok(GetListResponse{
+            name: list.name,
+            items: list_items
         })
-        .filter_map(Result::ok)
-        .collect::<Vec<ListItem>>();
+    }
 
-    // if this was successful then return the list items
-    Ok(GetListResponse{
-        name: list.name,
-        items: list_items
-    })
+    /*=====  End of Zome functions  ======*/
 }
 ```
 

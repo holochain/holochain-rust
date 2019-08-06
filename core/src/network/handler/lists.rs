@@ -27,6 +27,14 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
                 );
             }
 
+            for chain_header_entry in get_all_chain_header_entries(context.clone()) {
+                address_map.insert(
+                    chain_header_entry.clone(),
+                    get_all_aspect_addresses(&chain_header_entry, context.clone())
+                        .expect("Error getting entry aspects of authoring list for chain headers"),
+                );
+            }
+
             let action = Action::RespondAuthoringList(EntryListData {
                 space_address: get_list_data.space_address,
                 provider_agent_id: get_list_data.provider_agent_id,
@@ -45,6 +53,13 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .iter(&top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish(&context))
         .map(|chain_header| chain_header.entry_address().clone())
+        .collect()
+}
+
+fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Address> {
+    let chain = context.state().unwrap().agent().iter_chain();
+    chain
+        .map(|chain_header| chain_header.address())
         .collect()
 }
 

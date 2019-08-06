@@ -26,27 +26,34 @@ pub async fn initialize(
     let instance_context = instance.initialize_context(context.clone());
     let dna = dna.ok_or(HolochainError::DnaMissing)?;
 
-    // 2. Initialize the local chain
-    if let Err(err) = await!(get_dna_and_agent(&instance_context)) {
-        context.log(format!(
-            "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
-            err
-        ));
-        context.log("dna/initialize: Initializing new chain from given DNA...");
-        await!(initialize_chain(dna.clone(), &instance_context))?;
-    }
+    // 2. Initialize the local chain if not already
+    let first_initialization = match await!(get_dna_and_agent(&instance_context)) {
+        Ok(_) => false,
+        Err(err) => {
+            context.log(
+                format!("dna/initialize: Couldn't get DNA and agent from chain: {:?}",
+                err)
+            );
+            await!(initialize_chain(dna.clone(), &instance_context))?;
+            context.log("dna/initialize: Initializing new chain from given DNA...");
+            true
+        }
+    };
 
     // 3. Initialize the network
     await!(initialize_network(&instance_context))?;
 
-    // 4. Call publish on the agent and DNA entries. 
-    // This is to trigger the publishing of their headers not the entries themselves
-    let dna_entry = Entry::Dna(Box::new(dna.clone()));
-    await!(publish(dna_entry.address(), &context))?;
-    let agent_id_entry = Entry::AgentId(context.agent_id.clone());
-    await!(publish(agent_id_entry.address(), &context))?;
+    if first_initialization {
+        // 4. (first initialization only) Call publish on the agent and DNA entries. 
+        // This is to trigger the fast publishing of their headers not the entries themselves
+        let dna_entry = Entry::Dna(Box::new(dna.clone()));
+        await!(publish(dna_entry.address(), &context))?;
+        let agent_id_entry = Entry::AgentId(context.agent_id.clone());
+        await!(publish(agent_id_entry.address(), &context))?;
 
-    // 5. Call the init callbacks in the zomes
-    await!(call_init(dna, &instance_context))?;
+        // 5. (first initialization only) Call the init callbacks in the zomes
+        await!(call_init(dna, &instance_context))?;
+    }
+
     Ok(instance_context)
 }

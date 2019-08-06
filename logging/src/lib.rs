@@ -20,8 +20,8 @@
 //!
 //! # Quick Start
 //!
-//! To get you started quickly, the easiest and highest-level way to get a working logger is to use
-//! [`init_simple`].
+//! To get you started quickly, the easiest and highest-level way to get a working logger (with the
+//! [`Info`](Level::Info) log verbosity level) is to use [`init_simple`].
 //!
 //! ```edition2018
 //! use logging::prelude::*;
@@ -44,12 +44,13 @@
 //! use logging::prelude::*;
 //!
 //! FastLoggerBuilder::new()
+//!     // The timestamp format is customizable as well
 //!     .timestamp_format("%Y-%m-%d %H:%M:%S%.6f")
-//!     .set_level_from_str("Trace")
+//!     .set_level_from_str("Debug")
 //!     .build()
 //!     .expect("Fail to init the logging factory.");
 //!
-//! trace!("Let's trace what that program is doing.");
+//! debug!("Let's trace what that program is doing.");
 //! ```
 //!
 //! #### Building the logging factory from TOML configuration.

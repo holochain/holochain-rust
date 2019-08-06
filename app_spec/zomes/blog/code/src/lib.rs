@@ -58,14 +58,14 @@ define_zome! {
         if !(entry == get_result) {
             return Err("Could not retrieve the same entry in init".into());
         }
-        
+
         // should be able to access globals
         let agent_addr: Address = AGENT_ADDRESS.to_string().into();
         let _dna_hash: Address = DNA_ADDRESS.to_string().into();
 
         // should be able to call hdk::send, will timeout immedietly but that is ok
-        let _send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
-
+        let send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
+        dbg!("send_result: {:?}",  send_result);
         // should be able to call other zome funcs
         hdk::call(
             hdk::THIS_INSTANCE,

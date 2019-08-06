@@ -27,7 +27,7 @@ use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::{
-    data_types::{DirectMessageData, StoreEntryAspectData},
+    data_types::{DirectMessageData, StoreEntryAspectData, GenericResultData},
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
@@ -102,6 +102,10 @@ MessageData {{
     )
 }
 
+fn handle_failure_result(_failure_data: GenericResultData) -> Result<(), HolochainError> {
+    Ok(())
+}
+
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
@@ -109,11 +113,6 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
         let message = message.unwrap();
-        // context.log(format!(
-        //   "trace/net/handle:({}): {:?}",
-        //   context.agent_id.nick, message
-        // ));
-
         let maybe_json_msg = Lib3hServerProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());
@@ -127,7 +126,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "warning/net/handle: FailureResult: {:?}",
                     failure_data
                 ));
-                // TODO: Handle the reception of a FailureResult
+                handle_failure_result(failure_data).expect("handle_failure_result")
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {

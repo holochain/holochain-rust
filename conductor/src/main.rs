@@ -97,6 +97,7 @@ fn main() {
 #[cfg_attr(tarpaulin, skip)]
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
+    let config = dbg!(config);
     config
         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
         .map_err(|string| HolochainError::ConfigError(string))?;

@@ -4,7 +4,7 @@
 /// facility we use filter the logs from our dependendies.
 ///
 /// Once a logger has been registered you can use those macros like this:
-/// ```rust
+/// ```ignore
 ///
 /// // Let's init a new context
 /// let ctx = Context::new(...);

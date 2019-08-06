@@ -243,15 +243,15 @@ impl Instance {
         }
 
         if let Err(e) = self.save() {
-            context.log(format!(
-                "err/instance/process_action: could not save state: {:?}",
+            log_error!(context,
+                "instance/process_action: could not save state: {:?}",
                 e
-            ));
+            );
         } else {
-            context.log(format!(
-                "trace/reduce/process_actions: reducing {:?}",
+            log_trace!(context,
+                "reduce/process_actions: reducing {:?}",
                 action_wrapper
-            ));
+            );
         }
 
         // Add new observers
@@ -269,20 +269,20 @@ impl Instance {
             // to prevent emitting too many unneeded signals
             let trace_signal = Signal::Trace(action_wrapper.clone());
             tx.send(trace_signal).unwrap_or_else(|e| {
-                context.log(format!(
-                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                log_warn!(context,
+                    "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
-                ));
+                );
             });
 
             self.consistency_model
                 .process_action(action_wrapper.action())
                 .map(|signal| {
                     tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
-                        context.log(format!(
-                            "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                        log_warn!(context,
+                            "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                             e
-                        ));
+                        );
                     });
                 });
         }
@@ -428,8 +428,8 @@ pub mod tests {
         let logger = test_logger();
         (
             Arc::new(Context::new(
+                "Test-context-and-logger-instance",
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
                 content_storage.clone(),
@@ -459,14 +459,13 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
-        let logger = test_logger();
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         Arc::new(
             Context::new_with_channels(
+                "Test-context-with-channels-instance",
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
                 None,
@@ -489,8 +488,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test-context-with-state-instance",
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -514,8 +513,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
+            "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             cas.clone(),

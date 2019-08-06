@@ -149,12 +149,12 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
                         .unwrap_or(None)
                 })
                 .map_err(|error| {
-                    context.log(format!("err/net: Error trying to get headers {:?}", error));
+                    log_error!(context, "net: Error trying to get headers {:?}", error);
                     None::<EntryWithMetaAndHeader>
                 })
         })
         .map_err(|error| {
-            context.log(format!("err/net: Error trying to find entry {:?}", error));
+            log_error!(context, "net: Error trying to find entry {:?}", error);
             None::<EntryWithMetaAndHeader>
         })
         .unwrap_or(Ok(None))
@@ -193,10 +193,10 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
             ActionWrapper::new(Action::RespondQuery((query_data, respond_get)))
         }
         err => {
-            context.log(format!(
-                "err/net: Error ({:?}) deserializing Query {:?}",
+            log_error!(context,
+                "net: Error ({:?}) deserializing Query {:?}",
                 err, query_json
-            ));
+            );
             return;
         }
     };
@@ -233,10 +233,10 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             )))
         }
         err => {
-            context.log(format!(
-                "err/net: Error ({:?}) deserializing QueryResult {:?}",
+            log_error!(context,
+                "net: Error ({:?}) deserializing QueryResult {:?}",
                 err, query_result_json
-            ));
+            );
             return;
         }
     };

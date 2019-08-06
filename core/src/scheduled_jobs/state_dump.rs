@@ -158,5 +158,5 @@ Holding:
         holding_list = holding_strings.join("\n")
     );
 
-    context.log(format!("debug/state_dump: {}", debug_dump));
+    log_info!(context, "debug/state_dump: {}", debug_dump);
 }

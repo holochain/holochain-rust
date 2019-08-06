@@ -18,19 +18,19 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         Ok(verify_signature_input) => verify_signature_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_verify_signature failed to deserialize SerializedEntry: {:?}",
+            log_error!(context,
+                "zome: invoke_verify_signature failed to deserialize SerializedEntry: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
 
-    context.log(format!(
-        "debug/zome: using provenance:{:?} to verify data:{:?}",
+    log_debug!(context,
+        "zome: using provenance:{:?} to verify data:{:?}",
         verification_args.provenance.clone(),
         verification_args.payload.clone()
-    ));
+    );
 
     let verification_result = verification_args
         .provenance

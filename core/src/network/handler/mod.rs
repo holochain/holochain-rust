@@ -102,7 +102,8 @@ MessageData {{
     )
 }
 
-fn handle_failure_result(_failure_data: GenericResultData) -> Result<(), HolochainError> {
+fn handle_failure_result(failure_data: GenericResultData) -> Result<(), HolochainError> {
+    let _failure_data = dbg!(failure_data);
     Ok(())
 }
 
@@ -122,6 +123,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
                 }
+
                 log_warn!(context, "net/handle: FailureResult: {:?}", failure_data);
                 handle_failure_result(failure_data).expect("handle_failure_result")
             }

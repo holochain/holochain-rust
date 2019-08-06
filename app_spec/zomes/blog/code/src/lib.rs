@@ -16,7 +16,7 @@ pub mod post;
 
 use blog::Env;
 use hdk::{
-    AGENT_ADDRESS, DNA_ADDRESS, PUBLIC_TOKEN,
+    DNA_ADDRESS, PUBLIC_TOKEN,
     error::ZomeApiResult,
     holochain_persistence_api::{
         cas::content::Address
@@ -60,12 +60,13 @@ define_zome! {
         }
 
         // should be able to access globals
-        let agent_addr: Address = AGENT_ADDRESS.to_string().into();
+   //     let agent_addr: Address = AGENT_ADDRESS.to_string().into();
         let _dna_hash: Address = DNA_ADDRESS.to_string().into();
 
+        // TODO should we allow sending messages to self?
         // should be able to call hdk::send, will timeout immedietly but that is ok
-        let send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
-        dbg!("send_result: {:?}",  send_result);
+//        let send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
+  //      dbg!("send_result: {:?}",  send_result);
         // should be able to call other zome funcs
         hdk::call(
             hdk::THIS_INSTANCE,

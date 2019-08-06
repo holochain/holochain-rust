@@ -123,6 +123,7 @@ fn context_log_macro_test() {
     );
 
     // // Somehow we need to build our own logging instance for this test to show logs
+    // use logging::prelude::*;
     // let _ = FastLoggerBuilder::new()
     //             .set_level_from_str("Trace")
     //             .build()

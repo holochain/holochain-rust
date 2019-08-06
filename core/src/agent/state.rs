@@ -183,7 +183,7 @@ pub fn create_new_chain_header(
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
         root_state
-            .conductor_api()
+            .conductor_api
             .execute(entry.address().to_string(), CryptoMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
@@ -420,8 +420,14 @@ pub mod tests {
         let agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
-        let header =
-            create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
+        let header = create_new_chain_header(
+            &test_entry(),
+            &agent_state,
+            &state,
+            &None,
+            &vec![],
+        )
+        .unwrap();
         let agent_id = context.agent_id.clone();
         assert_eq!(
             header,

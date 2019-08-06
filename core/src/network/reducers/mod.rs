@@ -1,8 +1,6 @@
-pub mod get_entry;
-pub mod get_links;
+pub mod query;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
-pub mod handle_get_links_result;
 pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;
@@ -11,8 +9,7 @@ pub mod publish_header_entry;
 pub mod resolve_direct_connection;
 pub mod respond_authoring_list;
 pub mod respond_fetch;
-pub mod respond_get;
-pub mod respond_get_links;
+pub mod respond_query;
 pub mod respond_gossip_list;
 pub mod send_direct_message;
 pub mod shutdown;
@@ -22,11 +19,9 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         reducers::{
-            get_entry::{reduce_get_entry, reduce_get_entry_timeout},
-            get_links::{reduce_get_links, reduce_get_links_timeout},
+            query::{reduce_query, reduce_query_timeout},
             get_validation_package::reduce_get_validation_package,
             handle_custom_send_response::reduce_handle_custom_send_response,
-            handle_get_links_result::reduce_handle_get_links_result,
             handle_get_result::reduce_handle_get_result,
             handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
@@ -35,8 +30,7 @@ use crate::{
             resolve_direct_connection::reduce_resolve_direct_connection,
             respond_authoring_list::reduce_respond_authoring_list,
             respond_fetch::reduce_respond_fetch_data,
-            respond_get::reduce_respond_get,
-            respond_get_links::reduce_respond_get_links,
+            respond_query::reduce_respond_query,
             respond_gossip_list::reduce_respond_gossip_list,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
             shutdown::reduce_shutdown,
@@ -58,14 +52,11 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
-        Action::GetEntry(_) => Some(reduce_get_entry),
-        Action::GetEntryTimeout(_) => Some(reduce_get_entry_timeout),
-        Action::GetLinks(_) => Some(reduce_get_links),
-        Action::GetLinksTimeout(_) => Some(reduce_get_links_timeout),
+        Action::Query(_) => Some(reduce_query),
+        Action::QueryTimeout(_) => Some(reduce_query_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
-        Action::HandleGetResult(_) => Some(reduce_handle_get_result),
-        Action::HandleGetLinksResult(_) => Some(reduce_handle_get_links_result),
+        Action::HandleQuery(_) => Some(reduce_handle_get_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
@@ -74,8 +65,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),
         Action::RespondFetch(_) => Some(reduce_respond_fetch_data),
-        Action::RespondGet(_) => Some(reduce_respond_get),
-        Action::RespondGetLinks(_) => Some(reduce_respond_get_links),
+        Action::RespondQuery(_) => Some(reduce_respond_query),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         Action::ShutdownNetwork => Some(reduce_shutdown),

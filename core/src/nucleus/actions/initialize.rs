@@ -14,7 +14,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use holochain_persistence_api::cas::content::{Address};
+use holochain_persistence_api::cas::content::Address;
 
 use std::{pin::Pin, sync::Arc, time::*};
 
@@ -154,10 +154,7 @@ pub async fn initialize_chain(
                 ));
             }
             Ok(addr) => {
-                context.log(format!(
-                    "debug/initialize: created public token: {:?}",
-                    addr
-                ));
+                log_debug!(context, "initialize: created public token: {:?}", addr);
                 Some(addr)
             }
         }

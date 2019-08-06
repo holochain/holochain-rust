@@ -20,7 +20,6 @@ pub async fn initialize(
     dna: Option<Dna>,
     context: Arc<Context>,
 ) -> HcResult<Arc<Context>> {
-    // 1. Intitialize the context
     let instance_context = instance.initialize_context(context.clone());
     let dna = dna.ok_or(HolochainError::DnaMissing)?;
 
@@ -28,12 +27,12 @@ pub async fn initialize(
     let first_initialization = match await!(get_dna_and_agent(&instance_context)) {
         Ok(_) => false,
         Err(err) => {
-            context.log(
-                format!("dna/initialize: Couldn't get DNA and agent from chain: {:?}",
-                err)
+            log_debug!(context,
+                "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
+                err
             );
             await!(initialize_chain(dna.clone(), &instance_context))?;
-            context.log("dna/initialize: Initializing new chain from given DNA...");
+            log_debug!(context, "dna/initialize: Initializing new chain from given DNA...");
             true
         }
     };
@@ -51,6 +50,5 @@ pub async fn initialize(
         // 5. (first initialization only) Call the init callbacks in the zomes
         await!(call_init(dna, &instance_context))?;
     }
-
     Ok(instance_context)
 }

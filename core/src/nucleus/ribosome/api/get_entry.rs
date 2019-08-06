@@ -18,10 +18,10 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_get_entry() failed to deserialize: {:?}",
+            log_error!(context,
+                "zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -254,6 +254,7 @@ pub mod tests {
             crud_status: CrudStatus::Live,
             maybe_link_update_delete: None,
         };
+        // let header = create_new_chain_header(&entry, context.clone(), &None);
         let entry_result =
             GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(

@@ -90,13 +90,11 @@ pub async fn build_validation_package<'a>(
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            let agent_state = &context.state()?.agent();
-            let state = &State::new(context.clone());
-
+            let state = State::new(context.clone());
             agent::state::create_new_chain_header(
                 &entry,
-                agent_state,
-                state,
+                &context.state()?.agent(),
+                &state,
                 &None,
                 provenances,
             )?

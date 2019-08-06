@@ -71,7 +71,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
     let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
     if response_result.is_err() {
-        log_error!("zome : Could not get links for remove_link method");
+        log_error!("zome : Could not get links for remove_link method.");
         ribosome_error_code!(WorkflowFailed)
     } else {
         let response = response_result.expect("Could not get response");

@@ -101,7 +101,6 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
                     context.clone(),
                 )),
             };
-
             if Err(HolochainError::ValidationPending) != result {
                 remove_pending_validation(
                     pending.entry_with_header.entry.address(),
@@ -122,11 +121,11 @@ pub fn run_pending_validations(context: Arc<Context>) {
         .clone();
 
     pending_validations.iter().for_each(|(_, pending)| {
-        context.log(format!(
-            "debug/scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
+        log_debug!(context,
+            "scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
             pending.entry_with_header.entry.entry_type(),
             pending.entry_with_header.entry.address()
-        ));
+        );
         retry_validation(pending.clone(), context.clone());
     });
 }

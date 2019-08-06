@@ -47,10 +47,8 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
 }
 
 fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
-    let chain = context.state().unwrap().agent().chain_store();
-    let top_header = context.state().unwrap().agent().top_chain_header();
+    let chain = context.state().unwrap().agent().iter_chain();
     chain
-        .iter(&top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish(&context))
         .map(|chain_header| chain_header.entry_address().clone())
         .collect()

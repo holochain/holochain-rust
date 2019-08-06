@@ -8,7 +8,7 @@ use crate::{
         actions::add_pending_validation::add_pending_validation, validation::ValidationError,
     },
     scheduled_jobs::pending_validations::ValidatingWorkflow,
-    workflows::{validation_package,hold_entry::hold_entry_workflow}
+    workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
     entry::Entry,

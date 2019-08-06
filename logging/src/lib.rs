@@ -141,7 +141,13 @@ use std::{
 };
 
 /// Default format of the log's timestamp.
-const TIMESTAMP_FMT: &str = "%Y-%m-%d %H:%M:%S";
+const DEFAULT_TIMESTAMP_FMT: &str = "%Y-%m-%d %H:%M:%S";
+/// Default channel size value.
+const DEFAULT_CHANNEL_SIZE: usize = 1024;
+/// Default log verbosity level.
+const DEFAULT_LOG_LEVEL: Level = Level::Info;
+/// Default log verbosity level as a String.
+const DEFAULT_LOG_LEVEL_STR: &str = "Info";
 
 /// Helper type pointing to a trait object in order to send around a log message.
 type MsgT = Box<dyn LogMessageTrait>;
@@ -468,15 +474,15 @@ impl<'a> FastLoggerBuilder {
 impl Default for FastLoggerBuilder {
     fn default() -> Self {
         // Get the log verbosity from the command line
-        let level = env::var("RUST_LOG").unwrap_or_else(|_| "Info".to_string());
+        let level = env::var("RUST_LOG").unwrap_or_else(|_| DEFAULT_LOG_LEVEL_STR.to_string());
 
         FastLoggerBuilder {
-            level: Level::from_str(&level).unwrap_or(Level::Info),
+            level: Level::from_str(&level).unwrap_or(DEFAULT_LOG_LEVEL),
             rule_filters: Vec::new(),
             level_colors: ColoredLevelConfig::new(),
-            channel_size: 512,
+            channel_size: DEFAULT_CHANNEL_SIZE,
             file_path: None,
-            timestamp_format: String::from(TIMESTAMP_FMT)
+            timestamp_format: String::from(DEFAULT_TIMESTAMP_FMT)
         }
     }
 }
@@ -599,7 +605,7 @@ impl From<Logger> for FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             rule_filters,
             file_path: logger.file,
-            timestamp_format: logger.timestamp_format.unwrap_or(String::from(TIMESTAMP_FMT)),
+            timestamp_format: logger.timestamp_format.unwrap_or(String::from(DEFAULT_TIMESTAMP_FMT)),
             ..FastLoggerBuilder::default()
         }
     }

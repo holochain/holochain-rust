@@ -232,7 +232,7 @@ impl ColoredLogLevel for Level {
     }
 }
 
-static ID_COLORS: &'static [&str] = &[
+static ID_COLORS: &[&str] = &[
     "green", "cyan", "blue", "magenta", "white",
 ];
 

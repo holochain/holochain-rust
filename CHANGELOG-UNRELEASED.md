@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-* New logging implementation added as a subcrate : a fast logger with a filtering capability using regex expressions, please so [logging] for more details.
+* New logging implementation added as a subcrate : a fast logger with a filtering capability using regex expressions, please so [logging](logging) for more details.
 
 ### Changed
 

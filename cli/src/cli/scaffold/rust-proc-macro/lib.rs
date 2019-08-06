@@ -47,6 +47,11 @@ mod my_zome {
         Ok(())
     }
 
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        Ok(())
+    }
+
     #[entry_def]
      fn my_entry_def() -> ValidatingEntryType {
         entry!(

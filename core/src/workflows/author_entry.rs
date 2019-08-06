@@ -8,6 +8,7 @@ use crate::{
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
+    entry::CanPublish,
 };
 
 use holochain_core_types::{
@@ -80,13 +81,25 @@ pub async fn author_entry<'a>(
     ))?;
     log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
-    // 4. Publish the valid entry and its header (will be optional in the future) to DHT.
-    // For publishable entires this will publish the entry and the header
-    // For non-publishable entries this will only publish the header
-    log_debug!(context, "debug/workflow/authoring_entry/{}: publishing...", address);
-    await!(publish(entry.address(), &context))?;
-    log_debug!(context, "debug/workflow/authoring_entry/{}: published!", address);
+    // 4. Publish the valid entry to DHT. This will call Hold to itself
+    if entry.entry_type().can_publish(context) {
+        log_debug!(context,
+            "workflow/authoring_entry/{}: publishing...",
+            address
+        );
+        await!(publish(entry.address(), &context))?;
+        log_debug!(context,
+            "workflow/authoring_entry/{}: published!",
+            address
+        );
+    } else {
+        log_debug!(context,
+          "workflow/authoring_entry/{}: entry is private, no publishing",
+          address
+        );
+    }
 
+    // 5. Publish the header for all types (including private entries)
     log_debug!(context, "debug/workflow/authoring_entry/{}: publishing header...", address);
     await!(publish_header_entry(entry.address(), &context))?;
     log_debug!(context, "debug/workflow/authoring_entry/{}: header published!", address);

@@ -327,7 +327,9 @@ impl<'a> FastLoggerBuilder {
         Ok(logger.unwrap().into())
     }
 
-    /// Returns the verbosity level of logger to build. Can be one of: Trace, Debug, Info, Warn or Error.
+    /// Returns the [verbosity level](log::Level) of logger to build. Can be one of:
+    /// [Trace](Level::Trace), [Debug](Level::Debug), [Info](Level::Info),
+    /// [Warn](Level::Warn) or [Error](Level::Error).
     pub fn level(&self) -> Level {
         self.level
     }
@@ -350,7 +352,7 @@ impl<'a> FastLoggerBuilder {
     }
 
     /// Sets the capacity of our bounded message queue (i.e. there is a limit to how many messages
-    /// it can hold at a time.). By default we use a queue of 512.
+    /// it can hold at a time.). By default we use a queue of 1024.
     pub fn set_channel_size(&mut self, channel_size: usize) -> &mut Self {
         self.channel_size = channel_size;
         self

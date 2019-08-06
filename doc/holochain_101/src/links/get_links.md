@@ -7,8 +7,8 @@ Get Links allows the zome developer to query links from the DHT. The get links c
 `Options` : This a configurable struct that you can use to specify different options to apply when executing the query.
 
 # Options
-`Timeout` : The timeout variable on the options specifies how long the query process should wait for a response before it timesout
-`LinksStatusRequest` : This is a variable in which you can specify 3 options, `All`,`Live`,`Deleted`. This allows you to query the links based on crud_status in which all will return everything will live will only return live links and deleted as such.
+`Timeout` : The timeout variable on the options specifies how long the query process should wait befor a response before it timesout
+`LinksStatusRequest` : This is a variable in which you can specify 3 modes, `All`,`Live`,`Delete`. This allows you to query the links based on crud_status in which `All` will return everything will `Live` will only return live links and `Delete` as such.
 `Headers`: With the headers, you will be able to specify if you should return link headers as well. This is a boolean value that can true or false
 
 

@@ -56,7 +56,7 @@ mod my_zome {
      fn my_entry_def() -> ValidatingEntryType {
         entry!(
             name: "my_entry",
-            description: "this is a same entry defintion",
+            description: "this is a same entry definition",
             sharing: Sharing::Public,
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry

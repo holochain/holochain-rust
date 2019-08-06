@@ -2,7 +2,7 @@ use crate::{
     action::ActionWrapper,
     network::{
         actions::ActionResponse,
-        query::{GetLinksNetworkResult, NetworkQueryResult},
+        query::NetworkQueryResult,
         reducers::send,
         state::NetworkState,
     },
@@ -15,18 +15,11 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
-/// Send back to network a HandleQueryEntryResult, no matter what.
-/// Will return an empty content field if it actually doesn't have the data.
-fn reduce_respond_get_links_inner(
-    network_state: &mut NetworkState,
-    query_data: &QueryEntryData,
-    links: &GetLinksNetworkResult,
-    link_type: String,
-    tag: String,
-) -> Result<(), HolochainError> {
+
+fn reduce_respond_query_inner(network_state: &mut NetworkState,network_query_result:&NetworkQueryResult,query_data:&QueryEntryData) -> Result<(), HolochainError>
+{
     network_state.initialized()?;
-    let query_result_json: JsonString =
-        NetworkQueryResult::Links(links.clone(), link_type, tag).into();
+      let query_result_json: JsonString =network_query_result.into();
     send(
         network_state,
         Lib3hClientProtocol::HandleQueryEntryResult(QueryEntryResultData {
@@ -39,28 +32,20 @@ fn reduce_respond_get_links_inner(
         }),
     )
 }
-
-pub fn reduce_respond_get_links(
+/// Send back to network a HandleQueryEntryResult, no matter what.
+/// Will return an empty content field if it actually doesn't have the data.
+pub fn reduce_respond_query(
     network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (query_data, links, link_type, tag) =
-        unwrap_to!(action => crate::action::Action::RespondGetLinks);
-    let result = reduce_respond_get_links_inner(
-        network_state,
-        query_data,
-        links,
-        link_type.clone(),
-        tag.clone(),
-    );
+    let (query_data, payload) = unwrap_to!(action=>crate::action::Action::RespondQuery);
+    let result = reduce_respond_query_inner(network_state,payload,query_data)
+                .map(|_| Ok(()))
+                .unwrap_or_else(|e| Err(HolochainError::ErrorGeneric(e.to_string())));
 
-    network_state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::RespondGetLinks(match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
-    );
+    network_state
+        .actions
+        .insert(action_wrapper.clone(), ActionResponse::Respond(result));
 }

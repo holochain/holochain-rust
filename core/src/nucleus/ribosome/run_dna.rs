@@ -143,12 +143,10 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 err_code.as_str()
             );
             match &runtime.data {
-                WasmCallData::ZomeCall(d) => d
-                    .context
-                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
-                WasmCallData::CallbackCall(d) => d
-                    .context
-                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
+                WasmCallData::ZomeCall(d) =>
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
+                WasmCallData::CallbackCall(d) =>
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
                 _ => {}
             };
         }
@@ -185,10 +183,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     // Log & done
     // @TODO make this more sophisticated (truncation or something)
     // right now we have tests that return multiple wasm pages (64k+ bytes) so this is very spammy
-    // runtime.context.log(format!(
-    //     "debug/zome: Zome Function '{}' returned: {}",
+    // runtime. log_debug!(context, "zome: Zome Function '{}' returned: {}",
     //     zome_call.fn_name, return_log_msg,
-    // ));
+    // );
     let _ = return_log_msg;
     return return_result;
 }

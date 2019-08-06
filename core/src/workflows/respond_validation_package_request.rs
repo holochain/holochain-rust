@@ -31,15 +31,14 @@ pub async fn respond_validation_package_request(
         };
 
     if maybe_validation_package.is_some() {
-        context.log(format!(
-            "Sending validation package of entry {} to agent {}",
+        log_debug!(context,
+            "workflows/validation: Sending validation package of entry {} to agent {}",
             requested_entry_address, to_agent_id
-        ));
+        );
     } else {
-        context.log(format!(
-            "Got request for validation package of unknown entry {} from agent {}!",
+        log_debug!(context, "workflow/validation: Got request for validation package of unknown entry {} from agent {}!",
             requested_entry_address, to_agent_id
-        ));
+        );
     };
 
     let direct_message = DirectMessage::ValidationPackage(maybe_validation_package);

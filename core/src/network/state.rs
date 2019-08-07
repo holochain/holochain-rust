@@ -1,13 +1,9 @@
 use crate::{
-    action::{ActionWrapper, GetEntryKey, GetLinksKey},
-    network::{
-        actions::ActionResponse, direct_message::DirectMessage, query::GetLinksNetworkResult,
-    },
+    action::{ActionWrapper, QueryKey},
+    network::{actions::ActionResponse, direct_message::DirectMessage,query::NetworkQueryResult},
 };
 use boolinator::*;
-use holochain_core_types::{
-    entry::EntryWithMetaAndHeader, error::HolochainError, validation::ValidationPackage,
-};
+use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use snowflake;
@@ -18,21 +14,6 @@ use std::{
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
 
-/// This represents the state of a get_entry network process:
-/// None: process started, but no response yet from the network
-/// Some(Err(_)): there was a problem at some point
-/// Some(Ok(None)): no problem but also no entry -> it does not exist
-/// Some(Ok(Some(entry_with_meta))): we have it
-type GetEntryWithMetaResult = Option<Result<Option<EntryWithMetaAndHeader>, HolochainError>>;
-
-/// This represents the state of a get_links network process:
-/// None: process started, but no response yet from the network
-/// Some(Err(_)): there was a problem at some point
-/// Some(Ok(_)): we got the list of links
-type GetLinksResult = Option<Result<GetLinksNetworkResult, HolochainError>>;
-
-type GetLinksResultCount = Option<Result<usize, HolochainError>>;
-
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
@@ -40,6 +21,8 @@ type GetLinksResultCount = Option<Result<usize, HolochainError>>;
 ///   agent which actually should not happen. Something weird is going on.
 /// Some(Ok(Some(entry))): we have it
 type GetValidationPackageResult = Option<Result<Option<ValidationPackage>, HolochainError>>;
+
+type GetResults = Option<Result<NetworkQueryResult, HolochainError>>;
 
 #[derive(Clone, Debug)]
 pub struct NetworkState {
@@ -51,18 +34,8 @@ pub struct NetworkState {
     pub dna_address: Option<Address>,
     pub agent_id: Option<String>,
 
-    /// Here we store the results of GET entry processes.
-    /// None means that we are still waiting for a result from the network.
-    pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
-
-    /// Here we store the results of GET links processes.
-    /// The key of this map contains the base address, link_type and link tag for the link being requested.
-    /// the tag and link_type fields of the key are Options, None means they are waiting to retrieve all
-    /// links of any tag/type
-    /// None means that we are still waiting for a result from the network.
-    pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
-
-    pub get_links_results_count: HashMap<GetLinksKey, GetLinksResultCount>,
+    // Here are the results of every get action
+    pub get_query_results: HashMap<QueryKey, GetResults>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -90,10 +63,7 @@ impl NetworkState {
             network: Arc::new(Mutex::new(None)),
             dna_address: None,
             agent_id: None,
-
-            get_entry_with_meta_results: HashMap::new(),
-            get_links_results: HashMap::new(),
-            get_links_results_count: HashMap::new(),
+            get_query_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

@@ -62,7 +62,7 @@ The project structure should now be as follows:
 ```
 
 ## Writing the lists zome
-The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The holochain HDK uses Rust annotations to label parts of the code for special purposes. The most important of which is [`#[zome]`](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.define_zome.html). Every zome must use this annotation on a module in the `lib.rs` to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (init).
+The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. The holochain HDK uses Rust annotations to label parts of the code for special purposes. The most important of which is `#[zome]`. Every zome must use this annotation on a module in the `lib.rs` to define the structure of the zome, what entries it contains, which functions it exposes and what to do on first start-up (init).
 
 Open up `lib.rs` and replace its contents with the following:
 
@@ -135,7 +135,7 @@ use hdk::{
 
 The `Serialize` and `Deserialize` derived traits allow the structs to be converted to and from JSON, which is how entries are managed internally in Holochain. The DefaultJson derived trait comes from the holochain HDK itself and allows for seamless converting between data stored in the DHT and rust structs.
 
-These structs on their own are not yet valid Holochain entries. To create these we must include them in the `define_zome!` macro by using the `entry!` macro:
+These structs on their own are not yet valid Holochain entries. To create an entry we must write a functio n that return a `ValidatingEntryType` and tag it using the `#[entry_def]` attribute. The `entry!` macro makes it easy to define a `ValidatingEntryType`.
 
 ```rust
 

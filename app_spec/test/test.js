@@ -15,14 +15,13 @@ scenario('capabilities grant and claim', async (s, t, { alice, bob }) => {
 
     // Bob stores the grant as a claim
     const claim = await bob.app.call("blog", "commit_post_claim", { grantor: alice.app.agentId, claim: result.Ok })
-    t.deepEqual(claim, { Ok: 'QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu' });
+    t.deepEqual(claim, { Ok: 'QmcRjRrUeyD1nA5YTk9sEFrjVD8jUtEVFU3CLsDCPKNbmT'});
 
     // Bob can now create a post on alice's chain via a node-to-node message with the claim
     const post_content = "Holo world"
     const params = { grantor: alice.app.agentId, content: post_content, in_reply_to: null }
     const create_result = await bob.app.call("blog", "create_post_with_claim", params)
     t.deepEqual(create_result, {Ok: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk"})
-
     // Confirm that the post was actually added to alice's chain
     const get_post_result = await alice.app.call("blog", "get_post", { post_address: create_result.Ok })
     const value = JSON.parse(get_post_result.Ok.App[1])

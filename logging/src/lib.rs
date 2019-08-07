@@ -434,14 +434,16 @@ impl<'a> FastLoggerBuilder {
                         }
                     });
                 } else {
-                    let mut buffer = io::BufWriter::new(io::stderr());
+                    // TODO:  <06-08-19, dymayday> Use this instead of the current impl for better
+                    // perf, but we need to fix the capricious buffer flush
+                    // let mut buffer = io::BufWriter::new(io::stderr());
                     thread::spawn(move || {
                         while let Ok(msg) = r.recv() {
                             // Here we use `writeln!` instead of println! in order to avoid
                             // unnecessary flush.
                             // Currently we use `BufWriter` which has a sized buffer of about
                             // 8kb by default
-                            writeln!(&mut buffer, "{}", msg.build())
+                            writeln!(&mut io::BufWriter::new(io::stderr()), "{}", msg.build())
                                 .expect("Fail to log to file.")
                         }
                     });

@@ -12,6 +12,6 @@ A system validation also takes place when a remove_link is executed. Before a re
 
 `Zome Validation`
 
-A Zome Validation always takes place on each remove_link that is executed after it passes the system validation. These are rules that can be defined by the zome. The Zome Developer can choose to delete the Link using their defined criteria.
+A Zome Validation always takes place on each remove_link that is executed after it passes the system validation. These are rules that can be defined by the zome. Thus, the Zome Developer can choose approve link deletion using their defined criteria.
 
 

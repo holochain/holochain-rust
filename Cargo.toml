@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+  "benchmarks",
   "cli",
   "common",
   "conductor",
@@ -12,10 +13,10 @@ members = [
   "dpki",
   "hdk-proc-macros",
   "hdk-rust",
+  "logging",
   "net",
   "test_bin",
-  "benchmarks",
-  "logging"
+  "walkman",
 ]
 exclude = [
   "test_utils",

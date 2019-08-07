@@ -107,6 +107,9 @@ pub struct Configuration {
     /// Which signals to emit
     #[serde(default)]
     pub signals: SignalConfig,
+
+    /// Walkman config
+    pub walkman: Option<WalkmanConfig>,
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -838,6 +841,12 @@ pub struct DpkiConfiguration {
 pub struct SignalConfig {
     pub trace: bool,
     pub consistency: bool,
+}
+
+/// Configure which signals to emit, to reduce unwanted signal volume
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct WalkmanConfig {
+    pub logging: bool,
 }
 
 #[cfg(test)]

@@ -109,12 +109,23 @@ impl Instance {
         )?;
         Ok(context)
     }
-
     /// Only needed in tests to check that the initialization (and other workflows) fail
     /// with the right error message if no DNA is present.
     #[cfg(test)]
     pub fn initialize_without_dna(&mut self, context: Arc<Context>) -> Arc<Context> {
         self.inner_setup(context)
+    }
+
+    /// This function is only needed in tests, using previously recorded Walkman data to completely drive
+    /// the instance. Rather than responding to events from the outside world, its action channel is completely
+    /// managed by Walkman
+    #[cfg(test)]
+    pub fn initialize_with_walkman_cassette(
+        &mut self,
+        dna: Dna,
+        context: Arc<Context>,
+    ) -> HcResult<Arc<Context>> {
+        unimplemented!()
     }
 
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
@@ -345,12 +356,6 @@ impl Drop for Instance {
         self.state.write().unwrap().drop_inner_state();
     }
 }
-
-/*impl Default for Instance {
-    fn default(context:Context) -> Self {
-        Self::new(context)
-    }
-}*/
 
 /// Send Action to Instance's Event Queue and block until it has been processed.
 ///

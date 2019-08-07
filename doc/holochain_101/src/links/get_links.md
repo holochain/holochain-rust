@@ -1,5 +1,5 @@
 # Get Links
-Get Links allows the zome developer to query links from the DHT. The get links can be configured with options to customize what type of query should be returned. The parameters of the get_links are : 
+Get Links allows the zome developer to query links from the DHT. The call accepts an options parameter to customize the query behavior. The parameters of the get_links are : 
 
 `base` : which is the base address
 `LinkType Link Match` : which you can use to specify a regex of an exact match or pattern on the match of a link_type

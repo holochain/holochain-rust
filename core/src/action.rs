@@ -4,7 +4,7 @@ use crate::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
         entry_with_header::EntryWithHeader,
-        query::{GetLinksNetworkQuery,NetworkQueryResult},
+        query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },
     nucleus::{
@@ -18,13 +18,8 @@ use crate::{
 };
 
 use holochain_core_types::{
-    chain_header::ChainHeader,
-    crud_status::CrudStatus,
-    dna::Dna,
-    entry::Entry,
-    error::HolochainError,
-    link::link_data::LinkData,
-    signature::Provenance,
+    chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
+    error::HolochainError, link::link_data::LinkData, signature::Provenance,
     validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};

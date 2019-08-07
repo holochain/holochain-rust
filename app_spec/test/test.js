@@ -39,7 +39,7 @@ scenario('sign_and_verify_message', async (s, t, { alice, bob }) => {
     const message = "Hello everyone! Time to start the secret meeting";
 
     const SignResult = await bob.app.call("converse", "sign_message", { key_id:"", message: message });
-    t.deepEqual(SignResult, { Ok: 'N4wF/U1By7TA4H3k9i+5r8IGYzRMTi59mr/XZOpz8Ydj85mbupUk6tHMf/owgjJo43Vu1lja7ZFKGOFQnpa0Bw==' });
+    t.deepEqual(SignResult, { Ok: 'ftQIZQ6P5TOn++vT5PaQOYtwKnV0zfObXyiTbb/UX9gXu610KSATT1S3S9mKoaGCg1Glz+1t7KXnb3vSV5L/Dg==' });
 
     const provenance = [bob.app.agentId, SignResult.Ok];
 

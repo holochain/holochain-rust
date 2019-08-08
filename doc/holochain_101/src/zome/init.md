@@ -6,7 +6,7 @@ Recall that every peer will be running instances of DNA on their device. This is
 
 This lifecycle stage is called `init`. It is a callback that Holochain expects every single Zome to implement, because it will call it during initialization. If it does not exist within the WASM code for a Zome it will cause an error and peers will not be able to launch an instance of the DNA.
 
-Another important principle in Holochain is that not all networks are public. Some DNAs should only be joinable by agent meeting certain requirements. Some examples of this might be possessing a valid invite key, being on a greenlist or even meeting some requirements in another DNA. We refer to this access control as the *membrane* of the network.
+Another important principle in Holochain is that not all networks are public. Some DNAs should only be joinable by agent meeting certain requirements. Some examples of this might be possessing a valid invite key, being on a whitelist or even meeting some requirements in another DNA. We refer to this access control as the *membrane* of the network.
 
 To enforce the membrane requirements Holochain exposes a callback called `validate_agent`. This is analogous to a validation function for an entry but the entry is the agent themselves. Similar to an entry validation callback it is run by DHT nodes before they will acknowledge that the new agent has joined.
 
@@ -52,4 +52,44 @@ mod my_zome {
 
 ## Building in Rust: validate_agent
 
+Validate agent is required by every zome. Unlike init the callback takes a single argument, the entry validation data for the agent. This is identical to the `EntryValidationData` passed to entry validation callbacks and is an enum which contains the agent/authors public key, agent data and signed header.
 
+If the zome has no membrane requirements: 
+
+```rust
+#[zome]
+mod my_zome {
+
+    #[validate_agent]
+    fn validate_agent(_validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
+        Ok(())
+    }
+
+}
+```
+
+An example of ensuring the agents private key is in a hard-coded whitelist. One use-case for this could be private chat channels:
+
+```rust
+
+static WHITELIST_AGENT_KEYS: &'static [&str] = &["<keys-go-here>"];
+
+#[zome]
+mod my_zome {
+
+    #[validate_agent]
+    fn validate_agent(validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
+        if let EntryValidationData::Create{entry, ..} = validation_data {
+            let agent = entry as AgentId;
+            if WHITELIST_AGENT_KEYS.contains(&agent.pub_sign_key.as_str()) { {
+                Ok(()) // the agent is allowed
+            } else {
+                Err("This agent is not on the whitelist".to_string())
+            }
+        } else {
+            Err("Cannot update or delete an agent at this time".into())
+        }
+    }
+
+}
+```

@@ -25,17 +25,14 @@ impl CanPublish for EntryType {
         let entry_type_name = self.to_string();
         let maybe_def = dna.get_entry_type_def(entry_type_name.as_str());
         if maybe_def.is_none() {
-            context.log("err/dht/context must hold an entry type definition to publish an entry.");
+            log_error!("dht/context must hold an entry type definition to publish an entry.");
             return false;
         }
         let entry_type_def = maybe_def.unwrap();
 
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
-            context.log(format!(
-                "debug/dht/entry {} is not publishable",
-                entry_type_name
-            ));
+            log_debug!(context, "dht/entry {} is not publishable", entry_type_name);
             return false;
         }
         true

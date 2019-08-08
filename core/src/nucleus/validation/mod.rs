@@ -10,6 +10,7 @@ use holochain_persistence_api::cas::content::Address;
 
 use std::sync::Arc;
 
+mod agent_entry;
 mod app_entry;
 mod header_address;
 mod link_entry;
@@ -35,7 +36,7 @@ pub enum ValidationError {
     NotImplemented,
 
     /// An error occurred that is out of the scope of validation (no state?, I/O errors..)
-    Error(String),
+    Error(HolochainError),
 }
 
 /// Result of validating an entry.
@@ -53,7 +54,7 @@ impl From<ValidationError> for HolochainError {
             ValidationError::NotImplemented => {
                 HolochainError::NotImplemented("Validation not implemented".to_string())
             }
-            ValidationError::Error(e) => HolochainError::ErrorGeneric(e),
+            ValidationError::Error(e) => e,
         }
     }
 }
@@ -116,13 +117,11 @@ pub async fn validate_entry(
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),
 
-        // TODO: actually check agent against app specific membrane validation rule
-        // like for instance: validate_agent_id(
-        //                      entry.clone(),
-        //                      validation_data,
-        //                      context,
-        //                    )?
-        EntryType::AgentId => Ok(()),
+        EntryType::AgentId => await!(agent_entry::validate_agent_entry(
+            entry.clone(),
+            validation_data,
+            context,
+        )),
 
         _ => Err(ValidationError::NotImplemented),
     }

@@ -34,7 +34,7 @@ use std::{
 };
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
-struct SumInput {
+pub struct SumInput {
     num1: u32,
     num2: u32,
 }
@@ -89,7 +89,7 @@ pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
     }
 }
 
-fn check_sum_args(num1: u32, num2: u32) -> SumInput {
+pub fn check_sum_args(num1: u32, num2: u32) -> SumInput {
     SumInput {
         num1: num1,
         num2: num2,
@@ -131,7 +131,7 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
 }
 
 pub static BOB_AGENT_ID: &'static str =
-    "HcScj5GbxXdTq69sfnz3jcA4u5f35zftsuu5Eb3dBxHjgd9byUUW6JmN3Bvzqqr";
+    "HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz";
 
 fn is_my_friend(addr: Address) -> bool {
     addr == Address::from(BOB_AGENT_ID)

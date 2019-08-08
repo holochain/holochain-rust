@@ -3,6 +3,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
+use snowflake::ProcessUniqueId;
 use std::thread;
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
@@ -53,11 +54,16 @@ where
     let (master_tx, master_rx) = unbounded::<T>();
     for rx in rxs {
         let tx = master_tx.clone();
-        thread::spawn(move || {
-            while let Ok(item) = rx.recv() {
-                tx.send(item).unwrap_or(());
-            }
-        });
+        let _ = thread::Builder::new()
+            .name(format!(
+                "combine_receivers/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                while let Ok(item) = rx.recv() {
+                    tx.send(item).unwrap_or(());
+                }
+            });
     }
     master_rx
 }

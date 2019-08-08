@@ -1,8 +1,8 @@
 use super::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
-    protocol::Protocol,
     NetResult,
 };
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -11,19 +11,22 @@ use std::{
     thread, time,
 };
 
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+
 /// Struct for holding a network connection running on a separate thread.
 /// It is itself a NetSend, and spawns a NetWorker.
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
-    send_channel: mpsc::Sender<Protocol>,
+    send_channel: mpsc::Sender<Lib3hClientProtocol>,
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
     pub endpoint: String,
+    pub p2p_endpoint: String,
 }
 
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
-    fn send(&mut self, data: Protocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.send_channel.send(data)?;
         Ok(())
     }
@@ -46,15 +49,14 @@ impl NetConnectionThread {
         let (send_endpoint, recv_endpoint) = mpsc::channel();
 
         // Spawn worker thread
-        let thread = thread::spawn(move || {
+        let thread = thread::Builder::new().name(format!("net_worker_thread/{}", ProcessUniqueId::new().to_string())).spawn(move || {
             // Create worker
             let mut worker = worker_factory(handler).unwrap_or_else(|e| {
                 panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
             });
             // Get endpoint and send it to owner (NetConnectionThread)
-            let endpoint = worker.endpoint();
             send_endpoint
-                .send(endpoint)
+                .send((worker.endpoint(), worker.p2p_endpoint()))
                 .expect("Sending endpoint address should work.");
             drop(send_endpoint);
             // Loop as long owner wants to
@@ -104,14 +106,17 @@ impl NetConnectionThread {
             worker.stop().unwrap_or_else(|e| {
                 eprintln!("Error occured in p2p network module on stop: {:?}", e)
             });
-        });
+        }).expect("Could not spawn net connection thread");
 
         // Retrieve endpoint from spawned thread.
-        let endpoint = recv_endpoint.recv().map_err(|e| {
+        let (endpoint, p2p_endpoint) = recv_endpoint.recv().map_err(|e| {
             format_err!("Failed to receive endpoint address from net worker: {}", e)
         })?;
         let endpoint = endpoint
             .expect("Should have an endpoint address")
+            .to_string();
+        let p2p_endpoint = p2p_endpoint
+            .expect("Should hav a p2p_endpoint address")
             .to_string();
 
         // Done
@@ -121,6 +126,7 @@ impl NetConnectionThread {
             thread,
             done,
             endpoint,
+            p2p_endpoint,
         })
     }
 
@@ -132,7 +138,7 @@ impl NetConnectionThread {
             bail!("NetConnectionThread failed to join on stop() call");
         }
         // Call shutdown closure if any
-        if let Some(done) = self.done {
+        if let Some(mut done) = self.done {
             done();
         }
         Ok(())
@@ -143,21 +149,42 @@ impl NetConnectionThread {
 mod tests {
     use super::{super::net_connection::NetWorker, *};
     use crossbeam_channel::unbounded;
+    use holochain_persistence_api::hash::HashString;
+    use lib3h_protocol::{data_types::GenericResultData, protocol_server::Lib3hServerProtocol};
 
     struct DefWorker;
 
     impl NetWorker for DefWorker {}
 
+    fn success_server_result(result_info: Vec<u8>) -> Lib3hServerProtocol {
+        Lib3hServerProtocol::SuccessResult(GenericResultData {
+            request_id: "test_req_id".into(),
+            space_address: HashString::from("test_space"),
+            to_agent_id: HashString::from("test-agent"),
+            result_info,
+        })
+    }
+
+    fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocol {
+        Lib3hClientProtocol::SuccessResult(GenericResultData {
+            request_id: "test_req_id".into(),
+            space_address: HashString::from("test_space"),
+            to_agent_id: HashString::from("test-agent"),
+            result_info,
+        })
+    }
+
     #[test]
     fn it_can_defaults() {
         let mut con = NetConnectionThread::new(
             NetHandler::new(Box::new(move |_r| Ok(()))),
-            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
 
-        con.send("test".into()).unwrap();
+        con.send(success_client_result("tick".to_string().into_bytes()))
+            .unwrap();
         con.stop().unwrap();
     }
 
@@ -167,12 +194,18 @@ mod tests {
 
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
-            self.handler.handle(Ok("tick".into()))?;
+            self.handler
+                .handle(Ok(success_server_result("tick".to_string().into_bytes())))?;
             Ok(true)
         }
 
-        fn receive(&mut self, data: Protocol) -> NetResult<()> {
-            self.handler.handle(Ok(data))
+        fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+            match data {
+                Lib3hClientProtocol::SuccessResult(data) => self
+                    .handler
+                    .handle(Ok(success_server_result(data.result_info))),
+                msg => panic!("unexpected client protocol message in receive: {:?}", msg),
+            }
         }
     }
 
@@ -185,26 +218,33 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             })),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
 
-        con.send("test".into()).unwrap();
+        con.send(success_client_result("test".to_string().into_bytes()))
+            .unwrap();
 
         let res;
+
         loop {
             let tmp = receiver.recv().unwrap();
 
-            if &(String::from(tmp.as_json_string())) == "tick" {
-                continue;
-            } else {
-                res = tmp;
-                break;
+            match tmp {
+                Lib3hServerProtocol::SuccessResult(generic_data) => {
+                    if generic_data.result_info == "tick".to_string().into_bytes() {
+                        continue;
+                    } else {
+                        res = generic_data.result_info;
+                        break;
+                    }
+                }
+                msg => panic!("unexpected message received: {:?}", msg),
             }
         }
 
-        assert_eq!("test".to_string(), String::from(res.as_json_string()));
+        assert_eq!("test".to_string().into_bytes(), res);
 
         con.stop().unwrap();
     }
@@ -218,15 +258,19 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             })),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
             None,
         )
         .unwrap();
 
         let res = receiver.recv().unwrap();
 
-        assert_eq!("tick".to_string(), String::from(res.as_json_string()));
-
+        match res {
+            Lib3hServerProtocol::SuccessResult(generic_data) => {
+                assert_eq!("tick".to_string().into_bytes(), generic_data.result_info)
+            }
+            msg => panic!("unexpected message received: {:?}", msg),
+        }
         con.stop().unwrap();
     }
 }

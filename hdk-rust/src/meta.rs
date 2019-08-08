@@ -2,7 +2,10 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{api::G_MEM_STACK, entry_definition::ValidatingEntryType};
+use crate::{
+    api::G_MEM_STACK,
+    entry_definition::{AgentValidator, ValidatingEntryType},
+};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
@@ -16,7 +19,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 
 use holochain_wasm_utils::{
     api_serialization::validation::{
-        EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
+        AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
     memory::{
@@ -42,18 +45,24 @@ struct PartialZome {
 #[allow(improper_ctypes)]
 pub struct ZomeDefinition {
     pub entry_types: Vec<ValidatingEntryType>,
+    pub agent_entry_validator: Option<AgentValidator>,
 }
 
 impl ZomeDefinition {
-    fn new() -> ZomeDefinition {
+    pub fn new() -> ZomeDefinition {
         ZomeDefinition {
             entry_types: Vec::new(),
+            agent_entry_validator: None,
         }
     }
 
     #[allow(dead_code)]
     pub fn define(&mut self, entry_type: ValidatingEntryType) {
         self.entry_types.push(entry_type);
+    }
+
+    pub fn define_agent_validator(&mut self, agent_validator: AgentValidator) {
+        self.agent_entry_validator = Some(agent_validator);
     }
 }
 
@@ -135,6 +144,48 @@ pub extern "C" fn __hdk_validate_app_entry(
                 .into(),
             }
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_validate_agent_entry(
+    encoded_allocation_of_input: RibosomeEncodingBits,
+) -> RibosomeEncodingBits {
+    if let Err(allocation_error) =
+        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+    {
+        return allocation_error.as_ribosome_encoding();
+    }
+
+    let mut zd = ZomeDefinition::new();
+    unsafe { zome_setup(&mut zd) };
+
+    //get the validator code
+    let mut validator = match zd.agent_entry_validator {
+        None => {
+            return return_code_for_allocation_result(crate::global_fns::write_json(
+                JsonString::from_json("No agent validation callback registered for zome."),
+            ))
+            .into();
+        }
+        Some(v) => v,
+    };
+
+    // Deserialize input
+    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input)
+    {
+        Ok(v) => v,
+        Err(e) => return RibosomeEncodedValue::from(e).into(),
+    };
+
+    let validation_result = (*validator)(input.validation_data);
+
+    match validation_result {
+        Ok(()) => RibosomeEncodedValue::Success.into(),
+        Err(fail_string) => return_code_for_allocation_result(crate::global_fns::write_json(
+            JsonString::from_json(&fail_string),
+        ))
+        .into(),
     }
 }
 
@@ -333,7 +384,7 @@ pub mod tests {
 
         let validating_entry_type = entry!(
             name: "post",
-            description: "blog entry post",
+            description: "{\"description\": \"blog entry post\"}",
             sharing: Sharing::Public,
 
 
@@ -358,7 +409,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from_json("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
+            JsonString::from_json("{\"entry_types\":{\"post\":{\"properties\":\"{\\\"description\\\": \\\"blog entry post\\\"}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

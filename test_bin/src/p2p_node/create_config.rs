@@ -1,4 +1,5 @@
 use holochain_net::{p2p_config::*, tweetlog::*};
+use p2p_node::lib3h::engine::RealEngineConfig;
 
 /// Create a P2pConfig for an IPC node that uses n3h and possibily a specific folder.
 /// Return the generated P2pConfig and the created tempdir if no dir was provided.
@@ -27,33 +28,35 @@ pub(crate) fn create_ipc_config(
         Some(filepath) => {
             log_d!("filepath = {}", filepath);
             // Get config from file
-            let p2p_config = P2pConfig::from_file(filepath);
-            assert_eq!(p2p_config.backend_kind, P2pBackendKind::IPC);
-            // complement missing fields
-            serde_json::from_value(json!({
-            "backend_kind": String::from(p2p_config.backend_kind),
-            "backend_config":
-            {
-                "socketType": p2p_config.backend_config["socketType"],
-                "bootstrapNodes": bootstrap_nodes,
-                "spawn":
+            let mut p2p_config = P2pConfig::from_file(filepath);
+            assert_eq!(p2p_config.backend_kind, P2pBackendKind::N3H);
+            match p2p_config.backend_config {
+                BackendConfig::Json(partial_config) =>
+                // complement missing fields
                 {
-                    "workDir": dir.clone(),
-                    "env": {
-                        "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
-                        "N3H_WORK_DIR": dir.clone(),
-                        "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
-                        "N3H_LOG_LEVEL": p2p_config.backend_config["spawn"]["env"]["N3H_LOG_LEVEL"],
-                    }
-                },
-            }})).expect("Failled making valid P2pConfig with filepath")
+                    p2p_config.backend_config = BackendConfig::Json(json!(
+                    {
+                        "socketType": partial_config["socketType"],
+                        "bootstrapNodes": bootstrap_nodes,
+                        "spawn":
+                        {
+                            "workDir": dir.clone(),
+                            "env": {
+                                "N3H_MODE": partial_config["spawn"]["env"]["N3H_MODE"],
+                                "N3H_WORK_DIR": dir.clone(),
+                                "N3H_IPC_SOCKET": partial_config["spawn"]["env"]["N3H_IPC_SOCKET"],
+                                "N3H_LOG_LEVEL": partial_config["spawn"]["env"]["N3H_LOG_LEVEL"],
+                            }
+                        },
+                    }))
+                }
+                _ => panic!("wrong backend config, was expecting Json"),
+            }
+            p2p_config
         }
-        None => {
-            // use default config
-            serde_json::from_value(json!({
-            "backend_kind": "IPC",
-            "backend_config":
-            {
+        None => P2pConfig {
+            backend_kind: P2pBackendKind::N3H,
+            backend_config: BackendConfig::Json(json!({
                 "socketType": "ws",
                 "bootstrapNodes": bootstrap_nodes,
                 "spawn":
@@ -64,11 +67,11 @@ pub(crate) fn create_ipc_config(
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
                         "N3H_LOG_LEVEL": "t"
-                }
-            },
-            }}))
-            .expect("Failed making valid default P2pConfig")
-        }
+                    }
+                },
+            })),
+            maybe_end_user_config: None,
+        },
     };
     config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
         maybe_end_user_config_filepath,
@@ -105,32 +108,24 @@ pub(crate) fn create_lib3h_config(
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::LIB3H);
-            // complement missing fields
-            serde_json::from_value(json!({
-            "backend_kind": "LIB3H",
-            "backend_config":
-            {
-                "socketType": p2p_config.backend_config["socketType"],
-                "bootstrapNodes": p2p_config.backend_config["bootstrapNodes"],
-                "workDir": p2p_config.backend_config["workDir"],
-                "logLevel": p2p_config.backend_config["logLevel"],
-            }}))
-            .expect("Failled making valid LIB3H P2pConfig")
+            // TODO: complement missing fields if necessary
+            p2p_config
         }
-        None => {
-            // use default config
-            serde_json::from_value(json!({
-            "backend_kind": "LIB3H",
-            "backend_config":
-            {
-                "socketType": "ws",
-                "bootstrapNodes": bootstrap_nodes,
-                "workDir": dir.clone(),
-                "logLevel": "t"
-            },
-            }))
-            .expect("Failed making Lib3h default P2pConfig")
-        }
+        None => P2pConfig {
+            backend_kind: P2pBackendKind::LIB3H,
+            backend_config: BackendConfig::Lib3h(RealEngineConfig {
+                socket_type: "ws".into(),
+                tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
+                bootstrap_nodes: bootstrap_nodes,
+                work_dir: dir.clone(),
+                log_level: 'd',
+                bind_url: url::Url::parse("fixme://bind_url").unwrap(),
+                dht_custom_config: vec![],
+                dht_gossip_interval: 500,
+                dht_timeout_threshold: 3000,
+            }),
+            maybe_end_user_config: None,
+        },
     };
     config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
         maybe_end_user_config_filepath,

@@ -13,7 +13,6 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
-/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
@@ -46,7 +45,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -57,12 +56,16 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// /// # #[no_mangle]
+/// # pub fn hc_encrypt(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -96,7 +99,11 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// define_zome! {
 ///    entries: []
 ///
-///    genesis: || { Ok(()) }
+///    init: || { Ok(()) }
+///    
+///    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+///        Ok(())
+///    }
 ///
 ///    receive: |from, payload| {
 ///        // if you want to serialize data as json to pass, use the json! serde macro

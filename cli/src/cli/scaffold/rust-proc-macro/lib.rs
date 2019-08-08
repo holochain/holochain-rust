@@ -1,4 +1,4 @@
-#![feature(try_from, proc_macro_hygiene)]
+#![feature(proc_macro_hygiene)]
 #[macro_use]
 extern crate hdk;
 extern crate hdk_proc_macros;
@@ -7,22 +7,29 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
-extern crate holochain_core_types_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
 };
 use hdk::holochain_core_types::{
-    cas::content::Address,
     entry::Entry,
     dna::entry_types::Sharing,
-    error::HolochainError,
-    json::JsonString,
 };
+
+use hdk::holochain_json_api::{
+    json::JsonString,
+    error::JsonError
+};
+
+use hdk::holochain_persistence_api::{
+    cas::content::Address
+};
+
 use hdk_proc_macros::zome;
 
-// see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
+// see https://developer.holochain.org/api/latest/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
@@ -35,8 +42,13 @@ pub struct MyEntry {
 #[zome]
 mod my_zome {
 
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 
@@ -44,7 +56,7 @@ mod my_zome {
      fn my_entry_def() -> ValidatingEntryType {
         entry!(
             name: "my_entry",
-            description: "this is a same entry defintion",
+            description: "this is a same entry definition",
             sharing: Sharing::Public,
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
@@ -53,7 +65,7 @@ mod my_zome {
                 Ok(())
             }
         )
-    }   
+    }
 
     #[zome_fn("hc_public")]
     fn create_my_entry(entry: MyEntry) -> ZomeApiResult<Address> {

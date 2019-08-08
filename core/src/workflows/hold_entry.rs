@@ -1,9 +1,7 @@
 use crate::{
     context::Context,
     dht::actions::hold::hold_entry,
-    network::{
-        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
-    },
+    network::entry_with_header::EntryWithHeader,
     nucleus::{
         actions::add_pending_validation::add_pending_validation, validation::validate_entry,
     },
@@ -11,6 +9,7 @@ use crate::{
 
 use crate::{
     nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
+    workflows::validation_package,
 };
 use holochain_core_types::{
     error::HolochainError,
@@ -21,38 +20,37 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
-pub async fn hold_entry_workflow<'a>(
+pub async fn hold_entry_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let EntryWithHeader { entry, header } = entry_with_header;
-
-    // 1. Get validation package from source
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))
+    // 1. Get hold of validation package
+    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
-            context.log(format!("debug/workflow/hold_entry: {}", message));
-            context.log(format!("debug/workflow/hold_entry: Error was: {:?}", err));
+            log_debug!(context, "workflow/hold_entry: {}", message);
+            log_debug!(context, "workflow/hold_entry: Error was: {:?}", err);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 Vec::new(),
                 ValidatingWorkflow::HoldEntry,
-                &context,
+                context.clone(),
             );
             HolochainError::ValidationPending
         })?;
+
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
-        context.log(format!("debug/workflow/hold_entry: {}", message));
+        log_debug!(context, "workflow/hold_entry: {}", message);
         add_pending_validation(
             entry_with_header.to_owned(),
             Vec::new(),
             ValidatingWorkflow::HoldEntry,
-            &context,
+            context.clone(),
         );
         HolochainError::ValidationPending
     })?;
-    context.log(format!("debug/workflow/hold_entry: got validation package"));
+    log_debug!(context, "workflow/hold_entry: got validation package");
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -62,47 +60,45 @@ pub async fn hold_entry_workflow<'a>(
 
     // 3. Validate the entry
     await!(validate_entry(
-        entry.clone(),
+        entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
     ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            context.log(format!(
-                "debug/workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
+            log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
                 entry_with_header.entry.address(),
                 dependencies,
-            ));
+            );
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
                 ValidatingWorkflow::HoldEntry,
-                &context,
+                context.clone(),
             );
             HolochainError::ValidationPending
         } else {
-            context.log(format!(
-                "info/workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry.address(),
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
     })?;
 
-    context.log(format!(
-        "debug/workflow/hold_entry: is valid! {}",
+    log_debug!(context,
+        "workflow/hold_entry: is valid! {}",
         entry_with_header.entry.address()
-    ));
+    );
 
     // 3. If valid store the entry in the local DHT shard
     await!(hold_entry(entry_with_header, context.clone()))?;
 
-    context.log(format!(
-        "debug/workflow/hold_entry: HOLDING: {}",
+    log_debug!(context,
+        "workflow/hold_entry: HOLDING: {}",
         entry_with_header.entry.address()
-    ));
+    );
 
     Ok(())
 }

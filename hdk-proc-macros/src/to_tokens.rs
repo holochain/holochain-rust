@@ -14,7 +14,7 @@ impl ToTokens for ZomeFunction {
             .inputs
             .clone()
             .into_iter()
-            .map(|param| syn::Field::from(param));
+            .map(syn::Field::from);
 
         let input_param_names = self
             .declaration
@@ -106,7 +106,7 @@ impl ToTokens for FnDeclaration {
 
 impl ToTokens for ZomeCodeDef {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let genesis = self.genesis();
+        let init = self.init();
         let zome_setup = self.zome_setup();
         let list_traits = self.list_traits();
         let list_functions = self.list_functions();
@@ -122,7 +122,7 @@ impl ToTokens for ZomeCodeDef {
 
             #(#entry_def_fns )*
 
-            #genesis
+            #init
 
             #zome_setup
 

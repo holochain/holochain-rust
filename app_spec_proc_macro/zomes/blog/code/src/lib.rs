@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #![feature(proc_macro_hygiene)]
 
@@ -49,8 +48,13 @@ pub mod blog {
         memo::definition()
     }
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 

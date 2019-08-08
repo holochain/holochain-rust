@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -17,7 +16,11 @@ fn handle_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
 define_zome! {
     entries: []
 
-    genesis: || {
+    init: || {
+        Ok(())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 

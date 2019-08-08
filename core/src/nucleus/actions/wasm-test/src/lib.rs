@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -154,7 +153,11 @@ define_zome! {
         )
     ]
 
-    genesis: || {
+    init: || {
+        Ok(())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 

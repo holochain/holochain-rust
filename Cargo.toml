@@ -9,12 +9,13 @@ members = [
   "core_api_c_binding",
   "core",
   "dna_c_binding",
-  "hdk-rust",
-  "hdk-proc-macros",
-  "net",
   "dpki",
+  "hdk-proc-macros",
+  "hdk-rust",
+  "net",
   "test_bin",
-  "benchmarks"
+  "benchmarks",
+  "logging"
 ]
 exclude = [
   "test_utils",

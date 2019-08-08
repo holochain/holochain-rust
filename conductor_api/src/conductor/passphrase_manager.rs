@@ -18,13 +18,13 @@ pub trait PassphraseService {
 #[derive(Clone)]
 pub struct PassphraseManager {
     passphrase_cache: Arc<Mutex<Option<SecBuf>>>,
-    passphrase_service: Arc<Mutex<PassphraseService + Send>>,
+    passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>,
     last_read: Arc<Mutex<Instant>>,
     timeout_kill_switch: Sender<()>,
 }
 
 impl PassphraseManager {
-    pub fn new(passphrase_service: Arc<Mutex<PassphraseService + Send>>) -> Self {
+    pub fn new(passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>) -> Self {
         let (kill_switch_tx, kill_switch_rx) = unbounded::<()>();
         let pm = PassphraseManager {
             passphrase_cache: Arc::new(Mutex::new(None)),
@@ -35,22 +35,26 @@ impl PassphraseManager {
 
         let pm_clone = pm.clone();
 
-        thread::spawn(move || loop {
-            if kill_switch_rx.try_recv().is_ok() {
-                return;
-            }
-
-            if pm_clone.passphrase_cache.lock().unwrap().is_some() {
-                let duration_since_last_read =
-                    Instant::now().duration_since(*pm_clone.last_read.lock().unwrap());
-
-                if duration_since_last_read > Duration::from_secs(PASSPHRASE_CACHE_DURATION_SECS) {
-                    pm_clone.forget_passphrase();
+        let _ = thread::Builder::new()
+            .name("passphrase_manager".to_string())
+            .spawn(move || loop {
+                if kill_switch_rx.try_recv().is_ok() {
+                    return;
                 }
-            }
 
-            thread::sleep(Duration::from_secs(1));
-        });
+                if pm_clone.passphrase_cache.lock().unwrap().is_some() {
+                    let duration_since_last_read =
+                        Instant::now().duration_since(*pm_clone.last_read.lock().unwrap());
+
+                    if duration_since_last_read
+                        > Duration::from_secs(PASSPHRASE_CACHE_DURATION_SECS)
+                    {
+                        pm_clone.forget_passphrase();
+                    }
+                }
+
+                thread::sleep(Duration::from_secs(1));
+            });
 
         pm
     }

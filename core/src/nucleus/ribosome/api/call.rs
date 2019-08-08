@@ -51,10 +51,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_call failed to deserialize: {:?}",
+            log_error!(context,
+                "zome: invoke_call failed to deserialize: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -70,12 +70,12 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
             }
         }
         local_call(runtime, input.clone()).map_err(|error| {
-            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
         })
     } else {
         bridge_call(runtime, input.clone()).map_err(|error| {
-            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })
     };
@@ -91,7 +91,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     })?;
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(context.clone(), input);
-    context.block_on(call_zome_function(zome_call, &context))
+    context.block_on(call_zome_function(zome_call, context.clone()))
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -250,9 +250,9 @@ pub mod tests {
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
-
-        let context = &test_setup.context;
-        let result = context.block_on(call_zome_function(zome_call, context));
+        let result = test_setup
+            .context
+            .block_on(call_zome_function(zome_call, test_setup.context.clone()));
         assert_eq!(expected, Ok(result));
     }
 

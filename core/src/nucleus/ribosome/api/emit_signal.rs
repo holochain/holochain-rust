@@ -18,11 +18,11 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(args) => args,
         // Exit on error
         Err(error) => {
-            context.log(format!(
-                "err/zome: invoke_emit_signal failed to \
+            log_error!(context,
+                "zome: invoke_emit_signal failed to \
                  deserialize arguments: {:?} with error {:?}",
                 args_str, error
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -30,15 +30,13 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     if let Some(sender) = context.signal_tx() {
         let signal = Signal::User(UserSignal::from(emit_signal_args));
         let _ = sender.send(signal).map_err(|err| {
-            context.log(format!(
-                "err/zome: invoke_emit_signal() could not send signal: {:?}",
+            log_error!(context,
+                "zome: invoke_emit_signal() could not send signal: {:?}",
                 err,
-            ));
+            );
         });
     } else {
-        context.log(format!(
-            "err/zome: invoke_emit_signal() could not send signal because signal channel is not set up!",
-        ));
+        log_error!(context, "zome: invoke_emit_signal() could not send signal because signal channel is not set up!");
     }
 
     // We only log this case but still return Ok(()) since the semantic of sending a signal
@@ -87,7 +85,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::EmitSignal.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
         let (tx, rx) = unbounded::<Signal>();

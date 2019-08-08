@@ -3,13 +3,14 @@ use colored::*;
 use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
-    conductor::{mount_conductor_from_config, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::*,
     key_loaders::{test_keystore, test_keystore_loader},
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::{fs, path::PathBuf};
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -111,6 +112,7 @@ fn agent_configuration() -> AgentConfiguration {
         public_address: agent_id.pub_sign_key,
         keystore_file: agent_name,
         holo_remote_key: None,
+        test_agent: Some(true),
     }
 }
 
@@ -118,13 +120,17 @@ fn agent_configuration() -> AgentConfiguration {
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
+    let dna = Conductor::load_dna(dna_path).expect(&format!(
+        "Could not load DNA file {}",
+        dna_path.to_str().expect("No DNA file path given")
+    ));
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: dna_path
             .to_str()
             .expect("Expected DNA path to be valid unicode")
             .to_string(),
-        hash: None,
+        hash: dna.address().to_string(),
     }
 }
 
@@ -184,12 +190,13 @@ fn interface_configuration(
 fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
-        logger_type: "debug".to_string(),
+        logger_level: "debug".to_string(),
         rules: if logging {
             LogRules::default()
         } else {
             LogRules::new()
         },
+        state_dump: true,
     }
 }
 
@@ -208,7 +215,7 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
         bootstrap_nodes.push(node);
     };
 
-    Some(NetworkConfig {
+    Some(NetworkConfig::N3h(N3hConfig {
         bootstrap_nodes,
         n3h_log_level: EnvVar::N3hLogLevel
             .value()
@@ -224,16 +231,20 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
             .unwrap_or_else(default_n3h_persistence_path),
         n3h_ipc_uri: Default::default(),
         networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
-    })
+    }))
 }
 
 #[cfg(test)]
 mod tests {
+    extern crate tempfile;
     // use crate::cli::init::{init, tests::gen_dir};
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
+    use self::tempfile::tempdir;
     use holochain_conductor_api::config::*;
-    use std::path::PathBuf;
+    use holochain_core_types::dna::Dna;
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use std::fs::{create_dir, File};
 
     #[test]
     // flagged as broken for:
@@ -278,20 +289,29 @@ mod tests {
                     .to_string(),
                 keystore_file: "testAgent".to_string(),
                 holo_remote_key: None,
+                test_agent: Some(true),
             },
         );
     }
 
     #[test]
     fn test_dna_configuration() {
-        let dna_path = PathBuf::from("/test/path");
-        let dna = super::dna_configuration(&dna_path);
+        let dna = Dna::new();
+        let temp_path = tempdir()
+            .expect("Could not get tempdir")
+            .path()
+            .join("test_dna.json");
+        create_dir(temp_path.parent().unwrap()).expect("Could not create temporary directory");
+        let out_file = File::create(&temp_path).expect("Could not create temp file for test DNA");
+        serde_json::to_writer_pretty(&out_file, &dna).expect("Could not write test DNA to file");
+
+        let dna_config = super::dna_configuration(&temp_path);
         assert_eq!(
-            dna,
+            dna_config,
             DnaConfiguration {
                 id: "hc-run-dna".to_string(),
-                file: "/test/path".to_string(),
-                hash: None,
+                file: temp_path.to_str().unwrap().to_string(),
+                hash: dna.address().to_string(),
             }
         )
     }
@@ -363,14 +383,14 @@ mod tests {
         let networking = super::networking_configuration(true);
         assert_eq!(
             networking,
-            Some(NetworkConfig {
+            Some(NetworkConfig::N3h(N3hConfig {
                 bootstrap_nodes: Vec::new(),
                 n3h_log_level: default_n3h_log_level(),
                 n3h_mode: default_n3h_mode(),
                 n3h_persistence_path: default_n3h_persistence_path(),
                 n3h_ipc_uri: Default::default(),
                 networking_config_file: None,
-            })
+            }))
         );
 
         let no_networking = super::networking_configuration(false);

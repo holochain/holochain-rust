@@ -32,7 +32,7 @@ Examining a `.dna.json` file closely, nested within the JSON configuration for a
 "entry_types": [
     {
         "entry_type_name": "post",
-        "description": "A blog post entry which has an author",
+        "properties": "{\"description\": \"A blog post entry which has an author\"}",
         "sharing": "public",
         "links_to": []
     }
@@ -55,7 +55,11 @@ extern crate hdk;
 define_zome! {
     entries: []
 
-    genesis: || {
+    init: || {
+        Ok(())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 
@@ -92,7 +96,7 @@ entry!(
 )
 ```
 
-This should be a human-readable explanation of the meaning or role of this entry type.
+Historically this was a human-readable explanation of the meaning or role of this entry type. Now the description field can hold a stringified JSON object to hold various properties of this entry type (Possibly including a description but also UI display hints, indexing fields, example data etc. It is totally up to you). These properties can be accessed via `hdk::entry_type_properties`.
 
 ---
 
@@ -107,13 +111,12 @@ entry!(
 )
 ```
 
-As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/0.0.18-alpha1/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
+As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/0.0.26-alpha1/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
 
 ---
 
 __native_type__
 ```rust
-#![feature(try_from)]
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
@@ -139,11 +142,6 @@ Clearly, `native_type` is where things start to get interesting. It requires the
 It is important to remember that the Rust code of a Zome is compiled into WASM before it can be executed by Holochain. This introduces a certain constraint. How is data passed between Holochain, and the WASM Zome code? Answer: it is stored in the WASM memory as stringified JSON data, and accessed by the WASM code and by Holochain, running the WASM interpreter.
 
 JSON was chosen as the interchange format because it is so universal, and almost all languages have serializers and parsers. Rust's is called `serde`. The three `serde` related dependencies all relate to the need to serialize to and from JSON within Zomes.
-
-Note that the top line in the snippet above is important. It switches on a Rust feature that would otherwise be off, allowing attempted conversions between types, which is exactly what the JSON parsing is doing.
-```rust
-#![feature(try_from)]
-```
 
 Additionally, the HDK offers built-in conversion functions from JSON strings to Entry structs. This comes from the `DefaultJson` [derive](https://doc.rust-lang.org/rust-by-example/trait/derive.html).
 
@@ -174,7 +172,7 @@ entry!(
 
 At the moment, what `validation_package` is will not be covered in great detail. In short, for a peer to perform validation of an entry from another peer, varying degrees of metadata from the original author of the entry might be needed. `validation_package` refers to the carrier for that extra metadata.
 
-Looking at the above code, there is a required import from the HDK needed for use in `validation_package`, and that's the enum `ValidationPackageDefinition`. The value of `validation_package` is a function that takes no arguments. It will be called as a callback by Holochain. The result should be a value from the `ValidationPackageDefinition` enum, whose values can be [seen here](https://developer.holochain.org/api/0.0.18-alpha1/hdk/enum.ValidationPackageDefinition.html). In the example, and as the most basic option, simply use `Entry`, which means no extra metadata beyond the entry itself is needed.
+Looking at the above code, there is a required import from the HDK needed for use in `validation_package`, and that's the enum `ValidationPackageDefinition`. The value of `validation_package` is a function that takes no arguments. It will be called as a callback by Holochain. The result should be a value from the `ValidationPackageDefinition` enum, whose values can be [seen here](https://developer.holochain.org/api/0.0.26-alpha1/hdk/enum.ValidationPackageDefinition.html). In the example, and as the most basic option, simply use `Entry`, which means no extra metadata beyond the entry itself is needed.
 
 Further reading is [here](./entry_validation.md).
 
@@ -246,7 +244,11 @@ define_zome! {
         )
     ]
 
-    genesis: || {
+    init: || {
+        Ok(())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 
@@ -280,7 +282,11 @@ define_zome! {
         post_definition()
     ]
 
-    genesis: || {
+    init: || {
+        Ok(())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 
@@ -292,7 +298,7 @@ define_zome! {
 
 Use of this technique can help you write clean, modular code.
 
-If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.18-alpha1/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/v0.0.4/app_spec/zomes/blog/code/src/post.rs).
+    If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/release-0.0.26-alpha1/app_spec/zomes/blog/code/src/post.rs).
 
 #### Summary
-This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `genesis` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.
+This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `init` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.

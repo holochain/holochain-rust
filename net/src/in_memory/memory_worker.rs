@@ -2,16 +2,16 @@
 
 use super::memory_server::*;
 use crate::connection::{
-    json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
-    protocol::Protocol,
     NetResult,
 };
+
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
+
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use std::{
     collections::{hash_map::Entry, HashMap},
-    convert::TryFrom,
     sync::{mpsc, Mutex},
 };
 
@@ -19,7 +19,7 @@ use std::{
 #[allow(non_snake_case)]
 pub struct InMemoryWorker {
     handler: NetHandler,
-    receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,
+    receiver_per_dna: HashMap<Address, mpsc::Receiver<Lib3hServerProtocol>>,
     server_name: String,
     can_send_P2pReady: bool,
 }
@@ -27,10 +27,10 @@ pub struct InMemoryWorker {
 impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
-    fn receive(&mut self, data: Protocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         // InMemoryWorker doesn't have to do anything on shutdown
-        if data == Protocol::Shutdown {
-            self.handler.handle(Ok(Protocol::Terminated))?;
+        if data == Lib3hClientProtocol::Shutdown {
+            self.handler.handle(Ok(Lib3hServerProtocol::Terminated))?;
             return Ok(());
         }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
@@ -39,49 +39,37 @@ impl NetWorker for InMemoryWorker {
             .expect("InMemoryServer should have been initialized by now")
             .lock()
             .unwrap();
-        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            match json_msg {
-                JsonProtocol::TrackDna(track_msg) => {
-                    match self
-                        .receiver_per_dna
-                        .entry(track_msg.dna_address.to_owned())
-                    {
-                        Entry::Occupied(_) => (),
-                        Entry::Vacant(e) => {
-                            let (tx, rx) = mpsc::channel();
-                            server.register_chain(
-                                &track_msg.dna_address,
-                                &track_msg.agent_id,
-                                tx,
-                            )?;
-                            e.insert(rx);
-                        }
-                    };
-                }
-                _ => (),
+        match &data {
+            Lib3hClientProtocol::JoinSpace(track_msg) => {
+                let dna_address: HashString = track_msg.space_address.clone();
+                match self.receiver_per_dna.entry(dna_address.clone()) {
+                    Entry::Occupied(_) => (),
+                    Entry::Vacant(e) => {
+                        let (tx, rx) = mpsc::channel();
+                        println!("register_chain: {}::{}", dna_address, track_msg.agent_id);
+                        server.register_chain(&dna_address, &track_msg.agent_id, tx)?;
+                        e.insert(rx);
+                    }
+                };
             }
-        }
+            _ => (),
+        };
         // Serve
         server.serve(data.clone())?;
         // After serve
-        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            match json_msg {
-                JsonProtocol::UntrackDna(untrack_msg) => {
-                    match self
-                        .receiver_per_dna
-                        .entry(untrack_msg.dna_address.to_owned())
-                    {
-                        Entry::Vacant(_) => (),
-                        Entry::Occupied(e) => {
-                            server
-                                .unregister_chain(&untrack_msg.dna_address, &untrack_msg.agent_id);
-                            e.remove();
-                        }
-                    };
-                }
-                _ => (),
+        match &data {
+            Lib3hClientProtocol::LeaveSpace(untrack_msg) => {
+                let dna_address: HashString = untrack_msg.space_address.clone();
+                match self.receiver_per_dna.entry(dna_address.clone()) {
+                    Entry::Vacant(_) => (),
+                    Entry::Occupied(e) => {
+                        server.unregister_chain(&dna_address, &untrack_msg.agent_id);
+                        e.remove();
+                    }
+                };
             }
-        }
+            _ => (),
+        };
         // Done
         Ok(())
     }
@@ -91,7 +79,7 @@ impl NetWorker for InMemoryWorker {
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            self.handler.handle(Ok(Protocol::P2pReady))?;
+            self.handler.handle(Ok(Lib3hServerProtocol::P2pReady))?;
         }
         // check for messages from our InMemoryServer
         let mut did_something = false;
@@ -165,25 +153,26 @@ impl Drop for InMemoryWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        connection::json_protocol::{JsonProtocol, TrackDnaData},
-        p2p_config::P2pConfig,
-    };
+    use crate::p2p_config::P2pConfig;
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::{cas::content::Address, hash::HashString};
+    use lib3h_protocol::data_types::SpaceData;
 
     fn example_dna_address() -> Address {
-        "blabladnaAddress".into()
+        "QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu".into()
     }
 
-    static AGENT_ID_1: &'static str = "agent-hash-test-1";
+    static AGENT_ID_1: &'static str = "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk";
+    // TODO - AgentIds need to be HcSyada base32 format
+    //        currently HashString try_into Vec<u8> is doing only base58
+    //static AGENT_ID_1: &'static str = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
     fn can_memory_worker_double_track() {
         // setup client 1
-        let memory_config = &JsonString::from_json(&P2pConfig::unique_memory_backend_string());
-        let (handler_send_1, handler_recv_1) = unbounded::<Protocol>();
+        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_json());
+        let (handler_send_1, handler_recv_1) = unbounded::<Lib3hServerProtocol>();
 
         let mut memory_worker_1 = Box::new(
             InMemoryWorker::new(
@@ -199,32 +188,30 @@ mod tests {
         // Should receive p2pready on first tick
         memory_worker_1.tick().unwrap();
         let message = handler_recv_1.recv().unwrap();
-        assert_eq!(message, Protocol::P2pReady);
-
+        assert!(match message {
+            Lib3hServerProtocol::P2pReady => true,
+            _ => false,
+        });
         // First Track
         memory_worker_1
-            .receive(
-                JsonProtocol::TrackDna(TrackDnaData {
-                    dna_address: example_dna_address(),
-                    agent_id: HashString::from(AGENT_ID_1),
-                })
-                .into(),
-            )
+            .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
+                request_id: "test_req1".to_string(),
+                space_address: example_dna_address(),
+                agent_id: HashString::from(AGENT_ID_1),
+            }))
             .unwrap();
 
         // Should receive PeerConnected
         memory_worker_1.tick().unwrap();
-        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res: Lib3hServerProtocol = handler_recv_1.recv().unwrap();
 
         // Second Track
         memory_worker_1
-            .receive(
-                JsonProtocol::TrackDna(TrackDnaData {
-                    dna_address: example_dna_address(),
-                    agent_id: HashString::from(AGENT_ID_1),
-                })
-                .into(),
-            )
+            .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
+                request_id: "test_req2".to_string(),
+                space_address: example_dna_address(),
+                agent_id: HashString::from(AGENT_ID_1),
+            }))
             .unwrap();
 
         memory_worker_1.tick().unwrap();

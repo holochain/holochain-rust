@@ -19,6 +19,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 
+use crate::nucleus::ribosome::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
 pub async fn author_entry<'a>(
@@ -28,10 +29,18 @@ pub async fn author_entry<'a>(
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
-    context.log(format!(
-        "debug/workflow/authoring_entry: {} with content: {:?}",
+    log_debug!(context,
+        "workflow/authoring_entry: {} with content: {:?}",
         address, entry
-    ));
+    );
+
+    // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
+    if let Entry::LinkAdd(link_data) = entry {
+        get_link_entries(&link_data.link, context)?;
+    }
+    if let Entry::LinkRemove((link_data, _)) = entry {
+        get_link_entries(&link_data.link, context)?;
+    }
 
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(
@@ -45,49 +54,46 @@ pub async fn author_entry<'a>(
     };
 
     // 2. Validate the entry
-    context.log(format!(
-        "debug/workflow/authoring_entry/{}: validating...",
+    log_debug!(context,
+        "workflow/authoring_entry/{}: validating...",
         address
-    ));
+    );
     await!(validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
         &context
     ))?;
-    context.log(format!("Authoring entry {}: is valid!", address));
+    log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
-    context.log(format!(
-        "debug/workflow/authoring_entry/{}: committing...",
+    log_debug!(context,
+        "workflow/authoring_entry/{}: committing...",
         address
-    ));
+    );
     let addr = await!(commit_entry(
         entry.clone(),
         maybe_link_update_delete,
         &context
     ))?;
-    context.log(format!(
-        "debug/workflow/authoring_entry/{}: committed",
-        address
-    ));
+    log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     if entry.entry_type().can_publish(context) {
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: publishing...",
+        log_debug!(context,
+            "workflow/authoring_entry/{}: publishing...",
             address
-        ));
+        );
         await!(publish(entry.address(), &context))?;
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: published!",
+        log_debug!(context,
+            "workflow/authoring_entry/{}: published!",
             address
-        ));
+        );
     } else {
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: entry is private, no publishing",
-            address
-        ));
+        log_debug!(context,
+          "workflow/authoring_entry/{}: entry is private, no publishing",
+          address
+        );
     }
     Ok(CommitEntryResult::new(addr))
 }

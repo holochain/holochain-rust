@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![warn(unused_extern_crates)]
 #![feature(proc_macro_hygiene)]
 
@@ -18,7 +17,9 @@ use hdk::{
     holochain_core_types::{
         entry::Entry,
         dna::entry_types::Sharing,
-        link::LinkMatch
+        link::LinkMatch,
+        agent::AgentId,
+        validation::EntryValidationData,
     },
     holochain_persistence_api::{
         cas::content::Address,
@@ -27,7 +28,7 @@ use hdk::{
        json::JsonString,
        error::JsonError
     },
-    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions}
+    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount}
 };
 
 
@@ -51,7 +52,7 @@ pub mod simple {
         links: [
             from!(
                 "%agent_id",
-                link_type: "authored_posts",
+                link_type: "authored_simple_posts",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
@@ -95,22 +96,48 @@ pub mod simple {
     }
 
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        if let EntryValidationData::Create{entry, ..} = validation_data {
+            let agent = entry as AgentId;
+            if agent.nick == "reject_agent::app" {
+                Err("This agent will always be rejected".into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Err("Cannot update or delete an agent at this time".into())
+        }
+    }
+
+    #[zome_fn("hc_public")]
+    fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+        hdk::get_entry(&address)
+    }
+
+    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
+    {
+        let address = hdk::commit_entry(&simple_entry(target))?;
+        hdk::link_entries(&base, &address, "authored_simple_posts", "")?;
         Ok(())
     }
 
     #[zome_fn("hc_public")]
-    pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
+    pub fn create_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()>
     {
         let address = hdk::commit_entry(&simple_entry(target))?;
-        hdk::link_entries(&base, &address, "authored_posts", "")?;
+        hdk::link_entries(&base, &address, "authored_simple_posts", &tag)?;
         Ok(())
     }
     #[zome_fn("hc_public")]
     pub fn delete_link(base: Address,target : String) -> ZomeApiResult<()> {
         let address = hdk::entry_address(&simple_entry(target))?;
-        hdk::remove_link(&base, &address, "authored_posts", "")?;
+        hdk::remove_link(&base, &address, "authored_simple_posts", "")?;
         Ok(())
     }
 
@@ -121,7 +148,17 @@ pub mod simple {
             status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
             ..GetLinksOptions::default()
         };
-        hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_posts"), LinkMatch::Any,options)
+        hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_my_links_count(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResultCount>
+    {
+        let options = GetLinksOptions{
+            status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+            ..GetLinksOptions::default()
+        };
+        hdk::get_links_count_with_options(&base, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
     }
 
     #[zome_fn("hc_public")]
@@ -134,5 +171,16 @@ pub mod simple {
         hdk::emit_signal("test-signal", SignalPayload{message})
     }
 
-}
+    #[zome_fn("hc_public")]
+    pub fn encrypt(payload : String) -> ZomeApiResult<String> 
+    {
+       hdk::encrypt(payload)
+    }
 
+    #[zome_fn("hc_public")]
+    pub fn decrypt(payload : String) -> ZomeApiResult<String> 
+    {
+       hdk::decrypt(payload)
+    }
+
+}

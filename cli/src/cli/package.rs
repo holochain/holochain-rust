@@ -53,7 +53,7 @@ impl Packager {
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
                 "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24",
+                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14",
             ]),
         )?;
         if !should_continue {
@@ -65,12 +65,29 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = Value::from(self.bundle_recurse(&std::env::current_dir()?)?);
+        let current_dir = std::env::current_dir()?;
+        let dir_obj_bundle = Value::from(self.bundle_recurse(&current_dir).map_err(|e| {
+            format_err!(
+                "Couldn't traverse DNA in directory {:?}: {}",
+                &current_dir,
+                e
+            )
+        })?);
 
-        let dna_json = JsonString::from_json(&dir_obj_bundle.to_string());
-        let dna = Dna::try_from(dna_json)?;
+        let dna_str =
+            serde_json::to_string_pretty(&dir_obj_bundle).expect("failed to make pretty DNA");
+        let dna_json = JsonString::from_json(&dna_str);
 
-        let out_file = File::create(&output)?;
+        let dna = Dna::try_from(dna_json).map_err(|e| {
+            format_err!(
+                "Couldn't create a DNA from the bundle, got error {}\nJSON bundle was:\n {}",
+                e,
+                &dna_str
+            )
+        })?;
+
+        let out_file = File::create(&output)
+            .map_err(|e| format_err!("Couldn't create DNA output file {:?}; {}", output, e))?;
 
         serde_json::to_writer_pretty(&out_file, &(dir_obj_bundle))?;
 
@@ -97,10 +114,27 @@ impl Packager {
             .map(|e| e.path().to_path_buf())
             .collect();
 
-        let maybe_json_file_path = root
+        let root_json_files: Vec<&PathBuf> = root
             .iter()
             .filter(|e| e.is_file())
-            .find(|e| e.to_string_lossy().ends_with(".json"));
+            .filter(|e| e.to_string_lossy().ends_with(".json"))
+            .collect();
+
+        let mut meta_section = Object::new();
+
+        let maybe_json_file_path = match root_json_files.len() {
+            0 => {
+                // A root json file is optional so can still package the dna
+                None
+            }
+            1 => Some(root_json_files[0]),
+            _ => {
+                // more than one .json file is ambiguous so present an error
+                return Err (format_err!("Error Packaging DNA: Multiple files with extension .json were found in the root of the project, {:?}.\
+                    This is ambiguous as the packager is unable to tell which should be used as the base for the .dna.json", root_json_files)
+                );
+            }
+        };
 
         // Scan files but discard found json file
         let all_nodes = root.iter().filter(|node_path| {
@@ -108,8 +142,6 @@ impl Packager {
                 .and_then(|path| Some(node_path != &path))
                 .unwrap_or(true)
         });
-
-        let mut meta_section = Object::new();
 
         // Obtain the config file
         let mut main_tree: Object = if let Some(json_file_path) = maybe_json_file_path {
@@ -253,7 +285,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry.as_str().unwrap().to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let mut file_path = to.join(meta_entry);
+                            let file_path = to.join(meta_entry);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }
@@ -261,8 +293,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry[&meta_entry].to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let mut file_path =
-                                to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
+                            let file_path = to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }
@@ -303,9 +334,10 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 // too slow!
 #[cfg(feature = "broken-tests")]
 mod tests {
+    use super::*;
     use crate::cli::init::tests::gen_dir;
     use assert_cmd::prelude::*;
-    use std::process::Command;
+    use std::{path::PathBuf, process::Command};
 
     #[test]
     fn package_and_unpack_isolated() {
@@ -354,6 +386,33 @@ mod tests {
         unpack(&shared_space.path().to_path_buf());
 
         shared_space.close().unwrap();
+    }
+
+    #[test]
+    fn aborts_if_multiple_json_in_root() {
+        let shared_space = gen_dir();
+
+        let root_path = shared_space.path().to_path_buf();
+
+        fs::create_dir_all(&root_path).unwrap();
+
+        // Initialize and package a project
+        Command::main_binary()
+            .unwrap()
+            .args(&["init", root_path.to_str().unwrap()])
+            .assert()
+            .success();
+
+        // copy the json
+        fs::copy(root_path.join("app.json"), root_path.join("app2.json")).unwrap();
+
+        // ensure the package command fails
+        Command::main_binary()
+            .unwrap()
+            .args(&["package"])
+            .current_dir(&root_path)
+            .assert()
+            .failure();
     }
 
     #[test]
@@ -409,19 +468,23 @@ mod tests {
 
     #[test]
     fn auto_compilation() {
-        let tmp = gen_dir();
+        let shared_space = gen_dir();
+
+        let root_path = shared_space.path().to_path_buf();
+
+        fs::create_dir_all(&root_path).unwrap();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["init", "."])
+            .current_dir(&root_path)
+            .args(&["init", root_path.to_str().unwrap()])
             .assert()
             .success();
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
-            .args(&["g", "zomes/bubblechat", "rust"])
+            .current_dir(&root_path)
+            .args(&["generate", "zomes/bubblechat", "rust"])
             .assert()
             .success();
 
@@ -436,7 +499,7 @@ mod tests {
 
         Command::main_binary()
             .unwrap()
-            .current_dir(&tmp.path())
+            .current_dir(&shared_space.path())
             .args(&["package"])
             .assert()
             .success();

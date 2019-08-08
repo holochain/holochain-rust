@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate holochain_wasm_utils;
@@ -12,6 +11,8 @@ extern crate holochain_json_derive;
 
 use boolinator::Boolinator;
 use hdk::{
+    AGENT_ADDRESS,
+    DNA_ADDRESS,
     api::G_MEM_STACK,
     error::{ZomeApiError, ZomeApiResult},
     global_fns::init_global_memory,
@@ -442,6 +443,10 @@ fn hdk_test_entry_value() -> AppEntryValue {
     .into()
 }
 
+fn handle_get_entry_properties(entry_type_string: String) -> ZomeApiResult<JsonString> {
+    hdk::entry_type_properties(&EntryType::from(entry_type_string))
+}
+
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
@@ -458,7 +463,7 @@ define_zome! {
     entries: [
         entry!(
             name: "testEntryType",
-            description: "asdfda",
+            description: "\"test-properties-string\"",
             sharing: Sharing::Public,
 
             validation_package: || {
@@ -567,7 +572,45 @@ define_zome! {
         )
     ]
 
-    genesis: || { Ok(()) }
+    init: || {{
+        // should be able to commit an entry
+        let entry = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "called from init".into(),
+            }
+            .into(),
+        );
+        let addr = hdk::commit_entry(&entry)?;
+
+        // should be able to get the entry
+        let get_result = hdk::get_entry(&addr)?.unwrap();
+        if !(entry == get_result) {
+            return Err("Could not retrieve the same entry in init".into());
+        }
+        
+        // should be able to access globals
+        let agent_addr: Address = AGENT_ADDRESS.to_string().into();
+        let _dna_hash: Address = DNA_ADDRESS.to_string().into();
+
+        // should be able to call hdk::send, will timeout immedietly but that is ok
+        let _send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
+
+        // should be able to call other zome funcs
+        let _call_result = hdk::call(
+            hdk::THIS_INSTANCE,
+            "test_zome",
+            Address::from(hdk::PUBLIC_TOKEN.to_string()),
+            "check_app_entry_address",
+            JsonString::empty_object(),
+        )?;
+
+        Ok(())
+    }}
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
+    }
 
     receive: |_from, payload| {
         {
@@ -699,6 +742,12 @@ define_zome! {
             inputs: | |,
             outputs: |response: ZomeApiResult<()>|,
             handler: handle_sleep
+        }
+
+        get_entry_properties: {
+            inputs: | entry_type_string: String |,
+            outputs: |response: ZomeApiResult<JsonString>|,
+            handler: handle_get_entry_properties
         }
     ]
 

@@ -962,6 +962,7 @@ dependencies = [
  "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_mem 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_walkman 0.0.26-alpha1",
  "holochain_wasm_utils 0.0.26-alpha1",
  "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1228,6 +1229,13 @@ dependencies = [
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "unwrap_to 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "holochain_walkman"
+version = "0.0.26-alpha1"
+dependencies = [
+ "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

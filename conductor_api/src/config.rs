@@ -145,17 +145,17 @@ pub struct LoggerConfiguration {
     pub logger_level: String,
     #[serde(default)]
     pub rules: LogRules,
-    //    pub file: Option<String>,
     #[serde(default)]
     pub state_dump: bool,
+    #[serde(default)]
+    pub walkman: bool,
 }
 
 impl Default for LoggerConfiguration {
     fn default() -> LoggerConfiguration {
         LoggerConfiguration {
             logger_level: "debug".into(),
-            rules: Default::default(),
-            state_dump: false,
+            ..Default::default()
         }
     }
 }

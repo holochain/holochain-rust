@@ -4,7 +4,7 @@ use crate::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
         entry_with_header::EntryWithHeader,
-        query::{GetLinksNetworkQuery,NetworkQueryResult},
+        query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },
     nucleus::{
@@ -18,17 +18,13 @@ use crate::{
 };
 
 use holochain_core_types::{
-    chain_header::ChainHeader,
-    crud_status::CrudStatus,
-    dna::Dna,
-    entry::Entry,
-    error::HolochainError,
-    link::link_data::LinkData,
-    signature::Provenance,
+    chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
+    error::HolochainError, link::link_data::LinkData, signature::Provenance,
     validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
+use holochain_walkman::cassette::WalkmanLog;
 use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
@@ -84,6 +80,12 @@ impl Hash for ActionWrapper {
     /// @see https://github.com/holochain/holochain-rust/issues/203
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
+    }
+}
+
+impl WalkmanLog for ActionWrapper {
+    fn to_string(&self) -> String {
+        self.to_string()
     }
 }
 

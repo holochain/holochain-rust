@@ -1,28 +1,26 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Result},
+    io::{BufRead, BufReader},
     path::PathBuf,
 };
 
 pub type WalkmanNodeId = usize;
 pub type WalkmanNodeName = String;
 
-pub trait WalkmanData {
-    fn to_string(&self) -> String;
-}
+pub struct WalkmanData(String);
 
 const LOG_PREFIX: &'static str = "🖭 ";
 
 pub struct WalkmanLog {
     timestamp: u32,
-    data: Box<dyn WalkmanData>,
+    data: WalkmanData,
 }
 
 impl WalkmanLog {
-    pub fn from_data(data: dyn WalkmanData) -> Self {
+    pub fn from_data(data: WalkmanData) -> Self {
         Self {
             timestamp: 0, // TODO
-            data: data,
+            data,
         }
     }
 }
@@ -30,7 +28,7 @@ impl WalkmanLog {
 pub struct WalkmanEvent {
     node_id: WalkmanNodeId,
     timestamp: u32,
-    data: Box<dyn WalkmanData>,
+    data: WalkmanData,
 }
 
 pub struct WalkmanCassette {
@@ -49,7 +47,7 @@ impl WalkmanCassette {
             let mut f = File::open(file).map_err(|e| e.to_string())?;
             let mut contents = String::new();
             for line in BufReader::new(f).lines() {
-                if line.starts_with(LOG_PREFIX) {
+                if line.expect("IO error reading log").starts_with(LOG_PREFIX) {
                     events.push(WalkmanEvent { node_id })
                 }
             }

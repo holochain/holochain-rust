@@ -377,12 +377,12 @@ pub mod tests {
             false,
         );
 
-        // // Somehow we need to build our own logging instance for this test to show logs
-        // use logging::prelude::*;
-        // let _ = FastLoggerBuilder::new()
-        //             .set_level_from_str("Trace")
-        //             .build()
-        //             .expect("Fail to init logger.");
+        // Somehow we need to build our own logging instance for this test to show logs
+        use logging::prelude::*;
+        let mut guard = FastLoggerBuilder::new()
+            .set_level_from_str("Trace")
+            .build()
+            .expect("Fail to init logger.");
 
         // Tests if the context logger can be customized by poassing a target value
         log_info!(target: "holochain-custom-log-target", "Custom target & '{}' log level.", "Info");
@@ -394,7 +394,7 @@ pub mod tests {
         log_warn!(ctx, "'{}' log level with Context target.", "Warning");
         log_error!(ctx, "'{}' log level with Context target.", "Error");
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        guard.flush();
     }
 
     #[test]

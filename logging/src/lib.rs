@@ -27,12 +27,17 @@
 //! use logging::prelude::*;
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
-//! let _guard = logging::init_simple().unwrap();
+//! let mut guard = logging::init_simple().unwrap();
 //! info!("Here you go champ!");
 //!
 //! // Warning and Error log message have their own color
 //! warn!("You've been warned Sir!");
 //! error!("Oh... something wrong pal.");
+//!
+//! // Flushes any buffered records
+//! guard.flush();
+//! // Flush and shutdown gracefully the logging thread
+//! guard.shutdown();
 //! ```
 //!
 //! ### Examples
@@ -46,7 +51,7 @@
 //!
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
-//! let _guard = FastLoggerBuilder::new()
+//! let mut guard = FastLoggerBuilder::new()
 //!     // The timestamp format is customizable as well
 //!     .timestamp_format("%Y-%m-%d %H:%M:%S%.6f")
 //!     .set_level_from_str("Debug")
@@ -54,6 +59,11 @@
 //!     .expect("Fail to init the logging factory.");
 //!
 //! debug!("Let's trace what that program is doing.");
+//!
+//! // Flushes any buffered records
+//! guard.flush();
+//! // Flush and shutdown gracefully the logging thread
+//! guard.shutdown();
 //! ```
 //!
 //! #### Building the logging factory from TOML configuration.
@@ -73,7 +83,7 @@
 //!     "#;
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
-//! let _guard = FastLoggerBuilder::from_toml(toml)
+//! let mut guard = FastLoggerBuilder::from_toml(toml)
 //!     .expect("Fail to instantiate the logger from toml.")
 //!      .build()
 //!      .expect("Fail to build logger from toml.");
@@ -85,6 +95,10 @@
 //! // This one is colored in blue because of our rule on 'info' pattern
 //! info!("Some interesting info here");
 //!
+//! // Flushes any buffered records
+//! guard.flush();
+//! // Flush and shutdown gracefully the logging thread
+//! guard.shutdown();
 //! ```
 //!
 //! #### Dependency filtering
@@ -109,7 +123,7 @@
 //!     "#;
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
-//! let _guard = FastLoggerBuilder::from_toml(toml)
+//! let mut guard = FastLoggerBuilder::from_toml(toml)
 //!     .expect("Fail to instantiate the logger from toml.")
 //!     .build()
 //!     .expect("Fail to build logger from toml.");
@@ -121,6 +135,11 @@
 //! // argument.
 //! info!(target: "holochain", "Log message from Holochain Core.");
 //! info!(target: "holochain-app-2", "Log message from Holochain Core with instance ID 2");
+//!
+//! // Flushes any buffered records
+//! guard.flush();
+//! // Flush and shutdown gracefully the logging thread
+//! guard.shutdown();
 //! ```
 
 use log;

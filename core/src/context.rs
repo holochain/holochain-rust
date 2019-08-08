@@ -379,7 +379,7 @@ pub mod tests {
 
         // Somehow we need to build our own logging instance for this test to show logs
         use logging::prelude::*;
-        let mut guard = FastLoggerBuilder::new()
+        let guard = FastLoggerBuilder::new()
             .set_level_from_str("Trace")
             .build()
             .expect("Fail to init logger.");

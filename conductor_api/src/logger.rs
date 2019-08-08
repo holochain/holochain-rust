@@ -23,16 +23,18 @@ pub struct LogRules {
 impl Default for LogRules {
     fn default() -> LogRules {
         let mut rules = LogRules::new();
+        // Filtering out all the logs from our dependencies
         rules
-            .add_rule("^err/", false, Some("red".to_string()))
-            .expect("rule is valid");
+            .add_rule(".*", true, None)
+            .expect("Invalid logging rule.");
+        // And logging back all our logs
         rules
-            .add_rule("^debug/dna", false, Some("white".to_string()))
-            .expect("rule is valid");
+            .add_rule("^holochain", false, None)
+            .expect("Invalid logging rule.");
+        // Add Lib3h logs
         rules
-            .add_rule("^trace/", true, None)
-            .expect("rule is valid");
-        rules.add_rule(".*", false, None).expect("rule is valid");
+            .add_rule("^lib3h", false, None)
+            .expect("Invalid logging rule.");
         rules
     }
 }

@@ -1,8 +1,8 @@
 use crate::{
     context::Context,
     network::{
-        actions::get_links::get_links,
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult},
+        actions::query::{query, QueryMethod},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult,NetworkQueryResult},
     },
 };
 
@@ -14,7 +14,19 @@ pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    let links_result = await!(get_links(context, link_args, GetLinksNetworkQuery::Count))?;
+    let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
+    let response = await!(query(
+        context.clone(),
+        method,
+        link_args.options.timeout.clone()
+    ))?;
+
+    let links_result = match response {
+        NetworkQueryResult::Links(link_result, _, _) => Ok(link_result),
+        NetworkQueryResult::Entry(_) => Err(HolochainError::ErrorGeneric(
+            "Could not get link".to_string(),
+        )),
+    }?;
 
     let links_count = match links_result {
         GetLinksNetworkResult::Count(count) => Ok(count),

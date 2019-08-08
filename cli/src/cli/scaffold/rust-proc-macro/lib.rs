@@ -42,8 +42,13 @@ pub struct MyEntry {
 #[zome]
 mod my_zome {
 
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 
@@ -51,7 +56,7 @@ mod my_zome {
      fn my_entry_def() -> ValidatingEntryType {
         entry!(
             name: "my_entry",
-            description: "this is a same entry defintion",
+            description: "this is a same entry definition",
             sharing: Sharing::Public,
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry

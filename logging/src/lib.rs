@@ -529,7 +529,7 @@ impl<'a> FastLoggerBuilder {
             }
             Err(e) => {
                 eprintln!("Attempt to initialize the Logger more than once. '{}'.", e);
-                thread::spawn(move || {()})
+                thread::spawn(move || {})
             }
         };
 

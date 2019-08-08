@@ -521,7 +521,7 @@ impl<'a> FastLoggerBuilder {
                                 buffer.flush().expect("Fail to flush the logging buffer.");
                             } else {
                                 writeln!(&mut buffer, "{}", msg.build())
-                                    .expect("Fail to log to file.")
+                                    .expect("Fail to log to the stderr.")
                             }
                         }
                     })

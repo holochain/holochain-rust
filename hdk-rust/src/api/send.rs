@@ -7,12 +7,23 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
 /// This works in conjunction with the `receive` callback that has to be defined in the
-/// [define_zome!](../macro.define_zome.html) macro.
+/// [zome module](../macro.define_zome.html) macro.
 ///
 /// This function dispatches a message to the receiver, and will wait up to 60 seconds before returning a timeout error. The `send` function will return the string returned
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
+/// #![feature(proc_macro_hygiene)]
+/// 
+/// extern crate serde;
+/// #[macro_use]
+/// extern crate serde_derive;
+/// extern crate serde_json;
+/// extern crate hdk;
+/// extern crate hdk_proc_macros;
+/// 
+/// use hdk::error::ZomeApiResult;
+/// use hdk_proc_macros::zome;
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
@@ -24,6 +35,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
+/// 
 /// # use holochain_persistence_api::cas::content::Address;
 /// # use holochain_json_api::error::JsonError;
 /// # use holochain_json_api::json::JsonString;
@@ -90,40 +102,34 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
-/// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
-///     // because the function signature of hdk::send is the same as the
-///     // signature of handle_send_message we can just directly return its' result
-///     hdk::send(to_agent, message, 60000.into())
-/// }
 ///
-/// define_zome! {
-///    entries: []
+/// #[zome]
+/// mod test_zome {
+///     #[init]
+///     fn init() -> ZomeApiResult<()> {
+///         Ok(())
+///     }
 ///
-///    init: || { Ok(()) }
-///    
-///    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-///        Ok(())
-///    }
-///
-///    receive: |from, payload| {
+///     #[validate_agent]
+///     fn validate_agent(validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
+///         Ok(())
+///     }
+///     
+///     #[receive]
+///     fn receive(from: Address, payload: JsonString) {
 ///        // if you want to serialize data as json to pass, use the json! serde macro
 ///        json!({
 ///            "key": "value"
 ///        }).to_string()
-///    }
-///
-///    functions: [
-///            send_message: {
-///                inputs: |to_agent: Address, message: String|,
-///                outputs: |response: ZomeApiResult<String>|,
-///                handler: handle_send_message
-///            }
-///    ]
-///
-///     traits: {
-///         hc_public [send_message]
 ///     }
-///}
+///     
+///     #[zome_fn("hc_public")]
+/// 	fn send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
+///     	// because the function signature of hdk::send is the same as the
+///     	// signature of handle_send_message we can just directly return its' result
+///     	hdk::send(to_agent, message, 60000.into())
+/// 	}
+/// }
 /// # }
 /// ```
 pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {

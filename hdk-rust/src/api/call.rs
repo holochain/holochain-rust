@@ -13,18 +13,27 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// This first zome is the "callee"; i.e., the zome that receives the call, and is named `summer`.
 /// because the call sums two numbers.
 /// ```rust
-/// # #[macro_use]
-/// # extern crate hdk;
-/// # extern crate serde;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # #[macro_use]
-/// # extern crate serde_json;
-/// # use hdk::holochain_json_api::json::JsonString;
+/// #![feature(proc_macro_hygiene)]
+/// 
+/// extern crate serde;
+/// #[macro_use]
+/// extern crate serde_derive;
+/// extern crate serde_json;
+/// extern crate hdk;
+/// extern crate hdk_proc_macros;
+/// 
+/// use hdk::error::ZomeApiResult;
+/// use hdk_proc_macros::zome;
+///
+/// # use hdk::holochain_persistence_api::hash::HashString;
 /// # use hdk::holochain_json_api::error::JsonError;
+/// # use hdk::holochain_json_api::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
+/// # use hdk::error::ZomeApiResult;
+/// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
+/// # use hdk::holochain_persistence_api::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -83,33 +92,22 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
-///
-/// fn handle_sum(num1: u32, num2: u32) -> JsonString {
-///     let sum = num1 + num2;
-///     json!({"sum": sum.to_string()}).into()
-/// }
-///
-/// define_zome! {
-///     entries: []
-///
-///     init: || {
+/// 
+/// #[zome]
+/// pub mod summer {
+///     #[init]
+///     fn init() {
 ///         Ok(())
 ///     }
-///
-///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+/// 
+///     #[validate_agent]
+///     pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
 ///         Ok(())
 ///     }
-///     
-///     functions: [
-///             sum: {
-///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: JsonString|,
-///                 handler: handle_sum
-///             }
-///     ]
-///
-///     traits: {
-///         hc_public [sum]
+/// 
+///     #[zome_fn("hc_public")]
+///     fn sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
+///         Ok(num1 + num2)
 ///     }
 /// }
 ///
@@ -118,15 +116,17 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///
 /// This second zome is the "caller" that makes the call into the `summer` Zome.
 /// ```rust
-/// # #[macro_use]
-/// # extern crate hdk;
-/// # extern crate serde;
-/// # #[macro_use]
-/// # extern crate serde_derive;
-/// # #[macro_use]
-/// # extern crate serde_json;
-/// # #[macro_use]
-/// # extern crate holochain_json_derive;
+/// #![feature(proc_macro_hygiene)]
+/// 
+/// extern crate serde;
+/// #[macro_use]
+/// extern crate serde_derive;
+/// extern crate serde_json;
+/// extern crate hdk;
+/// extern crate hdk_proc_macros;
+/// 
+/// use hdk::error::ZomeApiResult;
+/// use hdk_proc_macros::zome;
 ///
 /// # use hdk::holochain_persistence_api::hash::HashString;
 /// # use hdk::holochain_json_api::error::JsonError;
@@ -196,40 +196,31 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///
 /// # fn main() {
 ///
-/// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
-///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-///     struct SumInput {
-///         num1: u32,
-///         num2: u32,
-///     };
-///     let call_input = SumInput {
-///         num1: num1,
-///         num2: num2,
-///     };
-///     hdk::call(hdk::THIS_INSTANCE, "summer", Address::from(hdk::PUBLIC_TOKEN.to_string()), "sum", call_input.into())
-/// }
-///
-/// define_zome! {
-///     entries: []
-///
-///     init: || {
+/// 
+/// #[zome]
+/// pub mod checker {
+///     #[init]
+///     fn init() {
 ///         Ok(())
 ///     }
-///     
-///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+/// 
+///     #[validate_agent]
+///     pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
 ///         Ok(())
 ///     }
-///
-///     functions: [
-///             check_sum: {
-///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: ZomeApiResult<JsonString>|,
-///                 handler: handle_check_sum
-///             }
-///     ]
-///
-///     traits: {
-///         hc_public [check_sum]
+/// 
+///     #[zome_fn("hc_public")]
+///     fn check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
+///         #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+///         struct SumInput {
+///             num1: u32,
+///             num2: u32,
+///         };
+///         let call_input = SumInput {
+///             num1: num1,
+///             num2: num2,
+///         };
+///         hdk::call(hdk::THIS_INSTANCE, "summer", Address::from(hdk::PUBLIC_TOKEN.to_string()), "sum", call_input.into())
 ///     }
 /// }
 ///

@@ -56,28 +56,23 @@ pub fn handle_sample_function(some_param: String) -> ZomeApiResult<Address> {
     // do something here
 }
 
-define_zome! {
-    entries: []
-
-    init: || { Ok(()) }
-
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+#[zome]
+mod zome {
+    #[init]
+    fn init() -> ZomeApiResult<()> {
         Ok(())
     }
 
-    functions: [
-        sample_function: {
-            inputs: |some_param: String|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: handle_sample_function
-        }
-    ]
-
-    traits: {
-        hc_public [
-            sample_function
-        ]
+    #[validate_agent]
+    fn validate_agent(validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
+        Ok(())
     }
+
+    #[zome_fn("hc_public")]
+    fn sample_function(some_param: String) -> ZomeApiResult<Address> {
+        // function body here
+    }
+}
 ```
 
 Remember that the **call** will block the execution of the caller DNA until the callee (target) finishes executing the call, so it's best to mind performance issues when working with bridges. Try to make contextual or incremental calls rather than all-encompassing ones.

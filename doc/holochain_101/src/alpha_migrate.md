@@ -23,7 +23,7 @@ At the level of the code, in more detail, the changes are as follows (note that 
 - Links are no longer created using `commit`, but instead have their own method, named `link_entries`
 - Instead of being implicitly imported, the Zome API functions are explicitly imported into Zomes, e.g.
 `extern crate hdk;`
-- The code of each Zome must now utilize a Rust "macro" called "define_zome!", and its various subproperties, which did not previously exist.
+- The code of each Zome must now utilize a Rust module annotated with `#[zome]`
 - Many aspects of validation have changed, see the section below on validation
 
 ### Updating Validation

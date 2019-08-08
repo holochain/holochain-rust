@@ -18,7 +18,7 @@ A Zome has
 
 To develop a Zome, you will have to become familiar with these different aspects, the most complex of which are the validating entry types, and the traits and function definition. Implementation details will differ depending on the language that you are developing a Zome in.
 
-## Building in Rust: define_zome!
+## Building in Rust
 
 As discussed in the [intro to HDK](./intro_to_hdk.md) article, by setting the HDK as a dependency in the `Cargo.toml` file, and then referencing it in `src/lib.rs`, Zome code in Rust gains access to a host of features.
 
@@ -28,7 +28,7 @@ What are Rust macros? Generally speaking, they are code that will actually gener
 
 In the case of Zome development, it was discovered that much code could be saved from being written, by encapsulating it in a macro.
 
-That is how `define_zome!` came about. It is a Rust macro imported from the HDK which must be used for every Zome (unless you read the source code for it yourself and write something that behaves the same way!)
+That is how `#[zome]` came about. It is a Rust macro imported from the HDK which must be used for every Zome (unless you read the source code for it yourself and write something that behaves the same way!)
 
 The following is technically the most minimalistic Zome that could be implemented. It does nothing, but still conforms to the expectations Holochain has for a Zome.
 
@@ -36,25 +36,25 @@ The following is technically the most minimalistic Zome that could be implemente
 #[macro_use]
 extern crate hdk;
 
-define_zome! {
-    entries: []
-
-    init: || {
+#[zome]
+mod my_zome {
+    
+    #[init]
+    fn init() -> ZomeApiResult<()> {
         Ok(())
     }
 
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+    #[validate_agent]
+    fn validate_agent(validation_data : EntryValidationData::<AgentId>) -> ZomeApiResult {
         Ok(())
     }
-
-    functions: []
 }
 ```
 
 `entries` represents the validating entry type definitions. Note that it is an array, because there can be many. What validating entry types are will be [explained next](./entry_type_definitions.md).
 
-`init` represents the previously mentioned `init` callback that Holochain expects from every Zome. [Skip here for details.](./init.md)
+`init` tags the previously mentioned `init` callback that Holochain expects from every Zome. [Skip here for details.](./init.md)'
 
-`functions` is where the functions are defined. [Skip here for details.](./zome_functions.md)
+`validate_agent` tags the callback that Holochain also expects from every Zome and is used to control who can join.
 
-These are the three *required* properties of `define_zome!`.
+`functions` must be defined inside the `my_zome` module. [Skip here for details.](./zome_functions.md)

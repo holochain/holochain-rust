@@ -821,7 +821,7 @@ option is to only require `TryInto<JsonString>` but this makes little or no
 difference to us in practise.
 
 An example of this is the `store_as_json` used to pass native Rust typed data
-across the WASM boundary. This is used internally by the `define_zome!` macro
+across the WASM boundary. This is used internally by the `#[zome]` macro
 for all zome funtions:
 
 ```rust

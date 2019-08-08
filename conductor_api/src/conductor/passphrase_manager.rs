@@ -129,14 +129,15 @@ impl PassphraseService for PassphraseServiceMock {
 }
 
 pub struct PassphraseServiceUnixSocket {
+    path: String,
     stream: Arc<Mutex<Option<std::io::Result<BufReader<UnixStream>>>>>,
 }
 
 impl PassphraseServiceUnixSocket {
-    pub fn new() -> Self {
+    pub fn new(path: String) -> Self {
         let stream = Arc::new(Mutex::new(None));
         let stream_clone = stream.clone();
-        let listener = UnixListener::bind("/home/lucksus/.config/Holoscape/conductor_login.socket")
+        let listener = UnixListener::bind(path.clone())
             .expect("Could not create unix socket for passphrase service");
         log_info!("Start accepting passphrase IPC connections on socket...");
         thread::spawn(move || {
@@ -147,7 +148,13 @@ impl PassphraseServiceUnixSocket {
             }
             log_info!("Passphrase provider connected through unix socket");
         });
-        PassphraseServiceUnixSocket { stream }
+        PassphraseServiceUnixSocket { path, stream }
+    }
+}
+
+impl Drop for PassphraseServiceUnixSocket {
+    fn drop(&mut self) {
+        std::fs::remove_file(self.path.clone()).unwrap();
     }
 }
 

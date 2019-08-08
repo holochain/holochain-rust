@@ -107,6 +107,23 @@ pub struct Configuration {
     /// Which signals to emit
     #[serde(default)]
     pub signals: SignalConfig,
+
+    #[serde(default)]
+    pub passphrase_service: PassphraseServiceConfig,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum PassphraseServiceConfig {
+    Cmd,
+    UnixSocket { path: String },
+    Mock { passphrase: String },
+}
+
+impl Default for PassphraseServiceConfig {
+    fn default() -> PassphraseServiceConfig {
+        PassphraseServiceConfig::Cmd
+    }
 }
 
 pub fn default_persistence_dir() -> PathBuf {

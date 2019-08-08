@@ -40,8 +40,8 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceUnixSocket};
-use config::AgentConfiguration;
+use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceUnixSocket, PassphraseServiceCmd, PassphraseServiceMock, PassphraseService};
+use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -180,6 +180,12 @@ impl Conductor {
             println!();
         }
 
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> = match config.passphrase_service.clone() {
+            PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+            PassphraseServiceConfig::UnixSocket{path} => Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path))),
+            PassphraseServiceConfig::Mock{passphrase} => Arc::new(Mutex::new(PassphraseServiceMock {passphrase}))
+        };
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -196,9 +202,7 @@ impl Conductor {
             logger,
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-                PassphraseServiceUnixSocket::new(),
-            )))),
+            passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
         }

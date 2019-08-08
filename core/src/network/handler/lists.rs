@@ -108,3 +108,67 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
         })
         .expect("Could not spawn thread for creating of gossip list");
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use crate::workflows::author_entry::author_entry;
+    use crate::nucleus::actions::tests::*;
+    use holochain_core_types::{
+        entry::{Entry, test_entry_with_value},
+    };
+    use holochain_persistence_api::cas::content::{AddressableContent, Address};
+    use std::{thread, time};
+    
+    #[test]
+    fn test_can_get_chain_header_list() {
+        let mut dna = test_dna();
+        dna.uuid = "test_can_get_chain_header_list".to_string();
+        let (_instance, context) = instance_by_name("jill", dna, None);
+
+        context
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+
+        thread::sleep(time::Duration::from_millis(500));
+
+        let chain = context.state().unwrap().agent().iter_chain();
+        let header_entry_addrs: Vec<Address> = chain.map(|header| Entry::ChainHeader(header).address()).collect();
+
+        assert_eq!(
+            get_all_chain_header_entries(context),
+            header_entry_addrs,
+        )
+
+    }
+
+    #[test]
+    fn test_can_get_all_aspect_addr_for_headers() {
+        let mut dna = test_dna();
+        dna.uuid = "test_can_get_chain_header_list".to_string();
+        let (_instance, context) = instance_by_name("jill", dna, None);
+
+        context
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+
+        thread::sleep(time::Duration::from_millis(500));
+
+        assert!(get_all_chain_header_entries(context.clone()).iter().all(|chain_header| {
+            get_all_aspect_addresses(&chain_header, context.clone()).is_ok()
+        }));
+    }
+
+}

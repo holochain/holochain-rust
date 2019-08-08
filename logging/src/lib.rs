@@ -144,6 +144,7 @@ use std::{
     io::{self, Write},
     str::FromStr,
     thread,
+    ops::Drop,
 };
 
 /// Default format of the log's timestamp.
@@ -159,7 +160,6 @@ const DEFAULT_LOG_LEVEL_STR: &str = "Info";
 type MsgT = Box<dyn LogMessageTrait>;
 
 /// The logging struct where we store everything we need in order to correctly log stuff.
-#[derive(Clone)]
 pub struct FastLogger {
     /// Log verbosity level.
     level: Level,
@@ -171,7 +171,8 @@ pub struct FastLogger {
     sender: Sender<MsgT>,
     /// Timestamp format of each log.
     timestamp_format: String,
-    // handle: Option<thread::JoinHandle<()>>,
+    /// Thread handle used to gracefully shutdown the logging thread.
+    handle: Option<thread::JoinHandle<()>>,
 }
 
 impl FastLogger {
@@ -215,6 +216,56 @@ impl FastLogger {
     /// so this function doesn't do anything.
     pub fn flush_filters(&mut self) {
         self.rule_filters.clear();
+    }
+
+    /// Flushes the write buffer inside the logging thread.
+    pub fn flush(&self) {
+        let flush_signal = Box::new(LogMessage::new_flush_signal());
+        self.sender.try_send(flush_signal)
+            .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
+    }
+
+    /// Wrapper function to avoid collision with [flsuh](Log::flush) from the [`Log`] crate trait.
+    fn flush_buffer(&self) {
+        self.flush();
+    }
+
+    /// Gracefully shutdown the logging thread and flush its writing buffer.
+    pub fn shutdown(&mut self) {
+        // Send a signal to exit the infinite loop of the logging thread
+        let terminate_signal = Box::new(LogMessage::new_terminate_signal());
+        self.sender.send(terminate_signal)
+            .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe it was already sent ?"));
+
+        // And then gracefully shutdown the logging thread
+        if let Some(handle) = self.handle.take() {
+            handle.join().expect("Fail to shutdown the logging thread.");
+        }
+    }
+}
+
+impl Drop for FastLogger {
+    // /// Custom drop definition to handle a more gracefull shutdown of our logging thread.
+    // /// This solution looks the best but it's currently not possible with the way unit tests are
+    // /// implemented in Holochain and more broadly in Rust. Specifically every unit tests access the
+    // /// same registered logger. So we fallback to a more hacky one by just giving some arbitrary
+    // /// time to the logging thread to finish it's business.
+    // fn drop(&mut self) {
+    //     // Send a signal to exit the infinite loop of the logging thread
+    //     let terminate_signal = Box::new(LogMessage::new_terminate_signal());
+    //     self.sender.send(terminate_signal)
+    //         .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe already sent?"));
+    //
+    //     // And then gracefully shutdown the logging thread
+    //     if let Some(handle) = self.handle.take() {
+    //         handle.join().expect("Fail to shutdown the logging thread.");
+    //      }
+    // }
+
+    /// This a fall back solution to give some arbitrary time to the logging thread to finish it's
+    /// business.
+    fn drop(&mut self) {
+        std::thread::sleep(std::time::Duration::from_millis(10));
     }
 }
 
@@ -269,7 +320,9 @@ impl log::Log for FastLogger {
     }
 
     /// Flushes any buffered records.
-    fn flush(&self) {}
+    fn flush(&self) {
+        self.flush_buffer();
+    }
 }
 
 /// Logger Builder used to correctly set up our logging capability.
@@ -395,8 +448,8 @@ impl<'a> FastLoggerBuilder {
 
     /// Registers a [FastLogger] as the comsumer of [log] facade so it becomes static and any further
     /// mutation are discarded.
-    #[allow(clippy::let_and_return)]
-    pub fn build(&self) -> Result<FastLoggerGuard, SetLoggerError> {
+    // #[allow(clippy::let_and_return)]
+    pub fn build(&self) -> Result<FastLogger, SetLoggerError> {
         // Let's create the logging thread that will be responsable for all the heavy work of
         // building and printing the log messages
         let (s, r): (Sender<MsgT>, Receiver<MsgT>) = crossbeam_channel::bounded(self.channel_size);
@@ -407,9 +460,10 @@ impl<'a> FastLoggerBuilder {
             level_colors: self.level_colors,
             sender: s.clone(),
             timestamp_format: self.timestamp_format.to_owned(),
+            handle: None,
         };
 
-        let handle = match log::set_boxed_logger(Box::new(logger.clone()))
+        let handle = match log::set_boxed_logger(Box::new(logger))
             .map(|_| log::set_max_level(self.level.to_level_filter()))
         {
             Ok(_v) => {
@@ -479,9 +533,16 @@ impl<'a> FastLoggerBuilder {
             }
         };
 
-        // logger.set_handle = Some(handle);
-        // Ok(logger)
-        Ok(FastLoggerGuard::new(&logger, handle))
+        // We recreate a FastLogger here because the previous one is moved to the logger register
+        // and we cannot make it derive clone because thread::JoinHandle doesn't implement clone
+        Ok(FastLogger {
+            level: self.level,
+            rule_filters: self.rule_filters.to_owned(),
+            level_colors: self.level_colors,
+            sender: s.clone(),
+            timestamp_format: self.timestamp_format.to_owned(),
+            handle: Some(handle),
+        })
     }
 
     /// Dull log build, only used for test purposes because it actually doesn't log anything by not
@@ -498,6 +559,7 @@ impl<'a> FastLoggerBuilder {
             level_colors: self.level_colors,
             sender: s,
             timestamp_format: self.timestamp_format.to_owned(),
+            handle: None,
         };
 
         Ok(logger)
@@ -520,78 +582,13 @@ impl Default for FastLoggerBuilder {
     }
 }
 
-
-
-pub struct FastLoggerGuard {
-    sender: Sender<MsgT>,
-    handle: Option<thread::JoinHandle<()>>,
-}
-
-impl FastLoggerGuard {
-    pub fn new(fastlogger: &FastLogger, handle: thread::JoinHandle<()>) -> Self {
-        Self {
-            sender: fastlogger.sender.clone(),
-            handle: Some(handle),
-        }
-    }
-
-    /// Flushes the write buffer inside the logging thread.
-    pub fn flush(&mut self) {
-        let flush_signal = Box::new(LogMessage::new_flush_signal());
-        self.sender.try_send(flush_signal)
-            .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
-    }
-
-    /// Gracefully shutdown the logging thread and flush its writing buffer.
-    pub fn shutdown(&mut self) {
-        // Send a signal to exit the infinite loop of the logging thread
-        let terminate_signal = Box::new(LogMessage::new_terminate_signal());
-        self.sender.send(terminate_signal)
-            .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe it was already sent ?"));
-
-        // And then gracefully shutdown the logging thread
-        if let Some(handle) = self.handle.take() {
-            handle.join().expect("Fail to shutdown the logging thread.");
-        }
-    }
-
-
-}
-
-use std::ops::Drop;
-impl Drop for FastLoggerGuard {
-    /// Custom drop definition to handle a more gracefull shutdown of our logging thread.
-    /// This solution looks the best but it's currently not possible with the way unit tests are
-    /// implemented in Holochain and more broadly in Rust. Specifically every unit tests access the
-    /// same registered logger. So we fallback to a more hacky one by just giving some arbitrary
-    /// time to the logging thread to finish it's business.
-    fn drop(&mut self) {
-        // Send a signal to exit the infinite loop of the logging thread
-        let terminate_signal = Box::new(LogMessage::new_terminate_signal());
-        self.sender.send(terminate_signal)
-            .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe already sent?"));
-
-        // And then gracefully shutdown the logging thread
-        if let Some(handle) = self.handle.take() {
-            handle.join().expect("Fail to shutdown the logging thread.");
-         }
-    }
-
-    // /// This a fall back solution to give some arbitrary time to the logging thread to finish it's
-    // /// business.
-    // fn drop(&mut self) {
-    //     std::thread::sleep(std::time::Duration::from_millis(10));
-    // }
-}
-
 /// Initialize a simple logging instance with [Info](Level::Info) log level verbosity or retrieve
 /// the level from the *RUST_LOG* environment variable and no rule filtering.
-pub fn init_simple() -> Result<FastLoggerGuard, SetLoggerError> {
+pub fn init_simple() -> Result<FastLogger, SetLoggerError> {
     FastLoggerBuilder::new().build()
 }
 
 /// This is our log message data structure. Useful especially for performance reasons.
-// #[derive(Clone)]
 struct LogMessage {
     /// The actual log message.
     args: String,

@@ -4,7 +4,7 @@ fn main() {
  
     // We need a guard here in order to gracefully shutdown
     // the logging thread
-    let _guard = FastLoggerBuilder::new()
+    let mut _guard = FastLoggerBuilder::new()
         .timestamp_format("%Y-%m-%d %H:%M:%S%.6f")
         .set_level_from_str("Trace")
         .add_rule_filter(RuleFilter::new("bug", false, "Magenta"))
@@ -25,4 +25,7 @@ fn main() {
     info!(target: "main", "Message from main.");
 
     debug!(target: "Level::Debug", "Level::Debug ? {:?}", Level::Debug);
+
+    // _guard.shutdown();
+    _guard.flush();
 }

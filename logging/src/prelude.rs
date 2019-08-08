@@ -17,4 +17,4 @@
 // log macro re-export
 pub use log::{log, trace, debug, info, warn, error};
 pub use log::Level;
-pub use crate::{FastLogger, FastLoggerBuilder, rule::{RuleFilter, RuleFilterBuilder}};
+pub use crate::{FastLogger, FastLoggerBuilder, FastLoggerGuard, rule::{RuleFilter, RuleFilterBuilder}};

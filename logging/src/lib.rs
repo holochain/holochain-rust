@@ -259,7 +259,7 @@ impl log::Log for FastLogger {
                 color: should_log_in,
                 target: Some(String::from(record.target())),
                 timestamp_format: self.timestamp_format.to_owned(),
-                terminate: false,
+                ..Default::default()
             };
 
             self.sender
@@ -437,10 +437,12 @@ impl<'a> FastLoggerBuilder {
                         while let Ok(msg) = r.recv() {
                             // Here we use `writeln!` instead of println! in order to avoid
                             // unnecessary flush.
-                            if msg.terminate() {
+                            if msg.should_terminate() {
                                 drop(r);
                                 buffer.flush().expect("Fail to flush the logging buffer.");
                                 break
+                            } else if msg.should_flush() {
+                                buffer.flush().expect("Fail to flush the logging buffer.")
                             } else {
                                 writeln!(&mut buffer, "{}", msg.build())
                                     .expect("Fail to log to file.")
@@ -457,10 +459,12 @@ impl<'a> FastLoggerBuilder {
                             // unnecessary flush.
                             // Currently we use `BufWriter` which has a sized buffer of about
                             // 8kb by default
-                            if msg.terminate() {
+                            if msg.should_terminate() {
                                 drop(r);
                                 buffer.flush().expect("Fail to flush the logging buffer.");
-                                break;
+                                break
+                            } else if msg.should_flush() {
+                                buffer.flush().expect("Fail to flush the logging buffer.");
                             } else {
                                 writeln!(&mut buffer, "{}", msg.build())
                                     .expect("Fail to log to file.")
@@ -475,6 +479,8 @@ impl<'a> FastLoggerBuilder {
             }
         };
 
+        // logger.set_handle = Some(handle);
+        // Ok(logger)
         Ok(FastLoggerGuard::new(&logger, handle))
     }
 
@@ -515,6 +521,7 @@ impl Default for FastLoggerBuilder {
 }
 
 
+
 pub struct FastLoggerGuard {
     sender: Sender<MsgT>,
     handle: Option<thread::JoinHandle<()>>,
@@ -527,22 +534,55 @@ impl FastLoggerGuard {
             handle: Some(handle),
         }
     }
+
+    /// Flushes the write buffer inside the logging thread.
+    pub fn flush(&mut self) {
+        let flush_signal = Box::new(LogMessage::new_flush_signal());
+        self.sender.try_send(flush_signal)
+            .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
+    }
+
+    /// Gracefully shutdown the logging thread and flush its writing buffer.
+    pub fn shutdown(&mut self) {
+        // Send a signal to exit the infinite loop of the logging thread
+        let terminate_signal = Box::new(LogMessage::new_terminate_signal());
+        self.sender.send(terminate_signal)
+            .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe it was already sent ?"));
+
+        // And then gracefully shutdown the logging thread
+        if let Some(handle) = self.handle.take() {
+            handle.join().expect("Fail to shutdown the logging thread.");
+        }
+    }
+
+
 }
 
 use std::ops::Drop;
 impl Drop for FastLoggerGuard {
-    /// Custom drop to handle a gracefull shutdown of our logging thread.
+    /// Custom drop definition to handle a more gracefull shutdown of our logging thread.
+    /// This solution looks the best but it's currently not possible with the way unit tests are
+    /// implemented in Holochain and more broadly in Rust. Specifically every unit tests access the
+    /// same registered logger. So we fallback to a more hacky one by just giving some arbitrary
+    /// time to the logging thread to finish it's business.
     fn drop(&mut self) {
-        let terminate_signal = Box::new(LogMessage::new_terminate_signal());
         // Send a signal to exit the infinite loop of the logging thread
-        self.sender.send(terminate_signal).expect("Fail to send thread shutdown signal.");
+        let terminate_signal = Box::new(LogMessage::new_terminate_signal());
+        self.sender.send(terminate_signal)
+            .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe already sent?"));
+
         // And then gracefully shutdown the logging thread
         if let Some(handle) = self.handle.take() {
             handle.join().expect("Fail to shutdown the logging thread.");
          }
     }
-}
 
+    // /// This a fall back solution to give some arbitrary time to the logging thread to finish it's
+    // /// business.
+    // fn drop(&mut self) {
+    //     std::thread::sleep(std::time::Duration::from_millis(10));
+    // }
+}
 
 /// Initialize a simple logging instance with [Info](Level::Info) log level verbosity or retrieve
 /// the level from the *RUST_LOG* environment variable and no rule filtering.
@@ -551,7 +591,7 @@ pub fn init_simple() -> Result<FastLoggerGuard, SetLoggerError> {
 }
 
 /// This is our log message data structure. Useful especially for performance reasons.
-#[derive(Clone, Debug)]
+// #[derive(Clone)]
 struct LogMessage {
     /// The actual log message.
     args: String,
@@ -576,7 +616,9 @@ struct LogMessage {
     /// Timestamp format.
     timestamp_format: String,
     /// Whether the logging thread should gracefully shutdown.
-    terminate: bool,
+    should_terminate: bool,
+    /// Whether we should flush the write buffer.
+    should_flush: bool,
 }
 
 impl LogMessage {
@@ -584,14 +626,27 @@ impl LogMessage {
     /// it gracefully.
     fn new_terminate_signal() -> Self {
         Self {
-            terminate: true,
+            should_terminate: true,
             ..Default::default()
         }
     }
 
-    /// Returns whether this message is a terminate signal or not.
-    fn terminate(&self) -> bool {
-        self.terminate
+    /// Create a special signal in order to flush the wite buffer of the logging thread.
+    fn new_flush_signal() -> Self {
+        Self {
+            should_flush: true,
+            ..Default::default()
+        }
+    }
+
+    /// Returns whether this message is a 'terminate signal' or not.
+    fn should_terminate(&self) -> bool {
+        self.should_terminate
+    }
+
+    /// Returns whether this message is a 'flush signal' or not.
+    fn should_flush(&self) -> bool {
+        self.should_flush
     }
 }
 
@@ -608,7 +663,8 @@ impl Default for LogMessage {
             thread_name: String::default(),
             color: None,
             timestamp_format: String::default(),
-            terminate: false,
+            should_terminate: false,
+            should_flush: false,
         }
     }
 }
@@ -619,7 +675,8 @@ impl Default for LogMessage {
 trait LogMessageTrait: Send {
     fn build(&self) -> String;
     fn shutdown(&mut self);
-    fn terminate(&self) -> bool;
+    fn should_terminate(&self) -> bool;
+    fn should_flush(&self) -> bool;
 }
 
 impl LogMessageTrait for LogMessage {
@@ -668,12 +725,17 @@ impl LogMessageTrait for LogMessage {
 
     /// Tells the logging thread to gracefully shutdown.
     fn shutdown(&mut self) {
-        self.terminate = true;
+        self.should_terminate = true;
     }
 
     /// Returns weather we should gracefully terminate the logging thread or keep going on.
-    fn terminate(&self) -> bool {
-        self.terminate()
+    fn should_terminate(&self) -> bool {
+        self.should_terminate()
+    }
+
+    /// Returns weather we should flush our buffer writer inside the logging thread.
+    fn should_flush(&self) -> bool {
+        self.should_flush()
     }
 }
 
@@ -902,4 +964,5 @@ fn log_to_file_test() {
     "#;
 
     FastLoggerBuilder::from_toml(toml).expect("Fail to load logging conf from toml.");
+    // info!("Ahoy Matey!");
 }

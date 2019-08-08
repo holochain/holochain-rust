@@ -34,6 +34,10 @@ impl Default for LogRules {
         rules
             .add_rule("^holochain", false, None)
             .expect("Invalid logging rule.");
+        // Add Lib3h logs
+        rules
+            .add_rule("^lib3h", false, None)
+            .expect("Invalid logging rule.");
         rules
     }
 }

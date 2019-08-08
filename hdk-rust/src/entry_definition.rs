@@ -25,7 +25,7 @@ pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> Result<(), String>
 /// What is missing from there is the validation callbacks that can not be defined as JSON
 /// and are added here as Box<FnMut> objects (types PackageCreator, Validator, LinkValidator)
 ///
-/// Instances of this struct are expected and used in the [define_zome! macro](macro.define_zome.html).
+/// Instances of this struct are expected and returned by functions tagged with `#[entry_def]` inside the [`#[zome]` module](macro.define_zome.html).
 /// Although possible, a DNA developer does not need to create these instances directly but instead
 /// should use the [entry! macro](macro.entry.html) for a clean syntax.
 pub struct ValidatingEntryType {
@@ -65,23 +65,21 @@ pub struct ValidatingLinkDefinition {
 }
 
 /// The `entry` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [define_zome](macro.define_zome.html) macro.
-/// It has 7 component parts:
+/// It has 6 component parts:
 /// 1. name: `name` is simply the descriptive name of the entry type, such as "post", or "user".
 ///      It is what must be given as the `entry_type_name` argument when calling [commit_entry](fn.commit_entry.html) and the other data read/write functions.
 /// 2. description: `description` is something that is primarily for human readers of your code, just describe this entry type
 /// 3. sharing: `sharing` defines what distribution over the DHT, or not, occurs with entries of this type, possible values
 ///      are defined in the [Sharing](../core_types/entry/dna/zome/entry_types/enum.Sharing.html) enum
-/// 4. native_type: `native_type` references a given Rust struct, which provides a clear schema for entries of this type.
-/// 5. validation_package: `validation_package` is a special identifier, which declares which data is required from peers
+/// 4. validation_package: `validation_package` is a special identifier, which declares which data is required from peers
 ///      when attempting to validate entries of this type.
 ///      Possible values are found within [ValidationPackageDefinition](enum.ValidationPackageDefinition.html)
-/// 6. validation: `validation` is a callback function which will be called any time that a
+/// 5. validation: `validation` is a callback function which will be called any time that a
 ///      (DHT) node processes or stores this entry, triggered through actions such as [commit_entry](fn.commit_entry.html), [update_entry](fn.update_entry.html), [remove_entry](fn.remove_entry.html).
 ///      It always expects two arguments, the first of which is the entry attempting to be validated,
 ///      the second is the validation `context`, which offers a variety of metadata useful for validation.
 ///      See [ValidationData](struct.ValidationData.html) for more details.
-/// 7. links: `links` is a vector of link definitions represented by `ValidatingLinkDefinition`.
+/// 6. links: `links` is a vector of link definitions represented by `ValidatingLinkDefinition`.
 ///     Links can be defined with the `link!` macro or, more concise, with either the `to!` or `from!` macro,
 ///     to define an association pointing from this entry type to another, or one that points back from
 ///     the other entry type to this one.

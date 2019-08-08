@@ -1,8 +1,10 @@
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use lib3h_sodium::secbuf::SecBuf;
+use log::Level;
 use std::{
-    io::{self, Write},
+    io::{self, BufRead, BufReader, Write},
+    os::unix::net::{UnixListener, UnixStream},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
@@ -123,5 +125,75 @@ pub struct PassphraseServiceMock {
 impl PassphraseService for PassphraseServiceMock {
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
         Ok(SecBuf::with_insecure_from_string(self.passphrase.clone()))
+    }
+}
+
+pub struct PassphraseServiceUnixSocket {
+    stream: Arc<Mutex<Option<std::io::Result<BufReader<UnixStream>>>>>,
+}
+
+impl PassphraseServiceUnixSocket {
+    pub fn new() -> Self {
+        let stream = Arc::new(Mutex::new(None));
+        let stream_clone = stream.clone();
+        let listener = UnixListener::bind("/home/lucksus/.config/Holoscape/conductor_login.socket")
+            .expect("Could not create unix socket for passphrase service");
+        log_info!("Start accepting passphrase IPC connections on socket...");
+        thread::spawn(move || {
+            let accept_result = listener.accept();
+            {
+                *(stream_clone.lock().unwrap()) =
+                    Some(accept_result.map(|(stream, _)| BufReader::new(stream)));
+            }
+            log_info!("Passphrase provider connected through unix socket");
+        });
+        PassphraseServiceUnixSocket { stream }
+    }
+}
+
+impl PassphraseService for PassphraseServiceUnixSocket {
+    fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
+        log_debug!("Passphrase needed. Using unix socket passphrase service...");
+        while self.stream.lock().unwrap().is_none() {
+            log_debug!("No one connected via socket yet. Waiting...");
+            thread::sleep(Duration::from_millis(500));
+        }
+
+        log_debug!("We have an open connection to a passphrase provider.");
+
+        // Request and read passphrase from socket
+        let mut passphrase_string = {
+            let mut stream_option = self.stream.lock().unwrap();
+            let listen_result = stream_option.as_mut().unwrap();
+            let stream = listen_result
+                .as_mut()
+                .expect("Error accepting unix socket connection for passphrase service");
+
+            log_debug!("Sending passphrase request via unix socket...");
+            stream
+                .get_mut()
+                .write_all(b"request_passphrase")
+                .expect("Could not write to passphrase socket");
+            log_debug!("Passphrase request sent.");
+            let mut passphrase_string = String::new();
+            log_debug!("Reading passphrase from socket...");
+            stream
+                .read_line(&mut passphrase_string)
+                .expect("Could not read from passphrase socket");
+            log_debug!("Got passphrase. All fine.");
+            passphrase_string
+        };
+
+        // Move passphrase in secure memory
+        let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
+        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+        passphrase_buf.write(0, passphrase_bytes.as_slice())?;
+
+        // Overwrite the unsafe passphrase memory with zeros
+        for byte in passphrase_bytes.iter_mut() {
+            *byte = 0u8;
+        }
+
+        Ok(passphrase_buf)
     }
 }

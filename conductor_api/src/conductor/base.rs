@@ -40,7 +40,7 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
+use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceUnixSocket};
 use config::AgentConfiguration;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
@@ -197,7 +197,7 @@ impl Conductor {
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-                PassphraseServiceCmd {},
+                PassphraseServiceUnixSocket::new(),
             )))),
             hash_config: None,
             n3h_keepalive_network: None,

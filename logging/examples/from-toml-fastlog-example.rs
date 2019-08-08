@@ -18,7 +18,7 @@ fn main() {
 
     // We need a guard here in order to gracefully shutdown
     // the logging thread
-    let _guard = FastLoggerBuilder::from_toml(toml)
+    let mut guard = FastLoggerBuilder::from_toml(toml)
         .expect("Fail to instantiate the logger from toml.")
         .build()
         .expect("Fail to build logger from toml.");
@@ -31,4 +31,9 @@ fn main() {
     warn!("Let's not warn twice about the same stuff.");
     // And this one will be printed in red
     error!("Abort the mission!!");
+
+    // Flushes any buffered records
+    guard.flush();
+    // Flush and shutdown gracefully the logging thread
+    guard.shutdown();
 }

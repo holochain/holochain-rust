@@ -269,7 +269,9 @@ impl Drop for FastLogger {
         self.flush_buffer();
         // This one is a dilema between usability vs performance.
         // Adding a wait duration is defininatly a performance counter but it's usefull from the
-        // user side because it help make those logs pop out
+        // user side because it help make those logs pop out.
+        // In the end a logger should be only registered once, so it should not be a problem for
+        // longer than 10ms runtime apps
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
 }

@@ -18,8 +18,6 @@ Each capability grant gets recorded as a private entry on the grantor’s chain.
 You can declare some functions as "public"  using the special `hc_public` marker trait in your zome function definitions (`#[zome_fn("hc_public")]`).  Functions in that trait will be added to the public capability grant which gets auto-committed during init.  Like this:
 
 ```rust
-define_zome! {
-
 ...
 
 #[zome_fn("hc_public")]
@@ -33,8 +31,6 @@ fn write_post() {
 }
 
 ...
-
-}
 ```
 
 ### Grant Capabilities

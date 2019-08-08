@@ -47,31 +47,14 @@ Setting up the entry types for a Zome is an often logical starting point when cr
 
 ## Building in Rust: Defining an Entry Type
 
-Recall that in [define_zome!](./define_zome.md#building-in-rust-define_zome), there was an array called `entries`. The most minimalistic Zome could look like this:
+Recall that in [the zome definition](./define_zome.md#building-in-rust-define_zome) it was mentioned that entries could be defined by annotating special function. The signature for an entry definition function inside the zome module is as follows:
+
 ```rust
-#[macro_use]
-extern crate hdk;
-
-define_zome! {
-    entries: []
-
-    init: || {
-        Ok(())
-    }
-
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
-    }
-
-    functions: []
-
-    traits: {}
-}
+#[entry_def]
+fn my_entry_def() -> ValidatingEntryType
 ```
 
-`entries` is where we will populate the Zome with entry type definitions. It expects an array of `ValidatingEntryType`. So how can one be created?
-
-Easy: the `entry!` macro. It can be used to encapsulate everything needed to define an entry type. All of the following must be defined:
+How do we create a ValidatingEntryType? Easy: the `entry!` macro. It can be used to encapsulate everything needed to define an entry type. All of the following must be defined:
 
 ---
 
@@ -112,47 +95,6 @@ entry!(
 ```
 
 As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/0.0.26-alpha1/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
-
----
-
-__native_type__
-```rust
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate holochain_persistence_derive;
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
-struct Post {
-    content: String,
-    date_created: String,
-}
-
-entry!(
-    ...
-    native_type: Post,
-    ...
-)
-```
-
-Clearly, `native_type` is where things start to get interesting. It requires the introduction of quite a number of dependencies, first of all. Why is that?
-
-It is important to remember that the Rust code of a Zome is compiled into WASM before it can be executed by Holochain. This introduces a certain constraint. How is data passed between Holochain, and the WASM Zome code? Answer: it is stored in the WASM memory as stringified JSON data, and accessed by the WASM code and by Holochain, running the WASM interpreter.
-
-JSON was chosen as the interchange format because it is so universal, and almost all languages have serializers and parsers. Rust's is called `serde`. The three `serde` related dependencies all relate to the need to serialize to and from JSON within Zomes.
-
-Additionally, the HDK offers built-in conversion functions from JSON strings to Entry structs. This comes from the `DefaultJson` [derive](https://doc.rust-lang.org/rust-by-example/trait/derive.html).
-
-Every struct used as a `native_type` reference should include all 4 derives, as in the example:
-```rust
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
-```
-
-`Serialize` and `Deserialize` come from `serde_derive`, and `DefaultJson` comes from `holochain_persistence_derive`.
-
-Then there is the struct itself. This is the real type definition, because it defines the schema. It is simply a list of property names, the 'keys', and the types of values expected, which should be set to one of the primitive types of the language. This will tell `serde` how to parse JSON string inputs into the type. Note that conversion from JSON strings into the struct type can easily fail, in particular if the proper keys are not present on the input.
 
 ---
 
@@ -198,7 +140,9 @@ The callback should return a Rust `Result` type. This is seen in `Ok(())`. The e
 
 `validation` for a `ValidatingEntryType` should either return `Ok(())` or an `Err` containing the string explaining why validation failed.
 
-The validity of an entry is therefore defined by the author of a Zome. First of all, data which doesn't conform to the schema defined by the `native_type` will fail, but `validation` allows for further rules to be defined.
+Also note the use of a Rust type as the type parameter to the validation data (`ValidationData<Post>`). In this case we are referencing a struct called `Post`. This automatically adds an extra layer of validation that the entry data must be serializable/deserializable between this type and JSON. Types used here must implement the `DefaultJson` trait.
+
+The validity of an entry is therefore defined by the author of a Zome. First of all, data which doesn't conform to the schema defined by the type will fail, but `validation` allows for further rules to be defined.
 
 Note that not only the entry author will call this function to validate the entry during its' creation, but other peers will call this function to validate the entry when it is requested via the network that they hold a copy of it. *This is at the heart of how Holochain functions as peer-to-peer data integrity layer.*
 
@@ -208,97 +152,27 @@ Further reading can be found [here](./entry_validation.md).
 
 ### Putting It All Together
 
-Taken all together, use of the `entry!` macro may look something like the following:
+Taken all together, defining an entry inside the `#[zome]` module using the `entry!` macro may look something like the following:
 
 ```rust
 ...
-entry!(
-    name: "post",
-    description: "A blog post entry which has an author",
-    sharing: Sharing::Public,
-    validation_package: || {
-        ValidationPackageDefinition::Entry
-    },
-    validation: |validation_data: EntryValidationData<Post>| {
-        Ok(())
-    }
-)
-```
-
-This can be embedded directly inside of the entries array of the `define_zome!`, like so:
-```rust
-...
-define_zome! {
-    entries: [
-        entry!(
-            name: "post",
-            description: "A blog post entry which has an author",
-            sharing: Sharing::Public,
-
-            validation_package: || {
-                ValidationPackageDefinition::Entry
-            },
-            validation: | _validation_data: EntryValidationData<Post>| {
-                Ok(())
-            }
-        )
-    ]
-
-    init: || {
-        Ok(())
-    }
-
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
-    }
-
-    functions: []
-
-    capabilitites: {}
-}
-```
-
-If there is only entry type, this can be fine, but if there are multiple, this can hurt readability of the source code. You can wrap the entry type definition in a function, and call it in `define_zome!`, like so:
-```rust
-...
-fn post_definition() -> ValidatingEntryType {
+#[entry_def]
+fn post_entry_def() -> ValidatingEntryType {
     entry!(
         name: "post",
         description: "A blog post entry which has an author",
         sharing: Sharing::Public,
-
         validation_package: || {
-            hdk::ValidationPackageDefinition::Entry
+            ValidationPackageDefinition::Entry
         },
-
-        validation: |_validation_data: Validation<Post>| {
+        validation: |validation_data: EntryValidationData<Post>| {
             Ok(())
         }
     )
 }
-
-define_zome! {
-    entries: [
-        post_definition()
-    ]
-
-    init: || {
-        Ok(())
-    }
-
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
-    }
-
-    functions: []
-
-    capabilitites: {}
-}
 ```
-
-Use of this technique can help you write clean, modular code.
 
     If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/release-0.0.26-alpha1/app_spec/zomes/blog/code/src/post.rs).
 
 #### Summary
-This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `init` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.
+This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `init` behaviour, so read on to learn about how to work with those aspects of defining a zome.

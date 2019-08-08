@@ -1,25 +1,24 @@
-# Init
+# Init and Validate Agent
 
 ## The Initialization Process
 
-Recall that every peer will be running instances of DNA on their device. This is how peers join the network for a given DNA. There are some actions that a developer may wish to initiate, upon a new peer joining a network. For this reason, a hook into this moment of the lifecycle is implemented by Holochain. It also provides an opportunity to reject the user from joining, if for some reason there is an issue with the way they are attempting to.
+Recall that every peer will be running instances of DNA on their device. This is how peers join the network for a given DNA. There are some actions that a developer may wish to initiate, by an agent, upon them joining a network. For this reason, a hook into this moment of the lifecycle is implemented by Holochain. 
 
 This lifecycle stage is called `init`. It is a callback that Holochain expects every single Zome to implement, because it will call it during initialization. If it does not exist within the WASM code for a Zome it will cause an error and peers will not be able to launch an instance of the DNA.
 
-This function also has the opportunity to reject the success of the launch of the instance. If it succeeds, the expected return value is just an integer (in WASM) representing that, but if it fails, a string is expected to be passed, explaining why.
+Another important principle in Holochain is that not all networks are public. Some DNAs should only be joinable by agent meeting certain requirements. Some examples of this might be possessing a valid invite key, being on a greenlist or even meeting some requirements in another DNA. We refer to this access control as the *membrane* of the network.
 
-When Holochain is attempting to launch an instance of a Zome, it will iterate through all the Zomes one by one, calling `init` within each. If each succeeds, success. If any one fails, the launch will fail, and the error string will be returned to the peer.
+To enforce the membrane requirements Holochain exposes a callback called `validate_agent`. This is analogous to a validation function for an entry but the entry is the agent themselves. Similar to an entry validation callback it is run by DHT nodes before they will acknowledge that the new agent has joined.
+
+When Holochain is attempting to launch an instance of a Zome, it will iterate through all the Zomes one by one, calling `init` and `validate_agent` callbacks within each. If each succeeds, success. If any one fails, the launch will fail, and the error string will be returned to the peer.
 
 Holochain will wait up to 30 seconds for a `init` response from the Zome, before it will throw a timeout error.
-
-Of course, this also indicates that `init` is a reserved function name and should not be used as the name of any other function that is publicly callable in the Zome.
-
 
 ## Building in Rust: init
 
 How is `init` used within the Rust HDK?
 
-[Previously](./define_zome.md), the general structure of `define_zome!` has been covered. It includes a Rust function closure called `init`, which is passed zero arguments. This is the hook that Holochain is expecting. It expects a Rust `Result` as a return value, which is either `Ok(())` or an `Err`, with the string explaining the error.
+[Previously](./define_zome.md), the general structure of a zome module has been covered. It includes an annotated function called `init`, which is passed zero arguments. This is the hook that Holochain is expecting. It expects a Rust `Result` as a return value, which is either `Ok(())` or an `Err`, with the string explaining the error.
 
 In the following two examples, nothing interesting will happen in the `init` functions, they are simply to illustrate how to return success, and how to return failure.
 
@@ -27,38 +26,30 @@ More complex capabilities will be possible during `init` in the future, yet for 
 
 If `init` should succeed:
 ```rust
-define_zome! {
-    entries: []
-
-    init: || {
+#[zome]
+mod my_zome {
+    
+    #[init]
+    fn init() -> ZomeApiResult<()> {
         Ok(())
     }
 
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
-    }
-
-    functions: []
-
-    traits: {}
 }
 ```
 
 If `init` should fail:
 ```rust
-define_zome! {
-    entries: []
-
-    init: || {
-        Err("the error string".to_string())
+#[zome]
+mod my_zome {
+    
+    #[init]
+    fn init() -> ZomeApiResult<()> {
+        Err("Somem error string".to_string())
     }
 
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
-    }
-
-    functions: []
-
-    traits: {}
 }
 ```
+
+## Building in Rust: validate_agent
+
+

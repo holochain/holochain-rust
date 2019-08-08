@@ -51,10 +51,10 @@ mod my_zome {
 }
 ```
 
-`entries` represents the validating entry type definitions. Note that it is an array, because there can be many. What validating entry types are will be [explained next](./entry_type_definitions.md).
-
 `init` tags the previously mentioned `init` callback that Holochain expects from every Zome. [Skip here for details.](./init.md)'
 
 `validate_agent` tags the callback that Holochain also expects from every Zome and is used to control who can join.
 
 `functions` must be defined inside the `my_zome` module. [Skip here for details.](./zome_functions.md)
+
+`entries` must also be defined within the `my_zome` module. Entries are defined by annotating a function that returns a `ValidatingEntryType` with `#[entry_def]`. What validating entry types are will be [explained next](./entry_type_definitions.md).

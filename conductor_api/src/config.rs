@@ -108,10 +108,21 @@ pub struct Configuration {
     #[serde(default)]
     pub signals: SignalConfig,
 
+    /// How should the conductor prompt the user for the passphrase to lock/unlock keystores?
+    /// The conductor is independent of the specialized implementation of the trait
+    /// PassphraseService. It just needs something to provide a passphrase when needed.
+    /// This config setting selects one of the available services (i.e. CLI prompt, IPC, mock)
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
 }
 
+/// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.
+/// In the context of a UI that wraps the conductor, this way of providing passphrases
+/// is not feasible.
+/// Setting the type to "unixsocket" and providing a path to a file socket enables
+/// arbitrary UIs to connect to the conductor and prompt the user for a passphrase.
+/// The according `PassphraseServiceUnixSocket` will send a request message over the socket
+/// then receives bytes as passphrase until a newline is sent.
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum PassphraseServiceConfig {

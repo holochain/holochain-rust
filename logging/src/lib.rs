@@ -222,7 +222,8 @@ impl FastLogger {
     pub fn flush(&self) {
         let flush_signal = Box::new(LogMessage::new_flush_signal());
         self.sender.try_send(flush_signal)
-            .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
+            .unwrap_or_else(|_| {}); // Let's safely handle any error from here
+            // .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
     }
 
     /// Wrapper function to avoid collision with [flsuh](Log::flush) from the [`Log`] crate trait.
@@ -265,6 +266,7 @@ impl Drop for FastLogger {
     /// This a fall back solution to give some arbitrary time to the logging thread to finish it's
     /// business.
     fn drop(&mut self) {
+        self.flush_buffer();
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
 }

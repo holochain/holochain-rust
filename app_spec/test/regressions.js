@@ -1,6 +1,6 @@
 module.exports = scenario => {
 
-scenario.only('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
+scenario('calling get_links before link_entries makes no difference', async (s, t, {alice}) => {
 
   const get1 = await alice.app.call("blog", "my_posts", {})
   t.ok(get1.Ok)

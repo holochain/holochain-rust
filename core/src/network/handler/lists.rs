@@ -23,21 +23,35 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
         .spawn(move || {
             let mut address_map = HashMap::new();
             for entry in get_all_public_chain_entries(context.clone()) {
-                address_map.insert(
-                    entry.clone(),
-                    get_all_aspect_addresses(&entry, context.clone())
-                        .expect("Error getting entry aspects of authoring list"),
-                );
+                match get_all_aspect_addresses(&entry, context.clone()) {
+                    Ok(aspects) => {
+                        address_map.insert(
+                            entry.clone(),
+                            aspects,
+                        );
+                    },
+                    Err(_err) => log_debug!(context,
+                        "handler/get_authoring_list: Error getting entry aspects of authoring list for entry with address: {}", 
+                        entry
+                    ),  
+                };
             }
 
             // chain header entries also should be communicated on the authoring list
             // In future make this depend if header publishing is enabled
             for chain_header_entry in get_all_chain_header_entries(context.clone()) {
-                address_map.insert(
-                    chain_header_entry.clone(),
-                    get_all_aspect_addresses(&chain_header_entry, context.clone())
-                        .expect("Error getting entry aspects of authoring list for chain headers"),
-                );
+                match get_all_aspect_addresses(&chain_header_entry, context.clone()) {
+                    Ok(aspects) => {
+                        address_map.insert(
+                            chain_header_entry.clone(),
+                            aspects,
+                        );
+                    },
+                    Err(_err) => log_debug!(context, 
+                        "handler/get_authoring_list: Error getting entry aspects of authoring list for chain header with address: {}",
+                        chain_header_entry)
+                    ,  
+                };
             }
 
             let action = Action::RespondAuthoringList(EntryListData {

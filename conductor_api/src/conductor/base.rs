@@ -553,7 +553,35 @@ impl Conductor {
     }
 
     fn get_p2p_config(&self) -> P2pConfig {
-        self.p2p_config.clone().unwrap_or_else(|| {
+        self.p2p_config.clone().map(|p2p_config| {
+
+          // TODO replace this hack with a discovery service trait
+          let urls : Vec<url::Url> = self.instances.values().map(|instance| {
+                    dbg!(instance
+                        .read()
+                        .unwrap()
+                        .context()
+                        .unwrap()
+                        .network()
+                        .lock()
+                        .as_ref()
+                        .unwrap()
+                        .p2p_endpoint())
+                }).collect();
+            match p2p_config.to_owned().backend_config {
+                BackendConfig::Memory(mut config) => {
+                    config.bootstrap_nodes =
+                        if config.bootstrap_nodes.is_empty() && !urls.is_empty()
+                        { vec![urls[0].clone()] }
+                        else
+                        { config.bootstrap_nodes.clone() };
+                    let mut p2p_config = p2p_config.clone();
+                    p2p_config.backend_config = dbg!(BackendConfig::Memory(config));
+                    p2p_config
+                },
+                _ => p2p_config.clone()
+            }
+        }).unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
@@ -798,31 +826,19 @@ impl Conductor {
                     }
                 }
                 let context = Arc::new(context);
-                Holochain::load(context.clone())
+                               Holochain::load(context.clone())
                     .and_then(|hc| {
-                        notify(format!(
+                       notify(format!(
                             "Successfully loaded instance {} from storage",
                             id.clone()
                         ));
-
-                        notify("bootstrap nodes is empty, populating.".into());
-                        let url = dbg!(context
-                            .network()
-                            .lock()
-                            .as_ref()
-                            .unwrap()
-                            .p2p_endpoint());
-
-                        self.config = self.config.with_bootstrap_nodes(&vec![url])
-                            .map_err(|err| dbg!(err))
-                            .unwrap_or(config.clone());
                         Ok(hc)
                     })
                     .or_else(|loading_error| {
                         // NoneError just means it didn't find a pre-existing state
                         // that's not a problem and so isn't logged as such
                         if loading_error == HolochainError::from(NoneError) {
-                            notify("No chain found in the store".to_string());
+                           notify("No chain found in the store".to_string());
                         } else {
                             notify(format!(
                                 "Failed to load instance {} from storage: {:?}",
@@ -831,7 +847,8 @@ impl Conductor {
                             ));
                         }
                         notify("Initializing new chain...".to_string());
-                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                        Holochain::new(dna, context)
+                        .map_err(|hc_err| hc_err.to_string())
                     })
             })
     }

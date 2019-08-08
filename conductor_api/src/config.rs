@@ -445,29 +445,6 @@ impl Configuration {
             .collect()
     }
 
-    pub fn with_bootstrap_nodes(
-        &mut self,
-        bootstrap_nodes: &Vec<url::Url>,
-    ) -> Result<Self, HolochainError> {
-        match self.network.to_owned() {
-            Some(NetworkConfig::Memory(mut config)) | Some(NetworkConfig::Lib3h(mut config)) => {
-                // TODO Ensures we have just one bootstrap node if none were set. Replace this
-                // hack with a discovery service trait
-                if config.bootstrap_nodes.is_empty() {
-                    config.bootstrap_nodes = bootstrap_nodes.clone();
-                }
-                Ok(self.to_owned())
-            }
-            Some(NetworkConfig::N3h(_)) => Err(HolochainError::ErrorGeneric(format!(
-                "with_bootstrap_nodes not supported by n3h configurations: {:?}",
-                self.clone()
-            ))),
-            None => Err(HolochainError::ErrorGeneric(format!(
-                "No configuration to add boostrap nodes to: {:?}",
-                self.clone()
-            ))),
-        }
-    }
     /// This function uses the petgraph crate to model the bridge connections in this config
     /// as a graph and then create a topological sorting of the nodes, which are instances.
     /// The sorting gets reversed to get those instances first that do NOT depend on others

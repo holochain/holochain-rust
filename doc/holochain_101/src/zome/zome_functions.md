@@ -15,7 +15,9 @@ So within Zome code, by calling functions of the HDK, you can do powerful things
 
 How these different functions work and how to use them will be covered throughout the rest of this chapter in detail. This article will provide a general overview of what Zome functions themselves are and how they work.
 
-Recall that Zomes will be written in diverse programming languages, any one that compiles to WebAssembly. Towards the bottom of this article, "Building in Rust" gives examples of what writing functions in Rust will be like. It is difficult to show what a function in WASM looks like, since even the "human-readable" version of WASM, WAT, is not highly readable.
+An important thing to note before going further is that zome functions *cannot* be used to enforce data integrity. One reason for this is that the core holochain functionality (e.g. `commit_entry`, `link_entry`) can be called externally bypassing the zome function logic. All data validation must be done inside the entry validation callbacks. You can think of zome functions just as helpers that encode common workflows and expose them to the consuming code (e.g. a UI).
+
+Recall that Zomes will be written in diverse programming languages, any one that compiles to WebAssembly. Towards the bottom of this article, "Building in Rust" gives examples of what writing functions in Rust will be like.
 
 ## DNA, Zomes, Functions, Traits, and Capabilities
 
@@ -102,156 +104,25 @@ Before making the function call, Holochain will check the validity of the reques
 
 ## Building in Rust: Zome Functions
 
-So far, in [entry type definitions](./entry_type_definitions.md) and [init](./init.md), the most complex example of `define_zome!` was still very simple, and didn't include any functions:
-
-```rust
-...
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
-struct Post {
-    content: String,
-    date_created: String,
-}
-
-define_zome! {
-    entries: [
-        entry!(
-            name: "post",
-            description: "A blog post entry which has an author",
-            sharing: Sharing::Public,
-            native_type: Post,
-            validation_package: || {
-                ValidationPackageDefinition::Entry
-            },
-            validation: |_post: Post, _validation_data: ValidationData| {
-                Ok(())
-            }
-        )
-    ]
-
-    init: || {
-        Ok(())
-    }
-
-    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
-    }
-
-    functions: []
-}
-```
-
-`functions` is where the function declarations will be made.
-
-### Adding Traits:
-
-Here are some sample traits
-
-```rust
-...
-
-define_zome! {
-    ...
-    traits: {
-        hc_public [read_post]
-        authoring [create_post, update_post]
-    }
-}
-```
-
-In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
+So far, in [entry type definitions](./entry_type_definitions.md) and [init](./init.md), the most complex example of a zome module was still very simple, and didn't include any functions.
 
 ### Adding a Zome Function
 
-In order to add a Zome function, there are two primary steps that are involved.
-1. declare your function in `define_zome!`
-2. write the Rust code for the handler of that function, calling any HDK functions you need
-
-__Step 1__
-
-The `functions` section looks a bit like an array of key-value pairs:
+Here is an example of a simplistic function, for illustration purposes. It centers on the use of a function call to an HDK function. Zome functions must be declared within a zome module (`#[zome]`).
 
 ```rust
-...
-
-define_zome! {
-    ...
-    functions: [
-        send_message: {
-            inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<String>|,
-            handler: handle_send_message
-        }
-    ]
-}
-```
-
-In this example, `send_message` is the given name of this function, by which it will be referenced and called elsewhere. There are three properties necessary to provide `send_message`, and any function declaration: `inputs`, `outputs`, and `handler`.
-
-`inputs` expects a list or argument names, and types, for the `send_message` function to be called with.
-
-`outputs` expects a single declaration of a return type. The name (which in the example is `response`) is arbitrary, call it anything.
-
-`handler` expects the name of a function which will handle this function call, and which matches the function signature of `inputs` and `outputs`. In this case, `handle_send_message`, which has yet to be defined.
-
-__Step 2__
-
-Here is an example of a simplistic function, for illustration purposes. It centers on the use of a function call to an HDK function.
-
-```rust
-fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
+#[zome_fn("hc_public", "my_trait")]
+fn send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
     hdk::send(to_agent, message, 60000.into())
 }
 ```
 
-Notice right away how the arguments match perfectly with the `inputs: |...|` section of the function declaration. Any differences will cause issues. This is also true of the return type of the output. Note the pairing of `ZomeApiResult<String>` as the return type.
+The function signature is consumed by the macro and used to automatically generate a definition. Notice also the `#[zome_fn()]` annotation contains a list of the traits this function should be added to.
 
-The name of the function, `handle_send_message` is the same as the name given as the `handler` in the `define_zome!` function declaration.
-
-Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.26-alpha1/hdk/api/fn.send.html).
+Within the function, `send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.26-alpha1/hdk/api/fn.send.html).
 
 The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.26-alpha1/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
 
 In the example, `handle_send_message` simply forwards the result of calling `hdk::send` as its' own result.
 
-Here are the above two steps combined:
-```rust
-...
-
-fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message, 60000.into())
-}
-
-define_zome! {
-    ...
-    functions: [
-        send_message: {
-            inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<String>|,
-            handler: handle_send_message
-        }
-    ]
-}
-```
-
 To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.4/hdk-rust/wasm-test/src/lib.rs).
-
-### Adding Traits:
-
-Here are some sample traits
-
-```rust
-...
-
-define_zome! {
-    ...
-    traits: {
-        hc_public [read_post]
-        authoring [create_post, update_post]
-    }
-}
-```
-
-In this example, `hc_public` is the reserved trait name which create a `Public` Capability-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
-
-Continue reading to learn all about the API Functions and examples of how to use them.

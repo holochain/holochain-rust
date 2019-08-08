@@ -36,7 +36,7 @@ Once Holochain stabilizes beyond the 0.0.x version numbers, it will be published
 
 If you wanted to lock the HDK at a specific version, you could adjust the HDK dependency like this:
 ```toml
-hdk = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.18-alpha1" }
+hdk = { git = "https://github.com/holochain/holochain-rust", tag = "v0.0.25-alpha1" }
 ```
 
 #### Use of the HDK in Rust code
@@ -51,4 +51,4 @@ extern crate hdk;
 
 The `#[macro_use]` statement on the first line is very important, since it allows the usage of Rust macros (discussed in the [Define Zome article](./define_zome.md)) defined in the HDK to be used in your code, and the macros will be needed. Now, within the Rust code files, exposed constants, functions, and even special macros from the HDK can be used.
 
-The very first thing to familiarize with is the `define_zome!` macro. Read on to learn about it.
+The very first thing to familiarize with is the `#[zome]` macro. Read on to learn about it.

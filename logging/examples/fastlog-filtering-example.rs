@@ -24,7 +24,9 @@ fn main() {
         color = "Green"
     "#;
 
-    FastLoggerBuilder::from_toml(toml)
+    // We need a guard here in order to gracefully shutdown
+    // the logging thread
+    let _guard = FastLoggerBuilder::from_toml(toml)
         .expect("Fail to instantiate the logger from toml.")
         .build()
         .expect("Fail to build logger from toml.");
@@ -47,7 +49,4 @@ fn main() {
     // All 'warning' and 'error' message have their own color
     warn!(target: "holochain", "You've been warned Sir!");
     error!(target: "holochain", "Abort the mission!!");
-
-    // Let's give some time to the working thread to finish logging...
-    std::thread::sleep(std::time::Duration::from_millis(10));
 }

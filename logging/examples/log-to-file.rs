@@ -21,7 +21,9 @@ fn main() {
 
     "#;
 
-    FastLoggerBuilder::from_toml(toml)
+    // We need a guard here in order to gracefully shutdown
+    // the logging thread
+    let _guard = FastLoggerBuilder::from_toml(toml)
         .expect("Fail to instantiate the logger from toml.")
         // .redirect_to_file("humpty_dumpty-blop.log")
         .build()
@@ -35,7 +37,4 @@ fn main() {
     warn!("Let's not warn twice about the same stuff.");
     // And this one will be printed in red
     error!("Abort the mission!!");
-
-    // Let's give some time to the working thread to finish logging...
-    std::thread::sleep(std::time::Duration::from_millis(10));
 }

@@ -40,7 +40,10 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceUnixSocket, PassphraseServiceCmd, PassphraseServiceMock, PassphraseService};
+use conductor::passphrase_manager::{
+    PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+    PassphraseServiceUnixSocket,
+};
 use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
@@ -180,11 +183,16 @@ impl Conductor {
             println!();
         }
 
-        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> = match config.passphrase_service.clone() {
-            PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
-            PassphraseServiceConfig::UnixSocket{path} => Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path))),
-            PassphraseServiceConfig::Mock{passphrase} => Arc::new(Mutex::new(PassphraseServiceMock {passphrase}))
-        };
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
+            match config.passphrase_service.clone() {
+                PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+                PassphraseServiceConfig::UnixSocket { path } => {
+                    Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
+                }
+                PassphraseServiceConfig::Mock { passphrase } => {
+                    Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+                }
+            };
 
         Conductor {
             instances: HashMap::new(),

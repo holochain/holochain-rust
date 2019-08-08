@@ -65,10 +65,26 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = Value::from(self.bundle_recurse(&std::env::current_dir()?)?);
+        let current_dir = std::env::current_dir()?;
+        let dir_obj_bundle = Value::from(self.bundle_recurse(&current_dir).map_err(|e| {
+            format_err!(
+                "Couldn't traverse DNA in directory {:?}: {}",
+                &current_dir,
+                e
+            )
+        })?);
 
-        let dna_json = JsonString::from_json(&dir_obj_bundle.to_string());
-        let dna = Dna::try_from(dna_json)?;
+        let dna_str =
+            serde_json::to_string_pretty(&dir_obj_bundle).expect("failed to make pretty DNA");
+        let dna_json = JsonString::from_json(&dna_str);
+
+        let dna = Dna::try_from(dna_json).map_err(|e| {
+            format_err!(
+                "Couldn't create a DNA from the bundle, got error {}\nJSON bundle was:\n {}",
+                e,
+                &dna_str
+            )
+        })?;
 
         let out_file = File::create(&output)
             .map_err(|e| format_err!("Couldn't create DNA output file {:?}; {}", output, e))?;

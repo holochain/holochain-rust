@@ -100,7 +100,6 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
-    #[allow(dead_code)]
     logger: FastLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
@@ -120,6 +119,10 @@ impl Drop for Conductor {
 
         self.shutdown()
             .unwrap_or_else(|err| println!("Error during shutdown, continuing anyway: {:?}", err));
+
+        // Flushing the logger's buffer writer
+        self.logger.flush();
+        // self.logger.shutdown();
 
         if let Some(network) = self.n3h_keepalive_network.take() {
             if let Err(err) = network.stop() {

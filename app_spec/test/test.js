@@ -51,7 +51,7 @@ scenario('encrypt_and_decrypt_message', async (s, t, { alice, bob }) => {
   const message = "Hello everyone! Time to start the secret meeting";
 
   const EncryptResult = await bob.app.call("simple", "encrypt", { payload:message });
-  
+
   t.ok(EncryptResult);
   const DecryptResult = await alice.app.call("simple", "decrypt", { payload:EncryptResult.Ok });
   t.deepEqual(DecryptResult.Ok, message);
@@ -104,11 +104,11 @@ scenario('show_env', async (s, t, { alice }) => {
   t.equal(result.Ok.dna_address, alice.app.dnaAddress)
   t.equal(result.Ok.dna_name, "HDK-spec-rust")
   t.equal(result.Ok.agent_address, alice.app.agentId)
-  t.equal(result.Ok.agent_id, '{"nick":"alice::app","pub_sign_key":"' + alice.app.agentId + '"}')
+  t.equal(result.Ok.agent_id, '{"nick":"conductor::alice","pub_sign_key":"' + alice.app.agentId + '"}')
   t.equal(result.Ok.properties, '{"test_property":"test-property-value"}')
 
   // don't compare the public token because it changes every time we change the dna.
-  t.deepEqual(result.Ok.cap_request.provenance, [ alice.app.agentId, 'HFQkrDmnSOcmGQnYNtaYZWj89rlIQVFg0PpEoeFyx/Qw6Oizy5PI+tcsO8wYrllkuVPPzF5P3pvbCctKkfyGBg==' ]
+  t.deepEqual(result.Ok.cap_request.provenance, [ alice.app.agentId, '+REZpeQusdTP7LZ8nw372FMFsMfWknCi6xGbxN0oPnJPGYA0IeM+BvIjwGBbDrHWYMSxAKScw6Gc2C2IsaCXDw==' ]
 );
 
 })
@@ -145,7 +145,7 @@ scenario('cross zome call', async (s, t, { alice }) => {
 scenario('send ping', async (s, t, { alice, bob }) => {
   const params = { to_agent: bob.app.agentId, message: "hello" }
   const result = await alice.app.call("blog", "ping", params)
-    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcSCIv3cPT5kegjoqgXM7nVU8rFbd9pyg5oOYUz9PSryp5mb7DKhCsXCS768pua" } })
+    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcSCI7sxHPVC9rpad9RwpefWpx99sar3o4XfwcX9438ob6PeFfpD7Ak8Z5H856z" } })
 })
 
 scenario('hash_post', async (s, t, { alice }) => {
@@ -863,7 +863,7 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
   await alice.app.callSync("simple", "create_link_with_tag",
   { "base": alice.app.agentId ,"target": "Holo world", "tag":"differen" }
    );
-  
+
   await alice.app.callSync("simple", "create_link_with_tag",
   { "base": alice.app.agentId ,"target": "Holo world 2","tag":"tag" });
 
@@ -883,8 +883,8 @@ scenario('get_links_crud_count', async (s, t, { alice, bob }) => {
     "tag":"tag"
   })
 
- 
-  
+
+
   //make sure count equals to 2
   t.equal(2,alice_posts_live.Ok.count);
   t.equal(2,bob_posts_live.Ok.count);
@@ -972,6 +972,13 @@ scenario('get_post with non-existant address returns null', async (s, t, { alice
 
 scenario('scenario test create & publish post -> get from other instance', async (s, t, { alice, bob }) => {
 
+  /*
+      This is not a complete test of requesting a grant because currently there
+      is no way in the test conductor to actually pass in the provenance of the
+      call.  That will be added when we convert the test framework to being built
+      on top of the rust conductor.   For now this is more a placeholder test, but
+      note that the value returned is actually the capbability token value.
+  */
   const initialContent = "Holo world"
   const params = { content: initialContent, in_reply_to: null }
   const create_result = await alice.app.callSync("blog", "create_post", params)
@@ -992,13 +999,6 @@ scenario('scenario test create & publish post -> get from other instance', async
 
 scenario('request grant', async (s, t, { alice, bob }) => {
 
-    /*
-      This is not a complete test of requesting a grant because currently there
-      is no way in the test conductor to actually pass in the provenance of the
-      call.  That will be added when we convert the test framework to being built
-      on top of the rust conductor.   For now this is more a placeholder test, but
-      note that the value returned is actually the capbability token value.
-    */
     const result = await alice.app.call("blog", "request_post_grant", {})
     t.ok(result.Ok)
     t.notOk(result.Err)

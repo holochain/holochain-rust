@@ -7,8 +7,6 @@ use crate::connection::{
 use lib3h::{
     dht::mirror_dht::MirrorDht,
     engine::{RealEngine, RealEngineConfig},
-    transport_wss::TransportWss,
-    transport::{memory_mock::transport_memory::TransportMemory, transport_trait::Transport}
 };
 
 use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClientProtocol};
@@ -19,13 +17,13 @@ use lib3h_protocol::{network_engine::NetworkEngine, protocol_client::Lib3hClient
 /// TODO: currently uses MirrorDht, will need to expand workers to use different
 /// generics.
 #[allow(non_snake_case)]
-pub struct Lib3hWorker<T:Transport> {
+pub struct Lib3hWorker<'a> {
     handler: NetHandler,
-    net_engine: RealEngine<T, MirrorDht>,
+    net_engine: RealEngine<'a, MirrorDht>,
 }
 
 
-impl<T:Transport> Lib3hWorker<T> {
+impl<'a> Lib3hWorker<'a> {
     pub fn advertise(self) -> url::Url {
         self.net_engine.advertise()
     }
@@ -33,7 +31,7 @@ impl<T:Transport> Lib3hWorker<T> {
 }
 
 /// Constructors
-impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
+impl Lib3hWorker<'_> {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn with_wss_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
@@ -47,9 +45,6 @@ impl Lib3hWorker<TransportWss<std::net::TcpStream>> {
             )?,
         })
     }
-}
-
-impl Lib3hWorker<TransportMemory> {
 
     /// Create a new memory worker connected to the lib3h NetworkEngine
     pub fn with_memory_transport(handler: NetHandler, real_config: RealEngineConfig) -> NetResult<Self> {
@@ -72,7 +67,7 @@ impl Lib3hWorker<TransportMemory> {
     }
 }
 
-impl<T:Transport> NetWorker for Lib3hWorker<T> {
+impl NetWorker for Lib3hWorker<'_> {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {

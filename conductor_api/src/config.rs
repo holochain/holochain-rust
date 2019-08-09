@@ -307,12 +307,13 @@ impl Configuration {
 
         #[cfg(not(unix))]
         {
-            if let PassphraseServiceConfig::UnixSocket{path} = self.passphrase_service.clone() {
+            if let PassphraseServiceConfig::UnixSocket { path } = self.passphrase_service.clone() {
                 let _ = path;
-                return Err(String::from("Passphrase service type 'unixsocket' is not available on non-Unix systems"));
+                return Err(String::from(
+                    "Passphrase service type 'unixsocket' is not available on non-Unix systems",
+                ));
             }
         }
-
 
         Ok(())
     }

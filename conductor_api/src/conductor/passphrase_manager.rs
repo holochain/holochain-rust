@@ -11,9 +11,9 @@ use std::{
 };
 
 #[cfg(unix)]
-use std::os::unix::net::{UnixListener, UnixStream};
-#[cfg(unix)]
 use std::io::{BufRead, BufReader};
+#[cfg(unix)]
+use std::os::unix::net::{UnixListener, UnixStream};
 
 /// We are caching the passphrase for 10 minutes.
 const PASSPHRASE_CACHE_DURATION_SECS: u64 = 600;
@@ -179,8 +179,9 @@ impl PassphraseService for PassphraseServiceUnixSocket {
 
         // Request and read passphrase from socket
         let mut passphrase_string = {
-            let mut stream_option = self.stream.lock()
-                .expect("Could not lock mutex holding unix domain socket connection for passphrase service");
+            let mut stream_option = self.stream.lock().expect(
+                "Could not lock mutex holding unix domain socket connection for passphrase service",
+            );
             let listen_result = stream_option.as_mut()
                 .expect("This option must be some at this point since we would be in above while loop otherwise.");
             let stream = listen_result

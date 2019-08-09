@@ -40,11 +40,11 @@ use std::{
 };
 
 use boolinator::Boolinator;
+#[cfg(unix)]
+use conductor::passphrase_manager::PassphraseServiceUnixSocket;
 use conductor::passphrase_manager::{
     PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
 };
-#[cfg(unix)]
-use conductor::passphrase_manager::PassphraseServiceUnixSocket;
 use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
@@ -184,27 +184,23 @@ impl Conductor {
             println!();
         }
 
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
+            if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
+            {
+                #[cfg(not(unix))]
+                panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
 
-
-        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> = if let PassphraseServiceConfig::UnixSocket{path} = config.passphrase_service.clone() {
-            #[cfg(not(unix))]
-            panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
-
-            #[cfg(unix)]
-            Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
-        } else {
-            match config.passphrase_service.clone() {
-                PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
-                PassphraseServiceConfig::Mock { passphrase } => {
-                    Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
-                },
-                _ => unreachable!()
-            }
-        };
-
-
-
-
+                #[cfg(unix)]
+                Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
+            } else {
+                match config.passphrase_service.clone() {
+                    PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+                    PassphraseServiceConfig::Mock { passphrase } => {
+                        Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+                    }
+                    _ => unreachable!(),
+                }
+            };
 
         Conductor {
             instances: HashMap::new(),

@@ -123,7 +123,7 @@ impl Drop for Conductor {
         // Flushing the logger's buffer writer
         self.logger.flush();
         // Do not shut down the logging thread if there is multiple concurrent conductor thread
-        // like during unit testing brcause they all use the same registered logger
+        // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
         if let Some(network) = self.n3h_keepalive_network.take() {

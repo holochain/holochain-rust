@@ -1,9 +1,10 @@
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use lib3h_sodium::secbuf::SecBuf;
+#[cfg(unix)]
 use log::Level;
 use std::{
-    io::{self, BufRead, BufReader, Write},
+    io::{self, Write},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
@@ -11,6 +12,8 @@ use std::{
 
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
+#[cfg(unix)]
+use std::io::{BufRead, BufReader};
 
 /// We are caching the passphrase for 10 minutes.
 const PASSPHRASE_CACHE_DURATION_SECS: u64 = 600;

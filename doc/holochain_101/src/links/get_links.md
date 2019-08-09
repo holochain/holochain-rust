@@ -1,10 +1,10 @@
 # Get Links
-Get Links allows the zome developer to query links from the DHT. The get links can be configured with options to customize what type of query should be returned. The parameters of the get_links are : 
+Get Links allows the zome developer to query links from the DHT. The call accepts an options parameter to customize the query behavior. The parameters of the get_links are : 
 
-`base` : which is the base address
-`LinkType Link Match` : which you can use to specify a regex of an exact match or pattern on the match of a link_type
-`Tag Link Match` : which you can use to specify a regex of an exact match or pattern on the match of a tag
-`Options` : This a configurable struct that you can use to specify different options to apply when executing the query.
+`base` :  address of the entry on which to query for links
+`LinkType Link Match` : a match enum which is either a regex or an exact match specifier on link_type
+`Tag Link Match` : a match enum which is either a regex or an exact match specifier on link's tag
+`Options` : a struct (see below) that you can use to specify different options to apply when executing the query.
 
 # Options
 `Timeout` : The timeout variable on the options specifies how long the query process should wait befor a response before it timesout

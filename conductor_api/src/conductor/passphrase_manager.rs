@@ -4,11 +4,13 @@ use lib3h_sodium::secbuf::SecBuf;
 use log::Level;
 use std::{
     io::{self, BufRead, BufReader, Write},
-    os::unix::net::{UnixListener, UnixStream},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
 };
+
+#[cfg(unix)]
+use std::os::unix::net::{UnixListener, UnixStream};
 
 /// We are caching the passphrase for 10 minutes.
 const PASSPHRASE_CACHE_DURATION_SECS: u64 = 600;
@@ -128,11 +130,13 @@ impl PassphraseService for PassphraseServiceMock {
     }
 }
 
+#[cfg(unix)]
 pub struct PassphraseServiceUnixSocket {
     path: String,
     stream: Arc<Mutex<Option<std::io::Result<BufReader<UnixStream>>>>>,
 }
 
+#[cfg(unix)]
 impl PassphraseServiceUnixSocket {
     pub fn new(path: String) -> Self {
         let stream = Arc::new(Mutex::new(None));
@@ -152,12 +156,14 @@ impl PassphraseServiceUnixSocket {
     }
 }
 
+#[cfg(unix)]
 impl Drop for PassphraseServiceUnixSocket {
     fn drop(&mut self) {
         std::fs::remove_file(self.path.clone()).unwrap();
     }
 }
 
+#[cfg(unix)]
 impl PassphraseService for PassphraseServiceUnixSocket {
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
         log_debug!("Passphrase needed. Using unix socket passphrase service...");

@@ -305,6 +305,15 @@ impl Configuration {
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
+        #[cfg(not(unix))]
+        {
+            if let PassphraseServiceConfig::UnixSocket{path} = self.passphrase_service.clone() {
+                let _ = path;
+                return Err(String::from("Passphrase service type 'unixsocket' is not available on non-Unix systems"));
+            }
+        }
+
+
         Ok(())
     }
 

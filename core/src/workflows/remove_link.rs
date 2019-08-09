@@ -1,7 +1,7 @@
 use crate::{
     context::Context, dht::actions::remove_link::remove_link,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    workflows::hold_entry::hold_entry_workflow
+    workflows::hold_entry::hold_entry_workflow,
 };
 
 use crate::{

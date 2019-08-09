@@ -94,19 +94,25 @@ pub async fn validate_entry(
             validation_data
         )),
 
-        EntryType::LinkAdd => {
-            await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))
-        }
+        EntryType::LinkAdd => await!(link_entry::validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
-        EntryType::LinkRemove => {
-            await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))
-        }
+        EntryType::LinkRemove => await!(link_entry::validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => {
-            await!(remove_entry::validate_remove_entry(entry.clone(), validation_data, context))
-        }
+        EntryType::Deletion => await!(remove_entry::validate_remove_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),

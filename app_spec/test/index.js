@@ -89,9 +89,16 @@ const registerAllScenarios = () => {
   // test cases if there is any Promise awaiting in between test declarations.
   let numRegistered = 0
 
-  const registerer = orchestrator => (...info) => {
-    numRegistered += 1
-    return orchestrator.registerScenario(...info)
+  const registerer = orchestrator => {
+    const f = (...info) => {
+      numRegistered += 1
+      return orchestrator.registerScenario(...info)
+    }
+    f.only = (...info) => {
+      numRegistered += 1
+      return orchestrator.registerScenario.only(...info)
+    }
+    return f
   }
 
   require('./regressions')(registerer(orchestratorSimple))

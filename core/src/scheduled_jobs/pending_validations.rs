@@ -13,8 +13,7 @@ use crate::workflows::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use snowflake::ProcessUniqueId;
-use std::{fmt, sync::Arc, thread};
-use std::convert::TryFrom;
+use std::{convert::TryFrom, fmt, sync::Arc, thread};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -48,7 +47,9 @@ impl TryFrom<String> for ValidatingWorkflow {
             "RemoveLink" => Ok(ValidatingWorkflow::RemoveLink),
             "UpdateEntry" => Ok(ValidatingWorkflow::UpdateEntry),
             "RemoveEntry" => Ok(ValidatingWorkflow::RemoveEntry),
-            _ => Err(HolochainError::SerializationError(String::from("No ValidatingWorkflow"))),
+            _ => Err(HolochainError::SerializationError(String::from(
+                "No ValidatingWorkflow",
+            ))),
         }
     }
 }

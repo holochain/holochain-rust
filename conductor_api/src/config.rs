@@ -108,7 +108,7 @@ pub struct Configuration {
     #[serde(default)]
     pub signals: SignalConfig,
 
-    /// How should the conductor prompt the user for the passphrase to lock/unlock keystores?
+    /// Configure how the conductor should prompt the user for the passphrase to lock/unlock keystores.
     /// The conductor is independent of the specialized implementation of the trait
     /// PassphraseService. It just needs something to provide a passphrase when needed.
     /// This config setting selects one of the available services (i.e. CLI prompt, IPC, mock)

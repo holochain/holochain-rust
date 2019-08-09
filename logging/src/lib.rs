@@ -474,7 +474,6 @@ impl<'a> FastLoggerBuilder {
 
     /// Registers a [FastLogger] as the comsumer of [log] facade so it becomes static and any further
     /// mutation are discarded.
-    // #[allow(clippy::let_and_return)]
     pub fn build(&self) -> Result<FastLogger, SetLoggerError> {
         // Let's create the logging thread that will be responsable for all the heavy work of
         // building and printing the log messages

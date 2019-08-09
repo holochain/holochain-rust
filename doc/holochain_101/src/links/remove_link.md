@@ -2,8 +2,7 @@
 
 `Recommended` : read link_entries documentation before reading this documentation.
 
-Remove Link is the process of marking a link as deleted in the DHT. For this process to happen, the remove_link process has to get all links that correspond with the target. This is each time a Link is commited, it is linked against the address of the link entry rather than the target. For this reason, it is why we have to run a get_links to obtain all the corresponding addresses that contain that target and set those links as deleted. This allows for links with the same target to be added after they have deleted e.g social media friend that has been removed and readded. The RemoveLink ends up adding an entry of LinkRemove to signifiy that this link has been deleted and if a similar link of LinkAdd with the same hash is added after, it will act as a tombstone and not acknowledge it.
-
+Remove Link is the process of marking a link as deleted in the DHT. For this process to happen, the remove_link first has to get all like hashes that share the same base,tag,link type and target. The remove link process will then mark all of these links as deleted in the process. The reason for this is that links that share the same base, tag, link_type and target do not necesarrily produce the same link hash. In order for the delete to work all corresponding link hashes would have to be marked as deleted in the DHT
 # Validation
 
 `System Validation`

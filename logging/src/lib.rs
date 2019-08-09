@@ -529,8 +529,6 @@ impl<'a> FastLoggerBuilder {
                         }
                     })
                 } else {
-                    // TODO:  <06-08-19, dymayday> Use this instead of the current impl for better
-                    // perf, but we need to fix the capricious buffer flush
                     let mut buffer = io::BufWriter::new(io::stderr());
                     thread::spawn(move || {
                         while let Ok(msg) = r.recv() {

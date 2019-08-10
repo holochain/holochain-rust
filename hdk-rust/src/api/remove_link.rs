@@ -7,6 +7,7 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// its status metadata to `Deleted` which gets published to the DHT.
 /// Consumes four values, two of which are the addresses of entries, and two of which are strings that describe the link
 /// type and its tag. Both must match exactly to remove a link.
+/// Before a RemoveLink is executed, a get_links will have to make sure that we are deleting the right links
 /// # Examples
 /// ```rust
 /// # extern crate hdk;

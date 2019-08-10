@@ -446,11 +446,11 @@ fn can_return_empty_string_as_validation_fail() {
         "check_commit_entry",
         &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
-    println!("\t result = {:?}", result);
-    assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(example_valid_entry_address()),
+        JsonString::from_json(
+            "{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"225\\\"}\"}"
+        )
     );
 }
 #[test]

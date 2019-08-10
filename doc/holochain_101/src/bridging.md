@@ -57,7 +57,7 @@ pub fn handle_sample_function(some_param: String) -> ZomeApiResult<Address> {
 }
 
 #[zome]
-mod zome {
+mod my_zome {
     #[init]
     fn init() -> ZomeApiResult<()> {
         Ok(())

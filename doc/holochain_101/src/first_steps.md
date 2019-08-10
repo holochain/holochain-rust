@@ -189,7 +189,7 @@ Take note also of the `links` field. As we will see later links are the main way
 ## Adding Functions
 Finally we need a way to interact with the hApp. We will define the following functions: `create_list`, `add_item` and `get_list`. get_list will retrieve a list and all the items linked to each list.
 
-Rust functions inside the zome module can be annotated with `#[zome_fn("hc_public")]` which will expose them to be callable from the conductor. The `"hc_public"` defines the capability required to call this function. This guide will not go in depth on capabilities but just know that hc_public means these functions are callable externally with no added security.
+Rust functions inside the zome module can be annotated with `#[zome_fn("hc_public")]` which will expose them to be callable from the conductor. The `"hc_public"` defines the capability required to call this function. This guide will not go in depth on capabilities but just know that hc_public means these functions are callable externally with no added security.  You can read more about capabilities [here](./zome/capabilities.md).
 
 It is best practice for functions to always return a `ZomeApiResult<T>`, where `T` is the type the function should return if it runs without error. This is an extension of the Rust Result type and allows zome functions to abort early on errors using the `?` operator. `create_list` could be written as:
 

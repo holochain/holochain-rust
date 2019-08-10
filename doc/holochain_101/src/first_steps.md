@@ -135,7 +135,7 @@ use hdk::{
 
 The `Serialize` and `Deserialize` derived traits allow the structs to be converted to and from JSON, which is how entries are managed internally in Holochain. The DefaultJson derived trait comes from the holochain HDK itself and allows for seamless converting between data stored in the DHT and rust structs.
 
-These structs on their own are not yet valid Holochain entries. To create an entry we must write a functio n that return a `ValidatingEntryType` and tag it using the `#[entry_def]` attribute. The `entry!` macro makes it easy to define a `ValidatingEntryType`.
+The List and ListItem structs on their own are not yet valid Holochain entries. To create an entry we must write a function that returns a `ValidatingEntryType` and tag it using the `#[entry_def]` attribute. The `entry!` macro makes it easy to define a `ValidatingEntryType`.
 
 ```rust
 
@@ -189,7 +189,7 @@ Take note also of the `links` field. As we will see later links are the main way
 ## Adding Functions
 Finally we need a way to interact with the hApp. We will define the following functions: `create_list`, `add_item` and `get_list`. get_list will retrieve a list and all the items linked to each list.
 
-Rust functions inside the zome module can be annotated with `#[zome_fn("hc_public")]` which will expose them to be callable from the conductor. The `"hc_public"` defines the capability required to call this function. This guide will not go in depth on capabilities but just know that hc_public means these functions are callable externally with no added security.
+Rust functions inside the zome module can be annotated with `#[zome_fn("hc_public")]` which will expose them to be callable from the conductor. The `"hc_public"` defines the capability required to call this function. This guide will not go in depth on capabilities but just know that hc_public means these functions are callable externally with no added security.  You can read more about capabilities [here](./zome/capabilities.md).
 
 It is best practice for functions to always return a `ZomeApiResult<T>`, where `T` is the type the function should return if it runs without error. This is an extension of the Rust Result type and allows zome functions to abort early on errors using the `?` operator. `create_list` could be written as:
 

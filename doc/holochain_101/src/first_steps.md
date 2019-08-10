@@ -135,7 +135,7 @@ use hdk::{
 
 The `Serialize` and `Deserialize` derived traits allow the structs to be converted to and from JSON, which is how entries are managed internally in Holochain. The DefaultJson derived trait comes from the holochain HDK itself and allows for seamless converting between data stored in the DHT and rust structs.
 
-These structs on their own are not yet valid Holochain entries. To create an entry we must write a functio n that return a `ValidatingEntryType` and tag it using the `#[entry_def]` attribute. The `entry!` macro makes it easy to define a `ValidatingEntryType`.
+The List and ListItem structs on their own are not yet valid Holochain entries. To create an entry we must write a function that returns a `ValidatingEntryType` and tag it using the `#[entry_def]` attribute. The `entry!` macro makes it easy to define a `ValidatingEntryType`.
 
 ```rust
 

@@ -189,7 +189,9 @@ mod todo {
 }
 ```
 
-Take note of the use of the struct types (`List` and `ListItem`) in the parameters to the validation function. This will automatically add validation to ensure these entries always match the structures. The `validation_package` field is a function that defines what data should be passed to the validation function through the `validation_data` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The validation field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
+Take note of the use of the struct types (`List` and `ListItem`) in the parameters to the validation function. This will automatically add validation to ensure these entries always match the structures, i.e. if a rouge node attempts to publish a List or ListItem that doesn't contain the data in the Struct definition, this will get caught by system level validation automatically.
+
+The `validation_package` field is a function that defines what data should be passed to the validation function through the `validation_data` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The validation field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
 
 Take note also of the `links` field. As we will see later links are the main way to encode relational data in holochain. The `links` section of the entry macro defines what other types of entries are allowed to link to and from this type. This also includes a validation function for fine grain control over linking.
 

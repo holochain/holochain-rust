@@ -15,23 +15,17 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// ```rust
 /// #![feature(proc_macro_hygiene)]
 /// 
-/// extern crate serde;
 /// #[macro_use]
 /// extern crate serde_derive;
-/// extern crate serde_json;
-/// extern crate hdk;
 /// extern crate hdk_proc_macros;
-/// 
-/// use hdk::error::ZomeApiResult;
 /// use hdk_proc_macros::zome;
+/// 
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_persistence_api;
 /// # extern crate holochain_json_api;
 /// # extern crate serde;
-/// # #[macro_use]
-/// # extern crate serde_derive;
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;

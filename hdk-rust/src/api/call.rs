@@ -21,8 +21,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// extern crate serde_json;
 /// extern crate hdk;
 /// extern crate hdk_proc_macros;
-/// 
-/// use hdk::error::ZomeApiResult;
 /// use hdk_proc_macros::zome;
 ///
 /// # use hdk::holochain_persistence_api::hash::HashString;
@@ -123,11 +121,11 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// extern crate serde_derive;
 /// extern crate serde_json;
 /// extern crate hdk;
+/// #[macro_use]
+/// extern crate holochain_json_derive;
 /// extern crate hdk_proc_macros;
-/// 
-/// use hdk::error::ZomeApiResult;
 /// use hdk_proc_macros::zome;
-///
+/// 
 /// # use hdk::holochain_persistence_api::hash::HashString;
 /// # use hdk::holochain_json_api::error::JsonError;
 /// # use hdk::holochain_json_api::json::JsonString;

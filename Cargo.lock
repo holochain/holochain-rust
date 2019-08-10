@@ -810,6 +810,7 @@ version = "0.0.26-alpha1"
 dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdk-proc-macros 0.0.26-alpha1",
  "holochain_conductor_api 0.0.26-alpha1",
  "holochain_core 0.0.26-alpha1",
  "holochain_core_types 0.0.26-alpha1",

@@ -521,6 +521,19 @@ define_zome! {
         ),
 
         entry!(
+            name: "empty_validation_response_tester",
+            description: "asdfda",
+            sharing: Sharing::Public,
+            validation_package: || {
+                hdk::ValidationPackageDefinition::ChainFull
+            },
+
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
+                Err("".to_string())
+            }
+        ),
+
+        entry!(
             name: "link_validator",
             description: "asdfda",
             sharing: Sharing::Public,

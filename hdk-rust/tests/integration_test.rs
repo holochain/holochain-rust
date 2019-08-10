@@ -263,6 +263,15 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+fn empty_string_validation_fail_entry() -> Entry {
+    Entry::App(
+        "empty_validation_response_tester".into(),
+        EntryStruct {
+            stuff: "should fail with empty string".into()
+        }.into()
+    )
+}
+
 #[cfg(not(windows))]
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
@@ -347,6 +356,11 @@ fn start_holochain_instance<T: Into<String>>(
             EntryTypeDef::new(),
         );
 
+        entry_types.insert(
+            EntryType::from("empty_validation_response_tester"),
+            EntryTypeDef::new(),
+        );
+
         let test_entry_type = &mut entry_types
             .get_mut(&EntryType::from("testEntryType"))
             .unwrap();
@@ -414,6 +428,23 @@ fn can_commit_entry() {
         &mut hc,
         "check_commit_entry",
         &String::from(JsonString::from(example_valid_entry())),
+    );
+    println!("\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from(example_valid_entry_address()),
+    );
+}
+#[test]
+fn can_return_empty_string_as_validation_fail() {
+    let (mut hc, _) = start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
+
+    // Call the exposed wasm function that calls the Commit API function
+    let result = make_test_call(
+        &mut hc,
+        "check_commit_entry",
+        &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);

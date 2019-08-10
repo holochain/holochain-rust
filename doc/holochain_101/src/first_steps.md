@@ -42,7 +42,7 @@ We will create a single zome called `lists` that uses a Rust build system:
 
 ```
 cd holochain-rust-todo
-hc generate zomes/lists rust
+hc generate zomes/lists rust-proc
 ```
 
 The project structure should now be as follows:
@@ -67,8 +67,9 @@ The Rust HDK makes use of Rust macros to reduce the need for boilerplate code. T
 Open up `lib.rs` and replace its contents with the following:
 
 ```rust
+#![feature(proc_macro_hygiene)]
 #[macro_use]
-extern crate hdk;
+extern crate hdk_proc_macros;
 
 #[zome]
 mod todo {
@@ -82,6 +83,7 @@ mod todo {
         Ok(())
     }
 }
+
 ```
 
 This is the simplest possible valid zome with no entries and no exposed functions.
@@ -110,25 +112,31 @@ struct GetListResponse {
 
 You might notice that the `List` struct does not contain a field that holds a collection of `ListItem`s. This will be implemented using links, which we will discuss later.
 
-Also be sure to add the following to the list of imports:
+Also be sure to replace the list of imports with the following that contains everything required for this example:
 
 ```rust
+#![feature(proc_macro_hygiene)]
+#[macro_use]
+extern crate hdk_proc_macros;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_persistence_derive;
+extern crate holochain_json_derive;
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
-        hash::HashString,
-        error::HolochainError,
         dna::entry_types::Sharing,
-        json::JsonString,
-        cas::content::Address,
         entry::Entry,
-    }
+        link::LinkMatch,
+    },
+    entry_definition::ValidatingEntryType,
+    holochain_persistence_api::cas::content::Address,
+    holochain_json_api::{
+       json::JsonString,
+       error::JsonError
+    },
 };
 ```
 
@@ -173,7 +181,7 @@ mod todo {
             description: "",
             sharing: Sharing::Public,
             validation_package: || hdk::ValidationPackageDefinition::Entry,
-            validation: |validation_data: hdk::EntryValidationData<ListItem>| {
+            validation: |_validation_data: hdk::EntryValidationData<ListItem>| {
                 Ok(())
             }
         )
@@ -203,7 +211,7 @@ fn create_list(list: List) -> ZomeApiResult<Address> {
     );
 
     // commit the entry and return the address
-	hdk::commit_entry(&list_entry)
+    hdk::commit_entry(&list_entry)
 }
 ```
 
@@ -220,9 +228,9 @@ fn add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<Address
         list_item.into()
     );
 
-	let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
-	hdk::link_entries(&list_addr, &item_addr, "items", "")?; // if successful, link to list address
-	Ok(item_addr)
+    let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
+    hdk::link_entries(&list_addr, &item_addr, "items", "")?; // if successful, link to list address
+    Ok(item_addr)
 }
 ```
 
@@ -257,23 +265,27 @@ fn get_list(list_addr: HashString) -> ZomeApiResult<GetListResponse> {
 Phew! and there we have it! If you are coding along the full lib.rs should now look like this:
 
 ```rust
+#![feature(proc_macro_hygiene)]
+#[macro_use]
+extern crate hdk_proc_macros;
 #[macro_use]
 extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_persistence_derive;
-
+extern crate holochain_json_derive;
 use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
-        hash::HashString,
         error::HolochainError,
         dna::entry_types::Sharing,
-        json::JsonString,
-        cas::content::Address,
         entry::Entry,
-    }
+    },
+    holochain_persistence_api::cas::content::Address,
+    holochain_json_api::{
+       json::JsonString,
+       error::JsonError
+    },
 };
 
 

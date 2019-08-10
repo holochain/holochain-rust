@@ -335,7 +335,7 @@ mod todo {
             description: "",
             sharing: Sharing::Public,
             validation_package: || hdk::ValidationPackageDefinition::Entry,
-            validation: |validation_data: hdk::EntryValidationData<ListItem>| {
+            validation: |_validation_data: hdk::EntryValidationData<ListItem>| {
                 Ok(())
             }
         )

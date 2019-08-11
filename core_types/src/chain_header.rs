@@ -37,7 +37,7 @@ pub struct ChainHeader {
     /// Address(es) of the agent(s) that authored and signed this entry,
     /// along with their cryptographic signatures
     provenances: Vec<Provenance>,
-    /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
+    /// Key to the immediately preceding header. Only the init Pair can have None as valid
     link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
     link_same_type: Option<Address>,

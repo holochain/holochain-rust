@@ -1,6 +1,13 @@
 use crate::{
-    action::ActionWrapper, consistency::ConsistencyModel, context::Context, persister::Persister,
-    scheduled_jobs, signal::Signal, state::State, workflows::application,
+    action::{Action, ActionWrapper},
+    consistency::ConsistencyModel,
+    context::Context,
+    network,
+    persister::Persister,
+    scheduled_jobs,
+    signal::Signal,
+    state::{State, StateWrapper},
+    workflows::application,
 };
 #[cfg(test)]
 use crate::{
@@ -8,17 +15,17 @@ use crate::{
     nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    ugly::lax_send_sync,
 };
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{
-    sync::{
-        mpsc::{sync_channel, Receiver, Sender, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
     thread,
     time::Duration,
 };
@@ -30,12 +37,13 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 #[derive(Clone)]
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
-    state: Arc<RwLock<State>>,
-    action_channel: Option<SyncSender<ActionWrapper>>,
-    observer_channel: Option<SyncSender<Observer>>,
+    state: Arc<RwLock<StateWrapper>>,
+    action_channel: Option<Sender<ActionWrapper>>,
+    observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<Persister>>>,
+    persister: Option<Arc<Mutex<dyn Persister>>>,
     consistency_model: ConsistencyModel,
+    kill_switch: Option<Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -46,8 +54,6 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
-
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
@@ -116,13 +122,13 @@ impl Instance {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    fn action_channel(&self) -> &Sender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &Sender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
@@ -139,8 +145,8 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = sync_channel::<ActionWrapper>(Self::DEFAULT_CHANNEL_BUF_SIZE);
-        let (tx_observer, rx_observer) = sync_channel::<Observer>(Self::DEFAULT_CHANNEL_BUF_SIZE);
+        let (tx_action, rx_action) = unbounded::<ActionWrapper>();
+        let (tx_observer, rx_observer) = unbounded::<Observer>();
         self.action_channel = Some(tx_action.clone());
         self.observer_channel = Some(tx_observer.clone());
 
@@ -162,21 +168,44 @@ impl Instance {
         rx_action: Receiver<ActionWrapper>,
         rx_observer: Receiver<Observer>,
     ) {
+        self.stop_action_loop();
+
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
-        thread::spawn(move || {
-            let mut state_observers: Vec<Observer> = Vec::new();
-            for action_wrapper in rx_action {
-                state_observers = sync_self.process_action(
-                    &action_wrapper,
-                    state_observers,
-                    &rx_observer,
-                    &sub_context,
-                );
-                sync_self.emit_signals(&sub_context, &action_wrapper);
-            }
-        });
+        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
+        self.kill_switch = Some(kill_sender);
+        let instance_is_alive = sub_context.instance_is_alive.clone();
+
+        let _ = thread::Builder::new()
+            .name(format!(
+                "action_loop/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                let mut state_observers: Vec<Observer> = Vec::new();
+                while !kill_receiver.try_recv().is_ok() {
+                    if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
+                        // Ping can happen often, and should be as lightweight as possible
+                        if *action_wrapper.action() != Action::Ping {
+                            state_observers = sync_self.process_action(
+                                &action_wrapper,
+                                state_observers,
+                                &rx_observer,
+                                &sub_context,
+                            );
+                            sync_self.emit_signals(&sub_context, &action_wrapper);
+                        }
+                    }
+                }
+                (*instance_is_alive.lock().unwrap()) = false;
+            });
+    }
+
+    pub fn stop_action_loop(&self) {
+        if let Some(ref kill_switch) = self.kill_switch {
+            let _ = kill_switch.send(());
+        }
     }
 
     /// Calls the reducers for an action and calls the observers with the new state
@@ -190,7 +219,7 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
-            let new_state: State;
+            let new_state: StateWrapper;
 
             {
                 // Only get a read lock first so code in reducers can read state as well
@@ -214,15 +243,15 @@ impl Instance {
         }
 
         if let Err(e) = self.save() {
-            context.log(format!(
-                "err/instance/process_action: could not save state: {:?}",
+            log_error!(context,
+                "instance/process_action: could not save state: {:?}",
                 e
-            ));
+            );
         } else {
-            context.log(format!(
-                "trace/reduce/process_actions: reducing {:?}",
+            log_trace!(context,
+                "reduce/process_actions: reducing {:?}",
                 action_wrapper
-            ));
+            );
         }
 
         // Add new observers
@@ -240,20 +269,20 @@ impl Instance {
             // to prevent emitting too many unneeded signals
             let trace_signal = Signal::Trace(action_wrapper.clone());
             tx.send(trace_signal).unwrap_or_else(|e| {
-                context.log(format!(
-                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                log_warn!(context,
+                    "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
-                ));
+                );
             });
 
             self.consistency_model
                 .process_action(action_wrapper.action())
                 .map(|signal| {
                     tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
-                        context.log(format!(
-                            "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                        log_warn!(context,
+                            "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                             e
-                        ));
+                        );
                     });
                 });
         }
@@ -262,27 +291,29 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::new(context.clone()))),
+            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
         }
     }
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(state)),
+            state: Arc::new(RwLock::new(StateWrapper::from(state))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<State> {
+    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
@@ -297,6 +328,21 @@ impl Instance {
             .try_lock()
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
+    }
+
+    pub async fn shutdown_network(&self) -> HcResult<()> {
+        await!(network::actions::shutdown::shutdown(
+            self.state.clone(),
+            self.action_channel.as_ref().unwrap().clone(),
+        ))
+    }
+}
+
+impl Drop for Instance {
+    fn drop(&mut self) {
+        let _ = self.shutdown_network();
+        self.stop_action_loop();
+        self.state.write().unwrap().drop_inner_state();
     }
 }
 
@@ -316,7 +362,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     loop {
-        if context.state().unwrap().history.contains(&action_wrapper) {
+        if context.state().unwrap().history().contains(&action_wrapper) {
             return;
         } else {
             let _ = tick_rx.recv_timeout(Duration::from_millis(10));
@@ -329,10 +375,8 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
-    action_channel
-        .send(action_wrapper)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
+    lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
 #[cfg(test)]
@@ -354,16 +398,15 @@ pub mod tests {
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
     };
-    use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
     use test_utils;
 
-    use crate::{persister::SimplePersister, state::State};
+    use crate::persister::SimplePersister;
 
     use std::{
-        sync::{mpsc::channel, Arc, Mutex},
+        sync::{Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
@@ -385,8 +428,8 @@ pub mod tests {
         let logger = test_logger();
         (
             Arc::new(Context::new(
+                "Test-context-and-logger-instance",
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
                 content_storage.clone(),
@@ -394,6 +437,7 @@ pub mod tests {
                 test_memory_network_config(network_name),
                 None,
                 None,
+                false,
             )),
             logger,
         )
@@ -410,19 +454,18 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
-        action_channel: &SyncSender<ActionWrapper>,
-        observer_channel: &SyncSender<Observer>,
+        action_channel: &Sender<ActionWrapper>,
+        observer_channel: &Sender<Observer>,
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
-        let logger = test_logger();
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         Arc::new(
             Context::new_with_channels(
+                "Test-context-with-channels-instance",
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
                 None,
@@ -433,6 +476,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 test_memory_network_config(network_name),
+                false,
             )
             .unwrap(),
         )
@@ -444,8 +488,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test-context-with-state-instance",
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -456,8 +500,9 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
+            false,
         );
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
@@ -468,8 +513,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
+            "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             cas.clone(),
@@ -480,6 +525,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
+            false,
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -488,15 +534,10 @@ pub mod tests {
             Some(chain_header),
             context.agent_id.address(),
         );
-        let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
+        let state = StateWrapper::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
-    }
-
-    #[test]
-    fn default_buffer_size_test() {
-        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -528,17 +569,17 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
 
-        /// fair warning... use test_instance_blank() if you want a minimal instance
+        // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
-            "Empty zomes = No genesis = infinite loops below!"
+            "Empty zomes = No init = infinite loops below!"
         );
 
         // @TODO abstract and DRY this out
         // @see https://github.com/holochain/holochain-rust/issues/195
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::InitializeChain(_) => true,
@@ -552,7 +593,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -567,13 +608,13 @@ pub mod tests {
             })
             .is_none()
         {
-            println!("Waiting for Commit for genesis");
+            println!("Waiting for Commit for init");
             sleep(Duration::from_millis(10))
         }
 
         while instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
@@ -620,13 +661,13 @@ pub mod tests {
         assert!(new_observers.is_empty());
 
         let rx_action_is_empty = match rx_action.try_recv() {
-            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(crossbeam_channel::TryRecvError::Empty) => true,
             _ => false,
         };
         assert!(rx_action_is_empty);
 
         let rx_observer_is_empty = match rx_observer.try_recv() {
-            Err(::std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(crossbeam_channel::TryRecvError::Empty) => true,
             _ => false,
         };
         assert!(rx_observer_is_empty);
@@ -676,10 +717,10 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that an unimplemented genesis allows the nucleus to initialize
+    /// tests that an unimplemented init allows the nucleus to initialize
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
-    fn test_missing_genesis() {
+    fn test_missing_init() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
@@ -690,15 +731,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a valid genesis allows the nucleus to initialize
-    fn test_genesis_ok() {
+    /// tests that a valid init allows the nucleus to initialize
+    fn test_init_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 0
                 )
                 (data (i32.const 0)
@@ -710,7 +751,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna, Some("test_genesis_ok"));
+        let maybe_instance = test_instance(dna, Some("test_init_ok"));
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();
@@ -718,15 +759,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a failed genesis prevents the nucleus from initializing
-    fn test_genesis_err() {
+    /// tests that a failed init prevents the nucleus from initializing
+    fn test_init_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 9
                 )
                 (data (i32.const 0)
@@ -742,7 +783,9 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from(JsonString::from(RawString::from("Genesis")))
+            String::from(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+            )
         );
     }
 
@@ -760,14 +803,14 @@ pub mod tests {
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -792,7 +835,7 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
         let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
         instance.process_action(
             &commit_agent_action,
@@ -802,10 +845,10 @@ pub mod tests {
         );
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history.iter().count());
+        assert_eq!(1, instance.state().history().iter().count());
         instance
             .state()
-            .history
+            .history()
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {

@@ -51,7 +51,7 @@ impl Packager {
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
                 "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24",
+                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14",
             ]),
         )?;
         if !should_continue {
@@ -63,12 +63,29 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = Value::from(self.bundle_recurse(&std::env::current_dir()?)?);
+        let current_dir = std::env::current_dir()?;
+        let dir_obj_bundle = Value::from(self.bundle_recurse(&current_dir).map_err(|e| {
+            format_err!(
+                "Couldn't traverse DNA in directory {:?}: {}",
+                &current_dir,
+                e
+            )
+        })?);
 
-        let dna_json = JsonString::from_json(&dir_obj_bundle.to_string());
-        let dna = Dna::try_from(dna_json)?;
+        let dna_str =
+            serde_json::to_string_pretty(&dir_obj_bundle).expect("failed to make pretty DNA");
+        let dna_json = JsonString::from_json(&dna_str);
 
-        let out_file = File::create(&output)?;
+        let dna = Dna::try_from(dna_json).map_err(|e| {
+            format_err!(
+                "Couldn't create a DNA from the bundle, got error {}\nJSON bundle was:\n {}",
+                e,
+                &dna_str
+            )
+        })?;
+
+        let out_file = File::create(&output)
+            .map_err(|e| format_err!("Couldn't create DNA output file {:?}; {}", output, e))?;
 
         serde_json::to_writer_pretty(&out_file, &(dir_obj_bundle))?;
 
@@ -266,7 +283,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry.as_str().unwrap().to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let mut file_path = to.join(meta_entry);
+                            let file_path = to.join(meta_entry);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }
@@ -274,8 +291,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
                             let base64_content = entry[&meta_entry].to_string();
                             let content = base64::decode(&base64_content)?;
 
-                            let mut file_path =
-                                to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
+                            let file_path = to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
 
                             File::create(file_path)?.write_all(&content[..])?;
                         }

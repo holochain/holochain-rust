@@ -59,7 +59,11 @@ pub fn handle_sample_function(some_param: String) -> ZomeApiResult<Address> {
 define_zome! {
     entries: []
 
-    genesis: || { Ok(()) }
+    init: || { Ok(()) }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+        Ok(())
+    }
 
     functions: [
         sample_function: {
@@ -77,5 +81,3 @@ define_zome! {
 ```
 
 Remember that the **call** will block the execution of the caller DNA until the callee (target) finishes executing the call, so it's best to mind performance issues when working with bridges. Try to make contextual or incremental calls rather than all-encompassing ones.
-
-

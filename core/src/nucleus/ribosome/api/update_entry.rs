@@ -22,10 +22,10 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_update_entry failed to deserialize SerializedEntry: {:?}",
+            log_error!(context,
+                "zome: invoke_update_entry failed to deserialize SerializedEntry: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -37,10 +37,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
     let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
     if let Err(err) = maybe_entry_result {
-        context.log(format!(
-            "err/zome: get_entry_result_workflow failed: {:?}",
-            err
-        ));
+        log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
         return ribosome_error_code!(WorkflowFailed);
     }
     let entry_result = maybe_entry_result.clone().unwrap();

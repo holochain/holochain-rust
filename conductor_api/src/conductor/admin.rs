@@ -130,7 +130,7 @@ impl ConductorAdmin for Conductor {
         let new_dna = DnaConfiguration {
             id: id.clone(),
             file: config_path_str.into(),
-            hash: Some(dna.address().to_string()),
+            hash: dna.address().to_string(),
         };
 
         let mut new_config = self.config.clone();
@@ -240,7 +240,9 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
-        self.instances.remove(id);
+        self.instances.remove(id).map(|instance| {
+            instance.write().unwrap().kill();
+        });
         let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
@@ -422,12 +424,13 @@ impl ConductorAdmin for Conductor {
                     let hc_lock = instance.clone();
                     let hc_lock_inner = hc_lock.clone();
                     let mut hc = hc_lock_inner.write().unwrap();
-                    hc.dpki_create_agent_key(name.clone())?;
+                    hc.dpki_create_agent_key(id.clone())?;
                 }
                 // TODO: how do we clean-up now if this fails? i.e. the dpki dna will have registered
                 // the identity to its DHT, but we failed, for what ever reason, to set up
                 // the agent in the conductor, so we should do something...
-                let dpki_keystore = self.get_keystore_for_agent(&dpki_instance_id)?;
+                let dpki_config = self.config.instance_by_id(&dpki_instance_id)?;
+                let dpki_keystore = self.get_keystore_for_agent(&dpki_config.agent)?;
                 let mut dpki_keystore = dpki_keystore.lock().unwrap();
                 let mut keybundle = dpki_keystore.get_keybundle(&id)?;
                 keystore.add_keybundle(PRIMARY_KEYBUNDLE_ID, &mut keybundle)?;
@@ -450,6 +453,7 @@ impl ConductorAdmin for Conductor {
             public_address: public_address.clone(),
             keystore_file: keystore_file,
             holo_remote_key: holo_remote_key.map(|_| true),
+            test_agent: None,
         };
 
         new_config.agents.push(new_agent);
@@ -530,7 +534,7 @@ impl ConductorAdmin for Conductor {
         let id = &new_bridge.caller_id;
         let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
         let mut instance = self.instances.get(id)?.write()?;
-        instance.set_conductor_api(new_conductor_api);
+        instance.set_conductor_api(new_conductor_api)?;
 
         notify(format!(
             "Added bridge from '{}' to '{}' as '{}'",
@@ -602,7 +606,7 @@ pub mod tests {
         let loader = Box::new(|_: &PathBuf| {
             Ok(Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap())
         })
-            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -659,7 +663,7 @@ public_address = '{}'"#,
     pub fn dna() -> String {
         r#"[[dnas]]
 file = 'app_spec.dna.json'
-hash = 'Qm328wyq38924y'
+hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
 id = 'test-dna'"#
             .to_string()
     }
@@ -714,6 +718,7 @@ type = 'websocket'"#,
 
     pub fn logger() -> String {
         r#"[logger]
+state_dump = false
 type = ''
 [[logger.rules.rules]]
 color = 'red'
@@ -752,8 +757,14 @@ pattern = '.*'"#
         toml
     }
 
-    pub fn create_test_conductor(test_name: &str, port: u32) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml(test_name, port)).unwrap();
+    pub fn barebones_test_toml(test_name: &str) -> String {
+        let mut toml = header_block(test_name);
+        toml = add_block(toml, agent1());
+        toml
+    }
+
+    pub fn create_test_conductor_from_toml(toml: &str, test_name: &str) -> Conductor {
+        let config = load_configuration::<Configuration>(toml).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -761,6 +772,10 @@ pattern = '.*'"#
         conductor.hash_config = test_hash_config();
         conductor.passphrase_manager = mock_passphrase_manager(test_name.to_string());
         conductor
+    }
+
+    pub fn create_test_conductor(test_name: &str, port: u32) -> Conductor {
+        create_test_conductor_from_toml(&test_toml(test_name, port), test_name)
     }
 
     #[test]
@@ -794,12 +809,12 @@ pattern = '.*'"#
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: String::from("new-dna.dna.json"),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );
@@ -873,12 +888,12 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );
@@ -978,12 +993,12 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );
@@ -1044,17 +1059,17 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
-                    hash: Some(String::from("Qm328wyq38924y")),
+                    hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),
                     file: new_dna_path.to_string_lossy().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: Some(String::from(new_dna.address())),
+                    hash: String::from(new_dna.address()),
                 },
             ]
         );

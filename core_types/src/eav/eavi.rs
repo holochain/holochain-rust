@@ -44,6 +44,7 @@ pub enum Attribute {
     LinkTag(String, String),
     RemovedLink(String, String),
     PendingEntry,
+    Target,
 }
 
 impl Default for Attribute {
@@ -82,6 +83,7 @@ impl fmt::Display for Attribute {
                 write!(f, "removed_link__{}__{}", link_type, tag)
             }
             Attribute::PendingEntry => write!(f, "pending-entry"),
+            Attribute::Target => write!(f, "target"),
         }
     }
 }
@@ -114,6 +116,7 @@ impl TryFrom<&str> for Attribute {
                 "link" => Ok(Link),
                 "link_remove" => Ok(LinkRemove),
                 "pending-entry" => Ok(PendingEntry),
+                "target" => Ok(Target),
                 a => Err(AttributeError::Unrecognized(a.to_string())),
             }
         }
@@ -143,7 +146,7 @@ pub type Index = i64;
 pub type EntityAttributeValueIndex =
     holochain_persistence_api::eav::EntityAttributeValueIndex<Attribute>;
 
-pub type EntityAttributeValueStorage = GenericStorage<Attribute>;
+pub type EntityAttributeValueStorage = dyn GenericStorage<Attribute>;
 
 fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
     if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {

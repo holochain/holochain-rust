@@ -24,10 +24,10 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+            log_error!(context,
+                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -36,10 +36,10 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
-            context.log(format!(
-                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+            log_error!(context,
+                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -157,7 +157,8 @@ pub mod tests {
 
     #[test]
     fn returns_ok_if_base_is_present() {
-        let (_, context) = create_test_instance_with_name(Some("returns_ok_if_base_present"));
+        let (_instance, context) =
+            create_test_instance_with_name(Some("returns_ok_if_base_present"));
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -175,7 +176,7 @@ pub mod tests {
 
     #[test]
     fn errors_with_wrong_type() {
-        let (_, context) = create_test_instance();
+        let (_instance, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -195,7 +196,7 @@ pub mod tests {
 
     #[test]
     fn works_with_linked_from_defined_link() {
-        let (_, context) = create_test_instance();
+        let (_instance, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))
@@ -217,7 +218,7 @@ pub mod tests {
 
     #[test]
     fn test_different_tags_produces_different_hashes() {
-        let (_, context) = create_test_instance();
+        let (_instance, context) = create_test_instance();
 
         context
             .block_on(commit_entry(test_entry(), None, &context))

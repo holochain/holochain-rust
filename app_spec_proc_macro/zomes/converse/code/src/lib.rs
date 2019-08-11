@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #![feature(proc_macro_hygiene)]
 
 extern crate hdk_proc_macros;
@@ -19,10 +18,18 @@ use hdk::{
 #[zome]
 pub mod converse {
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
         hdk::keystore_new_random("app_root_seed", 32)
-            .map_err(|err| format!("new seed generation failed: {}",err) )
+            .map_err(|err|
+                hdk::debug(format!("ignoring new seed generation because of error: {}",err))
+            ).unwrap_or(());
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        Ok(())
     }
 
     #[zome_fn("hc_public")]

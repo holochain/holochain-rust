@@ -44,7 +44,7 @@ pub struct CoreError {
 
 // Error trait by using the inner Error
 impl Error for CoreError {
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         self.kind.source()
     }
 }
@@ -114,9 +114,11 @@ pub enum HolochainError {
     ConfigError(String),
     Timeout,
     InitializationFailed(String),
+    LifecycleError(String),
     DnaHashMismatch(HashString, HashString),
     EntryNotFoundLocally,
     EntryIsPrivate,
+    List(Vec<HolochainError>),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -124,6 +126,12 @@ pub type HcResult<T> = Result<T, HolochainError>;
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
+    }
+}
+
+impl From<rust_base58::base58::FromBase58Error> for HolochainError {
+    fn from(e: rust_base58::base58::FromBase58Error) -> Self {
+        HolochainError::SerializationError(format!("{}", e))
     }
 }
 
@@ -149,6 +157,7 @@ impl fmt::Display for HolochainError {
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),
+            LifecycleError(err_msg) => write!(f, "{}", err_msg),
             DnaHashMismatch(hash1, hash2) => write!(
                 f,
                 "Provided DNA hash does not match actual DNA hash! {} != {}",
@@ -159,6 +168,15 @@ impl fmt::Display for HolochainError {
                 f,
                 "The requested entry is private and should not be shared via gossip"
             ),
+            List(list) => {
+                //most windows system know that \n is a newline so we should be good.
+                let error_list = list
+                    .iter()
+                    .map(|s| format!("{}", s))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                write!(f, "A list of errors has been generated {}", error_list)
+            }
         }
     }
 }

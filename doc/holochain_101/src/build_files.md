@@ -9,13 +9,16 @@ In the process of building a `.dna.json` file during packaging, here is what Hol
 When using [`hc generate` to scaffold a Zome](./zome/adding_a_zome.md), you will have a `.hcbuild` file automatically. If you create your Zome manually however, you will need to create the file yourself. Here's the structure of a `.hcbuild` file, using a Rust Zome which builds using Cargo as an example:
 ```json
 {
-  "steps": {
-    "cargo": [
-      "build",
-      "--release",
-      "--target=wasm32-unknown-unknown"
-    ]
-  },
+  "steps": [
+    {
+      "command": "cargo",
+      "arguments": [
+        "build",
+        "--release",
+        "--target=wasm32-unknown-unknown"
+      ]
+    },
+  ],
   "artifact": "target/wasm32-unknown-unknown/release/code.wasm"
 }
 ```

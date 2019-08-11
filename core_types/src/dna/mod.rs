@@ -6,7 +6,6 @@
 //! # Examples
 //!
 //! ```
-//! #![feature(try_from)]
 //! extern crate holochain_core_types;
 //! extern crate holochain_persistence_api;
 //! extern crate holochain_json_api;
@@ -291,7 +290,7 @@ pub mod tests {
     use holochain_persistence_api::cas::content::Address;
     use std::convert::TryFrom;
 
-    fn test_dna() -> Dna {
+    pub fn test_dna() -> Dna {
         let fixture = String::from(
             r#"{
                 "name": "test",

@@ -18,10 +18,10 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_get_entry() failed to deserialize: {:?}",
+            log_error!(context,
+                "zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -140,6 +140,14 @@ pub mod tests {
 
     (func
         (export "__hdk_validate_app_entry")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
+        (export "__hdk_validate_agent_entry")
         (param $allocation i64)
         (result i64)
 

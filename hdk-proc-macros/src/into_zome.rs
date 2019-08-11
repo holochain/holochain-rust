@@ -1,14 +1,15 @@
 extern crate proc_macro2;
 
 use crate::zome_code_def::{
-    EntryDefCallbacks, FnDeclaration, FnParameter, GenesisCallback, ReceiveCallback, ZomeCodeDef,
-    ZomeFunction, ZomeFunctions,
+    EntryDefCallbacks, FnDeclaration, FnParameter, InitCallback, ReceiveCallback,
+    ValidateAgentCallback, ZomeCodeDef, ZomeFunction, ZomeFunctions,
 };
 
 use hdk::holochain_core_types::dna::{fn_declarations::TraitFns, zome::ZomeTraits};
 use std::collections::BTreeMap;
 
-static GENESIS_ATTRIBUTE: &str = "genesis";
+static INIT_ATTRIBUTE: &str = "init";
+static VALIDATE_AGENT_ATTRIBUTE: &str = "validate_agent";
 static ZOME_FN_ATTRIBUTE: &str = "zome_fn";
 static ENTRY_DEF_ATTRIBUTE: &str = "entry_def";
 static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
@@ -16,7 +17,8 @@ static RECEIVE_CALLBACK_ATTRIBUTE: &str = "receive";
 pub trait IntoZome {
     fn extract_zome_fns(&self) -> ZomeFunctions;
     fn extract_entry_defs(&self) -> EntryDefCallbacks;
-    fn extract_genesis(&self) -> GenesisCallback;
+    fn extract_init(&self) -> InitCallback;
+    fn extract_validate_agent(&self) -> ValidateAgentCallback;
     fn extract_traits(&self) -> ZomeTraits;
     fn extract_receive_callback(&self) -> Option<ReceiveCallback>;
     fn extract_extra(&self) -> Vec<syn::Item>;
@@ -25,7 +27,8 @@ pub trait IntoZome {
         ZomeCodeDef {
             traits: self.extract_traits(),
             entry_def_fns: self.extract_entry_defs(),
-            genesis: self.extract_genesis(),
+            init: self.extract_init(),
+            validate_agent: self.extract_validate_agent(),
             receive_callback: self.extract_receive_callback(),
             zome_fns: self.extract_zome_fns(),
             extra: self.extract_extra(),
@@ -95,33 +98,80 @@ fn zome_fn_dec_from_syn(func: &syn::ItemFn) -> FnDeclaration {
 
     FnDeclaration {
         name: func.ident.clone().to_string(),
-        inputs: inputs,
+        inputs,
         output: func.decl.output.clone(),
     }
 }
 
 impl IntoZome for syn::ItemMod {
-    fn extract_genesis(&self) -> GenesisCallback {
-        // find all the functions tagged as the genesis callback
+    fn extract_init(&self) -> InitCallback {
+        // find all the functions tagged as the init callback
         let geneses: Vec<Box<syn::Block>> = funcs_iter(self)
-            .filter(is_tagged_with(GENESIS_ATTRIBUTE))
+            .filter(is_tagged_with(INIT_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, func| {
                 acc.push(func.block);
                 acc
             });
-        // only a single function can be tagged as genesis in a valid Zome.
+        // only a single function can be tagged as init in a valid Zome.
         // Error if there is more than one
-        // Also error if there is no genesis
+        // Also error if there is no init
         match geneses.len() {
             0 => {
                 emit_error(&self.ident,
-                    "No genesis function defined! A zome definition requires a callback tagged with #[genesis]");
+                    "No init function defined! A zome definition requires a callback tagged with #[init]");
                 panic!()
             }
             1 => *geneses[0].clone(),
             _ => {
                 emit_error(&self.ident,
-                    "Multiple functions tagged as genesis callback! Only one is permitted per zome definition.");
+                    "Multiple functions tagged as init callback! Only one is permitted per zome definition.");
+                panic!()
+            }
+        }
+    }
+
+    fn extract_validate_agent(&self) -> ValidateAgentCallback {
+        // find all the functions tagged as the validate_agent callback
+        let callbacks: Vec<syn::ItemFn> = funcs_iter(self)
+            .filter(is_tagged_with(VALIDATE_AGENT_ATTRIBUTE))
+            .fold(Vec::new(), |mut acc, func| {
+                acc.push(func);
+                acc
+            });
+        // only a single function can be tagged as validate_agent in a valid Zome.
+        // Error if there is more than one
+        // Also error if tagged function
+        match callbacks.len() {
+            0 => {
+                emit_error(&self.ident,
+                    "No validate_agent function defined! A zome definition requires a callback tagged with #[validate_agent]");
+                panic!()
+            }
+            1 => {
+                let callback = callbacks[0].clone();
+                let fn_def = zome_fn_dec_from_syn(&callback);
+
+                // must have the valid function signature which is ($ident: EntryValidationData<AgentId>)
+                let validation_data_param = match fn_def.inputs.len() {
+                    1 => {
+                        let param = fn_def.inputs[0].clone();
+                        param.ident
+                    }
+                    _ => {
+                        emit_error(&self.ident,
+                            "incorrect number of params for validate_agent callback. Must have a single param with type `EntryValidationData<AgentId>`");
+                        panic!()
+                    }
+                };
+
+                ValidateAgentCallback {
+                    validation_data_param,
+                    code: (*callback.block),
+                }
+            }
+            _ => {
+                emit_error(&self.ident,
+                    "Multiple functions tagged as validate_agent callback! Only one is permitted per zome definition.");
                 panic!()
             }
         }
@@ -145,9 +195,11 @@ impl IntoZome for syn::ItemMod {
         funcs_iter(self)
             .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, mut func| {
-                // TODO: drop all attributes on the fn. This may cause problems
-                // and really should only drop the ENTRY_DEF_ATTRIBUTE
-                func.attrs = Vec::new();
+                // Drop the EntryDef attribute on the functions so this doesn't recurse
+                func.attrs = func.attrs
+                    .into_iter()
+                    .filter(|attr| !attr.path.is_ident(ENTRY_DEF_ATTRIBUTE))
+                    .collect();
                 acc.push(func);
                 acc
             })
@@ -158,14 +210,17 @@ impl IntoZome for syn::ItemMod {
 	    .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
 	    .fold(BTreeMap::new(), |mut acc, func| {
             let func_name = func.ident.to_string();
-            func.attrs.iter().for_each(|attr| { // this will error if zome fn has multiple attriutes defined
+            func.attrs
+            .iter()
+            .filter(|attr| attr.path.is_ident(ZOME_FN_ATTRIBUTE))
+            .for_each(|attr| {
                 let meta = attr.parse_meta().unwrap();
                 match meta {
                 	syn::Meta::List(meta_list) => {
 		                meta_list.nested.iter().for_each(|e| {
 		                    if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
 		                        let trait_name = lit.value().clone();
-		                        if let None = acc.get(&trait_name) {
+		                        if acc.get(&trait_name).is_none() {
 		                            acc.insert(trait_name.clone(), TraitFns::new());
 		                        }
 		                        acc.get_mut(&trait_name).unwrap().functions.push(func_name.clone());
@@ -173,9 +228,9 @@ impl IntoZome for syn::ItemMod {
 		                });
                 	},
                 	syn::Meta::Word(_) => emit_warning(&func.ident,
-                        "Function is tagged as zome_fn but is not exposed via a trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?"),
+                        "Function is tagged as zome_fn but is not exposed via a Holochain trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?"),
                 	_ => emit_error(&func.ident,
-                        "zome_fn must be preceded by a comma delimited list of traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")"),
+                        "zome_fn must be preceded by a comma delimited list of Holochain traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")"),
                 }
             });
 	        acc
@@ -193,9 +248,10 @@ impl IntoZome for syn::ItemMod {
                         if let syn::Item::Fn(func) = item {
                             // any functions not tagged with a hdk attribute
                             !is_tagged_with(ZOME_FN_ATTRIBUTE)(func)
-                                && !is_tagged_with(GENESIS_ATTRIBUTE)(func)
+                                && !is_tagged_with(INIT_ATTRIBUTE)(func)
                                 && !is_tagged_with(ENTRY_DEF_ATTRIBUTE)(func)
                                 && !is_tagged_with(RECEIVE_CALLBACK_ATTRIBUTE)(func)
+                                && !is_tagged_with(VALIDATE_AGENT_ATTRIBUTE)(func)
                         } else {
                             true // and anything that is not a function
                         }
@@ -267,11 +323,16 @@ mod tests {
     use syn::parse_quote;
 
     #[test]
-    fn test_extract_genesis_smoke_test() {
+    fn test_extract_init_smoke_test() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
             }
@@ -283,8 +344,13 @@ mod tests {
     fn test_extract_single_trait() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -312,8 +378,13 @@ mod tests {
     fn test_multi_function_multi_traits() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -359,8 +430,13 @@ mod tests {
     fn test_extract_function_params_and_return() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -390,8 +466,13 @@ mod tests {
     fn test_extract_function_with_generic_return() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -417,8 +498,13 @@ mod tests {
     fn test_single_entry() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -449,8 +535,13 @@ mod tests {
     fn test_extra_code_in_module() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 
@@ -477,8 +568,13 @@ mod tests {
     fn test_no_receive_callback() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
             }
@@ -491,8 +587,13 @@ mod tests {
     fn test_receive_callback() {
         let module: syn::ItemMod = parse_quote! {
             mod zome {
-                #[genesis]
-                fn genesis() {
+                #[init]
+                fn init() {
+                    Ok(())
+                }
+
+                #[validate_agent]
+                fn validate_agent(validation_data: EntryValidationData<AgentId>) {
                     Ok(())
                 }
 

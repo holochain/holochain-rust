@@ -147,9 +147,9 @@ impl ConductorApiBuilder {
             let mut call_args = params_map.get("args").or_else(|| {
                 // TODO: Remove this fall back to the previous impl of inner 'params'
                 // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
-                hc.context()
-                    .log("warn/interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
-                    Please switch to 'args' instead, as 'params' will soon be phased out.");
+                let _ = hc.context().map(|context|
+                    log_warn!(context, "interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
+                    Please switch to 'args' instead, as 'params' will soon be phased out."));
                 params_map.get("params")
             });
 
@@ -164,7 +164,8 @@ impl ConductorApiBuilder {
             let func_name = Self::get_as_string("function", &params_map)?;
 
             let cap_request = {
-                let context = hc.context();
+                let context = hc.context()
+                    .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
                 // Get the token from the parameters.  If not there assume public token.
                 let maybe_token = Self::get_as_string("token", &params_map);
                 let token = match maybe_token {
@@ -806,7 +807,9 @@ impl ConductorApiBuilder {
                 id,
                 port,
                 bundle,
-                dna_interface
+                dna_interface,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string(),
             }))?;
             Ok(json!({"success": true}))
         });

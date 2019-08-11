@@ -1,26 +1,16 @@
 use crate::{
-    action::ActionWrapper,
+    action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
-    logger::Logger,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
-    state::State,
 };
-use futures::{
-    task::{noop_local_waker_ref, Poll},
-    Future,
-};
+use crossbeam_channel::{unbounded, Receiver, Sender};
+use futures::{task::Poll, Future};
 
-use holochain_persistence_api::{
-    cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
-    },
-    eav::EntityAttributeValueStorage,
-};
-
+use crate::state::StateWrapper;
+use futures::task::noop_waker_ref;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -33,12 +23,16 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
+use holochain_persistence_api::{
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    eav::EntityAttributeValueStorage,
+};
 use jsonrpc_core::{self, IoHandler};
 use std::{
-    sync::{
-        mpsc::{channel, Receiver, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
 };
@@ -46,28 +40,28 @@ use std::{
 use test_utils::mock_signing::mock_conductor_api;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
-/// This includes components that are injected from the outside like logger and persister
+/// This includes components that are injected from the outside like persister
 /// but also the store of the instance that gets injected before passing on the context
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
+    pub(crate) instance_name: String,
     pub agent_id: AgentId,
-    pub logger: Arc<Mutex<Logger>>,
-    pub persister: Arc<Mutex<Persister>>,
-    state: Option<Arc<RwLock<State>>>,
-    pub action_channel: Option<SyncSender<ActionWrapper>>,
-    pub observer_channel: Option<SyncSender<Observer>>,
-    pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+    pub persister: Arc<Mutex<dyn Persister>>,
+    state: Option<Arc<RwLock<StateWrapper>>>,
+    pub action_channel: Option<Sender<ActionWrapper>>,
+    pub observer_channel: Option<Sender<Observer>>,
+    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
-    pub(crate) signal_tx: Option<crossbeam_channel::Sender<Signal>>,
+    pub(crate) signal_tx: Option<Sender<Signal>>,
+    pub(crate) instance_is_alive: Arc<Mutex<bool>>,
+    pub state_dump_logging: bool,
 }
 
 impl Context {
-    pub const DEFAULT_CHANNEL_BUF_SIZE: usize = 100;
-
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
     // There are two different implementations of this function below which get pulled
@@ -95,19 +89,20 @@ impl Context {
     }
 
     pub fn new(
+        instance_name: &str,
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
-        persister: Arc<Mutex<Persister>>,
-        chain_storage: Arc<RwLock<ContentAddressableStorage>>,
-        dht_storage: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        persister: Arc<Mutex<dyn Persister>>,
+        chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
+        state_dump_logging: bool,
     ) -> Self {
         Context {
+            instance_name: instance_name.to_owned(),
             agent_id: agent_id.clone(),
-            logger,
             persister,
             state: None,
             action_channel: None,
@@ -121,23 +116,26 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
+            instance_is_alive: Arc::new(Mutex::new(true)),
+            state_dump_logging,
         }
     }
 
     pub fn new_with_channels(
+        instance_name: &str,
         agent_id: AgentId,
-        logger: Arc<Mutex<Logger>>,
-        persister: Arc<Mutex<Persister>>,
-        action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_tx: Option<crossbeam_channel::Sender<Signal>>,
-        observer_channel: Option<SyncSender<Observer>>,
-        cas: Arc<RwLock<ContentAddressableStorage>>,
-        eav: Arc<RwLock<EntityAttributeValueStorage<Attribute>>>,
+        persister: Arc<Mutex<dyn Persister>>,
+        action_channel: Option<Sender<ActionWrapper>>,
+        signal_tx: Option<Sender<Signal>>,
+        observer_channel: Option<Sender<Observer>>,
+        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
+        state_dump_logging: bool,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
+            instance_name: instance_name.to_owned(),
             agent_id: agent_id.clone(),
-            logger,
             persister,
             state: None,
             action_channel,
@@ -148,30 +146,27 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
+            instance_is_alive: Arc::new(Mutex::new(true)),
+            state_dump_logging,
         })
     }
 
-    // helper function to make it easier to call the logger
-    pub fn log<T: Into<String>>(&self, msg: T) {
-        let mut logger = self
-            .logger
-            .lock()
-            .or(Err(HolochainError::LoggingError))
-            .expect("Logger should work");;
-        logger.log(msg.into());
+    /// Returns the name of this context instance.
+    pub fn get_instance_name(&self) -> String {
+        self.instance_name.clone()
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<State>> {
+    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
-        // In the case of genesis we encounter race conditions with regards to setting the DNA.
-        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+        // In the case of init we encounter race conditions with regards to setting the DNA.
+        // Init gets called asynchronously right after dispatching an action that sets the DNA in
         // the state, which can result in this code being executed first.
         // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
         // TODO: use a future here
@@ -212,20 +207,41 @@ impl Context {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    pub fn action_channel(&self) -> &Sender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> Option<&crossbeam_channel::Sender<Signal>> {
+    pub fn is_action_channel_open(&self) -> bool {
+        self.action_channel
+            .clone()
+            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
+            .unwrap_or(false)
+    }
+
+    pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
+        match &self.action_channel {
+            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
+                Ok(()) => None,
+                Err(_) => Some(HolochainError::LifecycleError(msg.into())),
+            },
+            None => Some(HolochainError::InitializationFailed(msg.into())),
+        }
+    }
+
+    pub fn signal_tx(&self) -> Option<&Sender<Signal>> {
         self.signal_tx.as_ref()
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &Sender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
+    }
+
+    pub fn instance_still_alive(&self) -> bool {
+        *self.instance_is_alive.lock().unwrap()
     }
 
     /// This creates an observer for the instance's redux loop and installs it.
@@ -233,7 +249,7 @@ impl Context {
     /// got mutated.
     /// This enables blocking/parking the calling thread until the application state got changed.
     pub fn create_observer(&self) -> Receiver<()> {
-        let (tick_tx, tick_rx) = channel();
+        let (tick_tx, tick_rx) = unbounded();
         self.observer_channel()
             .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");
@@ -247,11 +263,19 @@ impl Context {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
+        let mut cx = std::task::Context::from_waker(noop_waker_ref());
+
         loop {
-            let _ = match future.as_mut().poll(noop_local_waker_ref()) {
+            let _ = match future.as_mut().poll(&mut cx) {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
+            if !self.instance_still_alive() {
+                panic!("Context::block_on() waiting for future but instance is not alive anymore => we gotta let this thread panic!")
+            }
+            if let Some(err) = self.action_channel_error("Context::block_on") {
+                panic!("Context::block_on() waiting for future but Redux loop got stopped => we gotta let this thread panic!\nError was: {:?}", err)
+            }
         }
     }
 
@@ -324,25 +348,22 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{logger::test_logger, persister::SimplePersister, state::State};
+    use crate::persister::SimplePersister;
     use holochain_core_types::agent::AgentId;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile;
 
     #[test]
-    fn default_buffer_size_test() {
-        assert_eq!(Context::DEFAULT_CHANNEL_BUF_SIZE, 100);
-    }
+    fn context_log_macro_test_from_context() {
+        use crate::*;
 
-    #[test]
-    fn state_test() {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
-        let mut maybe_context = Context::new(
-            AgentId::generate_fake("Terence"),
-            test_logger(),
+        let ctx = Context::new(
+            "LOG-TEST-ID",
+            AgentId::generate_fake("Bilbo"),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -353,17 +374,27 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
-        assert!(maybe_context.state().is_none());
+        // // Somehow we need to build our own logging instance for this test to show logs
+        // use logging::prelude::*;
+        // let _ = FastLoggerBuilder::new()
+        //             .set_level_from_str("Trace")
+        //             .build()
+        //             .expect("Fail to init logger.");
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
-        maybe_context.set_state(global_state.clone());
+        // Tests if the context logger can be customized by poassing a target value
+        log_info!(target: "holochain-custom-log-target", "Custom target & '{}' log level.", "Info");
 
-        {
-            let _read_lock = global_state.read().unwrap();
-            assert!(maybe_context.state().is_some());
-        }
+        // Tests if the context logger fills its target with the instance ID
+        log_trace!(ctx, "'{}' log level with Context target.", "Trace");
+        log_debug!(ctx, "'{}' log level with Context target.", "Debug");
+        log_info!(ctx, "'{}' log level with Context target.", "Info");
+        log_warn!(ctx, "'{}' log level with Context target.", "Warning");
+        log_error!(ctx, "'{}' log level with Context target.", "Error");
+
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 
     #[test]
@@ -374,8 +405,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test_deadlock_instance",
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -386,9 +417,10 @@ pub mod tests {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

@@ -2,15 +2,20 @@ use crate::{error::DefaultResult, util};
 use base64;
 use serde_json;
 use std::{
-    collections::HashMap,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
 };
 
 #[derive(Clone, Deserialize, Serialize)]
+pub struct BuildStep {
+    pub command: String,
+    pub arguments: Vec<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Build {
-    pub steps: HashMap<String, Vec<String>>,
+    pub steps: Vec<BuildStep>,
     pub artifact: PathBuf,
 }
 
@@ -34,9 +39,13 @@ impl Build {
 
     /// Starts the build using the supplied build steps and returns the contents of the artifact
     pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
-        for (bin, args) in &self.steps {
-            let slice_vec: Vec<_> = args.iter().map(|e| e.as_str()).collect();
-            util::run_cmd(base_path.to_path_buf(), bin.to_string(), &slice_vec[..])?;
+        for build_step in &self.steps {
+            let slice_vec: Vec<_> = build_step.arguments.iter().map(|e| e.as_str()).collect();
+            util::run_cmd(
+                base_path.to_path_buf(),
+                build_step.command.clone(),
+                &slice_vec[..],
+            )?;
         }
 
         let artifact_path = base_path.join(&self.artifact);
@@ -57,11 +66,11 @@ impl Build {
     // pub fn with_artifact<P: Into<PathBuf>>(artifact: P) -> Build {
     //     let path: PathBuf = artifact.into();
 
-    //     Build {
-    //         steps: HashMap::new(),
-    //         artifact: path,
-    //     }
-    // }
+        Build {
+            steps: Vec::new(),
+            artifact: path,
+        }
+    }
 
     // pub fn cmd(mut self, cmd: &str, args: &[&str]) -> Build {
     //     let cmd: String = cmd.to_owned();
@@ -71,7 +80,10 @@ impl Build {
     //         .map(|raw_arg| raw_arg.to_string())
     //         .collect();
 
-    //     self.steps.insert(cmd, args);
-    //     self
-    // }
+        self.steps.push(BuildStep {
+            command: cmd,
+            arguments: args,
+        });
+        self
+    }
 }

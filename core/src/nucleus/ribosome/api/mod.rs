@@ -8,6 +8,7 @@ pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
+pub mod get_links_count;
 pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
@@ -35,6 +36,7 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
+        get_links_count::invoke_get_links_count,
         init_globals::invoke_init_globals,
         keystore::{
             invoke_keystore_derive_key, invoke_keystore_derive_seed,
@@ -93,6 +95,9 @@ link_zome_api! {
 
     /// Retrieve links from the DHT
     "hc_get_links", GetLinks, invoke_get_links;
+
+    //Retrieve link count from DHT
+    "hc_get_links_count", GetLinksCount, invoke_get_links_count;
 
     /// Query the local chain for entries
     "hc_query", Query, invoke_query;
@@ -247,6 +252,14 @@ pub mod tests {
     )
 
     (func
+        (export "__hdk_validate_agent_entry")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
         (export "__hdk_validate_link")
         (param $allocation i64)
         (result i64)
@@ -357,7 +370,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
-        let (_, context) =
+        let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
         let call_result = test_zome_api_function_call(context.clone(), args_bytes);

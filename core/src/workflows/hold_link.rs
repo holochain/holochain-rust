@@ -8,7 +8,7 @@ use crate::{
         actions::add_pending_validation::add_pending_validation, validation::ValidationError,
     },
     scheduled_jobs::pending_validations::ValidatingWorkflow,
-    workflows::validation_package,
+    workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
     entry::Entry,
@@ -29,16 +29,14 @@ pub async fn hold_link_workflow(
     };
     let link = link_add.link().clone();
 
-    context.log(format!("debug/workflow/hold_link: {:?}", link));
-    context.log(format!(
-        "debug/workflow/hold_link: getting validation package..."
-    ));
+    log_debug!(context, "workflow/hold_link: {:?}", link);
+    log_debug!(context, "workflow/hold_link: getting validation package...");
     // 1. Get hold of validation package
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
-            context.log(format!("debug/workflow/hold_link: {}", message));
-            context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
+            log_debug!(context, "workflow/hold_link: {}", message);
+            log_debug!(context, "workflow/hold_link: Error was: {:?}", err);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 Vec::new(),
@@ -49,7 +47,7 @@ pub async fn hold_link_workflow(
         })?;
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
-        context.log(format!("debug/workflow/hold_link: {}", message));
+        log_debug!(context, "workflow/hold_link: {}", message);
         add_pending_validation(
             entry_with_header.to_owned(),
             Vec::new(),
@@ -58,7 +56,7 @@ pub async fn hold_link_workflow(
         );
         HolochainError::ValidationPending
     })?;
-    context.log(format!("debug/workflow/hold_link: got validation package"));
+    log_debug!(context, "workflow/hold_link: got validation package");
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -67,7 +65,7 @@ pub async fn hold_link_workflow(
     };
 
     // 3. Validate the entry
-    context.log(format!("debug/workflow/hold_link: validate..."));
+    log_debug!(context, "workflow/hold_link: validate...");
     await!(validate_entry(
         entry_with_header.entry.clone(),
         None,
@@ -76,7 +74,7 @@ pub async fn hold_link_workflow(
     ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            context.log(format!("debug/workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
+            log_debug!(context, "workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
@@ -85,20 +83,25 @@ pub async fn hold_link_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log(format!(
-                "info/workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
 
     })?;
-    context.log(format!("debug/workflow/hold_link: is valid!"));
+    log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry in the local DHT shard
     await!(add_link(&link_add, &context))?;
-    context.log(format!("debug/workflow/hold_link: added! {:?}", link));
+    log_debug!(context, "workflow/hold_link: added! {:?}", link);
+
+    //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
+    await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
+    log_debug!(context, "workflow/hold_entry: added! {:?}", entry_with_header);
+
+    //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
 }
 

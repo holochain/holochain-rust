@@ -15,11 +15,11 @@ Our recommended pattern for the installation of the conductor is to download the
 These dependencies need to be installed in order to compile, and use `holochain`:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - needs to be the `nightly-2019-01-24` build, so use the following commands, once you have first installed Rust
-  - `rustup toolchain install nightly-2019-01-24`
-  - `rustup default nightly-2019-01-24`
+  - needs to be the `nightly-2019-07-14` build, so use the following commands, once you have first installed Rust
+  - `rustup toolchain install nightly-2019-07-14`
+  - `rustup default nightly-2019-07-14`
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
-  - `rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24`
+  - `rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14`
 
 
 To install the cutting edge version of the Holochain conductor, run the following command in a terminal
@@ -29,7 +29,7 @@ $ cargo install holochain --force --git https://github.com/holochain/holochain-r
 
 To install the latest released version of the Holochain conductor, run the following command in a terminal
 ```shell
-$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.21-alpha1
+$ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --tag v0.0.25-alpha1
 ```
 
 The Conductor should then be available from your command line using the `holochain` command.

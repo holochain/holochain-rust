@@ -862,21 +862,9 @@ fn can_check_call_with_args() {
     //assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
-// TODO do this for all crate tests somehow
-fn enable_logging_for_test() {
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "trace");
-    }
-    let _ = env_logger::builder()
-        .default_format_timestamp(false)
-        .default_format_module_path(false)
-        .is_test(true)
-        .try_init();
-}
 
 #[test]
 fn can_send_and_receive() {
-    enable_logging_for_test();
     let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
     let endpoint = hc
         .context()

@@ -494,6 +494,11 @@ impl<'a> FastLoggerBuilder {
             Ok(_v) => {
                 // This is a hacky way to do it, because it cannot work using the Write trait object:
                 // `dyn std::io::Write` cannot be sent between threads safely
+                // Also
+                // Here we use `writeln!` instead of println! in order to avoid
+                // unnecessary flush.
+                // Currently we use `BufWriter` which has a sized buffer of about
+                // 8kb by default
                 if self.file_path.is_some() {
                     let mut buffer = {
                         let fp = match &self.file_path {
@@ -506,16 +511,11 @@ impl<'a> FastLoggerBuilder {
                             .append(true)
                             .open(&file_path)
                             .unwrap_or_else(|_| panic!("Fail to log to {:?}.", &file_path));
-                        // Here we use `writeln!` instead of println! in order to avoid
-                        // unnecessary flush.
-                        // Currently we use `BufWriter` which has a sized buffer of about
-                        // 8kb by default
+
                         io::BufWriter::new(file_stream)
                     };
                     thread::spawn(move || {
                         while let Ok(msg) = r.recv() {
-                            // Here we use `writeln!` instead of println! in order to avoid
-                            // unnecessary flush.
                             if msg.should_terminate() {
                                 drop(r);
                                 buffer.flush().expect("Fail to flush the logging buffer.");
@@ -532,10 +532,6 @@ impl<'a> FastLoggerBuilder {
                     let mut buffer = io::BufWriter::new(io::stderr());
                     thread::spawn(move || {
                         while let Ok(msg) = r.recv() {
-                            // Here we use `writeln!` instead of println! in order to avoid
-                            // unnecessary flush.
-                            // Currently we use `BufWriter` which has a sized buffer of about
-                            // 8kb by default
                             if msg.should_terminate() {
                                 drop(r);
                                 buffer.flush().expect("Fail to flush the logging buffer.");

@@ -221,12 +221,14 @@ impl log::Log for FastLogger {
     /// This is where we build the log message and send it to the logging thread that is in charge
     /// of formatting and printing the log message.
     fn log(&self, record: &Record) {
-        let args = record.args().to_string();
+        let target = record.target().to_string();
+        // Concatenate those two in order to use filtering on both
+        let args = format!("{} {}", &target, &record.args());
 
         // If it happens to slow the performances, maybe we should combine those two operations in
         // order to ovoid walking twice the same rule filter loop
         let should_log_args = self.should_log_in(&args);
-        let should_log_target = self.should_log_in(&record.target());
+        let should_log_target = self.should_log_in(&target);
 
         // Prioritizing the target color rule (if any) over the args one
         let should_log_in = should_log_target.clone();

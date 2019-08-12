@@ -9,6 +9,7 @@ function _usage() {
   echo "  lib3h - deptool lib3h <subcmd>"
   echo "    version - deptool lib3h version <version>"
   echo "    branch - deptool lib3h branch <branch-name>"
+  echo "    path - deptool lib3h path <path-name>"
   echo "options:"
   echo "  -h --help: additional help for command"
   exit 1
@@ -49,6 +50,16 @@ function _cmd() {
           fi
           _lib3h_deps "{ git = \"https://github.com/holochain/lib3h\", branch = \"${3}\" }"
           ;;
+        path)
+            if [ ${__help} == 1 ]; then
+                echo "deptool lib3h path"
+                echo " - set the various lib3h dep to a local file path"
+                echo " - example: deptool lib3h path ../lib3h"
+                echo "   will set: lib3h = { path = \"../lib3h\" }"
+                exit 1
+            fi
+            _lib3h_deps "{ path = \"${3}\" }"
+            ;;
         *)
           if [ ${__help} == 1 ]; then
             echo "deptool lib3h"

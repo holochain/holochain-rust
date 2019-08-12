@@ -188,6 +188,8 @@ impl Conductor {
             if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
             {
                 #[cfg(not(unix))]
+                let _ = path;
+                #[cfg(not(unix))]
                 panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
 
                 #[cfg(unix)]

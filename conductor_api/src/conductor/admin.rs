@@ -735,6 +735,11 @@ exclude = false
 pattern = '.*'"#
             .to_string()
     }
+    pub fn passphrase_service() -> String {
+        r#"[passphrase_service]
+type = 'cmd'"#
+            .to_string()
+    }
 
     pub fn add_block(base: String, new_block: String) -> String {
         format!("{}\n\n{}", base, new_block)
@@ -842,6 +847,7 @@ id = 'new-dna'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3000));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1153,6 +1159,7 @@ id = 'new-instance'"#,
         );
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1201,6 +1208,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1249,6 +1257,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1296,6 +1305,7 @@ type = 'http'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1336,6 +1346,7 @@ type = 'http'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1460,6 +1471,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1513,6 +1525,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1561,6 +1574,7 @@ public_address = '{}'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3009));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1606,6 +1620,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1651,6 +1666,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1678,6 +1694,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 

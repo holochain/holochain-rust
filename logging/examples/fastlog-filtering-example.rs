@@ -29,8 +29,10 @@ fn main() {
         .build()
         .expect("Fail to build logger from toml.");
 
-    debug!("Should be logged 'Cyan' thanks to a rule.");
+    debug!(target: "In Cyan", "Should be logged 'Cyan' thanks to a rule.");
     debug!(target: "holochain-app-5", "Should be 'Green' thanks to the last rule.");
+
+    // Should be logged thanks to the rule about 'app-5'
     debug!(target: "rpc-app-5", "Should be 'Green' thanks to the last rule as well.");
 
     // Should NOT be logged

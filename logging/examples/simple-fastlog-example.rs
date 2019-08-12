@@ -10,11 +10,12 @@ fn main() {
         .expect("Fail to instanciate the logging factory.");
 
     trace!("Track me if you can.");
-    debug!("What's bugging you today?");
+    debug!(target: "Buggy day", "What's bugging you today?");
     info!(target: "Simple_example_instance_id", "Some interesting info here");
     warn!("You've been warned Sir!");
     // This next one will not be logged according to our defined rule
-    warn!("Let's not warn twice about the same stuff.");
+    // about the "twice" target
+    warn!(target: "twice", "Let's not warn twice about the same stuff.");
     // And this one will be printed in red
     error!("Abort the mission!!");
 

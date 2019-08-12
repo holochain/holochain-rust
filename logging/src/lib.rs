@@ -239,7 +239,7 @@ impl log::Log for FastLogger {
 
         if self.enabled(record.metadata()) && should_log_in != None {
             let msg = LogMessage {
-                args,
+                args: record.args().to_string(),
                 module: record.module_path().unwrap_or("module-name").to_string(),
                 line: record.line().unwrap_or(000),
                 file: record.file().unwrap_or("").to_string(),

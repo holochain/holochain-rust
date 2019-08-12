@@ -557,7 +557,7 @@ impl Conductor {
 
           // TODO replace this hack with a discovery service trait
           let urls : Vec<url::Url> = self.instances.values().map(|instance| {
-                    dbg!(instance
+                    instance
                         .read()
                         .unwrap()
                         .context()
@@ -566,7 +566,7 @@ impl Conductor {
                         .lock()
                         .as_ref()
                         .unwrap()
-                        .p2p_endpoint())
+                        .p2p_endpoint()
                 }).collect();
             match p2p_config.to_owned().backend_config {
                 BackendConfig::Memory(mut config) => {
@@ -576,7 +576,7 @@ impl Conductor {
                         else
                         { config.bootstrap_nodes.clone() };
                     let mut p2p_config = p2p_config.clone();
-                    p2p_config.backend_config = dbg!(BackendConfig::Memory(config));
+                    p2p_config.backend_config = BackendConfig::Memory(config);
                     p2p_config
                 },
                 _ => p2p_config.clone()
@@ -645,17 +645,16 @@ impl Conductor {
         let _ = self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
-            self.p2p_config = dbg!(Some(self.initialize_p2p_config()));
+            self.p2p_config = Some(self.initialize_p2p_config());
         }
 
-        let config = dbg!(self.config.clone());
+        let config = self.config.clone();
         self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
-            let id = dbg!(id);
             // We only try to instantiate the instance if it is not running already,
             // which will be the case at least for the DPKI instance which got started
             // specifically in `self.dpki_bootstrap()` above.

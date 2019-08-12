@@ -1,3 +1,4 @@
+use logging::prelude::*;
 pub mod fetch;
 pub mod lists;
 pub mod query;
@@ -102,8 +103,10 @@ MessageData {{
     )
 }
 
-fn handle_failure_result(failure_data: GenericResultData) -> Result<(), HolochainError> {
-    let _failure_data = dbg!(failure_data);
+
+// TODO Implement a failure workflow?
+fn handle_failure_result(context: &Arc<Context>, failure_data: GenericResultData) -> Result<(), HolochainError> {
+    log_warn!(context, "handle_failure_result: unhandle failure={:?}", failure_data);
     Ok(())
 }
 
@@ -125,7 +128,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 }
 
                 log_warn!(context, "net/handle: FailureResult: {:?}", failure_data);
-                handle_failure_result(failure_data).expect("handle_failure_result")
+                handle_failure_result(&context, failure_data).expect("handle_failure_result")
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {

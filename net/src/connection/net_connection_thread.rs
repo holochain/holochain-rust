@@ -1,3 +1,5 @@
+use logging::prelude::*;
+
 use super::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
     NetResult,
@@ -69,7 +71,7 @@ impl NetConnectionThread {
                         // Have the worker handle it
                         did_something = true;
                         worker.receive(data).unwrap_or_else(|e| {
-                            eprintln!("Error occured in p2p network module, on receive: {:?}", e)
+                            debug!("Error occured in p2p network module, on receive: {:?}", e)
                         });
                         Ok(())
                     })
@@ -85,7 +87,7 @@ impl NetConnectionThread {
                         Ok(())
                     })
                     .unwrap_or_else(|e| {
-                        eprintln!("Error occured in p2p network module, on tick: {:?}", e)
+                        error!("Error occured in p2p network module, on tick: {:?}", e)
                     });
 
                 // Increase sleep duration if nothing was received or sent
@@ -102,7 +104,7 @@ impl NetConnectionThread {
             }
             // Stop the worker
             worker.stop().unwrap_or_else(|e| {
-                eprintln!("Error occured in p2p network module on stop: {:?}", e)
+                error!("Error occured in p2p network module on stop: {:?}", e)
             });
         }).expect("Could not spawn net connection thread");
 

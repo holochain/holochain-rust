@@ -1151,6 +1151,7 @@ dependencies = [
  "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=bootstrap-connect)",
  "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=bootstrap-connect)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
+ "logging 0.0.27-alpha1",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",

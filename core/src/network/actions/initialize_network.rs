@@ -23,13 +23,10 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    dbg!("waiting for network");
-
     log_debug!(context, "waiting for network");
     await!(InitNetworkFuture {
         context: context.clone(),
     })?;
-    dbg!("got network");
 
 
     Ok(())

@@ -2,15 +2,38 @@ use error::{HcResult,HolochainError};
 
 pub enum Lifecycle
 {
-    Beta,
-    Alpha,
-    Stable
+    Beta(i8),
+    Alpha(i8),
+    Stable(i8)
 }
 
 pub struct HDKVersion
 {
     versioning : (i8,i8,i8),
-    life_cycle : Lifecycle
+    lifecycle : Lifecycle
+}
+
+fn get_lifecycle(lifecycle_string:&str) ->HcResult<Lifecycle>
+{
+    if lifecycle_string.contains("beta")
+    {
+        Ok(Lifecycle::Beta(lifecycle_string.split("beta").nth(1).ok_or("Could not get beta version")?
+                       .parse::<i8>().map_err(|_|HolochainError::ErrorGeneric("Could not parse version".to_string()))?))
+    }
+    else if lifecycle_string.contains("stable")
+    {
+        Ok(Lifecycle::Stable(lifecycle_string.split("stable").nth(1).ok_or("Could not get stable version")?
+                      .parse::<i8>().map_err(|_|HolochainError::ErrorGeneric("Could not parse version".to_string()))?))
+    }
+    else if lifecycle_string.contains("alpha")
+    {
+        Ok(Lifecycle::Alpha(lifecycle_string.split("alpha").nth(1).ok_or("Could not get alpha version")?
+                     .parse::<i8>().map_err(|_|HolochainError::ErrorGeneric("Could not parse version".to_string()))?))
+    }
+    else 
+    {
+        Err(HolochainError::ErrorGeneric("Invalid Lifecycle Version".to_string()))
+    }
 }
 
 impl HDKVersion
@@ -25,18 +48,12 @@ impl HDKVersion
                           version_splits.next().ok_or("Could not get version")?.parse::<i8>().map_err(|_|HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
                           version_splits.next().ok_or("Could not get version")?.parse::<i8>().map_err(|_|HolochainError::ErrorGeneric("Could not parse version".to_string()))?);
 
-        let life_cycle = match splits.next().ok_or("Could not get lifecycle")?
-        {
-            "Beta" => Ok(Lifecycle::Beta),
-            "Stable" => Ok(Lifecycle::Stable),
-            "Alpha" => Ok(Lifecycle::Alpha),
-            _ => Err(HolochainError::ErrorGeneric("invalid lifecycle".to_string()))
-        }?;
+        let lifecycle = get_lifecycle(splits.next().ok_or("Could not get lifecycle")?)?;
 
         Ok(HDKVersion
         {
             versioning,
-            life_cycle,
+            lifecycle,
         })
     }
 }

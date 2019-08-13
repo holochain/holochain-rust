@@ -61,7 +61,7 @@ lazy_static!
     static ref HDK_VERSION: HDKVersion = 
     {
         let version = env!("HDK_VERSION","failed to obtain hdk version from build environment. Check build.rs");
-        HDKVersion::new(version).expect("Failed to create HDK Version. Check Build RS")
+        HDKVersion::new(version).expect("Failed to create HDK Version. Check Build.rs")
     };
 }
 

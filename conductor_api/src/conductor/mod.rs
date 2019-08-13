@@ -4,6 +4,7 @@ pub mod broadcaster;
 pub mod passphrase_manager;
 pub mod test_admin;
 pub mod ui_admin;
+pub mod stat;
 
 pub use self::{
     admin::ConductorAdmin,

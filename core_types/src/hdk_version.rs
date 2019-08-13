@@ -1,5 +1,15 @@
 use error::{HcResult,HolochainError};
 
+lazy_static!
+{
+    pub static ref HDK_VERSION: HDKVersion = 
+    {
+        let version = env!("HDK_VERSION","failed to obtain hdk version from build environment. Check build.rs");
+        HDKVersion::new(version).expect("Failed to create HDK Version. Check Build.rs")
+    };
+}
+
+#[derive(Clone,PartialEq, Eq)]
 pub enum Lifecycle
 {
     Beta(i8),
@@ -7,6 +17,7 @@ pub enum Lifecycle
     Stable(i8)
 }
 
+#[derive(Clone,PartialEq, Eq)]
 pub struct HDKVersion
 {
     versioning : (i8,i8,i8),
@@ -33,6 +44,21 @@ fn get_lifecycle(lifecycle_string:&str) ->HcResult<Lifecycle>
     else 
     {
         Err(HolochainError::ErrorGeneric("Invalid Lifecycle Version".to_string()))
+    }
+}
+
+impl ToString for HDKVersion
+{
+    fn to_string(&self) -> String
+    {
+        let version = vec![self.versioning.0.to_string(),self.versioning.1.to_string(),self.versioning.2.to_string()].join(".");
+        let life_cycle = match self.lifecycle
+        {
+            Lifecycle::Alpha(num) => vec!["Alpha",&num.to_string()].join(""),
+            Lifecycle::Beta(num) => vec!["Beta",&num.to_string()].join(""),
+            Lifecycle::Stable(num) => vec!["Stable",&num.to_string()].join("")
+        };
+        vec![version,life_cycle].join("-")
     }
 }
 

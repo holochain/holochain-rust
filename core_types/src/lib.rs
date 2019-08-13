@@ -48,22 +48,11 @@ pub mod ugly;
 pub mod validation;
 pub mod hdk_version;
 
-use hdk_version::HDKVersion;
-
-
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",
     "failed to obtain git hash from build environment. Check build.rs"
 );
 
-lazy_static!
-{
-    static ref HDK_VERSION: HDKVersion = 
-    {
-        let version = env!("HDK_VERSION","failed to obtain hdk version from build environment. Check build.rs");
-        HDKVersion::new(version).expect("Failed to create HDK Version. Check Build.rs")
-    };
-}
 
 // not docker build friendly
 // https://circleci.com/gh/holochain/holochain-rust/10757

@@ -969,5 +969,4 @@ fn log_to_file_test() {
     "#;
 
     FastLoggerBuilder::from_toml(toml).expect("Fail to load logging conf from toml.");
-    // info!("Ahoy Matey!");
 }

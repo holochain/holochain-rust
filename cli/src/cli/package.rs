@@ -15,6 +15,10 @@ use std::{
     sync::Arc,
 };
 
+use cli::scaffold::rust::CARGO_FILE_NAME;
+
+use holochain_core_types::hdk_version::{HDK_VERSION,HDKVersion};
+
 pub const CODE_DIR_NAME: &str = "code";
 
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
@@ -34,6 +38,18 @@ pub const META_TREE_SECTION_NAME: &str = "tree";
 pub const META_CONFIG_SECTION_NAME: &str = "config_file";
 
 pub type Object = Map<String, Value>;
+
+fn hdk_version_compare(hdk_version:&HDKVersion,cargo_toml :&str) -> DefaultResult<bool>
+{
+    let toml: Value = toml::from_str(cargo_toml)?;
+    let hdk = toml.get("hdk").ok_or(format_err!("Could not get HDK"))?;
+    let tag = hdk.get("tag")
+              .ok_or(format_err!("Could not get HDK tag"))?
+              .as_str()
+              .ok_or(format_err!("Could not parse string"))?;
+    let hdk_version_from_toml = HDKVersion::new(tag)?;
+    Ok(hdk_version==&hdk_version_from_toml)
+}
 
 struct Packager {
     strip_meta: bool,
@@ -220,6 +236,38 @@ impl Packager {
                     meta_tree.insert(file_name.clone(), META_BIN_ID.into());
 
                     let build = Build::from_file(build_config)?;
+                    if build.steps.iter().any(|s|s.command=="cargo")
+                    {
+                        let directories = node
+                                          .read_dir()?
+                                          .collect::<Result<Vec<_>,_>>()
+                                          .unwrap_or_default();
+                        
+                        directories
+                        .iter()
+                        .map(|p|p.path())
+                        .filter(|path| path.ends_with(CARGO_FILE_NAME))
+                        .for_each(|read_path|{
+
+                            File::open(read_path)
+                            .map(|mut read_file|{
+                                let mut contents = String::new();
+                                read_file
+                                .read_to_string(&mut contents)
+                                .map(|_|{
+                                    hdk_version_compare(&HDK_VERSION,&*contents)
+                                    .map(|hdk_match|{
+                                        if let false = hdk_match
+                                        {
+                                            eprintln!("There has been a version mismatch in one of the zomes. Current HDK Version is {}",HDK_VERSION.to_string())
+                                        }
+                                    }).unwrap_or_default()
+                                }).unwrap_or_else(|_|eprintln!("Could not read hdk from zome file and cannnot verify mismatch"))
+                            }).unwrap_or_else(|_|eprintln!("Could not open zome file and cannnot verify mismatch, check if cargo toml is in use"))
+
+                        });
+                        
+                    }
 
                     let wasm = build.run(&node)?;
 

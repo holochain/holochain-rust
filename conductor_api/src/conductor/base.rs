@@ -40,8 +40,12 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
-use config::AgentConfiguration;
+#[cfg(unix)]
+use conductor::passphrase_manager::PassphraseServiceUnixSocket;
+use conductor::passphrase_manager::{
+    PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+};
+use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -185,6 +189,26 @@ impl Conductor {
             println!();
         }
 
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
+            if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
+            {
+                #[cfg(not(unix))]
+                let _ = path;
+                #[cfg(not(unix))]
+                panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
+
+                #[cfg(unix)]
+                Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
+            } else {
+                match config.passphrase_service.clone() {
+                    PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+                    PassphraseServiceConfig::Mock { passphrase } => {
+                        Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+                    }
+                    _ => unreachable!(),
+                }
+            };
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -201,9 +225,7 @@ impl Conductor {
             logger,
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-                PassphraseServiceCmd {},
-            )))),
+            passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
         }

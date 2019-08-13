@@ -245,7 +245,7 @@ impl FastLogger {
             // .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
     }
 
-    /// Wrapper function to avoid collision with [flsuh](Log::flush) from the [`Log`] crate trait.
+    /// Wrapper function to avoid collision with [flush](log::Log::flush) from the [`log`] crate trait.
     fn flush_buffer(&self) {
         self.flush();
     }

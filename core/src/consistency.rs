@@ -2,13 +2,20 @@ use crate::{
     action::Action, context::Context, entry::CanPublish,
     network::entry_with_header::EntryWithHeader,
 };
-use holochain_core_types::{entry::Entry, link::link_data::LinkData};
+use holochain_core_types::{agent::AgentId, entry::Entry, link::link_data::LinkData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone)]
 pub struct ConsistencyModel {
+    // upon Commit, caches the corresponding ConsistencySignal which will only be emitted
+    // later, when the corresponding Publish has been processed
     commit_cache: HashMap<Address, ConsistencySignal>,
+
+    // Stores the AgentId, once it has been committed
+    agent_id: Option<AgentId>,
+
+    // Context needed to examine state and do logging
     context: Arc<Context>,
 }
 
@@ -16,6 +23,7 @@ impl ConsistencyModel {
     pub fn new(context: Arc<Context>) -> Self {
         Self {
             commit_cache: HashMap::new(),
+            agent_id: None,
             context,
         }
     }
@@ -55,6 +63,7 @@ impl ConsistencySignal {
 pub enum ConsistencyEvent {
     // CAUSES
     Publish(Address),                                   // -> Hold
+    InitializeChain,                                    // -> Hold (the AgentId)
     AddPendingValidation(Address),                      // -> RemovePendingValidation
     SignalZomeFunctionCall(snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
@@ -85,6 +94,11 @@ impl ConsistencyModel {
         use ConsistencyEvent::*;
         use ConsistencyGroup::*;
         match action {
+            Action::Commit((Entry::AgentId(agent_id), _, _)) => {
+                self.agent_id = Some(agent_id.clone());
+                None
+            }
+
             Action::Commit((entry, crud_link, _)) => {
                 // XXX: Since can_publish relies on a properly initialized Context, there are a few ways
                 // can_publish can fail. If we hit the possiblity of failure, just add the commit to the cache
@@ -123,9 +137,9 @@ impl ConsistencyModel {
                 // Emit the signal that was created when observing the corresponding Commit
                 let maybe_signal = self.commit_cache.remove(address);
                 maybe_signal.or_else(|| {
-                    // TODO: hook up logger
-                    println!(
-                        "warn/consistency: Publishing address that was not previously committed"
+                    log_warn!(
+                        self.context,
+                        "consistency: Publishing address that was not previously committed"
                     );
                     None
                 })
@@ -166,6 +180,16 @@ impl ConsistencyModel {
             Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
                 ReturnZomeFunctionResult(result.call().id()),
             )),
+            Action::InitializeChain(_) => {
+                let agent_id = self.agent_id.as_ref().expect(
+                    "ConsistencyEvent::InitializeChain encountered before AgentId committed",
+                );
+                Some(ConsistencySignal::new_pending(
+                    InitializeChain,
+                    Validators,
+                    vec![Hold(agent_id.address())],
+                ))
+            }
             _ => None,
         }
     }

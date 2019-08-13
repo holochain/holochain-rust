@@ -350,24 +350,41 @@ scenario('my_memos_are_private', async (s, t, { alice, bob }) => {
 
 })
 
+scenario.only('agent_id_gets_gossiped_on_startup', async (s, t, { alice, bob }) => {
+
+  //confirm that bob can see alices' agent id
+  const alice_agent_id = await bob.app.callSync("simple", "get_entry", { "address":alice.app.agentId })
+  //expect address
+  console.log("ALICE AGENT ID:"+alice.app.agentId)
+  console.log(JSON.stringify(alice_agent_id.Ok))
+  t.ok(alice_agent_id.Ok)
+})
 
 scenario('delete_post', async (s, t, { alice, bob }) => {
 
+  // create an anchor off which to hang the links
+  const anchor_result = await alice.app.callSync("simple", "create_anchor", { } )
+  //expect address
+  console.log("ANCHOR RESULT:"+JSON.stringify(anchor_result))
+  t.ok(anchor_result.Ok)
+
+  const anchor_address = anchor_result.Ok;
+
+  //confirm that bob can see the anchor
+  const bob_get_anchor_result = await alice.app.callSync("simple", "get_entry",{ "address":anchor_address })
+  //expect address
+  console.log("BOB ANCHOR RESULT:"+JSON.stringify(bob_get_anchor_result))
+  t.ok(bob_get_anchor_result.Ok)
+
   //creates a simple link with alice as author with initial chain header
-  await alice.app.callSync("simple", "create_link",
-    { "base":alice.app.agentId, "target": "Posty" }
-  )
+  await alice.app.callSync("simple", "create_link", { "base":anchor_address, "target": "Posty" })
 
 
   //creates a simple link with bob as author with different chain header
-  await bob.app.callSync("simple", "create_link",
-    { "base":alice.app.agentId, "target": "Posty" }
-  )
+  await bob.app.callSync("simple", "create_link", { "base":anchor_address, "target": "Posty" })
 
   //get all created links so far alice
-  const alice_posts = await bob.app.call("simple", "get_my_links",
-    { "base": alice.app.agentId,"status_request" : "Live" }
-  )
+  const alice_posts = await bob.app.call("simple", "get_my_links",{ "base": anchor_address, "status_request" : "Live" })
 
 
   //expect two links from alice
@@ -375,9 +392,7 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   t.equal(alice_posts.Ok.links.length,2 );
 
   //get all created links so far for bob
-  const bob_posts = await bob.app.call("simple", "get_my_links",
-    { "base": alice.app.agentId,"status_request" : "Live" }
-  )
+  const bob_posts = await bob.app.call("simple", "get_my_links", { "base": anchor_address,"status_request" : "Live" })
 
 
   //expected two links from bob
@@ -385,12 +400,12 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
   t.equal(bob_posts.Ok.links.length,2 );
 
   //alice removes both links
-  await alice.app.callSync("simple", "delete_link", { "base":alice.app.agentId, "target": "Posty" })
+    await alice.app.callSync("simple", "delete_link", { "base":anchor_address, "target": "Posty" })
 
   // get links from bob
-  const bob_agent_posts_expect_empty = await bob.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+  const bob_agent_posts_expect_empty = await bob.app.call("simple", "get_my_links",{ "base": anchor_address,"status_request" : "Live" })
   //get links from alice
-  const alice_agent_posts_expect_empty = await alice.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+  const alice_agent_posts_expect_empty = await alice.app.call("simple", "get_my_links",{ "base": anchor_address,"status_request" : "Live" })
 
   //bob expects zero links
   t.ok(bob_agent_posts_expect_empty.Ok)
@@ -401,10 +416,10 @@ scenario('delete_post', async (s, t, { alice, bob }) => {
 
 
   //different chain hash up to this point so we should be able to create a link with the same data
-  await alice.app.callSync("simple", "create_link",{ "base":alice.app.agentId, "target": "Posty" })
+    await alice.app.callSync("simple", "create_link",{ "base":anchor_address, "target": "Posty" })
 
   //get alice posts
-  const alice_posts_not_empty = await bob.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+    const alice_posts_not_empty = await bob.app.call("simple", "get_my_links",{ "base": anchor_address,"status_request" : "Live" })
 
    //expect 1 post
   t.ok(alice_posts_not_empty.Ok)
@@ -717,6 +732,7 @@ scenario('my_posts_immediate_timeout', async (s, t, { alice }) => {
   const result = await alice.app.call("blog", "my_posts_immediate_timeout", {})
 
   t.ok(result.Err)
+
   console.log(result)
   t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
 })

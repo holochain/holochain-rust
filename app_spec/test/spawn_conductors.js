@@ -24,7 +24,31 @@ instances = []
     port = ${adminPort}
 
 [logger]
-type = "debug"
+type="warn"
+[[logger.rules.rules]]
+exclude = true
+pattern = ".*parity.*"
+[[logger.rules.rules]]
+exclude = true
+pattern = ".*tokio.*"
+[[logger.rules.rules]]
+exclude = true
+pattern = ".*mio.*"
+[[logger.rules.rules]]
+exclude = true
+pattern = "@MirrorDht@ now:"
+[[logger.rules.rules]]
+exclude = true
+pattern = " - output: false 0"
+[[logger.rules.rules]]
+exclude = true
+pattern = "process.*START"
+[[logger.rules.rules]]
+exclude = true
+pattern = "process.*END"
+[[logger.rules.rules]]
+exclude = true
+pattern = "MemoryServer mem:"
 ${debugging ? '' : '[[logger.rules.rules]]'}
 ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}

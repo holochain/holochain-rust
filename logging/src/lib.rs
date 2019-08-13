@@ -25,6 +25,7 @@
 //!
 //! ```edition2018
 //! use logging::prelude::*;
+//!
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
 //! let mut guard = logging::init_simple().unwrap();

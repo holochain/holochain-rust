@@ -50,6 +50,13 @@ const orchestratorSimple = new Orchestrator({
   debugLog: false,
   executor: tapeExecutor(require('tape')),
   middleware: backwardCompatibilityMiddleware,
+
+  // if an action arrives between the soft and hard timeout,
+  // the clock is restarted
+  waiter: {
+        softTimeout: 3000, // grace period to create a warning
+        hardTimeout: 9000, // scenario stopped after hard timeout
+    }
 })
 
 const orchestratorSimpleInMemory = new Orchestrator({

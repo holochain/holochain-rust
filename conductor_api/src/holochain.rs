@@ -110,6 +110,7 @@ use holochain_json_api::json::JsonString;
 use holochain_core::state::StateWrapper;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
+use holochain_core::state_dump::StateDump;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -262,6 +263,13 @@ impl Holochain {
     pub fn set_conductor_api(&mut self, api: IoHandler) -> Result<(), HolochainInstanceError> {
         self.context()?.conductor_api.reset(api);
         Ok(())
+    }
+
+    pub fn get_state_dump(&self) -> Result<StateDump, HolochainInstanceError> {
+        self.check_instance()?;
+        Ok(StateDump::from(self.context.clone()
+            .expect("Context must be Some since we've checked it with check_instance()? above"))
+        )
     }
 }
 

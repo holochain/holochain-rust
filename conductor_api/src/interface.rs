@@ -22,7 +22,7 @@ use std::{
     thread,
 };
 
-use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -710,6 +710,32 @@ impl ConductorApiBuilder {
             let bridges =
                 conductor_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
             Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self
+    }
+
+    pub fn with_debug_functions(mut self) -> Self {
+        self.io.add_method("debug/running_instances", move |_params| {
+            let running_instances_ids = conductor_call!(
+                |c| c.running_instances()
+            )?;
+            Ok(serde_json::to_value(running_instances_ids)
+                .map_err(|_| jsonrpc_core::Error::internal_error())?
+            )
+        });
+
+        self.io.add_method("debug/state_dump", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+
+            let dump = conductor_call!(
+                |c| c.state_dump_for_instance(&instance_id)
+            )?;
+
+            Ok(serde_json::to_value(dump).map_err(|_|
+                jsonrpc_core::Error::internal_error()
+            )?)
         });
 
         self

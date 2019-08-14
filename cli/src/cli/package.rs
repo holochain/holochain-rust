@@ -17,7 +17,7 @@ use std::{
 
 use cli::scaffold::rust::CARGO_FILE_NAME;
 
-use holochain_core_types::hdk_version::{HDK_VERSION,HDKVersion};
+use holochain_core_types::hdk_version::{HDKVersion, HDK_VERSION};
 
 pub const CODE_DIR_NAME: &str = "code";
 
@@ -39,17 +39,21 @@ pub const META_CONFIG_SECTION_NAME: &str = "config_file";
 
 pub type Object = Map<String, Value>;
 
-fn hdk_version_compare(hdk_version:&HDKVersion,cargo_toml :&str) -> DefaultResult<bool>
-{
+fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultResult<bool> {
     let toml: Value = toml::from_str(cargo_toml)?;
-    let dependancies = toml.get("dependencies").ok_or(format_err!("Could not get dependancies"))?;
-    let hdk = dependancies.get("hdk").ok_or(format_err!("Could not get HDK"))?;
-    let tag = hdk.get("tag")
-              .ok_or(format_err!("Could not get HDK tag"))?
-              .as_str()
-              .ok_or(format_err!("Could not parse string"))?;
+    let dependancies = toml
+        .get("dependencies")
+        .ok_or(format_err!("Could not get dependancies"))?;
+    let hdk = dependancies
+        .get("hdk")
+        .ok_or(format_err!("Could not get HDK"))?;
+    let tag = hdk
+        .get("tag")
+        .ok_or(format_err!("Could not get HDK tag"))?
+        .as_str()
+        .ok_or(format_err!("Could not parse string"))?;
     let hdk_version_from_toml = HDKVersion::new(tag)?;
-    Ok(hdk_version==&hdk_version_from_toml)
+    Ok(hdk_version == &hdk_version_from_toml)
 }
 
 struct Packager {
@@ -237,13 +241,12 @@ impl Packager {
                     meta_tree.insert(file_name.clone(), META_BIN_ID.into());
 
                     let build = Build::from_file(build_config)?;
-                    if build.steps.iter().any(|s|s.command=="cargo")
-                    {
+                    if build.steps.iter().any(|s| s.command == "cargo") {
                         let directories = node
-                                          .read_dir()?
-                                          .collect::<Result<Vec<_>,_>>()
-                                          .unwrap_or_default();
-                        
+                            .read_dir()?
+                            .collect::<Result<Vec<_>, _>>()
+                            .unwrap_or_default();
+
                         directories
                         .iter()
                         .map(|p|p.path())
@@ -267,7 +270,6 @@ impl Packager {
                             }).unwrap_or_else(|_|eprintln!("Could not open zome file and cannnot verify mismatch, check if cargo toml is in use"))
 
                         });
-                        
                     }
 
                     let wasm = build.run(&node)?;
@@ -435,26 +437,33 @@ mod tests {
     }
 
     #[test]
-    fn hdk_version_compare_test()
-    {
+    fn hdk_version_compare_test() {
         //compare same
         let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
-        assert!(hdk_version_compare(&hdk_version,r#"
+        assert!(hdk_version_compare(
+            &hdk_version,
+            r#"
         name = 'stuff'
 
         [dependencies]
         hdk = {github='xxx', tag='99.99.99-alpha99'}
       
-    "#).expect("Could not compare"));
+    "#
+        )
+        .expect("Could not compare"));
 
-    let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
-        assert!(!hdk_version_compare(&hdk_version,r#"
+        let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
+        assert!(!hdk_version_compare(
+            &hdk_version,
+            r#"
         name = 'stuff'
 
         [dependencies]
         hdk = {github='xxx', tag='0.0.0-alpha1'}
       
-    "#).expect("Could not compare"))
+    "#
+        )
+        .expect("Could not compare"))
     }
 
     #[test]

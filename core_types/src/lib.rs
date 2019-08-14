@@ -41,18 +41,17 @@ pub mod agent;
 pub mod bits_n_pieces;
 pub mod chain_migrate;
 pub mod dna;
+pub mod hdk_version;
 pub mod link;
 pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
-pub mod hdk_version;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",
     "failed to obtain git hash from build environment. Check build.rs"
 );
-
 
 // not docker build friendly
 // https://circleci.com/gh/holochain/holochain-rust/10757

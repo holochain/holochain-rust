@@ -21,7 +21,9 @@ fn main() {
 
     "#;
 
-    FastLoggerBuilder::from_toml(toml)
+    // We need a guard here in order to gracefully shutdown
+    // the logging thread
+    let mut guard = FastLoggerBuilder::from_toml(toml)
         .expect("Fail to instantiate the logger from toml.")
         // .redirect_to_file("humpty_dumpty-blop.log")
         .build()
@@ -36,6 +38,8 @@ fn main() {
     // And this one will be printed in red
     error!("Abort the mission!!");
 
-    // Let's give some time to the working thread to finish logging...
-    std::thread::sleep(std::time::Duration::from_millis(10));
+    // Flushes any buffered records
+    guard.flush();
+    // Flush and shutdown gracefully the logging thread
+    guard.shutdown();
 }

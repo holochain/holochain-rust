@@ -21,6 +21,7 @@ pub mod query;
 pub mod receive;
 pub mod send;
 pub mod sign;
+pub mod meta;
 mod update_entry;
 pub mod validation;
 pub mod verify_signature;

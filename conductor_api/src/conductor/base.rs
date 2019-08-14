@@ -1170,7 +1170,8 @@ impl Conductor {
             conductor_api_builder = conductor_api_builder
                 .with_admin_dna_functions()
                 .with_admin_ui_functions()
-                .with_test_admin_functions();
+                .with_test_admin_functions()
+                .with_stat_functions();
         }
 
         conductor_api_builder.spawn()

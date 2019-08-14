@@ -22,7 +22,9 @@ use std::{
     thread,
 };
 
-use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, ConductorStatInterface, CONDUCTOR};
+use conductor::{
+    ConductorAdmin, ConductorStatInterface, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR,
+};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -1144,7 +1146,7 @@ impl ConductorApiBuilder {
 
     /// This adds RPC methods to inspect resource usage of different instances
     /// Currently implements:
-    /// 
+    ///
     ///  * `stat/storage`
     ///     Report how much storage is being consumed by a particular instance. This is dependent on the storage backend that the instance
     ///     is using. Storage implementations are reponsible for reporting their own usage so it may not actually reflect disk space.
@@ -1158,8 +1160,7 @@ impl ConductorApiBuilder {
         self.io.add_method("stat/storage", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let instance_id_str = Self::get_as_string("instance_id", &params_map)?;
-            let report =
-                conductor_call!(|c| c.get_instance_storage(&instance_id_str))?;
+            let report = conductor_call!(|c| c.get_instance_storage(&instance_id_str))?;
             Ok(json!({
                 "instance_id": instance_id_str,
                 "storage_report": report,

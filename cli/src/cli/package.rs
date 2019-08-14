@@ -263,7 +263,7 @@ impl Packager {
                                     .map(|hdk_match|{
                                         if let false = hdk_match
                                         {
-                                            eprintln!("There has been a version mismatch in one of the zomes. Current HDK Version is {}",HDK_VERSION.to_string())
+                                            eprintln!("There has been a version mismatch in the current zome. Current HDK Version is {}",HDK_VERSION.to_string())
                                         }
                                     }).unwrap_or_default()
                                 }).unwrap_or_else(|_|eprintln!("Could not read hdk from zome file and cannnot verify mismatch"))

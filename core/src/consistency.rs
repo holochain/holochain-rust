@@ -137,8 +137,7 @@ impl ConsistencyModel {
                 // Emit the signal that was created when observing the corresponding Commit
                 let maybe_signal = self.commit_cache.remove(address);
                 maybe_signal.or_else(|| {
-                    log_warn!(
-                        self.context,
+                    println!(
                         "consistency: Publishing address that was not previously committed"
                     );
                     None

@@ -11,6 +11,7 @@ pub use self::{
     base::{mount_conductor_from_config, Conductor, CONDUCTOR},
     test_admin::ConductorTestAdmin,
     ui_admin::ConductorUiAdmin,
+    stat::ConductorStatInterface,
 };
 
 #[cfg(test)]

@@ -1,12 +1,8 @@
-use crate::{
-    action::{QueryKey},
-    context::Context,
-    network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall,
-};
+use crate::context::Context;
 use holochain_core_types::{entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{convert::TryInto, sync::Arc};
+use crate::state_dump::StateDump;
 
 fn address_to_content_and_type(
     address: &Address,
@@ -39,74 +35,35 @@ fn address_to_content_and_type(
 }
 
 pub fn state_dump(context: Arc<Context>) {
-    let (nucleus, network, dht) = {
-        let state_lock = context.state().expect("No state?!");
-        (
-            (*state_lock.nucleus()).clone(),
-            (*state_lock.network()).clone(),
-            (*state_lock.dht()).clone(),
-        )
-    };
+    let dump = StateDump::from(context.clone());
 
-    let running_calls: Vec<ZomeFnCall> = nucleus
-        .zome_calls
-        .into_iter()
-        .filter(|(_, result)| result.is_none())
-        .map(|(call, _)| call)
-        .collect();
-
-    let query_flows: Vec<QueryKey> = network
-        .get_query_results
-        //using iter so that we don't copy this again and again if it is a scheduled job that runs everytime
-        //it might be slow if copied
+    let pending_validation_strings = dump.pending_validations
         .iter()
-        .filter(|(_,result)|result.is_none())
-        .map(|(key,_)|key.clone())
-        .collect();
-
-
-    let validation_package_flows: Vec<Address> = network
-        .get_validation_package_results
-        .into_iter()
-        .filter(|(_, result)| result.is_none())
-        .map(|(address, _)| address)
-        .collect();
-
-    let direct_message_flows: Vec<(String, DirectMessage)> = network
-        .direct_message_connections
-        .into_iter()
-        .map(|(s, dm)| (s.clone(), dm.clone()))
-        .collect();
-
-    let pending_validation_strings = nucleus
-        .pending_validations
-        .keys()
-        .map(|pending_validation_key| {
+        .map(|pending_validation| {
             let maybe_content =
-                address_to_content_and_type(&pending_validation_key.address, context.clone());
+                address_to_content_and_type(&pending_validation.address, context.clone());
             maybe_content
                 .map(|(content_type, content)| {
                     format!(
                         "<{}> [{}] {}: {}",
-                        pending_validation_key.workflow.to_string(),
+                        pending_validation.workflow.to_string(),
                         content_type,
-                        pending_validation_key.address.to_string(),
+                        pending_validation.address.to_string(),
                         content
                     )
                 })
                 .unwrap_or_else(|err| {
                     format!(
                         "<{}> [UNKNOWN] {}: Error trying to get type/content: {}",
-                        pending_validation_key.workflow.to_string(),
-                        pending_validation_key.address.to_string(),
+                        pending_validation.workflow.to_string(),
+                        pending_validation.address.to_string(),
                         err
                     )
                 })
         })
         .collect::<Vec<String>>();
 
-    let holding_strings = dht
-        .get_all_held_entry_addresses()
+    let holding_strings = dump.held_entries
         .iter()
         .map(|address| {
             let maybe_content = address_to_content_and_type(address, context.clone());
@@ -150,11 +107,11 @@ Holding:
 {holding_list}
 --------
     "#,
-        calls = running_calls,
+        calls = dump.running_calls,
         validations = pending_validation_strings.join("\n"),
-        flows = query_flows,
-        validation_packages = validation_package_flows,
-        direct_messages = direct_message_flows,
+        flows = dump.query_flows,
+        validation_packages = dump.validation_package_flows,
+        direct_messages = dump.direct_message_flows,
         holding_list = holding_strings.join("\n")
     );
 

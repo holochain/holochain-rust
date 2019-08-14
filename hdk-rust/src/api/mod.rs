@@ -69,7 +69,7 @@ pub use self::{
     sign::{sign, sign_one_time, verify_signature},
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
-    version::version
+    version::version,
 };
 
 macro_rules! def_api_fns {

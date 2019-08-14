@@ -241,7 +241,8 @@ impl Packager {
                     meta_tree.insert(file_name.clone(), META_BIN_ID.into());
 
                     let build = Build::from_file(build_config)?;
-                    if build.steps.iter().any(|s| s.command == "cargo") {                        let directories = node
+                    if build.steps.iter().any(|s| s.command == "cargo") {
+                        let directories = node
                             .read_dir()?
                             .collect::<Result<Vec<_>, _>>()
                             .unwrap_or_default();

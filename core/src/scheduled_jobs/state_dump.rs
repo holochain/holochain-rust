@@ -1,38 +1,6 @@
 use crate::context::Context;
-use holochain_core_types::{entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::{convert::TryInto, sync::Arc};
-use crate::state_dump::StateDump;
-
-fn address_to_content_and_type(
-    address: &Address,
-    context: Arc<Context>,
-) -> Result<(String, String), HolochainError> {
-    let raw_content = context.dht_storage.read()?.fetch(address)??;
-    let maybe_entry: Result<Entry, _> = raw_content.clone().try_into();
-    if let Ok(entry) = maybe_entry {
-        let mut entry_type = entry.entry_type().to_string();
-        let content = match entry {
-            Entry::Dna(_) => String::from("DNA omitted"),
-            Entry::AgentId(agent_id) => agent_id.nick,
-            Entry::LinkAdd(link) | Entry::LinkRemove((link, _)) => format!(
-                "({}#{})\n\t{} => {}",
-                link.link.link_type(),
-                link.link.tag(),
-                link.link.base(),
-                link.link.target(),
-            ),
-            Entry::App(app_type, app_value) => {
-                entry_type = app_type.to_string();
-                app_value.to_string()
-            }
-            _ => entry.content().to_string(),
-        };
-        Ok((entry_type, content))
-    } else {
-        Ok((String::from("UNKNOWN"), raw_content.to_string()))
-    }
-}
+use std::sync::Arc;
+use crate::state_dump::{StateDump, address_to_content_and_type};
 
 pub fn state_dump(context: Arc<Context>) {
     let dump = StateDump::from(context.clone());

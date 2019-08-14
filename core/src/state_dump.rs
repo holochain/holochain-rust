@@ -1,10 +1,11 @@
 use crate::nucleus::ZomeFnCall;
 use crate::action::QueryKey;
-use holochain_persistence_api::cas::content::Address;
+use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use crate::network::direct_message::DirectMessage;
 use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
 use crate::context::Context;
-use std::sync::Arc;
+use std::{convert::TryInto, sync::Arc};
 
 #[derive(Serialize)]
 pub struct PendingValidationDump{
@@ -82,5 +83,35 @@ impl From<Arc<Context>> for StateDump {
             running_calls, query_flows, validation_package_flows, direct_message_flows,
             pending_validations, held_entries
         }
+    }
+}
+
+pub fn address_to_content_and_type(
+    address: &Address,
+    context: Arc<Context>,
+) -> Result<(String, String), HolochainError> {
+    let raw_content = context.dht_storage.read()?.fetch(address)??;
+    let maybe_entry: Result<Entry, _> = raw_content.clone().try_into();
+    if let Ok(entry) = maybe_entry {
+        let mut entry_type = entry.entry_type().to_string();
+        let content = match entry {
+            Entry::Dna(_) => String::from("DNA omitted"),
+            Entry::AgentId(agent_id) => agent_id.nick,
+            Entry::LinkAdd(link) | Entry::LinkRemove((link, _)) => format!(
+                "({}#{})\n\t{} => {}",
+                link.link.link_type(),
+                link.link.tag(),
+                link.link.base(),
+                link.link.target(),
+            ),
+            Entry::App(app_type, app_value) => {
+                entry_type = app_type.to_string();
+                app_value.to_string()
+            }
+            _ => entry.content().to_string(),
+        };
+        Ok((entry_type, content))
+    } else {
+        Ok((String::from("UNKNOWN"), raw_content.to_string()))
     }
 }

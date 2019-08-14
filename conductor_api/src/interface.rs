@@ -738,6 +738,21 @@ impl ConductorApiBuilder {
             )?)
         });
 
+        self.io.add_method("debug/fetch_cas", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+            let address = Self::get_as_string("address", &params_map)?;
+
+            let (entry_type, content) = conductor_call!(
+                |c| c.get_type_and_content_from_cas(&Address::from(address), &instance_id)
+            )?;
+
+            Ok(json!({
+                "type": entry_type,
+                "content": content,
+            }))
+        });
+
         self
     }
 

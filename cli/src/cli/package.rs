@@ -42,7 +42,8 @@ pub type Object = Map<String, Value>;
 fn hdk_version_compare(hdk_version:&HDKVersion,cargo_toml :&str) -> DefaultResult<bool>
 {
     let toml: Value = toml::from_str(cargo_toml)?;
-    let hdk = toml.get("hdk").ok_or(format_err!("Could not get HDK"))?;
+    let dependancies = toml.get("dependencies").ok_or(format_err!("Could not get dependancies"))?;
+    let hdk = dependancies.get("hdk").ok_or(format_err!("Could not get HDK"))?;
     let tag = hdk.get("tag")
               .ok_or(format_err!("Could not get HDK tag"))?
               .as_str()
@@ -380,14 +381,11 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 
 #[cfg(test)]
 // too slow!
-#[cfg(feature = "broken-tests")]
 mod tests {
     use super::*;
-    use crate::cli::init::tests::gen_dir;
-    use assert_cmd::prelude::*;
-    use std::{path::PathBuf, process::Command};
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn package_and_unpack_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
@@ -437,6 +435,30 @@ mod tests {
     }
 
     #[test]
+    fn hdk_version_compare_test()
+    {
+        //compare same
+        let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
+        assert!(hdk_version_compare(&hdk_version,r#"
+        name = 'stuff'
+
+        [dependencies]
+        hdk = {github='xxx', tag='99.99.99-alpha99'}
+      
+    "#).expect("Could not compare"));
+
+    let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
+        assert!(!hdk_version_compare(&hdk_version,r#"
+        name = 'stuff'
+
+        [dependencies]
+        hdk = {github='xxx', tag='0.0.0-alpha1'}
+      
+    "#).expect("Could not compare"))
+    }
+
+    #[test]
+    #[cfg(feature = "broken-tests")]
     fn aborts_if_multiple_json_in_root() {
         let shared_space = gen_dir();
 
@@ -465,6 +487,7 @@ mod tests {
 
     #[test]
     /// A test ensuring that packaging and unpacking a project results in the very same project
+    #[cfg(feature = "broken-tests")]
     fn package_reverse() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
@@ -515,6 +538,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn auto_compilation() {
         let shared_space = gen_dir();
 

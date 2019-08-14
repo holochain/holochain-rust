@@ -715,6 +715,26 @@ impl ConductorApiBuilder {
         self
     }
 
+    /// Adds functions useful for debugging.
+    ///
+    /// - `debug/running_instances`
+    ///     Install a UI bundle that can later be hosted by an interface
+    ///     Params:
+    ///     - `id` ID used to refer to this bundle
+    ///     - `root_dir` Directory to host on the HTTP server
+    ///
+    /// - `debug/state_dump`
+    ///   Returns a JSON object with all relevant fields of an instance's state.
+    ///   Params:
+    ///   - `instance_id` ID of the instance of which the state is requested
+    ///
+    /// - `debug/fetch_cas`
+    ///   Returns content of a given instance's CAS.
+    ///   Params:
+    ///   - `instance_id` ID of the instance of which's CAS content is requested
+    ///   - `address` Address (hash) of the content that is requests
+    ///   Returns an object of the form: {type:"<entry type>", content: "<content>"}
+    /// 
     pub fn with_debug_functions(mut self) -> Self {
         self.io.add_method("debug/running_instances", move |_params| {
             let running_instances_ids = conductor_call!(

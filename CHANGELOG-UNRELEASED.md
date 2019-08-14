@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
 
-* Ability for conductor to report disk usage per instance over RPC using the `stat/disk` method [#1657](https://github.com/holochain/holochain-rust/pull/1657)
+* Ability for conductor to report disk usage per instance over RPC using the `stat/storage` method [#1657](https://github.com/holochain/holochain-rust/pull/1657)
 
 ### Changed
 

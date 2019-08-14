@@ -12,14 +12,14 @@ lazy_static! {
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Lifecycle {
-    Beta(i8),
-    Alpha(i8),
-    Stable(i8),
+    Beta(i16),
+    Alpha(i16),
+    Stable(i16),
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct HDKVersion {
-    versioning: (i8, i8, i8),
+    versioning: (i16, i16, i16),
     lifecycle: Lifecycle,
 }
 
@@ -30,7 +30,7 @@ fn get_lifecycle(lifecycle_string: &str) -> HcResult<Lifecycle> {
                 .split("beta")
                 .nth(1)
                 .ok_or("Could not get beta version")?
-                .parse::<i8>()
+                .parse::<i16>()
                 .map_err(|_| HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
         ))
     } else if lifecycle_string.contains("stable") {
@@ -39,7 +39,7 @@ fn get_lifecycle(lifecycle_string: &str) -> HcResult<Lifecycle> {
                 .split("stable")
                 .nth(1)
                 .ok_or("Could not get stable version")?
-                .parse::<i8>()
+                .parse::<i16>()
                 .map_err(|_| HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
         ))
     } else if lifecycle_string.contains("alpha") {
@@ -48,7 +48,7 @@ fn get_lifecycle(lifecycle_string: &str) -> HcResult<Lifecycle> {
                 .split("alpha")
                 .nth(1)
                 .ok_or("Could not get alpha version")?
-                .parse::<i8>()
+                .parse::<i16>()
                 .map_err(|_| HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
         ))
     } else {
@@ -85,17 +85,17 @@ impl HDKVersion {
             version_splits
                 .next()
                 .ok_or("Could not get version")?
-                .parse::<i8>()
+                .parse::<i16>()
                 .map_err(|_| HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
             version_splits
                 .next()
                 .ok_or("Could not get version")?
-                .parse::<i8>()
+                .parse::<i16>()
                 .map_err(|_| HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
             version_splits
                 .next()
                 .ok_or("Could not get version")?
-                .parse::<i8>()
+                .parse::<i16>()
                 .map_err(|_| HolochainError::ErrorGeneric("Could not parse version".to_string()))?,
         );
 

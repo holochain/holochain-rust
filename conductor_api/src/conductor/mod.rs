@@ -12,6 +12,7 @@ pub use self::{
     stat::ConductorStatInterface,
     test_admin::ConductorTestAdmin,
     ui_admin::ConductorUiAdmin,
+    stat::ConductorStatInterface,
 };
 
 #[cfg(test)]

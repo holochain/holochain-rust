@@ -21,10 +21,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
     thread,
 };
-
-use conductor::{
-    ConductorAdmin, ConductorStatInterface, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR,
-};
+use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, ConductorStatInterface, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -1160,7 +1157,8 @@ impl ConductorApiBuilder {
         self.io.add_method("stat/storage", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let instance_id_str = Self::get_as_string("instance_id", &params_map)?;
-            let report = conductor_call!(|c| c.get_instance_storage(&instance_id_str))?;
+            let report =
+                conductor_call!(|c| c.get_instance_storage(&instance_id_str))?;
             Ok(json!({
                 "instance_id": instance_id_str,
                 "storage_report": report,

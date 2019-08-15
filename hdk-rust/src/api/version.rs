@@ -2,6 +2,7 @@ use super::Dispatch;
 use error::{ZomeApiError, ZomeApiResult};
 use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
 
+///this method will return the current version of the HDK based on the latest git tag
 pub fn version<S: Into<String>>() -> ZomeApiResult<String> {
     let meta = Dispatch::Meta.with_input(MetaArgs {
         method: MetaMethod::Version,

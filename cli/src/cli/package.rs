@@ -266,7 +266,7 @@ impl Packager {
                                             eprintln!("WARNING: The HDK version found in {:?} does not match the current version.\n If you are seeing compilation problems, update the version in your Cargo.toml files to the current version: {}", read_path, HDK_VERSION.to_string())
                                         }
                                     }).unwrap_or_default()
-                                }).unwrap_or_else(|_|eprintln!("Could not read hdk from zome file and cannnot verify mismatch"))
+                                }).unwrap_or_else(|_|eprintln!("Could not read hdk from zome file and cannnot verify mismatch."))
                             }).unwrap_or_else(|_|eprintln!("Could not open zome file and cannnot verify mismatch, check if cargo toml is in use"))
 
                         });

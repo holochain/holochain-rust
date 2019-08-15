@@ -20,7 +20,7 @@ pub fn invoke_meta(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         // Exit on error
         Err(error) => {
             log_error!(context,
-                "zome: invoke_emit_signal failed to \
+                "zome: invoke_meta failed to \
                  deserialize arguments: {:?} with error {:?}",
                 args_str, error
             );

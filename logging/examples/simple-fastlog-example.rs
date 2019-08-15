@@ -1,7 +1,10 @@
 use logging::prelude::*;
 
 fn main() {
-    FastLoggerBuilder::new()
+ 
+    // We need a guard here in order to gracefully shutdown
+    // the logging thread
+    let mut guard = FastLoggerBuilder::new()
         .timestamp_format("%Y-%m-%d %H:%M:%S%.6f")
         .set_level_from_str("Trace")
         .add_rule_filter(RuleFilter::new("bug", false, "Magenta"))
@@ -23,6 +26,8 @@ fn main() {
 
     debug!(target: "Level::Debug", "Level::Debug ? {:?}", Level::Debug);
 
-    // Let's give some time to the working thread to finish logging...
-    std::thread::sleep(std::time::Duration::from_millis(10));
+    // Flushes any buffered records
+    guard.flush();
+    // Flush and shutdown gracefully the logging thread
+    guard.shutdown();
 }

@@ -9,6 +9,7 @@ function _usage() {
   echo "  lib3h - deptool lib3h <subcmd>"
   echo "    version - deptool lib3h version <version>"
   echo "    branch - deptool lib3h branch <branch-name>"
+  echo "    path - deptool lib3h path <path>"
   echo "options:"
   echo "  -h --help: additional help for command"
   exit 1

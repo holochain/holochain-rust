@@ -177,6 +177,18 @@ scenario('create_post', async (s, t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario('create_post_malformed_args', async (s, t, { alice }) => {
+
+  const content = "Holo world"
+  const malformed_arg = content
+  const params = { malformed_arg }
+  const result = await alice.callSync("blog", "create_post", params)
+
+  t.notOk(result.Ok)
+  // TODO The result should have a deserialization error but this assertion instead fails!
+  t.ok(result.Err)
+})
+
 scenario('create_tagged_post and retrieve all tags', async (s, t, { alice }) => {
   const result1 = await alice.app.callSync("blog", "create_tagged_post", {
     content: "Tutorial on amazing Holochain design patterns",

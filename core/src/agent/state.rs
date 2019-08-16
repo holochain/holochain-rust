@@ -176,14 +176,14 @@ pub enum ActionResponse {
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
-    root_state: &State,
+    root_state: &StateWrapper,
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
         root_state
-            .conductor_api
+            .conductor_api()
             .execute(entry.address().to_string(), CryptoMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
@@ -229,7 +229,7 @@ fn reduce_commit_entry(
     let result = create_new_chain_header(
         &entry,
         agent_state,
-        root_state,
+        &StateWrapper::from(root_state.clone()),
         &maybe_link_update_delete,
         provenances,
     )
@@ -421,7 +421,13 @@ pub mod tests {
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
         let header =
-            create_new_chain_header(&test_entry(), &agent_state, &state, &None, &vec![]).unwrap();
+            create_new_chain_header(
+                &test_entry(),
+                &agent_state,
+                &StateWrapper::from(state),
+                &None,
+                &vec![]
+            ).unwrap();
         let agent_id = context.agent_id.clone();
         assert_eq!(
             header,

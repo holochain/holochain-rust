@@ -13,6 +13,8 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::data_types::{EntryListData, GetListData};
 use snowflake::ProcessUniqueId;
 use std::{collections::HashMap, sync::Arc, thread};
+use crate::network::entry_aspect::EntryAspect;
+use crate::agent::state::create_new_chain_header;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     thread::Builder::new()
@@ -23,35 +25,32 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
         .spawn(move || {
             let mut address_map = HashMap::new();
             for entry in get_all_public_chain_entries(context.clone()) {
-                match get_all_aspect_addresses(&entry, context.clone()) {
-                    Ok(aspects) => {
-                        address_map.insert(
-                            entry.clone(),
-                            aspects,
-                        );
-                    },
-                    Err(_err) => log_debug!(context,
-                        "handler/get_authoring_list: Error getting entry aspects of authoring list for entry with address: {}", 
-                        entry
-                    ),  
-                };
+                let content_aspect = get_content_aspect(&entry, context.clone())
+                    .expect("Must be able to get content aspect of entry that is in our source chain");
+                address_map.insert(
+                    entry.clone(),
+                    vec![content_aspect.address()]
+                );
             }
 
             // chain header entries also should be communicated on the authoring list
             // In future make this depend if header publishing is enabled
+            let state = context.state()
+                .expect("There must be a state in context when we are responding to a HandleGetAuthoringEntryList");
             for chain_header_entry in get_all_chain_header_entries(context.clone()) {
-                match get_all_aspect_addresses(&chain_header_entry, context.clone()) {
-                    Ok(aspects) => {
-                        address_map.insert(
-                            chain_header_entry.clone(),
-                            aspects,
-                        );
-                    },
-                    Err(_err) => log_debug!(context, 
-                        "handler/get_authoring_list: Error getting entry aspects of authoring list for chain header with address: {}",
-                        chain_header_entry)
-                    ,  
-                };
+                let address = chain_header_entry.address();
+                let header_entry_header = create_new_chain_header(
+                    &chain_header_entry,
+                    &state.agent(),
+                    &*state,
+                    &None,
+                    &Vec::new(),
+                ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
+                let content_aspect = EntryAspect::Content(
+                    chain_header_entry,
+                    header_entry_header,
+                );
+                address_map.insert(address, vec![content_aspect.address()]);
             }
 
             let action = Action::RespondAuthoringList(EntryListData {
@@ -73,10 +72,10 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .collect()
 }
 
-fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Address> {
+fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().iter_chain();
     chain
-        .map(|chain_header| Entry::ChainHeader(chain_header).address())
+        .map(|chain_header| Entry::ChainHeader(chain_header))
         .collect()
 }
 
@@ -131,7 +130,7 @@ pub mod tests {
     use holochain_core_types::{
         entry::{Entry, test_entry_with_value},
     };
-    use holochain_persistence_api::cas::content::{AddressableContent, Address};
+    use holochain_persistence_api::cas::content::AddressableContent;
     use std::{thread, time};
     
     #[test]
@@ -153,11 +152,11 @@ pub mod tests {
         thread::sleep(time::Duration::from_millis(500));
 
         let chain = context.state().unwrap().agent().iter_chain();
-        let header_entry_addrs: Vec<Address> = chain.map(|header| Entry::ChainHeader(header).address()).collect();
+        let header_entries: Vec<Entry> = chain.map(|header| Entry::ChainHeader(header)).collect();
 
         assert_eq!(
             get_all_chain_header_entries(context),
-            header_entry_addrs,
+            header_entries,
         )
 
     }
@@ -181,7 +180,7 @@ pub mod tests {
         thread::sleep(time::Duration::from_millis(500));
 
         assert!(get_all_chain_header_entries(context.clone()).iter().all(|chain_header| {
-            get_all_aspect_addresses(&chain_header, context.clone()).is_ok()
+            get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
         }));
     }
 

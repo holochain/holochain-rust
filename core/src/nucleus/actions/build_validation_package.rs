@@ -19,6 +19,7 @@ use holochain_core_types::{
 };
 use snowflake;
 use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
+use crate::state::StateWrapper;
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -94,7 +95,7 @@ pub async fn build_validation_package<'a>(
             agent::state::create_new_chain_header(
                 &entry,
                 &context.state()?.agent(),
-                &state,
+                &StateWrapper::from(state),
                 &None,
                 provenances,
             )?

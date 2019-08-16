@@ -21,6 +21,7 @@ use lib3h_protocol::{
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use crate::state::StateWrapper;
 
 
 /// Send to network a request to publish a header entry alone
@@ -34,7 +35,7 @@ fn publish_header(
     let header_entry_header = create_new_chain_header(
         &header_entry,
         &root_state.agent(),
-        root_state,
+        &StateWrapper::from(root_state.clone()),
         &None,
         &Vec::new(),
     )?;

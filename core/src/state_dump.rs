@@ -6,6 +6,7 @@ use crate::network::direct_message::DirectMessage;
 use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
 use crate::context::Context;
 use std::{convert::TryInto, sync::Arc};
+use holochain_core_types::chain_header::ChainHeader;
 
 #[derive(Serialize)]
 pub struct PendingValidationDump{
@@ -22,18 +23,22 @@ pub struct StateDump {
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub pending_validations: Vec<PendingValidationDump>,
     pub held_entries: Vec<Address>,
+    pub source_chain: Vec<ChainHeader>,
 }
 
 impl From<Arc<Context>> for StateDump {
     fn from(context: Arc<Context>) -> StateDump {
-        let (nucleus, network, dht) = {
+        let (agent, nucleus, network, dht) = {
             let state_lock = context.state().expect("No state?!");
             (
+                (*state_lock.agent()).clone(),
                 (*state_lock.nucleus()).clone(),
                 (*state_lock.network()).clone(),
                 (*state_lock.dht()).clone(),
             )
         };
+
+        let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
 
         let running_calls: Vec<ZomeFnCall> = nucleus
             .zome_calls
@@ -81,7 +86,7 @@ impl From<Arc<Context>> for StateDump {
 
         StateDump {
             running_calls, query_flows, validation_package_flows, direct_message_flows,
-            pending_validations, held_entries
+            pending_validations, held_entries, source_chain
         }
     }
 }

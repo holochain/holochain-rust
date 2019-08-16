@@ -24,7 +24,7 @@ instances = []
     port = ${adminPort}
 
 [logger]
-type="warn"
+type="info"
 [[logger.rules.rules]]
 exclude = true
 pattern = ".*parity.*"
@@ -62,8 +62,8 @@ work_dir = ""
 log_level = "d"
 bind_url = "mem://${tmpPath}"
 dht_custom_config = []
-dht_timeout_threshold = 180000
-dht_gossip_interval = 300
+dht_timeout_threshold = 8000
+dht_gossip_interval = 500
 n3h_log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"

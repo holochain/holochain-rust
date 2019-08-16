@@ -350,7 +350,7 @@ scenario('my_memos_are_private', async (s, t, { alice, bob }) => {
 
 })
 
-scenario.only('agent_id_gets_gossiped_on_startup', async (s, t, { alice, bob }) => {
+scenario('agent_id_gets_gossiped_on_startup', async (s, t, { alice, bob }) => {
 
   //confirm that bob can see alices' agent id
   const alice_agent_id = await bob.app.callSync("simple", "get_entry", { "address":alice.app.agentId })

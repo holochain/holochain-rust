@@ -21,8 +21,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
     thread,
 };
-
-use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, ConductorStatInterface, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -1139,6 +1138,32 @@ impl ConductorApiBuilder {
                 Ok(json!({ "pub_key": pub_key }))
             });
 
+        self
+    }
+
+    /// This adds RPC methods to inspect resource usage of different instances
+    /// Currently implements:
+    ///
+    ///  * `stat/storage`
+    ///     Report how much storage is being consumed by a particular instance. This is dependent on the storage backend that the instance
+    ///     is using. Storage implementations are reponsible for reporting their own usage so it may not actually reflect disk space.
+    ///     Params:
+    ///     * `instance_id`: [string] The instance ID of the instance to report on
+    ///     Returns a JSON object with the following fields:
+    ///     * `instance_id`: [string] Will be the same as passed as a parameter
+    ///     * `storage_report`: A JSON object containing the sub-reports for the chain CAS, DHT CAS and EAV storages
+    ///     
+    pub fn with_stat_functions(mut self) -> Self {
+        self.io.add_method("stat/storage", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id_str = Self::get_as_string("instance_id", &params_map)?;
+            let report =
+                conductor_call!(|c| c.get_instance_storage(&instance_id_str))?;
+            Ok(json!({
+                "instance_id": instance_id_str,
+                "storage_report": report,
+            }))
+        });
         self
     }
 }

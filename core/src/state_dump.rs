@@ -38,7 +38,7 @@ impl From<Arc<Context>> for StateDump {
             )
         };
 
-        let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
+        let source_chain: Vec<ChainHeader> = agent.iter_chain().rev().collect();
 
         let running_calls: Vec<ZomeFnCall> = nucleus
             .zome_calls

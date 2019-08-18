@@ -40,6 +40,7 @@ pub fn invoke_meta(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 }
 
 #[cfg(test)]
+#[cfg(not(windows))]
 mod test_super {
     use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},

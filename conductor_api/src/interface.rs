@@ -18,8 +18,10 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex, RwLock, mpsc},
     thread,
+    thread::sleep,
+    time::Duration,
 };
 
 use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -199,9 +201,40 @@ impl ConductorApiBuilder {
                 }
             };
 
-            let response = hc
+            // setup the self-meter in another thread to monitor this one
+            let mut meter = self_meter::Meter::new(Duration::from_millis(10)).unwrap();
+            meter.track_current_thread("call");
+            meter.scan()
+                .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+
+            let (tx, rx) = mpsc::channel();
+            let monitor = thread::spawn(move || {
+                while let Err(_) = rx.try_recv() { // loop until calling thread messages that it is complete
+                    meter.scan()
+                        .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+                    sleep(meter.get_scan_interval());
+                }
+                meter // return ownership of meter back to the calling thread
+            });
+
+            let call_response = hc
                 .call(&zome_name, cap_request, &func_name, &args_string)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+
+            tx.send(()).unwrap();
+            let mut meter = monitor.join().expect("Monitor thread did not terminate successfully");
+
+            meter.scan()
+                .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+
+            let response = json!({
+                "call_response": call_response,
+                "resource_usage": json!({
+                    "global": meter.report().expect("Could not generate report"),
+                    "call_thread": meter.thread_report().expect("could not generate thread report").collect::<Vec<_>>(),
+                })
+            });
+
             Ok(Value::String(response.to_string()))
         });
     }

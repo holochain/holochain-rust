@@ -2,8 +2,9 @@ use crate::holo_signing_service::request_service;
 use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
-use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
-use holochain_core::context::Context;
+use holochain_core::{
+    context::Context, nucleus::actions::call_zome_function::make_cap_request_for_call,
+};
 
 use holochain_core_types::{
     agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
@@ -19,9 +20,8 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock, mpsc},
-    thread,
-    thread::sleep,
+    sync::{mpsc, Arc, Mutex, RwLock},
+    thread::{self, sleep},
     time::Duration,
 };
 
@@ -122,7 +122,12 @@ impl ConductorApiBuilder {
         *self.io
     }
 
-    fn get_cap_request(context: Arc<Context>, func_name: &String, params_map: &Map<String, Value>, args_string: &String) -> jsonrpc_core::Result<CapabilityRequest> {
+    fn get_cap_request(
+        context: Arc<Context>,
+        func_name: &String,
+        params_map: &Map<String, Value>,
+        args_string: &String,
+    ) -> jsonrpc_core::Result<CapabilityRequest> {
         // Get the token from the parameters.  If not there assume public token.
         let maybe_token = Self::get_as_string("token", &params_map);
         let token = match maybe_token {
@@ -144,12 +149,9 @@ impl ConductorApiBuilder {
                 JsonString::from_json(&args_string.clone()),
             ),
             Some(json_provenance) => {
-                let provenance: Provenance =
-                    serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
-                        jsonrpc_core::Error::invalid_params(format!(
-                            "invalid provenance: {}",
-                            e
-                        ))
+                let provenance: Provenance = serde_json::from_value(json_provenance.to_owned())
+                    .map_err(|e| {
+                        jsonrpc_core::Error::invalid_params(format!("invalid provenance: {}", e))
                     })?;
                 CapabilityRequest::new(token, provenance.source(), provenance.signature())
             }
@@ -157,11 +159,13 @@ impl ConductorApiBuilder {
         Ok(cap_req)
     }
 
-    fn get_call_args(params_map: &Map<String, Value>) -> jsonrpc_core::Result<(String, String, String)> {
+    fn get_call_args(
+        params_map: &Map<String, Value>,
+    ) -> jsonrpc_core::Result<(String, String, String)> {
         // Getting the arguments of the call contained in the json-rpc 'args'
         let call_args = match params_map.get("args") {
             Some(Value::Null) | None => Value::Object(Map::new()), // null or no value should be mapped to empty object
-            Some(val) => val.to_owned(), 
+            Some(val) => val.to_owned(),
         };
         let args_string = serde_json::to_string(&call_args)
             .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
@@ -193,7 +197,12 @@ impl ConductorApiBuilder {
             let mut hc = hc_lock_inner.write().unwrap();
 
             let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
-            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, &params_map, &args_string)?;
+            let cap_request = Self::get_cap_request(
+                hc.context().unwrap(),
+                &func_name,
+                &params_map,
+                &args_string,
+            )?;
 
             let response = hc
                 .call(&zome_name, cap_request, &func_name, &args_string)

@@ -122,7 +122,7 @@ impl ConductorApiBuilder {
         *self.io
     }
 
-    fn get_cap_request(context: Arc<Context>, func_name: &String, params_map: Map<String, Value>, args_string: &String) -> jsonrpc_core::Result<CapabilityRequest> {
+    fn get_cap_request(context: Arc<Context>, func_name: &String, params_map: &Map<String, Value>, args_string: &String) -> jsonrpc_core::Result<CapabilityRequest> {
         // Get the token from the parameters.  If not there assume public token.
         let maybe_token = Self::get_as_string("token", &params_map);
         let token = match maybe_token {
@@ -157,6 +157,19 @@ impl ConductorApiBuilder {
         Ok(cap_req)
     }
 
+    fn get_call_args(params_map: &Map<String, Value>) -> jsonrpc_core::Result<(String, String, String)> {
+        // Getting the arguments of the call contained in the json-rpc 'args'
+        let call_args = match params_map.get("args") {
+            Some(Value::Null) | None => Value::Object(Map::new()), // null or no value should be mapped to empty object
+            Some(val) => val.to_owned(), 
+        };
+        let args_string = serde_json::to_string(&call_args)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+        let zome_name = Self::get_as_string("zome", &params_map)?;
+        let func_name = Self::get_as_string("function", &params_map)?;
+        Ok((zome_name, func_name, args_string))
+    }
+
     /// Adds a "call" method for making zome function calls
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
@@ -165,6 +178,7 @@ impl ConductorApiBuilder {
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+
             let id = instance_ids_map
                 .get(&PublicInstanceIdentifier::from(public_id_str))
                 .ok_or(jsonrpc_core::Error::invalid_params(
@@ -173,22 +187,45 @@ impl ConductorApiBuilder {
             let instance = instances
                 .get(id)
                 .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
 
-            // Getting the arguments of the call contained in the json-rpc 'args'
-            let call_args = match params_map.get("args") {
-                Some(Value::Null) | None => Value::Object(Map::new()), // null or no value should be mapped to empty object
-                Some(val) => val.to_owned(), 
-            };
+            let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
+            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, &params_map, &args_string)?;
 
-            let args_string = serde_json::to_string(&call_args)
+            let response = hc
+                .call(&zome_name, cap_request, &func_name, &args_string)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-            let zome_name = Self::get_as_string("zome", &params_map)?;
-            let func_name = Self::get_as_string("function", &params_map)?;
 
-            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, params_map, &args_string)?;
+            Ok(Value::String(response.to_string()))
+        });
+    }
+
+    pub fn with_call_with_metrics(mut self) -> Self {
+        let instances = self.instances.clone();
+        let instance_ids_map = self.instance_ids_map.clone();
+
+        self.io.add_method("call", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+
+            let id = instance_ids_map
+                .get(&PublicInstanceIdentifier::from(public_id_str))
+                .ok_or(jsonrpc_core::Error::invalid_params(
+                    "instance identifier invalid",
+                ))?;
+            let instance = instances
+                .get(id)
+                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+
+            let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
+            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, &params_map, &args_string)?;
 
             // setup the self-meter in another thread to monitor this one
             let mut meter = self_meter::Meter::new(Duration::from_millis(100)).unwrap();
@@ -222,6 +259,7 @@ impl ConductorApiBuilder {
 
             Ok(Value::String(response.to_string()))
         });
+        self
     }
 
     /// Adds a "info/instances" method that returns a JSON object describing all registered

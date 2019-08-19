@@ -203,61 +203,70 @@ impl ConductorApiBuilder {
         });
     }
 
-    pub fn with_call_with_metrics(mut self) -> Self {
+    /// Adds a call and measure function to the conductor. This is currently only available on linux
+    #[cfg(target_os = "linux")]
+    pub fn with_call_and_measure(mut self) -> Self {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
 
-        self.io.add_method("call", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+        self.io.add_method("call_and_measure", move |params| {
+            if cfg!(target_os = "linux") {
+                let params_map = Self::unwrap_params_map(params)?;
+                let public_id_str = Self::get_as_string("instance_id", &params_map)?;
 
-            let id = instance_ids_map
-                .get(&PublicInstanceIdentifier::from(public_id_str))
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "instance identifier invalid",
-                ))?;
-            let instance = instances
-                .get(id)
-                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+                let id = instance_ids_map
+                    .get(&PublicInstanceIdentifier::from(public_id_str))
+                    .ok_or(jsonrpc_core::Error::invalid_params(
+                        "instance identifier invalid",
+                    ))?;
+                let instance = instances
+                    .get(id)
+                    .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
 
-            let hc_lock = instance.clone();
-            let hc_lock_inner = hc_lock.clone();
-            let mut hc = hc_lock_inner.write().unwrap();
+                let hc_lock = instance.clone();
+                let hc_lock_inner = hc_lock.clone();
+                let mut hc = hc_lock_inner.write().unwrap();
 
-            let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
-            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, &params_map, &args_string)?;
+                let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
+                let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, &params_map, &args_string)?;
 
-            // setup the self-meter in another thread to monitor this one
-            let mut meter = self_meter::Meter::new(Duration::from_millis(100)).unwrap();
-            meter.scan()
-                .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+                // setup the self-meter in another thread to monitor this one
+                let mut meter = self_meter::Meter::new(Duration::from_millis(100)).unwrap();
+                meter.scan()
+                    .map_err(|e| eprintln!("Scan error: {}", e)).ok();
 
-            let (tx, rx) = mpsc::channel();
-            let monitor = thread::spawn(move || {
-                while let Err(_) = rx.try_recv() { // loop until calling thread messages that it is complete
-                    meter.scan()
-                        .map_err(|e| eprintln!("Scan error: {}", e)).ok();
-                    sleep(meter.get_scan_interval());
-                }
-                meter // return ownership of meter back to the calling thread
-            });
+                let (tx, rx) = mpsc::channel();
+                let monitor = thread::spawn(move || {
+                    while let Err(_) = rx.try_recv() { // loop until calling thread messages that it is complete
+                        meter.scan()
+                            .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+                        sleep(meter.get_scan_interval());
+                    }
+                    meter // return ownership of meter back to the calling thread
+                });
 
-            let call_response = hc
-                .call(&zome_name, cap_request, &func_name, &args_string)
-                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                let call_response = hc
+                    .call(&zome_name, cap_request, &func_name, &args_string)
+                    .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
-            tx.send(()).unwrap();
-            let mut meter = monitor.join().expect("Monitor thread did not terminate successfully");
+                tx.send(()).unwrap();
+                let mut meter = monitor.join().expect("Monitor thread did not terminate successfully");
 
-            meter.scan()
-                .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+                meter.scan()
+                    .map_err(|e| eprintln!("Scan error: {}", e)).ok();
 
-            let response = json!({
-                "call_response": call_response,
-                "resource_usage": meter.report().expect("Could not generate report"),
-            });
+                let response = json!({
+                    "call_response": call_response,
+                    "resource_usage": meter.report().expect("Could not generate report"),
+                });
 
-            Ok(Value::String(response.to_string()))
+                Ok(Value::String(response.to_string()))
+            } else {
+                Err(jsonrpc_core::Error::invalid_params_with_details(
+                    "'call_and_measure' not available on current OS. Only linux is supported at this time".to_string(),
+                    "".to_string(),
+                ))
+            }
         });
         self
     }

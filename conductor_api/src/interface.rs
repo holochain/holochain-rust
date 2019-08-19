@@ -3,6 +3,7 @@ use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
+use holochain_core::context::Context;
 
 use holochain_core_types::{
     agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
@@ -121,13 +122,45 @@ impl ConductorApiBuilder {
         *self.io
     }
 
+    fn get_cap_request(context: Arc<Context>, func_name: &String, params_map: Map<String, Value>, args_string: &String) -> jsonrpc_core::Result<CapabilityRequest> {
+        // Get the token from the parameters.  If not there assume public token.
+        let maybe_token = Self::get_as_string("token", &params_map);
+        let token = match maybe_token {
+            Err(_err) => context.get_public_token().map_err(|err| {
+                jsonrpc_core::Error::invalid_params(format!(
+                    "Public token not found: {}",
+                    err.to_string()
+                ))
+            })?,
+            Ok(token) => Address::from(token),
+        };
+
+        let maybe_provenance = params_map.get("provenance");
+        let cap_req = match maybe_provenance {
+            None => make_cap_request_for_call(
+                context.clone(),
+                token,
+                &func_name,
+                JsonString::from_json(&args_string.clone()),
+            ),
+            Some(json_provenance) => {
+                let provenance: Provenance =
+                    serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
+                        jsonrpc_core::Error::invalid_params(format!(
+                            "invalid provenance: {}",
+                            e
+                        ))
+                    })?;
+                CapabilityRequest::new(token, provenance.source(), provenance.signature())
+            }
+        };
+        Ok(cap_req)
+    }
+
     /// Adds a "call" method for making zome function calls
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
-
-        // We need to place this one here in order to avoid compiler lifetime issue
-        let default_call_args = json!({});
 
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
@@ -144,66 +177,21 @@ impl ConductorApiBuilder {
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
 
+            // Getting the arguments of the call contained in the json-rpc 'args'
+            let call_args = match params_map.get("args") {
+                Some(Value::Null) | None => Value::Object(Map::new()), // null or no value should be mapped to empty object
+                Some(val) => val.to_owned(), 
+            };
 
-            // Getting the arguments of the call contained in the json-rpc 'params'
-            let mut call_args = params_map.get("args").or_else(|| {
-                // TODO: Remove this fall back to the previous impl of inner 'params'
-                // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
-                let _ = hc.context().map(|context|
-                    log_warn!(context, "interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
-                    Please switch to 'args' instead, as 'params' will soon be phased out."));
-                params_map.get("params")
-            });
-
-            // For a consistent error behavior, we check if the passed value is 'null',
-            // which triggers an error, and fallback as if an empty object was passed instead '{}'
-            if json!(null) == *call_args.unwrap_or(&default_call_args) {
-                call_args = Some(&default_call_args);
-            }
             let args_string = serde_json::to_string(&call_args)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             let zome_name = Self::get_as_string("zome", &params_map)?;
             let func_name = Self::get_as_string("function", &params_map)?;
 
-            let cap_request = {
-                let context = hc.context()
-                    .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
-                // Get the token from the parameters.  If not there assume public token.
-                let maybe_token = Self::get_as_string("token", &params_map);
-                let token = match maybe_token {
-                    Err(_err) => context.get_public_token().map_err(|err| {
-                        jsonrpc_core::Error::invalid_params(format!(
-                            "Public token not found: {}",
-                            err.to_string()
-                        ))
-                    })?,
-                    Ok(token) => Address::from(token),
-                };
-
-                let maybe_provenance = params_map.get("provenance");
-                match maybe_provenance {
-                    None => make_cap_request_for_call(
-                        context.clone(),
-                        token,
-                        &func_name,
-                        JsonString::from_json(&args_string.clone()),
-                    ),
-                    Some(json_provenance) => {
-                        let provenance: Provenance =
-                            serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
-                                jsonrpc_core::Error::invalid_params(format!(
-                                    "invalid provenance: {}",
-                                    e
-                                ))
-                            })?;
-                        CapabilityRequest::new(token, provenance.source(), provenance.signature())
-                    }
-                }
-            };
+            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, params_map, &args_string)?;
 
             // setup the self-meter in another thread to monitor this one
-            let mut meter = self_meter::Meter::new(Duration::from_millis(10)).unwrap();
-            meter.track_current_thread("call");
+            let mut meter = self_meter::Meter::new(Duration::from_millis(100)).unwrap();
             meter.scan()
                 .map_err(|e| eprintln!("Scan error: {}", e)).ok();
 
@@ -229,10 +217,7 @@ impl ConductorApiBuilder {
 
             let response = json!({
                 "call_response": call_response,
-                "resource_usage": json!({
-                    "global": meter.report().expect("Could not generate report"),
-                    "call_thread": meter.thread_report().expect("could not generate thread report").collect::<Vec<_>>(),
-                })
+                "resource_usage": meter.report().expect("Could not generate report"),
             });
 
             Ok(Value::String(response.to_string()))

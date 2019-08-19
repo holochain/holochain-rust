@@ -43,6 +43,8 @@ crossbeam-channel = "=0.3.8"
 log = "=0.4.8"
 logging = { path = "../logging" }
 nickel = "=0.11.0"
+
+[target.'cfg(target_os = "linux")'.dependencies]
 self-meter = "=0.6.0"
 
 [dev-dependencies]

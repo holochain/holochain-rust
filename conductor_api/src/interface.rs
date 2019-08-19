@@ -718,10 +718,8 @@ impl ConductorApiBuilder {
     /// Adds functions useful for debugging.
     ///
     /// - `debug/running_instances`
-    ///     Install a UI bundle that can later be hosted by an interface
-    ///     Params:
-    ///     - `id` ID used to refer to this bundle
-    ///     - `root_dir` Directory to host on the HTTP server
+    ///     Get all currently running instances.
+    ///     Returns an array of instance ID strings.
     ///
     /// - `debug/state_dump`
     ///   Returns a JSON object with all relevant fields of an instance's state.

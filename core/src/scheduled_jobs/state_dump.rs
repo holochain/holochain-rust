@@ -1,132 +1,94 @@
-use crate::{
-    action::{QueryKey},
-    context::Context,
-    network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall,
-};
-use holochain_core_types::{entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::{convert::TryInto, sync::Arc};
+use crate::context::Context;
+use std::sync::Arc;
+use crate::state_dump::{StateDump, address_to_content_and_type};
+use holochain_core_types::chain_header::ChainHeader;
+use holochain_persistence_api::cas::content::{AddressableContent, Address};
 
-fn address_to_content_and_type(
-    address: &Address,
-    context: Arc<Context>,
-) -> Result<(String, String), HolochainError> {
-    let raw_content = context.dht_storage.read()?.fetch(address)??;
-    let maybe_entry: Result<Entry, _> = raw_content.clone().try_into();
-    if let Ok(entry) = maybe_entry {
-        let mut entry_type = entry.entry_type().to_string();
-        let content = match entry {
-            Entry::Dna(_) => String::from("DNA omitted"),
-            Entry::AgentId(agent_id) => agent_id.nick,
-            Entry::LinkAdd(link) | Entry::LinkRemove((link, _)) => format!(
-                "({}#{})\n\t{} => {}",
-                link.link.link_type(),
-                link.link.tag(),
-                link.link.base(),
-                link.link.target(),
-            ),
-            Entry::App(app_type, app_value) => {
-                entry_type = app_type.to_string();
-                app_value.to_string()
-            }
-            _ => entry.content().to_string(),
-        };
-        Ok((entry_type, content))
-    } else {
-        Ok((String::from("UNKNOWN"), raw_content.to_string()))
-    }
+fn header_to_string(h: &ChainHeader) -> String {
+    format!(
+r#"===========Header===========
+Type: {:?}
+Timestamp: {}
+Sources: {:?}
+Header address: {}
+Prev. address: {:?}
+----------Content----------"#,
+    h.entry_type(),
+    h.timestamp(),
+    h.provenances()
+        .iter()
+        .map(|p| p.source().to_string())
+        .collect::<Vec<String>>()
+        .join(", "),
+    h.address(),
+    h.link().map(|l| l.to_string()))
+}
+
+fn address_to_content_string(address: &Address, context: Arc<Context>) -> String {
+    let maybe_content = address_to_content_and_type(address, context.clone());
+    maybe_content
+        .map(|(content_type, content)| {
+            format!("* [{}] {}: {}", content_type, address.to_string(), content)
+        })
+        .unwrap_or_else(|err| {
+            format!(
+                "* [UNKNOWN] {}: Error trying to get type/content: {}",
+                address.to_string(),
+                err
+            )
+        })
 }
 
 pub fn state_dump(context: Arc<Context>) {
-    let (nucleus, network, dht) = {
-        let state_lock = context.state().expect("No state?!");
-        (
-            (*state_lock.nucleus()).clone(),
-            (*state_lock.network()).clone(),
-            (*state_lock.dht()).clone(),
-        )
-    };
+    let dump = StateDump::from(context.clone());
 
-    let running_calls: Vec<ZomeFnCall> = nucleus
-        .zome_calls
-        .into_iter()
-        .filter(|(_, result)| result.is_none())
-        .map(|(call, _)| call)
-        .collect();
-
-    let query_flows: Vec<QueryKey> = network
-        .get_query_results
-        //using iter so that we don't copy this again and again if it is a scheduled job that runs everytime
-        //it might be slow if copied
+    let pending_validation_strings = dump.pending_validations
         .iter()
-        .filter(|(_,result)|result.is_none())
-        .map(|(key,_)|key.clone())
-        .collect();
-
-
-    let validation_package_flows: Vec<Address> = network
-        .get_validation_package_results
-        .into_iter()
-        .filter(|(_, result)| result.is_none())
-        .map(|(address, _)| address)
-        .collect();
-
-    let direct_message_flows: Vec<(String, DirectMessage)> = network
-        .direct_message_connections
-        .into_iter()
-        .map(|(s, dm)| (s.clone(), dm.clone()))
-        .collect();
-
-    let pending_validation_strings = nucleus
-        .pending_validations
-        .keys()
-        .map(|pending_validation_key| {
+        .map(|pending_validation| {
             let maybe_content =
-                address_to_content_and_type(&pending_validation_key.address, context.clone());
+                address_to_content_and_type(&pending_validation.address, context.clone());
             maybe_content
                 .map(|(content_type, content)| {
                     format!(
                         "<{}> [{}] {}: {}",
-                        pending_validation_key.workflow.to_string(),
+                        pending_validation.workflow.to_string(),
                         content_type,
-                        pending_validation_key.address.to_string(),
+                        pending_validation.address.to_string(),
                         content
                     )
                 })
                 .unwrap_or_else(|err| {
                     format!(
                         "<{}> [UNKNOWN] {}: Error trying to get type/content: {}",
-                        pending_validation_key.workflow.to_string(),
-                        pending_validation_key.address.to_string(),
+                        pending_validation.workflow.to_string(),
+                        pending_validation.address.to_string(),
                         err
                     )
                 })
         })
         .collect::<Vec<String>>();
 
-    let holding_strings = dht
-        .get_all_held_entry_addresses()
+    let holding_strings = dump.held_entries
         .iter()
-        .map(|address| {
-            let maybe_content = address_to_content_and_type(address, context.clone());
-            maybe_content
-                .map(|(content_type, content)| {
-                    format!("* [{}] {}: {}", content_type, address.to_string(), content)
-                })
-                .unwrap_or_else(|err| {
-                    format!(
-                        "* [UNKNOWN] {}: Error trying to get type/content: {}",
-                        address.to_string(),
-                        err
-                    )
-                })
-        })
+        .map(|address| address_to_content_string(address, context.clone()))
+        .collect::<Vec<String>>();
+
+    let source_chain_strings = dump.source_chain
+        .iter()
+        .map(|h| format!(
+            "{}\n=> {}",
+            header_to_string(h),
+            address_to_content_string(h.entry_address(), context.clone())
+        ))
         .collect::<Vec<String>>();
 
     let debug_dump = format!(
         r#"
 =============STATE DUMP===============
+Agent's Source Chain:
+========
+
+{source_chain}
 
 Nucleus:
 ========
@@ -150,11 +112,12 @@ Holding:
 {holding_list}
 --------
     "#,
-        calls = running_calls,
+        source_chain = source_chain_strings.join("\n\n"),
+        calls = dump.running_calls,
         validations = pending_validation_strings.join("\n"),
-        flows = query_flows,
-        validation_packages = validation_package_flows,
-        direct_messages = direct_message_flows,
+        flows = dump.query_flows,
+        validation_packages = dump.validation_package_flows,
+        direct_messages = dump.direct_message_flows,
         holding_list = holding_strings.join("\n")
     );
 

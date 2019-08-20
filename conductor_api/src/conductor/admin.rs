@@ -48,6 +48,7 @@ pub trait ConductorAdmin {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError>;
     fn remove_instance_from_interface(
         &mut self,
@@ -301,6 +302,7 @@ impl ConductorAdmin for Conductor {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -327,7 +329,7 @@ impl ConductorAdmin for Conductor {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
                         id: instance_id.clone(),
-                        alias: None,
+                        alias: alias.clone()
                     });
                 }
                 interface

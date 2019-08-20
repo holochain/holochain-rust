@@ -173,13 +173,13 @@ enum Cli {
         #[structopt(
             long,
             short,
-            help = "Set passphrase via argument and don't prompt for it"
+            help = "Set passphrase via argument and don't prompt for it (not reccomended)"
         )]
         passphrase: Option<String>,
         #[structopt(
             long,
             short,
-            help = "Provide base64 encoded root seed to derive device seed from"
+            help = "Set root seed via argument and don't prompt for it (not reccomended). Base64 or BIP39 mnemonic encoded root seed to derive device seed from"
         )]
         root_seed: Option<String>,
         #[structopt(
@@ -189,6 +189,12 @@ enum Cli {
         )]
         device_derivation_index: Option<u64>,
     },
+    #[structopt(
+        name = "dpki-init",
+        alias = "d",
+        about = "Generates a new DPKI root seed, encrypts it with the provided passphrase and outputs the encrypted key as a BIP39 mnemonic"
+    )]
+    DpkiInit,
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
         #[structopt(name = "INSTANCE", help = "Instance ID to view")]
@@ -290,9 +296,8 @@ fn run() -> HolochainResult<()> {
             root_seed,
             device_derivation_index,
         } => {
-            if root_seed.is_some() !=device_derivation_index.is_some()
-            {
-                return Err(HolochainError::Default(format_err!("'root_seed' and 'device_derivation_index' have to be set together")));
+            if !device_derivation_index.is_some() && root_seed.is_some() {
+                return Err(HolochainError::Default(format_err!("A device derivation index must be provided to generate key from root seed")));
             }
 
             let passphrase = passphrase.or_else(|| {
@@ -302,6 +307,7 @@ fn run() -> HolochainResult<()> {
                     None
                 }
             });
+            
             cli::keygen(
                 path,
                 passphrase,
@@ -310,7 +316,13 @@ fn run() -> HolochainResult<()> {
                 device_derivation_index,
             )
             .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
-        }
+        },
+
+        Cli::DpkiInit => {
+            cli::dpki_init()
+                .map(|mnemonic| println!("{}", mnemonic))
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
+        },
 
         Cli::ChainLog {
             instance_id,

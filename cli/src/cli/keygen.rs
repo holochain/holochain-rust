@@ -1,10 +1,14 @@
+use holochain_core_types::error::{HcResult, HolochainError};
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_api::{
     key_loaders::mock_passphrase_manager,
     keystore::{Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_dpki::{utils::SeedContext, CONTEXT_SIZE, SEED_SIZE};
+use holochain_dpki::{
+    utils::SeedContext, CONTEXT_SIZE, SEED_SIZE, 
+    seed::{RootSeed, Seed, SeedType, TypedSeed},
+};
 use lib3h_sodium::secbuf::SecBuf;
 use rpassword;
 use std::{
@@ -13,6 +17,33 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+
+/// If a root seed is passed then decode it from either Base64 or BIP39
+/// If not then securely prompt the user for the seed then attempt to decode
+fn get_root_seed(root_seed: Option<String>, quiet: bool) -> HcResult<RootSeed> {
+    let seed_string = root_seed.unwrap_or_else(|| {
+        print!("Root seed: ");
+        io::stdout().flush().expect("Could not flush stdout");
+        let seed_str_1 = rpassword::read_password().expect("Could not read seed from STDIN");
+        print!("Re-enter root seed: ");
+        io::stdout().flush().expect("Could not flush stdout");
+        let seed_str_2 = rpassword::read_password().expect("Could not read seed from STDIN");
+        if seed_str_1 != seed_str_2 {
+            panic!("Root seeds do not match. Aborting");
+        }
+        seed_str_1
+    });
+
+    // try and parse the seed from string
+    let root_seed = Seed::new_with_mnemonic(seed_string, SeedType::Root)?;
+
+    // TODO: prompt for seed encryption passphrase and decrypt encrypted root seed
+    
+    match root_seed.into_typed()? {
+        TypedSeed::Root(inner_root_seed) => Ok(inner_root_seed),
+        _ => unreachable!()
+    }
+}
 
 pub fn keygen(
     path: Option<PathBuf>,
@@ -133,7 +164,6 @@ pub mod test {
             Some(path.clone()),
             Some(passphrase.clone()),
             true,
-            None,
             None,
             None
         ).expect("Keygen should work");

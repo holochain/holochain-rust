@@ -420,7 +420,7 @@ mod tests {
         assert!(bundle.is_same(&mut unblob));
 
         // Test with wrong passphrase
-        TEST_CRYPTO.randombytes_buf(&mut passphrase);
+        TEST_CRYPTO.randombytes_buf(&mut passphrase).expect("should work");
         let maybe_unblob = KeyBundle::from_blob(&blob, &mut passphrase);
         assert!(maybe_unblob.is_err());
     }
@@ -446,7 +446,7 @@ mod tests {
         assert_eq!(unblob.public(), signing_key.public());
 
         // Test with wrong passphrase
-        TEST_CRYPTO.randombytes_buf(&mut passphrase);
+        TEST_CRYPTO.randombytes_buf(&mut passphrase).expect("should work");
         let maybe_unblob = SigningKeyPair::from_blob(&blob, &mut passphrase);
         assert!(maybe_unblob.is_err());
     }
@@ -472,7 +472,7 @@ mod tests {
         assert_eq!(unblob.public(), enc_key.public());
 
         // Test with wrong passphrase
-        TEST_CRYPTO.randombytes_buf(&mut passphrase);
+        TEST_CRYPTO.randombytes_buf(&mut passphrase).expect("should work");
         let maybe_unblob = EncryptingKeyPair::from_blob(&blob, &mut passphrase);
         assert!(maybe_unblob.is_err());
     }
@@ -480,7 +480,7 @@ mod tests {
     #[test]
     fn it_should_blob_seed() {
         let mut passphrase = generate_random_seed_buf();
-        let mut seed_buf = generate_random_seed_buf();
+        let seed_buf = generate_random_seed_buf();
         let mut initial_seed = Seed::new(seed_buf, SeedType::Root);
 
         let blob = initial_seed
@@ -495,7 +495,7 @@ mod tests {
     #[test]
     fn it_should_blob_device_pin_seed() {
         let mut passphrase = generate_random_seed_buf();
-        let mut seed_buf = generate_random_seed_buf();
+        let seed_buf = generate_random_seed_buf();
         let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf);
 
         let blob = initial_device_pin_seed
@@ -504,7 +504,7 @@ mod tests {
             .unwrap();
 
         let seed = Seed::from_blob(&blob, &mut passphrase).unwrap();
-        let mut typed_seed = seed.into_typed().unwrap();
+        let typed_seed = seed.into_typed().unwrap();
 
         match typed_seed {
             TypedSeed::DevicePin(mut device_pin_seed) => {

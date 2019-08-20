@@ -189,7 +189,7 @@ pub mod tests {
     #[test]
     fn it_should_hcid_roundtrip() {
         let mut pub_sec_buf = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.sign_public_key_bytes());
-        TEST_CRYPTO.randombytes_buf(&mut pub_sec_buf);
+        TEST_CRYPTO.randombytes_buf(&mut pub_sec_buf).expect("should work");
 
         let codec = HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with_hcs0");
         let pub_key_b32 = encode_pub_key(&mut pub_sec_buf, &codec).unwrap();
@@ -205,7 +205,7 @@ pub mod tests {
         let codec = HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with_hcs0");
         // Create random seed
         let mut seed = TEST_CRYPTO.buf_new_insecure(SEED_SIZE);
-        TEST_CRYPTO.randombytes_buf(&mut seed);
+        TEST_CRYPTO.randombytes_buf(&mut seed).expect("should work");
         // Create keys
         let mut public_key = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.sign_public_key_bytes());
         let mut secret_key = TEST_CRYPTO.buf_new_secure(TEST_CRYPTO.sign_secret_key_bytes());
@@ -215,7 +215,7 @@ pub mod tests {
         let pub_key_b32 = encode_pub_key(&mut public_key, &codec).unwrap();
         // Create signing buffers
         let mut message = TEST_CRYPTO.buf_new_insecure(42);
-        TEST_CRYPTO.randombytes_buf(&mut message);
+        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
         let mut signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
         TEST_CRYPTO
             .sign(&mut message, &mut secret_key, &mut signature)

@@ -112,7 +112,7 @@ pub(crate) mod tests {
 
         let data = data.read_lock();
         let decrypted_data = decrypted_data.read_lock();
-        assert_eq!(format!("{:?}", *decrypted_data), format!("{:?}", *data));
+        assert_eq!(format!("{:?}", decrypted_data), format!("{:?}", data));
     }
 
     #[test]
@@ -126,11 +126,11 @@ pub(crate) mod tests {
             let pw2_hash = hashed_password.read_lock();
             assert_eq!(
                 "[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",
-                format!("{:?}", *pw2_hash),
+                format!("{:?}", pw2_hash),
             );
         }
         // hash with different salt should have different result
-        TEST_CRYPTO.randombytes_buf(&mut salt);
+        TEST_CRYPTO.randombytes_buf(&mut salt).expect("should work");
         let mut hashed_password_b = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
         pw_hash(&mut password, &mut salt, &mut hashed_password_b).unwrap();
         assert!(hashed_password.compare(&mut hashed_password_b) != 0);

@@ -304,7 +304,7 @@ mod tests {
 
         // Create random data
         let mut message = TEST_CRYPTO.buf_new_insecure(16);
-        TEST_CRYPTO.randombytes_buf(&mut message);
+        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
 
         // sign it
         let mut signature = sign_keys.sign(&mut message).unwrap();
@@ -315,13 +315,13 @@ mod tests {
 
         // Create random data
         let mut random_signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
-        TEST_CRYPTO.randombytes_buf(&mut random_signature);
+        TEST_CRYPTO.randombytes_buf(&mut random_signature).expect("should work");
         // authentify random signature
         let succeeded = sign_keys.verify(&mut message, &mut random_signature);
         assert_eq!(succeeded, Ok(false));
 
         // Randomize data again
-        TEST_CRYPTO.randombytes_buf(&mut message);
+        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
         let succeeded = sign_keys.verify(&mut message, &mut signature);
         assert_eq!(succeeded, Ok(false));
     }

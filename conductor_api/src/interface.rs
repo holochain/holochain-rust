@@ -7,7 +7,6 @@ use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_c
 use holochain_core_types::{
     agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
-use holochain_dpki::key_bundle::KeyBundle;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
@@ -27,7 +26,10 @@ use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
-use holochain_dpki::utils::SeedContext;
+use holochain_dpki::{
+    key_bundle::KeyBundle;
+    utils::{SeedContext, secbuf_from_array, secbuf_new_insecure_from_string};
+};
 use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
@@ -858,7 +860,7 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = secbuf_new_insecure_from_string(payload.clone());
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -882,7 +884,7 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = secbuf_new_insecure_from_string(payload.clone());
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -908,9 +910,8 @@ impl ConductorApiBuilder {
             //decoded base64 string
             let decoded_message = base64::decode(&payload)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
-            let mut decoded_message_buf = SecBuf::with_insecure(decoded_message.len());
-            decoded_message_buf
-                .from_array(&decoded_message)
+            let mut decoded_message_buf = CRYPTO.buf_new_insecure(decoded_message.len());
+            secbuf_from_array(&mut decoded_message_buf, &decoded_message)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:

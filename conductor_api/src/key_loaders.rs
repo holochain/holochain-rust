@@ -4,7 +4,7 @@ use crate::{
 };
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceMock};
 use holochain_core_types::error::HolochainError;
-use holochain_dpki::{password_encryption::PwHashConfig, SEED_SIZE};
+use holochain_dpki::{secbuf_new_insecure_from_string, SEED_SIZE};
 use keystore::test_hash_config;
 use lib3h_sodium::{hash::sha256, secbuf::SecBuf};
 use std::{
@@ -42,8 +42,8 @@ pub fn test_keystore(agent_name: &String) -> Keystore {
     .unwrap();
 
     // Create seed from name
-    let mut name = SecBuf::with_insecure_from_string(agent_name.clone());
-    let mut seed = SecBuf::with_insecure(SEED_SIZE);
+    let mut name = secbuf_new_insecure_from_string(agent_name.clone());
+    let mut seed = CRYPTO.buf_new_insecure(SEED_SIZE);
     sha256(&mut name, &mut seed).expect("Could not hash test agent name");
 
     let secret = Arc::new(Mutex::new(Secret::Seed(seed)));

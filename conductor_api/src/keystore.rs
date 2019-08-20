@@ -10,7 +10,7 @@ use holochain_dpki::{
     seed::Seed,
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
-        generate_random_buf, SeedContext,
+        generate_random_buf, SeedContext, secbuf_new_insecure_from_string
     },
     SEED_SIZE,
 };
@@ -107,8 +107,8 @@ fn make_passphrase_check(
     passphrase: &mut SecBuf,
     hash_config: Option<PwHashConfig>,
 ) -> HcResult<String> {
-    let mut check_buf = SecBuf::with_secure(PCHECK_SIZE);
-    check_buf.randomize();
+    let mut check_buf = CRYPTO.buf_new_secure(PCHECK_SIZE);
+    CRYPTO.randombytes_buf(&mut check_buf);
     check_buf.write(0, &PCHECK_HEADER).unwrap();
     encrypt_with_passphrase_buf(&mut check_buf, passphrase, hash_config)
 }
@@ -171,10 +171,10 @@ impl Keystore {
             self.hash_config.clone(),
             PCHECK_SIZE,
         )?;
-        let mut decrypted_header = SecBuf::with_insecure(PCHECK_HEADER_SIZE);
+        let mut decrypted_header = CRYPTO.buf_new_insecure(PCHECK_HEADER_SIZE);
         let decrypted_buf = decrypted_buf.read_lock();
         decrypted_header.write(0, &decrypted_buf[0..PCHECK_HEADER_SIZE])?;
-        let mut expected_header = SecBuf::with_secure(PCHECK_HEADER_SIZE);
+        let mut expected_header = CRYPTO.buf_new_secure(PCHECK_HEADER_SIZE);
         expected_header.write(0, &PCHECK_HEADER)?;
         Ok(decrypted_header.compare(&mut expected_header) == 0)
     }
@@ -230,7 +230,7 @@ impl Keystore {
             .ok_or(HolochainError::new("Secret not found"))?;
 
         let mut default_passphrase =
-            SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
+            secbuf_new_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
 
         let maybe_secret = if Ok(true) == self.check_passphrase(&mut default_passphrase) {
             self.inner_decrypt(blob, default_passphrase)
@@ -259,7 +259,7 @@ impl Keystore {
         self.check_passphrase(&mut passphrase)?;
         let blob = match *secret.lock()? {
             Secret::Seed(ref mut buf) => {
-                let mut owned_buf = SecBuf::with_insecure(buf.len());
+                let mut owned_buf = CRYPTO.buf_new_insecure(buf.len());
                 owned_buf.write(0, &*buf.read_lock())?;
                 Seed::new(owned_buf, SeedType::OneShot).as_blob(
                     &mut passphrase,
@@ -514,7 +514,7 @@ impl Keystore {
         let mut src_secret = src_secret.lock().unwrap();
         match *src_secret {
             Secret::SigningKey(ref mut key_pair) => {
-                let mut data_buf = SecBuf::with_insecure_from_string(data);
+                let mut data_buf = secbuf_new_insecure_from_string(data);
 
                 let mut signature_buf = key_pair.sign(&mut data_buf)?;
                 let buf = signature_buf.read_lock();
@@ -567,7 +567,7 @@ pub mod tests {
     fn test_keystore_new() {
         let random_passphrase = random_test_passphrase();
         let keystore = new_test_keystore(random_passphrase.clone());
-        let mut random_passphrase = SecBuf::with_insecure_from_string(random_passphrase);
+        let mut random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
         assert!(keystore.list().is_empty());
         assert_eq!(keystore.check_passphrase(&mut random_passphrase), Ok(true));
         let mut another_random_passphrase = utils::generate_random_buf(10);
@@ -621,7 +621,7 @@ pub mod tests {
     fn test_keystore_change_passphrase() {
         let random_passphrase = random_test_passphrase();
         let mut keystore = new_test_keystore(random_passphrase.clone());
-        let mut random_passphrase = SecBuf::with_insecure_from_string(random_passphrase);
+        let mut random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
         let mut another_random_passphrase = utils::generate_random_buf(10);
         assert!(
             // wrong passphrase

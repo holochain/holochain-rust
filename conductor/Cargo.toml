@@ -6,7 +6,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 holochain_core_types = { path = "../core_types" }
 holochain_conductor_api = { path = "../conductor_api" }
-lib3h_sodium = "=0.0.10"
+lib3h_sodium = { path = "/home/eric/code/metacurrency/holochain/lib3h/crates/sodium" }
 holochain_common = { path = "../common" }
 signal-hook = "=0.1.9"
 structopt = "=0.2.15"

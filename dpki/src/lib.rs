@@ -11,11 +11,18 @@ pub const SEED_SIZE: usize = 32;
 pub const AGENT_ID_CTX: [u8; 8] = *b"HCAGNTID";
 pub(crate) const SIGNATURE_SIZE: usize = 64;
 
+pub type SecBuf = Box<dyn Buffer>;
+
+use lib3h_crypto_api::{Buffer, CryptoSystem};
+use lib3h_sodium::SodiumCryptoSystem;
+
 lazy_static! {
     pub static ref CODEC_HCS0: hcid::HcidEncoding =
         hcid::HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with hcs0.");
     pub static ref CODEC_HCK0: hcid::HcidEncoding =
         hcid::HcidEncoding::with_kind("hck0").expect("HCID failed miserably with_hck0.");
+    pub static ref CRYPTO: Box<dyn CryptoSystem> =
+        Box::new(SodiumCryptoSystem::new().set_pwhash_interactive());
 }
 
 pub mod key_blob;

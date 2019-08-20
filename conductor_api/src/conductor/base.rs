@@ -1,4 +1,4 @@
-use crate::{
+puse crate::{
     conductor::broadcaster::Broadcaster,
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
@@ -1418,7 +1418,7 @@ pub mod tests {
         .unwrap();
 
         // Create deterministic seed
-        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        let mut seed = CRYPTO.buf_new_insecure(SEED_SIZE);
         let mock_seed: Vec<u8> = (1..SEED_SIZE).map(|e| e as u8 + index).collect();
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");

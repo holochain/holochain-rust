@@ -1,12 +1,11 @@
 use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
-    utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, SEED_SIZE,
+    utils::{secbuf_from_array, generate_derived_seed_buf, SeedContext},
+    SecBuf, AGENT_ID_CTX, CRYPTO, SEED_SIZE,
 };
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
-use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
 use std::str;
 
@@ -84,8 +83,8 @@ impl Seed {
 
         let entropy = mnemonic.entropy().to_owned();
         assert_eq!(entropy.len(), SEED_SIZE);
-        let mut seed_buf = SecBuf::with_secure(entropy.len());
-        seed_buf.from_array(entropy.as_slice())?;
+        let mut seed_buf = CRYPTO.buf_new_secure(entropy.len());
+        secbuf_from_array(&mut seed_buf, entropy.as_slice())?;
         // Done
         Ok(Seed {
             kind: seed_type,
@@ -195,13 +194,9 @@ impl DeviceSeed {
     /// generate a device pin seed by applying pwhash of pin with this seed as the salt
     /// @param {string} pin - should be >= 4 characters 1-9
     /// @return {DevicePinSeed} Resulting Device Pin Seed
-    pub fn generate_device_pin_seed(
-        &mut self,
-        pin: &mut SecBuf,
-        config: Option<PwHashConfig>,
-    ) -> HcResult<DevicePinSeed> {
-        let mut hash = SecBuf::with_secure(pwhash::HASHBYTES);
-        pw_hash(pin, &mut self.inner.buf, &mut hash, config)?;
+    pub fn generate_device_pin_seed(&mut self, pin: &mut SecBuf) -> HcResult<DevicePinSeed> {
+        let mut hash = CRYPTO.buf_new_secure(CRYPTO.pwhash_bytes());
+        pw_hash(pin, &mut self.inner.buf, &mut hash)?;
         Ok(DevicePinSeed::new(hash))
     }
 }
@@ -239,10 +234,10 @@ impl DevicePinSeed {
         if index == 0 {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
-        let mut dna_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let mut dna_seed_buf = CRYPTO.buf_new_secure(SEED_SIZE);
         let context = SeedContext::new(AGENT_ID_CTX);
         let mut context = context.to_sec_buf();
-        kdf::derive(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
+        CRYPTO.kdf(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
         Ok(KeyBundle::new_from_seed_buf(&mut dna_seed_buf)?)
     }
@@ -256,7 +251,6 @@ impl DevicePinSeed {
 mod tests {
     use super::*;
     use crate::{
-        password_encryption::tests::TEST_CONFIG,
         utils::{self, generate_random_seed_buf},
         SEED_SIZE,
     };
@@ -311,9 +305,7 @@ mod tests {
         let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
         let mut device_seed = root_seed.generate_device_seed(&context, 3).unwrap();
-        let device_pin_seed = device_seed
-            .generate_device_pin_seed(&mut pin, TEST_CONFIG)
-            .unwrap();
+        let device_pin_seed = device_seed.generate_device_pin_seed(&mut pin).unwrap();
         assert_eq!(SeedType::DevicePin, device_pin_seed.seed().kind);
     }
 
@@ -325,7 +317,7 @@ mod tests {
         let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
         let mut ds = rs.generate_device_seed(&context, 3).unwrap();
-        let mut dps = ds.generate_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
+        let mut dps = ds.generate_device_pin_seed(&mut pin).unwrap();
         let mut keybundle_5 = dps.generate_dna_key(5).unwrap();
 
         assert_eq!(crate::SIGNATURE_SIZE, keybundle_5.sign_keys.private.len());
@@ -342,7 +334,7 @@ mod tests {
 
     #[test]
     fn it_should_roundtrip_mnemonic() {
-        let mut seed_buf = SecBuf::with_insecure(SEED_SIZE);
+        let mut seed_buf = CRYPTO.buf_new_insecure(SEED_SIZE);
         {
             let mut seed_buf = seed_buf.write_lock();
             seed_buf[0] = 12;

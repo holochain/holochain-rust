@@ -6,9 +6,10 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_dpki::{
     key_bundle::KeyBundle,
+    utils::{secbuf_from_array,secbuf_new_insecure_from_string},
     SEED_SIZE,
+    SecBuf,
 };
-use lib3h_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use std::{
     collections::HashMap,
@@ -23,7 +24,7 @@ lazy_static! {
 pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
     let nick = nick.into();
     // Create deterministic seed from nick:
-    let mut seed = SecBuf::with_insecure(SEED_SIZE);
+    let mut seed = CRYPTO.buf_new_insecure(SEED_SIZE);
     let nick_bytes = nick.as_bytes();
     let seed_bytes: Vec<u8> = (1..SEED_SIZE).map(|num| {
         if num <= nick_bytes.len(){
@@ -60,7 +61,7 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_K
         .lock()
         .map(|mut keybundle| {
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload);
+            let mut message = secbuf_new_insecure_from_string(payload);
 
             // Create signature
             let mut message_signed = keybundle.sign(&mut message).expect("Mock signing failed.");
@@ -87,7 +88,7 @@ pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_
         .lock()
         .map(|mut keybundle| {
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload);
+            let mut message = secbuf_new_insecure_from_string(payload);
 
             // Create signature
             let mut message_signed = keybundle.encrypt(&mut message).expect("Mock signing failed.");
@@ -104,7 +105,7 @@ pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String { TEST_AGENT_
 /// but with key generated from a static/deterministic mock seed.
 /// This enables unit testing of core code that creates signatures without
 /// depending on the conductor or actual key files.
-pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String { 
+pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String {
         TEST_AGENT_KEYBUNDLES
         .lock()
         .unwrap()
@@ -116,8 +117,8 @@ pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String {
         .map(|mut keybundle| {
             let decoded_base_64 = base64::decode(&payload).unwrap();
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure(decoded_base_64.len());
-            message.from_array(&decoded_base_64).unwrap();
+            let mut message = CRYPTO.buf_new_insecure(decoded_base_64.len());
+            sebuf_from_array(&mut message, &decoded_base_64).unwrap();
 
             // Create signature
             let mut decrypted = keybundle.decrypt(&mut message).expect("Mock signing failed.");

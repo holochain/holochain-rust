@@ -297,7 +297,9 @@ fn run() -> HolochainResult<()> {
             device_derivation_index,
         } => {
             if !device_derivation_index.is_some() && root_seed.is_some() {
-                return Err(HolochainError::Default(format_err!("A device derivation index must be provided to generate key from root seed")));
+                return Err(HolochainError::Default(format_err!(
+                    "A device derivation index must be provided to generate key from root seed"
+                )));
             }
 
             let passphrase = passphrase.or_else(|| {
@@ -308,21 +310,13 @@ fn run() -> HolochainResult<()> {
                 }
             });
 
-            cli::keygen(
-                path,
-                passphrase,
-                quiet,
-                root_seed,
-                device_derivation_index,
-            )
-            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
-        },
-
-        Cli::DpkiInit => {
-            cli::dpki_init()
-                .map(|mnemonic| println!("{}", mnemonic))
+            cli::keygen(path, passphrase, quiet, root_seed, device_derivation_index)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
-        },
+        }
+
+        Cli::DpkiInit => cli::dpki_init()
+            .map(|mnemonic| println!("{}", mnemonic))
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 
         Cli::ChainLog {
             instance_id,

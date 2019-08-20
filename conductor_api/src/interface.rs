@@ -27,8 +27,8 @@ use config::{
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use holochain_dpki::{
-    key_bundle::KeyBundle;
-    utils::{SeedContext, secbuf_from_array, secbuf_new_insecure_from_string};
+    key_bundle::KeyBundle,
+    utils::{secbuf_from_array, secbuf_new_insecure_from_string, SeedContext},
 };
 use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};

@@ -10,7 +10,7 @@ use holochain_dpki::{
     seed::Seed,
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
-        generate_random_buf, SeedContext, secbuf_new_insecure_from_string
+        generate_random_buf, secbuf_new_insecure_from_string, SeedContext,
     },
     SEED_SIZE,
 };

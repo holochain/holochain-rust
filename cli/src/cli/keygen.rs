@@ -134,7 +134,6 @@ pub mod test {
             Some(passphrase.clone()),
             true,
             None,
-            None,
             None
         ).expect("Keygen should work");
 

@@ -21,7 +21,7 @@ use lib3h_sodium::{
 };
 
 use conductor::passphrase_manager::PassphraseManager;
-use holochain_dpki::{password_encryption::PwHashConfig, seed::SeedType};
+use holochain_dpki::{password_encryption::PwHashConfig, seed::{SeedType, SeedTrait}};
 use std::{
     collections::{BTreeMap, HashMap},
     fs::File,
@@ -48,6 +48,12 @@ pub enum Secret {
 pub enum KeyType {
     Signing,
     Encrypting,
+}
+
+impl<S: SeedTrait> From<S> for Secret {
+    fn from(s: S) -> Self {
+        Secret::Seed(s.seed().buf.clone())
+    }
 }
 
 /// A type for providing high-level crypto functions and managing secrets securely.

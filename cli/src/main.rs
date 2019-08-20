@@ -192,7 +192,7 @@ enum Cli {
     #[structopt(
         name = "dpki-init",
         alias = "d",
-        about = "Generates a new DPKI root seed, encrypts it with the provided passphrase and outputs the encrypted key as a BIP39 mnemonic"
+        about = "Generates a new DPKI root seed and outputs the encrypted key as a BIP39 mnemonic"
     )]
     DpkiInit,
     #[structopt(name = "chain", about = "View the contents of a source chain")]

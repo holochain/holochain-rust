@@ -185,12 +185,6 @@ enum Cli {
         #[structopt(
             long,
             short,
-            help = "Derive device seed from root seed with this derivation context"
-        )]
-        device_derivation_context: Option<String>,
-        #[structopt(
-            long,
-            short,
             help = "Derive device seed from root seed with this index"
         )]
         device_derivation_index: Option<u64>,
@@ -294,13 +288,11 @@ fn run() -> HolochainResult<()> {
             nullpass,
             passphrase,
             root_seed,
-            device_derivation_context,
             device_derivation_index,
         } => {
-            if root_seed.is_some() != device_derivation_context.is_some()
-                || device_derivation_context.is_some() != device_derivation_index.is_some()
+            if root_seed.is_some() !=device_derivation_index.is_some()
             {
-                return Err(HolochainError::Default(format_err!("'root_seed' and 'device_derivation_context' and 'device_derivation_index' all have to be set together")));
+                return Err(HolochainError::Default(format_err!("'root_seed' and 'device_derivation_index' have to be set together")));
             }
 
             let passphrase = passphrase.or_else(|| {
@@ -315,7 +307,6 @@ fn run() -> HolochainResult<()> {
                 passphrase,
                 quiet,
                 root_seed,
-                device_derivation_context,
                 device_derivation_index,
             )
             .map_err(|e| HolochainError::Default(format_err!("{}", e)))?

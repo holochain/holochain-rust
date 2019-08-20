@@ -19,7 +19,6 @@ pub fn keygen(
     passphrase: Option<String>,
     quiet: bool,
     root_seed: Option<String>,
-    device_derivation_context: Option<String>,
     device_derivation_index: Option<u64>,
 ) -> DefaultResult<()> {
     let passphrase = passphrase.unwrap_or_else(|| {
@@ -56,11 +55,8 @@ when unlocking the keybundle to use within a Holochain conductor."
 
     let (keystore, pub_key) = if root_seed.is_some() {
         let root_seed = root_seed.expect("this to be some as we checked above");
-        let device_derivation_context = device_derivation_context.expect(
-            "Device derivation context is ensured to be set together with root_seed in main.rs",
-        );
         let device_derivation_index = device_derivation_index.expect(
-            "Device derivation index is ensured to be set together with root_seed in main.rs",
+            "Device derivation context is ensured to be set together with root_seed in main.rs",
         );
 
         let mut transient_keystore = Keystore::new(mock_passphrase_manager(passphrase.clone()), None)?;
@@ -71,7 +67,9 @@ when unlocking the keybundle to use within a Holochain conductor."
         let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
 
         let mut context_array: [u8; CONTEXT_SIZE] = Default::default();
-        context_array.copy_from_slice(base64::decode(&device_derivation_context)?.as_slice());
+        let context_string = String::from("HCDEVICE");
+        let context_slice = context_string.as_bytes();
+        context_array.copy_from_slice(context_slice);
         let context = SeedContext::new(context_array);
 
         transient_keystore.add("root_seed", secret)?;

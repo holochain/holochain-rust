@@ -179,7 +179,7 @@ enum Cli {
         #[structopt(
             long,
             short,
-            help = "Set root seed via argument and don't prompt for it (not reccomended). Base64 or BIP39 mnemonic encoded root seed to derive device seed from"
+            help = "Set root seed via argument and don't prompt for it (not reccomended). BIP39 mnemonic encoded root seed to derive device seed and agent key from"
         )]
         root_seed: Option<String>,
         #[structopt(
@@ -307,7 +307,7 @@ fn run() -> HolochainResult<()> {
                     None
                 }
             });
-            
+
             cli::keygen(
                 path,
                 passphrase,

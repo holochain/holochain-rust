@@ -17,7 +17,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-/// If a root seed is passed then decode it from either Base64 or BIP39
+/// If a root seed is passed then decode it from BIP39 (TODO: Also suppot base64)
 /// If not then securely prompt the user for the seed then attempt to decode
 fn get_root_seed(root_seed: Option<String>, quiet: bool) -> HcResult<RootSeed> {
     let seed_string = root_seed.unwrap_or_else(|| {
@@ -138,6 +138,7 @@ when unlocking the keybundle to use within a Holochain conductor."
 #[cfg(test)]
 pub mod test {
     use super::*;
+    use cli::dpki_init::dpki_init;
     use holochain_conductor_api::{
         key_loaders::mock_passphrase_manager,
         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
@@ -145,7 +146,7 @@ pub mod test {
     use std::{fs::remove_file, path::PathBuf};
 
     #[test]
-    fn keygen_roundtrip() {
+    fn keygen_roundtrip_no_dpki() {
         let path = PathBuf::new().join("test.key");
         let passphrase = String::from("secret");
 
@@ -155,6 +156,32 @@ pub mod test {
             true,
             None,
             None
+        ).expect("Keygen should work");
+
+        let mut keystore =
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
+                .unwrap();
+
+        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
+
+        assert!(keybundle.is_ok());
+
+        let _ = remove_file(path);
+    }
+
+    #[test]
+    fn keygen_roundtrip_with_dpki() {
+        let path = PathBuf::new().join("test_dpki.key");
+        let passphrase = String::from("secret_dpki");
+
+        let mnemonic = dpki_init().expect("Could not generate root seed mneomonic");
+
+        keygen(
+            Some(path.clone()),
+            Some(passphrase.clone()),
+            true,
+            Some(mnemonic),
+            Some(1)
         ).expect("Keygen should work");
 
         let mut keystore =

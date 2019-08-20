@@ -1,15 +1,14 @@
-use holochain_core_types::error::{HcResult, HolochainError};
+use holochain_core_types::error::{HcResult};
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_api::{
     key_loaders::mock_passphrase_manager,
-    keystore::{Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
+    keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_dpki::{
-    utils::SeedContext, CONTEXT_SIZE, SEED_SIZE, 
+    utils::SeedContext, CONTEXT_SIZE, 
     seed::{RootSeed, Seed, SeedType, TypedSeed},
 };
-use lib3h_sodium::secbuf::SecBuf;
 use rpassword;
 use std::{
     fs::create_dir_all,
@@ -22,11 +21,15 @@ use std::{
 /// If not then securely prompt the user for the seed then attempt to decode
 fn get_root_seed(root_seed: Option<String>, quiet: bool) -> HcResult<RootSeed> {
     let seed_string = root_seed.unwrap_or_else(|| {
-        print!("Root seed: ");
-        io::stdout().flush().expect("Could not flush stdout");
+        if !quiet {
+            print!("Root seed: ");
+            io::stdout().flush().expect("Could not flush stdout");
+        }
         let seed_str_1 = rpassword::read_password().expect("Could not read seed from STDIN");
-        print!("Re-enter root seed: ");
-        io::stdout().flush().expect("Could not flush stdout");
+        if !quiet {
+            print!("Re-enter root seed: ");
+            io::stdout().flush().expect("Could not flush stdout");
+        }
         let seed_str_2 = rpassword::read_password().expect("Could not read seed from STDIN");
         if seed_str_1 != seed_str_2 {
             panic!("Root seeds do not match. Aborting");
@@ -84,36 +87,22 @@ when unlocking the keybundle to use within a Holochain conductor."
         println!("Generating keystore (this will take a few moments)...");
     }
 
-    let (keystore, pub_key) = if root_seed.is_some() {
-        let root_seed = root_seed.expect("this to be some as we checked above");
+    let (keystore, pub_key) = if device_derivation_index.is_some() {
+
+        let mut root_seed = get_root_seed(root_seed, quiet)?;
         let device_derivation_index = device_derivation_index.expect(
             "Device derivation context is ensured to be set together with root_seed in main.rs",
         );
-
-        let mut transient_keystore = Keystore::new(mock_passphrase_manager(passphrase.clone()), None)?;
-
-        let mut seed = SecBuf::with_insecure(SEED_SIZE);
-        seed.write(0, base64::decode(&root_seed)?.as_slice())
-            .expect("SecBuf must be writeable");
-        let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
 
         let mut context_array: [u8; CONTEXT_SIZE] = Default::default();
         let context_string = String::from("HCDEVICE");
         let context_slice = context_string.as_bytes();
         context_array.copy_from_slice(context_slice);
-        let context = SeedContext::new(context_array);
-
-        transient_keystore.add("root_seed", secret)?;
-        transient_keystore.add_seed_from_seed(
-            "root_seed",
-            "device_seed",
-            &context,
-            device_derivation_index,
-        )?;
+        let seed_context = SeedContext::new(context_array);
 
         let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
-        let device_seed = transient_keystore.get("device_seed")?;
-        keystore.add("device_seed", device_seed)?;
+        let device_seed = root_seed.generate_device_seed(&seed_context, device_derivation_index)?;
+        keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
         let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
         (keystore, pub_key)
     } else {

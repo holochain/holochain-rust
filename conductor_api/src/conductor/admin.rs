@@ -327,6 +327,7 @@ impl ConductorAdmin for Conductor {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
                         id: instance_id.clone(),
+                        alias: None,
                     });
                 }
                 interface

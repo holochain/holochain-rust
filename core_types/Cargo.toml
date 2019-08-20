@@ -28,7 +28,7 @@ objekt= "=0.1.2"
 holochain_persistence_api = "=0.0.7"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-lib3h_crypto_api = { path = "/home/eric/code/metacurrency/holochain/lib3h/crates/crypto_api" }
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"

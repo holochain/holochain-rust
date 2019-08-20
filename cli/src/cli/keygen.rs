@@ -1,14 +1,27 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+use holochain_conductor_api::{
+    key_loaders::mock_passphrase_manager,
+    keystore::{Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
+};
+use holochain_dpki::{utils::SeedContext, CONTEXT_SIZE, SEED_SIZE};
+use lib3h_sodium::secbuf::SecBuf;
 use rpassword;
 use std::{
     fs::create_dir_all,
     io::{self, Write},
     path::PathBuf,
+    sync::{Arc, Mutex},
 };
 
-pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>, quiet: bool) -> DefaultResult<()> {
+pub fn keygen(
+    path: Option<PathBuf>,
+    passphrase: Option<String>,
+    quiet: bool,
+    root_seed: Option<String>,
+    device_derivation_context: Option<String>,
+    device_derivation_index: Option<u64>,
+) -> DefaultResult<()> {
     let passphrase = passphrase.unwrap_or_else(|| {
         if !quiet {
             println!(
@@ -40,7 +53,43 @@ when unlocking the keybundle to use within a Holochain conductor."
     if !quiet {
         println!("Generating keystore (this will take a few moments)...");
     }
-    let (keystore, pub_key) = Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?;
+
+    let (keystore, pub_key) = if root_seed.is_some() {
+        let root_seed = root_seed.expect("this to be some as we checked above");
+        let device_derivation_context = device_derivation_context.expect(
+            "Device derivation context is ensured to be set together with root_seed in main.rs",
+        );
+        let device_derivation_index = device_derivation_index.expect(
+            "Device derivation index is ensured to be set together with root_seed in main.rs",
+        );
+
+        let mut transient_keystore = Keystore::new(mock_passphrase_manager(passphrase.clone()), None)?;
+
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        seed.write(0, base64::decode(&root_seed)?.as_slice())
+            .expect("SecBuf must be writeable");
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed)));
+
+        let mut context_array: [u8; CONTEXT_SIZE] = Default::default();
+        context_array.copy_from_slice(base64::decode(&device_derivation_context)?.as_slice());
+        let context = SeedContext::new(context_array);
+
+        transient_keystore.add("root_seed", secret)?;
+        transient_keystore.add_seed_from_seed(
+            "root_seed",
+            "device_seed",
+            &context,
+            device_derivation_index,
+        )?;
+
+        let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
+        let device_seed = transient_keystore.get("device_seed")?;
+        keystore.add("device_seed", device_seed)?;
+        let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
+        (keystore, pub_key)
+    } else {
+        Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?
+    };
 
     let path = if None == path {
         let p = keys_directory();
@@ -82,7 +131,14 @@ pub mod test {
         let path = PathBuf::new().join("test.key");
         let passphrase = String::from("secret");
 
-        keygen(Some(path.clone()), Some(passphrase.clone()), true).expect("Keygen should work");
+        keygen(
+            Some(path.clone()),
+            Some(passphrase.clone()),
+            true,
+            None,
+            None,
+            None
+        ).expect("Keygen should work");
 
         let mut keystore =
             Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)

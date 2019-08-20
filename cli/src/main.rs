@@ -19,6 +19,7 @@ extern crate semver;
 extern crate toml;
 #[macro_use]
 extern crate serde_json;
+extern crate holochain_dpki;
 extern crate ignore;
 extern crate rpassword;
 
@@ -163,8 +164,36 @@ enum Cli {
             help = "Only print machine-readable output; intended for use by programs and scripts"
         )]
         quiet: bool,
-        #[structopt(long, short, help = "Don't ask for passphrase")]
+        #[structopt(
+            long,
+            short,
+            help = "Use insecure, hard-wired passphrase for testing and Don't ask for passphrase"
+        )]
         nullpass: bool,
+        #[structopt(
+            long,
+            short,
+            help = "Set passphrase via argument and don't prompt for it"
+        )]
+        passphrase: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Provide base64 encoded root seed to derive device seed from"
+        )]
+        root_seed: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Derive device seed from root seed with this derivation context"
+        )]
+        device_derivation_context: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Derive device seed from root seed with this index"
+        )]
+        device_derivation_index: Option<u64>,
     },
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
@@ -263,14 +292,33 @@ fn run() -> HolochainResult<()> {
             path,
             quiet,
             nullpass,
+            passphrase,
+            root_seed,
+            device_derivation_context,
+            device_derivation_index,
         } => {
-            let passphrase = if nullpass {
-                Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
-            } else {
-                None
-            };
-            cli::keygen(path, passphrase, quiet)
-                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
+            if root_seed.is_some() != device_derivation_context.is_some()
+                || device_derivation_context.is_some() != device_derivation_index.is_some()
+            {
+                return Err(HolochainError::Default(format_err!("'root_seed' and 'device_derivation_context' and 'device_derivation_index' all have to be set together")));
+            }
+
+            let passphrase = passphrase.or_else(|| {
+                if nullpass {
+                    Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
+                } else {
+                    None
+                }
+            });
+            cli::keygen(
+                path,
+                passphrase,
+                quiet,
+                root_seed,
+                device_derivation_context,
+                device_derivation_index,
+            )
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 
         Cli::ChainLog {

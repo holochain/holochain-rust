@@ -8,6 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
 * Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
+* Conductor API debug functions added: 
+    * `debug/running_instances`: returns array of running instance IDs
+    * `debug/state_dump`: returns a state dump for a given instance
+    * `debug/fetch_cas`: returns the content for a given entry address and instance ID
+  
+  Also added the source to the state dump.
+  [#1661](https://github.com/holochain/holochain-rust/pull/1661)
 
 ### Changed
 

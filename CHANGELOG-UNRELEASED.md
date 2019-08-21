@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
 * Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
+* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658) 
 * Conductor API debug functions added: 
     * `debug/running_instances`: returns array of running instance IDs
     * `debug/state_dump`: returns a state dump for a given instance

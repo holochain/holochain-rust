@@ -69,6 +69,7 @@ when unlocking the keybundle to use within a Holochain conductor."
     }
 
     let (keystore, pub_key) = if device_derivation_index.is_some() {
+        println!("This keystore is to be generated from a DPKI root seed.");
         let mut root_seed = get_root_seed(root_seed, &passphrase, quiet)?;
         let device_derivation_index = device_derivation_index.expect(
             "Device derivation context is ensured to be set together with root_seed in main.rs",

@@ -1408,7 +1408,8 @@ type = 'http'"#,
         assert_eq!(
             conductor.add_instance_to_interface(
                 &String::from("websocket interface"),
-                &String::from("new-instance-2")
+                &String::from("new-instance-2"),
+                &None,
             ),
             Ok(())
         );

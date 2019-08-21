@@ -43,7 +43,7 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
     let toml: Value = toml::from_str(cargo_toml)?;
     let dependancies = toml
         .get("dependencies")
-        .ok_or(format_err!("Could not get dependancies"))?;
+        .ok_or(format_err!("Could not get dependencies"))?;
     let hdk = dependancies
         .get("hdk")
         .ok_or(format_err!("Could not get HDK"))?;

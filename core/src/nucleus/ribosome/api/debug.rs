@@ -8,7 +8,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     let payload = runtime.load_json_string_from_args(args);
-    context.log(format!("debug/dna: '{}'", payload));
+    log_debug!(context, "dna: '{}'", payload);
 
     ribosome_success!()
 }

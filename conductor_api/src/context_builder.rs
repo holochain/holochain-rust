@@ -8,12 +8,7 @@ use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 
-use holochain_core::{
-    context::Context,
-    logger::{Logger, SimpleLogger},
-    persister::SimplePersister,
-    signal::SignalSender,
-};
+use holochain_core::{context::Context, persister::SimplePersister, signal::SignalSender};
 use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_core::IoHandler;
@@ -32,8 +27,8 @@ use std::{
 /// Use any combination of `with_*` functions to configure the context and finally call
 /// `spawn()` to retrieve the context.
 pub struct ContextBuilder {
+    instance_name: Option<String>,
     agent_id: Option<AgentId>,
-    logger: Option<Arc<Mutex<dyn Logger>>>,
     // Persister is currently set to a reasonable default in spawn().
     // TODO: add with_persister() function to ContextBuilder.
     //persister: Option<Arc<Mutex<Persister>>>,
@@ -43,19 +38,21 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
+    state_dump_logging: bool,
 }
 
 impl ContextBuilder {
     pub fn new() -> Self {
         ContextBuilder {
+            instance_name: None,
             agent_id: None,
-            logger: None,
             chain_storage: None,
             dht_storage: None,
             eav_storage: None,
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
+            state_dump_logging: false,
         }
     }
 
@@ -125,19 +122,23 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_logger(mut self, logger: Arc<Mutex<dyn Logger>>) -> Self {
-        self.logger = Some(logger);
-        self
-    }
-
     pub fn with_signals(mut self, signal_tx: SignalSender) -> Self {
         self.signal_tx = Some(signal_tx);
         self
     }
 
+    pub fn with_instance_name(mut self, instance_name: &str) -> Self {
+        self.instance_name = Some(String::from(instance_name));
+        self
+    }
+
+    pub fn with_state_dump_logging(mut self) -> Self {
+        self.state_dump_logging = true;
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
-    /// The logger gets set to SimpleLogger.
     /// The persister gets set to SimplePersister based on the chain storage.
     pub fn spawn(self) -> Context {
         let chain_storage = self
@@ -149,9 +150,12 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
+
         Context::new(
+            &self
+                .instance_name
+                .unwrap_or("Anonymous-instance".to_string()),
             self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
-            self.logger.unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
@@ -160,6 +164,7 @@ impl ContextBuilder {
                 .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
+            self.state_dump_logging,
         )
     }
 }

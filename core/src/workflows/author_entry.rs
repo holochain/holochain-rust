@@ -29,10 +29,10 @@ pub async fn author_entry<'a>(
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
-    context.log(format!(
-        "debug/workflow/authoring_entry: {} with content: {:?}",
+    log_debug!(context,
+        "workflow/authoring_entry: {} with content: {:?}",
         address, entry
-    ));
+    );
 
     // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
     if let Entry::LinkAdd(link_data) = entry {
@@ -54,62 +54,59 @@ pub async fn author_entry<'a>(
     };
 
     // 2. Validate the entry
-    context.log(format!(
-        "debug/workflow/authoring_entry/{}: validating...",
+    log_debug!(context,
+        "workflow/authoring_entry/{}: validating...",
         address
-    ));
+    );
     await!(validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
         &context
     ))?;
-    context.log(format!("Authoring entry {}: is valid!", address));
+    log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
-    context.log(format!(
-        "debug/workflow/authoring_entry/{}: committing...",
+    log_debug!(context,
+        "workflow/authoring_entry/{}: committing...",
         address
-    ));
+    );
     let chain_header = await!(commit_entry(
         entry.clone(),
         maybe_link_update_delete,
         &context
     ))?;
-    context.log(format!(
-        "debug/workflow/authoring_entry/{}: committed",
-        address
-    ));
+    log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     if entry.entry_type().can_publish(context) {
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: publishing...",
+        log_debug!(context,
+            "workflow/authoring_entry/{}: publishing...",
             address
-        ));
+        );
         await!(publish(entry.address(), &context))?;
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: published!",
+        log_debug!(context,
+            "workflow/authoring_entry/{}: published!",
             address
-        ));
+        );
     } else {
-        context.log(format!(
-            "debug/workflow/authoring_entry/{}: entry is private, no publishing",
-            address
-        ));
+        log_debug!(context,
+          "workflow/authoring_entry/{}: entry is private, no publishing",
+          address
+        );
     }
 
     // 5. Publish the header entry to the DHT. This should be called for both public and private entries
-    context.log(format!(
+    log_debug!(context,
         "debug/workflow/authoring_entry/{}: publishing header...",
         address
-    ));   
+    );   
     let header_entry = Entry::ChainHeader(chain_header.clone());
     await!(publish(header_entry.address(), &context))?; 
-    context.log(format!(
+    log_debug!(context,
         "debug/workflow/authoring_entry/{}: published header!",
         address
-    ));
+    );
     
     Ok(CommitEntryResult::new(chain_header.entry_address().clone()))
 }
@@ -117,12 +114,9 @@ pub async fn author_entry<'a>(
 #[cfg(test)]
 pub mod tests {
     use super::author_entry;
-    use crate::nucleus::actions::get_entry::get_entry_from_dht;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{
-        entry::{test_entry_with_value, Entry}
-    };
-    use holochain_persistence_api::cas::content::AddressableContent;
+    use holochain_core_types::entry::test_entry_with_value;
+    use holochain_json_api::json::JsonString;
     use std::{thread, time};
 
     #[test]
@@ -145,73 +139,31 @@ pub mod tests {
             .address();
         thread::sleep(time::Duration::from_millis(500));
 
-        let mut entry: Option<Entry> = None;
+        let mut json: Option<JsonString> = None;
         let mut tries = 0;
-        while entry.is_none() && tries < 120 {
+        while json.is_none() && tries < 120 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &entry_address).expect("Could not retrieve entry from DHT");
+                let state = &context2.state().unwrap();
+                json = state
+                    .dht()
+                    .content_storage()
+                    .read()
+                    .unwrap()
+                    .fetch(&entry_address)
+                    .expect("could not fetch from CAS");
             }
-            println!("Try {}: {:?}", tries, entry);
-            if entry.is_none() {
+            println!("Try {}: {:?}", tries, json);
+            if json.is_none() {
                 thread::sleep(time::Duration::from_millis(1000));
             }
         }
 
-        // let x: String = json.unwrap().to_string();
+        let x: String = json.unwrap().to_string();
         assert_eq!(
-            entry,
-            Some(test_entry_with_value("{\"stuff\":\"test entry value\"}"))
-        );
-    }
-
-    #[test]
-    /// test that the header of an entry can be retrieved directly by its hash by another agent connected
-    /// via the in-memory network
-    fn test_commit_with_dht_publish_header_is_published() {
-        let mut dna = test_dna();
-        dna.uuid = "test_commit_with_dht_publish_header_is_published".to_string();
-        let netname = Some("test_commit_with_dht_publish_header_is_published, the network");
-        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
-
-        let entry_address = context1
-            .block_on(author_entry(
-                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
-                None,
-                &context1,
-                &vec![],
-            ))
-            .unwrap()
-            .address();
-
-        thread::sleep(time::Duration::from_millis(500));
-
-        // get the header from the top of Jill's chain
-        let state = &context1.state().unwrap();
-        let header = state.get_headers(entry_address)
-            .expect("Could not retrieve headers from authors chain")
-            .into_iter()
-            .next()
-            .expect("No headers were found for this entry in the authors chain");
-        let header_entry = Entry::ChainHeader(header);
-
-        // try and load it by its address as Jack. This means it has been communicated over the mock network
-        let mut entry: Option<Entry> = None;
-        let mut tries = 0;
-        while entry.is_none() && tries < 5 {
-            tries = tries + 1;
-            {
-                entry = get_entry_from_dht(&context2, &header_entry.address()).expect("Could not retrieve entry from DHT");
-            }
-            println!("Try {}: {:?}", tries, entry);
-            if entry.is_none() {
-                thread::sleep(time::Duration::from_millis(1000));
-            }
-        }
-        assert_eq!(
-            entry,
-            Some(header_entry),
+            x,
+            "{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"test entry value\\\"}\"]}"
+                .to_string(),
         );
     }
 }

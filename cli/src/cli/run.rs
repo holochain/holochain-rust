@@ -112,6 +112,7 @@ fn agent_configuration() -> AgentConfiguration {
         public_address: agent_id.pub_sign_key,
         keystore_file: agent_name,
         holo_remote_key: None,
+        test_agent: Some(true),
     }
 }
 
@@ -189,12 +190,13 @@ fn interface_configuration(
 fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
-        logger_type: "debug".to_string(),
+        logger_level: "debug".to_string(),
         rules: if logging {
             LogRules::default()
         } else {
             LogRules::new()
         },
+        state_dump: true,
     }
 }
 
@@ -287,6 +289,7 @@ mod tests {
                     .to_string(),
                 keystore_file: "testAgent".to_string(),
                 holo_remote_key: None,
+                test_agent: Some(true),
             },
         );
     }

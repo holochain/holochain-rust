@@ -8,26 +8,24 @@ use crate::{
     dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-    logger::DebugLogger,
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
-use holochain_core::{
-    logger::{ChannelLogger, Logger},
-    signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
     error::{HcResult, HolochainError},
 };
+use key_loaders::test_keystore;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -42,8 +40,12 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
-use config::AgentConfiguration;
+#[cfg(unix)]
+use conductor::passphrase_manager::PassphraseServiceUnixSocket;
+use conductor::passphrase_manager::{
+    PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+};
+use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -53,7 +55,8 @@ use holochain_net::{
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
 use signal_wrapper::SignalWrapper;
-use static_file_server::StaticServer;
+use static_file_server::ConductorStaticFileServer;
+use static_server_impls::NickelStaticServer as StaticServer;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -101,7 +104,7 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
-    logger: DebugLogger,
+    logger: FastLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
@@ -120,6 +123,12 @@ impl Drop for Conductor {
 
         self.shutdown()
             .unwrap_or_else(|err| println!("Error during shutdown, continuing anyway: {:?}", err));
+
+        // Flushing the logger's buffer writer
+        self.logger.flush();
+        // Do not shut down the logging thread if there is multiple concurrent conductor thread
+        // like during unit testing because they all use the same registered logger
+        // self.logger.shutdown();
 
         if let Some(network) = self.n3h_keepalive_network.take() {
             if let Err(err) = network.stop() {
@@ -148,15 +157,57 @@ pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> 
 pub type UiDirCopier =
     Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
-// preparing for having conductor notifiers go to one of the log streams
+/// preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
-        let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+        let _rules = config.logger.rules.clone();
+        let mut logger_builder = FastLoggerBuilder::new();
+        logger_builder.set_level_from_str(&config.logger.logger_level.as_str());
+
+        for rule in config.logger.rules.rules.iter() {
+            logger_builder.add_rule_filter(RuleFilter::new(
+                rule.pattern.as_str(),
+                rule.exclude,
+                rule.color.as_ref().unwrap_or(&String::default()).as_str(),
+            ));
+        }
+
+        let logger = logger_builder
+            .build()
+            .expect("Fail to instanciate the logging factory.");
+
+        if config.ui_bundles.len() > 0 || config.ui_interfaces.len() > 0 {
+            println!();
+            println!("{}", std::iter::repeat("!").take(20).collect::<String>());
+            println!("DEPRECATION WARNING - Hosting a static UI via the conductor will not be supported in future releases");
+            println!("{}", std::iter::repeat("!").take(20).collect::<String>());
+            println!();
+        }
+
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
+            if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
+            {
+                #[cfg(not(unix))]
+                let _ = path;
+                #[cfg(not(unix))]
+                panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
+
+                #[cfg(unix)]
+                Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
+            } else {
+                match config.passphrase_service.clone() {
+                    PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+                    PassphraseServiceConfig::Mock { passphrase } => {
+                        Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+                    }
+                    _ => unreachable!(),
+                }
+            };
 
         Conductor {
             instances: HashMap::new(),
@@ -171,12 +222,10 @@ impl Conductor {
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
-            logger: DebugLogger::new(rules),
+            logger,
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-                PassphraseServiceCmd {},
-            )))),
+            passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
         }
@@ -219,7 +268,7 @@ impl Conductor {
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
-        self.log("starting signal loop".into());
+        debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
@@ -694,18 +743,17 @@ impl Conductor {
                     }
                 }
 
-                if config.logger.logger_type == "debug" {
-                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
-                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-                    )));
-                }
-
+                let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id, config)?;
                 context_builder = context_builder.with_conductor_api(api);
 
+                if self.config.logger.state_dump {
+                    context_builder = context_builder.with_state_dump_logging();
+                }
+
                 // Spawn context
-                let context = context_builder.spawn();
+                let context = context_builder.with_instance_name(&instance_name).spawn();
 
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
@@ -737,8 +785,8 @@ impl Conductor {
                                 &dna_hash_computed_from_file, &dna_file)?;
                         },
                         Err(_) => {
-                            let msg = format!("err/Conductor: Could not load DNA file {:?}.", &dna_file);
-                            context.log(msg);
+                            let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
+                            log_error!(context, "{}", msg);
 
                             // If something is wrong with the DNA file, we only
                             // check the 2 primary sources of DNA's hashes
@@ -748,11 +796,11 @@ impl Conductor {
                                 Ok(_) => (),
                                 Err(e) => {
                                     let msg = format!("\
-                                    err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                    Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                     '{}' != '{}'",
                                     &dna_hash_from_conductor_config,
                                     &dna_hash_computed);
-                                    context.log(msg);
+                                    log_error!(context, "{}", msg);
 
                                     return Err(e.to_string());
                                 }
@@ -920,7 +968,8 @@ impl Conductor {
                                 '{}' != '{}'",
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -938,7 +987,8 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -953,7 +1003,7 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_computed,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -992,29 +1042,41 @@ impl Conductor {
             if let Some(true) = agent_config.holo_remote_key {
                 return Err("agent is holo_remote, no keystore".to_string());
             }
-            let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
-            let mut keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
-                &keystore_file_path,
-                self.passphrase_manager.clone(),
-                self.hash_config.clone(),
-            )
-            .map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load keystore \"{}\"",
-                    agent_config.keystore_file,
-                ))
-            })?;
+
+            let mut keystore = match agent_config.test_agent {
+                Some(true) => test_keystore(&agent_config.name),
+                _ => {
+                    let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
+                    let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
+                        &keystore_file_path,
+                        self.passphrase_manager.clone(),
+                        self.hash_config.clone(),
+                    )
+                    .map_err(|_| {
+                        HolochainError::ConfigError(format!(
+                            "Could not load keystore \"{}\"",
+                            agent_config.keystore_file,
+                        ))
+                    })?;
+                    keystore
+                }
+            };
+
             let keybundle = keystore
                 .get_keybundle(PRIMARY_KEYBUNDLE_ID)
                 .map_err(|err| format!("{}", err,))?;
 
-            if agent_config.public_address != keybundle.get_id() {
-                return Err(format!(
-                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    keystore_file_path.to_str().unwrap(),
-                    keybundle.get_id(),
-                    agent_config.public_address,
-                ));
+            if let Some(true) = agent_config.test_agent {
+                // don't worry about public_address if this is a test_agent
+            } else {
+                if agent_config.public_address != keybundle.get_id() {
+                    return Err(format!(
+                        "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                        agent_config.keystore_file,
+                        keybundle.get_id(),
+                        agent_config.public_address,
+                    ));
+                }
             }
 
             self.agent_keys
@@ -1108,7 +1170,8 @@ impl Conductor {
             conductor_api_builder = conductor_api_builder
                 .with_admin_dna_functions()
                 .with_admin_ui_functions()
-                .with_test_admin_functions();
+                .with_test_admin_functions()
+                .with_debug_functions();
         }
 
         conductor_api_builder.spawn()
@@ -1123,17 +1186,14 @@ impl Conductor {
         let (broadcaster, _handle) = iface
             .run(dispatcher, kill_switch_rx)
             .map_err(|error| {
-                self.log(format!(
-                    "err/conductor: Error running interface '{}': {}",
+                error!(
+                    "conductor: Error running interface '{}': {}",
                     interface_config.id, error
-                ));
+                );
                 error
             })
             .unwrap();
-        self.log(format!(
-            "debug/conductor: adding broadcaster to map {:?}",
-            broadcaster
-        ));
+        debug!("conductor: adding broadcaster to map {:?}", broadcaster);
 
         {
             self.interface_broadcasters
@@ -1143,13 +1203,6 @@ impl Conductor {
         }
 
         kill_switch_tx
-    }
-
-    fn log(&self, msg: String) {
-        self.logger
-            .get_sender()
-            .send(("conductor".to_string(), msg))
-            .unwrap()
     }
 
     pub fn dna_dir_path(&self) -> PathBuf {
@@ -1283,7 +1336,7 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use conductor::passphrase_manager::PassphraseManager;
+    use conductor::{passphrase_manager::PassphraseManager, test_admin::ConductorTestAdmin};
     use key_loaders::mock_passphrase_manager;
     use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
     extern crate tempfile;
@@ -1645,6 +1698,37 @@ pub mod tests {
             Err(HolochainError::DnaHashMismatch(a, b)),
             "DNA consistency check Fail."
         )
+    }
+
+    #[test]
+    fn test_serialize_and_load_with_test_agents() {
+        let mut conductor = test_conductor(10091, 10092);
+
+        conductor
+            .add_test_agent("test-agent-id".into(), "test-agent-name".into())
+            .expect("could not add test agent");
+
+        let config_toml_string =
+            serialize_configuration(&conductor.config()).expect("Could not serialize config");
+        let serialized_config = load_configuration::<Configuration>(&config_toml_string)
+            .expect("Could not deserialize toml");
+
+        let mut reanimated_conductor = Conductor::from_config(serialized_config);
+        reanimated_conductor.dna_loader = test_dna_loader();
+        reanimated_conductor.key_loader = test_key_loader();
+
+        assert_eq!(
+            reanimated_conductor
+                .config()
+                .agents
+                .iter()
+                .filter_map(|agent| agent.test_agent)
+                .count(),
+            1
+        );
+        reanimated_conductor
+            .boot_from_config()
+            .expect("Could not boot the conductor with test agent")
     }
 
     #[test]

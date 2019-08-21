@@ -22,7 +22,7 @@ use std::{
     thread,
 };
 
-use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -148,7 +148,7 @@ impl ConductorApiBuilder {
                 // TODO: Remove this fall back to the previous impl of inner 'params'
                 // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
                 let _ = hc.context().map(|context|
-                    context.log("warn/interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
+                    log_warn!(context, "interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
                     Please switch to 'args' instead, as 'params' will soon be phased out."));
                 params_map.get("params")
             });
@@ -715,6 +715,59 @@ impl ConductorApiBuilder {
         self
     }
 
+    /// Adds functions useful for debugging.
+    ///
+    /// - `debug/running_instances`
+    ///     Get all currently running instances.
+    ///     Returns an array of instance ID strings.
+    ///
+    /// - `debug/state_dump`
+    ///   Returns a JSON object with all relevant fields of an instance's state.
+    ///   Params:
+    ///   - `instance_id` ID of the instance of which the state is requested
+    ///
+    /// - `debug/fetch_cas`
+    ///   Returns content of a given instance's CAS.
+    ///   Params:
+    ///   - `instance_id` ID of the instance of which's CAS content is requested
+    ///   - `address` Address (hash) of the content that is requests
+    ///   Returns an object of the form: {type:"<entry type>", content: "<content>"}
+    ///
+    pub fn with_debug_functions(mut self) -> Self {
+        self.io
+            .add_method("debug/running_instances", move |_params| {
+                let running_instances_ids = conductor_call!(|c| c.running_instances())?;
+                Ok(serde_json::to_value(running_instances_ids)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?)
+            });
+
+        self.io.add_method("debug/state_dump", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+
+            let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+
+            Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("debug/fetch_cas", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+            let address = Self::get_as_string("address", &params_map)?;
+
+            let (entry_type, content) = conductor_call!(
+                |c| c.get_type_and_content_from_cas(&Address::from(address), &instance_id)
+            )?;
+
+            Ok(json!({
+                "type": entry_type,
+                "content": content,
+            }))
+        });
+
+        self
+    }
+
     /// Adds a further set of functions to the Conductor RPC for managing
     /// static UI bundles and HTTP interfaces to these.
     /// This adds the following RPC endpoints:
@@ -807,7 +860,9 @@ impl ConductorApiBuilder {
                 id,
                 port,
                 bundle,
-                dna_interface
+                dna_interface,
+                reroute_to_root: true,
+                bind_address: "127.0.0.1".to_string(),
             }))?;
             Ok(json!({"success": true}))
         });

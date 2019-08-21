@@ -51,7 +51,6 @@ pub mod test {
     use super::*;
     use crate::{
         context::Context,
-        logger::test_logger,
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
@@ -67,8 +66,8 @@ pub mod test {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "Test-context-instance",
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -79,6 +78,7 @@ pub mod test {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

@@ -24,6 +24,7 @@
   - [Intro to Zome Definition](./zome/define_zome.md)
   - [App Entry Type Definitions](./zome/entry_type_definitions.md)
   - [Init](./zome/init.md)
+  - [Validate Agent](./zome/validate_agent.md)
   - [Zome Functions](./zome/zome_functions.md)
   - [Capabilities](./zome/capabilities.md)
   - [Read & Write Data Operations](./zome/read_and_write.md)

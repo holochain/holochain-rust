@@ -155,10 +155,10 @@ pub async fn initialize_chain(
             }
             Ok(chain_header) => {
                 let addr = chain_header.entry_address().clone();
-                context.log(format!(
+                log_debug!(context,
                     "debug/initialize: created public token: {:?}",
                     addr
-                ));
+                );
                 Some(addr)
             }
         }

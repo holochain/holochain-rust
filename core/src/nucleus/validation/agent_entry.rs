@@ -34,7 +34,7 @@ pub async fn validate_agent_entry(
         },
     };
 
-    context.log(format!("Validating agent entry with args: {:?}", params));
+    log_debug!(context, "Validating agent entry with args: {:?}", params);
 
     let results = await!(future::join_all(dna.zomes.iter().map(|(zome_name, _)| {
         let call = CallbackFnCall::new(&zome_name, "__hdk_validate_agent_entry", params.clone());
@@ -52,7 +52,7 @@ pub async fn validate_agent_entry(
         .collect();
 
     if errors.is_empty() {
-        context.log(format!("Validating agent entry success!: {:?}", results));
+        log_debug!(context, "Validating agent entry success!: {:?}", results);
         Ok(())
     } else {
         Err(ValidationError::Error(

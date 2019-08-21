@@ -1,7 +1,8 @@
 use crate::{
     conductor::{base::notify, Conductor},
     config::{UiBundleConfiguration, UiInterfaceConfiguration},
-    static_file_server::StaticServer,
+    static_file_server::ConductorStaticFileServer,
+    static_server_impls::NickelStaticServer as StaticServer,
 };
 use error::HolochainInstanceError;
 use holochain_core_types::error::HolochainError;
@@ -173,7 +174,7 @@ impl ConductorUiAdmin for Conductor {
 pub mod tests {
     use super::*;
     use conductor::{admin::tests::*, base::UiDirCopier};
-    use std::{fs::File, io::Read};
+    use std::{fs::File, io::Read, net::Ipv4Addr};
 
     pub fn test_ui_copier() -> UiDirCopier {
         let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
@@ -219,6 +220,7 @@ root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -268,6 +270,7 @@ id = 'test-bundle-id'"#,
         );
         toml = add_line(toml, format!("root_dir = '{}'", dest.display()));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -311,6 +314,7 @@ id = 'test-bundle-id'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -327,6 +331,8 @@ id = 'test-bundle-id'"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Err(HolochainError::ErrorGeneric(
                 "UI bundle configuration test-bundle-id not found, mentioned in UI interface test-ui-interface-id".into()
@@ -349,6 +355,8 @@ id = 'test-bundle-id'"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );
@@ -374,12 +382,15 @@ id = 'test-bundle-id'
 root_dir = '.'
 
 [[ui_interfaces]]
+bind_address = '127.0.0.1'
 bundle = 'test-bundle-id'
 id = 'test-ui-interface-id'
-port = 4000"#,
+port = 4000
+reroute_to_root = true"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -414,6 +425,8 @@ port = 4000"#,
                 port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );
@@ -447,6 +460,7 @@ root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -456,7 +470,8 @@ root_dir = '.'"#,
     #[test]
     fn test_start_ui_interface() {
         let test_name = "test_start_ui_interface";
-        let mut conductor = create_test_conductor(test_name, 3004);
+        let mut conductor =
+            create_test_conductor_from_toml(&barebones_test_toml(test_name), test_name);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -471,9 +486,11 @@ root_dir = '.'"#,
         assert_eq!(
             conductor.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 4000,
+                port: 4100,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );
@@ -487,7 +504,8 @@ root_dir = '.'"#,
     #[test]
     fn test_stop_ui_interface() {
         let test_name = "test_stop_ui_interface";
-        let mut conductor = create_test_conductor(test_name, 3005);
+        let mut conductor =
+            create_test_conductor_from_toml(&barebones_test_toml(test_name), test_name);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -502,9 +520,11 @@ root_dir = '.'"#,
         assert_eq!(
             conductor.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 4001,
+                port: 4101,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
+                reroute_to_root: true,
+                bind_address: Ipv4Addr::LOCALHOST.to_string()
             }),
             Ok(())
         );

@@ -22,12 +22,12 @@ pub(crate) fn get_entry_from_cas(
     storage: &Arc<RwLock<dyn ContentAddressableStorage>>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    if let Some(json) = (*storage.read().unwrap()).fetch(&address)? {
-        let entry: Entry = json.try_into()?;
-        Ok(Some(entry))
-    } else {
-        Ok(None) // no errors but entry is not in CAS
-    }
+    let json = (*storage.read().unwrap()).fetch(&address)?;
+
+    let entry: Option<Entry> = json
+        .and_then(|js| js.try_into().ok())
+        .map(|s: Entry| s.into());
+    Ok(entry)
 }
 
 pub fn get_entry_from_agent_chain(
@@ -146,14 +146,12 @@ pub fn get_entry_with_meta<'a>(
     context: &'a Arc<Context>,
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
-    context.log("get_entry_with_meta: begin");
     // 1. try to get the entry
-    let entry = match get_entry_from_dht(context, &address) { // this is returning None for header entries
+    let entry = match get_entry_from_dht(context, &address) {
         Err(err) => return Err(err),
         Ok(None) => return Ok(None),
         Ok(Some(entry)) => entry,
     };
-    context.log("get_entry_with_meta: 1. complete. Entry retrieved from DHT");
 
     // 2. try to get the entry's metadata
     let (crud_status, maybe_link_update_delete) =

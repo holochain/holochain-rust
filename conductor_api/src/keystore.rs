@@ -21,7 +21,10 @@ use lib3h_sodium::{
 };
 
 use conductor::passphrase_manager::PassphraseManager;
-use holochain_dpki::{password_encryption::PwHashConfig, seed::{SeedType, SeedTrait}};
+use holochain_dpki::{
+    password_encryption::PwHashConfig,
+    seed::{SeedTrait, SeedType},
+};
 use std::{
     collections::{BTreeMap, HashMap},
     fs::File,

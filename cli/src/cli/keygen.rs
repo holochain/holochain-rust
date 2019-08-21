@@ -10,38 +10,28 @@ use holochain_dpki::{
     utils::SeedContext,
     CONTEXT_SIZE,
 };
-use rpassword;
 use std::{
     fs::create_dir_all,
     io::{self, Write},
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+use util::get_secure_string_double_check;
 
 /// If a root seed is passed then decode it from BIP39 (TODO: Also suppot base64)
 /// If not then securely prompt the user for the seed then attempt to decode
-fn get_root_seed(root_seed: Option<String>, quiet: bool) -> HcResult<RootSeed> {
+/// TODO: Decrypt the root seed using the passphrase (currently it is unencrypted)
+fn get_root_seed(
+    root_seed: Option<String>,
+    _passphrase: &String,
+    quiet: bool,
+) -> HcResult<RootSeed> {
     let seed_string = root_seed.unwrap_or_else(|| {
-        if !quiet {
-            print!("Root seed: ");
-            io::stdout().flush().expect("Could not flush stdout");
-        }
-        let seed_str_1 = rpassword::read_password().expect("Could not read seed from STDIN");
-        if !quiet {
-            print!("Re-enter root seed: ");
-            io::stdout().flush().expect("Could not flush stdout");
-        }
-        let seed_str_2 = rpassword::read_password().expect("Could not read seed from STDIN");
-        if seed_str_1 != seed_str_2 {
-            panic!("Root seeds do not match. Aborting");
-        }
-        seed_str_1
+        get_secure_string_double_check("Root Seed", quiet).expect("Coult not retrieve root seed")
     });
 
     // try and parse the seed from string
     let root_seed = Seed::new_with_mnemonic(seed_string, SeedType::Root)?;
-
-    // TODO: prompt for seed encryption passphrase and decrypt encrypted root seed
 
     match root_seed.into_typed()? {
         TypedSeed::Root(inner_root_seed) => Ok(inner_root_seed),
@@ -71,17 +61,7 @@ when unlocking the keybundle to use within a Holochain conductor."
             print!("Passphrase: ");
             io::stdout().flush().expect("Could not flush stdout");
         }
-        let passphrase1 = rpassword::read_password().unwrap();
-        if !quiet {
-            print!("Re-enter passphrase: ");
-            io::stdout().flush().expect("Could not flush stdout");
-        }
-        let passphrase2 = rpassword::read_password().unwrap();
-        if passphrase1 != passphrase2 {
-            println!("Passphrases do not match. Please retry...");
-            ::std::process::exit(1);
-        }
-        passphrase1
+        get_secure_string_double_check("Passphrase", quiet).expect("Could not retrieve passphrase")
     });
 
     if !quiet {
@@ -89,7 +69,7 @@ when unlocking the keybundle to use within a Holochain conductor."
     }
 
     let (keystore, pub_key) = if device_derivation_index.is_some() {
-        let mut root_seed = get_root_seed(root_seed, quiet)?;
+        let mut root_seed = get_root_seed(root_seed, &passphrase, quiet)?;
         let device_derivation_index = device_derivation_index.expect(
             "Device derivation context is ensured to be set together with root_seed in main.rs",
         );
@@ -175,7 +155,8 @@ pub mod test {
         let path = PathBuf::new().join("test_dpki.key");
         let passphrase = String::from("secret_dpki");
 
-        let mnemonic = dpki_init().expect("Could not generate root seed mneomonic");
+        let mnemonic = dpki_init(Some("dummy passphrase".to_string()))
+            .expect("Could not generate root seed mneomonic");
 
         keygen(
             Some(path.clone()),

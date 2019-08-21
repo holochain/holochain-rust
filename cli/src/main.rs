@@ -194,7 +194,14 @@ enum Cli {
         alias = "d",
         about = "Generates a new DPKI root seed and outputs the encrypted key as a BIP39 mnemonic"
     )]
-    DpkiInit,
+    DpkiInit {
+        #[structopt(
+            long,
+            short,
+            help = "Set passphrase via argument and don't prompt for it (not reccomended)"
+        )]
+        passphrase: Option<String>,
+    },
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
         #[structopt(name = "INSTANCE", help = "Instance ID to view")]
@@ -314,7 +321,7 @@ fn run() -> HolochainResult<()> {
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 
-        Cli::DpkiInit => cli::dpki_init()
+        Cli::DpkiInit { passphrase } => cli::dpki_init(passphrase)
             .map(|mnemonic| println!("{}", mnemonic))
             .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 

@@ -78,7 +78,7 @@ impl KeyPair for SigningKeyPair {
         // Generate keys
         let mut pub_sec_buf = CRYPTO.buf_new_insecure(CRYPTO.sign_public_key_bytes());
         let mut priv_sec_buf = CRYPTO.buf_new_secure(CRYPTO.sign_secret_key_bytes());
-        CRYPTO.sign_seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
+        CRYPTO.sign_seed_keypair(seed, &mut pub_sec_buf, &mut priv_sec_buf)?;
         // Convert and encode public key side
         let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
@@ -107,7 +107,7 @@ impl SigningKeyPair {
     /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
     pub fn sign(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
         let mut signature = CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
-        CRYPTO.sign(data, &mut self.private, &mut signature)?;
+        CRYPTO.sign(&mut signature, data, &mut self.private)?;
         Ok(signature)
     }
 
@@ -233,10 +233,10 @@ impl EncryptingKeyPair {
 
         CRYPTO.aead_decrypt(
             &mut decrypted_message,
-            &mut self.private,
+            &mut cipher_no_nonce,
             None,
             &mut nonce,
-            &mut cipher_no_nonce,
+            &mut self.private,
         )?;
         Ok(())
     }

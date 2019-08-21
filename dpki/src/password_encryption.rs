@@ -24,9 +24,9 @@ pub(crate) struct EncryptedData {
 /// @param {Option<PwHashConfig>} config - Optional hashing settings
 /// TODO make salt optional
 pub(crate) fn pw_hash(
+    hash_result: &mut SecBuf,
     password: &mut SecBuf,
     salt: &mut SecBuf,
-    hash_result: &mut SecBuf,
 ) -> HcResult<()> {
     CRYPTO.pwhash(hash_result, password, salt)?;
     Ok(())
@@ -44,8 +44,14 @@ pub(crate) fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> HcResult<Enc
     let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
     CRYPTO.randombytes_buf(&mut nonce)?;
     let mut cipher = CRYPTO.buf_new_insecure(data.len() + CRYPTO.aead_auth_bytes());
-    pw_hash(passphrase, &mut salt, &mut secret)?;
+    pw_hash(&mut secret, passphrase, &mut salt)?;
     CRYPTO.aead_encrypt(&mut cipher, data, None, &mut nonce, &mut secret)?;
+    // aead_encrypt!(CRYPTO =>
+    //               cipher: &mut cipher,
+    //               message: data,
+    //               adata: None,
+    //               nonce: &mut nonce,
+    //               secret: &mut secret)?;
 
     let salt = salt.read_lock().to_vec();
     let nonce = nonce.read_lock().to_vec();
@@ -76,8 +82,8 @@ pub(crate) fn pw_dec(
     let mut cipher = CRYPTO.buf_new_insecure(encrypted_data.cipher.len());
     secbuf_from_array(&mut cipher, &encrypted_data.cipher)
         .expect("Failed to write SecBuf with array");
-    pw_hash(passphrase, &mut salt, &mut secret)?;
-    CRYPTO.aead_decrypt(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
+    pw_hash(&mut secret, passphrase, &mut salt)?;
+    CRYPTO.aead_decrypt(decrypted_data, &mut cipher, None, &mut nonce, &mut secret)?;
     Ok(())
 }
 
@@ -120,7 +126,7 @@ pub(crate) mod tests {
         let mut password = test_password();
         let mut salt = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_salt_bytes());
         let mut hashed_password = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
-        pw_hash(&mut password, &mut salt, &mut hashed_password).unwrap();
+        pw_hash(&mut hashed_password, &mut password, &mut salt).unwrap();
         println!("salt = {:?}", salt);
         {
             let pw2_hash = hashed_password.read_lock();
@@ -132,12 +138,12 @@ pub(crate) mod tests {
         // hash with different salt should have different result
         TEST_CRYPTO.randombytes_buf(&mut salt).expect("should work");
         let mut hashed_password_b = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
-        pw_hash(&mut password, &mut salt, &mut hashed_password_b).unwrap();
+        pw_hash(&mut hashed_password_b, &mut password, &mut salt).unwrap();
         assert!(hashed_password.compare(&mut hashed_password_b) != 0);
 
         // same hash should have same result
         let mut hashed_password_c = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
-        pw_hash(&mut password, &mut salt, &mut hashed_password_c).unwrap();
+        pw_hash( &mut hashed_password_c, &mut password, &mut salt).unwrap();
         assert!(hashed_password_c.compare(&mut hashed_password_b) == 0);
     }
 

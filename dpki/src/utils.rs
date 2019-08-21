@@ -210,7 +210,7 @@ pub mod tests {
         let mut public_key = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.sign_public_key_bytes());
         let mut secret_key = TEST_CRYPTO.buf_new_secure(TEST_CRYPTO.sign_secret_key_bytes());
         TEST_CRYPTO
-            .sign_seed_keypair(&mut public_key, &mut secret_key, &mut seed)
+            .sign_seed_keypair(&mut seed, &mut public_key, &mut secret_key)
             .unwrap();
         let pub_key_b32 = encode_pub_key(&mut public_key, &codec).unwrap();
         // Create signing buffers
@@ -218,7 +218,7 @@ pub mod tests {
         TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
         let mut signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
         TEST_CRYPTO
-            .sign(&mut message, &mut secret_key, &mut signature)
+            .sign(&mut signature, &mut message, &mut secret_key)
             .unwrap();
         let res = verify_bufs(pub_key_b32, &mut message, &mut signature);
         assert!(res.unwrap());

@@ -75,13 +75,11 @@ pub(crate) fn pw_dec(
 ) -> HcResult<()> {
     let mut secret = CRYPTO.buf_new_secure(CRYPTO.kx_session_key_bytes());
     let mut salt = CRYPTO.buf_new_insecure(CRYPTO.pwhash_salt_bytes());
-    secbuf_from_array(&mut salt, &encrypted_data.salt).expect("Failed to write SecBuf with array");
+    secbuf_from_array(&mut salt, &encrypted_data.salt)?;
     let mut nonce = CRYPTO.buf_new_insecure(encrypted_data.nonce.len());
-    secbuf_from_array(&mut nonce, &encrypted_data.nonce)
-        .expect("Failed to write SecBuf with array");
+    secbuf_from_array(&mut nonce, &encrypted_data.nonce)?;
     let mut cipher = CRYPTO.buf_new_insecure(encrypted_data.cipher.len());
-    secbuf_from_array(&mut cipher, &encrypted_data.cipher)
-        .expect("Failed to write SecBuf with array");
+    secbuf_from_array(&mut cipher, &encrypted_data.cipher)?;
     pw_hash(&mut secret, passphrase, &mut salt)?;
     CRYPTO.aead_decrypt(decrypted_data, &mut cipher, None, &mut nonce, &mut secret)?;
     Ok(())

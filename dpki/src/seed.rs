@@ -197,8 +197,8 @@ impl DeviceSeed {
     pub fn generate_device_pin_seed(&mut self, pin: &mut SecBuf) -> HcResult<DevicePinSeed> {
         let mut hash = CRYPTO.buf_new_secure(CRYPTO.pwhash_bytes());
         let mut salt = CRYPTO.buf_new_secure(CRYPTO.pwhash_salt_bytes());
-        // TODO: hash the seed into a salt sized buf
-        // CRYPTO.generic_hash(salt, &mut self.inner.buf)?;
+        //hash the seed into a salt sized buf
+        CRYPTO.generic_hash(&mut salt, &mut self.inner.buf, None)?;
         pw_hash(&mut hash, pin, &mut salt)?;
         Ok(DevicePinSeed::new(hash))
     }

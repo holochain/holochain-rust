@@ -1149,28 +1149,31 @@ impl Conductor {
     }
 
     fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
-        let instance_ids: Vec<String> = interface_config
-            .instances
-            .iter()
-            .map(|i| i.id.clone())
-            .collect();
+        let mut conductor_api_builder = ConductorApiBuilder::new();
+        for instance_ref_config in interface_config.instances.iter() {
+            let id = &instance_ref_config.id;
+            let name = instance_ref_config.alias.as_ref().unwrap_or(id).clone();
 
-        let instance_subset: InstanceMap = self
-            .instances
-            .iter()
-            .filter(|(id, _)| instance_ids.contains(&id))
-            .map(|(id, val)| (id.clone(), val.clone()))
-            .collect();
+            let instance = self.instances.get(id);
+            let instance_config = self.config.instance_by_id(id);
+            if instance.is_none() || instance_config.is_none() {
+                continue;
+            }
 
-        let mut conductor_api_builder = ConductorApiBuilder::new()
-            .with_instances(instance_subset)
-            .with_instance_configs(self.config.instances.clone());
+            let instance = instance.unwrap();
+            let instance_config = instance_config.unwrap();
+
+            conductor_api_builder = conductor_api_builder
+                .with_named_instance(name.clone(), instance.clone())
+                .with_named_instance_config(name.clone(), instance_config)
+        }
 
         if interface_config.admin {
             conductor_api_builder = conductor_api_builder
                 .with_admin_dna_functions()
                 .with_admin_ui_functions()
-                .with_test_admin_functions();
+                .with_test_admin_functions()
+                .with_debug_functions();
         }
 
         conductor_api_builder.spawn()

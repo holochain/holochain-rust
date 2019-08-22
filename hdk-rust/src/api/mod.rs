@@ -39,6 +39,7 @@ mod send;
 mod sign;
 mod sleep;
 mod update_remove;
+mod version;
 
 pub use self::{
     bundle::{close_bundle, start_bundle},
@@ -68,6 +69,7 @@ pub use self::{
     sign::{sign, sign_one_time, verify_signature},
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
+    version::version,
 };
 
 macro_rules! def_api_fns {
@@ -183,6 +185,7 @@ def_api_fns! {
     hc_get_links, GetLinks;
     hc_get_links_count,GetLinksCount;
     hc_sleep, Sleep;
+    hc_meta,Meta;
     hc_keystore_list, KeystoreList;
     hc_keystore_new_random, KeystoreNewRandom;
     hc_keystore_derive_seed, KeystoreDeriveSeed;

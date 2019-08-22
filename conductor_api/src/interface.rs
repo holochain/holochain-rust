@@ -412,6 +412,7 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `interface_id`: Which interface to add the instance to?
     ///     * `instance_id`: Which instance to add?
+    ///     * `alias`: (Optional) Local name of the instance within this interface
     ///
     ///  * `admin/interface/remove_instance`
     ///     Remove an instance from a given interface.
@@ -630,7 +631,8 @@ impl ConductorApiBuilder {
                 let params_map = Self::unwrap_params_map(params)?;
                 let interface_id = Self::get_as_string("interface_id", &params_map)?;
                 let instance_id = Self::get_as_string("instance_id", &params_map)?;
-                conductor_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id))?;
+                let alias = Self::get_as_string("alias", &params_map).ok();
+                conductor_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id, &alias))?;
                 Ok(json!({"success": true}))
             });
 

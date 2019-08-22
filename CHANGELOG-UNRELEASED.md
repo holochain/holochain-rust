@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   Also added the source to the state dump.
   [#1661](https://github.com/holochain/holochain-rust/pull/1661)
 
+* Add `alias` to instance references in interfaces to decouple hard-coded instance references in hApp UIs from conductor configs. [#1676](https://github.com/holochain/holochain-rust/pull/1676)
 ### Changed
 
 ### Deprecated

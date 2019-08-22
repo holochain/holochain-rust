@@ -182,6 +182,7 @@ fn interface_configuration(
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
             id: INSTANCE_CONFIG_ID.into(),
+            alias: None,
         }],
     })
 }
@@ -356,6 +357,7 @@ mod tests {
                 admin: true,
                 instances: vec![InstanceReferenceConfiguration {
                     id: "test-instance".to_string(),
+                    alias: None,
                 }],
             }
         );
@@ -370,6 +372,7 @@ mod tests {
                 admin: true,
                 instances: vec![InstanceReferenceConfiguration {
                     id: "test-instance".to_string(),
+                    alias: None,
                 }],
             }
         );

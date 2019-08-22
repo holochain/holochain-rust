@@ -107,6 +107,34 @@ pub struct Configuration {
     /// Which signals to emit
     #[serde(default)]
     pub signals: SignalConfig,
+
+    /// Configure how the conductor should prompt the user for the passphrase to lock/unlock keystores.
+    /// The conductor is independent of the specialized implementation of the trait
+    /// PassphraseService. It just needs something to provide a passphrase when needed.
+    /// This config setting selects one of the available services (i.e. CLI prompt, IPC, mock)
+    #[serde(default)]
+    pub passphrase_service: PassphraseServiceConfig,
+}
+
+/// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.
+/// In the context of a UI that wraps the conductor, this way of providing passphrases
+/// is not feasible.
+/// Setting the type to "unixsocket" and providing a path to a file socket enables
+/// arbitrary UIs to connect to the conductor and prompt the user for a passphrase.
+/// The according `PassphraseServiceUnixSocket` will send a request message over the socket
+/// then receives bytes as passphrase until a newline is sent.
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum PassphraseServiceConfig {
+    Cmd,
+    UnixSocket { path: String },
+    Mock { passphrase: String },
+}
+
+impl Default for PassphraseServiceConfig {
+    fn default() -> PassphraseServiceConfig {
+        PassphraseServiceConfig::Cmd
+    }
 }
 
 pub fn default_persistence_dir() -> PathBuf {
@@ -276,6 +304,16 @@ impl Configuration {
         }
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
+
+        #[cfg(not(unix))]
+        {
+            if let PassphraseServiceConfig::UnixSocket { path } = self.passphrase_service.clone() {
+                let _ = path;
+                return Err(String::from(
+                    "Passphrase service type 'unixsocket' is not available on non-Unix systems",
+                ));
+            }
+        }
 
         Ok(())
     }
@@ -671,9 +709,22 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
+/// An instance reference makes an instance available in the scope
+/// of an interface.
+/// Since UIs usually hard-code the name with which they reference an instance,
+/// we need to decouple that name used by the UI from the internal ID of
+/// the instance. That is what the optional `alias` field provides.
+/// Given that there is 1-to-1 relationship between UIs and interfaces,
+/// by setting an alias for available instances in the UI's interface
+/// each UI can have its own unique handle for shared instances.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceReferenceConfiguration {
+    /// ID of the instance that is made available in the interface
     pub id: String,
+
+    /// A local name under which the instance gets mounted in the
+    /// interface's scope
+    pub alias: Option<String>,
 }
 
 /// A bridge enables an instance to call zome functions of another instance.

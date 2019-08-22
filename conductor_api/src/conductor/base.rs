@@ -40,8 +40,12 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
-use config::AgentConfiguration;
+#[cfg(unix)]
+use conductor::passphrase_manager::PassphraseServiceUnixSocket;
+use conductor::passphrase_manager::{
+    PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+};
+use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -100,7 +104,6 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
-    #[allow(dead_code)]
     logger: FastLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
@@ -120,6 +123,12 @@ impl Drop for Conductor {
 
         self.shutdown()
             .unwrap_or_else(|err| println!("Error during shutdown, continuing anyway: {:?}", err));
+
+        // Flushing the logger's buffer writer
+        self.logger.flush();
+        // Do not shut down the logging thread if there is multiple concurrent conductor thread
+        // like during unit testing because they all use the same registered logger
+        // self.logger.shutdown();
 
         if let Some(network) = self.n3h_keepalive_network.take() {
             if let Err(err) = network.stop() {
@@ -180,6 +189,26 @@ impl Conductor {
             println!();
         }
 
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
+            if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
+            {
+                #[cfg(not(unix))]
+                let _ = path;
+                #[cfg(not(unix))]
+                panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
+
+                #[cfg(unix)]
+                Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
+            } else {
+                match config.passphrase_service.clone() {
+                    PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+                    PassphraseServiceConfig::Mock { passphrase } => {
+                        Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+                    }
+                    _ => unreachable!(),
+                }
+            };
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -196,9 +225,7 @@ impl Conductor {
             logger,
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-                PassphraseServiceCmd {},
-            )))),
+            passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
         }
@@ -1122,28 +1149,31 @@ impl Conductor {
     }
 
     fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
-        let instance_ids: Vec<String> = interface_config
-            .instances
-            .iter()
-            .map(|i| i.id.clone())
-            .collect();
+        let mut conductor_api_builder = ConductorApiBuilder::new();
+        for instance_ref_config in interface_config.instances.iter() {
+            let id = &instance_ref_config.id;
+            let name = instance_ref_config.alias.as_ref().unwrap_or(id).clone();
 
-        let instance_subset: InstanceMap = self
-            .instances
-            .iter()
-            .filter(|(id, _)| instance_ids.contains(&id))
-            .map(|(id, val)| (id.clone(), val.clone()))
-            .collect();
+            let instance = self.instances.get(id);
+            let instance_config = self.config.instance_by_id(id);
+            if instance.is_none() || instance_config.is_none() {
+                continue;
+            }
 
-        let mut conductor_api_builder = ConductorApiBuilder::new()
-            .with_instances(instance_subset)
-            .with_instance_configs(self.config.instances.clone());
+            let instance = instance.unwrap();
+            let instance_config = instance_config.unwrap();
+
+            conductor_api_builder = conductor_api_builder
+                .with_named_instance(name.clone(), instance.clone())
+                .with_named_instance_config(name.clone(), instance_config)
+        }
 
         if interface_config.admin {
             conductor_api_builder = conductor_api_builder
                 .with_admin_dna_functions()
                 .with_admin_ui_functions()
-                .with_test_admin_functions();
+                .with_test_admin_functions()
+                .with_debug_functions();
         }
 
         conductor_api_builder.spawn()

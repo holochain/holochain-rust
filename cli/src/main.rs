@@ -223,6 +223,17 @@ enum Cli {
         )]
         path: Option<PathBuf>,
     },
+    #[structopt(
+        name = "sign",
+        alias = "s",
+        about = "Sign a message using a key or a key derived from a root seed"
+    )]
+    Sign {
+        #[structopt(long, short, help = "(optional) Root seed mnemonic. If not provided will prompt for key")]
+        root_seed: Option<String>,
+        #[structopt(long, short, help = "String message to sign with the key")]
+        message: String,
+    }
 }
 
 fn main() {
@@ -347,7 +358,12 @@ fn run() -> HolochainResult<()> {
             let dna_hash = cli::hash_dna(&dna_path)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
-        }
+        },
+        Cli::Sign{ root_seed, message } => cli::sign(root_seed, message)
+            .map(|signed_message| {
+                println!("{}", signed_message);
+            })
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
     }
 
     Ok(())

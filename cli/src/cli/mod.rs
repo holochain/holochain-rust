@@ -8,6 +8,7 @@ pub mod package;
 mod run;
 mod scaffold;
 pub mod test;
+mod sign;
 
 pub use self::{
     chain_log::{chain_list, chain_log},
@@ -18,5 +19,6 @@ pub use self::{
     keygen::keygen,
     package::{package, unpack},
     run::{get_interface_type_string, hc_run_configuration, run},
+    sign::sign,
     test::{test, TEST_DIR_NAME},
 };

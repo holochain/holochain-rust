@@ -8,7 +8,7 @@ use holochain_core_types::error::HcResult;
 use holochain_dpki::{
     seed::{RootSeed, Seed, SeedType, TypedSeed},
     utils::SeedContext,
-    CONTEXT_SIZE,
+    DEVICE_CTX,
 };
 use std::{
     fs::create_dir_all,
@@ -21,7 +21,7 @@ use util::get_secure_string_double_check;
 /// If a root seed is passed then decode it from BIP39 (TODO: Also suppot base64)
 /// If not then securely prompt the user for the seed then attempt to decode
 /// TODO: Decrypt the root seed using the passphrase (currently it is unencrypted)
-fn get_root_seed(
+pub (crate) fn get_root_seed(
     root_seed: Option<String>,
     _passphrase: &String,
     quiet: bool,
@@ -75,14 +75,8 @@ when unlocking the keybundle to use within a Holochain conductor."
             "Device derivation context is ensured to be set together with root_seed in main.rs",
         );
 
-        let mut context_array: [u8; CONTEXT_SIZE] = Default::default();
-        let context_string = String::from("HCDEVICE");
-        let context_slice = context_string.as_bytes();
-        context_array.copy_from_slice(context_slice);
-        let seed_context = SeedContext::new(context_array);
-
         let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
-        let device_seed = root_seed.generate_device_seed(&seed_context, device_derivation_index)?;
+        let device_seed = root_seed.generate_device_seed(&SeedContext::new(DEVICE_CTX), device_derivation_index)?;
         keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
         let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
         (keystore, pub_key)

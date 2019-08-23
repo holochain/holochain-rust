@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
     utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, SEED_SIZE,
+    AGENT_ID_CTX, SEED_SIZE, DEVICE_CTX, REVOCATION_SEED_INDEX,
 };
 use bip39::{Language, Mnemonic};
 use holochain_core_types::error::{HcResult, HolochainError};
@@ -163,6 +163,16 @@ impl RootSeed {
         let device_seed_buf =
             generate_derived_seed_buf(&mut self.inner.buf, seed_context, index, SEED_SIZE)?;
         Ok(DeviceSeed::new(device_seed_buf))
+    }
+
+    /// Generate a revocation key
+    /// By convention this is genreated from the 0th seed in the DEVICE_CTX
+    pub fn generate_revocation_key(&mut self) -> HcResult<KeyBundle> {
+        let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let context = SeedContext::new(DEVICE_CTX);
+        let mut context = context.to_sec_buf();
+        kdf::derive(&mut ref_seed_buf, REVOCATION_SEED_INDEX, &mut context, &mut self.inner.buf)?;
+        Ok(KeyBundle::new_from_seed_buf(&mut ref_seed_buf)?)
     }
 }
 

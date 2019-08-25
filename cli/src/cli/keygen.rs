@@ -1,4 +1,3 @@
-use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_api::{
     key_loaders::mock_passphrase_manager,
@@ -45,7 +44,7 @@ pub fn keygen(
     quiet: bool,
     root_seed: Option<String>,
     device_derivation_index: Option<u64>,
-) -> DefaultResult<()> {
+) -> HcResult<()> {
     let passphrase = passphrase.unwrap_or_else(|| {
         if !quiet {
             println!(
@@ -113,7 +112,7 @@ when unlocking the keybundle to use within a Holochain conductor."
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use cli::dpki_init::dpki_init;
+    use cli::dpki;
     use holochain_conductor_api::{
         key_loaders::mock_passphrase_manager,
         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
@@ -150,7 +149,7 @@ pub mod test {
         let path = PathBuf::new().join("test_dpki.key");
         let passphrase = String::from("secret_dpki");
 
-        let mnemonic = dpki_init(Some("dummy passphrase".to_string()))
+        let mnemonic = dpki::genroot(Some("dummy passphrase".to_string()))
             .expect("Could not generate root seed mneomonic");
 
         keygen(

@@ -1,5 +1,5 @@
 mod chain_log;
-mod dpki_init;
+mod dpki;
 mod generate;
 mod hash_dna;
 mod init;
@@ -8,17 +8,15 @@ pub mod package;
 mod run;
 mod scaffold;
 pub mod test;
-mod sign;
 
 pub use self::{
     chain_log::{chain_list, chain_log},
-    dpki_init::dpki_init,
+    dpki::Dpki,
     generate::generate,
     hash_dna::hash_dna,
     init::init,
     keygen::keygen,
     package::{package, unpack},
     run::{get_interface_type_string, hc_run_configuration, run},
-    sign::sign,
     test::{test, TEST_DIR_NAME},
 };

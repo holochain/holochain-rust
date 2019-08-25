@@ -28,6 +28,7 @@ mod config_files;
 mod error;
 mod util;
 
+use crate::cli::Dpki;
 use crate::error::{HolochainError, HolochainResult};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -194,14 +195,6 @@ enum Cli {
         alias = "d",
         about = "Generates a new DPKI root seed and outputs the encrypted key as a BIP39 mnemonic"
     )]
-    DpkiInit {
-        #[structopt(
-            long,
-            short,
-            help = "Set passphrase via argument and don't prompt for it (not reccomended)"
-        )]
-        passphrase: Option<String>,
-    },
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
         #[structopt(name = "INSTANCE", help = "Instance ID to view")]
@@ -223,17 +216,8 @@ enum Cli {
         )]
         path: Option<PathBuf>,
     },
-    #[structopt(
-        name = "sign",
-        alias = "s",
-        about = "Sign a message using a key or a key derived from a root seed"
-    )]
-    Sign {
-        #[structopt(long, short, help = "(optional) Root seed mnemonic. If not provided will prompt for key")]
-        root_seed: Option<String>,
-        #[structopt(long, short, help = "String message to sign with the key")]
-        message: String,
-    }
+    #[structopt(name = "dpki")]
+    Dpki(Dpki),
 }
 
 fn main() {
@@ -332,8 +316,8 @@ fn run() -> HolochainResult<()> {
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 
-        Cli::DpkiInit { passphrase } => cli::dpki_init(passphrase)
-            .map(|mnemonic| println!("{}", mnemonic))
+        Cli::Dpki(dpki) => dpki.execute()
+            .map(|result| println!("{}", result))
             .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 
         Cli::ChainLog {
@@ -359,11 +343,6 @@ fn run() -> HolochainResult<()> {
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
         },
-        Cli::Sign{ root_seed, message } => cli::sign(root_seed, message)
-            .map(|signed_message| {
-                println!("{}", signed_message);
-            })
-            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
     }
 
     Ok(())

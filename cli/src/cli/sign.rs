@@ -17,11 +17,11 @@ pub fn sign(root_seed_string: Option<String>, message: String) -> HcResult<Strin
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use cli::dpki_init;
+    use cli::dpki;
 
     #[test]
     fn can_sign_a_message() {
-    	let mnemonic = dpki_init(Some("dummy passphrase".to_string()))
+    	let mnemonic = dpki::genroot(Some("dummy passphrase".to_string()))
             .expect("Could not generate root seed mneomonic");
 
         let message = String::from("sign me");

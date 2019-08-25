@@ -3,10 +3,12 @@ use crate::util::get_secure_string_double_check;
 use crate::cli::keygen;
 use holochain_core_types::error::HcResult;
 use holochain_dpki::{
-    seed::{RootSeed, SeedTrait},
+    seed::{Seed, RootSeed, SeedTrait, TypedSeed, SeedType},
     utils::generate_random_seed_buf,
 };
 use structopt::StructOpt;
+use lib3h_sodium::secbuf::SecBuf;
+
 
 #[derive(StructOpt)]
 pub enum Dpki {
@@ -66,9 +68,7 @@ impl Dpki {
                 keygen(path, passphrase, quiet, root_seed, Some(device_derivation_index))
                 .map(|_| "success".to_string()),
             Self::GenRevoke{ derivation_index } => genrevoke(None, derivation_index),
-            Self::Revoke { .. } => {
-                panic!()
-            },
+            Self::Revoke { key } => revoke(None, key),
         }
     }
 }
@@ -99,4 +99,25 @@ fn genrevoke(_passphrase: Option<String>, derivation_index: u64) -> HcResult<Str
     });
 
     revocation_seed.seed_mut().get_mnemonic()
+}
+
+fn revoke(_passphrase: Option<String>, key_string: String) -> HcResult<String> {
+    let revocation_seed_mnemonic = get_secure_string_double_check("Revocation Key", false).expect("Could not obtain revocation seed");
+    let _passphrase = _passphrase.unwrap_or_else(|| {
+        get_secure_string_double_check("Revocation Key Encryption Passphrase (placeholder)", false)
+            .expect("Could not obtain passphrase")
+    });
+
+    let revocation_seed = Seed::new_with_mnemonic(revocation_seed_mnemonic, SeedType::Revocation)?;
+    let mut revocation_seed = match revocation_seed.into_typed()? {
+        TypedSeed::Revocation(inner_root_seed) => inner_root_seed,
+        _ => unreachable!(),
+    };
+
+    let mut revocation_keypair = revocation_seed.generate_revocation_key(1)?;
+    let mut data_buf = SecBuf::with_insecure_from_string(key_string);
+    let mut signature_buf = revocation_keypair.sign(&mut data_buf)?;
+    let buf = signature_buf.read_lock();
+    let signature_str = base64::encode(&**buf);
+    Ok(signature_str)
 }

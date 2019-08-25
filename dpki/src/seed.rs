@@ -48,6 +48,7 @@ pub enum TypedSeed {
     Root(RootSeed),
     Device(DeviceSeed),
     DevicePin(DevicePinSeed),
+    Revocation(RevocationSeed),
 }
 
 /// Common Trait for TypedSeeds
@@ -109,6 +110,7 @@ impl Seed {
             SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(self.buf))),
             SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(self.buf))),
             SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(self.buf))),
+            SeedType::Revocation => Ok(TypedSeed::Revocation(RevocationSeed::new(self.buf))),
             _ => Err(HolochainError::ErrorGeneric(
                 "Seed does have specific behavior for its type".to_string(),
             )),

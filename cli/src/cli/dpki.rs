@@ -102,9 +102,9 @@ fn genrevoke(_passphrase: Option<String>, derivation_index: u64) -> HcResult<Str
 }
 
 fn revoke(_passphrase: Option<String>, key_string: String) -> HcResult<String> {
-    let revocation_seed_mnemonic = get_secure_string_double_check("Revocation Key", false).expect("Could not obtain revocation seed");
+    let revocation_seed_mnemonic = get_secure_string_double_check("Revocation Seed", false).expect("Could not obtain revocation seed");
     let _passphrase = _passphrase.unwrap_or_else(|| {
-        get_secure_string_double_check("Revocation Key Encryption Passphrase (placeholder)", false)
+        get_secure_string_double_check("Revocation Seed Encryption Passphrase (placeholder)", false)
             .expect("Could not obtain passphrase")
     });
 

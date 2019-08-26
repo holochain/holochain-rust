@@ -23,7 +23,7 @@ use hdk::{
         get_links::{GetLinksOptions, GetLinksResult},
         QueryArgsOptions, QueryResult,
     },
-     AGENT_ID_STR, CAPABILITY_REQ, DNA_NAME, PROPERTIES,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN
 };
 
 use memo::Memo;

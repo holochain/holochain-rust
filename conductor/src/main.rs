@@ -49,6 +49,14 @@ pub enum SignalConfiguration
     Windows
 }
 
+impl Default for SignalConfiguration
+{
+    fn default() -> Self
+    {
+        if cfg!(target_os = "windows"){SignalConfiguration::Windows} else {SignalConfiguration::Unix}
+    }
+}
+
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
@@ -59,7 +67,6 @@ fn main() {
         .unwrap_or(config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
 
-    let signal_configuration = SignalConfiguration::Windows;
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(()) => {
@@ -83,7 +90,7 @@ fn main() {
                     .expect("Could not start UI servers!");
             }
 
-            match signal_configuration
+            match SignalConfiguration::default()
             {
                 #[cfg(unix)]
                 SignalConfiguration::Unix =>

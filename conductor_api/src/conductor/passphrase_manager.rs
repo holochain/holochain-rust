@@ -12,7 +12,6 @@ use std::io::BufRead;
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use lib3h_sodium::secbuf::SecBuf;
-#[cfg(unix)]
 use log::Level;
 use std::{
     io::{self, Write},
@@ -190,12 +189,12 @@ impl PassphraseService for PassphraseServiceWindowsSocket
 {
     fn request_passphrase(&self) ->Result<SecBuf,HolochainError>
     {
-       // log_debug!("Passphrase needed. using windows unix socket passphrase service...");
+        log_debug!("Passphrase needed. using windows unix socket passphrase service...");
         
         Ok(self.pipe.connect().map(|_|{
             io_request_passphrase(&self.pipe)
         }).unwrap_or_else(|_|{
-            //log_debug!("No one connected via socket yet. Waiting...");
+            log_debug!("No one connected via socket yet. Waiting...");
             thread::sleep(Duration::from_millis(500));
             self.request_passphrase()
         })?)
@@ -204,11 +203,11 @@ impl PassphraseService for PassphraseServiceWindowsSocket
 
 fn io_request_passphrase<S : Read + Write>(mut stream : S) ->Result<SecBuf,HolochainError>
 {
-    //log_debug!("Sending passphrase request...");
+    log_debug!("Sending passphrase request...");
     stream.write_all(b"request_passphrase")?;
-   // log_debug!("Passphrase request sent.");
+    log_debug!("Passphrase request sent.");
     let mut passphrase_string = String::new();
-    //log_debug!("Reading passphrase from socket...");
+    log_debug!("Reading passphrase from socket...");
     let mut buff_reader = BufReader::new(stream);
     buff_reader.read_line(&mut passphrase_string)?;
     // Move passphrase in secure memory

@@ -177,7 +177,7 @@ pub struct PassphraseServiceWindowsSocket{
 
 impl PassphraseServiceWindowsSocket
 {
-    fn new<A: AsRef<OsStr>>(address:A) -> Result<PassphraseServiceWindowsSocket,HolochainError>
+    pub fn new<A: AsRef<OsStr>>(address:A) -> Result<PassphraseServiceWindowsSocket,HolochainError>
     {
         Ok(PassphraseServiceWindowsSocket
         {

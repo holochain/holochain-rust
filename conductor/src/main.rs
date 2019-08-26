@@ -116,11 +116,10 @@ fn main() {
                           // NB: conductor is dropped here and should shut down itself
                      }
                 },
-                SignalConfiguration::Windows => 
+                _ => 
                 {
-                      
-                },
-                _=>panic!("OS configuration not specified for kill")
+                      ()
+                }
             }
 
             

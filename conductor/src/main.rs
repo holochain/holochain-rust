@@ -19,8 +19,6 @@ extern crate holochain_core_types;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
-#[cfg(Windows)]
-extern crate winproc;
 extern crate structopt;
 
 use holochain_conductor_api::{

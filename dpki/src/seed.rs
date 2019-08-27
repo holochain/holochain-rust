@@ -540,7 +540,7 @@ mod tests {
             .unwrap()
         {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(seed.seed().kind, seed_2.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut seed_2.seed_mut().buf));

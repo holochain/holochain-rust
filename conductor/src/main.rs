@@ -19,8 +19,6 @@ extern crate holochain_core_types;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
-#[cfg(Windows)]
-extern crate winproc;
 extern crate structopt;
 
 use holochain_conductor_api::{
@@ -30,8 +28,6 @@ use holochain_conductor_api::{
 use holochain_core_types::error::HolochainError;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
-#[cfg(Windows)]
-use win_proc::Process;
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
 
@@ -116,11 +112,10 @@ fn main() {
                           // NB: conductor is dropped here and should shut down itself
                      }
                 },
-                SignalConfiguration::Windows => 
+                _ => 
                 {
-                      
-                },
-                _=>panic!("OS configuration not specified for kill")
+                      ()
+                }
             }
 
             

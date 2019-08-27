@@ -55,7 +55,6 @@ pub trait SeedTrait {
     fn seed(&self) -> &Seed;
     fn seed_mut(&mut self) -> &mut Seed;
     /// encrypt the contents of a seed with a passphrase
-    /// Default trait so all seeds are encryptable by default
     /// Encrypted seeds preserve their seed type
     fn encrypt(
         &mut self,

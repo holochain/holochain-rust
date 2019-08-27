@@ -52,7 +52,7 @@ use holochain_wasm_utils::{
 };
 use std::{
     collections::BTreeMap,
-    path::PathBuf,
+    path::{PathBuf,MAIN_SEPARATOR},
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -451,11 +451,19 @@ fn can_return_empty_string_as_validation_fail() {
         "check_commit_entry",
         &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
+    let path = PathBuf::new()
+              .join("core")
+              .join("src")
+              .join("nucleus")
+              .join("ribosome")
+              .join("runtime.rs");
+    let path_string = path.as_path().to_str().expect("path should have been created");
+    let formatted_path_string = path_string.replace(MAIN_SEPARATOR,&vec![MAIN_SEPARATOR.to_string(),MAIN_SEPARATOR.to_string(),MAIN_SEPARATOR.to_string(),MAIN_SEPARATOR.to_string()].join(""));
+    let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
+
     assert_eq!(
         result.unwrap(),
-        JsonString::from_json(
-            "{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"225\\\"}\"}"
-        )
+        JsonString::from_json(&result_format)
     );
 }
 #[test]

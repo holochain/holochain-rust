@@ -1,11 +1,9 @@
 #[cfg(windows)]
 extern crate named_pipe;
 #[cfg(windows)]
-use std::io::BufReader;
-#[cfg(windows)]
 use self::named_pipe::PipeOptions;
 use std::io::Read;
-use std::io::BufRead;
+use std::io::{BufRead,BufReader};
 
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
@@ -18,8 +16,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[cfg(unix)]
-use std::io::{BufRead, BufReader};
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
 
@@ -196,6 +192,7 @@ impl PassphraseService for PassphraseServiceWindowsSocket
         connection_pipe.wait_ms(50000).map(|pipe_server_result|{
             let pipe = pipe_server_result.expect("Problem creating pipe server for windows");
             io_request_passphrase(pipe)
+            
         })
         .unwrap_or_else(|_|{
             log_debug!("No one connected via socket yet. Waiting...");
@@ -205,15 +202,15 @@ impl PassphraseService for PassphraseServiceWindowsSocket
     }
 }
 
-fn io_request_passphrase<S : Read + Write>(mut stream : S) ->Result<SecBuf,HolochainError>
+fn io_request_passphrase<S:Read + Write>(mut stream : S) ->Result<SecBuf,HolochainError>
 {
     log_debug!("Sending passphrase request...");
     stream.write_all(b"request_passphrase")?;
     log_debug!("Passphrase request sent.");
     let mut passphrase_string = String::new();
     log_debug!("Reading passphrase from socket...");
-    let mut buff_reader = BufReader::new(stream);
-    buff_reader.read_line(&mut passphrase_string)?;
+    let mut buf_read = BufReader::new(stream);
+    buf_read.read_line(&mut passphrase_string)?;
     // Move passphrase in secure memory
     let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
     let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());

@@ -4,7 +4,7 @@ use crate::{
     utils::{generate_derived_seed_buf, SeedContext},
     AGENT_ID_CTX, SEED_SIZE, DEVICE_CTX, REVOKE_CTX,
 };
-use bip39::{Language, Mnemonic};
+use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
 use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
@@ -356,7 +356,7 @@ impl MnemonicableSeed for EncryptedSeed {
         let entropy: Vec<u8> = phrase
             .split(" ")
             .collect::<Vec<&str>>()
-            .chunks(24)
+            .chunks(MnemonicType::Words24.word_count())
             .map(|chunk| {
                 Mnemonic::from_phrase(chunk.join(" "), Language::English)
                     .unwrap()
@@ -396,7 +396,7 @@ impl MnemonicableSeed for EncryptedSeed {
         assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
 
         let mnemonic = entropy
-            .chunks(32)
+            .chunks(SEED_SIZE)
             .map(|sub_entropy| {
                 Mnemonic::from_entropy(&*sub_entropy, Language::English)
                     .expect("Could not generate mnemonic")
@@ -558,7 +558,7 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let dec_seed_untyped = enc_seed
@@ -566,7 +566,7 @@ mod tests {
             .unwrap();
         let mut dec_seed = match dec_seed_untyped {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(seed.seed().kind, dec_seed.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut dec_seed.seed_mut().buf));
@@ -577,12 +577,12 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
-        assert_eq!(mnemonic.split(" ").count(), 48);
+        assert_eq!(mnemonic.split(" ").count(), MnemonicType::Words24.word_count() * 2);
 
         let mut enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
         let mut seed_2 = match enc_seed_2
@@ -590,7 +590,7 @@ mod tests {
             .unwrap()
         {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(seed.seed().kind, seed_2.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut seed_2.seed_mut().buf));

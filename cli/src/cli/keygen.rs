@@ -115,66 +115,66 @@ fn keygen_dpki(root_seed_mnemonic: String, root_seed_passphrase: Option<String>,
     Ok((keystore, pub_key))
 }
 
-#[cfg(test)]
-pub mod test {
-    use super::*;
-    use cli::dpki;
-    use holochain_conductor_api::{
-        key_loaders::mock_passphrase_manager,
-        keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-    };
-    use std::{fs::remove_file, path::PathBuf};
+// #[cfg(test)]
+// pub mod test {
+//     use super::*;
+//     use cli::dpki;
+//     use holochain_conductor_api::{
+//         key_loaders::mock_passphrase_manager,
+//         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+//     };
+//     use std::{fs::remove_file, path::PathBuf};
 
-    #[test]
-    fn keygen_roundtrip_no_dpki() {
-        let path = PathBuf::new().join("test.key");
-        let passphrase = String::from("secret");
+//     #[test]
+//     fn keygen_roundtrip_no_dpki() {
+//         let path = PathBuf::new().join("test.key");
+//         let passphrase = String::from("secret");
 
-        keygen(
-            Some(path.clone()),
-            Some(passphrase.clone()),
-            true,
-            String::from(""),
-            None,
-        )
-        .expect("Keygen should work");
+//         keygen(
+//             Some(path.clone()),
+//             Some(passphrase.clone()),
+//             true,
+//             String::from(""),
+//             None,
+//         )
+//         .expect("Keygen should work");
 
-        let mut keystore =
-            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
-                .unwrap();
+//         let mut keystore =
+//             Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
+//                 .unwrap();
 
-        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
+//         let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 
-        assert!(keybundle.is_ok());
+//         assert!(keybundle.is_ok());
 
-        let _ = remove_file(path);
-    }
+//         let _ = remove_file(path);
+//     }
 
-    #[test]
-    fn keygen_roundtrip_with_dpki() {
-        let path = PathBuf::new().join("test_dpki.key");
-        let passphrase = String::from("secret_dpki");
+//     #[test]
+//     fn keygen_roundtrip_with_dpki() {
+//         let path = PathBuf::new().join("test_dpki.key");
+//         let passphrase = String::from("secret_dpki");
 
-        let mnemonic = dpki::genroot(Some("dummy passphrase".to_string()))
-            .expect("Could not generate root seed mneomonic");
+//         let mnemonic = dpki::genroot(Some("dummy passphrase".to_string()))
+//             .expect("Could not generate root seed mneomonic");
 
-        keygen(
-            Some(path.clone()),
-            Some(passphrase.clone()),
-            true,
-            mnemonic,
-            Some(1),
-        )
-        .expect("Keygen should work");
+//         keygen(
+//             Some(path.clone()),
+//             Some(passphrase.clone()),
+//             true,
+//             mnemonic,
+//             Some(1),
+//         )
+//         .expect("Keygen should work");
 
-        let mut keystore =
-            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
-                .unwrap();
+//         let mut keystore =
+//             Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
+//                 .unwrap();
 
-        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
+//         let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 
-        assert!(keybundle.is_ok());
+//         assert!(keybundle.is_ok());
 
-        let _ = remove_file(path);
-    }
-}
+//         let _ = remove_file(path);
+//     }
+// }

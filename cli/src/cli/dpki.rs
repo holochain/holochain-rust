@@ -69,8 +69,6 @@ pub enum Dpki {
         mnemonic_passphrase: Option<String>,
 
         #[structopt(
-            long,
-            short,
             help = "Derive device seed from root seed with this index"
         )]
         device_derivation_index: u64,
@@ -116,8 +114,6 @@ pub enum Dpki {
     )]
     Revoke {
         #[structopt(
-            long,
-            short,
             help = "Public key to revoke (or any other string you want to sign with a revocation key)"
         )]
         key: String,

@@ -40,13 +40,25 @@ pub enum Dpki {
             short,
             help = "Set passphrase via argument and don't prompt for it (not reccomended)"
         )]
-        passphrase: Option<String>,
+        keystore_passphrase: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Use insecure, hard-wired passphrase for testing and Don't ask for passphrase"
+        )]
+        nullpass: bool,
         #[structopt(
             long,
             short,
             help = "Set root seed via argument and don't prompt for it (not reccomended). BIP39 mnemonic encoded root seed to derive device seed and agent key from"
         )]
         root_seed: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Set mnemonic passphrase via argument and don't prompt for it (not reccomended)"
+        )]
+        mnemonic_passphrase: Option<String>,
         #[structopt(
             long,
             short,
@@ -81,8 +93,8 @@ impl Dpki {
     pub fn execute(self) -> HcResult<String> {
         match self {
             Self::GenRoot{ passphrase } => genroot(passphrase),
-            Self::Keygen{ path, passphrase, quiet, root_seed, device_derivation_index } =>
-                keygen(path, passphrase, quiet, root_seed.unwrap(), Some(device_derivation_index))
+            Self::Keygen{ path, keystore_passphrase, nullpass, quiet, root_seed, mnemonic_passphrase, device_derivation_index } =>
+                keygen(path, keystore_passphrase, nullpass, mnemonic_passphrase, root_seed, Some(device_derivation_index), quiet)
                 .map(|_| "success".to_string()),
             Self::GenRevoke{ derivation_index } => genrevoke(None, derivation_index),
             Self::Revoke { key } => revoke(None, key),

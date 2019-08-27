@@ -9,25 +9,16 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
-
 pub mod blog;
 pub mod memo;
 pub mod post;
 
 use blog::Env;
 use hdk::{
-    AGENT_ADDRESS, DNA_ADDRESS, PUBLIC_TOKEN,
     error::ZomeApiResult,
-    holochain_persistence_api::{
-        cas::content::Address
-    },
-    holochain_json_api::{
-        error::JsonError, json::JsonString,
-    },
-    holochain_core_types::{
-        entry::Entry,
-        signature::Provenance
-    },
+    holochain_core_types::{entry::Entry, signature::Provenance},
+    holochain_json_api::{error::JsonError, json::JsonString},
+    holochain_persistence_api::cas::content::Address,
     holochain_wasm_utils::api_serialization::{
         get_entry::{EntryHistory, GetEntryResult},
         get_links::GetLinksResult,

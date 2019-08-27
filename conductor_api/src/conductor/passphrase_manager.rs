@@ -166,13 +166,13 @@ impl PassphraseServiceUnixSocket {
     }
 }
 
-#[cfg(unix)]
+#[cfg(windows)]
 pub struct PassphraseServiceWindowsSocket{
     pub path : String
 }
 
 
-#[cfg(unix)]
+#[cfg(windows)]
 impl PassphraseServiceWindowsSocket
 {
     pub fn new(path:String) -> PassphraseServiceWindowsSocket
@@ -197,7 +197,7 @@ impl PassphraseService for PassphraseServiceWindowsSocket
             
         })
         .unwrap_or_else(|_|{
-            log_debug!("No one connected via socket yet. Waiting...");
+            log_debug!("No one connected via socket yet. trying again...");
             thread::sleep(Duration::from_millis(500));
             self.request_passphrase()
         })

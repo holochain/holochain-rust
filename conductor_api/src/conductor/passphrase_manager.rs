@@ -191,7 +191,9 @@ impl PassphraseService for PassphraseServiceWindowsSocket
     {
         log_debug!("Passphrase needed. using windows unix socket passphrase service...");
         let connection_pipe = PipeOptions::new(self.path.clone()).single()?;
-        connection_pipe.wait_ms(50000).map(|pipe_server_result|{
+        
+        //wait for 5 minutes if problem try again
+        connection_pipe.wait_ms(300000).map(|pipe_server_result|{
             let pipe = pipe_server_result.expect("Problem creating pipe server for windows");
             io_request_passphrase(pipe)
             

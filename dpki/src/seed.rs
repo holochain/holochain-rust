@@ -508,7 +508,7 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let dec_seed_untyped = enc_seed

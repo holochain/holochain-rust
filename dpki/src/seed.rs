@@ -346,7 +346,7 @@ impl MnemonicableSeed for EncryptedSeed {
         assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
 
         let mnemonic = entropy
-            .chunks(SEED_SIZE + ABYTES)
+            .chunks(SEED_SIZE)
             .map(|sub_entropy| {
                 Mnemonic::from_entropy(&*sub_entropy, Language::English)
                     .expect("Could not generate mnemonic")
@@ -508,7 +508,7 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let dec_seed_untyped = enc_seed
@@ -516,7 +516,7 @@ mod tests {
             .unwrap();
         let mut dec_seed = match dec_seed_untyped {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(seed.seed().kind, dec_seed.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut dec_seed.seed_mut().buf));
@@ -527,7 +527,7 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
@@ -540,7 +540,7 @@ mod tests {
             .unwrap()
         {
             TypedSeed::Root(s) => s,
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(seed.seed().kind, seed_2.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut seed_2.seed_mut().buf));

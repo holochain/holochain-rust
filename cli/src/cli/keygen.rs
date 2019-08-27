@@ -31,7 +31,7 @@ pub fn keygen(
 containing a public and a private key, for signing and encryption by the agent.
 This keybundle will be stored encrypted by passphrase within the keystore file.
 The passphrase is securing the keys and will be needed, together with the file,
-in order to use the key.", quiet);
+in order to use the key.\n", quiet);
 
     let keystore_passphrase = match (keystore_passphrase, nullpass) {
         (None, true) => String::from(holochain_common::DEFAULT_PASSPHRASE),
@@ -40,7 +40,7 @@ in order to use the key.", quiet);
         (None, false) =>  {
             // prompt for the passphrase
             user_prompt("Please enter a secret passphrase below. You will have to enter it again
-when unlocking the keybundle to use within a Holochain conductor.", quiet);
+when unlocking the keybundle to use within a Holochain conductor.\n", quiet);
             io::stdout().flush().expect("Could not flush stdout");
             get_secure_string_double_check("keystore Passphrase", quiet).expect("Could not retrieve passphrase")
         }

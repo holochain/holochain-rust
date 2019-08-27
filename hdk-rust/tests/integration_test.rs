@@ -52,7 +52,7 @@ use holochain_wasm_utils::{
 };
 use std::{
     collections::BTreeMap,
-    path::{PathBuf,MAIN_SEPARATOR},
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -458,7 +458,7 @@ fn can_return_empty_string_as_validation_fail() {
               .join("ribosome")
               .join("runtime.rs");
     let path_string = path.as_path().to_str().expect("path should have been created");
-    let formatted_path_string = path_string.replace(MAIN_SEPARATOR,&vec![MAIN_SEPARATOR.to_string(),MAIN_SEPARATOR.to_string(),MAIN_SEPARATOR.to_string(),MAIN_SEPARATOR.to_string()].join(""));
+    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\","\\","\\"].join(""));
     let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
 
     assert_eq!(

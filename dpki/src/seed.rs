@@ -532,7 +532,7 @@ mod tests {
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
-        assert_eq!(mnemonic.split(" ").count(), 48);
+        assert_eq!(mnemonic.split(" ").count(), MnemonicType::Words24.word_count() * 2);
 
         let mut enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
         let mut seed_2 = match enc_seed_2

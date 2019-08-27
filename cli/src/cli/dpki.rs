@@ -109,14 +109,14 @@ fn genroot(passphrase: Option<String>, quiet: bool) -> HcResult<String> {
         let mut input = String::new();
         stdin().read_line(&mut input).expect("Could not read from stdin");
         match input.as_str() {
-            "Y" => {
+            "Y\n" => {
                 Some(get_secure_string_double_check("Root Seed Passphrase", quiet).expect("Could not read root string passphrase"))
             },
-            "n" => {
+            "n\n" => {
                 None
             },
             _ => {
-                panic!("Invalid response")
+                panic!(format!("Invalid response: {}", input))
             }
         }
     });

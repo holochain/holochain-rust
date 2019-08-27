@@ -1,11 +1,9 @@
 #[cfg(windows)]
-extern crate mio_named_pipes;
-#[cfg(windows)]
-use self::mio_named_pipes::NamedPipe;
-#[cfg(windows)]
-use std::ffi::OsStr;
+extern crate named_pipe;
 #[cfg(windows)]
 use std::io::BufReader;
+#[cfg(windows)]
+use self::named_pipe::PipeOptions;
 use std::io::Read;
 use std::io::BufRead;
 
@@ -24,6 +22,8 @@ use std::{
 use std::io::{BufRead, BufReader};
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
+
+
 
 
 /// We are caching the passphrase for 10 minutes.
@@ -171,17 +171,19 @@ impl PassphraseServiceUnixSocket {
 }
 
 pub struct PassphraseServiceWindowsSocket{
-    pub pipe : NamedPipe
+    pub path : String
 }
+
+
 
 impl PassphraseServiceWindowsSocket
 {
-    pub fn new<A: AsRef<OsStr>>(address:A) -> Result<PassphraseServiceWindowsSocket,HolochainError>
+    pub fn new(path:String) -> PassphraseServiceWindowsSocket
     {
-        Ok(PassphraseServiceWindowsSocket
+        PassphraseServiceWindowsSocket
         {
-            pipe : NamedPipe::new(address)?
-        })
+            path
+        }
     }
 }
 
@@ -190,14 +192,16 @@ impl PassphraseService for PassphraseServiceWindowsSocket
     fn request_passphrase(&self) ->Result<SecBuf,HolochainError>
     {
         log_debug!("Passphrase needed. using windows unix socket passphrase service...");
-        
-        Ok(self.pipe.connect().map(|_|{
-            io_request_passphrase(&self.pipe)
-        }).unwrap_or_else(|_|{
+        let connection_pipe = PipeOptions::new(self.path.clone()).single()?;
+        connection_pipe.wait_ms(50000).map(|pipe_server_result|{
+            let pipe = pipe_server_result.expect("Problem creating pipe server for windows");
+            io_request_passphrase(pipe)
+        })
+        .unwrap_or_else(|_|{
             log_debug!("No one connected via socket yet. Waiting...");
             thread::sleep(Duration::from_millis(500));
             self.request_passphrase()
-        })?)
+        })
     }
 }
 

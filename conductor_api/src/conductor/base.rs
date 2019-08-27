@@ -38,10 +38,6 @@ use std::{
     thread,
     time::Duration,
 };
-
-#[cfg(windows)]
-use std::ffi::OsStr;
-
 use boolinator::Boolinator;
 #[cfg(unix)]
 use conductor::passphrase_manager::PassphraseServiceUnixSocket;
@@ -208,8 +204,7 @@ impl Conductor {
             },
             PassphraseServiceConfig::WindowsPipe { path } =>
             {
-                let os_path = OsStr::new(&path);
-                let passphrase_serivce = PassphraseServiceWindowsSocket::new(os_path).expect("Could not create windows passphrase manager");
+                let passphrase_serivce = PassphraseServiceWindowsSocket::new(path);
                 Arc::new(Mutex::new(passphrase_serivce))
             },
             PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),

@@ -4,7 +4,7 @@ use crate::{
     utils::{generate_derived_seed_buf, SeedContext},
     AGENT_ID_CTX, SEED_SIZE,
 };
-use bip39::{Language, Mnemonic};
+use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
 use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
@@ -306,7 +306,7 @@ impl MnemonicableSeed for EncryptedSeed {
         let entropy: Vec<u8> = phrase
             .split(" ")
             .collect::<Vec<&str>>()
-            .chunks(24)
+            .chunks(MnemonicType::Words24.word_count())
             .map(|chunk| {
                 Mnemonic::from_phrase(chunk.join(" "), Language::English)
                     .unwrap()
@@ -346,7 +346,7 @@ impl MnemonicableSeed for EncryptedSeed {
         assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
 
         let mnemonic = entropy
-            .chunks(32)
+            .chunks(SEED_SIZE + ABYTES)
             .map(|sub_entropy| {
                 Mnemonic::from_entropy(&*sub_entropy, Language::English)
                     .expect("Could not generate mnemonic")

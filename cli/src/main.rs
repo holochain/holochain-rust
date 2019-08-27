@@ -178,18 +178,6 @@ enum Cli {
             help = "Set passphrase via argument and don't prompt for it (not reccomended)"
         )]
         passphrase: Option<String>,
-        #[structopt(
-            long,
-            short,
-            help = "Set root seed via argument and don't prompt for it (not reccomended). BIP39 mnemonic encoded root seed to derive device seed and agent key from"
-        )]
-        root_seed: Option<String>,
-        #[structopt(
-            long,
-            short,
-            help = "Derive device seed from root seed with this index"
-        )]
-        device_derivation_index: Option<u64>,
     },
     #[structopt(
         name = "dpki-init",
@@ -300,24 +288,8 @@ fn run() -> HolochainResult<()> {
             quiet,
             nullpass,
             passphrase,
-            root_seed,
-            device_derivation_index,
         } => {
-            if !device_derivation_index.is_some() && root_seed.is_some() {
-                return Err(HolochainError::Default(format_err!(
-                    "A device derivation index must be provided to generate key from root seed"
-                )));
-            }
-
-            let passphrase = passphrase.or_else(|| {
-                if nullpass {
-                    Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
-                } else {
-                    None
-                }
-            });
-
-            cli::keygen(path, passphrase, quiet, root_seed.unwrap(), device_derivation_index)
+            cli::keygen(path, passphrase, nullpass, None, None, None, quiet)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
 

@@ -15,42 +15,65 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-use util::{get_secure_string_double_check, get_seed};
+use util::{get_secure_string_double_check, get_seed, user_prompt};
 
 pub fn keygen(
     path: Option<PathBuf>,
-    passphrase: Option<String>,
-    quiet: bool,
-    root_seed_mnemonic: String,
+    keystore_passphrase: Option<String>,
+    nullpass: bool,
+    mnemonic_passphrase: Option<String>,
+    root_seed_mnemonic: Option<String>,
     device_derivation_index: Option<u64>,
+    quiet: bool,
 ) -> HcResult<()> {
-    let passphrase = passphrase.unwrap_or_else(|| {
-        if !quiet {
-            println!(
-                "
-This will create a new agent keystore and populate it with an agent keybundle
+
+    user_prompt("This will create a new agent keystore and populate it with an agent keybundle
 containing a public and a private key, for signing and encryption by the agent.
 This keybundle will be stored encrypted by passphrase within the keystore file.
 The passphrase is securing the keys and will be needed, together with the file,
-in order to use the key.
-Please enter a secret passphrase below. You will have to enter it again
-when unlocking the keybundle to use within a Holochain conductor."
-            );
-            print!("Passphrase: ");
+in order to use the key.", quiet);
+
+    let keystore_passphrase = match (keystore_passphrase, nullpass) {
+        (None, true) => String::from(holochain_common::DEFAULT_PASSPHRASE),
+        (Some(s), false) => s,
+        (Some(_), true) => panic!("Invalid combination of args. Cannot pass --nullpass and also provide a passphrase"),
+        (None, false) =>  {
+            // prompt for the passphrase
+            user_prompt("Please enter a secret passphrase below. You will have to enter it again
+when unlocking the keybundle to use within a Holochain conductor.", quiet);
             io::stdout().flush().expect("Could not flush stdout");
+            get_secure_string_double_check("keystore Passphrase", quiet).expect("Could not retrieve passphrase")
         }
-        get_secure_string_double_check("Passphrase", quiet).expect("Could not retrieve passphrase")
-    });
+    };
 
     if !quiet {
         println!("Generating keystore (this will take a few moments)...");
     }
 
     let (keystore, pub_key) = if let Some(derivation_index) = device_derivation_index {
-        println!("This keystore is to be generated from a DPKI root seed.");
-        keygen_dpki(root_seed_mnemonic, Some(passphrase.clone()), derivation_index, passphrase)?
+        user_prompt("This keystore is to be generated from a DPKI root seed. ", quiet);
+
+        let root_seed_mnemonic = root_seed_mnemonic.unwrap_or_else(|| {
+            get_secure_string_double_check("Root Seed Mnemonic", quiet).expect("Could not retrieve mnemonic")
+        });
+
+        match root_seed_mnemonic.split(" ").count() {
+            24 => {
+                // unencrypted mnemonic
+                keygen_dpki(root_seed_mnemonic, None, derivation_index, keystore_passphrase)?
+            },
+            48 => {
+                // encrypted mnemonic
+                let mnemonic_passphrase = mnemonic_passphrase.unwrap_or_else(|| {
+                    get_secure_string_double_check("Root Seed Mnemonic passphrase", quiet).expect("Could not retrieve mnemonic passphrase")
+                });
+                keygen_dpki(root_seed_mnemonic, Some(mnemonic_passphrase), derivation_index, keystore_passphrase)?
+            },
+            _ => panic!("Invalid number of words in mnemonic")
+        }
+
     } else {
-        keygen_standalone(passphrase)?
+        keygen_standalone(keystore_passphrase)?
     };
 
     let path = if None == path {

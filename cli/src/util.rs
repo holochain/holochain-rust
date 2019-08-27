@@ -29,6 +29,12 @@ pub fn get_secure_string_double_check(name: &str, quiet: bool) -> HcResult<Strin
     Ok(retrieved_str_1)
 }
 
+pub fn user_prompt(message: &str, quiet: bool) {
+    if !quiet {
+        println!("{}", message);
+    }
+}
+
 /// Retrieve a seed from a BIP39 mnemonic
 /// If a passphrase is provided assume it is encrypted and decrypt it
 /// If not then assume it is unencrypted

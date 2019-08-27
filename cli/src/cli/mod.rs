@@ -1,4 +1,5 @@
 mod chain_log;
+mod dpki;
 mod generate;
 mod hash_dna;
 mod init;
@@ -10,6 +11,7 @@ pub mod test;
 
 pub use self::{
     chain_log::{chain_list, chain_log},
+    dpki::Dpki,
     generate::generate,
     hash_dna::hash_dna,
     init::init,

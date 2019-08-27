@@ -1,4 +1,5 @@
 #![warn(unused_extern_crates)]
+#![macro_use]
 extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
@@ -19,6 +20,7 @@ extern crate semver;
 extern crate toml;
 #[macro_use]
 extern crate serde_json;
+extern crate holochain_dpki;
 extern crate ignore;
 extern crate rpassword;
 
@@ -27,6 +29,7 @@ mod config_files;
 mod error;
 mod util;
 
+use crate::cli::Dpki;
 use crate::error::{HolochainError, HolochainResult};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -163,9 +166,36 @@ enum Cli {
             help = "Only print machine-readable output; intended for use by programs and scripts"
         )]
         quiet: bool,
-        #[structopt(long, short, help = "Don't ask for passphrase")]
+        #[structopt(
+            long,
+            short,
+            help = "Use insecure, hard-wired passphrase for testing and Don't ask for passphrase"
+        )]
         nullpass: bool,
+        #[structopt(
+            long,
+            short,
+            help = "Set passphrase via argument and don't prompt for it (not reccomended)"
+        )]
+        passphrase: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Set root seed via argument and don't prompt for it (not reccomended). BIP39 mnemonic encoded root seed to derive device seed and agent key from"
+        )]
+        root_seed: Option<String>,
+        #[structopt(
+            long,
+            short,
+            help = "Derive device seed from root seed with this index"
+        )]
+        device_derivation_index: Option<u64>,
     },
+    #[structopt(
+        name = "dpki-init",
+        alias = "d",
+        about = "Generates a new DPKI root seed and outputs the encrypted key as a BIP39 mnemonic"
+    )]
     #[structopt(name = "chain", about = "View the contents of a source chain")]
     ChainLog {
         #[structopt(name = "INSTANCE", help = "Instance ID to view")]
@@ -187,6 +217,12 @@ enum Cli {
         )]
         path: Option<PathBuf>,
     },
+    #[structopt(
+        name = "dpki",
+        alias = "d",
+        about = "Operations to manage keys for DPKI"
+    )]
+    Dpki(Dpki),
 }
 
 fn main() {
@@ -263,15 +299,31 @@ fn run() -> HolochainResult<()> {
             path,
             quiet,
             nullpass,
+            passphrase,
+            root_seed,
+            device_derivation_index,
         } => {
-            let passphrase = if nullpass {
-                Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
-            } else {
-                None
-            };
-            cli::keygen(path, passphrase, quiet)
+            if !device_derivation_index.is_some() && root_seed.is_some() {
+                return Err(HolochainError::Default(format_err!(
+                    "A device derivation index must be provided to generate key from root seed"
+                )));
+            }
+
+            let passphrase = passphrase.or_else(|| {
+                if nullpass {
+                    Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
+                } else {
+                    None
+                }
+            });
+
+            cli::keygen(path, passphrase, quiet, root_seed.unwrap(), device_derivation_index)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
         }
+
+        Cli::Dpki(dpki) => dpki.execute()
+            .map(|result| println!("{}", result))
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 
         Cli::ChainLog {
             instance_id,
@@ -295,7 +347,7 @@ fn run() -> HolochainResult<()> {
             let dna_hash = cli::hash_dna(&dna_path)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
-        }
+        },
     }
 
     Ok(())

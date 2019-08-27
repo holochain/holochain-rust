@@ -204,7 +204,14 @@ impl Conductor {
             },
             PassphraseServiceConfig::WindowsPipe { path } =>
             {
+                #[cfg(not(windows))]
+                let _ = path;
+                #[cfg(not(windows))]
+                panic!("Named pipes are not available on non-Windows systems. Can't create a PassphraseServiceUnixSocket.");
+
+                #[cfg(windows)]
                 let passphrase_serivce = PassphraseServiceWindowsSocket::new(path);
+                #[cfg(windows)]
                 Arc::new(Mutex::new(passphrase_serivce))
             },
             PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),

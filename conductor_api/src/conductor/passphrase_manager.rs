@@ -166,12 +166,13 @@ impl PassphraseServiceUnixSocket {
     }
 }
 
+#[cfg(unix)]
 pub struct PassphraseServiceWindowsSocket{
     pub path : String
 }
 
 
-
+#[cfg(unix)]
 impl PassphraseServiceWindowsSocket
 {
     pub fn new(path:String) -> PassphraseServiceWindowsSocket
@@ -183,6 +184,7 @@ impl PassphraseServiceWindowsSocket
     }
 }
 
+#[cfg(windows)]
 impl PassphraseService for PassphraseServiceWindowsSocket
 {
     fn request_passphrase(&self) ->Result<SecBuf,HolochainError>
@@ -242,7 +244,7 @@ impl PassphraseService for PassphraseServiceUnixSocket {
         log_debug!("We have an open connection to a passphrase provider.");
 
         // Request and read passphrase from socket
-        let mut passphrase_buf = {
+        let passphrase_buf = {
             let mut stream_option = self.stream.lock().expect(
                 "Could not lock mutex holding unix domain socket connection for passphrase service",
             );
@@ -253,7 +255,7 @@ impl PassphraseService for PassphraseServiceUnixSocket {
                 .expect("Error accepting unix socket connection for passphrase service");
 
             log_debug!("Sending passphrase request via unix socket...");
-            io_request_passphrase(stream)?
+            io_request_passphrase(stream.get_mut())
         };
         passphrase_buf
     }

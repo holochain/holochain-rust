@@ -346,7 +346,7 @@ impl MnemonicableSeed for EncryptedSeed {
         assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
 
         let mnemonic = entropy
-            .chunks(32)
+            .chunks(SEED_SIZE)
             .map(|sub_entropy| {
                 Mnemonic::from_entropy(&*sub_entropy, Language::English)
                     .expect("Could not generate mnemonic")

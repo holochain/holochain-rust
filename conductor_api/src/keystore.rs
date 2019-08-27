@@ -7,7 +7,7 @@ use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
     key_bundle::KeyBundle,
     keypair::{EncryptingKeyPair, KeyPair, SigningKeyPair},
-    seed::Seed,
+    seed::{Seed, SeedTrait},
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, SeedContext,
@@ -43,6 +43,12 @@ pub enum Secret {
     SigningKey(SigningKeyPair),
     EncryptingKey(EncryptingKeyPair),
     Seed(SecBuf),
+}
+
+impl<S: SeedTrait> From<S> for Secret {
+    fn from(s: S) -> Self {
+        Secret::Seed(s.seed().buf.clone())
+    }
 }
 
 pub enum KeyType {

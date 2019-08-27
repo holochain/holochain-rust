@@ -1,6 +1,6 @@
+use std::io::stdin;
 use std::path::PathBuf;
-use crate::util;
-use crate::util::get_secure_string_double_check;
+use crate::util::{self, get_secure_string_double_check, user_prompt};
 use crate::cli::keygen;
 use holochain_core_types::error::HcResult;
 use holochain_dpki::{
@@ -20,6 +20,7 @@ pub enum Dpki {
     )]
     GenRoot {
         passphrase: Option<String>,
+        quiet: bool,
     },
 
     #[structopt(
@@ -92,7 +93,7 @@ pub enum Dpki {
 impl Dpki {
     pub fn execute(self) -> HcResult<String> {
         match self {
-            Self::GenRoot{ passphrase } => genroot(passphrase),
+            Self::GenRoot{ passphrase, quiet } => genroot(passphrase, quiet),
             Self::Keygen{ path, keystore_passphrase, nullpass, quiet, root_seed, mnemonic_passphrase, device_derivation_index } =>
                 keygen(path, keystore_passphrase, nullpass, mnemonic_passphrase, root_seed, Some(device_derivation_index), quiet)
                 .map(|_| "success".to_string()),
@@ -102,7 +103,27 @@ impl Dpki {
     }
 }
 
-pub (crate) fn genroot(passphrase: Option<String>) -> HcResult<String> {
+fn genroot(passphrase: Option<String>, quiet: bool) -> HcResult<String> {
+    let passphrase = passphrase.or_else(|| {
+        user_prompt("Would you like to passphrase encrypt the root seed? (Y/n)", quiet);
+        let mut input = String::new();
+        stdin().read_line(&mut input).expect("Could not read from stdin");
+        match input.as_str() {
+            "Y" => {
+                Some(get_secure_string_double_check("Root Seed Passphrase", quiet).expect("Could not read root string passphrase"))
+            },
+            "n" => {
+                None
+            },
+            _ => {
+                panic!("Invalid response")
+            }
+        }
+    });
+    genroot_inner(passphrase)
+}
+
+pub (crate) fn genroot_inner(passphrase: Option<String>) -> HcResult<String> {
     let seed_buf = generate_random_seed_buf();
     let mut root_seed = RootSeed::new(seed_buf);
     match passphrase {

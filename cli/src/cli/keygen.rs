@@ -45,13 +45,9 @@ when unlocking the keybundle to use within a Holochain conductor.", quiet);
             get_secure_string_double_check("keystore Passphrase", quiet).expect("Could not retrieve passphrase")
         }
     };
-
-    if !quiet {
-        println!("Generating keystore (this will take a few moments)...");
-    }
-
+    
     let (keystore, pub_key) = if let Some(derivation_index) = device_derivation_index {
-        user_prompt("This keystore is to be generated from a DPKI root seed. ", quiet);
+        user_prompt("This keystore is to be generated from a DPKI root seed. You can regenerate this keystore at any time by using the same root key mnemonic and device derivation index.", quiet);
 
         let root_seed_mnemonic = root_seed_mnemonic.unwrap_or_else(|| {
             get_secure_string_double_check("Root Seed Mnemonic", quiet).expect("Could not retrieve mnemonic")
@@ -60,6 +56,7 @@ when unlocking the keybundle to use within a Holochain conductor.", quiet);
         match root_seed_mnemonic.split(" ").count() {
             24 => {
                 // unencrypted mnemonic
+                user_prompt("Generating keystore (this will take a few moments)...", quiet);
                 keygen_dpki(root_seed_mnemonic, None, derivation_index, keystore_passphrase)?
             },
             48 => {
@@ -67,12 +64,14 @@ when unlocking the keybundle to use within a Holochain conductor.", quiet);
                 let mnemonic_passphrase = mnemonic_passphrase.unwrap_or_else(|| {
                     get_secure_string_double_check("Root Seed Mnemonic passphrase", quiet).expect("Could not retrieve mnemonic passphrase")
                 });
+                user_prompt("Generating keystore (this will take a few moments)...", quiet);
                 keygen_dpki(root_seed_mnemonic, Some(mnemonic_passphrase), derivation_index, keystore_passphrase)?
             },
-            _ => panic!("Invalid number of words in mnemonic")
+            _ => panic!("Invalid number of words in mnemonic. Must be 24 (unencrypted) or 48 (encrypted)")
         }
 
     } else {
+        user_prompt("Generating keystore (this will take a few moments)...", quiet);
         keygen_standalone(keystore_passphrase)?
     };
 
@@ -115,66 +114,72 @@ fn keygen_dpki(root_seed_mnemonic: String, root_seed_passphrase: Option<String>,
     Ok((keystore, pub_key))
 }
 
-// #[cfg(test)]
-// pub mod test {
-//     use super::*;
-//     use cli::dpki;
-//     use holochain_conductor_api::{
-//         key_loaders::mock_passphrase_manager,
-//         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-//     };
-//     use std::{fs::remove_file, path::PathBuf};
+#[cfg(test)]
+pub mod test {
+    use super::*;
+    use cli::dpki;
+    use holochain_conductor_api::{
+        key_loaders::mock_passphrase_manager,
+        keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    };
+    use std::{fs::remove_file, path::PathBuf};
 
-//     #[test]
-//     fn keygen_roundtrip_no_dpki() {
-//         let path = PathBuf::new().join("test.key");
-//         let passphrase = String::from("secret");
+    #[test]
+    fn keygen_roundtrip_no_dpki() {
+        let path = PathBuf::new().join("test.key");
+        let passphrase = String::from("secret");
 
-//         keygen(
-//             Some(path.clone()),
-//             Some(passphrase.clone()),
-//             true,
-//             String::from(""),
-//             None,
-//         )
-//         .expect("Keygen should work");
+        keygen(
+            Some(path.clone()),
+            Some(passphrase.clone()),
+            false,
+            None,
+            None,
+            None,
+            true,
+        )
+        .expect("Keygen should work");
 
-//         let mut keystore =
-//             Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
-//                 .unwrap();
+        let mut keystore =
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
+                .unwrap();
 
-//         let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
+        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 
-//         assert!(keybundle.is_ok());
+        assert!(keybundle.is_ok());
 
-//         let _ = remove_file(path);
-//     }
+        let _ = remove_file(path);
+    }
 
-//     #[test]
-//     fn keygen_roundtrip_with_dpki() {
-//         let path = PathBuf::new().join("test_dpki.key");
-//         let passphrase = String::from("secret_dpki");
+    #[test]
+    fn keygen_roundtrip_with_dpki() {
+        let path = PathBuf::new().join("test_dpki.key");
+        let keystore_passphrase = String::from("secret_dpki");
+        let mnemonic_passphrase = String::from("dummy passphrase");
 
-//         let mnemonic = dpki::genroot(Some("dummy passphrase".to_string()))
-//             .expect("Could not generate root seed mneomonic");
+        let mnemonic = dpki::genroot_inner(Some(mnemonic_passphrase.clone()))
+            .expect("Could not generate root seed mneomonic");
 
-//         keygen(
-//             Some(path.clone()),
-//             Some(passphrase.clone()),
-//             true,
-//             mnemonic,
-//             Some(1),
-//         )
-//         .expect("Keygen should work");
+        keygen(
+            Some(path.clone()),
+            Some(keystore_passphrase.clone()),
+            false,
+            Some(mnemonic_passphrase),
+            Some(mnemonic),
+            Some(1),
+            true,
+        )
+        .expect("Keygen should work");
 
-//         let mut keystore =
-//             Keystore::new_from_file(path.clone(), mock_passphrase_manager(passphrase), None)
-//                 .unwrap();
 
-//         let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
+        let mut keystore =
+            Keystore::new_from_file(path.clone(), mock_passphrase_manager(keystore_passphrase), None)
+                .unwrap();
 
-//         assert!(keybundle.is_ok());
+        let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 
-//         let _ = remove_file(path);
-//     }
-// }
+        assert!(keybundle.is_ok());
+
+        let _ = remove_file(path);
+    }
+}

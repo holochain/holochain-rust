@@ -59,15 +59,19 @@ pub trait SeedTrait {
     fn encrypt(
         &mut self,
         passphrase: String,
-        config: Option<PwHashConfig>
+        config: Option<PwHashConfig>,
     ) -> HcResult<EncryptedSeed> {
         let mut passphrase_buf = SecBuf::with_insecure_from_string(passphrase);
-        let encrypted_data = pw_enc_zero_nonce(&mut self.seed_mut().buf, &mut passphrase_buf, config)?;
+        let encrypted_data =
+            pw_enc_zero_nonce(&mut self.seed_mut().buf, &mut passphrase_buf, config)?;
         Ok(EncryptedSeed::new(encrypted_data, self.seed().kind.clone()))
     }
 }
 
-pub trait MnemonicableSeed where Self: Sized {
+pub trait MnemonicableSeed
+where
+    Self: Sized,
+{
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self>;
     fn get_mnemonic(&mut self) -> HcResult<String>;
 }
@@ -280,11 +284,18 @@ impl EncryptedSeed {
         Self { kind, data }
     }
 
-    pub fn decrypt(&mut self, passphrase: String, config: Option<PwHashConfig>) -> HcResult<TypedSeed> {
+    pub fn decrypt(
+        &mut self,
+        passphrase: String,
+        config: Option<PwHashConfig>,
+    ) -> HcResult<TypedSeed> {
         let mut passphrase_buf = SecBuf::with_insecure_from_string(passphrase);
         let mut decrypted_data = SecBuf::with_secure(SEED_SIZE);
         pw_dec(&self.data, &mut passphrase_buf, &mut decrypted_data, config)?;
-        Ok(Seed::new_with_initializer(SeedInitializer::Seed(decrypted_data), self.kind.clone()).into_typed()?)
+        Ok(
+            Seed::new_with_initializer(SeedInitializer::Seed(decrypted_data), self.kind.clone())
+                .into_typed()?,
+        )
     }
 }
 
@@ -292,16 +303,23 @@ impl MnemonicableSeed for EncryptedSeed {
     // TODO: We need some way of zeroing the internal memory used by mnemonic
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
         // split out the two phrases, decode then combine the bytes
-        let entropy: Vec<u8> = phrase.split(" ").collect::<Vec<&str>>()
+        let entropy: Vec<u8> = phrase
+            .split(" ")
+            .collect::<Vec<&str>>()
             .chunks(24)
             .map(|chunk| {
-                Mnemonic::from_phrase(chunk.join(" "), Language::English).unwrap().entropy().to_owned()
-            }).flatten().collect();
+                Mnemonic::from_phrase(chunk.join(" "), Language::English)
+                    .unwrap()
+                    .entropy()
+                    .to_owned()
+            })
+            .flatten()
+            .collect();
 
         assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
 
-        let enc_data = EncryptedData{
-            nonce: [0; NONCEBYTES].to_vec(),  // zero nonce
+        let enc_data = EncryptedData {
+            nonce: [0; NONCEBYTES].to_vec(), // zero nonce
             cipher: entropy[..SEED_SIZE + ABYTES].to_vec(),
             salt: entropy[SEED_SIZE + ABYTES..].to_vec(),
         };
@@ -316,14 +334,26 @@ impl MnemonicableSeed for EncryptedSeed {
     /// which adds an extra 32 bytes. This fits nicely into two 24 word BIP39 mnemonics.
     // TODO: We need some way of zeroing the internal memory used by mnemonic
     fn get_mnemonic(&mut self) -> HcResult<String> {
-        let bytes: Vec<u8> = self.data.cipher.iter().cloned().chain(self.data.salt.iter().cloned()).collect();
+        let bytes: Vec<u8> = self
+            .data
+            .cipher
+            .iter()
+            .cloned()
+            .chain(self.data.salt.iter().cloned())
+            .collect();
         let entropy = bytes.as_slice();
 
         assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
 
-        let mnemonic = entropy.chunks(32).map(|sub_entropy| {
-            Mnemonic::from_entropy(&*sub_entropy, Language::English).expect("Could not generate mnemonic").into_phrase()
-        }).collect::<Vec<String>>().join(" ");
+        let mnemonic = entropy
+            .chunks(32)
+            .map(|sub_entropy| {
+                Mnemonic::from_entropy(&*sub_entropy, Language::English)
+                    .expect("Could not generate mnemonic")
+                    .into_phrase()
+            })
+            .collect::<Vec<String>>()
+            .join(" ");
 
         Ok(mnemonic)
     }
@@ -476,10 +506,18 @@ mod tests {
     #[test]
     fn it_should_encrypt_and_decrypt_seed() {
         let seed_buf = generate_random_seed_buf();
-        let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() { TypedSeed::Root(s) => s, _ => panic!()};
+        let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
+            TypedSeed::Root(s) => s,
+            _ => panic!(),
+        };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
-        let dec_seed_untyped = enc_seed.decrypt("some passphrase".to_string(), None).unwrap();
-        let mut dec_seed = match dec_seed_untyped { TypedSeed::Root(s) => s, _ => panic!()};
+        let dec_seed_untyped = enc_seed
+            .decrypt("some passphrase".to_string(), None)
+            .unwrap();
+        let mut dec_seed = match dec_seed_untyped {
+            TypedSeed::Root(s) => s,
+            _ => panic!(),
+        };
         assert_eq!(seed.seed().kind, dec_seed.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut dec_seed.seed_mut().buf));
     }
@@ -487,14 +525,23 @@ mod tests {
     #[test]
     fn it_should_roundtrip_encrypted_seed_mnemonic() {
         let seed_buf = generate_random_seed_buf();
-        let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() { TypedSeed::Root(s) => s, _ => panic!()};
+        let mut seed = match Seed::new(seed_buf, SeedType::Root).into_typed().unwrap() {
+            TypedSeed::Root(s) => s,
+            _ => panic!(),
+        };
         let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
         assert_eq!(mnemonic.split(" ").count(), 48);
 
         let mut enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
-        let mut seed_2 = match enc_seed_2.decrypt("some passphrase".to_string(), None).unwrap() { TypedSeed::Root(s) => s, _ => panic!()};
+        let mut seed_2 = match enc_seed_2
+            .decrypt("some passphrase".to_string(), None)
+            .unwrap()
+        {
+            TypedSeed::Root(s) => s,
+            _ => panic!(),
+        };
         assert_eq!(seed.seed().kind, seed_2.seed().kind);
         assert_eq!(0, seed.seed_mut().buf.compare(&mut seed_2.seed_mut().buf));
     }

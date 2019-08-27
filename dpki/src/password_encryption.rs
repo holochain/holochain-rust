@@ -1,9 +1,8 @@
+pub use aead::{ABYTES, NONCEBYTES};
 use holochain_core_types::error::HcResult;
 use lib3h_sodium::{aead, kx, pwhash, secbuf::SecBuf};
-use serde_derive::{Deserialize, Serialize};
 pub use pwhash::SALTBYTES;
-pub use aead::NONCEBYTES;
-pub use aead::ABYTES;
+use serde_derive::{Deserialize, Serialize};
 
 pub type OpsLimit = u64;
 pub type MemLimit = usize;
@@ -69,7 +68,7 @@ pub(crate) fn pw_enc(
 pub(crate) fn pw_enc_zero_nonce(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
-    config: Option<PwHashConfig>,   
+    config: Option<PwHashConfig>,
 ) -> HcResult<EncryptedData> {
     let mut salt = SecBuf::with_insecure(SALTBYTES);
     salt.randomize();
@@ -85,7 +84,7 @@ fn pw_enc_base(
     passphrase: &mut SecBuf,
     mut salt: &mut SecBuf,
     mut nonce: &mut SecBuf,
-    config: Option<PwHashConfig>, 
+    config: Option<PwHashConfig>,
 ) -> HcResult<EncryptedData> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);

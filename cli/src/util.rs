@@ -1,3 +1,4 @@
+use std::io::stdin;
 use crate::error::DefaultResult;
 use colored::*;
 pub use holochain_common::paths::DNA_EXTENSION;
@@ -35,6 +36,23 @@ pub fn user_prompt(message: &str, quiet: bool) {
     }
 }
 
+pub fn user_prompt_yes_no(message: &str, quiet: bool) -> bool {
+        user_prompt(format!("{} (Y/n)", message).as_str(), quiet);
+        let mut input = String::new();
+        stdin().read_line(&mut input).expect("Could not read from stdin");
+        match input.as_str() {
+            "Y\n" => {
+                true
+            },
+            "n\n" => {
+                false
+            },
+            _ => {
+                panic!(format!("Invalid response: {}", input))
+            }
+        }
+}
+
 /// Retrieve a seed from a BIP39 mnemonic
 /// If a passphrase is provided assume it is encrypted and decrypt it
 /// If not then assume it is unencrypted
@@ -50,6 +68,16 @@ pub fn get_seed(
         None => {
             Seed::new_with_mnemonic(seed_mnemonic, seed_type)?.into_typed()
         }
+    }
+}
+
+pub trait WordCountable {
+    fn word_count(&self) -> usize;
+}
+
+impl WordCountable for String {
+    fn word_count(&self) -> usize {
+        self.split(" ").count()
     }
 }
 

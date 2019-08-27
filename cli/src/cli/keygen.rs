@@ -46,20 +46,11 @@ when unlocking the keybundle to use within a Holochain conductor."
         println!("Generating keystore (this will take a few moments)...");
     }
 
-    let (keystore, pub_key) = if device_derivation_index.is_some() {
+    let (keystore, pub_key) = if let Some(derivation_index) = device_derivation_index {
         println!("This keystore is to be generated from a DPKI root seed.");
-        let mut root_seed = match get_seed(root_seed_mnemonic, Some(passphrase.clone()), SeedType::Root)? { TypedSeed::Root(s) => s, _ => unreachable!() };
-        let device_derivation_index = device_derivation_index.expect(
-            "Device derivation context is ensured to be set together with root_seed in main.rs",
-        );
-
-        let mut keystore = Keystore::new(mock_passphrase_manager(passphrase), None)?;
-        let device_seed = root_seed.generate_device_seed(&SeedContext::new(DEVICE_CTX), device_derivation_index)?;
-        keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
-        let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
-        (keystore, pub_key)
+        keygen_dpki(root_seed_mnemonic, Some(passphrase.clone()), derivation_index, passphrase)?
     } else {
-        Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?
+        keygen_standalone(passphrase)?
     };
 
     let path = if None == path {
@@ -86,6 +77,19 @@ when unlocking the keybundle to use within a Holochain conductor."
         println!("You can set this file in a conductor config as keystore_file for an agent.");
     }
     Ok(())
+}
+
+fn keygen_standalone(keystore_passphrase: String) -> HcResult<(Keystore, String)> {
+    Keystore::new_standalone(mock_passphrase_manager(keystore_passphrase), None)
+}
+
+fn keygen_dpki(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, derivation_index: u64, keystore_passphrase: String) -> HcResult<(Keystore, String)> {
+    let mut root_seed = match get_seed(root_seed_mnemonic, root_seed_passphrase, SeedType::Root)? { TypedSeed::Root(s) => s, _ => unreachable!() };
+    let mut keystore = Keystore::new(mock_passphrase_manager(keystore_passphrase), None)?;
+    let device_seed = root_seed.generate_device_seed(&SeedContext::new(DEVICE_CTX), derivation_index)?;
+    keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
+    let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
+    Ok((keystore, pub_key))
 }
 
 #[cfg(test)]

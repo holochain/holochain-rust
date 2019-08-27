@@ -1,12 +1,52 @@
 use crate::error::DefaultResult;
 use colored::*;
 pub use holochain_common::paths::DNA_EXTENSION;
+use holochain_core_types::error::HcResult;
+use rpassword;
+use holochain_dpki::seed::{Seed, SeedType, TypedSeed, MnemonicableSeed, EncryptedSeed};
+
 use std::{
     fs,
-    io::ErrorKind,
+    io::{self, ErrorKind, Write},
     path::PathBuf,
     process::{Command, Stdio},
 };
+
+pub fn get_secure_string_double_check(name: &str, quiet: bool) -> HcResult<String> {
+    if !quiet {
+        print!("Enter {}: ", name);
+        io::stdout().flush()?;
+    }
+    let retrieved_str_1 = rpassword::read_password()?;
+    if !quiet {
+        print!("Re-enter {}: ", name);
+        io::stdout().flush()?;
+    }
+    let retrieved_str_2 = rpassword::read_password()?;
+    if retrieved_str_1 != retrieved_str_2 {
+        panic!("Root seeds do not match. Aborting");
+    }
+    Ok(retrieved_str_1)
+}
+
+/// Retrieve a seed from a BIP39 mnemonic
+/// If a passphrase is provided assume it is encrypted and decrypt it
+/// If not then assume it is unencrypted
+pub fn get_seed(
+    seed_mnemonic: String,
+    passphrase: Option<String>,
+    seed_type: SeedType,
+) -> HcResult<TypedSeed> {
+    match passphrase {
+        Some(passphrase) => {
+            EncryptedSeed::new_with_mnemonic(seed_mnemonic, seed_type)?.decrypt(passphrase, None)
+        },
+        None => {
+            Seed::new_with_mnemonic(seed_mnemonic, seed_type)?.into_typed()
+        }
+    }
+}
+
 
 pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
     let pretty_command = format!("{} {}", bin.green(), args.join(" ").cyan());

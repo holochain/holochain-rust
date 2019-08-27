@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
     utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, SEED_SIZE,
+    AGENT_ID_CTX, SEED_SIZE, DEVICE_CTX, REVOKE_CTX,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
@@ -48,6 +48,7 @@ pub enum TypedSeed {
     Root(RootSeed),
     Device(DeviceSeed),
     DevicePin(DevicePinSeed),
+    Revocation(RevocationSeed),
 }
 
 /// Common Trait for TypedSeeds
@@ -176,7 +177,7 @@ impl RootSeed {
         }
     }
 
-    /// Generate Device Seed
+    // Generate Device Seed
     /// @param {number} index - the index number in this seed group, must not be zero
     pub fn generate_device_seed(
         &mut self,
@@ -186,6 +187,18 @@ impl RootSeed {
         let device_seed_buf =
             generate_derived_seed_buf(&mut self.inner.buf, seed_context, index, SEED_SIZE)?;
         Ok(DeviceSeed::new(device_seed_buf))
+    }
+
+    /// Generate Revocation Seed
+    /// @param {number} index - the index number in this seed group, must not be zero
+    pub fn generate_revocation_seed(
+        &mut self,
+        index: u64,
+    ) -> HcResult<RevocationSeed> {
+        let seed_context = SeedContext::new(REVOKE_CTX);
+        let seed_buf =
+            generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
+        Ok(RevocationSeed::new(seed_buf))
     }
 }
 
@@ -268,6 +281,43 @@ impl DevicePinSeed {
         kdf::derive(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
         Ok(KeyBundle::new_from_seed_buf(&mut dna_seed_buf)?)
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Revocation Seed
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct RevocationSeed {
+    inner: Seed,
+}
+
+impl SeedTrait for RevocationSeed {
+    fn seed(&self) -> &Seed {
+        &self.inner
+    }
+    fn seed_mut(&mut self) -> &mut Seed {
+        &mut self.inner
+    }
+}
+
+impl RevocationSeed {
+    /// Construct from a 32 bytes seed buffer
+    pub fn new(seed_buf: SecBuf) -> Self {
+        RevocationSeed {
+            inner: Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), SeedType::Revocation),
+        }
+    }
+
+    /// Generate a revocation key
+    /// By convention this is genreated from the 0th seed in the DEVICE_CTX
+    pub fn generate_revocation_key(&mut self, derivation_index: u64) -> HcResult<KeyBundle> {
+        let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let context = SeedContext::new(DEVICE_CTX);
+        let mut context = context.to_sec_buf();
+        kdf::derive(&mut ref_seed_buf, derivation_index, &mut context, &mut self.inner.buf)?;
+        Ok(KeyBundle::new_from_seed_buf(&mut ref_seed_buf)?)
     }
 }
 

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use crate::util::{self, get_secure_string_double_check, user_prompt_yes_no, WordCountable};
+use crate::util::{self, get_secure_string_double_check, user_prompt, user_prompt_yes_no, WordCountable};
 use crate::cli::keygen;
 use holochain_core_types::error::HcResult;
 use holochain_dpki::{
@@ -80,8 +80,6 @@ pub enum Dpki {
     )]
     GenRevoke {
         #[structopt(
-            long,
-            short,
             help = "Derive revocation seed from root seed with this index"
         )]
         derivation_index: u64,
@@ -148,12 +146,18 @@ impl Dpki {
 }
 
 fn genroot(passphrase: Option<String>, quiet: bool) -> HcResult<String> {
+    user_prompt("This will generate a new random DPKI root seed.
+You should only have to do this once and you should keep the seed safe.
+It will be printed out once as a mnemonic at the end of this process.
+The root seed can be used to generate new device, revocation and auth keys.\n", quiet);
+
     let passphrase = passphrase.or_else(|| {
         match user_prompt_yes_no("Would you like to encrypt the root seed?", quiet) {
             true => Some(get_secure_string_double_check("Root Seed Passphrase", quiet).expect("Could not read revocation passphrase")),
             false => None,
         }
     });
+    println!();
     genroot_inner(passphrase)
 }
 
@@ -171,6 +175,10 @@ pub (crate) fn genroot_inner(passphrase: Option<String>) -> HcResult<String> {
 }
 
 fn genrevoke(root_seed_passphrase: Option<String>, revocation_seed_passphrase: Option<String>, derivation_index: u64, quiet: bool) -> HcResult<String> {
+    user_prompt("This will generate a new revocation seed derived from a root seed.
+This can be used to revoke access to keys you have previously authorized.\n", quiet);
+
+
     let root_seed_mnemonic = get_secure_string_double_check("Root Seed", quiet)?;
     let root_seed_passphrase = match root_seed_mnemonic.word_count() {
         MNEMONIC_WORD_COUNT => None, // ignore any passphrase passed if it is an unencrypted mnemonic
@@ -183,6 +191,7 @@ fn genrevoke(root_seed_passphrase: Option<String>, revocation_seed_passphrase: O
             false => None,
         }
     });
+    println!();
     genrevoke_inner(root_seed_mnemonic, root_seed_passphrase, revocation_seed_passphrase, derivation_index)
 }
 
@@ -200,12 +209,16 @@ fn genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Option<Stri
 }
 
 fn revoke(passphrase: Option<String>, key_string: String, quiet: bool) -> HcResult<String> {
+    user_prompt("This will sign a given key/string with a revocation key.
+The resulting signed message can be used to publish a DPKI revocation message which will revoke the key.\n", quiet);
+
     let revocation_seed_mnemonic = get_secure_string_double_check("Revocation Seed", false)?;
     let passphrase = match revocation_seed_mnemonic.word_count() {
         MNEMONIC_WORD_COUNT => None, // ignore any passphrase passed if it is an unencrypted mnemonic
         ENCRYPTED_MNEMONIC_WORD_COUNT => passphrase.or_else(|| { Some(get_secure_string_double_check("Revocation Seed Passphrase", quiet).expect("Could not read passphrase")) }),
         _ => panic!("Invalid word count for mnemonic")
     };
+    println!();
     revoke_inner(revocation_seed_mnemonic, passphrase, key_string)
 }
 

@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- added nix for `hc-conductor-install` and `hc-conductor-uninstall` based on `cargo`
+
 ### Changed
 
 ### Deprecated
@@ -15,4 +17,3 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 ### Security
-

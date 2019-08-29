@@ -8,12 +8,15 @@ use holochain_dpki::{
     key_bundle::KeyBundle,
     seed::{RootSeed, SeedTrait, TypedSeed, SeedType, MnemonicableSeed},
     utils::generate_random_seed_buf,
+    keypair::KeyPair,
 };
 use structopt::StructOpt;
 use lib3h_sodium::secbuf::SecBuf;
 
 const MNEMONIC_WORD_COUNT: usize = 24;
 const ENCRYPTED_MNEMONIC_WORD_COUNT: usize = 2*MNEMONIC_WORD_COUNT;
+
+const DEFAULT_REVOCATION_KEY_DEV_INDEX: u64 = 1;
 
 pub enum SignType {
     Revoke,
@@ -216,18 +219,20 @@ This can be used to revoke access to keys you have previously authorized.\n", qu
         }
     });
     println!();
-    genrevoke_inner(root_seed_mnemonic, root_seed_passphrase, revocation_seed_passphrase, derivation_index)
+    let (mnemonic, pubkey) = genrevoke_inner(root_seed_mnemonic, root_seed_passphrase, revocation_seed_passphrase, derivation_index)?;
+    Ok(format!("Public Key: {}\n\nMnemonic: {}", pubkey, mnemonic))
 }
 
-fn genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, revocation_seed_passphrase: Option<String>, derivation_index: u64) -> HcResult<String> {
+fn genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, revocation_seed_passphrase: Option<String>, derivation_index: u64) -> HcResult<(String, String)> {
     let mut root_seed = match util::get_seed(root_seed_mnemonic, root_seed_passphrase, SeedType::Root)? { TypedSeed::Root(s) => s, _ => unreachable!() };
     let mut revocation_seed = root_seed.generate_revocation_seed(derivation_index)?;
+    let pubkey = revocation_seed.generate_revocation_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?.sign_keys.public();
     match revocation_seed_passphrase {
         Some(passphrase) => {
-            revocation_seed.encrypt(passphrase, None)?.get_mnemonic()
+            Ok((revocation_seed.encrypt(passphrase, None)?.get_mnemonic()?, pubkey))
         },
         None => {
-            revocation_seed.seed_mut().get_mnemonic()
+            Ok((revocation_seed.seed_mut().get_mnemonic()?, pubkey))
         }
     }
 }
@@ -250,7 +255,7 @@ fn sign_inner(revocation_seed_mnemonic: String, passphrase: Option<String>, key_
     let keypair = match sign_type {
         SignType::Revoke => {
             let mut revocation_seed = match util::get_seed(revocation_seed_mnemonic, passphrase, SeedType::Revocation)? { TypedSeed::Revocation(s) => s, _ => unreachable!() };
-            revocation_seed.generate_revocation_key(1)?
+            revocation_seed.generate_revocation_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?
         },
         SignType::Auth => {
             panic!("not implemented")

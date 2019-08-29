@@ -127,6 +127,38 @@ pub enum Dpki {
     },
 
     #[structopt(
+        name = "genauth",
+        about = "Generate an auth seed given an encrypted root seed mnemonic, passphrase and derivation index."
+    )]
+    GenAuth {
+        #[structopt(
+            help = "Derive auth seed from root seed with this index"
+        )]
+        derivation_index: u64,
+
+        #[structopt(
+            long,
+            short,
+            help = "unsecurely pass passphrase to decrypt root seed (not reccomended). Will prompt if encrypted seed provided."
+        )]
+        root_seed_passphrase: Option<String>,
+
+        #[structopt(
+            long,
+            short,
+            help = "unsecurely pass passphrase to encrypt auth seed (not reccomended)."
+        )]
+        auth_seed_passphrase: Option<String>,
+
+        #[structopt(
+            long,
+            short,
+            help = "Only print machine-readable output; intended for use by programs and scripts"
+        )]
+        quiet: bool,
+    },
+
+    #[structopt(
         name = "sign",
         about = "Produce the signed string needed to revoke a key given a revocation seed mnemonic and passphrase."
     )]
@@ -167,6 +199,7 @@ impl Dpki {
                 keygen(path, keystore_passphrase, nullpass, mnemonic_passphrase, root_seed, Some(device_derivation_index), quiet)
                 .map(|_| "success".to_string()),
             Self::GenRevoke{ derivation_index, root_seed_passphrase, revocation_seed_passphrase, quiet } => genrevoke(root_seed_passphrase, revocation_seed_passphrase, derivation_index, quiet),
+            Self::GenAuth{ derivation_index, root_seed_passphrase, auth_seed_passphrase, quiet } => genauth(root_seed_passphrase, auth_seed_passphrase, derivation_index, quiet),
             Self::Sign { passphrase, key, sign_type, quiet } => sign(passphrase, key, sign_type, quiet),
         }
     }
@@ -219,20 +252,59 @@ This can be used to revoke access to keys you have previously authorized.\n", qu
         }
     });
     println!();
-    let (mnemonic, pubkey) = genrevoke_inner(root_seed_mnemonic, root_seed_passphrase, revocation_seed_passphrase, derivation_index)?;
+    let (mnemonic, pubkey) = genauth_genrevoke_inner(root_seed_mnemonic, root_seed_passphrase, revocation_seed_passphrase, derivation_index, SignType::Revoke)?;
     Ok(format!("Public Key: {}\n\nMnemonic: {}", pubkey, mnemonic))
 }
 
-fn genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, revocation_seed_passphrase: Option<String>, derivation_index: u64) -> HcResult<(String, String)> {
+fn genauth(root_seed_passphrase: Option<String>, auth_seed_passphrase: Option<String>, derivation_index: u64, quiet: bool) -> HcResult<String> {
+    user_prompt("This will generate a new authorization seed derived from a root seed.
+This can be used to authorize new keys in DPKI.\n", quiet);
+
+
+    let root_seed_mnemonic = get_secure_string_double_check("Root Seed", quiet)?;
+    let root_seed_passphrase = match root_seed_mnemonic.word_count() {
+        MNEMONIC_WORD_COUNT => None, // ignore any passphrase passed if it is an unencrypted mnemonic
+        ENCRYPTED_MNEMONIC_WORD_COUNT => root_seed_passphrase.or_else(|| { Some(get_secure_string_double_check("Root Seed Passphrase", quiet).expect("Could not read passphrase")) }),
+        _ => panic!("Invalid word count for mnemonic")
+    };
+    let auth_seed_passphrase = auth_seed_passphrase.or_else(|| {
+        match user_prompt_yes_no("Would you like to encrypt the auth seed?", quiet) {
+            true => Some(get_secure_string_double_check("Auth Seed Passphrase", quiet).expect("Could not read auth passphrase")),
+            false => None,
+        }
+    });
+    println!();
+    let (mnemonic, pubkey) = genauth_genrevoke_inner(root_seed_mnemonic, root_seed_passphrase, auth_seed_passphrase, derivation_index, SignType::Auth)?;
+    Ok(format!("Public Key: {}\n\nMnemonic: {}", pubkey, mnemonic))
+}
+
+fn genauth_genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, new_seed_passphrase: Option<String>, derivation_index: u64, key_type: SignType) -> HcResult<(String, String)> {
     let mut root_seed = match util::get_seed(root_seed_mnemonic, root_seed_passphrase, SeedType::Root)? { TypedSeed::Root(s) => s, _ => unreachable!() };
-    let mut revocation_seed = root_seed.generate_revocation_seed(derivation_index)?;
-    let pubkey = revocation_seed.generate_revocation_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?.sign_keys.public();
-    match revocation_seed_passphrase {
-        Some(passphrase) => {
-            Ok((revocation_seed.encrypt(passphrase, None)?.get_mnemonic()?, pubkey))
+    
+    match key_type {
+        SignType::Revoke => {
+            let mut revocation_seed = root_seed.generate_revocation_seed(derivation_index)?;
+            let pubkey = revocation_seed.generate_revocation_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?.sign_keys.public();
+            match new_seed_passphrase {
+                Some(passphrase) => {
+                    Ok((revocation_seed.encrypt(passphrase, None)?.get_mnemonic()?, pubkey))
+                },
+                None => {
+                    Ok((revocation_seed.seed_mut().get_mnemonic()?, pubkey))
+                }
+            }
         },
-        None => {
-            Ok((revocation_seed.seed_mut().get_mnemonic()?, pubkey))
+        SignType::Auth => {
+            let mut auth_seed = root_seed.generate_auth_seed(derivation_index)?;
+            let pubkey = auth_seed.generate_auth_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?.sign_keys.public();
+            match new_seed_passphrase {
+                Some(passphrase) => {
+                    Ok((auth_seed.encrypt(passphrase, None)?.get_mnemonic()?, pubkey))
+                },
+                None => {
+                    Ok((auth_seed.seed_mut().get_mnemonic()?, pubkey))
+                }
+            }
         }
     }
 }

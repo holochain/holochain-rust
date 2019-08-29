@@ -19,9 +19,9 @@ let
   });
 
   platforms = {
-    aarch64-linux = pkgsCross.aarch64-multiplatform-musl;
-    x86_64-linux = pkgsCross.musl64;
-    x86_64-windows = pkgsCross.mingwW64;
+    aarch64-linux = pkgsCross.aarch64-multiplatform-musl.pkgsStatic;
+    x86_64-linux = pkgsCross.musl64.pkgsStatic;
+    x86_64-windows = pkgsCross.mingwW64.pkgsStatic;
   };
 in
 

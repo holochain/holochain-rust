@@ -56,6 +56,7 @@ pub trait SeedTrait {
     fn seed_mut(&mut self) -> &mut Seed;
     /// encrypt the contents of a seed with a passphrase
     /// Encrypted seeds preserve their seed type
+    // TODO: passphrase should use SecBuf across the board
     fn encrypt(
         &mut self,
         passphrase: String,
@@ -300,7 +301,6 @@ impl EncryptedSeed {
 }
 
 impl MnemonicableSeed for EncryptedSeed {
-    // TODO: We need some way of zeroing the internal memory used by mnemonic
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
         // split out the two phrases, decode then combine the bytes
         let entropy: Vec<u8> = phrase
@@ -332,7 +332,6 @@ impl MnemonicableSeed for EncryptedSeed {
     /// Generate a mnemonic for the seed.
     /// Encrypted seeds produce a 48 word mnemonic as the encrypted output also contains auth bytes and salt bytes
     /// which adds an extra 32 bytes. This fits nicely into two 24 word BIP39 mnemonics.
-    // TODO: We need some way of zeroing the internal memory used by mnemonic
     fn get_mnemonic(&mut self) -> HcResult<String> {
         let bytes: Vec<u8> = self
             .data

@@ -760,7 +760,7 @@ dependencies = [
 
 [[package]]
 name = "hc"
-version = "0.0.29-alpha1"
+version = "0.0.29-alpha2"
 dependencies = [
  "assert_cmd 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",

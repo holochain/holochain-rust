@@ -6,8 +6,6 @@ use holochain_conductor_api::{
 use holochain_core_types::error::HcResult;
 use holochain_dpki::{
     seed::{SeedType, TypedSeed},
-    utils::SeedContext,
-    DEVICE_CTX,
 };
 use std::{
     fs::create_dir_all,
@@ -108,7 +106,7 @@ fn keygen_standalone(keystore_passphrase: String) -> HcResult<(Keystore, String)
 fn keygen_dpki(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, derivation_index: u64, keystore_passphrase: String) -> HcResult<(Keystore, String)> {
     let mut root_seed = match get_seed(root_seed_mnemonic, root_seed_passphrase, SeedType::Root)? { TypedSeed::Root(s) => s, _ => unreachable!() };
     let mut keystore = Keystore::new(mock_passphrase_manager(keystore_passphrase), None)?;
-    let device_seed = root_seed.generate_device_seed(&SeedContext::new(DEVICE_CTX), derivation_index)?;
+    let device_seed = root_seed.generate_device_seed(derivation_index)?;
     keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
     let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
     Ok((keystore, pub_key))

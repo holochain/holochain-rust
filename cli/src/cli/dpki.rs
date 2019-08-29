@@ -296,7 +296,8 @@ fn genauth_genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Opt
             }
         },
         SignType::Auth => {
-            let mut auth_seed = root_seed.generate_auth_seed(derivation_index)?;
+            // TODO: Allow different derivation paths for the auth key
+            let mut auth_seed = root_seed.generate_device_seed(derivation_index)?.generate_auth_seed(1)?;
             let pubkey = auth_seed.generate_auth_key(DEFAULT_AUTH_KEY_DEV_INDEX)?.sign_keys.public();
             match new_seed_passphrase {
                 Some(passphrase) => {

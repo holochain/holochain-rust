@@ -186,11 +186,11 @@ impl RootSeed {
     /// @param {number} index - the index number in this seed group, must not be zero
     pub fn generate_device_seed(
         &mut self,
-        seed_context: &SeedContext,
         index: u64,
     ) -> HcResult<DeviceSeed> {
+        let device_ctx = SeedContext::new(REVOKE_CTX);
         let device_seed_buf =
-            generate_derived_seed_buf(&mut self.inner.buf, seed_context, index, SEED_SIZE)?;
+            generate_derived_seed_buf(&mut self.inner.buf, &device_ctx, index, SEED_SIZE)?;
         Ok(DeviceSeed::new(device_seed_buf))
     }
 
@@ -204,18 +204,6 @@ impl RootSeed {
         let seed_buf =
             generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
         Ok(RevocationSeed::new(seed_buf))
-    }
-
-    /// Generate Auth Seed
-    /// @param {number} index - the index number in this seed group, must not be zero
-    pub fn generate_auth_seed(
-        &mut self,
-        index: u64,
-    ) -> HcResult<AuthSeed> {
-        let seed_context = SeedContext::new(AUTH_CTX);
-        let seed_buf =
-            generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
-        Ok(AuthSeed::new(seed_buf))
     }
 }
 
@@ -256,6 +244,18 @@ impl DeviceSeed {
         let mut hash = SecBuf::with_secure(pwhash::HASHBYTES);
         pw_hash(pin, &mut self.inner.buf, &mut hash, config)?;
         Ok(DevicePinSeed::new(hash))
+    }
+
+    /// Generate Auth Seed
+    /// @param {number} index - the index number in this seed group, must not be zero
+    pub fn generate_auth_seed(
+        &mut self,
+        index: u64,
+    ) -> HcResult<AuthSeed> {
+        let seed_context = SeedContext::new(AUTH_CTX);
+        let seed_buf =
+            generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
+        Ok(AuthSeed::new(seed_buf))
     }
 }
 
@@ -491,14 +491,13 @@ mod tests {
     #[test]
     fn it_should_create_a_device_seed() {
         let seed_buf = generate_random_seed_buf();
-        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
-        let mut device_seed_3 = root_seed.generate_device_seed(&context, 3).unwrap();
+        let mut device_seed_3 = root_seed.generate_device_seed(3).unwrap();
         assert_eq!(SeedType::Device, device_seed_3.seed().kind);
-        let _ = root_seed.generate_device_seed(&context, 0).unwrap_err();
-        let mut device_seed_1 = root_seed.generate_device_seed(&context, 1).unwrap();
-        let mut device_seed_3_b = root_seed.generate_device_seed(&context, 3).unwrap();
+        let _ = root_seed.generate_device_seed(0).unwrap_err();
+        let mut device_seed_1 = root_seed.generate_device_seed(1).unwrap();
+        let mut device_seed_3_b = root_seed.generate_device_seed(3).unwrap();
         assert!(
             device_seed_3
                 .seed_mut()
@@ -520,9 +519,8 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut pin = generate_random_seed_buf();
 
-        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
-        let mut device_seed = root_seed.generate_device_seed(&context, 3).unwrap();
+        let mut device_seed = root_seed.generate_device_seed(3).unwrap();
         let device_pin_seed = device_seed
             .generate_device_pin_seed(&mut pin, TEST_CONFIG)
             .unwrap();
@@ -534,9 +532,8 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut pin = generate_random_seed_buf();
 
-        let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
-        let mut ds = rs.generate_device_seed(&context, 3).unwrap();
+        let mut ds = rs.generate_device_seed(3).unwrap();
         let mut dps = ds.generate_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
         let mut keybundle_5 = dps.generate_dna_key(5).unwrap();
 

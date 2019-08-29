@@ -1,3 +1,5 @@
+use std::str::FromStr;
+use std::string::ParseError;
 use std::path::PathBuf;
 use crate::util::{self, get_secure_string_double_check, user_prompt, user_prompt_yes_no, WordCountable};
 use crate::cli::keygen;
@@ -13,6 +15,21 @@ use lib3h_sodium::secbuf::SecBuf;
 const MNEMONIC_WORD_COUNT: usize = 24;
 const ENCRYPTED_MNEMONIC_WORD_COUNT: usize = 2*MNEMONIC_WORD_COUNT;
 
+pub enum SignType {
+    Revoke,
+    Auth,
+}
+
+impl FromStr for SignType {
+    type Err = ParseError;
+    fn from_str(day: &str) -> Result<Self, Self::Err> {
+        match day {
+            "revoke" => Ok(SignType::Revoke),
+            "auth" => Ok(SignType::Auth),
+            _ => panic!(),
+        }
+    }
+}
 
 #[derive(StructOpt)]
 pub enum Dpki {
@@ -107,12 +124,12 @@ pub enum Dpki {
     },
 
     #[structopt(
-        name = "revoke",
+        name = "sign",
         about = "Produce the signed string needed to revoke a key given a revocation seed mnemonic and passphrase."
     )]
-    Revoke {
+    Sign {
         #[structopt(
-            help = "Public key to revoke (or any other string you want to sign with a revocation key)"
+            help = "Public key to revoke/authorize (or any other string you want to sign with an auth/revocation key)"
         )]
         key: String,
 
@@ -129,6 +146,13 @@ pub enum Dpki {
             help = "Only print machine-readable output; intended for use by programs and scripts"
         )]
         quiet: bool,
+
+        #[structopt(
+            long,
+            short,
+            help = "How to interpred seed (revoke/auth)"
+        )]
+        sign_type: SignType, 
     },
 }
 
@@ -140,7 +164,7 @@ impl Dpki {
                 keygen(path, keystore_passphrase, nullpass, mnemonic_passphrase, root_seed, Some(device_derivation_index), quiet)
                 .map(|_| "success".to_string()),
             Self::GenRevoke{ derivation_index, root_seed_passphrase, revocation_seed_passphrase, quiet } => genrevoke(root_seed_passphrase, revocation_seed_passphrase, derivation_index, quiet),
-            Self::Revoke { passphrase, key, quiet } => revoke(passphrase, key, quiet),
+            Self::Sign { passphrase, key, sign_type, quiet } => sign(passphrase, key, sign_type, quiet),
         }
     }
 }
@@ -208,7 +232,7 @@ fn genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Option<Stri
     }
 }
 
-fn revoke(passphrase: Option<String>, key_string: String, quiet: bool) -> HcResult<String> {
+fn sign(passphrase: Option<String>, key_string: String, sign_type: SignType, quiet: bool) -> HcResult<String> {
     user_prompt("This will sign a given key/string with a revocation key.
 The resulting signed message can be used to publish a DPKI revocation message which will revoke the key.\n", quiet);
 
@@ -219,13 +243,20 @@ The resulting signed message can be used to publish a DPKI revocation message wh
         _ => panic!("Invalid word count for mnemonic")
     };
     println!();
-    revoke_inner(revocation_seed_mnemonic, passphrase, key_string)
+    sign_inner(revocation_seed_mnemonic, passphrase, key_string, sign_type)
 }
 
-fn revoke_inner(revocation_seed_mnemonic: String, passphrase: Option<String>, key_string: String) -> HcResult<String> {
-    let mut revocation_seed = match util::get_seed(revocation_seed_mnemonic, passphrase, SeedType::Revocation)? { TypedSeed::Revocation(s) => s, _ => unreachable!() };
-    let revocation_keypair = revocation_seed.generate_revocation_key(1)?;
-    sign_with_key_from_seed(revocation_keypair, key_string)
+fn sign_inner(revocation_seed_mnemonic: String, passphrase: Option<String>, key_string: String, sign_type: SignType) -> HcResult<String> {
+    let keypair = match sign_type {
+        SignType::Revoke => {
+            let mut revocation_seed = match util::get_seed(revocation_seed_mnemonic, passphrase, SeedType::Revocation)? { TypedSeed::Revocation(s) => s, _ => unreachable!() };
+            revocation_seed.generate_revocation_key(1)?
+        },
+        SignType::Auth => {
+            panic!("not implemented")
+        }
+    };
+    sign_with_key_from_seed(keypair, key_string)
 }
 
 fn sign_with_key_from_seed(mut keypair: KeyBundle, key_string: String) -> HcResult<String> {

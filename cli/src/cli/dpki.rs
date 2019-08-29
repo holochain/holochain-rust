@@ -17,6 +17,7 @@ const MNEMONIC_WORD_COUNT: usize = 24;
 const ENCRYPTED_MNEMONIC_WORD_COUNT: usize = 2*MNEMONIC_WORD_COUNT;
 
 const DEFAULT_REVOCATION_KEY_DEV_INDEX: u64 = 1;
+const DEFAULT_AUTH_KEY_DEV_INDEX: u64 = 1;
 
 pub enum SignType {
     Revoke,
@@ -296,7 +297,7 @@ fn genauth_genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Opt
         },
         SignType::Auth => {
             let mut auth_seed = root_seed.generate_auth_seed(derivation_index)?;
-            let pubkey = auth_seed.generate_auth_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?.sign_keys.public();
+            let pubkey = auth_seed.generate_auth_key(DEFAULT_AUTH_KEY_DEV_INDEX)?.sign_keys.public();
             match new_seed_passphrase {
                 Some(passphrase) => {
                     Ok((auth_seed.encrypt(passphrase, None)?.get_mnemonic()?, pubkey))
@@ -310,27 +311,28 @@ fn genauth_genrevoke_inner(root_seed_mnemonic: String, root_seed_passphrase: Opt
 }
 
 fn sign(passphrase: Option<String>, key_string: String, sign_type: SignType, quiet: bool) -> HcResult<String> {
-    user_prompt("This will sign a given key/string with a revocation key.
-The resulting signed message can be used to publish a DPKI revocation message which will revoke the key.\n", quiet);
+    user_prompt("This will sign a given key/string with a auth/revocation key.
+The resulting signed message can be used to publish a DPKI auth/revocation message which will auth/revoke a key.\n", quiet);
 
-    let revocation_seed_mnemonic = get_secure_string_double_check("Revocation Seed", false)?;
-    let passphrase = match revocation_seed_mnemonic.word_count() {
+    let seed_mnemonic = get_secure_string_double_check("Seed", false)?;
+    let passphrase = match seed_mnemonic.word_count() {
         MNEMONIC_WORD_COUNT => None, // ignore any passphrase passed if it is an unencrypted mnemonic
-        ENCRYPTED_MNEMONIC_WORD_COUNT => passphrase.or_else(|| { Some(get_secure_string_double_check("Revocation Seed Passphrase", quiet).expect("Could not read passphrase")) }),
+        ENCRYPTED_MNEMONIC_WORD_COUNT => passphrase.or_else(|| { Some(get_secure_string_double_check("Seed Passphrase", quiet).expect("Could not read passphrase")) }),
         _ => panic!("Invalid word count for mnemonic")
     };
     println!();
-    sign_inner(revocation_seed_mnemonic, passphrase, key_string, sign_type)
+    sign_inner(seed_mnemonic, passphrase, key_string, sign_type)
 }
 
-fn sign_inner(revocation_seed_mnemonic: String, passphrase: Option<String>, key_string: String, sign_type: SignType) -> HcResult<String> {
+fn sign_inner(seed_mnemonic: String, passphrase: Option<String>, key_string: String, sign_type: SignType) -> HcResult<String> {
     let keypair = match sign_type {
         SignType::Revoke => {
-            let mut revocation_seed = match util::get_seed(revocation_seed_mnemonic, passphrase, SeedType::Revocation)? { TypedSeed::Revocation(s) => s, _ => unreachable!() };
+            let mut revocation_seed = match util::get_seed(seed_mnemonic, passphrase, SeedType::Revocation)? { TypedSeed::Revocation(s) => s, _ => unreachable!() };
             revocation_seed.generate_revocation_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?
         },
         SignType::Auth => {
-            panic!("not implemented")
+            let mut auth_seed = match util::get_seed(seed_mnemonic, passphrase, SeedType::Auth)? { TypedSeed::Auth(s) => s, _ => unreachable!() };
+            auth_seed.generate_auth_key(DEFAULT_AUTH_KEY_DEV_INDEX)?        
         }
     };
     sign_with_key_from_seed(keypair, key_string)

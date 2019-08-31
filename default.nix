@@ -11,7 +11,11 @@ let
     (buildRustPackage rustPlatform args).overrideAttrs (super: {
       buildType = "debug";
 
-      nativeBuildInputs = super.nativeBuildInputs ++ [ buildPackages.perl ];
+      nativeBuildInputs = super.nativeBuildInputs ++ (with buildPackages; [
+        nodejs-12_x
+        perl
+      ]);
+
       buildInputs = optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
         CoreServices
         Security

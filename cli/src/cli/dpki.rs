@@ -326,7 +326,7 @@ The resulting signed message can be used to publish a DPKI auth/revocation messa
 }
 
 fn sign_inner(seed_mnemonic: String, passphrase: Option<String>, key_string: String, sign_type: SignType) -> HcResult<String> {
-    let keypair = match sign_type {
+    let mut keypair = match sign_type {
         SignType::Revoke => {
             let mut revocation_seed = match util::get_seed(seed_mnemonic, passphrase, SeedType::Revocation)? { TypedSeed::Revocation(s) => s, _ => unreachable!() };
             revocation_seed.generate_revocation_key(DEFAULT_REVOCATION_KEY_DEV_INDEX)?
@@ -336,13 +336,42 @@ fn sign_inner(seed_mnemonic: String, passphrase: Option<String>, key_string: Str
             auth_seed.generate_auth_key(DEFAULT_AUTH_KEY_DEV_INDEX)?        
         }
     };
-    sign_with_key_from_seed(keypair, key_string)
+    sign_with_key_from_seed(&mut keypair, key_string)
 }
 
-fn sign_with_key_from_seed(mut keypair: KeyBundle, key_string: String) -> HcResult<String> {
+fn sign_with_key_from_seed(keypair: &mut KeyBundle, key_string: String) -> HcResult<String> {
     let mut data_buf = SecBuf::with_insecure_from_string(key_string);
     let mut signature_buf = keypair.sign(&mut data_buf)?;
     let buf = signature_buf.read_lock();
     let signature_str = base64::encode(&**buf);
     Ok(signature_str)
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    
+    use holochain_core_types::{
+        signature::{Provenance, Signature},
+    };
+    use holochain_persistence_api::cas::content::Address;
+    use holochain_dpki::{
+        keypair::*,
+        utils::Verify,
+    };
+    use super::*;
+
+    #[test]
+    fn can_verify_signature() {
+        let payload = "test signing payload";
+        let mut seed = generate_random_seed_buf();
+        let sign_keys = SigningKeyPair::new_from_seed(&mut seed).unwrap();
+        let enc_keys = EncryptingKeyPair::new_from_seed(&mut seed).unwrap();
+        let mut key_bundle = KeyBundle::new(sign_keys, enc_keys).unwrap();
+
+        let sig = sign_with_key_from_seed(&mut key_bundle, payload.to_string()).unwrap();
+
+        let prov = Provenance::new(Address::from(key_bundle.sign_keys.public), Signature::from(sig));
+        assert!(prov.verify(payload.to_string()).unwrap());
+    }
 }

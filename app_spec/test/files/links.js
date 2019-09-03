@@ -3,8 +3,8 @@ const { one, two } = require('../config')
 module.exports = scenario => {
 
     scenario('delete_post', async (s, t) => {
-      const ps = await s.players({alice: one, bob: one}, true)
-      const {alice, bob} = ps
+      const {alice, bob} = await s.players({alice: one, bob: one}, true)
+
         //creates a simple link with alice as author with initial chain header
         await alice.callSync("app", "simple", "create_link",
           { "base":alice.info('app').agentAddress, "target": "Posty" }

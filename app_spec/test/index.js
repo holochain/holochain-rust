@@ -1,4 +1,3 @@
-const _ = require('lodash')
 const { Orchestrator, tapeExecutor, combine } = require('@holochain/try-o-rama')
 // const { Orchestrator, tapeExecutor, combine } = require('quadrama')
 const spawnConductor = require('./spawn_conductors')

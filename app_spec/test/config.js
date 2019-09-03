@@ -1,3 +1,4 @@
+const _ = require('lodash')
 const path = require('path')
 const { Config } = require('@holochain/try-o-rama')
 

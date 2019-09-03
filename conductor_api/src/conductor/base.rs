@@ -710,9 +710,15 @@ impl Conductor {
                 let agent_id = &instance_config.agent;
                 let agent_config = config.agent_by_id(agent_id).unwrap();
                 let agent_address = self.agent_config_to_id(&agent_config)?;
-                config.update_agent_address_by_id(agent_id, &agent_address);
-                self.config = config.clone();
-                self.save_config()?;
+                if agent_config.test_agent.unwrap_or_default() {
+                    // Modify the config so that the public_address is correct.
+                    // (The public_address is simply ignored for test_agents, as
+                    // it is generated from the agent's name instead of read from
+                    // a physical keyfile)
+                    config.update_agent_address_by_id(agent_id, &agent_address);
+                    self.config = config.clone();
+                    self.save_config()?;
+                }
 
                 context_builder = context_builder.with_agent(agent_address.clone());
 

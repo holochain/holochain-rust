@@ -502,7 +502,6 @@ fn can_round_trip() {
 }
 
 #[test]
-#[cfg(not(windows))]
 fn can_get_entry_ok() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_ok", "alice");
     // Call the exposed wasm function that calls the Commit API function
@@ -577,7 +576,6 @@ fn can_get_entry_bad() {
 }
 
 #[test]
-#[cfg(not(windows))] // TODO does not work on windows because of different seperator
 fn can_invalidate_invalid_commit() {
     let (mut hc, _) = start_holochain_instance("can_invalidate_invalid_commit", "alice");
     // Call the exposed wasm function that calls the Commit API function
@@ -594,9 +592,18 @@ fn can_invalidate_invalid_commit() {
         })
         .to_string(),
     );
+     let path = PathBuf::new()
+              .join("core")
+              .join("src")
+              .join("nucleus")
+              .join("ribosome")
+              .join("runtime.rs");
+    let path_string = path.as_path().to_str().expect("path should have been created");
+    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\","\\","\\"].join(""));
+    let error_string = format!("{{\"Err\":{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"",formatted_path_string);
     assert!(result.is_ok(), "result = {:?}", result);
     assert!(
-        result.unwrap().to_string().contains("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"")
+        result.unwrap().to_string().contains(&error_string)
     );
 }
 

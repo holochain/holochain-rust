@@ -106,18 +106,13 @@ pub async fn hold_link_workflow(
 }
 
 #[cfg(test)]
-// too slow!
 #[cfg(feature = "broken-tests")]
+// too slow!
 pub mod tests {
     use super::*;
-    use crate::{
-        network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
+    use crate::{ nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
-    use futures::executor::block_on;
-    use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
-    };
-    use test_utils::*;
+    use holochain_core_types::{chain_header::test_chain_header,agent::test_agent_id,link::link_data::LinkData, entry::test_entry_with_value};
 
     #[test]
     /// Test that an invalid link will be rejected by this workflow.
@@ -127,37 +122,32 @@ pub mod tests {
     ///
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
-        // Hacked DNA that regards everything as valid
-        let hacked_dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_valid()));
-        // Original DNA that regards nothing as valid
-        let mut dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_invalid()));
-        dna.uuid = String::from("test_reject_invalid_link_on_hold_workflow");
 
-        // Address of the original DNA
-        let dna_address = dna.address();
-
-        let (_, context1) =
-            test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
-        let netname = Some("test_reject_invalid_link_on_remove_workflow");
+        let mut dna = test_dna();
+        dna.uuid = "test_reject_invalid_link_on_hold_workflow".to_string();
+        let netname = Some("test_reject_invalid_link_on_hold_workflow, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
-
+  
         // Commit entry on attackers node
-        let entry = test_entry();
+        let entry = test_entry_with_value("{\"stuff\":\"test entry value\"}");
+        println!("before author");
         let entry_address = context1
-            .block_on(author_entry(&entry, None, &context1))
+            .block_on(author_entry(&entry, None, &context1,&Vec::new()))
             .unwrap();
 
         let link_add = LinkData::new_add(
-            &entry_address,
-            &entry_address,
+            &entry_address.address,
+            &entry_address.address,
             "test-tag",
+            "test-link",
             test_chain_header(),
             test_agent_id(),
         );
         let link_entry = Entry::LinkAdd(link_add);
-
+        println!("before link add");
         let _ = context1
-            .block_on(author_entry(&link_entry, None, &context1))
+            .block_on(author_entry(&link_entry, None, &context1,&Vec::new()))
             .unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
@@ -169,12 +159,13 @@ pub mod tests {
             entry: link_entry,
             header,
         };
-
+         println!("before hold link");
         // Call hold_entry_workflow on victim DHT node
-        let result = context2.block_on(hold_link_workflow(&entry_with_header, &context2));
+        let result = context2.block_on(hold_link_workflow(&entry_with_header, context2.clone()));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());
+        
         assert_eq!(
             result.err().unwrap(),
             HolochainError::ValidationFailed(String::from("FAIL wat")),

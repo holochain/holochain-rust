@@ -1362,7 +1362,6 @@ type = 'http'"#,
     }
 
     #[test]
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn test_add_instance_to_interface() {
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);

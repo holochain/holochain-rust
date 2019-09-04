@@ -14,7 +14,6 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
 
-#[cfg(not(windows))]
 use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
@@ -41,7 +40,6 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-#[cfg(not(windows))]
 use holochain_core_types::{entry::EntryWithMeta, error::CoreError};
 use holochain_wasm_utils::{
     api_serialization::{

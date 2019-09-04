@@ -277,7 +277,6 @@ fn empty_string_validation_fail_entry() -> Entry {
     )
 }
 
-#[cfg(not(windows))]
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {

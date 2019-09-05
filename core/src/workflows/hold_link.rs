@@ -123,11 +123,17 @@ pub mod tests {
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
 
-        let mut dna = test_dna();
-        dna.uuid = "test_reject_invalid_link_on_hold_workflow".to_string();
-        let netname = Some("test_reject_invalid_link_on_hold_workflow, the network");
-        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
+         let hacked_dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_valid()));
+        // Original DNA that regards nothing as valid
+        let mut dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_invalid()));
+        dna.uuid = String::from("test_reject_invalid_link_on_hold_workflow");
+
+        // Address of the original DNA
+        let dna_address = dna.address();
+
+        let (_, context1) =
+            test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
+        let netname = Some("test_reject_invalid_link_on_remove_workflow");
   
         // Commit entry on attackers node
         let entry = test_entry_with_value("{\"stuff\":\"test entry value\"}");

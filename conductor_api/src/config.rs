@@ -456,6 +456,15 @@ impl Configuration {
         self.agents.iter().find(|ac| &ac.id == id).cloned()
     }
 
+    /// Returns the agent configuration with the given ID if present
+    pub fn update_agent_address_by_id(&mut self, id: &str, agent_id: &AgentId) {
+        self.agents.iter_mut().for_each(|ac| {
+            if &ac.id == id {
+                ac.public_address = agent_id.pub_sign_key.clone()
+            }
+        })
+    }
+
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()

@@ -211,7 +211,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
-        let instance = self.instantiate_from_config(id, Some(&new_config))?;
+        let instance = self.instantiate_from_config(id, Some(&mut new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -329,7 +329,7 @@ impl ConductorAdmin for Conductor {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
                         id: instance_id.clone(),
-                        alias: alias.clone()
+                        alias: alias.clone(),
                     });
                 }
                 interface

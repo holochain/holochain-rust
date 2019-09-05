@@ -345,7 +345,6 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_link",
         "get_entry_properties",
         "show_env",
-        "emit_signal",
         "hash_entry"
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
@@ -970,16 +969,6 @@ fn show_env()
         Ok(JsonString::from(r#"{"Ok":{"dna_name":"TestApp","dna_address":"QmVbbEHR9b47yZxUjwyeu9jJ7iyiy5zNUwaFjJC139xvNZ","agent_id":"{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{"cap_token":"QmWniZmxqV3fpa3tZDNod3o5yrUqP3S5w3QGpyWtktaLTC","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]},"properties":"{}"}}"#)))
 }
 
-#[test]
-fn emit_signal()
-{
-    let (mut hc, _) = start_holochain_instance("emit_signal", "alice");
-    let result = make_test_call(&mut hc, "show_env", r#"{message:"emit_signal"}"#);
-
-    assert_eq!(
-        result,
-        Ok(JsonString::from(r#"{"Ok":{}}"#))
-}
 
 #[test]
 fn test_get_entry_properties() {

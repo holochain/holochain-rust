@@ -122,7 +122,7 @@ pub mod tests {
     ///
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
-
+        // Hacked DNA that regards everything as valid
          let hacked_dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_valid()));
         // Original DNA that regards nothing as valid
         let mut dna = create_test_dna_with_wat("test_zome", Some(&test_wat_always_invalid()));

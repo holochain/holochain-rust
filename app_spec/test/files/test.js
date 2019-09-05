@@ -5,16 +5,6 @@ scenario('agentId', async (s, t, { alice, bob }) => {
   t.notEqual(alice.app.agentId, bob.app.agentId)
 })
 
-// dp we still need this test?
-scenario('cross zome call', async (s, t, { alice }) => {
-
-  const num1 = 2
-  const num2 = 2
-  const params = { num1, num2 }
-  const result = await alice.app.call("blog", "check_sum", params)
-  t.notOk(result.Err)
-  t.equal(result.Ok, 4)
-})
 
 scenario('send ping', async (s, t, { alice, bob }) => {
   const params = { to_agent: bob.app.agentId, message: "hello" }

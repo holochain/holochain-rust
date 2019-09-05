@@ -962,11 +962,19 @@ fn hash_entry()
 fn show_env()
 {
     let (mut hc, _) = start_holochain_instance("show_env", "alice");
+    let dna = hc.context().unwrap().get_dna().unwrap();
+    let dna_address_string = dna.address().to_string();
+    let dna_address = dna_address_string.as_str();
+    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{{"cap_token":"QmWniZmxqV3fpa3tZDNod3o5yrUqP3S5w3QGpyWtktaLTC","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]}},"properties":"{{}}"}}}}"#,dna_address);
+    let json_result = Ok(JsonString::from_json(&format));
+
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);
 
+    
+    
     assert_eq!(
         result,
-        Ok(JsonString::from(r#"{"Ok":{"dna_name":"TestApp","dna_address":"QmVbbEHR9b47yZxUjwyeu9jJ7iyiy5zNUwaFjJC139xvNZ","agent_id":"{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{"cap_token":"QmWniZmxqV3fpa3tZDNod3o5yrUqP3S5w3QGpyWtktaLTC","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]},"properties":"{}"}}"#)))
+        json_result)
 }
 
 

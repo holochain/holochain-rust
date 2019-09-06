@@ -24,7 +24,7 @@ pub async fn initialize(
     let dna = dna.ok_or(HolochainError::DnaMissing)?;
     if let Err(err) = await!(get_dna_and_agent(&instance_context)) {
         log_warn!(context,
-            "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
+            "dna/initialize: No DNA and agent in chain so assuming uninitialized: {:?}",
             err
         );
         log_info!(context, "dna/initialize: Initializing new chain from given DNA...");

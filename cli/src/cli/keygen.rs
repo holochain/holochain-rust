@@ -4,9 +4,7 @@ use holochain_conductor_api::{
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::error::HcResult;
-use holochain_dpki::{
-    seed::{SeedType, TypedSeed},
-};
+use holochain_dpki::seed::{SeedType, TypedSeed};
 use std::{
     fs::create_dir_all,
     io::{self, Write},
@@ -24,52 +22,82 @@ pub fn keygen(
     device_derivation_index: Option<u64>,
     quiet: bool,
 ) -> HcResult<()> {
-
-    user_prompt("This will create a new agent keystore and populate it with an agent keybundle
+    user_prompt(
+        "This will create a new agent keystore and populate it with an agent keybundle
 containing a public and a private key, for signing and encryption by the agent.
 This keybundle will be stored encrypted by passphrase within the keystore file.
 The passphrase is securing the keys and will be needed, together with the file,
-in order to use the key.\n", quiet);
+in order to use the key.\n",
+        quiet,
+    );
 
     let keystore_passphrase = match (keystore_passphrase, nullpass) {
         (None, true) => String::from(holochain_common::DEFAULT_PASSPHRASE),
         (Some(s), false) => s,
-        (Some(_), true) => panic!("Invalid combination of args. Cannot pass --nullpass and also provide a passphrase"),
-        (None, false) =>  {
+        (Some(_), true) => panic!(
+            "Invalid combination of args. Cannot pass --nullpass and also provide a passphrase"
+        ),
+        (None, false) => {
             // prompt for the passphrase
-            user_prompt("Please enter a secret passphrase below. You will have to enter it again
-when unlocking the keybundle to use within a Holochain conductor.\n", quiet);
+            user_prompt(
+                "Please enter a secret passphrase below. You will have to enter it again
+when unlocking the keybundle to use within a Holochain conductor.\n",
+                quiet,
+            );
             io::stdout().flush().expect("Could not flush stdout");
-            get_secure_string_double_check("keystore Passphrase", quiet).expect("Could not retrieve passphrase")
+            get_secure_string_double_check("keystore Passphrase", quiet)
+                .expect("Could not retrieve passphrase")
         }
     };
-    
+
     let (keystore, pub_key) = if let Some(derivation_index) = device_derivation_index {
         user_prompt("This keystore is to be generated from a DPKI root seed. You can regenerate this keystore at any time by using the same root key mnemonic and device derivation index.", quiet);
 
         let root_seed_mnemonic = root_seed_mnemonic.unwrap_or_else(|| {
-            get_secure_string_double_check("Root Seed Mnemonic", quiet).expect("Could not retrieve mnemonic")
+            get_secure_string_double_check("Root Seed Mnemonic", quiet)
+                .expect("Could not retrieve mnemonic")
         });
 
         match root_seed_mnemonic.split(" ").count() {
             24 => {
                 // unencrypted mnemonic
-                user_prompt("Generating keystore (this will take a few moments)...", quiet);
-                keygen_dpki(root_seed_mnemonic, None, derivation_index, keystore_passphrase)?
-            },
+                user_prompt(
+                    "Generating keystore (this will take a few moments)...",
+                    quiet,
+                );
+                keygen_dpki(
+                    root_seed_mnemonic,
+                    None,
+                    derivation_index,
+                    keystore_passphrase,
+                )?
+            }
             48 => {
                 // encrypted mnemonic
                 let mnemonic_passphrase = mnemonic_passphrase.unwrap_or_else(|| {
-                    get_secure_string_double_check("Root Seed Mnemonic passphrase", quiet).expect("Could not retrieve mnemonic passphrase")
+                    get_secure_string_double_check("Root Seed Mnemonic passphrase", quiet)
+                        .expect("Could not retrieve mnemonic passphrase")
                 });
-                user_prompt("Generating keystore (this will take a few moments)...", quiet);
-                keygen_dpki(root_seed_mnemonic, Some(mnemonic_passphrase), derivation_index, keystore_passphrase)?
-            },
-            _ => panic!("Invalid number of words in mnemonic. Must be 24 (unencrypted) or 48 (encrypted)")
+                user_prompt(
+                    "Generating keystore (this will take a few moments)...",
+                    quiet,
+                );
+                keygen_dpki(
+                    root_seed_mnemonic,
+                    Some(mnemonic_passphrase),
+                    derivation_index,
+                    keystore_passphrase,
+                )?
+            }
+            _ => panic!(
+                "Invalid number of words in mnemonic. Must be 24 (unencrypted) or 48 (encrypted)"
+            ),
         }
-
     } else {
-        user_prompt("Generating keystore (this will take a few moments)...", quiet);
+        user_prompt(
+            "Generating keystore (this will take a few moments)...",
+            quiet,
+        );
         keygen_standalone(keystore_passphrase)?
     };
 
@@ -103,8 +131,16 @@ fn keygen_standalone(keystore_passphrase: String) -> HcResult<(Keystore, String)
     Keystore::new_standalone(mock_passphrase_manager(keystore_passphrase), None)
 }
 
-fn keygen_dpki(root_seed_mnemonic: String, root_seed_passphrase: Option<String>, derivation_index: u64, keystore_passphrase: String) -> HcResult<(Keystore, String)> {
-    let mut root_seed = match get_seed(root_seed_mnemonic, root_seed_passphrase, SeedType::Root)? { TypedSeed::Root(s) => s, _ => unreachable!() };
+fn keygen_dpki(
+    root_seed_mnemonic: String,
+    root_seed_passphrase: Option<String>,
+    derivation_index: u64,
+    keystore_passphrase: String,
+) -> HcResult<(Keystore, String)> {
+    let mut root_seed = match get_seed(root_seed_mnemonic, root_seed_passphrase, SeedType::Root)? {
+        TypedSeed::Root(s) => s,
+        _ => unreachable!(),
+    };
     let mut keystore = Keystore::new(mock_passphrase_manager(keystore_passphrase), None)?;
     let device_seed = root_seed.generate_device_seed(derivation_index)?;
     keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
@@ -169,10 +205,12 @@ pub mod test {
         )
         .expect("Keygen should work");
 
-
-        let mut keystore =
-            Keystore::new_from_file(path.clone(), mock_passphrase_manager(keystore_passphrase), None)
-                .unwrap();
+        let mut keystore = Keystore::new_from_file(
+            path.clone(),
+            mock_passphrase_manager(keystore_passphrase),
+            None,
+        )
+        .unwrap();
 
         let keybundle = keystore.get_keybundle(PRIMARY_KEYBUNDLE_ID);
 

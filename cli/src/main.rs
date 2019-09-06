@@ -29,8 +29,10 @@ mod config_files;
 mod error;
 mod util;
 
-use crate::cli::Dpki;
-use crate::error::{HolochainError, HolochainResult};
+use crate::{
+    cli::Dpki,
+    error::{HolochainError, HolochainResult},
+};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -288,12 +290,11 @@ fn run() -> HolochainResult<()> {
             quiet,
             nullpass,
             passphrase,
-        } => {
-            cli::keygen(path, passphrase, nullpass, None, None, None, quiet)
-                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
-        }
+        } => cli::keygen(path, passphrase, nullpass, None, None, None, quiet)
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 
-        Cli::Dpki(dpki) => dpki.execute()
+        Cli::Dpki(dpki) => dpki
+            .execute()
             .map(|result| println!("{}", result))
             .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 
@@ -319,7 +320,7 @@ fn run() -> HolochainResult<()> {
             let dna_hash = cli::hash_dna(&dna_path)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
-        },
+        }
     }
 
     Ok(())

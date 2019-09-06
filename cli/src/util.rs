@@ -1,10 +1,10 @@
-use std::io::stdin;
 use crate::error::DefaultResult;
 use colored::*;
 pub use holochain_common::paths::DNA_EXTENSION;
 use holochain_core_types::error::HcResult;
+use holochain_dpki::seed::{EncryptedSeed, MnemonicableSeed, Seed, SeedType, TypedSeed};
 use rpassword;
-use holochain_dpki::seed::{Seed, SeedType, TypedSeed, MnemonicableSeed, EncryptedSeed};
+use std::io::stdin;
 
 use std::{
     fs,
@@ -37,20 +37,16 @@ pub fn user_prompt(message: &str, quiet: bool) {
 }
 
 pub fn user_prompt_yes_no(message: &str, quiet: bool) -> bool {
-        user_prompt(format!("{} (Y/n)", message).as_str(), quiet);
-        let mut input = String::new();
-        stdin().read_line(&mut input).expect("Could not read from stdin");
-        match input.as_str() {
-            "Y\n" => {
-                true
-            },
-            "n\n" => {
-                false
-            },
-            _ => {
-                panic!(format!("Invalid response: {}", input))
-            }
-        }
+    user_prompt(format!("{} (Y/n)", message).as_str(), quiet);
+    let mut input = String::new();
+    stdin()
+        .read_line(&mut input)
+        .expect("Could not read from stdin");
+    match input.as_str() {
+        "Y\n" => true,
+        "n\n" => false,
+        _ => panic!(format!("Invalid response: {}", input)),
+    }
 }
 
 /// Retrieve a seed from a BIP39 mnemonic
@@ -64,10 +60,8 @@ pub fn get_seed(
     match passphrase {
         Some(passphrase) => {
             EncryptedSeed::new_with_mnemonic(seed_mnemonic, seed_type)?.decrypt(passphrase, None)
-        },
-        None => {
-            Seed::new_with_mnemonic(seed_mnemonic, seed_type)?.into_typed()
         }
+        None => Seed::new_with_mnemonic(seed_mnemonic, seed_type)?.into_typed(),
     }
 }
 
@@ -80,7 +74,6 @@ impl WordCountable for String {
         self.split(" ").count()
     }
 }
-
 
 pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
     let pretty_command = format!("{} {}", bin.green(), args.join(" ").cyan());

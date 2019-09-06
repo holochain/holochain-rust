@@ -1,13 +1,17 @@
 use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
-    network::actions::initialize_network::initialize_network,
+    network::actions::{
+        initialize_network::initialize_network,
+        publish::publish,
+    },
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
 };
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
+use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
@@ -28,5 +32,7 @@ pub async fn initialize(
     }
     await!(initialize_network(&instance_context))?;
     await!(call_init(dna, &instance_context))?;
+    // publish this agents AgentId
+    await!(publish(context.agent_id.address(), &context))?;
     Ok(instance_context)
 }

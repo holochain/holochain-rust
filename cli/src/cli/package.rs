@@ -387,7 +387,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn package_and_unpack_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
@@ -467,7 +466,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn aborts_if_multiple_json_in_root() {
         let shared_space = gen_dir();
 
@@ -496,7 +494,6 @@ mod tests {
 
     #[test]
     /// A test ensuring that packaging and unpacking a project results in the very same project
-    #[cfg(feature = "broken-tests")]
     fn package_reverse() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
@@ -547,7 +544,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn auto_compilation() {
         let shared_space = gen_dir();
 

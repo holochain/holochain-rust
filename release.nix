@@ -1,32 +1,32 @@
 let
   overlay = final: previous: import ./. { pkgs = final; };
+
+  nixpkgs = args: import ./pkgs.nix (args // {
+    overlays = [ overlay ];
+  });
 in
 
-with import ./pkgs.nix { overlays = [ overlay ]; };
+with nixpkgs {};
 
 let
-  intoRelease = drv: _double: pkgs: pkgs."${drv}".overrideAttrs (super: {
-    buildType = "release";
-
-    postInstall = (super.postInstall or "") + ''
-      mkdir -p $out/nix-support
-      for f in $out/bin/*; do
-        echo "file binary-dist $f" >> $out/nix-support/hydra-build-products
-      done
-    '';
-
-    stripAllList = [ "bin" ];
-  });
+  # nativeRelease = import "${pkgs.path}/pkgs/top-level/release-lib.nix" {
+  #   nixpkgsArgs.overlays = [ overlay ];
+  #   supportedSystems = [ "aarch64-linux" "x86_64-linux" ];
+  # };
 
   platforms = {
     aarch64-linux = pkgsCross.aarch64-multiplatform-musl.pkgsStatic;
     x86_64-linux = pkgsCross.musl64.pkgsStatic;
+    x86_64-linux-native = nixpkgs { system = "x86_64-linux"; };
     x86_64-windows = pkgsCross.mingwW64.pkgsStatic;
   };
 in
 
 {
-  holochain-cli = lib.mapAttrs (intoRelease "holochain-cli") platforms;
+  holochain-cli = lib.mapAttrs (lib.const (lib.getAttr "holochain-cli")) platforms;
 
-  holochain-conductor = lib.mapAttrs (intoRelease "holochain-conductor") platforms;
+  holochain-conductor = lib.mapAttrs (lib.const (lib.getAttr "holochain-conductor")) platforms;
+
+  # native = with nativeRelease;
+  #   mapTestOn (packagePlatforms (lib.getAttrs [ "holochain-cli" "holochain-conductor" ] pkgs));
 }

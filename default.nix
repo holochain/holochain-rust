@@ -9,8 +9,6 @@ let
       inherit (rust.packages.nightly) rustPlatform;
     in
     (buildRustPackage rustPlatform args).overrideAttrs (super: {
-      buildType = "debug";
-
       nativeBuildInputs = super.nativeBuildInputs ++ (with buildPackages; [
         nodejs-12_x
         perl
@@ -20,6 +18,15 @@ let
         CoreServices
         Security
       ]);
+
+      postInstall = (super.postInstall or "") + ''
+        mkdir -p $out/nix-support
+        for f in $out/bin/*; do
+          echo "file binary-dist $f" >> $out/nix-support/hydra-build-products
+        done
+      '';
+
+      stripAllList = [ "bin" ];
 
       OPENSSL_STATIC = "1";
       RUST_SODIUM_LIB_DIR = "${libsodium}/lib";

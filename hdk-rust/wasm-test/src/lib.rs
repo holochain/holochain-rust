@@ -487,6 +487,15 @@ fn handle_get_entry_properties(entry_type_string: String) -> ZomeApiResult<JsonS
     hdk::entry_type_properties(&EntryType::from(entry_type_string))
 }
 
+pub fn handle_emit_signal(message: String) -> ZomeApiResult<()> {
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
+}
+
 fn handle_hash(content:String) ->ZomeApiResult<Address>
 {
     hdk::entry_address(&Entry::App(
@@ -834,6 +843,13 @@ define_zome! {
             inputs: | entry_type_string: String |,
             outputs: |response: ZomeApiResult<JsonString>|,
             handler: handle_get_entry_properties
+        }
+
+        emit_signal : {
+            inputs : |message:String|,
+            outputs: |response: ZomeApiResult<()>|,
+            handler : handle_emit_signal
+
         }
     ]
 

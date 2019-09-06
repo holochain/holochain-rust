@@ -213,12 +213,12 @@ impl ConductorApiBuilder {
     }
 
     /// Adds a call and measure function to the conductor. This is currently only available on linux
-    #[cfg(target_os = "linux")]
     pub fn with_call_and_measure(mut self) -> Self {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
 
         self.io.add_method("call_and_measure", move |params| {
+            // only actually add this function for linux OS
             if cfg!(target_os = "linux") {
                 let params_map = Self::unwrap_params_map(params)?;
                 let public_id_str = Self::get_as_string("instance_id", &params_map)?;
@@ -270,7 +270,7 @@ impl ConductorApiBuilder {
                 });
 
                 Ok(Value::String(response.to_string()))
-            } else {
+            } else { // other OS will just get a default response
                 Err(jsonrpc_core::Error::invalid_params_with_details(
                     "'call_and_measure' not available on current OS. Only linux is supported at this time".to_string(),
                     "".to_string(),

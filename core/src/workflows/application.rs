@@ -3,6 +3,7 @@ use crate::{
     instance::Instance,
     network::actions::{
         publish_header_entry::publish_header_entry,
+        publish::publish,
         initialize_network::initialize_network,
     },
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
@@ -28,7 +29,7 @@ pub async fn initialize(
         Ok(_) => false,
         Err(err) => {
             log_debug!(context,
-                "dna/initialize: Couldn't get DNA and agent from chain: {:?}",
+                "dna/initialize: No DNA and agent in chain so assuming uninitialized: {:?}",
                 err
             );
             await!(initialize_chain(dna.clone(), &instance_context))?;
@@ -41,7 +42,9 @@ pub async fn initialize(
     await!(initialize_network(&instance_context))?;
 
     if first_initialization {
-        // 4. (first initialization only) Publish the headers of the agent and DNA entries. 
+        // 4. (first initialization only) Publish the agent entry and headers of the agent and DNA entries. 
+        await!(publish(context.agent_id.address(), &context))?;
+
         let dna_entry = Entry::Dna(Box::new(dna.clone()));
         await!(publish_header_entry(dna_entry.address(), &context))?;
         let agent_id_entry = Entry::AgentId(context.agent_id.clone());

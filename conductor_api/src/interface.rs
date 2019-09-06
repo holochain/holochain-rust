@@ -178,8 +178,8 @@ impl ConductorApiBuilder {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
 
-        self.io.add_method("call", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
+        self.io.add_method("call", move |_params| {
+            let params_map = Self::unwrap_params_map(_params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
 
             let id = instance_ids_map
@@ -282,7 +282,7 @@ impl ConductorApiBuilder {
 
     #[cfg(not(target_os = "linux"))]
     pub fn with_call_and_measure(mut self) -> Self {
-        self.io.add_method("call_and_measure", move |params| {
+        self.io.add_method("call_and_measure", move |_params| {
             Err(jsonrpc_core::Error::invalid_params_with_details(
                 "'call_and_measure' not available on current OS. Only linux is supported at this time".to_string(),
                 "".to_string(),

@@ -9,6 +9,8 @@ in
 with nixpkgs {};
 
 let
+  getAttrVal = name: lib.const (lib.getAttr name);
+
   platforms = {
     aarch64-linux-musl-cross = pkgsCross.aarch64-multiplatform-musl.pkgsStatic;
     aarch64-linux-gnu-native = nixpkgs { system = "aarch64-linux"; };
@@ -19,7 +21,7 @@ let
 in
 
 {
-  holochain-cli = lib.mapAttrs (lib.const (lib.getAttr "holochain-cli")) platforms;
+  holochain-cli = lib.mapAttrs (getAttrVal "holochain-cli") platforms;
 
-  holochain-conductor = lib.mapAttrs (lib.const (lib.getAttr "holochain-conductor")) platforms;
+  holochain-conductor = lib.mapAttrs (getAttrVal "holochain-conductor") platforms;
 }

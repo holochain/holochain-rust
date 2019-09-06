@@ -20,7 +20,7 @@ use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::{signal_channel,UserSignal,Signal,SignalReceiver}
+    signal::{UserSignal,Signal,SignalReceiver}
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -348,7 +348,13 @@ fn start_holochain_instance<T: Into<String>>(
         "get_entry_properties",
         "emit_signal",
         "show_env",
-        "hash_entry"
+        "hash_entry",
+        "sign_message",
+        "verify_message",
+        "add_seed",
+        "add_key",
+        "get_pubkey",
+        "list_secrets"
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();

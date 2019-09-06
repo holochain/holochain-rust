@@ -507,6 +507,8 @@ fn handle_hash(content:String) ->ZomeApiResult<Address>
     ))
 }
 
+
+
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
@@ -519,9 +521,7 @@ fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
 
-pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
-    hdk::keystore_list().map(|keystore_ids| keystore_ids.ids)
-}
+
 
 define_zome! {
     entries: [
@@ -833,11 +833,6 @@ define_zome! {
             handler : handle_show_env
         }
 
-        list_secrets: {
-            inputs: | |,
-            outputs: |result: ZomeApiResult<Vec<String>>|,
-            handler: handle_list_secrets
-        }
 
         get_entry_properties: {
             inputs: | entry_type_string: String |,

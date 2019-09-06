@@ -13,11 +13,4 @@ scenario('send ping', async (s, t, { alice, bob }) => {
 })
 
 
-  scenario('emit signal', async (s, t, { alice }) => {
-    const result = await alice.app.callSync("simple", "test_emit_signal", {message: "test message"})
-    t.equal(alice.app.signals.length, 1)
-    t.deepEqual(alice.app.signals[0], { signal_type: 'User', name: 'test-signal', arguments: '{"message":"test message"}' })
-    t.notOk(result.Err)
-  })
-
 }

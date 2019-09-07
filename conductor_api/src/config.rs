@@ -34,7 +34,7 @@ use std::{
     fs::File,
     io::prelude::*,
     net::Ipv4Addr,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 use toml;
@@ -235,9 +235,8 @@ impl Configuration {
                 )
             })?;
             let dna_config = dna_config.unwrap();
-            let dna =
-                Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone()))
-                    .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
+            let dna = Arc::get_mut(&mut dna_loader).unwrap()(&Path::new(&dna_config.file))
+                .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
 
             for zome in dna.zomes.values() {
                 for bridge in zome.bridges.iter() {
@@ -341,14 +340,13 @@ impl Configuration {
         })?;
 
         let caller_dna_file = caller_dna_config.file.clone();
-        let caller_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
-                .map_err(|err| {
-                    format!(
-                        "Could not load DNA file \"{}\"; error was: {}",
-                        caller_dna_file, err
-                    )
-                })?;
+        let caller_dna = Arc::get_mut(&mut dna_loader).unwrap()(&Path::new(&caller_dna_file))
+            .map_err(|err| {
+                format!(
+                    "Could not load DNA file \"{}\"; error was: {}",
+                    caller_dna_file, err
+                )
+            })?;
 
         //
         // Get callee's config. DNA config, and DNA:
@@ -368,14 +366,13 @@ impl Configuration {
         })?;
 
         let callee_dna_file = callee_dna_config.file.clone();
-        let callee_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
-                .map_err(|err| {
-                    format!(
-                        "Could not load DNA file \"{}\"; error was: {}",
-                        callee_dna_file, err
-                    )
-                })?;
+        let callee_dna = Arc::get_mut(&mut dna_loader).unwrap()(&Path::new(&callee_dna_file))
+            .map_err(|err| {
+                format!(
+                    "Could not load DNA file \"{}\"; error was: {}",
+                    callee_dna_file, err
+                )
+            })?;
 
         //
         // Get matching bridge definition from caller's DNA:

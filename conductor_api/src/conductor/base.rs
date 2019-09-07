@@ -33,7 +33,7 @@ use std::{
     fs::{self, File},
     io::prelude::*,
     option::NoneError,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex, RwLock},
     thread,
     time::Duration,
@@ -145,7 +145,7 @@ type SignalSender = Sender<Signal>;
 pub type KeyLoader = Arc<
     Box<
         dyn FnMut(
-                &PathBuf,
+                &Path,
                 Arc<PassphraseManager>,
                 Option<PwHashConfig>,
             ) -> Result<Keystore, HolochainError>
@@ -153,9 +153,9 @@ pub type KeyLoader = Arc<
             + Sync,
     >,
 >;
-pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
+pub type DnaLoader = Arc<Box<dyn FnMut(&Path) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
-    Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
+    Arc<Box<dyn FnMut(&Path, &Path) -> Result<(), HolochainError> + Send + Sync>>;
 
 /// preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -967,7 +967,7 @@ impl Conductor {
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
         dna_hash_computed_from_file: &HashString,
-        dna_file: &PathBuf,
+        dna_file: &Path,
     ) -> Result<(), HolochainError> {
         match Conductor::check_dna_consistency(&dna_hash_from_conductor_config, &dna_hash_computed)
         {
@@ -1124,7 +1124,7 @@ impl Conductor {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    pub fn load_dna(file: &PathBuf) -> HcResult<Dna> {
+    pub fn load_dna(file: &Path) -> HcResult<Dna> {
         notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();
@@ -1134,17 +1134,18 @@ impl Conductor {
 
     /// Default KeyLoader that actually reads files from the filesystem
     fn load_key(
-        file: &PathBuf,
+        file: &Path,
         passphrase_manager: Arc<PassphraseManager>,
         hash_config: Option<PwHashConfig>,
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
-        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, hash_config)?;
+        let keystore =
+            Keystore::new_from_file(file.to_path_buf(), passphrase_manager, hash_config)?;
         Ok(keystore)
     }
 
-    fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
+    fn copy_ui_dir(source: &Path, dest: &Path) -> Result<(), HolochainError> {
         notify(format!(
             "Copying UI from {} to {}",
             source.display(),
@@ -1382,7 +1383,7 @@ pub mod tests {
     //    extern crate parking_lot;
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|path: &PathBuf| {
+        let loader = Box::new(|path: &Path| {
             Ok(match path.to_str().unwrap().as_ref() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
@@ -1392,13 +1393,13 @@ pub mod tests {
                 _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
             })
         })
-            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+            as Box<dyn FnMut(&Path) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
     pub fn test_key_loader() -> KeyLoader {
         let loader = Box::new(
-            |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+            |path: &Path, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
                 match path.to_str().unwrap().as_ref() {
                     "holo_tester1.key" => Ok(test_keystore(1)),
                     "holo_tester2.key" => Ok(test_keystore(2)),
@@ -1412,7 +1413,7 @@ pub mod tests {
         )
             as Box<
                 dyn FnMut(
-                        &PathBuf,
+                        &Path,
                         Arc<PassphraseManager>,
                         Option<PwHashConfig>,
                     ) -> Result<Keystore, HolochainError>
@@ -2001,8 +2002,8 @@ pub mod tests {
         let mut path = PathBuf::new();
 
         path.push(wasm_target_dir(
-            &String::from("conductor_api").into(),
-            &String::from("test-bridge-caller").into(),
+            "conductor_api".as_ref(),
+            "test-bridge-caller".as_ref(),
         ));
         let wasm_path_component: PathBuf = [
             String::from("wasm32-unknown-unknown"),

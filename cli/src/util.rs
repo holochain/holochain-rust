@@ -4,7 +4,7 @@ pub use holochain_common::paths::DNA_EXTENSION;
 use std::{
     fs,
     io::ErrorKind,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -28,7 +28,7 @@ pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<
 }
 
 /// Helper method for getting the standard dna file name built from the directory name and extension
-pub fn std_dna_file_name(path: &PathBuf) -> DefaultResult<String> {
+pub fn std_dna_file_name(path: &Path) -> DefaultResult<String> {
     let dir_name = file_name_string(path)?;
     Ok(format!("{}.{}", dir_name, DNA_EXTENSION))
 }
@@ -36,7 +36,7 @@ pub fn std_dna_file_name(path: &PathBuf) -> DefaultResult<String> {
 pub const DIST_DIR_NAME: &str = "dist";
 
 /// Helper method for obtaining the path to the dist directory, and creating it if it doesn't exist
-pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
+pub fn get_dist_path(path: &Path) -> DefaultResult<PathBuf> {
     // create dist folder
     let dist_path = path.join(&DIST_DIR_NAME);
 
@@ -47,12 +47,12 @@ pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
     Ok(dist_path)
 }
 
-pub fn std_package_path(path: &PathBuf) -> DefaultResult<PathBuf> {
+pub fn std_package_path(path: &Path) -> DefaultResult<PathBuf> {
     Ok(get_dist_path(path)?.join(std_dna_file_name(path)?))
 }
 
 /// Helper method for obtaining the file name of a path as a String
-pub fn file_name_string(path: &PathBuf) -> DefaultResult<String> {
+pub fn file_name_string(path: &Path) -> DefaultResult<String> {
     let file_name = path
         .file_name()
         .ok_or_else(|| format_err!("unable to retrieve file name for path: {:?}", path))?

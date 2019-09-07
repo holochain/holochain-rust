@@ -8,7 +8,7 @@ use holochain_dpki::{password_encryption::PwHashConfig, SEED_SIZE};
 use keystore::test_hash_config;
 use lib3h_sodium::{hash::sha256, secbuf::SecBuf};
 use std::{
-    path::PathBuf,
+    path::Path,
     sync::{Arc, Mutex},
 };
 
@@ -17,13 +17,13 @@ use std::{
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_keystore_loader() -> KeyLoader {
     let loader = Box::new(
-        |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+        |path: &Path, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
             Ok(test_keystore(&path.to_str().unwrap().to_string()))
         },
     )
         as Box<
             dyn FnMut(
-                    &PathBuf,
+                    &Path,
                     Arc<PassphraseManager>,
                     Option<PwHashConfig>,
                 ) -> Result<Keystore, HolochainError>

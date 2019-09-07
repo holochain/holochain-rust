@@ -38,7 +38,7 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    path::PathBuf,
+    path::Path,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -46,7 +46,7 @@ use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
-pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
+pub fn create_wasm_from_file(path: &Path) -> Vec<u8> {
     let mut file = File::open(path)
         .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {:?}; {}", path, err));
     let mut buf = Vec::new();
@@ -257,7 +257,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
 pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
-    wasm_path: &PathBuf,
+    wasm_path: &Path,
     fn_name: &str,
     params: J,
 ) -> HolochainResult<JsonString> {

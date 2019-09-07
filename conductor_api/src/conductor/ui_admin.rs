@@ -174,11 +174,11 @@ impl ConductorUiAdmin for Conductor {
 pub mod tests {
     use super::*;
     use conductor::{admin::tests::*, base::UiDirCopier};
-    use std::{fs::File, io::Read, net::Ipv4Addr};
+    use std::{fs::File, io::Read, net::Ipv4Addr, path::Path};
 
     pub fn test_ui_copier() -> UiDirCopier {
-        let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
-            as Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
+        let copier = Box::new(|_source: &Path, _dest: &Path| Ok(()))
+            as Box<dyn FnMut(&Path, &Path) -> Result<(), HolochainError> + Send + Sync>;
         Arc::new(copier)
     }
 

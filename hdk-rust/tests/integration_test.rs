@@ -306,10 +306,7 @@ fn start_holochain_instance<T: Into<String>>(
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
-    let wasm_dir_component: PathBuf = wasm_target_dir(
-        &String::from("hdk-rust").into(),
-        &String::from("wasm-test").into(),
-    );
+    let wasm_dir_component: PathBuf = wasm_target_dir("hdk-rust".as_ref(), "wasm-test".as_ref());
     wasm_path.push(wasm_dir_component);
     let wasm_path_component: PathBuf = [
         String::from("wasm32-unknown-unknown"),

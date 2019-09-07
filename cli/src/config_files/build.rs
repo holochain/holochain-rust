@@ -38,7 +38,7 @@ impl Build {
     }
 
     /// Starts the build using the supplied build steps and returns the contents of the artifact
-    pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
+    pub fn run(&self, base_path: &Path) -> DefaultResult<String> {
         for build_step in &self.steps {
             let slice_vec: Vec<_> = build_step.arguments.iter().map(|e| e.as_str()).collect();
             util::run_cmd(

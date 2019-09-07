@@ -11,7 +11,7 @@ use std::{
     convert::TryFrom,
     fs::{self, File},
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
@@ -85,7 +85,7 @@ impl Packager {
         Packager::new(strip_meta).run(&output)
     }
 
-    fn run(&self, output: &PathBuf) -> DefaultResult<()> {
+    fn run(&self, output: &Path) -> DefaultResult<()> {
         let current_dir = std::env::current_dir()?;
         let dir_obj_bundle = Value::from(self.bundle_recurse(&current_dir).map_err(|e| {
             format_err!(
@@ -123,20 +123,18 @@ impl Packager {
         Ok(())
     }
 
-    fn bundle_recurse(&self, path: &PathBuf) -> DefaultResult<Object> {
+    fn bundle_recurse(&self, path: &Path) -> DefaultResult<Object> {
         let root_dir = WalkBuilder::new(path)
             .max_depth(Some(1))
             .add_custom_ignore_filename(IGNORE_FILE_NAME)
             .build()
             .skip(1);
 
-        let root: Vec<_> = root_dir
-            .filter_map(|e| e.ok())
-            .map(|e| e.path().to_path_buf())
-            .collect();
+        let root: Vec<_> = root_dir.filter_map(|e| e.ok()).collect();
 
-        let root_json_files: Vec<&PathBuf> = root
+        let root_json_files: Vec<&Path> = root
             .iter()
+            .map(|e| e.path())
             .filter(|e| e.is_file())
             .filter(|e| e.to_string_lossy().ends_with(".json"))
             .collect();
@@ -158,9 +156,9 @@ impl Packager {
         };
 
         // Scan files but discard found json file
-        let all_nodes = root.iter().filter(|node_path| {
+        let all_nodes = root.iter().map(|n| n.path()).filter(|&node_path| {
             maybe_json_file_path
-                .and_then(|path| Some(node_path != &path))
+                .and_then(|path| Some(node_path != path))
                 .unwrap_or(true)
         });
 
@@ -185,7 +183,7 @@ impl Packager {
         let mut meta_tree = Object::new();
 
         for node in all_nodes {
-            let file_name = util::file_name_string(&node)?;
+            let file_name = util::file_name_string(node)?;
 
             // ignore empty main_tree, which results from an unparseable JSON file
             if node.is_file() && !main_tree.is_empty() {
@@ -304,7 +302,7 @@ pub fn package(strip_meta: bool, output: PathBuf) -> DefaultResult<()> {
     Packager::package(strip_meta, output)
 }
 
-pub fn unpack(path: &PathBuf, to: &PathBuf) -> DefaultResult<()> {
+pub fn unpack(path: &Path, to: &Path) -> DefaultResult<()> {
     ensure!(path.is_file(), "argument \"path\" doesn't point to a file");
 
     if !to.exists() {
@@ -321,7 +319,7 @@ pub fn unpack(path: &PathBuf, to: &PathBuf) -> DefaultResult<()> {
     Ok(())
 }
 
-fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
+fn unpack_recurse(mut obj: Object, to: &Path) -> DefaultResult<()> {
     if let Some(Value::Object(mut main_meta_obj)) = obj.remove(META_SECTION_NAME) {
         // unpack the tree
         if let Some(Value::Object(tree_meta_obj)) = main_meta_obj.remove(META_TREE_SECTION_NAME) {
@@ -391,7 +389,7 @@ mod tests {
     fn package_and_unpack_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
-        fn package(shared_file_path: &PathBuf) {
+        fn package(shared_file_path: &Path) {
             let temp_space = gen_dir();
             let temp_dir_path = temp_space.path();
 
@@ -411,7 +409,7 @@ mod tests {
                 .success();
         }
 
-        fn unpack(shared_file_path: &PathBuf) {
+        fn unpack(shared_file_path: &Path) {
             let temp_space = gen_dir();
             let temp_dir_path = temp_space.path();
 

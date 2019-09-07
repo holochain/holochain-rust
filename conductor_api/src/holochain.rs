@@ -336,10 +336,7 @@ mod tests {
     }
 
     fn example_api_wasm_path() -> PathBuf {
-        let mut path = wasm_target_dir(
-            &String::from("conductor_api").into(),
-            &String::from("wasm-test").into(),
-        );
+        let mut path = wasm_target_dir("conductor_api".as_ref(), "wasm-test".as_ref());
         let wasm_path_component: PathBuf = [
             String::from("wasm32-unknown-unknown"),
             String::from("release"),

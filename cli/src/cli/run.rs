@@ -11,7 +11,10 @@ use holochain_conductor_api::{
 };
 use holochain_core_types::agent::AgentId;
 use holochain_persistence_api::cas::content::AddressableContent;
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
@@ -70,7 +73,7 @@ pub fn get_interface_type_string(given_type: String) -> String {
 }
 
 pub fn hc_run_configuration(
-    dna_path: &PathBuf,
+    dna_path: &Path,
     port: u16,
     persist: bool,
     networked: bool,
@@ -119,7 +122,7 @@ fn agent_configuration() -> AgentConfiguration {
 // DNA
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
-fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
+fn dna_configuration(dna_path: &Path) -> DnaConfiguration {
     let dna = Conductor::load_dna(dna_path).expect(&format!(
         "Could not load DNA file {}",
         dna_path.to_str().expect("No DNA file path given")

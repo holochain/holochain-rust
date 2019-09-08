@@ -544,16 +544,17 @@ impl Conductor {
             NetworkConfig::N3h(config) => {
                 println!(
                     "Spawning network with working directory: {}",
-                    config.n3h_persistence_path
+                    config.n3h_persistence_path.to_string_lossy()
                 );
+
                 let spawn_result = ipc_spawn(
                     config.n3h_persistence_path.clone(),
                     P2pConfig::load_end_user_config(config.networking_config_file).to_string(),
                     hashmap! {
-                        String::from("N3H_MODE") => config.n3h_mode.clone(),
-                        String::from("N3H_WORK_DIR") => config.n3h_persistence_path.clone(),
-                        String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
-                        String::from("N3H_LOG_LEVEL") => config.n3h_log_level.clone(),
+                        String::from("N3H_MODE") => config.n3h_mode.into(),
+                        String::from("N3H_WORK_DIR") => config.n3h_persistence_path.into_os_string(),
+                        String::from("N3H_IPC_SOCKET") => "tcp://127.0.0.1:*".into(),
+                        String::from("N3H_LOG_LEVEL") => config.n3h_log_level.into(),
                     },
                     2000,
                     true,
@@ -770,7 +771,7 @@ impl Conductor {
                 let dna_file = PathBuf::from(&dna_config.file);
                 let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
                     HolochainError::ConfigError(format!(
-                        "Could not load DNA file \"{}\"",
+                        "Could not load DNA file {:?}",
                         dna_config.file
                     ))
                 })?;
@@ -1056,15 +1057,14 @@ impl Conductor {
             let mut keystore = match agent_config.test_agent {
                 Some(true) => test_keystore(&agent_config.name),
                 _ => {
-                    let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
                     let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
-                        &keystore_file_path,
+                        &agent_config.keystore_file,
                         self.passphrase_manager.clone(),
                         self.hash_config.clone(),
                     )
                     .map_err(|_| {
                         HolochainError::ConfigError(format!(
-                            "Could not load keystore \"{}\"",
+                            "Could not load keystore {:?}",
                             agent_config.keystore_file,
                         ))
                     })?;
@@ -1081,7 +1081,7 @@ impl Conductor {
             } else {
                 if agent_config.public_address != keybundle.get_id() {
                     return Err(format!(
-                        "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                        "Key from file {:?} ('{}') does not match public address {} mentioned in config!",
                         agent_config.keystore_file,
                         keybundle.get_id(),
                         agent_config.public_address,
@@ -2306,7 +2306,7 @@ pub mod tests {
         conductor.key_loader = test_key_loader();
         assert_eq!(
             conductor.boot_from_config(),
-            Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
+            Err("Error while trying to create instance \"test-instance-1\": Key from file \"holo_tester1.key\" (\'HcSCI7T6wQ5t4nffbjtUk98Dy9fa79Ds6Uzg8nZt8Fyko46ikQvNwfoCfnpuy7z\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!"
                 .to_string()),
         );
     }

@@ -1,14 +1,15 @@
 use holochain_net::{p2p_config::*, tweetlog::*};
 use p2p_node::lib3h::engine::RealEngineConfig;
+use std::path::{Path, PathBuf};
 
 /// Create a P2pConfig for an IPC node that uses n3h and possibily a specific folder.
 /// Return the generated P2pConfig and the created tempdir if no dir was provided.
 #[cfg_attr(tarpaulin, skip)]
 pub(crate) fn create_ipc_config(
-    maybe_config_filepath: Option<&str>,
-    maybe_end_user_config_filepath: Option<String>,
+    maybe_config_filepath: Option<&Path>,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     bootstrap_nodes: Vec<String>,
-    maybe_dir_path: Option<String>,
+    maybe_dir_path: Option<PathBuf>,
 ) -> (P2pConfig, Option<tempfile::TempDir>) {
     // Create temp directory if no dir was provided
     let mut maybe_dir_ref = None;
@@ -16,17 +17,17 @@ pub(crate) fn create_ipc_config(
         dir_path
     } else {
         let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-        let dir_path = dir_ref.path().clone().to_string_lossy().to_string();
+        let dir_path = dir_ref.path().to_path_buf();
         maybe_dir_ref = Some(dir_ref);
         dir_path
     };
 
-    log_i!("create_ipc_config() dir = {}", dir);
+    log_i!("create_ipc_config() dir = {:?}", dir);
 
     // Create config
     let mut config: P2pConfig = match maybe_config_filepath {
         Some(filepath) => {
-            log_d!("filepath = {}", filepath);
+            log_d!("filepath = {:?}", filepath);
             // Get config from file
             let mut p2p_config = P2pConfig::from_file(filepath);
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::N3H);
@@ -83,10 +84,10 @@ pub(crate) fn create_ipc_config(
 /// Return the generated P2pConfig and the created tempdir if no dir was provided.
 #[cfg_attr(tarpaulin, skip)]
 pub(crate) fn create_lib3h_config(
-    maybe_config_filepath: Option<&str>,
-    maybe_end_user_config_filepath: Option<String>,
+    maybe_config_filepath: Option<&Path>,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     bootstrap_nodes: Vec<String>,
-    maybe_dir_path: Option<String>,
+    maybe_dir_path: Option<PathBuf>,
 ) -> (P2pConfig, Option<tempfile::TempDir>) {
     // Create temp directory if no dir was provided
     let mut maybe_dir_ref = None;
@@ -94,17 +95,17 @@ pub(crate) fn create_lib3h_config(
         dir_path
     } else {
         let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-        let dir_path = dir_ref.path().clone().to_string_lossy().to_string();
+        let dir_path = dir_ref.path().to_path_buf();
         maybe_dir_ref = Some(dir_ref);
         dir_path
     };
 
-    log_i!("create_lib3h_config() dir = {}", dir);
+    log_i!("create_lib3h_config() dir = {:?}", dir);
 
     // Create config
     let mut config: P2pConfig = match maybe_config_filepath {
         Some(filepath) => {
-            log_d!("filepath = {}", filepath);
+            log_d!("filepath = {:?}", filepath);
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::LIB3H);
@@ -117,7 +118,12 @@ pub(crate) fn create_lib3h_config(
                 socket_type: "ws".into(),
                 tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
                 bootstrap_nodes: bootstrap_nodes,
-                work_dir: dir.clone(),
+                // since this value is going to be used as a path, fail fast by panicking
+                // FIXME: remove conversion. pending https://github.com/holochain/lib3h/pull/309
+                work_dir: dir.into_os_string().into_string().expect(
+                    "work dir for RealEngineConfig to be valid utf8. \
+                     this will not always be required",
+                ),
                 log_level: 'd',
                 bind_url: url::Url::parse("fixme://bind_url").unwrap(),
                 dht_custom_config: vec![],

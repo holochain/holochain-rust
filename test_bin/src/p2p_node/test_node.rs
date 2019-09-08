@@ -19,7 +19,10 @@ use lib3h_protocol::{
 
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+};
 
 use super::{
     chain_store::ChainStore,
@@ -629,10 +632,10 @@ impl TestNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_lib3h(
         agent_id: Address,
-        maybe_config_filepath: Option<&str>,
-        maybe_end_user_config_filepath: Option<String>,
+        maybe_config_filepath: Option<&Path>,
+        maybe_end_user_config_filepath: Option<PathBuf>,
         bootstrap_nodes: Vec<String>,
-        maybe_dir_path: Option<String>,
+        maybe_dir_path: Option<PathBuf>,
     ) -> Self {
         let (p2p_config, _maybe_temp_dir) = create_lib3h_config(
             maybe_config_filepath,
@@ -647,10 +650,10 @@ impl TestNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
         agent_id: Address,
-        maybe_config_filepath: Option<&str>,
-        maybe_end_user_config_filepath: Option<String>,
+        maybe_config_filepath: Option<&Path>,
+        maybe_end_user_config_filepath: Option<PathBuf>,
         bootstrap_nodes: Vec<String>,
-        maybe_dir_path: Option<String>,
+        maybe_dir_path: Option<PathBuf>,
     ) -> Self {
         let (p2p_config, _maybe_temp_dir) = create_ipc_config(
             maybe_config_filepath,

@@ -12,6 +12,7 @@ use super::n3h::get_verify_n3h;
 use std::{
     collections::HashMap,
     io::{Read, Write},
+    path::PathBuf,
 };
 
 pub struct SpawnResult {
@@ -26,15 +27,15 @@ pub const DEFAULT_TIMEOUT_MS: usize = 5000;
 /// Will block for IPC connection until timeout_ms is reached.
 /// Can also block for P2P connection
 pub fn ipc_spawn(
-    work_dir: String,
+    work_dir: PathBuf,
     end_user_config: String,
-    mut env: HashMap<String, String>,
+    mut env: HashMap<String, std::ffi::OsString>,
     timeout_ms: usize,
     can_wait_for_p2p: bool,
 ) -> NetResult<SpawnResult> {
     let (n3h, n3h_args) = get_verify_n3h()?;
 
-    env.insert("NO_CLEANUP".to_string(), "1".to_string());
+    env.insert("NO_CLEANUP".to_string(), "1".into());
 
     let mut child = std::process::Command::new(n3h);
 

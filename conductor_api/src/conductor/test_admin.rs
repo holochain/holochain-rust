@@ -28,7 +28,7 @@ impl ConductorTestAdmin for Conductor {
             id: id.clone(),
             name: name.clone(),
             public_address: public_address.clone(),
-            keystore_file: name.clone(),
+            keystore_file: name.clone().into(),
             holo_remote_key: None,
             test_agent: Some(true),
         };

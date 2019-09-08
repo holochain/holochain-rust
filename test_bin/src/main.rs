@@ -33,7 +33,11 @@ pub mod three_workflows;
 use constants::*;
 use holochain_net::{connection::NetResult, tweetlog::*};
 use p2p_node::test_node::TestNode;
-use std::{collections::HashMap, fs::File};
+use std::{
+    collections::HashMap,
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 pub(crate) type TwoNodesTestFn =
     fn(alex: &mut TestNode, billy: &mut TestNode, can_test_connect: bool) -> NetResult<()>;
@@ -105,7 +109,7 @@ fn print_test_name(print_str: &str, test_fn: *mut std::os::raw::c_void) {
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn load_config_file(filepath: &str) -> serde_json::Value {
+fn load_config_file(filepath: &Path) -> serde_json::Value {
     let config_file =
         File::open(filepath).expect("Failed to open filepath on Network Test config.");
     serde_json::from_reader(config_file).expect("file is not proper JSON")
@@ -116,20 +120,18 @@ fn load_config_file(filepath: &str) -> serde_json::Value {
 fn main() {
     // Check args ; get config filepath
     let args: Vec<String> = std::env::args().collect();
-    let mut config_path = String::new();
-    if args.len() == 2 {
-        config_path = args[1].clone();
-    }
-    if config_path == "" {
+    let config_path: PathBuf = if args.len() == 2 {
+        (*args[1]).into()
+    } else {
         println!(
             "Usage: No config file supplied. Using default config: test_bin/data/test_config.json"
         );
-        config_path = format!(
-            "test_bin{0}data{0}test_config.json",
-            std::path::MAIN_SEPARATOR
-        )
-        .to_string();
-    }
+        let mut path = PathBuf::new();
+        path.push("test_bin");
+        path.push("data");
+        path.push("test_config.json");
+        path
+    };
 
     // Load config
     let config = load_config_file(&config_path);
@@ -172,13 +174,17 @@ fn main() {
             launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         }
         if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
-            launch_two_nodes_test_with_mock("test_bin/data/lib3h_mock_config.json", None, test_fn)
-                .unwrap();
+            launch_two_nodes_test_with_mock(
+                "test_bin/data/lib3h_mock_config.json".as_ref(),
+                None,
+                test_fn,
+            )
+            .unwrap();
         }
         if config["modes"]["N3H"].as_bool().unwrap() {
             launch_two_nodes_test(
-                "test_bin/data/n3h_config.json",
-                Some("test_bin/data/end_user_net_config.json".to_string()),
+                "test_bin/data/n3h_config.json".as_ref(),
+                Some("test_bin/data/end_user_net_config.json".into()),
                 test_fn,
             )
             .unwrap();
@@ -189,8 +195,8 @@ fn main() {
     if config["modes"]["LIB3H"].as_bool().unwrap() {
         for test_fn in TWO_NODES_LIB3H_TEST_FNS.iter() {
             launch_two_nodes_test_with_lib3h(
-                "test_bin/data/lib3h_config.json",
-                Some("test_bin/data/end_user_net_config.json".to_string()),
+                "test_bin/data/lib3h_config.json".as_ref(),
+                Some("test_bin/data/end_user_net_config.json".into()),
                 *test_fn,
             )
             .unwrap();
@@ -204,7 +210,7 @@ fn main() {
             }
             if config["modes"]["LIB3H_MOCK"].as_bool().unwrap() {
                 launch_three_nodes_test_with_mock(
-                    "test_bin/data/lib3h_mock_config.json",
+                    "test_bin/data/lib3h_mock_config.json".as_ref(),
                     None,
                     test_fn,
                 )
@@ -212,8 +218,8 @@ fn main() {
             }
             if config["modes"]["N3H"].as_bool().unwrap() {
                 launch_three_nodes_test(
-                    "test_bin/data/n3h_config.json",
-                    Some("test_bin/data/end_user_net_config.json".to_string()),
+                    "test_bin/data/n3h_config.json".as_ref(),
+                    Some("test_bin/data/end_user_net_config.json".into()),
                     test_fn,
                 )
                 .unwrap();
@@ -225,15 +231,15 @@ fn main() {
     if config["suites"]["CONNECTION_WORKFLOWS"].as_bool().unwrap() {
         if config["modes"]["N3H"].as_bool().unwrap() {
             connection_workflows::two_nodes_disconnect_test(
-                "test_bin/data/n3h_config.json",
-                Some("test_bin/data/end_user_net_config.json".to_string()),
+                "test_bin/data/n3h_config.json".as_ref(),
+                Some("test_bin/data/end_user_net_config.json".into()),
                 basic_workflows::dht_test,
             )
             .unwrap();
 
             connection_workflows::three_nodes_disconnect_test(
-                "test_bin/data/n3h_config.json",
-                Some("test_bin/data/end_user_net_config.json".to_string()),
+                "test_bin/data/n3h_config.json".as_ref(),
+                Some("test_bin/data/end_user_net_config.json".into()),
                 three_workflows::hold_and_publish_test,
             )
             .unwrap();
@@ -272,8 +278,8 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
 // do general test in a mocked mode
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_mock(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -302,8 +308,8 @@ fn launch_two_nodes_test_with_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -338,8 +344,8 @@ fn launch_two_nodes_test(
 /// Do test with default lib3hcd ..
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_lib3h(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -402,8 +408,8 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
 // do general test with a mocked mode
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test_with_mock(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -436,8 +442,8 @@ fn launch_three_nodes_test_with_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_three_nodes_test(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -482,8 +488,8 @@ fn launch_three_nodes_test(
 #[cfg_attr(tarpaulin, skip)]
 #[allow(dead_code)]
 fn launch_three_nodes_test_with_lib3h(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes

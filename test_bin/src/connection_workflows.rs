@@ -16,23 +16,25 @@ use lib3h_protocol::{
 
 use p2p_node::test_node::TestNode;
 
+use std::path::{Path, PathBuf};
+
 // Disconnect & reconnect a Node in a two nodes scenario
 #[cfg_attr(tarpaulin, skip)]
 pub(crate) fn two_nodes_disconnect_test(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create alex temp dir
     let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
+    let alex_dir_path = alex_dir.path();
     // Create two nodes
     let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(alex_dir_path.clone()),
+        Some(alex_dir_path.to_path_buf()),
     );
     let mut billy = TestNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.clone(),
@@ -62,7 +64,7 @@ pub(crate) fn two_nodes_disconnect_test(
         maybe_end_user_config_filepath.clone(),
         // TODO test bootstrap with billy's endpoint
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(alex_dir_path),
+        Some(alex_dir_path.to_path_buf()),
     );
     basic_workflows::setup_one_node(&mut alex, &mut billy, &DNA_ADDRESS_A, true)?;
 
@@ -115,8 +117,8 @@ pub(crate) fn two_nodes_disconnect_test(
 // Disconnect & reconnect a Node in a three nodes scenario
 #[cfg_attr(tarpaulin, skip)]
 pub(crate) fn three_nodes_disconnect_test(
-    config_filepath: &str,
-    maybe_end_user_config_filepath: Option<String>,
+    config_filepath: &Path,
+    maybe_end_user_config_filepath: Option<PathBuf>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     log_i!("");
@@ -124,33 +126,30 @@ pub(crate) fn three_nodes_disconnect_test(
     log_i!("=================");
     // Create alex & temp dir
     let alex_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let alex_dir_path = alex_dir.path().to_string_lossy().to_string();
     let mut alex = TestNode::new_with_spawn_ipc_network(
         ALEX_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(alex_dir_path.clone()),
+        Some(alex_dir.path().to_path_buf()),
     );
     // Create billy & temp dir
     let billy_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let billy_dir_path = billy_dir.path().to_string_lossy().to_string();
     let mut billy = TestNode::new_with_spawn_ipc_network(
         BILLY_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(billy_dir_path),
+        Some(billy_dir.path().to_path_buf()),
     );
     // Create camille & temp dir
     let camille_dir = tempfile::tempdir().expect("Failed to created a temp directory.");
-    let camille_dir_path = camille_dir.path().to_string_lossy().to_string();
     let mut camille = TestNode::new_with_spawn_ipc_network(
         CAMILLE_AGENT_ID.clone(),
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-        Some(camille_dir_path),
+        Some(camille_dir.path().to_path_buf()),
     );
 
     // Perform some other test function
@@ -174,7 +173,7 @@ pub(crate) fn three_nodes_disconnect_test(
         Some(config_filepath),
         maybe_end_user_config_filepath.clone(),
         vec![billy.p2p_binding.clone()],
-        Some(alex_dir_path),
+        Some(alex_dir.path().to_path_buf()),
     );
     alex.track_dna(&DNA_ADDRESS_A, true)
         .expect("Failed sending TrackDna on alex");

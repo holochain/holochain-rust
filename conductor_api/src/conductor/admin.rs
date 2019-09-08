@@ -412,7 +412,7 @@ impl ConductorAdmin for Conductor {
         }
 
         let (keystore_file, public_address) = if let Some(public_address) = holo_remote_key {
-            ("::ignored::".to_string(), public_address.to_string())
+            ("::ignored::".into(), public_address.to_string())
         } else {
             let (keystore, public_address) = if self.using_dpki() {
                 let dpki_instance_id = self.dpki_instance_id().unwrap();
@@ -446,7 +446,7 @@ impl ConductorAdmin for Conductor {
             create_dir_all(self.instance_storage_dir_path())?;
             keystore.save(keystore_file.clone())?;
             self.add_agent_keystore(id.clone(), keystore);
-            (keystore_file.to_string_lossy().into_owned(), public_address)
+            (keystore_file, public_address)
         };
 
         let new_agent = AgentConfiguration {
@@ -815,12 +815,12 @@ type = 'cmd'"#
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.dna.json"),
+                    file: PathBuf::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: String::from("new-dna.dna.json"),
+                    file: PathBuf::from("new-dna.dna.json"),
                     hash: String::from(new_dna.address()),
                 },
             ]
@@ -894,12 +894,12 @@ id = 'new-dna'"#,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.dna.json"),
+                    file: PathBuf::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: output_dna_file.to_str().unwrap().to_string(),
+                    file: output_dna_file.clone(),
                     hash: String::from(new_dna.address()),
                 },
             ]
@@ -998,12 +998,12 @@ id = 'new-dna'"#,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.dna.json"),
+                    file: PathBuf::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
-                    file: output_dna_file.to_str().unwrap().to_string(),
+                    file: output_dna_file.clone(),
                     hash: String::from(new_dna.address()),
                 },
             ]
@@ -1063,17 +1063,17 @@ id = 'new-dna'"#,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: String::from("app_spec.dna.json"),
+                    file: PathBuf::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),
-                    file: new_dna_path.to_string_lossy().to_string(),
+                    file: new_dna_path,
                     hash: String::from(new_dna.address()),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
-                    file: output_dna_file.to_str().unwrap().to_string(),
+                    file: output_dna_file.clone(),
                     hash: String::from(new_dna.address()),
                 },
             ]

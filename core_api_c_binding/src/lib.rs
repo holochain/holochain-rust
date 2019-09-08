@@ -19,6 +19,7 @@ use std::sync::Arc;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
+    path::{Path, PathBuf},
 };
 
 #[derive(Clone, Debug)]
@@ -30,7 +31,10 @@ impl Logger for NullLogger {
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> *mut Holochain {
-    let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
+    let path: PathBuf = CStr::from_ptr(storage_path)
+        .to_string_lossy()
+        .into_owned()
+        .into();
     let context = get_context(&path);
 
     assert!(!ptr.is_null());
@@ -47,7 +51,10 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> 
 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain {
-    let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
+    let path: PathBuf = CStr::from_ptr(storage_path)
+        .to_string_lossy()
+        .into_owned()
+        .into();
     let context = get_context(&path);
 
     match context {
@@ -59,11 +66,11 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
     }
 }
 
-fn get_context(path: &String) -> Result<Context, HolochainError> {
+fn get_context(path: &Path) -> Result<Context, HolochainError> {
     let agent = AgentId::generate_fake("c_bob");
     Ok(ContextBuilder::new()
         .with_agent(agent)
-        .with_file_storage(path.clone())?
+        .with_file_storage(path)?
         .spawn())
 }
 

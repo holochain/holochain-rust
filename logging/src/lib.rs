@@ -162,6 +162,7 @@ use std::{
     default::Default,
     env,
     io::{self, Write},
+    path::PathBuf,
     str::FromStr,
     thread,
     ops::Drop,
@@ -352,7 +353,7 @@ pub struct FastLoggerBuilder {
     /// Size of the channel used to send log message. Currently defaulting to 512.
     channel_size: usize,
     /// The path of the file where the log will be dump in the optional case we redirect logs to a file.
-    file_path: Option<String>,
+    file_path: Option<PathBuf>,
     /// Timestamp format of each log.
     timestamp_format: String,
 }
@@ -452,14 +453,14 @@ impl<'a> FastLoggerBuilder {
     }
 
     /// Redirect log message to the provided file path.
-    pub fn redirect_to_file(&mut self, file_path: &str) -> &mut Self {
-        self.file_path = Some(String::from(file_path));
+    pub fn redirect_to_file(&mut self, file_path: PathBuf) -> &mut Self {
+        self.file_path = Some(file_path);
         self
     }
 
     /// Returns the file path of the logs in the case we want to redirect them to a file.
-    pub fn file_path(&self) -> Option<String> {
-        self.file_path.clone()
+    pub fn file_path(&self) -> Option<&PathBuf> {
+        self.file_path.as_ref()
     }
 
     /// Registers a [FastLogger] as the comsumer of [log] facade so it becomes static and any further
@@ -489,18 +490,13 @@ impl<'a> FastLoggerBuilder {
                 // unnecessary flush.
                 // Currently we use `BufWriter` which has a sized buffer of about
                 // 8kb by default
-                if self.file_path.is_some() {
+                if let Some(file_path) = &self.file_path {
                     let mut buffer = {
-                        let fp = match &self.file_path {
-                            Some(fp) => fp.to_string(),
-                            None => String::from("dummy.log"),
-                        };
-                        let file_path = std::path::PathBuf::from(&fp);
                         let file_stream = std::fs::OpenOptions::new()
                             .create(true)
                             .append(true)
-                            .open(&file_path)
-                            .unwrap_or_else(|_| panic!("Fail to log to {:?}.", &file_path));
+                            .open(file_path)
+                            .unwrap_or_else(|_| panic!("Fail to log to {:?}.", file_path));
 
                         io::BufWriter::new(file_stream)
                     };
@@ -757,7 +753,7 @@ struct Logger {
     /// Verbosity level of the logger.
     level: String,
     /// The path to the file in the case where we want to redirect our log to a file.
-    file: Option<String>,
+    file: Option<PathBuf>,
     /// List of filtering [rules](RuleFilter).
     rules: Option<Vec<Rule>>,
     /// Timestamp format.
@@ -879,7 +875,7 @@ fn logger_conf_deserialization_test() {
     assert_eq!(flb.level(), Level::Debug);
 
     // File dump check
-    assert_eq!(flb.file_path(), Some(String::from("humpty_dumpty.log")));
+    assert_eq!(flb.file_path(), Some(&PathBuf::from("humpty_dumpty.log")));
 }
 
 #[test]
@@ -901,7 +897,7 @@ fn fastloggerbuilder_conf_deserialization_test() {
     assert_eq!(flb.level(), Level::Debug);
 
     // File dump check
-    assert_eq!(flb.file_path(), Some(String::from("humpty_dumpty.log")));
+    assert_eq!(flb.file_path(), Some(&PathBuf::from("humpty_dumpty.log")));
 }
 
 #[test]

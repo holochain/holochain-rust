@@ -5,6 +5,7 @@ use lib3h_sodium::secbuf::SecBuf;
 use log::Level;
 use std::{
     io::{self, Write},
+    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
@@ -135,13 +136,13 @@ impl PassphraseService for PassphraseServiceMock {
 
 #[cfg(unix)]
 pub struct PassphraseServiceUnixSocket {
-    path: String,
+    path: PathBuf,
     stream: Arc<Mutex<Option<std::io::Result<BufReader<UnixStream>>>>>,
 }
 
 #[cfg(unix)]
 impl PassphraseServiceUnixSocket {
-    pub fn new(path: String) -> Self {
+    pub fn new(path: PathBuf) -> Self {
         let stream = Arc::new(Mutex::new(None));
         let stream_clone = stream.clone();
         let listener = UnixListener::bind(path.clone())
@@ -162,7 +163,7 @@ impl PassphraseServiceUnixSocket {
 #[cfg(unix)]
 impl Drop for PassphraseServiceUnixSocket {
     fn drop(&mut self) {
-        std::fs::remove_file(self.path.clone()).unwrap();
+        std::fs::remove_file(&self.path).unwrap();
     }
 }
 

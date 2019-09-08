@@ -36,7 +36,7 @@
 ///     conductor::Conductor,
 /// };
 /// use holochain_core_types::error::HolochainError;
-/// use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
+/// use std::{fs::File, io::prelude::*, path::{Path, PathBuf}, sync::Arc};
 /// use structopt::StructOpt;
 ///
 /// #[derive(StructOpt, Debug)]
@@ -52,7 +52,7 @@
 ///     let config_path = opt.config
 ///         .unwrap_or(PathBuf::from(r"~/.holochain/conductor/conductor_config.toml"));
 ///     println!("Using config path: {:?}", config_path);
-///     match bootstrap_from_config(&sconfig_path) {
+///     match bootstrap_from_config(&config_path) {
 ///         Ok(mut conductor) => {
 ///             if conductor.instances().len() > 0 {
 ///                 println!(

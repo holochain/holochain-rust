@@ -5,12 +5,13 @@ use lib3h_sodium::secbuf::SecBuf;
 use log::Level;
 use std::{
     io::{self, Write},
-    path::PathBuf,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
 };
 
+#[cfg(unix)]
+use std::path::PathBuf;
 #[cfg(unix)]
 use std::io::{BufRead, BufReader};
 #[cfg(unix)]

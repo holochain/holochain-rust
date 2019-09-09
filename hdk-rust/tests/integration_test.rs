@@ -13,6 +13,8 @@ extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
+#[macro_use]
+extern crate unwrap_to;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;
@@ -20,7 +22,8 @@ use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::{UserSignal,Signal,SignalReceiver}
+    signal::{UserSignal,Signal,SignalReceiver},
+    consistency::ConsistencyEvent
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -58,7 +61,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
+    time::{SystemTime,Duration},
 };
 use test_utils::*;
 
@@ -300,6 +303,64 @@ fn example_valid_entry_params() -> String {
 fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
+
+
+fn wait_for_action(signal_receiver: &SignalReceiver,expected_signal : ConsistencyEvent,max_tries: i8,up_till : Option<usize>) ->Result<ConsistencyEvent,HolochainError>
+{
+ 
+    if max_tries > 0
+    {
+        signal_receiver
+        //THIS FIRST PART IS JUST FOR OPTIMIZATION PURPOSES WHILE FINDING A GOOD BALANCE OF SEPERATION
+        //============================================================================================
+        .iter()
+        //skip the first
+        .skip(up_till.unwrap_or(0))
+        //only iterate over the 10
+        .take(10)
+        //make sure we filter only over the signals
+        .filter(|recv| match recv{Signal::Consistency(cons)=>true,_=>false})
+        //==============================================================================================
+        .filter_map(|recv|
+        {
+            match recv
+            {
+                Signal::Consistency(cons)=>
+                {
+                    let content = cons.clone().event();
+                    let event : ConsistencyEvent = serde_json::from_str(&content).expect("Could not convert serde");
+                    match event
+                    {
+                        ConsistencyEvent::Hold(_)=>Some(event),
+                        ConsistencyEvent::AddLink(_)=>Some(event),
+                        ConsistencyEvent::UpdateEntry(_, _)=>Some(event),
+                        ConsistencyEvent::RemoveEntry(_,_) => Some(event),
+                        ConsistencyEvent::AddLink(_)=>Some(event),
+                        ConsistencyEvent::RemoveLink(_) => Some(event),
+                        _=>None
+                    }
+                },
+                _=>None
+            }
+            
+        })
+        //check if signal matches expected signal
+        .find(|recv|
+        {
+            recv == &expected_signal
+        })
+        .map(|recv|Ok(recv))
+        .unwrap_or_else(||{
+            thread::sleep(Duration::from_secs(3));
+            wait_for_action(signal_receiver,expected_signal,max_tries - 1,up_till.map(|s|s+10))
+        })
+    }
+    else
+    {
+        Err(HolochainError::ErrorGeneric("Test timeout".to_string()))
+    }
+}
+
 
 fn start_holochain_instance<T: Into<String>>(
     uuid: T,
@@ -932,7 +993,7 @@ fn can_send_and_receive() {
     );
 
     let address = entry_committed_by_receive.address().to_string();
-
+    
     let expected: ZomeApiResult<String> = Ok(format!("Committed: 'TEST' / address: {}", address));
     assert_eq!(result.unwrap(), JsonString::from(expected),);
 
@@ -977,7 +1038,7 @@ fn hash_entry()
 #[test]
 fn show_env()
 {
-    let (mut hc, _,_) = start_holochain_instance("show_env", "alice");
+    let (mut hc, _,signal) = start_holochain_instance("show_env", "alice");
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
@@ -987,7 +1048,7 @@ fn show_env()
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);
 
     
-    
+
     assert_eq!(
         result,
         json_result)

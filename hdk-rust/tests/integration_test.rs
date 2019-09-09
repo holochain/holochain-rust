@@ -344,6 +344,8 @@ fn start_holochain_instance<T: Into<String>>(
         "sleep",
         "remove_link",
         "get_entry_properties",
+        "create_and_link_tagged_entry",
+        "get_my_entries_by_tag"
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -372,6 +374,11 @@ fn start_holochain_instance<T: Into<String>>(
         test_entry_type.links_to.push(LinksTo {
             target_type: String::from("testEntryType"),
             link_type: String::from("test"),
+        });
+
+        test_entry_type.links_to.push(LinksTo {
+            target_type:String::from("testEntryType"),
+            link_type: String::from("intergration test"),
         });
     }
 
@@ -943,6 +950,26 @@ fn sleep_smoke_test() {
     let (mut hc, _) = start_holochain_instance("sleep_smoke_test", "alice");
     let result = make_test_call(&mut hc, "sleep", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn create_tag_and_retrieve()
+{
+    let (mut hc, _) = start_holochain_instance("create_and_link_tagged_entry", "alice");
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me once","tag":"tag another me"}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    
+    thread::sleep(Duration::from_millis(50000));
+    let result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag another me"}"#);
+    assert_eq!(
+        result,
+        Ok(JsonString::from(r#"{"Ok":"test-properties-string"}"#)),
+        "result = {:?}",
+        result,
+    );
+
 }
 
 #[test]

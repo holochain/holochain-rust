@@ -207,6 +207,30 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     Ok(entry_1.address())
 }
 
+pub fn handle_create_tagged_post(content: String, tag: String) -> ZomeApiResult<Address> {
+
+    
+    let test_entry_to_create_1 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let test_entry_to_create_2 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+    hdk::commit_entry(&test_entry_to_create_1)?;
+    hdk::commit_entry(&test_entry_to_create_2)?;
+
+    hdk::link_entries(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
+    Ok(test_entry_to_create_2.address())
+}
+
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&address, LinkMatch::Exactly("test"), LinkMatch::Exactly("test-tag"))
 }
@@ -459,6 +483,20 @@ fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
 
+pub fn handle_my_entries_by_tag(tag:String) -> ZomeApiResult<GetLinksResult> {
+    
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let address = hdk::entry_address(&test_entry_to_create)?;
+    let tag = LinkMatch::Regex(tag.as_ref());
+    hdk::get_links(&address, LinkMatch::Any, tag)
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -494,7 +532,27 @@ define_zome! {
                     validation: |validation_data: hdk::LinkValidationData | {
                         Ok(())
                     }
-                )
+                ),
+                from!(
+                "%agent_id",
+                link_type: "intergration test",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: | validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+               ),
+               to!(
+                "%agent_id",
+                link_type: "intergration test",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: | validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+               )
             ]
         ),
 
@@ -732,6 +790,18 @@ define_zome! {
             handler: handle_check_query
         }
 
+        create_and_link_tagged_entry : {
+            inputs : |content:String,tag:String|,
+            outputs : |result : ZomeApiResult<Address>|,
+            handler : handle_create_tagged_post
+        }
+
+        get_my_entries_by_tag : {
+            inputs : |tag:String|,
+            outputs : |result : ZomeApiResult<GetLinksResult>|,
+            handler : handle_my_entries_by_tag
+        }
+
         // check_sys_entry_address: {
         //     inputs: | |,
         //     outputs: |result: JsonString|,
@@ -757,11 +827,13 @@ define_zome! {
             handler: handle_sleep
         }
 
+
         get_entry_properties: {
             inputs: | entry_type_string: String |,
             outputs: |response: ZomeApiResult<JsonString>|,
             handler: handle_get_entry_properties
         }
+        
     ]
 
     traits: {}

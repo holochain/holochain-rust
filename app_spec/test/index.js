@@ -128,16 +128,16 @@ const runMultiDnaTests = async () => {
   // waiting for and not receiving the agent entry of the first one.
   // I believe this is due to n3h not sending a peer connected message for a local instance
   // and core has not implented the authoring list yet...
-  const conductor = await spawnConductor('conductor', 6000, true)
+  const conductor = await spawnConductor('conductor', 6000, false)
   await orchestratorMultiDna.registerConductor({name: 'conductor', url: 'http://0.0.0.0:6000'})
   await orchestratorMultiDna.run()
   conductor.kill()
 }
 
 const runValidationTests = async () => {
-  const valid_agent = await spawnConductor('valid_agent', 3000, true)
+  const valid_agent = await spawnConductor('valid_agent', 3000, false)
   await orchestratorValidateAgent.registerConductor({name: 'valid_agent', url: 'http://0.0.0.0:3000'})
-  const reject_agent = await spawnConductor('reject_agent', 4000, true)
+  const reject_agent = await spawnConductor('reject_agent', 4000, false)
   await orchestratorValidateAgent.registerConductor({name: 'reject_agent', url: 'http://0.0.0.0:4000'})
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms))

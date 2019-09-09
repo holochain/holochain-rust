@@ -16,17 +16,17 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => {
-            context.log(format!(
-                "log/get_links: invoke_get_links called with {:?}",
+            log_debug!(context,
+                "zome/get_links: invoke_get_links called with {:?}",
                 input,
-            ));
+            );
             input
         }
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+            log_error!(context,
+                "zome/get_links: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

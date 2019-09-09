@@ -2,10 +2,9 @@
 
 use holochain_core_types::entry::entry_type::EntryType;
 
-use crate::{context::Context, state::State};
+use crate::context::Context;
 pub trait CanPublish {
     fn can_publish(&self, context: &Context) -> bool;
-    fn can_publish_from_state(&self, state: &State) -> bool;
 }
 
 impl CanPublish for EntryType {
@@ -26,46 +25,14 @@ impl CanPublish for EntryType {
         let entry_type_name = self.to_string();
         let maybe_def = dna.get_entry_type_def(entry_type_name.as_str());
         if maybe_def.is_none() {
-            context.log("err/dht/context must hold an entry type definition to publish an entry.");
+            log_error!("dht/context must hold an entry type definition to publish an entry.");
             return false;
         }
         let entry_type_def = maybe_def.unwrap();
 
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
-            context.log(format!(
-                "debug/dht/entry {} is not publishable",
-                entry_type_name
-            ));
-            return false;
-        }
-        true
-    }
-
-    fn can_publish_from_state(&self, state: &State) -> bool {
-        match self {
-            EntryType::Dna | EntryType::CapTokenGrant | EntryType::CapTokenClaim => return false,
-            _ => {
-                if self.is_sys() {
-                    return true;
-                }
-            }
-        }
-
-        let dna = &state
-            .nucleus()
-            .dna()
-            .expect("DNA must be present to test if entry is publishable.");
-
-        let entry_type_name = self.to_string();
-        let maybe_def = dna.get_entry_type_def(entry_type_name.as_str());
-        if maybe_def.is_none() {
-            return false;
-        }
-        let entry_type_def = maybe_def.unwrap();
-
-        // app entry type must be publishable
-        if !entry_type_def.sharing.clone().can_publish() {
+            log_debug!(context, "dht/entry {} is not publishable", entry_type_name);
             return false;
         }
         true

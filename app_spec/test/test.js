@@ -1,36 +1,4 @@
-
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
-
 module.exports = scenario => {
-
-scenario('header publishing', async (s, t, { alice, bob }) => {
-    const publish_result = await alice.app.callSync("simple", "create_simple_entry", {content: "testing header publish"})
-    console.log(publish_result)
-    t.ok(publish_result.Ok)
-
-    // get the address of the header from Alice
-    const header_addr = await alice.app.callSync("simple", "get_entry_header_address", { address: publish_result.Ok })
-    t.ok(header_addr.Ok)
-    console.log("Header addresses: ", header_addr.Ok)
-
-    // load the entry from its address as Alice and check it matches the entry
-    const header_from_alice = await alice.app.callSync("simple", "get_entry", {address: header_addr.Ok[0]})
-    t.ok(header_from_alice.Ok)
-    console.log(header_from_alice)
-    t.equal(
-      header_from_alice.Ok.ChainHeader.entry_address,
-      publish_result.Ok
-    )
-
-    // load the entry from its address as Bob and  check it matches the entry
-    const header_from_bob = await bob.app.callSync("simple", "get_entry", {address: header_addr.Ok[0]})
-    t.ok(header_from_bob.Ok)
-    console.log(header_from_bob)
-    t.equal(
-      header_from_bob.Ok.ChainHeader.entry_address,
-      publish_result.Ok
-    )
-})
 
 scenario('capabilities grant and claim', async (s, t, { alice, bob }) => {
 

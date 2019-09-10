@@ -632,7 +632,11 @@ impl ConductorApiBuilder {
                 let interface_id = Self::get_as_string("interface_id", &params_map)?;
                 let instance_id = Self::get_as_string("instance_id", &params_map)?;
                 let alias = Self::get_as_string("alias", &params_map).ok();
-                conductor_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id, &alias))?;
+                conductor_call!(|c| c.add_instance_to_interface(
+                    &interface_id,
+                    &instance_id,
+                    &alias
+                ))?;
                 Ok(json!({"success": true}))
             });
 

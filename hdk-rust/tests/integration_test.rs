@@ -13,8 +13,6 @@ extern crate hdk;
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
-#[macro_use]
-extern crate unwrap_to;
 
 #[cfg(not(windows))]
 use hdk::error::ZomeApiError;

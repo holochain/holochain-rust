@@ -272,8 +272,9 @@ fn empty_string_validation_fail_entry() -> Entry {
     Entry::App(
         "empty_validation_response_tester".into(),
         EntryStruct {
-            stuff: "should fail with empty string".into()
-        }.into()
+            stuff: "should fail with empty string".into(),
+        }
+        .into(),
     )
 }
 
@@ -345,7 +346,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_link",
         "get_entry_properties",
         "show_env",
-        "hash_entry"
+        "hash_entry",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -445,7 +446,8 @@ fn can_commit_entry() {
 }
 #[test]
 fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _) = start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
+    let (mut hc, _) =
+        start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
@@ -454,19 +456,19 @@ fn can_return_empty_string_as_validation_fail() {
         &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
     let path = PathBuf::new()
-              .join("core")
-              .join("src")
-              .join("nucleus")
-              .join("ribosome")
-              .join("runtime.rs");
-    let path_string = path.as_path().to_str().expect("path should have been created");
-    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\","\\","\\"].join(""));
+        .join("core")
+        .join("src")
+        .join("nucleus")
+        .join("ribosome")
+        .join("runtime.rs");
+    let path_string = path
+        .as_path()
+        .to_str()
+        .expect("path should have been created");
+    let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
     let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
 
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from_json(&result_format)
-    );
+    assert_eq!(result.unwrap(), JsonString::from_json(&result_format));
 }
 #[test]
 fn can_commit_entry_macro() {
@@ -941,26 +943,22 @@ fn sleep_smoke_test() {
 }
 
 #[test]
-fn hash_entry()
-{
+fn hash_entry() {
     let (mut hc, _) = start_holochain_instance("hash_entry", "alice");
     let params = r#"{"content":"this is to hash"}"#;
-    let result = make_test_call(
-        &mut hc,
-        "hash_entry",
-        &params
-    );
+    let result = make_test_call(&mut hc, "hash_entry", &params);
     assert_eq!(
         result,
-        Ok(JsonString::from(r#"{"Ok":"QmNsza9FP5Unf45UixMfnPvkg4SY8aYcPjvX8FtMzVfpas"}"#)),
+        Ok(JsonString::from(
+            r#"{"Ok":"QmNsza9FP5Unf45UixMfnPvkg4SY8aYcPjvX8FtMzVfpas"}"#
+        )),
         "result = {:?}",
         result,
     );
 }
 
 #[test]
-fn show_env()
-{
+fn show_env() {
     let (mut hc, _) = start_holochain_instance("show_env", "alice");
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);
 
@@ -968,7 +966,6 @@ fn show_env()
         result,
         Ok(JsonString::from(r#"{"Ok":{"dna_name":"TestApp","dna_address":"QmVbbEHR9b47yZxUjwyeu9jJ7iyiy5zNUwaFjJC139xvNZ","agent_id":"{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{"cap_token":"QmWniZmxqV3fpa3tZDNod3o5yrUqP3S5w3QGpyWtktaLTC","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]},"properties":"{}"}}"#)))
 }
-
 
 #[test]
 fn test_get_entry_properties() {

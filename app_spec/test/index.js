@@ -7,7 +7,7 @@ const spawnConductor = require('./spawn_conductors')
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
 // (But never over)
-const MIN_EXPECTED_SCENARIOS = 49
+const MIN_EXPECTED_SCENARIOS = 45
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"

@@ -13,7 +13,7 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::Signal,
+    signal::{Signal,signal_channel,SignalReceiver}
 };
 use holochain_core_types::{
    dna::{
@@ -214,6 +214,7 @@ pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    let (signal,_) = signal_channel();
     let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
@@ -222,7 +223,8 @@ pub fn test_context_and_logger_with_network_name(
                 .with_agent(agent.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                 .expect("Tempdir must be accessible")
-                .with_conductor_api(mock_signing::mock_conductor_api(agent));
+                .with_conductor_api(mock_signing::mock_conductor_api(agent))
+                .with_signals(signal);
             if let Some(network_name) = network_name {
                 let config = P2pConfig::new_with_memory_backend(network_name);
                 builder = builder.with_p2p_config(config);
@@ -232,6 +234,34 @@ pub fn test_context_and_logger_with_network_name(
                 .spawn()
         }),
         logger,
+    )
+}
+
+pub fn test_context_and_logger_with_network_name_and_signal(
+    agent_name: &str,
+    network_name: Option<&str>,
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
+    let (signal,reciever) = signal_channel();
+    let agent = mock_signing::registered_test_agent(agent_name);
+    let logger = test_logger();
+    (
+        Arc::new({
+            let mut builder = ContextBuilder::new()
+                .with_agent(agent.clone())
+                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                .expect("Tempdir must be accessible")
+                .with_conductor_api(mock_signing::mock_conductor_api(agent))
+                .with_signals(signal);
+            if let Some(network_name) = network_name {
+                let config = P2pConfig::new_with_memory_backend(network_name);
+                builder = builder.with_p2p_config(config);
+            }
+            builder
+                .with_instance_name("test_context_instance")
+                .spawn()
+        }),
+        logger,
+        reciever
     )
 }
 

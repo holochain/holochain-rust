@@ -487,6 +487,15 @@ fn handle_get_entry_properties(entry_type_string: String) -> ZomeApiResult<JsonS
     hdk::entry_type_properties(&EntryType::from(entry_type_string))
 }
 
+pub fn handle_emit_signal(message: String) -> ZomeApiResult<()> {
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
+}
+
 fn handle_hash(content:String) ->ZomeApiResult<Address>
 {
     hdk::entry_address(&Entry::App(
@@ -497,6 +506,8 @@ fn handle_hash(content:String) ->ZomeApiResult<Address>
         .into(),
     ))
 }
+
+
 
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
@@ -510,9 +521,7 @@ fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
 
-pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
-    hdk::keystore_list().map(|keystore_ids| keystore_ids.ids)
-}
+
 
 define_zome! {
     entries: [
@@ -824,16 +833,18 @@ define_zome! {
             handler : handle_show_env
         }
 
-        list_secrets: {
-            inputs: | |,
-            outputs: |result: ZomeApiResult<Vec<String>>|,
-            handler: handle_list_secrets
-        }
 
         get_entry_properties: {
             inputs: | entry_type_string: String |,
             outputs: |response: ZomeApiResult<JsonString>|,
             handler: handle_get_entry_properties
+        }
+
+        emit_signal : {
+            inputs : |message:String|,
+            outputs: |response: ZomeApiResult<()>|,
+            handler : handle_emit_signal
+
         }
     ]
 

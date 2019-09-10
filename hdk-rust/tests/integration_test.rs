@@ -59,7 +59,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
     thread,
-    time::{Duration, SystemTime},
+    time::Duration
 };
 use test_utils::*;
 

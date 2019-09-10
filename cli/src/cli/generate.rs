@@ -12,6 +12,7 @@ use std::{
     path::PathBuf,
 };
 
+
 pub const ZOME_CONFIG_FILE_NAME: &str = "zome.json";
 
 pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
@@ -76,16 +77,16 @@ fn scaffold<S: Scaffold>(tooling: &S, base_path: PathBuf) -> DefaultResult<()> {
 }
 
 #[cfg(test)]
-// too slow!
-#[cfg(feature = "broken-tests")]
-mod tests {
-    use assert_cmd::prelude::*;
+pub mod tests {
+    extern crate assert_cmd;
+    extern crate tempfile;
+    use cli::generate::tests::assert_cmd::{cargo::CommandCargoExt,assert::OutputAssertExt};
     use std::process::Command;
-    use tempfile::{Builder, TempDir};
+    use self::tempfile::{Builder, TempDir};
 
     const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
 
-    fn gen_dir() -> TempDir {
+    pub fn gen_dir() -> TempDir {
         Builder::new()
             .prefix(HOLOCHAIN_TEST_PREFIX)
             .tempdir()

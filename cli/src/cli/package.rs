@@ -385,7 +385,11 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 // too slow!
 mod tests {
     use super::*;
-
+    extern crate assert_cmd;
+    use cli::generate::tests::gen_dir;
+    use std::process::Command;
+    use cli::package::tests::assert_cmd::cargo::CommandCargoExt;
+    use cli::package::tests::assert_cmd::assert::OutputAssertExt;
     #[test]
     fn package_and_unpack_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";

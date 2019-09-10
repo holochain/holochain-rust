@@ -343,12 +343,10 @@ fn wait_for_action(
             })
             //check if signal matches expected signal
             .find(|recv| {
-                println!("finding");
                 recv == &expected_signal
             })
             .map(|recv| Ok(recv))
             .unwrap_or_else(|| {
-                println!("uwnrap or else");
                 thread::sleep(Duration::from_secs(3));
                 wait_for_action(
                     signal_receiver,
@@ -358,7 +356,7 @@ fn wait_for_action(
                 )
             })
     } else {
-        Err(HolochainError::ErrorGeneric("Test timeout".to_string()))
+        Err(HolochainError::ErrorGeneric("Waiter timed out while running test".to_string()))
     }
 }
 

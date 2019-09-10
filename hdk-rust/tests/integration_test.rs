@@ -308,27 +308,30 @@ fn example_valid_entry_address() -> Address {
 fn wait_for_action(signal_receiver: &SignalReceiver,expected_signal : ConsistencyEvent,max_tries: i8,up_till : Option<usize>) ->Result<ConsistencyEvent,HolochainError>
 {
  
+    println!("max tries {:?}",max_tries.clone());
     if max_tries > 0
     {
         signal_receiver
         //THIS FIRST PART IS JUST FOR OPTIMIZATION PURPOSES WHILE FINDING A GOOD BALANCE OF SEPERATION
         //============================================================================================
-        .iter()
+        .try_iter()
         //skip the first
         .skip(up_till.unwrap_or(0))
         //only iterate over the 10
         .take(10)
         //make sure we filter only over the signals
-        .filter(|recv| match recv{Signal::Consistency(cons)=>true,_=>false})
+        .filter(|recv| {println!("filter");match recv{Signal::Consistency(cons)=>true,_=>false}})
         //==============================================================================================
         .filter_map(|recv|
         {
+            println!("filter map");
             match recv
             {
                 Signal::Consistency(cons)=>
                 {
                     let content = cons.clone().event();
                     let event : ConsistencyEvent = serde_json::from_str(&content).expect("Could not convert serde");
+                    println!("event {:?}",event.clone());
                     match event
                     {
                         ConsistencyEvent::Hold(_)=>Some(event),
@@ -347,10 +350,12 @@ fn wait_for_action(signal_receiver: &SignalReceiver,expected_signal : Consistenc
         //check if signal matches expected signal
         .find(|recv|
         {
+            println!("finding");
             recv == &expected_signal
         })
         .map(|recv|Ok(recv))
         .unwrap_or_else(||{
+            println!("uwnrap or else");
             thread::sleep(Duration::from_secs(3));
             wait_for_action(signal_receiver,expected_signal,max_tries - 1,up_till.map(|s|s+10))
         })
@@ -1042,6 +1047,7 @@ fn show_env()
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
+    wait_for_action(&signal,ConsistencyEvent::Hold(dna.address()),10,None).unwrap();
     let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{{"cap_token":"QmNWi3WsKzfNcgMq5PaxD5ePdxzvY7BHLet58csiWYb4Dc","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]}},"properties":"{{}}"}}}}"#,dna_address);
     let json_result = Ok(JsonString::from_json(&format));
 

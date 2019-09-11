@@ -30,6 +30,7 @@ use std::{
     time::Duration,
 };
 use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::Ordering;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -177,7 +178,7 @@ impl Instance {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
-        (*instance_is_alive.lock().unwrap()) = true;
+        instance_is_alive.store(true, Ordering::Relaxed);
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
@@ -282,7 +283,7 @@ impl Instance {
             if let Some(signal) = self.consistency_model
                 .process_action(action_wrapper.action())
             {
-                tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
+                tx.send(Signal::Consistency(signal.into())).unwrap_or_else(|e| {
                             log_warn!(
                                 context,
                                 "reduce: Signal channel is closed! No signals can be sent ({:?}).",

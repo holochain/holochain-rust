@@ -14,6 +14,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::data_types::DirectMessageData;
 use snowflake::ProcessUniqueId;
 use std::convert::TryFrom;
+use holochain_persistence_api::cas::content::Address;
 
 fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(

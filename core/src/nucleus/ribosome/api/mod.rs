@@ -8,6 +8,7 @@ pub mod emit_signal;
 pub mod entry_address;
 pub mod get_entry;
 pub mod get_links;
+pub mod get_links_count;
 pub mod init_globals;
 pub mod link_entries;
 #[macro_use]
@@ -21,6 +22,7 @@ pub mod remove_link;
 pub mod send;
 pub mod sign;
 pub mod sleep;
+pub mod meta;
 pub mod update_entry;
 pub mod verify_signature;
 
@@ -35,6 +37,7 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
         get_links::invoke_get_links,
+        get_links_count::invoke_get_links_count,
         init_globals::invoke_init_globals,
         keystore::{
             invoke_keystore_derive_key, invoke_keystore_derive_seed,
@@ -48,6 +51,7 @@ use crate::nucleus::ribosome::{
         send::invoke_send,
         sign::invoke_sign_one_time,
         sleep::invoke_sleep,
+        meta::invoke_meta,
         update_entry::invoke_update_entry,
         verify_signature::invoke_verify_signature,
     },
@@ -93,6 +97,9 @@ link_zome_api! {
 
     /// Retrieve links from the DHT
     "hc_get_links", GetLinks, invoke_get_links;
+
+    //Retrieve link count from DHT
+    "hc_get_links_count", GetLinksCount, invoke_get_links_count;
 
     /// Query the local chain for entries
     "hc_query", Query, invoke_query;
@@ -144,6 +151,9 @@ link_zome_api! {
 
     /// Send a DNA defined signal to UIs and other listeners
     "hc_emit_signal", EmitSignal, invoke_emit_signal;
+    
+    ///send a meta
+    "hc_meta",Meta,invoke_meta;
 }
 
 #[cfg(test)]
@@ -240,6 +250,14 @@ pub mod tests {
 
     (func
         (export "__hdk_validate_app_entry")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
+        (export "__hdk_validate_agent_entry")
         (param $allocation i64)
         (result i64)
 

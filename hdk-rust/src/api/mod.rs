@@ -39,6 +39,7 @@ mod send;
 mod sign;
 mod sleep;
 mod update_remove;
+mod version;
 
 pub use self::{
     bundle::{close_bundle, start_bundle},
@@ -52,7 +53,10 @@ pub use self::{
     entry_address::entry_address,
     entry_type_properties::entry_type_properties,
     get_entry::{get_entry, get_entry_history, get_entry_initial, get_entry_result},
-    get_links::{get_links, get_links_and_load, get_links_result, get_links_with_options},
+    get_links::{
+        get_links, get_links_and_load, get_links_count, get_links_count_with_options,
+        get_links_result, get_links_with_options,
+    },
     keystore::{
         keystore_derive_key, keystore_derive_seed, keystore_get_public_key, keystore_list,
         keystore_new_random, keystore_sign,
@@ -65,6 +69,7 @@ pub use self::{
     sign::{sign, sign_one_time, verify_signature},
     sleep::sleep,
     update_remove::{remove_entry, update_agent, update_entry},
+    version::version,
 };
 
 macro_rules! def_api_fns {
@@ -178,7 +183,9 @@ def_api_fns! {
     hc_link_entries, LinkEntries;
     hc_remove_link, RemoveLink;
     hc_get_links, GetLinks;
+    hc_get_links_count,GetLinksCount;
     hc_sleep, Sleep;
+    hc_meta,Meta;
     hc_keystore_list, KeystoreList;
     hc_keystore_new_random, KeystoreNewRandom;
     hc_keystore_derive_seed, KeystoreDeriveSeed;

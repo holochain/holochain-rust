@@ -29,7 +29,7 @@ use hdk::holochain_persistence_api::{
 
 use hdk_proc_macros::zome;
 
-// see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
+// see https://developer.holochain.org/api/latest/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
@@ -42,8 +42,13 @@ pub struct MyEntry {
 #[zome]
 mod my_zome {
 
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
         Ok(())
     }
 
@@ -51,7 +56,7 @@ mod my_zome {
      fn my_entry_def() -> ValidatingEntryType {
         entry!(
             name: "my_entry",
-            description: "this is a same entry defintion",
+            description: "this is a same entry definition",
             sharing: Sharing::Public,
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry

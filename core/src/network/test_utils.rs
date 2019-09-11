@@ -25,7 +25,7 @@ pub fn test_instance_with_spoofed_dna(
     // fair warning... use test_instance_blank() if you want a minimal instance
     assert!(
         !dna.zomes.clone().is_empty(),
-        "Empty zomes = No genesis = infinite loops below!"
+        "Empty zomes = No init = infinite loops below!"
     );
 
     Ok((instance, context))
@@ -40,6 +40,14 @@ pub fn test_wat_always_valid() -> String {
 
     (func
         (export "__hdk_validate_app_entry")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
+        (export "__hdk_validate_agent_entry")
         (param $allocation i64)
         (result i64)
 

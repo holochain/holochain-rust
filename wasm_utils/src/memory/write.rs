@@ -5,7 +5,7 @@ use crate::memory::{
 };
 use holochain_json_api::json::JsonString;
 use memory::allocation::{AllocationResult, Length};
-use std::{convert::TryInto, os::raw::c_char, slice};
+use std::{cmp::max, convert::TryInto, os::raw::c_char, slice};
 
 impl WasmStack {
     /// Write in wasm memory according to stack state.
@@ -24,7 +24,7 @@ impl WasmStack {
     /// Write a string in wasm memory according to stack state.
     pub fn write_string(&mut self, s: &str) -> AllocationResult {
         let bytes = s.as_bytes();
-        let length = bytes.len() as MemoryInt;
+        let length = max(bytes.len(), 1) as MemoryInt; // always allocate at least 1 byte
         if MemoryBits::from(length) > WasmStack::max() {
             return Err(AllocationError::OutOfBounds);
         }
@@ -39,7 +39,7 @@ impl WasmStack {
             .map_err(|_| AllocationError::Serialization)?;
 
         let json_bytes = j.to_bytes();
-        let json_bytes_len = json_bytes.len() as MemoryInt;
+        let json_bytes_len = max(json_bytes.len(), 1) as MemoryInt; // always allocate at least 1 byte
         if MemoryBits::from(json_bytes_len) > WasmStack::max() {
             return Err(AllocationError::OutOfBounds);
         }

@@ -11,7 +11,7 @@ A Zome has
 - `description`: defined in JSON in the `zome.json` file within a Zome folder
 - `config`: Not Implemented Yet
 - validating entry types: definition may vary based on the language
-- a `genesis` function: a callback that Holochain expects and requires, defined in the code itself
+- a `init` function: a callback that Holochain expects and requires, defined in the code itself
 - `fn_declarations`: a collection of custom functions declarations,
 - `traits`: sets of named function groups used for composability
 - `code`: the core application logic of a Zome, written in a language that compiles to WASM, which Holochain interprets through that compiled WASM
@@ -39,7 +39,11 @@ extern crate hdk;
 define_zome! {
     entries: []
 
-    genesis: || {
+    init: || {
+        Ok(())
+    }
+
+    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
         Ok(())
     }
 
@@ -49,7 +53,7 @@ define_zome! {
 
 `entries` represents the validating entry type definitions. Note that it is an array, because there can be many. What validating entry types are will be [explained next](./entry_type_definitions.md).
 
-`genesis` represents the previously mentioned `genesis` callback that Holochain expects from every Zome. [Skip here for details.](./genesis.md)
+`init` represents the previously mentioned `init` callback that Holochain expects from every Zome. [Skip here for details.](./init.md)
 
 `functions` is where the functions are defined. [Skip here for details.](./zome_functions.md)
 

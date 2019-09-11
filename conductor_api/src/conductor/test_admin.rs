@@ -30,12 +30,13 @@ impl ConductorTestAdmin for Conductor {
             public_address: public_address.clone(),
             keystore_file: name.clone(),
             holo_remote_key: None,
+            test_agent: Some(true),
         };
         new_config.agents.push(new_agent);
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.add_agent_keystore(id.clone(), keystore);
-        // self.save_config()?; we don't actually want to save it for tests
+        self.save_config()?;
         notify(format!("Added agent \"{}\"", id));
         Ok(public_address)
     }

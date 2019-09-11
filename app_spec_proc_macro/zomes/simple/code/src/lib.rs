@@ -17,7 +17,9 @@ use hdk::{
     holochain_core_types::{
         entry::Entry,
         dna::entry_types::Sharing,
-        link::LinkMatch
+        link::LinkMatch,
+        agent::AgentId,
+        validation::EntryValidationData,
     },
     holochain_persistence_api::{
         cas::content::Address,
@@ -26,7 +28,7 @@ use hdk::{
        json::JsonString,
        error::JsonError
     },
-    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions}
+    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount}
 };
 
 
@@ -88,22 +90,50 @@ pub mod simple {
         Entry::App("simple".into(), Simple::new(content).into())
     }
 
+    /// doc comments are allowed on entry defs
     #[entry_def]
     pub fn simple_entry_def() -> ValidatingEntryType {
           definition()
     }
 
 
-    #[genesis]
-    pub fn genesis() {
+    #[init]
+    pub fn init() {
         Ok(())
     }
 
+    #[validate_agent]
+    pub fn validate_agent(validation_data: EntryValidationData<AgentId>) {
+        if let EntryValidationData::Create{entry, ..} = validation_data {
+            let agent = entry as AgentId;
+            if agent.nick == "reject_agent::app" {
+                Err("This agent will always be rejected".into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Err("Cannot update or delete an agent at this time".into())
+        }
+    }
+
+    /// doc comments are allowed on zome functions
     #[zome_fn("hc_public")]
+    fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+        hdk::get_entry(&address)
+    }
+
     pub fn create_link(base: Address,target : String) -> ZomeApiResult<()>
     {
         let address = hdk::commit_entry(&simple_entry(target))?;
         hdk::link_entries(&base, &address, "authored_simple_posts", "")?;
+        Ok(())
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn create_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()>
+    {
+        let address = hdk::commit_entry(&simple_entry(target))?;
+        hdk::link_entries(&base, &address, "authored_simple_posts", &tag)?;
         Ok(())
     }
     #[zome_fn("hc_public")]
@@ -121,6 +151,16 @@ pub mod simple {
             ..GetLinksOptions::default()
         };
         hdk::get_links_with_options(&base, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_my_links_count(base: Address,status_request : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResultCount>
+    {
+        let options = GetLinksOptions{
+            status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+            ..GetLinksOptions::default()
+        };
+        hdk::get_links_count_with_options(&base, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
     }
 
     #[zome_fn("hc_public")]

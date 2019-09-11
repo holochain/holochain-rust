@@ -4,13 +4,16 @@ use crate::{
 };
 use constants::*;
 use holochain_net::{
-    connection::{
-        json_protocol::{ConnectData, EntryData, JsonProtocol},
-        net_connection::NetSend,
-        NetResult,
-    },
+    connection::{net_connection::NetSend, NetResult},
     tweetlog::*,
 };
+
+use lib3h_protocol::{
+    data_types::{ConnectData, EntryData},
+    protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+};
+
 use p2p_node::test_node::TestNode;
 
 // Disconnect & reconnect a Node in a two nodes scenario
@@ -69,25 +72,31 @@ pub(crate) fn two_nodes_disconnect_test(
     // Connect nodes between them
     log_i!("connect: billy.p2p_binding = {}", billy.p2p_binding);
     alex.send(
-        JsonProtocol::Connect(ConnectData {
-            peer_address: billy.p2p_binding.clone(),
+        // TODO BLOCKER determine correct values
+        Lib3hClientProtocol::Connect(ConnectData {
+            request_id: "alex_connect_billy_request_id".into(),
+            peer_uri: url::Url::parse(billy.p2p_binding.clone().as_str())
+                .expect("well-formed billy p2p binding uri"),
+            network_id: "alex_connect_billy_network_id".into(),
         })
         .into(),
     )?;
     // Make sure Peers are connected
     let result_a = alex
-        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
         .unwrap();
     log_i!("got connect result A: {:?}", result_a);
-    one_let!(JsonProtocol::PeerConnected(d) = result_a {
-        assert_eq!(d.agent_id, *BILLY_AGENT_ID);
+    one_let!(Lib3hServerProtocol::Connected(d) = result_a {
+        assert_eq!(d.request_id, "alex_connect_billy_request_id");
+        assert_eq!(d.uri.to_string(), billy.p2p_binding);
     });
     let result_b = billy
-        .wait_json(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
+        .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
         .unwrap();
     log_i!("got connect result B: {:?}", result_b);
-    one_let!(JsonProtocol::PeerConnected(d) = result_b {
-        assert_eq!(d.agent_id, *ALEX_AGENT_ID);
+    one_let!(Lib3hServerProtocol::Connected(d) = result_b {
+        assert_eq!(d.request_id, "alex_connect_billy_request_id");
+        assert_eq!(d.uri.to_string(), alex.p2p_binding);
     });
 
     // see what alex is receiving
@@ -187,21 +196,22 @@ pub(crate) fn three_nodes_disconnect_test(
 
     // Alex should receive the data
     let req_id = query_entry.request_id.clone();
-    let mut result = alex.find_recv_json_msg(
+    let mut result = alex.find_recv_lib3h_msg(
         0,
-        Box::new(one_is_where!(JsonProtocol::QueryEntryResult(entry_data), {
-            entry_data.request_id == req_id
-        })),
+        Box::new(one_is_where!(
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
+            { entry_data.request_id == req_id }
+        )),
     );
     if result.is_none() {
-        result = alex.wait_json(Box::new(one_is_where!(
-            JsonProtocol::QueryEntryResult(entry_data),
+        result = alex.wait_lib3h(Box::new(one_is_where!(
+            Lib3hServerProtocol::QueryEntryResult(entry_data),
             { entry_data.request_id == query_entry.request_id }
         )))
     }
     let json = result.unwrap();
     log_i!("got result 3: {:?}", json);
-    let query_data = unwrap_to!(json => JsonProtocol::QueryEntryResult);
+    let query_data = unwrap_to!(json => Lib3hServerProtocol::QueryEntryResult);
     let query_result: EntryData = bincode::deserialize(&query_data.query_result).unwrap();
     assert_eq!(query_data.entry_address, ENTRY_ADDRESS_3.clone());
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);

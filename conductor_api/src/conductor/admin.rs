@@ -48,6 +48,7 @@ pub trait ConductorAdmin {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError>;
     fn remove_instance_from_interface(
         &mut self,
@@ -210,7 +211,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
-        let instance = self.instantiate_from_config(id, Some(&new_config))?;
+        let instance = self.instantiate_from_config(id, Some(&mut new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -301,6 +302,7 @@ impl ConductorAdmin for Conductor {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -327,6 +329,7 @@ impl ConductorAdmin for Conductor {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
                         id: instance_id.clone(),
+                        alias: alias.clone(),
                     });
                 }
                 interface
@@ -424,12 +427,13 @@ impl ConductorAdmin for Conductor {
                     let hc_lock = instance.clone();
                     let hc_lock_inner = hc_lock.clone();
                     let mut hc = hc_lock_inner.write().unwrap();
-                    hc.dpki_create_agent_key(name.clone())?;
+                    hc.dpki_create_agent_key(id.clone())?;
                 }
                 // TODO: how do we clean-up now if this fails? i.e. the dpki dna will have registered
                 // the identity to its DHT, but we failed, for what ever reason, to set up
                 // the agent in the conductor, so we should do something...
-                let dpki_keystore = self.get_keystore_for_agent(&dpki_instance_id)?;
+                let dpki_config = self.config.instance_by_id(&dpki_instance_id)?;
+                let dpki_keystore = self.get_keystore_for_agent(&dpki_config.agent)?;
                 let mut dpki_keystore = dpki_keystore.lock().unwrap();
                 let mut keybundle = dpki_keystore.get_keybundle(&id)?;
                 keystore.add_keybundle(PRIMARY_KEYBUNDLE_ID, &mut keybundle)?;
@@ -452,6 +456,7 @@ impl ConductorAdmin for Conductor {
             public_address: public_address.clone(),
             keystore_file: keystore_file,
             holo_remote_key: holo_remote_key.map(|_| true),
+            test_agent: None,
         };
 
         new_config.agents.push(new_agent);
@@ -716,6 +721,7 @@ type = 'websocket'"#,
 
     pub fn logger() -> String {
         r#"[logger]
+state_dump = false
 type = ''
 [[logger.rules.rules]]
 color = 'red'
@@ -730,6 +736,11 @@ pattern = '^debug/dna'
 [[logger.rules.rules]]
 exclude = false
 pattern = '.*'"#
+            .to_string()
+    }
+    pub fn passphrase_service() -> String {
+        r#"[passphrase_service]
+type = 'cmd'"#
             .to_string()
     }
 
@@ -754,8 +765,14 @@ pattern = '.*'"#
         toml
     }
 
-    pub fn create_test_conductor(test_name: &str, port: u32) -> Conductor {
-        let config = load_configuration::<Configuration>(&test_toml(test_name, port)).unwrap();
+    pub fn barebones_test_toml(test_name: &str) -> String {
+        let mut toml = header_block(test_name);
+        toml = add_block(toml, agent1());
+        toml
+    }
+
+    pub fn create_test_conductor_from_toml(toml: &str, test_name: &str) -> Conductor {
+        let config = load_configuration::<Configuration>(toml).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
@@ -763,6 +780,10 @@ pattern = '.*'"#
         conductor.hash_config = test_hash_config();
         conductor.passphrase_manager = mock_passphrase_manager(test_name.to_string());
         conductor
+    }
+
+    pub fn create_test_conductor(test_name: &str, port: u32) -> Conductor {
+        create_test_conductor_from_toml(&test_toml(test_name, port), test_name)
     }
 
     #[test]
@@ -829,6 +850,7 @@ id = 'new-dna'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3000));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1140,6 +1162,7 @@ id = 'new-instance'"#,
         );
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1188,6 +1211,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1236,6 +1260,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1283,6 +1308,7 @@ type = 'http'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1323,6 +1349,7 @@ type = 'http'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1335,7 +1362,6 @@ type = 'http'"#,
     }
 
     #[test]
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn test_add_instance_to_interface() {
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
@@ -1381,7 +1407,8 @@ type = 'http'"#,
         assert_eq!(
             conductor.add_instance_to_interface(
                 &String::from("websocket interface"),
-                &String::from("new-instance-2")
+                &String::from("new-instance-2"),
+                &None,
             ),
             Ok(())
         );
@@ -1447,6 +1474,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1500,6 +1528,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1548,6 +1577,7 @@ public_address = '{}'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3009));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1593,6 +1623,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1638,6 +1669,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1665,6 +1697,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 

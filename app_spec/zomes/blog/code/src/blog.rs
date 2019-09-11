@@ -23,7 +23,7 @@ use hdk::{
         get_links::{GetLinksOptions, GetLinksResult},
         QueryArgsOptions, QueryResult,
     },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN
 };
 
 use memo::Memo;
@@ -34,7 +34,7 @@ use std::{
 };
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
-struct SumInput {
+pub struct SumInput {
     num1: u32,
     num2: u32,
 }
@@ -89,7 +89,7 @@ pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
     }
 }
 
-fn check_sum_args(num1: u32, num2: u32) -> SumInput {
+pub fn check_sum_args(num1: u32, num2: u32) -> SumInput {
     SumInput {
         num1: num1,
         num2: num2,

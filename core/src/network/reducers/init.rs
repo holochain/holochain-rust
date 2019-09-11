@@ -3,13 +3,8 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_net::{
-    connection::{
-        json_protocol::{JsonProtocol, TrackDnaData},
-        net_connection::NetSend,
-    },
-    p2p_network::P2pNetwork,
-};
+use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
+use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
 
 pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
@@ -32,8 +27,9 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     //        tweetlog.i("TWEETLOG ENABLED");
     //    }
 
-    let json = JsonProtocol::TrackDna(TrackDnaData {
-        dna_address: network_settings.dna_address.clone(),
+    let json = Lib3hClientProtocol::JoinSpace(SpaceData {
+        request_id: snowflake::ProcessUniqueId::new().to_string(),
+        space_address: network_settings.dna_address.clone(),
         agent_id: network_settings.agent_id.clone().into(),
     });
 
@@ -55,7 +51,6 @@ pub mod test {
     use super::*;
     use crate::{
         context::Context,
-        logger::test_logger,
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
@@ -71,8 +66,8 @@ pub mod test {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "Test-context-instance",
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -83,6 +78,7 @@ pub mod test {
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
+            false,
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

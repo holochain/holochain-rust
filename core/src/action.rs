@@ -1,8 +1,11 @@
 use crate::{
     agent::state::AgentState,
     network::{
-        direct_message::DirectMessage, entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader, state::NetworkState,
+        direct_message::DirectMessage,
+        entry_aspect::EntryAspect,
+        entry_with_header::EntryWithHeader,
+        query::{GetLinksNetworkQuery, NetworkQueryResult},
+        state::NetworkState,
     },
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
@@ -15,23 +18,13 @@ use crate::{
 };
 
 use holochain_core_types::{
-    chain_header::ChainHeader,
-    crud_status::CrudStatus,
-    dna::Dna,
-    entry::{Entry, EntryWithMetaAndHeader},
-    error::HolochainError,
-    link::link_data::LinkData,
-    signature::Provenance,
+    chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
+    error::HolochainError, link::link_data::LinkData, signature::Provenance,
     validation::ValidationPackage,
 };
-use holochain_net::{
-    connection::{
-        json_protocol::{EntryListData, FetchEntryData, QueryEntryData},
-        net_connection::NetHandler,
-    },
-    p2p_config::P2pConfig,
-};
+use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
+use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -89,6 +82,20 @@ impl Hash for ActionWrapper {
     }
 }
 
+///This describes a key for the actions
+#[derive(Clone, PartialEq, Debug, Serialize, Eq, Hash)]
+pub enum QueryKey {
+    Entry(GetEntryKey),
+    Links(GetLinksKey),
+}
+
+///This is a payload for the Get Method
+#[derive(Clone, PartialEq, Debug, Serialize)]
+pub enum QueryPayload {
+    Entry,
+    Links((Option<CrudStatus>, GetLinksNetworkQuery)),
+}
+
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug, Serialize)]
 #[serde(tag = "action_type", content = "data")]
@@ -133,36 +140,26 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    /// Get an Entry on the network by address
-    GetEntry(GetEntryKey),
+    ///Performs a Network Query Action based on the key and payload, used for links and Entries
+    Query((QueryKey, QueryPayload)),
 
-    /// Lets the network module respond to a Get request.
-    /// Triggered from the corresponding workflow after retrieving the
-    /// requested entry from our local DHT shard.
-    RespondGet((QueryEntryData, Option<EntryWithMetaAndHeader>)),
+    ///Performs a Query Timeout Action which times out based the values given
+    QueryTimeout(QueryKey),
 
-    /// Lets the network module respond to a FETCH request.
+    /// Lets the network module respond to a Query request.
     /// Triggered from the corresponding workflow after retrieving the
-    /// requested entry from our local DHT shard.
-    RespondFetch((FetchEntryData, Vec<EntryAspect>)),
+    /// requested object from the DHT
+    RespondQuery((QueryEntryData, NetworkQueryResult)),
 
     /// We got a response for our get request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleGetResult((Option<EntryWithMetaAndHeader>, GetEntryKey)),
+    HandleQuery((NetworkQueryResult, QueryKey)),
 
-    ///
+    RespondFetch((FetchEntryData, Vec<EntryAspect>)),
+
     UpdateEntry((Address, Address)),
     ///
     RemoveEntry((Address, Address)),
-    ///
-    GetEntryTimeout(GetEntryKey),
-
-    /// get links from entry address and link_type name
-    /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks(GetLinksKey),
-    GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((QueryEntryData, Vec<(Address, CrudStatus)>, String, String)),
-    HandleGetLinksResult((Vec<(Address, CrudStatus)>, GetLinksKey)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -201,8 +198,8 @@ pub enum Action {
     // Nucleus actions:
     // ----------------
     /// initialize a chain from Dna
-    /// not the same as genesis
-    /// may call genesis internally
+    /// not the same as init
+    /// may call init internally
     InitializeChain(Dna),
     /// return the result of an InitializeChain action
     /// the result is an initialization structure which include the generated public token if any
@@ -321,7 +318,7 @@ pub struct NetworkSettings {
 pub mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey},
+        action::{Action, ActionWrapper, GetEntryKey, QueryKey, QueryPayload},
         nucleus::tests::test_call_response,
     };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
@@ -329,10 +326,13 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(GetEntryKey {
-            address: expected_entry_address(),
-            id: String::from("test-id"),
-        })
+        Action::Query((
+            QueryKey::Entry(GetEntryKey {
+                address: expected_entry_address(),
+                id: String::from("test-id"),
+            }),
+            QueryPayload::Entry,
+        ))
     }
 
     /// dummy action wrapper with test_action()
@@ -347,10 +347,13 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(GetEntryKey {
-            address: expected_entry_address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
-        }))
+        ActionWrapper::new(Action::Query((
+            QueryKey::Entry(GetEntryKey {
+                address: expected_entry_address(),
+                id: snowflake::ProcessUniqueId::new().to_string(),
+            }),
+            QueryPayload::Entry,
+        )))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

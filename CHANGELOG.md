@@ -2,6 +2,117 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.29-alpha2] - 2019-08-26
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.29-alpha1] - 2019-08-26
+
+### Added
+
+* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658) 
+* Conductor API debug functions added: 
+    * `debug/running_instances`: returns array of running instance IDs
+    * `debug/state_dump`: returns a state dump for a given instance
+    * `debug/fetch_cas`: returns the content for a given entry address and instance ID
+  
+  Also added the source to the state dump.
+  [#1661](https://github.com/holochain/holochain-rust/pull/1661)
+
+* Add `alias` to instance references in interfaces to decouple hard-coded instance references in hApp UIs from conductor configs. [#1676](https://github.com/holochain/holochain-rust/pull/1676)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.28-alpha1] - 2019-08-18
+
+### Added
+* Ability to provide passphrase to lock/unlock keystores via IPC unix domain socket added. [#1646](https://github.com/holochain/holochain-rust/pull/1646) 
+
+* Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.27-alpha1] - 2019-08-08
+
+### Added
+
+* New logging implementation added as a subcrate : a fast logger with a filtering capability using regex expressions, please so [logging](logging) for more details. [#1537](https://github.com/holochain/holochain-rust/pull/1537) and [#1639](https://github.com/holochain/holochain-rust/pull/1639)
+
+### Changed
+
+- Bump dependent crate versions (holochain_persistence 0.0.7, holochain_serialization 0.0.7, lib3h 0.0.10) in preparation futures 0.3.0-alpha17 which will allow us to shift to the upcoming Rust 1.38.0 beta [#1632](https://github.com/holochain/holochain-rust/pull/1632)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.26-alpha1] - 2019-08-05
+
+### Added
+
+### Changed
+- State dump debugging: A new config flag got added that activates dumping of core's redux state every ten seconds in a human readable form: [#1601](https://github.com/holochain/holochain-rust/pull/1601)
+- The static file server has been replaced and now uses the Nickel crate intead of Hyper. It now correctly sets content type headers and can be configured to bind to a different address in the conductor config toml [#1595](https://github.com/holochain/holochain-rust/pull/1595)
+- Optimized get_links so that fewer network calls are made overrall [#1607](https://github.com/holochain/holochain-rust/pull/1607)
+
+- DEPRECATION WARNING, conductor static UI server is to be removed in an upcoming release. Devs will receive a warning when starting a conductor with a UI server configured [PR#1602](https://github.com/holochain/holochain-rust/pull/1602)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- When using agent config with `test_agent = true`, the conductor was checking the `public_address` field against the generated keystore. No longer so. [PR#1629](https://github.com/holochain/holochain-rust/pull/1629)
+
+### Security
+
+## [0.0.25-alpha1] - 2019-07-26
+
+### Added
+
+### Changed
+- **Breaking Change** genesis function now renamed to init [#1508](https://github.com/holochain/holochain-rust/pull/1508)
+- **BREAKING:** Zomes must now include a `validate_agent` callback. If this rejects in any zome the DNA will not start. This can be used to enforce membrane requirements. [#1497](https://github.com/holochain/holochain-rust/pull/1497)
+- Added a `get_links_count` method which allows the user to get number of links by base and tag [#1568](https://github.com/holochain/holochain-rust/pull/1568)### Changed
+- The Conductor will shut down gracefully when receiving SIGINT (i.e. Ctrl+C) or SIGKILL, also causing a graceful shutdown of an attached n3h instance, if running [#1599](https://github.com/holochain/holochain-rust/pull/1599)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Fixed problem with `hc run` that was introduced by [Conductor config sanitizing](https://github.com/holochain/holochain-rust/pull/1335) a week ago: The conductor config now needs to include the correct hash of each configured DNA file. [#1603](https://github.com/holochain/holochain-rust/pull/1603) adds the proper hash to the internally created conductor config that `hc run` runs.
+
+### Security
+
 ## [0.0.24-alpha2] - 2019-07-15
 
 ### Added

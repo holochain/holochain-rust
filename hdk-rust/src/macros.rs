@@ -42,7 +42,7 @@ macro_rules! load_string {
 /// macro in the main library file in their Zome.
 /// The `define_zome` macro has 4 component parts:
 /// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
-/// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
+/// 2. init: `init` is a callback called by Holochain to every Zome implemented within a DNA.
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
 ///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
 /// 3. receive (optional): `receive` is a callback called by Holochain when another agent on a hApp has initiated a node-to-node direct message.
@@ -104,12 +104,16 @@ macro_rules! load_string {
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_meta(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -180,7 +184,11 @@ macro_rules! load_string {
 ///         )
 ///     ]
 ///
-///     genesis: || {
+///     init: || {
+///         Ok(())
+///     }
+///     
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
 ///
@@ -216,9 +224,15 @@ macro_rules! define_zome {
             $( $entry_expr:expr ),*
         ]
 
-        genesis : || {
-            $genesis_expr:expr
+        init : || {
+            $init_expr:expr
         }
+
+
+        validate_agent: |$agent_validation_param:ident : EntryValidationData::<AgentId>| {
+            $agent_validation_expr:expr
+        }
+
 
         $(
             receive : |$receive_from:ident, $receive_param:ident| {
@@ -252,10 +266,16 @@ macro_rules! define_zome {
             $(
                 zd.define($entry_expr);
             )*
+
+            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
+                let $agent_validation_param = validation_data;
+                $agent_validation_expr
+            });
+            zd.define_agent_validator(validator);
         }
 
         #[no_mangle]
-        pub extern "C" fn genesis(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+        pub extern "C" fn init(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
             let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
             let allocation = match maybe_allocation {
                 Ok(allocation) => allocation,
@@ -269,7 +289,7 @@ macro_rules! define_zome {
             }
 
             fn execute() -> Result<(), String> {
-                $genesis_expr
+                $init_expr
             }
 
             match execute() {

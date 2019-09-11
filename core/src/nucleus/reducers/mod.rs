@@ -22,7 +22,9 @@ use crate::{
     },
 };
 
-use crate::state::State;
+use crate::{
+    nucleus::reducers::return_zome_function_result::reduce_signal_zome_function, state::State,
+};
 use std::sync::Arc;
 
 /// Maps incoming action to the correct reducer
@@ -35,6 +37,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
+        Action::SignalZomeFunctionCall(_) => Some(reduce_signal_zome_function),
         _ => None,
     }
 }

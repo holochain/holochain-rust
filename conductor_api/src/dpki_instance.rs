@@ -11,7 +11,7 @@ use holochain_core::{
 
 pub const DPKI_ZOME_NAME: &str = "dpki";
 pub const DPKI_TRAIT_FN_ADD_AGENT: &str = "create_agent_key";
-pub const DPKI_TRAIT_FN_INIT: &str = "init";
+pub const DPKI_TRAIT_FN_INIT: &str = "init_dpki";
 pub const DPKI_TRAIT_FN_IS_INITIALIZED: &str = "is_initialized";
 
 use std::{convert::TryInto, sync::Arc};
@@ -74,7 +74,11 @@ impl DpkiInstance for Holochain {
             DPKI_TRAIT_FN_IS_INITIALIZED,
             params,
         )?;
-        let result: bool = result.try_into()?;
-        Ok(result)
+        let result: Result<bool, HolochainError> = result.try_into()?;
+        match result.to_owned() {
+            Ok(r) => println!("DPKI instance is initialized: {:?}", r),
+            Err(e) => println!("ERROR: DPKI is not initialized: {:?}", e),
+        }
+        result
     }
 }

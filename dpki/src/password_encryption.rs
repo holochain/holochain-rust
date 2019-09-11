@@ -1,5 +1,7 @@
+pub use aead::{ABYTES, NONCEBYTES};
 use holochain_core_types::error::HcResult;
 use lib3h_sodium::{aead, kx, pwhash, secbuf::SecBuf};
+pub use pwhash::SALTBYTES;
 use serde_derive::{Deserialize, Serialize};
 
 pub type OpsLimit = u64;
@@ -10,7 +12,7 @@ pub type PwHashAlgo = i8;
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
 /// Struct holding the result of a passphrase encryption
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) struct EncryptedData {
     pub salt: Vec<u8>,
     pub nonce: Vec<u8>,
@@ -48,11 +50,43 @@ pub(crate) fn pw_enc(
     passphrase: &mut SecBuf,
     config: Option<PwHashConfig>,
 ) -> HcResult<EncryptedData> {
-    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-    let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
+    let mut salt = SecBuf::with_insecure(SALTBYTES);
     salt.randomize();
-    let mut nonce = SecBuf::with_insecure(aead::NONCEBYTES);
+    let mut nonce = SecBuf::with_insecure(NONCEBYTES);
     nonce.randomize();
+    pw_enc_base(data, passphrase, &mut salt, &mut nonce, config)
+}
+
+/// Simple API for encrypting a buffer with a pwhash-ed passphrase but uses a zero nonce
+/// This does not weaken security provided the same passphrase/salt is not used to encrypt multiple
+/// pieces of data. Since a random salt is produced by this function it should not be an issue.
+///  Helpful for reducing the size of the output EncryptedData (by NONCEBYTES)
+/// @param {Buffer} data - the data to encrypt
+/// @param {SecBuf} passphrase - the passphrase to use for encrypting
+/// @param {Option<PwHashConfig>} config - Optional encrypting settings
+/// @return {EncryptedData} - the resulting encrypted data
+pub(crate) fn pw_enc_zero_nonce(
+    data: &mut SecBuf,
+    passphrase: &mut SecBuf,
+    config: Option<PwHashConfig>,
+) -> HcResult<EncryptedData> {
+    let mut salt = SecBuf::with_insecure(SALTBYTES);
+    salt.randomize();
+    let mut nonce = SecBuf::with_insecure(NONCEBYTES);
+    nonce.write(0, &[0; NONCEBYTES])?;
+    let data = pw_enc_base(data, passphrase, &mut salt, &mut nonce, config)?;
+    Ok(data)
+}
+
+/// Private general wrapper of pw_enc
+fn pw_enc_base(
+    data: &mut SecBuf,
+    passphrase: &mut SecBuf,
+    mut salt: &mut SecBuf,
+    mut nonce: &mut SecBuf,
+    config: Option<PwHashConfig>,
+) -> HcResult<EncryptedData> {
+    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);
     pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::enc(data, &mut secret, None, &mut nonce, &mut cipher)?;
@@ -80,7 +114,7 @@ pub(crate) fn pw_dec(
     config: Option<PwHashConfig>,
 ) -> HcResult<()> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-    let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
+    let mut salt = SecBuf::with_insecure(SALTBYTES);
     salt.from_array(&encrypted_data.salt)
         .expect("Failed to write SecBuf with array");
     let mut nonce = SecBuf::with_insecure(encrypted_data.nonce.len());
@@ -144,7 +178,7 @@ pub(crate) mod tests {
     #[test]
     fn it_should_generate_pw_hash_with_salt() {
         let mut password = test_password();
-        let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
+        let mut salt = SecBuf::with_insecure(SALTBYTES);
         let mut hashed_password = SecBuf::with_insecure(pwhash::HASHBYTES);
         pw_hash(&mut password, &mut salt, &mut hashed_password, TEST_CONFIG).unwrap();
         println!("salt = {:?}", salt);

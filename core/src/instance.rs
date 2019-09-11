@@ -101,14 +101,14 @@ impl Instance {
         let context = self.inner_setup(context);
         context.block_on(
             async {
-              await!(initialize_chain(dna.clone(), &context))?;
-              await!(initialize_network_with_spoofed_dna(
-                  spoofed_dna_address,
-                  &context
-              ))
+                await!(initialize_chain(dna.clone(), &context))?;
+                await!(initialize_network_with_spoofed_dna(
+                    spoofed_dna_address,
+                    &context
+                ))
             },
         )?;
-      Ok(context)
+        Ok(context)
     }
 
     /// Only needed in tests to check that the initialization (and other workflows) fail
@@ -177,7 +177,7 @@ impl Instance {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
-
+        (*instance_is_alive.lock().unwrap()) = true;
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
@@ -244,15 +244,17 @@ impl Instance {
         }
 
         if let Err(e) = self.save() {
-            context.log(format!(
-                "err/instance/process_action: could not save state: {:?}",
+            log_error!(
+                context,
+                "instance/process_action: could not save state: {:?}",
                 e
-            ));
+            );
         } else {
-            context.log(format!(
-                "trace/reduce/process_actions: reducing {:?}",
+            log_trace!(
+                context,
+                "reduce/process_actions: reducing {:?}",
                 action_wrapper
-            ));
+            );
         }
 
         // Add new observers
@@ -270,20 +272,22 @@ impl Instance {
             // to prevent emitting too many unneeded signals
             let trace_signal = Signal::Trace(action_wrapper.clone());
             tx.send(trace_signal).unwrap_or_else(|e| {
-                context.log(format!(
-                    "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                log_warn!(
+                    context,
+                    "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                     e
-                ));
+                );
             });
 
             if let Some(signal) = self.consistency_model
                 .process_action(action_wrapper.action())
             {
                 tx.send(Signal::Consistency(signal)).unwrap_or_else(|e| {
-                    context.log(format!(
-                        "warn/reduce: Signal channel is closed! No signals can be sent ({:?}).",
-                        e
-                    ));
+                            log_warn!(
+                                context,
+                                "reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                                e
+                            );
                 });
             }
 
@@ -401,7 +405,6 @@ pub mod tests {
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
     };
-    use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
@@ -432,8 +435,8 @@ pub mod tests {
         let logger = test_logger();
         (
             Arc::new(Context::new(
+                "Test-context-and-logger-instance",
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
                 content_storage.clone(),
@@ -441,6 +444,7 @@ pub mod tests {
                 test_memory_network_config(network_name),
                 None,
                 None,
+                false,
             )),
             logger,
         )
@@ -462,14 +466,13 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
-        let logger = test_logger();
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         Arc::new(
             Context::new_with_channels(
+                "Test-context-with-channels-instance",
                 agent,
-                logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
                 None,
@@ -480,6 +483,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 test_memory_network_config(network_name),
+                false,
             )
             .unwrap(),
         )
@@ -491,8 +495,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "test-context-with-state-instance",
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
@@ -503,6 +507,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
+            false,
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -515,8 +520,8 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
+            "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             cas.clone(),
@@ -527,6 +532,7 @@ pub mod tests {
             test_memory_network_config(network_name),
             None,
             None,
+            false,
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -573,7 +579,7 @@ pub mod tests {
         // fair warning... use test_instance_blank() if you want a minimal instance
         assert!(
             !dna.zomes.clone().is_empty(),
-            "Empty zomes = No genesis = infinite loops below!"
+            "Empty zomes = No init = infinite loops below!"
         );
 
         // @TODO abstract and DRY this out
@@ -609,7 +615,7 @@ pub mod tests {
             })
             .is_none()
         {
-            println!("Waiting for Commit for genesis");
+            println!("Waiting for Commit for init");
             sleep(Duration::from_millis(10))
         }
 
@@ -718,10 +724,10 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that an unimplemented genesis allows the nucleus to initialize
+    /// tests that an unimplemented init allows the nucleus to initialize
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
-    fn test_missing_genesis() {
+    fn test_missing_init() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
@@ -732,15 +738,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a valid genesis allows the nucleus to initialize
-    fn test_genesis_ok() {
+    /// tests that a valid init allows the nucleus to initialize
+    fn test_init_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 0
                 )
                 (data (i32.const 0)
@@ -752,7 +758,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna, Some("test_genesis_ok"));
+        let maybe_instance = test_instance(dna, Some("test_init_ok"));
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();
@@ -760,15 +766,15 @@ pub mod tests {
     }
 
     #[test]
-    /// tests that a failed genesis prevents the nucleus from initializing
-    fn test_genesis_err() {
+    /// tests that a failed init prevents the nucleus from initializing
+    fn test_init_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
             Some(
                 r#"
             (module
                 (memory (;0;) 1)
-                (func (export "genesis") (param $p0 i64) (result i64)
+                (func (export "init") (param $p0 i64) (result i64)
                     i64.const 9
                 )
                 (data (i32.const 0)
@@ -784,7 +790,9 @@ pub mod tests {
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
-            String::from(JsonString::from(RawString::from("Genesis")))
+            String::from(
+                "At least one zome init returned error: [(\"test_zome\", \"\\\"Init\\\"\")]"
+            )
         );
     }
 

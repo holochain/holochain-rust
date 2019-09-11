@@ -41,6 +41,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// #[no_mangle]
 /// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_meta(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -57,6 +59,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -90,10 +94,14 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// define_zome! {
 ///     entries: []
 ///
-///     genesis: || {
+///     init: || {
 ///         Ok(())
 ///     }
 ///
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
+///         Ok(())
+///     }
+///     
 ///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
@@ -145,8 +153,10 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// #[no_mangle]
+/// # #[no_mangle]
 /// # pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_meta(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -163,6 +173,8 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// #[no_mangle]
+/// # pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
@@ -204,7 +216,11 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// define_zome! {
 ///     entries: []
 ///
-///     genesis: || {
+///     init: || {
+///         Ok(())
+///     }
+///     
+///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
 ///

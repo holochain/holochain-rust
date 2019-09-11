@@ -6,7 +6,7 @@ use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-/// ZomeApiFunction::GetLinks function code
+/// ZomeApiFunction::GetLinks function code.
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
@@ -16,17 +16,17 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => {
-            context.log(format!(
-                "log/get_links: invoke_get_links called with {:?}",
+            log_debug!(context,
+                "zome/get_links: invoke_get_links called with {:?}",
                 input,
-            ));
+            );
             input
         }
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+            log_error!(context,
+                "zome/get_links: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -106,7 +106,7 @@ pub mod tests {
         (instance, arc_context)
     }
 
-    fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
+    pub fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
             assert!(initialized_context //commit the AddLink entry first
                 .block_on(commit_entry(
@@ -124,7 +124,7 @@ pub mod tests {
         });
     }
 
-    fn get_links(
+    pub fn get_links(
         initialized_context: Arc<Context>,
         base: &Address,
         link_type: LinkMatch<String>,

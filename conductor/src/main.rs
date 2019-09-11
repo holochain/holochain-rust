@@ -93,7 +93,7 @@ fn main() {
                         Signals::new(&[SIGINT, SIGTERM]).expect("Couldn't create signals list");
 
                     // Wait forever until we get one of the signals defined above
-                    termination_signals.forever();
+                    let _sig = termination_signals.forever().next();
 
                     // So we're here because we received a shutdown signal.
                     // Let's shut down.

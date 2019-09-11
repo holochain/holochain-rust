@@ -2,7 +2,9 @@ use crate::holo_signing_service::request_service;
 use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
-use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
+use holochain_core::{
+    context::Context, nucleus::actions::call_zome_function::make_cap_request_for_call,
+};
 
 use holochain_core_types::{
     agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
@@ -119,17 +121,67 @@ impl ConductorApiBuilder {
         *self.io
     }
 
+    fn get_cap_request(
+        context: Arc<Context>,
+        func_name: &String,
+        params_map: &Map<String, Value>,
+        args_string: &String,
+    ) -> jsonrpc_core::Result<CapabilityRequest> {
+        // Get the token from the parameters.  If not there assume public token.
+        let maybe_token = Self::get_as_string("token", &params_map);
+        let token = match maybe_token {
+            Err(_err) => context.get_public_token().map_err(|err| {
+                jsonrpc_core::Error::invalid_params(format!(
+                    "Public token not found: {}",
+                    err.to_string()
+                ))
+            })?,
+            Ok(token) => Address::from(token),
+        };
+
+        let maybe_provenance = params_map.get("provenance");
+        let cap_req = match maybe_provenance {
+            None => make_cap_request_for_call(
+                context.clone(),
+                token,
+                &func_name,
+                JsonString::from_json(&args_string.clone()),
+            ),
+            Some(json_provenance) => {
+                let provenance: Provenance = serde_json::from_value(json_provenance.to_owned())
+                    .map_err(|e| {
+                        jsonrpc_core::Error::invalid_params(format!("invalid provenance: {}", e))
+                    })?;
+                CapabilityRequest::new(token, provenance.source(), provenance.signature())
+            }
+        };
+        Ok(cap_req)
+    }
+
+    fn get_call_args(
+        params_map: &Map<String, Value>,
+    ) -> jsonrpc_core::Result<(String, String, String)> {
+        // Getting the arguments of the call contained in the json-rpc 'args'
+        let call_args = match params_map.get("args") {
+            Some(Value::Null) | None => Value::Object(Map::new()), // null or no value should be mapped to empty object
+            Some(val) => val.to_owned(),
+        };
+        let args_string = serde_json::to_string(&call_args)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+        let zome_name = Self::get_as_string("zome", &params_map)?;
+        let func_name = Self::get_as_string("function", &params_map)?;
+        Ok((zome_name, func_name, args_string))
+    }
+
     /// Adds a "call" method for making zome function calls
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
 
-        // We need to place this one here in order to avoid compiler lifetime issue
-        let default_call_args = json!({});
-
-        self.io.add_method("call", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
+        self.io.add_method("call", move |_params| {
+            let params_map = Self::unwrap_params_map(_params)?;
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+
             let id = instance_ids_map
                 .get(&PublicInstanceIdentifier::from(public_id_str))
                 .ok_or(jsonrpc_core::Error::invalid_params(
@@ -138,72 +190,105 @@ impl ConductorApiBuilder {
             let instance = instances
                 .get(id)
                 .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
 
-
-            // Getting the arguments of the call contained in the json-rpc 'params'
-            let mut call_args = params_map.get("args").or_else(|| {
-                // TODO: Remove this fall back to the previous impl of inner 'params'
-                // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
-                let _ = hc.context().map(|context|
-                    log_warn!(context, "interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
-                    Please switch to 'args' instead, as 'params' will soon be phased out."));
-                params_map.get("params")
-            });
-
-            // For a consistent error behavior, we check if the passed value is 'null',
-            // which triggers an error, and fallback as if an empty object was passed instead '{}'
-            if json!(null) == *call_args.unwrap_or(&default_call_args) {
-                call_args = Some(&default_call_args);
-            }
-            let args_string = serde_json::to_string(&call_args)
-                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-            let zome_name = Self::get_as_string("zome", &params_map)?;
-            let func_name = Self::get_as_string("function", &params_map)?;
-
-            let cap_request = {
-                let context = hc.context()
-                    .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
-                // Get the token from the parameters.  If not there assume public token.
-                let maybe_token = Self::get_as_string("token", &params_map);
-                let token = match maybe_token {
-                    Err(_err) => context.get_public_token().map_err(|err| {
-                        jsonrpc_core::Error::invalid_params(format!(
-                            "Public token not found: {}",
-                            err.to_string()
-                        ))
-                    })?,
-                    Ok(token) => Address::from(token),
-                };
-
-                let maybe_provenance = params_map.get("provenance");
-                match maybe_provenance {
-                    None => make_cap_request_for_call(
-                        context.clone(),
-                        token,
-                        &func_name,
-                        JsonString::from_json(&args_string.clone()),
-                    ),
-                    Some(json_provenance) => {
-                        let provenance: Provenance =
-                            serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
-                                jsonrpc_core::Error::invalid_params(format!(
-                                    "invalid provenance: {}",
-                                    e
-                                ))
-                            })?;
-                        CapabilityRequest::new(token, provenance.source(), provenance.signature())
-                    }
-                }
-            };
+            let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
+            let cap_request = Self::get_cap_request(
+                hc.context().unwrap(),
+                &func_name,
+                &params_map,
+                &args_string,
+            )?;
 
             let response = hc
                 .call(&zome_name, cap_request, &func_name, &args_string)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+
             Ok(Value::String(response.to_string()))
         });
+    }
+
+    /// Adds a call and measure function to the conductor. This is currently only available on linux
+    #[cfg(target_os = "linux")]
+    pub fn with_call_and_measure(mut self) -> Self {
+
+        use std::{
+            time::Duration,
+            thread::sleep,
+            sync::mpsc,
+        };
+
+        let instances = self.instances.clone();
+        let instance_ids_map = self.instance_ids_map.clone();
+
+        self.io.add_method("call_and_measure", move |params| {
+            // only actually add this function for linux OS
+            let params_map = Self::unwrap_params_map(params)?;
+            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+
+            let id = instance_ids_map
+                .get(&PublicInstanceIdentifier::from(public_id_str))
+                .ok_or(jsonrpc_core::Error::invalid_params(
+                    "instance identifier invalid",
+                ))?;
+            let instance = instances
+                .get(id)
+                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+
+            let hc_lock = instance.clone();
+            let hc_lock_inner = hc_lock.clone();
+            let mut hc = hc_lock_inner.write().unwrap();
+
+            let (zome_name, func_name, args_string) = Self::get_call_args(&params_map)?;
+            let cap_request = Self::get_cap_request(hc.context().unwrap(), &func_name, &params_map, &args_string)?;
+
+            // setup the self-meter in another thread to monitor this one
+            let mut meter = self_meter::Meter::new(Duration::from_millis(100)).unwrap();
+            meter.scan()
+                .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+
+            let (tx, rx) = mpsc::channel();
+            let monitor = thread::spawn(move || {
+                while let Err(_) = rx.try_recv() { // loop until calling thread messages that it is complete
+                    meter.scan()
+                        .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+                    sleep(meter.get_scan_interval());
+                }
+                meter // return ownership of meter back to the calling thread
+            });
+
+            let call_response = hc
+                .call(&zome_name, cap_request, &func_name, &args_string)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+
+            tx.send(()).unwrap();
+            let mut meter = monitor.join().expect("Monitor thread did not terminate successfully");
+
+            meter.scan()
+                .map_err(|e| eprintln!("Scan error: {}", e)).ok();
+
+            let response = json!({
+                "call_response": call_response,
+                "resource_usage": meter.report().expect("Could not generate report"),
+            });
+
+            Ok(Value::String(response.to_string()))
+        });
+        self
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    pub fn with_call_and_measure(mut self) -> Self {
+        self.io.add_method("call_and_measure", move |_params| {
+            Err(jsonrpc_core::Error::invalid_params_with_details(
+                "'call_and_measure' not available on current OS. Only linux is supported at this time".to_string(),
+                "".to_string(),
+            ))
+        });
+        self
     }
 
     /// Adds a "info/instances" method that returns a JSON object describing all registered

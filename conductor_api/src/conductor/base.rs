@@ -1183,7 +1183,8 @@ impl Conductor {
                 .with_admin_dna_functions()
                 .with_admin_ui_functions()
                 .with_test_admin_functions()
-                .with_debug_functions();
+                .with_debug_functions()
+                .with_call_and_measure();
         }
 
         conductor_api_builder.spawn()

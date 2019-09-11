@@ -172,7 +172,7 @@ impl Holochain {
         let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister
             .load(context.clone())?
-            .ok_or(HolochainError::ErrorGeneric(
+            .ok_or_else(|| HolochainError::ErrorGeneric(
                 "State could not be loaded due to NoneError".to_string(),
             ))?;
         let mut instance = Instance::from_state(loaded_state.clone(), context.clone());

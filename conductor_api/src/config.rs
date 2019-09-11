@@ -247,7 +247,7 @@ impl Configuration {
                             .bridges
                             .iter()
                             .find(|b| b.handle == handle)
-                            .ok_or(format!(
+                            .ok_or_else(|| format!(
                                 "Required bridge '{}' for instance '{}' missing",
                                 handle, instance.id
                             ))?;
@@ -328,7 +328,7 @@ impl Configuration {
         //
         let caller_config = self
             .instance_by_id(&bridge_config.caller_id)
-            .ok_or(format!(
+            .ok_or_else(|| format!(
                 "Instance configuration \"{}\" not found, mentioned in bridge",
                 bridge_config.caller_id
             ))?;
@@ -355,7 +355,7 @@ impl Configuration {
         //
         let callee_config = self
             .instance_by_id(&bridge_config.callee_id)
-            .ok_or(format!(
+            .ok_or_else(|| format!(
                 "Instance configuration \"{}\" not found, mentioned in bridge",
                 bridge_config.callee_id
             ))?;
@@ -389,7 +389,7 @@ impl Configuration {
             }
         }
 
-        let bridge = maybe_bridge.ok_or(format!(
+        let bridge = maybe_bridge.ok_or_else(|| format!(
             "No bridge definition with handle '{}' found in {}'s DNA",
             bridge_config.handle, bridge_config.caller_id,
         ))?;

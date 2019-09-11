@@ -48,6 +48,7 @@ pub trait ConductorAdmin {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError>;
     fn remove_instance_from_interface(
         &mut self,
@@ -210,7 +211,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
-        let instance = self.instantiate_from_config(id, Some(&new_config))?;
+        let instance = self.instantiate_from_config(id, Some(&mut new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -301,6 +302,7 @@ impl ConductorAdmin for Conductor {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -327,6 +329,7 @@ impl ConductorAdmin for Conductor {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
                         id: instance_id.clone(),
+                        alias: alias.clone(),
                     });
                 }
                 interface
@@ -735,6 +738,11 @@ exclude = false
 pattern = '.*'"#
             .to_string()
     }
+    pub fn passphrase_service() -> String {
+        r#"[passphrase_service]
+type = 'cmd'"#
+            .to_string()
+    }
 
     pub fn add_block(base: String, new_block: String) -> String {
         format!("{}\n\n{}", base, new_block)
@@ -842,6 +850,7 @@ id = 'new-dna'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3000));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1153,6 +1162,7 @@ id = 'new-instance'"#,
         );
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1201,6 +1211,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1249,6 +1260,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1296,6 +1308,7 @@ type = 'http'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1336,6 +1349,7 @@ type = 'http'"#,
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1348,7 +1362,6 @@ type = 'http'"#,
     }
 
     #[test]
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn test_add_instance_to_interface() {
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
@@ -1394,7 +1407,8 @@ type = 'http'"#,
         assert_eq!(
             conductor.add_instance_to_interface(
                 &String::from("websocket interface"),
-                &String::from("new-instance-2")
+                &String::from("new-instance-2"),
+                &None,
             ),
             Ok(())
         );
@@ -1460,6 +1474,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1513,6 +1528,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1561,6 +1577,7 @@ public_address = '{}'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3009));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1606,6 +1623,7 @@ type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1651,6 +1669,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -1678,6 +1697,7 @@ handle = 'my favourite instance!'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 

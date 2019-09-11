@@ -2,6 +2,60 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.29-alpha2] - 2019-08-26
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.29-alpha1] - 2019-08-26
+
+### Added
+
+* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658) 
+* Conductor API debug functions added: 
+    * `debug/running_instances`: returns array of running instance IDs
+    * `debug/state_dump`: returns a state dump for a given instance
+    * `debug/fetch_cas`: returns the content for a given entry address and instance ID
+  
+  Also added the source to the state dump.
+  [#1661](https://github.com/holochain/holochain-rust/pull/1661)
+
+* Add `alias` to instance references in interfaces to decouple hard-coded instance references in hApp UIs from conductor configs. [#1676](https://github.com/holochain/holochain-rust/pull/1676)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.28-alpha1] - 2019-08-18
+
+### Added
+* Ability to provide passphrase to lock/unlock keystores via IPC unix domain socket added. [#1646](https://github.com/holochain/holochain-rust/pull/1646) 
+
+* Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.27-alpha1] - 2019-08-08
 
 ### Added

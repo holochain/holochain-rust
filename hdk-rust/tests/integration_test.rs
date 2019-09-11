@@ -20,6 +20,8 @@ use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
+    consistency::ConsistencyEvent,
+    signal::{Signal,signal_channel, SignalReceiver},
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -299,6 +301,55 @@ fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
+
+fn wait_for_action(
+    signal_receiver: &SignalReceiver,
+    expected_signal: ConsistencyEvent,
+    max_tries: i8
+) -> Result<ConsistencyEvent, HolochainError> {
+    if max_tries > 0 {
+        signal_receiver
+            //THIS FIRST PART IS JUST FOR OPTIMIZATION PURPOSES WHILE FINDING A GOOD BALANCE OF SEPERATION
+            //============================================================================================
+            .try_iter()
+            .filter(|recv| match recv {
+                Signal::Consistency(_) => true,
+                _ => false,
+            })
+            //==============================================================================================
+            .filter_map(|recv| match recv {
+                Signal::Consistency(cons) => {
+                    let content = cons.clone().event();
+                    let event: ConsistencyEvent =
+                        serde_json::from_str(&content).expect("Could not convert serde");
+                    match event {
+                        ConsistencyEvent::Hold(_) => Some(event),
+                        ConsistencyEvent::AddLink(_) => Some(event),
+                        ConsistencyEvent::UpdateEntry(_, _) => Some(event),
+                        ConsistencyEvent::RemoveEntry(_, _) => Some(event),
+                        ConsistencyEvent::RemoveLink(_) => Some(event),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            //check if signal matches expected signal
+            .find(|recv| {
+                recv == &expected_signal
+            })
+            .map(|recv| Ok(recv))
+            .unwrap_or_else(|| {
+                thread::sleep(Duration::from_secs(3));
+                wait_for_action(
+                    signal_receiver,
+                    expected_signal,
+                    max_tries - 1
+                )
+            })
+    } else {
+        Err(HolochainError::ErrorGeneric("Waiter timed out while running test".to_string()))
+    }
+}
 fn start_holochain_instance<T: Into<String>>(
     uuid: T,
     agent_name: T,
@@ -960,8 +1011,8 @@ fn create_tag_and_retrieve()
     assert!(result.is_ok(), "result = {:?}", result);
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me once","tag":"tag another me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    
-    thread::sleep(Duration::from_millis(50000));
+    let expected_zome : ZomeApiResult<Address> = result.into::<ZomeApiResult<Address>>();
+    wait_for_action(signal_receiver,ConsistencyEvent::Hold(expected_zome.unwrap(),10));
     let result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag another me"}"#);
     assert_eq!(
         result,

@@ -196,7 +196,8 @@ impl IntoZome for syn::ItemMod {
             .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, mut func| {
                 // Drop the EntryDef attribute on the functions so this doesn't recurse
-                func.attrs = func.attrs
+                func.attrs = func
+                    .attrs
                     .into_iter()
                     .filter(|attr| !attr.path.is_ident(ENTRY_DEF_ATTRIBUTE))
                     .collect();

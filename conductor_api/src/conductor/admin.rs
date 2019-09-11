@@ -203,9 +203,9 @@ impl ConductorAdmin for Conductor {
             storage: StorageConfiguration::Pickle {
                 path: storage_path
                     .to_str()
-                    .ok_or_else(||HolochainError::ConfigError(
-                        format!("invalid path {:?}", storage_path),
-                    ))?
+                    .ok_or_else(|| {
+                        HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
+                    })?
                     .into(),
             },
         };
@@ -308,10 +308,12 @@ impl ConductorAdmin for Conductor {
 
         if new_config
             .interface_by_id(interface_id)
-            .ok_or_else(|| HolochainError::ErrorGeneric(format!(
-                "Interface with ID {} not found",
-                interface_id
-            )))?
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!(
+                    "Interface with ID {} not found",
+                    interface_id
+                ))
+            })?
             .instances
             .iter()
             .any(|i| i.id == *instance_id)
@@ -357,10 +359,12 @@ impl ConductorAdmin for Conductor {
 
         if !new_config
             .interface_by_id(interface_id)
-            .ok_or_else(|| HolochainError::ErrorGeneric(format!(
-                "Interface with ID {} not found",
-                interface_id
-            )))?
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!(
+                    "Interface with ID {} not found",
+                    interface_id
+                ))
+            })?
             .instances
             .iter()
             .any(|i| i.id == *instance_id)

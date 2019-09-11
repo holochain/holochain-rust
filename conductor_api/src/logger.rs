@@ -98,8 +98,10 @@ impl DebugLogger {
 
         thread::Builder::new()
             .name("debug_logger".to_string())
-            .spawn(move || while let Ok((id, msg)) = rx.recv() {
-                run(&rules, id, msg)
+            .spawn(move || {
+                while let Ok((id, msg)) = rx.recv() {
+                    run(&rules, id, msg)
+                }
             })
             .expect("Could not spawn thread for DebugLogger");
         logger

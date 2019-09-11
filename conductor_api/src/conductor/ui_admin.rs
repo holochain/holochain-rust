@@ -150,9 +150,7 @@ impl ConductorUiAdmin for Conductor {
 
         self.static_servers
             .remove(id)
-            .ok_or_else(|| HolochainError::ErrorGeneric(
-                "Could not remove server".into(),
-            ))?;
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not remove server".into()))?;
 
         Ok(())
     }

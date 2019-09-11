@@ -376,13 +376,9 @@ impl Conductor {
 
     pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
         {
-            let kill_switch =
-                self.interface_threads
-                    .get(id)
-                    .ok_or_else(|| HolochainError::ErrorGeneric(format!(
-                        "Interface {} not found.",
-                        id
-                    )))?;
+            let kill_switch = self.interface_threads.get(id).ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!("Interface {} not found.", id))
+            })?;
             notify(format!("Stopping interface {}", id));
             kill_switch.send(()).map_err(|err| {
                 let message = format!("Error stopping interface: {}", err);
@@ -436,14 +432,14 @@ impl Conductor {
                         .bridges
                         .iter()
                         .find(|b| b.handle == handle)
-                        .ok_or_else(|| HolochainInstanceError::RequiredBridgeMissing(
-                            handle.clone(),
-                        ))?;
+                        .ok_or_else(|| {
+                            HolochainInstanceError::RequiredBridgeMissing(handle.clone())
+                        })?;
                     self.instances
                         .get(&bridge_config.callee_id)
-                        .ok_or_else(|| HolochainInstanceError::RequiredBridgeMissing(
-                            handle.clone(),
-                        ))?
+                        .ok_or_else(|| {
+                            HolochainInstanceError::RequiredBridgeMissing(handle.clone())
+                        })?
                         .read()
                         .unwrap()
                         .active()
@@ -531,13 +527,9 @@ impl Conductor {
     }
 
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
-        let network_config = self
-            .config
-            .clone()
-            .network
-            .ok_or_else(|| HolochainError::ErrorGeneric(
-                "attempt to spawn network when not configured".to_string(),
-            ))?;
+        let network_config = self.config.clone().network.ok_or_else(|| {
+            HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string())
+        })?;
 
         match network_config {
             NetworkConfig::N3h(config) => {
@@ -662,13 +654,14 @@ impl Conductor {
 
         for ui_interface_config in config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));
-            let bundle_config =
-                config
-                    .ui_bundle_by_id(&ui_interface_config.bundle)
-                    .ok_or_else(|| format!(
+            let bundle_config = config
+                .ui_bundle_by_id(&ui_interface_config.bundle)
+                .ok_or_else(|| {
+                    format!(
                         "UI interface {} references bundle with id {} but no such bundle found",
                         &ui_interface_config.id, &ui_interface_config.bundle
-                    ))?;
+                    )
+                })?;
             let connected_dna_interface = ui_interface_config
                 .clone()
                 .dna_interface
@@ -891,8 +884,7 @@ impl Conductor {
             api_builder = api_builder.with_agent_decryption_callback(
                 self.get_keybundle_for_agent(&instance_config.agent)?,
             );
-            let keystore = self
-                .get_keystore_for_agent(&instance_config.agent)?;
+            let keystore = self.get_keystore_for_agent(&instance_config.agent)?;
             api_builder = api_builder.with_agent_keystore_functions(keystore);
         }
 
@@ -1101,8 +1093,7 @@ impl Conductor {
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
-        let keystore = self
-            .get_keystore_for_agent(agent_id)?;
+        let keystore = self.get_keystore_for_agent(agent_id)?;
         let mut keystore = keystore.lock().unwrap();
         let keybundle = keystore
             .get_keybundle(PRIMARY_KEYBUNDLE_ID)
@@ -1228,24 +1219,24 @@ impl Conductor {
 
     pub fn save_config(&self) -> Result<(), HolochainError> {
         fs::create_dir_all(&self.config.persistence_dir).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!(
-                    "Could not directory structure {:?}",
-                    self.config.persistence_dir
-                )
-            )
+            HolochainError::ErrorGeneric(format!(
+                "Could not directory structure {:?}",
+                self.config.persistence_dir
+            ))
         })?;
         let mut file = File::create(&self.config_path()).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!("Could not create file at {:?}", self.config_path()),
-            )
+            HolochainError::ErrorGeneric(format!(
+                "Could not create file at {:?}",
+                self.config_path()
+            ))
         })?;
 
         file.write(serialize_configuration(&self.config)?.as_bytes())
             .map_err(|_| {
-                HolochainError::ErrorGeneric(
-                    format!("Could not save config to {:?}", self.config_path()),
-                )
+                HolochainError::ErrorGeneric(format!(
+                    "Could not save config to {:?}",
+                    self.config_path()
+                ))
             })?;
         Ok(())
     }

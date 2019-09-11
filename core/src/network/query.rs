@@ -54,6 +54,7 @@ pub enum NetworkQuery {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
     Links(GetLinksNetworkResult, String, String),

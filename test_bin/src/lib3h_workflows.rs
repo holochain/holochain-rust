@@ -59,7 +59,6 @@ pub fn setup_two_lib3h_nodes(
                     .expect("well formed peer uri"),
                 network_id: "FIXME".into(),
             })
-            .into(),
         )?;
 
         // Make sure Peers are connected

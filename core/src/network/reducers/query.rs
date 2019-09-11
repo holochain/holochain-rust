@@ -9,7 +9,6 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 
 
@@ -21,7 +20,7 @@ fn reduce_query_inner(network_state: &mut NetworkState,key:  QueryKey,network_qu
     let key_address = match key
     {
         QueryKey::Entry(key) => (key.id.clone(),key.address.clone()),
-        QueryKey::Links(key) => (key.id.clone(),HashString::from(key.base_address.clone()))
+        QueryKey::Links(key) => (key.id.clone(),key.base_address.clone())
     };
     send(
         network_state,
@@ -49,7 +48,7 @@ pub fn reduce_query(
         }
         QueryKey::Links(key) => {
             let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
-            NetworkQuery::GetLinks(key.link_type.clone(),key.tag.clone(),crud_status.clone(),query.clone())
+            NetworkQuery::GetLinks(key.link_type.clone(),key.tag.clone(),*crud_status,query.clone())
         }
     };
 

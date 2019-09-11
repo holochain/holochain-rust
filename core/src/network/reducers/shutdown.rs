@@ -39,7 +39,7 @@ pub fn reduce_shutdown(
         let network = network_lock
             .as_mut()
             .expect("Tried to shutdown uninitialized network");
-        let _ = network.send(json.into());
+        let _ = network.send(json);
         sleep(Duration::from_secs(2));
     }
 

@@ -8,6 +8,7 @@ use std::thread;
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
 #[serde(tag = "signal_type")]
+#[allow(clippy::large_enum_variant)]
 pub enum Signal {
     Trace(ActionWrapper),
     Consistency(ConsistencySignal<String>),

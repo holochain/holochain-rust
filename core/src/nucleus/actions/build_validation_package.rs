@@ -72,7 +72,6 @@ pub async fn build_validation_package<'a>(
     };
 
     {
-        let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
         let maybe_entry_header = find_chain_header(&entry.clone(), &context.state().unwrap());

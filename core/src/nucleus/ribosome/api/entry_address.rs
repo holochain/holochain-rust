@@ -55,7 +55,6 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     if let Err(err) = maybe_entry_type {
         return Ok(err);
     }
-    let entry = Entry::from(entry);
 
     // Return result
     runtime.store_result(Ok(entry.address()))

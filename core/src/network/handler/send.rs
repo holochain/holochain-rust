@@ -14,7 +14,6 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::data_types::DirectMessageData;
 use snowflake::ProcessUniqueId;
 use std::convert::TryFrom;
-use holochain_persistence_api::cas::content::Address;
 
 fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
@@ -46,7 +45,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 ))
                 .spawn(move || {
                     if let Err(error) = context.block_on(handle_custom_direct_message(
-                        Address::from(message_data.from_agent_id),
+                        message_data.from_agent_id,
                         message_data.request_id,
                         custom_direct_message,
                         context.clone(),
@@ -71,7 +70,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 ))
                 .spawn(move || {
                     context.block_on(respond_validation_package_request(
-                        Address::from(message_data.from_agent_id),
+                        message_data.from_agent_id,
                         message_data.request_id,
                         address,
                         context.clone(),

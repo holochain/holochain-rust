@@ -2,7 +2,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
 };
-use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
@@ -47,7 +47,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let latest_entry = entry_result.latest().unwrap();
 
     // Create Chain Entry
-    let entry = Entry::from(entry_args.new_entry.clone());
+    let entry = entry_args.new_entry.clone();
 
     let res: Result<Address, HolochainError> = context
         .block_on(author_entry(
@@ -56,8 +56,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             &context.clone(),
             &vec![], // TODO should provenance be a parameter?
         ))
-        .map(|result| result.address())
-        .map_err(|validation_error| HolochainError::from(validation_error));
+        .map(|result| result.address());
 
     runtime.store_result(res)
 }

@@ -5,7 +5,7 @@ let
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = current;
- holonix-version = "0.0.20";
+ holonix-version = "v0.0.31";
 in
 rec {
 
@@ -28,7 +28,7 @@ rec {
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "0k8d66dl9cwhikwl8a24gxald12lvbl4zf0jxfak9snpnb5mnlnm";
+   sha256 = "16pzgabavj99qj8x1zs4v5gg1i6457m95cdw36g2ap9dwnmdkkdk";
 
    # the github owner of the holonix repo
    owner = "holochain";

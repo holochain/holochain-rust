@@ -31,6 +31,11 @@ impl<E: Serialize> ConsistencySignal<E> {
             .collect();
         Self { event, pending }
     }
+
+    pub fn event(self) -> E
+    {
+        self.event
+    }
 }
 
 impl From<ConsistencySignalE> for ConsistencySignal<String> {
@@ -53,7 +58,7 @@ impl From<ConsistencySignalE> for ConsistencySignal<String> {
 
 type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize,Deserialize,PartialEq)]
 pub enum ConsistencyEvent {
     // CAUSES
     Publish(Address),                                   // -> Hold

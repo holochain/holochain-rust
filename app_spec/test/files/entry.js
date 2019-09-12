@@ -1,65 +1,4 @@
 module.exports = scenario => {
-
-    scenario('create_tagged_post and retrieve all tags', async (s, t, { alice }) => {
-        const result1 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "Tutorial on amazing Holochain design patterns",
-          tag: "work"
-        })
-        t.ok(result1.Ok)
-      
-        const result2 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "Fly tying, is it for you?",
-          tag: "fishing"
-        })
-        t.ok(result2.Ok)
-      
-        const getResult = await alice.app.callSync("blog", "my_posts", {})
-        t.equal(getResult.Ok.links.length, 2)
-        let tags = getResult.Ok.links.map(l => l.tag)
-        t.ok(tags.includes("work"))
-        t.ok(tags.includes("fishing"))
-      })
-      
-      scenario('create_tagged_post and retrieve exact tag match', async (s, t, { alice }) => {
-        const result1 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "Tutorial on amazing Holochain design patterns",
-          tag: "work"
-        })
-        t.ok(result1.Ok)
-      
-        const result2 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "Fly tying, is it for you?",
-          tag: "fishing"
-        })
-        t.ok(result2.Ok)
-      
-        const getResult = await alice.app.callSync("blog", "my_posts", {tag: "fishing"})
-        t.equal(getResult.Ok.links.length, 1)
-        let tags = getResult.Ok.links.map(l => l.tag)
-        t.notOk(tags.includes("work"))
-        t.ok(tags.includes("fishing"))
-      })
-      
-      scenario('create_tagged_post and retrieve regex tag match', async (s, t, { alice }) => {
-        const result1 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "A post made on the 10th of October",
-          tag: "10/10/2019"
-        })
-        t.ok(result1.Ok)
-      
-        const result2 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "A post made on the 10th of September",
-          tag: "10/9/2019"
-        })
-        t.ok(result2.Ok)
-      
-        const getResult = await alice.app.callSync("blog", "my_posts", {tag: "^10\/[0-9]+\/2019$"})
-        t.equal(getResult.Ok.links.length, 2)
-        let tags = getResult.Ok.links.map(l => l.tag)
-        t.ok(tags.includes("10/10/2019"))
-        t.ok(tags.includes("10/9/2019"))
-      })
-
       scenario('delete_entry_post', async (s, t, { alice, bob }) => {
         const content = "Hello Holo world 321"
         const in_reply_to = null
@@ -325,14 +264,6 @@ module.exports = scenario => {
         t.equal(entry_value.content, content)
         t.equal(entry_value.date_created, "now")
       
-      })
-
-      scenario('hash_post', async (s, t, { alice }) => {
-
-        const params = { content: "Holo world" }
-        const result = await alice.app.call("blog", "post_address", params)
-      
-        t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
       })
 
       scenario('create_post', async (s, t, { alice }) => {

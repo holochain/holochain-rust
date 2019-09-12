@@ -45,6 +45,9 @@ use std::{
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
+
+
+
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
     let mut file = File::open(path)

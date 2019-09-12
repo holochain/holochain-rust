@@ -319,30 +319,7 @@ module.exports = scenario => {
         t.ok(error.line)
       })
 
-      scenario('posts_by_agent', async (s, t, { alice }) => {
-
-        const agent = "Bob"
-        const params = { agent }
-      
-        const result = await alice.app.call("blog", "posts_by_agent", params)
-      
-        t.deepEqual(result.Ok, { links: [] })
-      })
-
-      scenario('my_posts', async (s, t, { alice }) => {
-
-        await alice.app.callSync("blog", "create_post",
-          { "content": "Holo world", "in_reply_to": "" }
-        )
-      
-        await alice.app.callSync("blog", "create_post",
-          { "content": "Another post", "in_reply_to": "" }
-        )
-      
-        const result = await alice.app.call("blog", "my_posts", {})
-      
-        t.equal(result.Ok.links.length, 2)
-      })
+    
 
       scenario('my_posts_immediate_timeout', async (s, t, { alice }) => {
 

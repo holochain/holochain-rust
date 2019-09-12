@@ -8,6 +8,7 @@ extern crate serde_derive;
 extern crate boolinator;
 #[macro_use]
 extern crate holochain_json_derive;
+extern crate test_utils;
 
 use boolinator::Boolinator;
 use hdk::{
@@ -47,11 +48,7 @@ use holochain_wasm_utils::{
     },
 };
 use std::{convert::TryFrom, time::Duration};
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-struct TestEntryType {
-    stuff: String,
-}
+use test_utils::TestEntryType;
 
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
@@ -247,7 +244,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     Ok(entry_1.address())
 }
 
-pub fn handle_create_tagged_post(content: String, tag: String) -> ZomeApiResult<Address> {
+pub fn handle_create_tagged_post(content: String, tag: String) -> Address {
 
     
     let test_entry_to_create_1 = Entry::App(
@@ -264,11 +261,33 @@ pub fn handle_create_tagged_post(content: String, tag: String) -> ZomeApiResult<
         }
         .into(),
     );
-    hdk::commit_entry(&test_entry_to_create_1)?;
-    hdk::commit_entry(&test_entry_to_create_2)?;
+    hdk::commit_entry(&test_entry_to_create_1).expect("Could not commit test entry");
+    hdk::commit_entry(&test_entry_to_create_2).expect("Could not commit test entry");
 
-    hdk::link_entries(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
-    Ok(test_entry_to_create_2.address())
+    hdk::link_entries(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref()).expect("link failed");
+    test_entry_to_create_2.address()
+}
+
+pub fn handle_delete_tagged_post(content: String, tag: String) -> ZomeApiResult<()> {
+
+    
+    let test_entry_to_create_1 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let test_entry_to_create_2 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+ 
+    hdk::remove_link(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
+    Ok(())
 }
 
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
@@ -545,7 +564,7 @@ fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
 
-pub fn handle_my_entries_by_tag(tag:String) -> ZomeApiResult<GetLinksResult> {
+pub fn handle_my_entries_by_tag(tag:Option<String>) -> ZomeApiResult<GetLinksResult> {
     
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
@@ -555,8 +574,30 @@ pub fn handle_my_entries_by_tag(tag:String) -> ZomeApiResult<GetLinksResult> {
         .into(),
     );
     let address = hdk::entry_address(&test_entry_to_create)?;
-    let tag = LinkMatch::Regex(tag.as_ref());
-    hdk::get_links(&address, LinkMatch::Any, tag)
+
+    if let Some(tag_matched) = tag
+    {
+        hdk::get_links(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched))
+    } 
+    else
+    {
+        hdk::get_links(&address, LinkMatch::Any, LinkMatch::Any)
+    }
+
+}
+
+pub fn handle_my_entries_with_load(tag: Option<String>) -> ZomeApiResult<Vec<TestEntryType>> {
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let address = hdk::entry_address(&test_entry_to_create)?;
+
+    let tag = match tag {Some(ref s) => LinkMatch::Exactly(s.as_ref()), None => LinkMatch::Any};
+    hdk::utils::get_links_and_load_type(&address, LinkMatch::Exactly("intergration test"), tag)
 }
 
 define_zome! {
@@ -854,12 +895,12 @@ define_zome! {
 
         create_and_link_tagged_entry : {
             inputs : |content:String,tag:String|,
-            outputs : |result : ZomeApiResult<Address>|,
+            outputs : |result : Address|,
             handler : handle_create_tagged_post
         }
 
         get_my_entries_by_tag : {
-            inputs : |tag:String|,
+            inputs : |tag:Option<String>|,
             outputs : |result : ZomeApiResult<GetLinksResult>|,
             handler : handle_my_entries_by_tag
         }
@@ -913,6 +954,19 @@ define_zome! {
             outputs: |response: ZomeApiResult<()>|,
             handler : handle_emit_signal
 
+        }
+
+        my_entries_with_load: {
+            inputs: |tag: Option<String>|,
+            outputs: |result: ZomeApiResult<Vec<TestEntryType>>|,
+            handler: handle_my_entries_with_load
+        }
+
+        delete_link_tagged_entry :
+        {
+            inputs : |content:String,tag:String|,
+            outputs : |result : Address|,
+            handler : handle_create_tagged_post
         }
         
     ]

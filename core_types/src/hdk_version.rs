@@ -67,9 +67,9 @@ impl ToString for HDKVersion {
         ]
         .join(".");
         let life_cycle = match self.lifecycle {
-            Lifecycle::Alpha(num) => vec!["Alpha", &num.to_string()].join(""),
-            Lifecycle::Beta(num) => vec!["Beta", &num.to_string()].join(""),
-            Lifecycle::Stable(num) => vec!["Stable", &num.to_string()].join(""),
+            Lifecycle::Alpha(num) => vec!["alpha", &num.to_string()].join(""),
+            Lifecycle::Beta(num) => vec!["beta", &num.to_string()].join(""),
+            Lifecycle::Stable(num) => vec!["stable", &num.to_string()].join(""),
         };
         vec![version, life_cycle].join("-")
     }

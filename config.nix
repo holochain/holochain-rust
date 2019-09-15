@@ -1,11 +1,11 @@
 let
- release-commit = "fcd149fd6cd76ba70380c59007cab6a310d94c61";
- current = "0.0.30-alpha1";
- previous = "0.0.29-alpha2";
+ release-commit = "ad2ba8a61a03de1edd847c684692fdcca46dd58a";
+ current = "0.0.30-alpha2";
+ previous = "0.0.30-alpha1";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = current;
- holonix-version = "0.0.22";
+ holonix-version = "0.0.28";
 in
 rec {
 
@@ -28,7 +28,7 @@ rec {
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "0f373k3c6318qgya6mhk199ins2a4g4rkbqy3v382nix990iq2va";
+   sha256 = "1fsnk038b9a75v8wmqlaykz2rxrzp85jdzs8nxkwj1snga963v1p";
 
    # the github owner of the holonix repo
    owner = "holochain";

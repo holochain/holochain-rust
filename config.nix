@@ -4,7 +4,7 @@ let
  previous = "0.0.30-alpha23";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
- tag = current;
+ tag = "v${current}";
  holonix-version = "v0.0.32";
  holonix-sha256 = "16pzgabavj99qj8x1zs4v5gg1i6457m95cdw36g2ap9dwnmdkkdk";
 in

@@ -102,10 +102,6 @@ jobs:
    - checkout
 
    - run:
-       name: install cli
-       command: nix-shell --run hc-cli-install
-
-   - run:
       name: test cli
       command: nix-shell --run hc-cli-test
 

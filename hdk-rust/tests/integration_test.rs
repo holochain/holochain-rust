@@ -20,6 +20,7 @@ use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{
     logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
+    signal::{UserSignal,Signal,SignalReceiver}
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -32,6 +33,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, EntryType},
         Entry,
     },
+    
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
@@ -273,8 +275,9 @@ fn empty_string_validation_fail_entry() -> Entry {
     Entry::App(
         "empty_validation_response_tester".into(),
         EntryStruct {
-            stuff: "should fail with empty string".into()
-        }.into()
+            stuff: "should fail with empty string".into(),
+        }
+        .into(),
     )
 }
 
@@ -302,7 +305,7 @@ fn example_valid_entry_address() -> Address {
 fn start_holochain_instance<T: Into<String>>(
     uuid: T,
     agent_name: T,
-) -> (Holochain, Arc<Mutex<TestLogger>>) {
+) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
@@ -344,6 +347,15 @@ fn start_holochain_instance<T: Into<String>>(
         "sleep",
         "remove_link",
         "get_entry_properties",
+        "emit_signal",
+        "show_env",
+        "hash_entry",
+        "sign_message",
+        "verify_message",
+        "add_seed",
+        "add_key",
+        "get_pubkey",
+        "list_secrets"
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -385,14 +397,14 @@ fn start_holochain_instance<T: Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger) =
-        test_context_and_logger_with_network_name(&agent_name.into(), Some(&dna.uuid));
+    let (context, test_logger,signal_recieve) =
+        test_context_and_logger_with_network_name_and_signal(&agent_name.into(), Some(&dna.uuid));
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
-    (hc, test_logger)
+    (hc, test_logger,signal_recieve)
 }
 
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
@@ -411,7 +423,7 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
 
 #[test]
 fn can_use_globals() {
-    let (mut hc, _) = start_holochain_instance("can_use_globals", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_use_globals", "alice");
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert_eq!(
@@ -426,7 +438,7 @@ fn can_use_globals() {
 
 #[test]
 fn can_commit_entry() {
-    let (mut hc, _) = start_holochain_instance("can_commit_entry", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_commit_entry", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
@@ -443,7 +455,8 @@ fn can_commit_entry() {
 }
 #[test]
 fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _) = start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
+        start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
@@ -452,23 +465,23 @@ fn can_return_empty_string_as_validation_fail() {
         &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
     let path = PathBuf::new()
-              .join("core")
-              .join("src")
-              .join("nucleus")
-              .join("ribosome")
-              .join("runtime.rs");
-    let path_string = path.as_path().to_str().expect("path should have been created");
-    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\","\\","\\"].join(""));
+        .join("core")
+        .join("src")
+        .join("nucleus")
+        .join("ribosome")
+        .join("runtime.rs");
+    let path_string = path
+        .as_path()
+        .to_str()
+        .expect("path should have been created");
+    let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
     let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
 
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from_json(&result_format)
-    );
+    assert_eq!(result.unwrap(), JsonString::from_json(&result_format));
 }
 #[test]
 fn can_commit_entry_macro() {
-    let (mut hc, _) = start_holochain_instance("can_commit_entry_macro", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_commit_entry_macro", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -485,7 +498,7 @@ fn can_commit_entry_macro() {
 
 #[test]
 fn can_round_trip() {
-    let (mut hc, test_logger) = start_holochain_instance("can_round_trip", "alice");
+    let (mut hc, test_logger,_) = start_holochain_instance("can_round_trip", "alice");
     let result = make_test_call(
         &mut hc,
         "send_tweet",
@@ -503,7 +516,7 @@ fn can_round_trip() {
 
 #[test]
 fn can_get_entry_ok() {
-    let (mut hc, _) = start_holochain_instance("can_get_entry_ok", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_get_entry_ok", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -538,7 +551,7 @@ fn can_get_entry_ok() {
 
 #[test]
 fn can_get_entry_bad() {
-    let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
 
     let result = make_test_call(
@@ -577,7 +590,7 @@ fn can_get_entry_bad() {
 
 #[test]
 fn can_invalidate_invalid_commit() {
-    let (mut hc, _) = start_holochain_instance("can_invalidate_invalid_commit", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_invalidate_invalid_commit", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -609,7 +622,7 @@ fn can_invalidate_invalid_commit() {
 
 #[test]
 fn has_populated_validation_data() {
-    let (mut hc, _) = start_holochain_instance("has_populated_validation_data", "alice");
+    let (mut hc, _,_) = start_holochain_instance("has_populated_validation_data", "alice");
 
     //
     // Add two entries to chain to have something to check ValidationData on
@@ -654,7 +667,7 @@ fn has_populated_validation_data() {
 
 #[test]
 fn can_link_entries() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_link_entries", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -662,7 +675,7 @@ fn can_link_entries() {
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _) = start_holochain_instance("can_remove_link", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_remove_link", "alice");
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -671,7 +684,7 @@ fn can_remove_link() {
 #[test]
 #[cfg(test)]
 fn can_roundtrip_links() {
-    let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =
@@ -795,7 +808,7 @@ fn can_roundtrip_links() {
 #[test]
 #[cfg(not(windows))]
 fn can_validate_links() {
-    let (mut hc, _) = start_holochain_instance("can_validate_links", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_validate_links", "alice");
     let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;
     let result = make_test_call(&mut hc, "link_validation", params_ok);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -822,7 +835,7 @@ fn can_validate_links() {
 
 #[test]
 fn can_check_query() {
-    let (mut hc, _) = start_holochain_instance("can_check_query", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_check_query", "alice");
 
     let result = make_test_call(
         &mut hc,
@@ -840,7 +853,7 @@ fn can_check_query() {
 
 #[test]
 fn can_check_app_entry_address() {
-    let (mut hc, _) = start_holochain_instance("can_check_app_entry_address", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_check_app_entry_address", "alice");
 
     let result = make_test_call(&mut hc, "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -853,7 +866,7 @@ fn can_check_app_entry_address() {
 
 #[test]
 fn can_check_sys_entry_address() {
-    let (mut hc, _) = start_holochain_instance("can_check_sys_entry_address", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_check_sys_entry_address", "alice");
 
     let _result = make_test_call(&mut hc, "check_sys_entry_address", r#"{}"#);
     // TODO
@@ -902,12 +915,12 @@ fn can_check_call_with_args() {
 
 #[test]
 fn can_send_and_receive() {
-    let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
+    let (mut hc, _,_) = start_holochain_instance("can_send_and_receive", "alice");
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
 
-    let (mut hc2, _) = start_holochain_instance("can_send_and_receive", "bob");
+    let (mut hc2, _,_) = start_holochain_instance("can_send_and_receive", "bob");
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -940,14 +953,73 @@ fn can_send_and_receive() {
 
 #[test]
 fn sleep_smoke_test() {
-    let (mut hc, _) = start_holochain_instance("sleep_smoke_test", "alice");
+    let (mut hc, _,_) = start_holochain_instance("sleep_smoke_test", "alice");
     let result = make_test_call(&mut hc, "sleep", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }
 
 #[test]
+fn hash_entry() {
+    let (mut hc, _,_) = start_holochain_instance("hash_entry", "alice");
+    let params = r#"{"content":"this is to hash"}"#;
+    let result = make_test_call(&mut hc, "hash_entry", &params);
+    assert_eq!(
+        result,
+        Ok(JsonString::from(
+            r#"{"Ok":"QmNsza9FP5Unf45UixMfnPvkg4SY8aYcPjvX8FtMzVfpas"}"#
+        )),
+        "result = {:?}",
+        result,
+    );
+}
+
+#[test]
+fn show_env() {
+    let (mut hc, _,_) = start_holochain_instance("show_env", "alice");
+    let dna = hc.context().unwrap().get_dna().unwrap();
+    let dna_address_string = dna.address().to_string();
+    let dna_address = dna_address_string.as_str();
+    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{{"cap_token":"QmNWi3WsKzfNcgMq5PaxD5ePdxzvY7BHLet58csiWYb4Dc","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]}},"properties":"{{}}"}}}}"#,dna_address);
+    let json_result = Ok(JsonString::from_json(&format));
+
+    let result = make_test_call(&mut hc, "show_env", r#"{}"#);
+
+    
+    
+    assert_eq!(
+        result,
+        json_result)
+}
+
+#[test]
+fn test_signal()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("emit_signal", "alice");
+    let params = r#"{"message":"test message"}"#;
+    let result = make_test_call(
+        &mut hc,
+        "emit_signal",
+        &params
+    );
+    assert!(result.is_ok());
+    assert!(signal_receiver.iter().find(|recv|
+    {
+        match recv
+        {
+            Signal::User(recieved_signal) => 
+            {
+                recieved_signal==&UserSignal{name:String::from("test-signal"),arguments : JsonString::from(r#"{"message":"test message"}"#)}
+            },
+            _=>false
+        }
+    }).is_some());
+    
+       
+}
+
+#[test]
 fn test_get_entry_properties() {
-    let (mut hc, _) = start_holochain_instance("test_get_entry_properties", "alice");
+    let (mut hc, _,_) = start_holochain_instance("test_get_entry_properties", "alice");
     let result = make_test_call(
         &mut hc,
         "get_entry_properties",

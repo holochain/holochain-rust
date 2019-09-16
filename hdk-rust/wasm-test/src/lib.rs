@@ -13,6 +13,10 @@ use boolinator::Boolinator;
 use hdk::{
     AGENT_ADDRESS,
     DNA_ADDRESS,
+    DNA_NAME,
+    AGENT_ID_STR,
+    PROPERTIES,
+    CAPABILITY_REQ,
     api::G_MEM_STACK,
     error::{ZomeApiError, ZomeApiResult},
     global_fns::init_global_memory,
@@ -24,7 +28,7 @@ use holochain_wasm_utils::{
         query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
-        dna::entry_types::Sharing,
+        dna::{entry_types::Sharing,capabilities::CapabilityRequest},
         entry::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
@@ -49,6 +53,7 @@ struct TestEntryType {
     stuff: String,
 }
 
+
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct CommitOutputStruct {
     address: String,
@@ -62,6 +67,41 @@ struct EntryStruct {
 #[no_mangle]
 pub extern "C" fn handle_check_global() -> Address {
     hdk::AGENT_LATEST_HASH.clone()
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+pub struct Env {
+    dna_name: String,
+    dna_address: String,
+    agent_id: String,
+    agent_address: String,
+    cap_request: Option<CapabilityRequest>,
+    properties: JsonString,
+}
+
+/// This handler shows how you can access the globals that are always available
+/// inside a zome.  In this case it just creates an object with their values
+/// and returns it as the result.
+pub fn handle_show_env() -> ZomeApiResult<Env> {
+    let _dna_entry = hdk::get_entry(&DNA_ADDRESS)?;
+    let _agent_entry = hdk::get_entry(&AGENT_ADDRESS)?;
+    Ok(Env {
+        dna_name: DNA_NAME.to_string(),
+        dna_address: DNA_ADDRESS.to_string(),
+        agent_id: AGENT_ID_STR.to_string(),
+        agent_address: AGENT_ADDRESS.to_string(),
+        cap_request: CAPABILITY_REQ.clone(),
+        properties: PROPERTIES.clone(),
+    })
+}
+
+pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
 }
 
 #[no_mangle]
@@ -447,6 +487,28 @@ fn handle_get_entry_properties(entry_type_string: String) -> ZomeApiResult<JsonS
     hdk::entry_type_properties(&EntryType::from(entry_type_string))
 }
 
+pub fn handle_emit_signal(message: String) -> ZomeApiResult<()> {
+    #[derive(Debug, Serialize, Deserialize, DefaultJson)]
+    struct SignalPayload {
+        message: String
+    }
+
+    hdk::emit_signal("test-signal", SignalPayload{message})
+}
+
+fn handle_hash(content:String) ->ZomeApiResult<Address>
+{
+    hdk::entry_address(&Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: content.into(),
+        }
+        .into(),
+    ))
+}
+
+
+
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
@@ -458,6 +520,8 @@ fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<Stri
 fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
+
+
 
 define_zome! {
     entries: [
@@ -757,10 +821,30 @@ define_zome! {
             handler: handle_sleep
         }
 
+        hash_entry : {
+            inputs : |content : String|,
+            outputs : |response : ZomeApiResult<Address>|,
+            handler : handle_hash
+        }
+
+        show_env : {
+            inputs : | |,
+            outputs : |response : ZomeApiResult<Env>|,
+            handler : handle_show_env
+        }
+
+
         get_entry_properties: {
             inputs: | entry_type_string: String |,
             outputs: |response: ZomeApiResult<JsonString>|,
             handler: handle_get_entry_properties
+        }
+
+        emit_signal : {
+            inputs : |message:String|,
+            outputs: |response: ZomeApiResult<()>|,
+            handler : handle_emit_signal
+
         }
     ]
 

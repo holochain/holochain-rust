@@ -10,7 +10,6 @@ members = [
   "core",
   "dna_c_binding",
   "dpki",
-  "hdk-proc-macros",
   "hdk-rust",
   "net",
   "test_bin",

@@ -810,8 +810,6 @@ dependencies = [
 ]
 
 [[package]]
-version = "0.0.30-alpha5"
- "hdk 0.0.30-alpha5",
 name = "heck"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

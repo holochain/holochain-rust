@@ -3,6 +3,10 @@
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate holochain_json_derive;
 
 pub mod mock_signing;
 
@@ -24,17 +28,20 @@ use holochain_core_types::{
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
-    entry::entry_type::{AppEntryType, EntryType},
+    entry::{entry_type::{AppEntryType, EntryType,test_app_entry_type},{Entry,EntryWithMeta}},
+    crud_status::CrudStatus
+  
 };
 use holochain_persistence_api::{
-    cas::content::AddressableContent,
+    cas::content::{AddressableContent,Address}
 };
-use holochain_json_api::json::JsonString;
+use holochain_json_api::{json::JsonString,error::JsonError};
 
 use holochain_net::p2p_config::P2pConfig;
 
 use holochain_wasm_utils::{
     wasm_target_dir,
+    api_serialization::get_entry::{GetEntryResult, StatusRequestKind}
 };
 
 use std::{
@@ -509,4 +516,52 @@ pub fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> Holoch
         )
     };
     hc.call("test_zome", cap_call, fn_name, params)
+}
+
+
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
+/// dupes wasm_test::EntryStruct;
+struct TestEntry {
+    stuff: String,
+}
+
+fn example_valid_entry() -> Entry {
+    Entry::App(
+        test_app_entry_type().into(),
+        TestEntry {
+            stuff: "non fail".into(),
+        }
+        .into(),
+    )
+}
+
+fn empty_string_validation_fail_entry() -> Entry {
+    Entry::App(
+        "empty_validation_response_tester".into(),
+        TestEntry {
+            stuff: "should fail with empty string".into(),
+        }
+        .into(),
+    )
+}
+
+fn example_valid_entry_result() -> GetEntryResult {
+    let entry = example_valid_entry();
+    let entry_with_meta = &EntryWithMeta {
+        entry: entry.clone(),
+        crud_status: CrudStatus::Live,
+        maybe_link_update_delete: None,
+    };
+    GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
+}
+
+fn example_valid_entry_params() -> String {
+    format!(
+        "{{\"entry\":{}}}",
+        String::from(JsonString::from(example_valid_entry())),
+    )
+}
+
+fn example_valid_entry_address() -> Address {
+    Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }

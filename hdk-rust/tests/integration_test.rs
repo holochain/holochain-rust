@@ -17,19 +17,15 @@ extern crate holochain_json_derive;
 use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{*};
-use holochain_core::{
-    logger::TestLogger, nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::{Signal,signal_channel,UserSignal, SignalReceiver},consistency::ConsistencyEvent
-};
+use holochain_core::signal::{Signal,UserSignal};
 use holochain_core_types::{
     crud_status::CrudStatus,
     dna::{
-        entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
         zome::{ZomeFnDeclarations, ZomeTraits},
     },
     entry::{
-        entry_type::{test_app_entry_type, EntryType},
+        entry_type::test_app_entry_type,
         Entry,
     },
     
@@ -236,67 +232,7 @@ pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
-pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
-    let mut traitfns = TraitFns::new();
-    let mut fn_declarations = Vec::new();
 
-    for fn_name in fn_names {
-        traitfns.functions.push(String::from(fn_name));
-        let mut fn_decl = FnDeclaration::new();
-        fn_decl.name = String::from(fn_name);
-        fn_declarations.push(fn_decl);
-    }
-    let mut traits = BTreeMap::new();
-    traits.insert("hc_public".to_string(), traitfns);
-    (fn_declarations, traits)
-}
-
-#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
-/// dupes wasm_test::EntryStruct;
-struct EntryStruct {
-    stuff: String,
-}
-
-fn example_valid_entry() -> Entry {
-    Entry::App(
-        test_app_entry_type().into(),
-        EntryStruct {
-            stuff: "non fail".into(),
-        }
-        .into(),
-    )
-}
-
-fn empty_string_validation_fail_entry() -> Entry {
-    Entry::App(
-        "empty_validation_response_tester".into(),
-        EntryStruct {
-            stuff: "should fail with empty string".into(),
-        }
-        .into(),
-    )
-}
-
-fn example_valid_entry_result() -> GetEntryResult {
-    let entry = example_valid_entry();
-    let entry_with_meta = &EntryWithMeta {
-        entry: entry.clone(),
-        crud_status: CrudStatus::Live,
-        maybe_link_update_delete: None,
-    };
-    GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
-}
-
-fn example_valid_entry_params() -> String {
-    format!(
-        "{{\"entry\":{}}}",
-        String::from(JsonString::from(example_valid_entry())),
-    )
-}
-
-fn example_valid_entry_address() -> Address {
-    Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
-}
 
 
 #[test]

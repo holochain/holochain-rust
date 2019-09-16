@@ -1,6 +1,6 @@
 [package]
 name = "logging"
-version = "0.0.30-alpha4"
+version = "0.0.30-alpha5"
 authors = ["dymayday <meidhy.demagny@holo.host>"]
 edition = "2018"
 

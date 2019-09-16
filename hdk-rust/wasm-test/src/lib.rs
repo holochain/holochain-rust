@@ -293,6 +293,20 @@ pub fn handle_create_tagged_entry_bad_link(content: String, tag: String) -> Zome
     Ok(())
 }
 
+pub fn handle_create_priv_entry(content: String) -> ZomeApiResult<Address> {
+
+    let priv_test_entry = Entry::App(
+        "private test entry".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+
+    hdk::commit_entry(&priv_test_entry)
+}
+
+
 pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult<()> {
 
     
@@ -664,6 +678,11 @@ pub fn handle_my_entries_with_load(tag: Option<String>) -> ZomeApiResult<Vec<Tes
     hdk::utils::get_links_and_load_type(&address, LinkMatch::Exactly("intergration test"), tag)
 }
 
+pub fn handle_get_entry(address:Address) -> ZomeApiResult<Option<Entry>>
+{
+    hdk::get_entry(&address)
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -742,6 +761,19 @@ define_zome! {
                     },
                 _ => Ok(())
                 }
+            }
+        ),
+
+        entry!(
+            name: "private test entry",
+            description: "priv",
+            sharing: Sharing::Private,
+            validation_package: || {
+                hdk::ValidationPackageDefinition::ChainFull
+            },
+
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
+               Ok(())
             }
         ),
 
@@ -1059,7 +1091,20 @@ define_zome! {
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: handle_my_entries_immediate_timeout
         }
-        
+
+        get_entry: {
+            inputs: |address:Address|,
+            outputs: |post_hashes: ZomeApiResult<Option<Entry>>|,
+            handler: handle_get_entry
+        }
+
+        create_priv_entry:
+        {
+            inputs: |content:String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_create_priv_entry
+        }
+    
     ]
 
     traits: {}

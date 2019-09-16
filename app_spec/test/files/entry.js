@@ -249,51 +249,6 @@ module.exports = scenario => {
         t.same(entry, null)
       })
 
-      scenario('create/get_post roundtrip', async (s, t, { alice }) => {
-        const content = "Holo world"
-        const in_reply_to = null
-        const params = { content, in_reply_to }
-        const create_post_result = await alice.app.call("blog", "create_post", params)
-        const post_address = create_post_result.Ok
-      
-        const params_get = { post_address }
-        const result = await alice.app.call("blog", "get_post", params_get)
-      
-        const entry_value = JSON.parse(result.Ok.App[1])
-        t.comment("get_post() entry_value = " + entry_value + "")
-        t.equal(entry_value.content, content)
-        t.equal(entry_value.date_created, "now")
-      
-      })
-
-      scenario('create_post', async (s, t, { alice }) => {
-
-        const content = "Holo world"
-        const in_reply_to = null
-        const params = { content, in_reply_to }
-        const result = await alice.app.call("blog", "create_post", params)
-      
-        t.ok(result.Ok)
-        t.notOk(result.Err)
-        t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-      })
-
-      scenario('post max content size 280 characters', async (s, t, { alice }) => {
-
-        const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-        const in_reply_to = null
-        const params = { content, in_reply_to }
-        const result = await alice.app.call("blog", "create_post", params)
-      
-        // result should be an error
-        t.ok(result.Err);
-        t.notOk(result.Ok)
-      
-        const inner = JSON.parse(result.Err.Internal)
-      
-        t.ok(inner.file)
-        t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-        t.ok(inner.line)
-      })
+    
 
     }

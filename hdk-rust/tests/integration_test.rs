@@ -362,7 +362,9 @@ fn start_holochain_instance<T: Into<String>>(
         "delete_link_tagged_entry",
         "my_entries_immediate_timeout",
         "create_and_link_tagged_entry_bad_link",
-        "link_tag_validation"
+        "link_tag_validation",
+        "get_entry",
+        "create_priv_entry"
 
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
@@ -380,12 +382,14 @@ fn start_holochain_instance<T: Into<String>>(
             EntryType::from("validation_package_tester"),
             EntryTypeDef::new(),
         );
-
         entry_types.insert(
             EntryType::from("empty_validation_response_tester"),
             EntryTypeDef::new(),
         );
-
+        entry_types.insert(
+            EntryType::from("private test entry"),
+            EntryTypeDef::new(),
+        );
         let test_entry_type = &mut entry_types
             .get_mut(&EntryType::from("testEntryType"))
             .unwrap();
@@ -1047,36 +1051,64 @@ pub fn test_links_with_load()
 
     let mut result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
     println!("result {:?}",result);
-    let mut expected_result : ZomeApiResult<Vec<TestEntryType>> =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
-    let mut tries = 0;
-    let mut expected_links = expected_result.unwrap().clone();
-    while expected_links.len()!=1 && tries <5
-    {
-        result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
-        expected_result =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
-        expected_links = expected_result.unwrap();
-        thread::sleep(Duration::from_secs(10));
-        tries = tries+1;
-    }
+
+    let mut expected_result  = wait_for_links::<Vec<TestEntryType>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==1,6);
+    let mut expected_links = expected_result.expect("Could not get links for test");
     assert_eq!(expected_links[0].stuff,"message me".to_string());
 
     let mut result = make_test_call(&mut hc, "delete_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let mut expected_result : ZomeApiResult<Vec<TestEntryType>> =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
-    let mut tries = 0;
-    let mut expected_links = expected_result.unwrap().clone();
-    while expected_links.len()==0 && tries <6
-    {
-        result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
-        expected_result =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
-        expected_links = expected_result.unwrap();
-        thread::sleep(Duration::from_secs(10));
-        tries = tries+1;
-    }
+    let expected_result = wait_for_links::<Vec<TestEntryType>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==0,6);
+    let expected_links = expected_result.unwrap().clone();
 
     assert_eq!(expected_links.len(),0);
    
+}
+
+
+#[test]
+fn testing()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry", "alice");
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
+    println!("expected zome  {:?}",expected_zome.clone());
+
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me once","tag":"tag another me"}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let expected_zome : Address =serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
+
+    let mut result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag another me"}"#);
+    let expected_links = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag", r#"{"tag":"tag another me"}"#,|cond|cond.links().len()==1,6).unwrap();
+
+    println!("expected links {:?}",expected_links);
+    //assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));
+    //assert!(expected_links.links().iter().any(|s|s.address ==HashString::from("QmeuyJUoXHnU9GJT2LxnnNMmjDbvq1GGsa99pjmo1gPo4Y")));
+
+}
+
+
+pub fn wait_for_links<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
+{
+    let mut result = make_test_call(holochain, zome_call, params);
+    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
+
+    let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
+                                            .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
+    
+    let value = expected_result.clone()?;
+    if !boolean_condition(value) && tries >0
+    {
+        println!("What is this");
+        thread::sleep(Duration::from_secs(10));
+        wait_for_links(holochain,zome_call,params,boolean_condition,tries-1)
+    }
+    else
+    {
+        expected_result
+    }
 }
 
 
@@ -1114,7 +1146,42 @@ pub fn test_invalid_target_link()
 
 }
 
+#[test]
+pub fn test_bad_entry()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("get_entry", "alice");
+    let result = make_test_call(&mut hc, "get_entry", r#"{"address":"aba"}"#);
+    
+    let mut expected_result : ZomeApiResult<Option<Entry>> = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
+    assert_eq!(expected_result.unwrap(),None)
 
+}
+
+#[test]
+pub fn create_and_retrieve_private_entry()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("priv", "alice");
+    let result = make_test_call(&mut hc, "create_priv_entry", r#"{"content":"check this out"}"#);
+
+    let mut expected_result : ZomeApiResult<Address> = serde_json::from_str::<ZomeApiResult<Address>>(&result.clone().unwrap().to_string()).unwrap();
+    let zome_call = format!(r#"{{"address":"{}"}}"#,expected_result.unwrap());
+
+    let mut result = make_test_call(&mut hc, "get_entry", &zome_call);
+    let mut expected_result : ZomeApiResult<Option<Entry>> = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
+    let mut tries = 0;
+    let mut expected_entry = expected_result.unwrap();
+    while expected_entry.is_some() && tries <6
+    {
+        result = make_test_call(&mut hc, "get_entry", &zome_call);
+        expected_result = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
+        expected_entry = expected_result.unwrap();
+        thread::sleep(Duration::from_secs(10));
+        tries = tries+1;
+    }
+
+    assert_eq!(expected_entry.unwrap().address(),HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp"))
+
+}
 
 
 #[test]

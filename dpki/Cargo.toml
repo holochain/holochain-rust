@@ -1,6 +1,6 @@
 [package]
 name = "holochain_dpki"
-version = "0.0.30-alpha2"
+version = "0.0.30-alpha23"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 

@@ -59,7 +59,8 @@ use std::{
     thread,
     time::Duration,
 };
-use test_utils::{create_wasm_from_file,test_context_and_logger_with_network_name_and_signal,create_test_dna_with_defs};
+use test_utils::{create_wasm_from_file,test_context_and_logger_with_network_name_and_signal,create_test_dna_with_defs,
+                 start_holochain_instance,make_test_call};
 //
 // These empty function definitions below are needed for the windows linker
 //
@@ -300,143 +301,6 @@ fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
-
-
-fn start_holochain_instance<T: Into<String>>(
-    uuid: T,
-    agent_name: T,
-) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
-    // Setup the holochain instance
-
-    let mut wasm_path = PathBuf::new();
-    let wasm_dir_component: PathBuf = wasm_target_dir(
-        &String::from("hdk-rust").into(),
-        &String::from("wasm-test").into(),
-    );
-    wasm_path.push(wasm_dir_component);
-    let wasm_path_component: PathBuf = [
-        String::from("wasm32-unknown-unknown"),
-        String::from("release"),
-        String::from("test_globals.wasm"),
-    ]
-    .iter()
-    .collect();
-    wasm_path.push(wasm_path_component);
-
-    let wasm = create_wasm_from_file(&wasm_path);
-
-    let defs = create_test_defs_with_fn_names(vec![
-        "check_global",
-        "check_commit_entry",
-        "check_commit_entry_macro",
-        "check_get_entry_result",
-        "check_get_entry",
-        "send_tweet",
-        "commit_validation_package_tester",
-        "link_two_entries",
-        "links_roundtrip_create",
-        "links_roundtrip_get",
-        "links_roundtrip_get_and_load",
-        "link_validation",
-        "check_query",
-        "check_app_entry_address",
-        "check_sys_entry_address",
-        "check_call",
-        "check_call_with_args",
-        "send_message",
-        "sleep",
-        "remove_link",
-        "get_entry_properties",
-        "emit_signal",
-        "show_env",
-        "hash_entry",
-        "sign_message",
-        "verify_message",
-        "add_seed",
-        "add_key",
-        "get_pubkey",
-        "list_secrets",
-        "create_and_link_tagged_entry",
-        "get_my_entries_by_tag",
-        "my_entries_with_load",
-        "delete_link_tagged_entry",
-        "my_entries_immediate_timeout",
-        "create_and_link_tagged_entry_bad_link",
-        "link_tag_validation",
-        "get_entry",
-        "create_priv_entry"
-
-    ]);
-    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
-    dna.uuid = uuid.into();
-
-    // TODO: construct test DNA using the auto-generated JSON feature
-    // The code below is fragile!
-    // We have to manually construct a Dna struct that reflects what we defined using define_zome!
-    // in wasm-test/src/lib.rs.
-    // In a production setting, hc would read the auto-generated JSON to make sure the Dna struct
-    // matches up. We should do the same in test.
-    {
-        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
-        entry_types.insert(
-            EntryType::from("validation_package_tester"),
-            EntryTypeDef::new(),
-        );
-        entry_types.insert(
-            EntryType::from("empty_validation_response_tester"),
-            EntryTypeDef::new(),
-        );
-        entry_types.insert(
-            EntryType::from("private test entry"),
-            EntryTypeDef::new(),
-        );
-        let test_entry_type = &mut entry_types
-            .get_mut(&EntryType::from("testEntryType"))
-            .unwrap();
-        test_entry_type.links_to.push(LinksTo {
-            target_type: String::from("testEntryType"),
-            link_type: String::from("test"),
-        });
-
-        test_entry_type.links_to.push(LinksTo {
-            target_type:String::from("testEntryType"),
-            link_type: String::from("intergration test"),
-        });
-    }
-
-    {
-        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
-        let mut link_validator = EntryTypeDef::new();
-        link_validator.links_to.push(LinksTo {
-            target_type: String::from("link_validator"),
-            link_type: String::from("longer"),
-        });
-        entry_types.insert(EntryType::from("link_validator"), link_validator);
-    }
-
-    let (context, test_logger,signal_recieve) =
-        test_context_and_logger_with_network_name_and_signal(&agent_name.into(), Some(&dna.uuid));
-    let mut hc =
-        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
-
-    // Run the holochain instance
-    hc.start().expect("couldn't start");
-    (hc, test_logger,signal_recieve)
-}
-
-fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
-    let cap_call = {
-        let context = hc.context()?;
-        let token = context.get_public_token().unwrap();
-        make_cap_request_for_call(
-            context.clone(),
-            token,
-            fn_name,
-            JsonString::from_json(params),
-        )
-    };
-    hc.call("test_zome", cap_call, fn_name, params)
-}
 
 #[test]
 fn can_use_globals() {
@@ -978,59 +842,27 @@ fn sleep_smoke_test() {
 #[test]
 fn create_tag_and_retrieve()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("create_tag_and_retrieve", "alice");
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
-    println!("expected zome  {:?}",expected_zome.clone());
 
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me once","tag":"tag another me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let expected_zome : Address =serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
 
-    let mut result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag another me"}"#);
-    let mut expected_result : ZomeApiResult<GetLinksResult> =serde_json::from_str::<ZomeApiResult<GetLinksResult>>(&result.clone().unwrap().to_string()).unwrap();
-    let mut tries = 0;
-    let mut expected_links = expected_result.unwrap().clone();
-    while expected_links.links().len()!=1 && tries <5
-    {
-        result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag another me"}"#);
-        expected_result =serde_json::from_str::<ZomeApiResult<GetLinksResult>>(&result.clone().unwrap().to_string()).unwrap();
-        expected_links = expected_result.unwrap();
-        thread::sleep(Duration::from_secs(10));
-        tries = tries+1;
-    }
+    let expected_result = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag another me"}"#,|cond|cond.links().len()==1,6);
+    let expected_links = expected_result.unwrap().clone();
     assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));
     assert!(expected_links.links().iter().any(|s|s.address ==HashString::from("QmeuyJUoXHnU9GJT2LxnnNMmjDbvq1GGsa99pjmo1gPo4Y")));
 
-    let mut result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag me"}"#);
-    let mut expected_result : ZomeApiResult<GetLinksResult> =serde_json::from_str::<ZomeApiResult<GetLinksResult>>(&result.clone().unwrap().to_string()).unwrap();
-    let mut expected_links = expected_result.unwrap().clone();
-    let mut tries = 0;
-    while expected_links.links().len()!=1 && tries <5
-    {
-        result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag me"}"#);
-        expected_result = serde_json::from_str::<ZomeApiResult<GetLinksResult>>(&result.clone().unwrap().to_string()).unwrap();
-        expected_links = expected_result.unwrap();
-        thread::sleep(Duration::from_secs(10));
-        tries = tries+1;
-    }
-
+    let expected_result = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag me"}"#,|cond|cond.links().len()==1,6);
+    let expected_links = expected_result.unwrap().clone();
     assert!(expected_links.links().iter().any(|s| s.tag=="tag me"));
     assert!(expected_links.links().iter().any(|s| s.address ==HashString::from("QmPdCLGkzp9daTcwbKePno9SySameXGRqdM4TfTGkju6Mo")));
-
-    let mut result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{}"#);
-    let mut expected_result : ZomeApiResult<GetLinksResult> =serde_json::from_str::<ZomeApiResult<GetLinksResult>>(&result.clone().unwrap().to_string()).unwrap();
+    
+    let expected_result = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{}"#,|cond|cond.links().len()==2,6);
     let mut expected_links = expected_result.unwrap().clone();
-    let mut tries = 0;
-    while expected_links.links().len()!=2 && tries <5
-    {
-        result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{}"#);
-        expected_result = serde_json::from_str::<ZomeApiResult<GetLinksResult>>(&result.clone().unwrap().to_string()).unwrap();
-        expected_links = expected_result.unwrap().clone();
-        thread::sleep(Duration::from_secs(10));
-        tries = tries+1;
-    }
     assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));
     assert!(expected_links.links().iter().any(|s| s.tag=="tag me"));
 
@@ -1044,7 +876,7 @@ pub struct TestEntryType {
 #[test]
 pub fn test_links_with_load()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("test_links_with_load", "alice");
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
@@ -1065,30 +897,6 @@ pub fn test_links_with_load()
     assert_eq!(expected_links.len(),0);
    
 }
-
-
-#[test]
-fn testing()
-{
-    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry", "alice");
-    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-    let expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
-    println!("expected zome  {:?}",expected_zome.clone());
-
-    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me once","tag":"tag another me"}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-    let expected_zome : Address =serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
-
-    let mut result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{"tag":"tag another me"}"#);
-    let expected_links = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag", r#"{"tag":"tag another me"}"#,|cond|cond.links().len()==1,6).unwrap();
-
-    println!("expected links {:?}",expected_links);
-    //assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));
-    //assert!(expected_links.links().iter().any(|s|s.address ==HashString::from("QmeuyJUoXHnU9GJT2LxnnNMmjDbvq1GGsa99pjmo1gPo4Y")));
-
-}
-
 
 pub fn wait_for_links<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
 {
@@ -1115,7 +923,7 @@ pub fn wait_for_links<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str
 #[test]
 pub fn test_links_with_immediate_timeout()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("test_links_with_immediate_timeout", "alice");
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
 
     let mut result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
@@ -1126,8 +934,8 @@ pub fn test_links_with_immediate_timeout()
 #[test]
 pub fn test_bad_links()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry_bad_link", "alice");
-    let result = make_test_call(&mut hc, "create_and_link_tagged_entry_bad_link", r#"{"content" : "message",tag:"maiffins"}"#);
+    let (mut hc, _,signal_receiver) = start_holochain_instance("test_bad_links", "alice");
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry_bad_link", r#"{"content" : "message","tag":"maiffins"}"#);
 
     let mut expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
     assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":{"ErrorGeneric":"Base for link not found"},"file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
@@ -1138,7 +946,7 @@ pub fn test_bad_links()
 #[test]
 pub fn test_invalid_target_link()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("link_tag_validation", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("test_invalid_target_link", "alice");
     let result = make_test_call(&mut hc, "link_tag_validation", r#"{"stuff1" : "first","stuff2":"second","tag":"muffins"}"#);
     
     let mut expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
@@ -1149,7 +957,7 @@ pub fn test_invalid_target_link()
 #[test]
 pub fn test_bad_entry()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("get_entry", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("test_bad_entry", "alice");
     let result = make_test_call(&mut hc, "get_entry", r#"{"address":"aba"}"#);
     
     let mut expected_result : ZomeApiResult<Option<Entry>> = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
@@ -1160,26 +968,16 @@ pub fn test_bad_entry()
 #[test]
 pub fn create_and_retrieve_private_entry()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("priv", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_retrieve_private_entry", "alice");
     let result = make_test_call(&mut hc, "create_priv_entry", r#"{"content":"check this out"}"#);
 
     let mut expected_result : ZomeApiResult<Address> = serde_json::from_str::<ZomeApiResult<Address>>(&result.clone().unwrap().to_string()).unwrap();
     let zome_call = format!(r#"{{"address":"{}"}}"#,expected_result.unwrap());
 
     let mut result = make_test_call(&mut hc, "get_entry", &zome_call);
-    let mut expected_result : ZomeApiResult<Option<Entry>> = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
-    let mut tries = 0;
-    let mut expected_entry = expected_result.unwrap();
-    while expected_entry.is_some() && tries <6
-    {
-        result = make_test_call(&mut hc, "get_entry", &zome_call);
-        expected_result = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
-        expected_entry = expected_result.unwrap();
-        thread::sleep(Duration::from_secs(10));
-        tries = tries+1;
-    }
-
-    assert_eq!(expected_entry.unwrap().address(),HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp"))
+    let expected_result = wait_for_links::<Option<Entry>>(&mut hc,"get_entry",&zome_call,|maybe_entry|maybe_entry.is_some(),6);
+    let entry = expected_result.expect("Could not get entry for test");
+    assert_eq!(entry.unwrap().address(),HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp"))
 
 }
 
@@ -1220,7 +1018,7 @@ fn show_env() {
 #[test]
 fn test_signal()
 {
-    let (mut hc, _,signal_receiver) = start_holochain_instance("emit_signal", "alice");
+    let (mut hc, _,signal_receiver) = start_holochain_instance("test_signal", "alice");
     let params = r#"{"message":"test message"}"#;
     let result = make_test_call(
         &mut hc,

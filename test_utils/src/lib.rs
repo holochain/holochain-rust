@@ -33,6 +33,10 @@ use holochain_json_api::json::JsonString;
 
 use holochain_net::p2p_config::P2pConfig;
 
+use holochain_wasm_utils::{
+    wasm_target_dir,
+};
+
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
     fs::File,
@@ -168,6 +172,22 @@ pub fn create_test_defs_with_fn_names(fn_names: Vec<String>) -> (ZomeFnDeclarati
     traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
 
     (functions, traits)
+}
+
+
+pub fn create_test_defs_with_hc_public_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut traitfns = TraitFns::new();
+    let mut fn_declarations = Vec::new();
+
+    for fn_name in fn_names {
+        traitfns.functions.push(String::from(fn_name));
+        let mut fn_decl = FnDeclaration::new();
+        fn_decl.name = String::from(fn_name);
+        fn_declarations.push(fn_decl);
+    }
+    let mut traits = BTreeMap::new();
+    traits.insert("hc_public".to_string(), traitfns);
+    (fn_declarations, traits)
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
@@ -351,4 +371,142 @@ where
             _ => continue,
         }
     }
+}
+
+
+pub fn start_holochain_instance<T: Into<String>>(
+    uuid: T,
+    agent_name: T,
+) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
+    // Setup the holochain instance
+
+    let mut wasm_path = PathBuf::new();
+    let wasm_dir_component: PathBuf = wasm_target_dir(
+        &String::from("hdk-rust").into(),
+        &String::from("wasm-test").into(),
+    );
+    wasm_path.push(wasm_dir_component);
+    let wasm_path_component: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("test_globals.wasm"),
+    ]
+    .iter()
+    .collect();
+    wasm_path.push(wasm_path_component);
+
+    let wasm = create_wasm_from_file(&wasm_path);
+
+    let defs = create_test_defs_with_hc_public_fn_names(vec![
+        "check_global",
+        "check_commit_entry",
+        "check_commit_entry_macro",
+        "check_get_entry_result",
+        "check_get_entry",
+        "send_tweet",
+        "commit_validation_package_tester",
+        "link_two_entries",
+        "links_roundtrip_create",
+        "links_roundtrip_get",
+        "links_roundtrip_get_and_load",
+        "link_validation",
+        "check_query",
+        "check_app_entry_address",
+        "check_sys_entry_address",
+        "check_call",
+        "check_call_with_args",
+        "send_message",
+        "sleep",
+        "remove_link",
+        "get_entry_properties",
+        "emit_signal",
+        "show_env",
+        "hash_entry",
+        "sign_message",
+        "verify_message",
+        "add_seed",
+        "add_key",
+        "get_pubkey",
+        "list_secrets",
+        "create_and_link_tagged_entry",
+        "get_my_entries_by_tag",
+        "my_entries_with_load",
+        "delete_link_tagged_entry",
+        "my_entries_immediate_timeout",
+        "create_and_link_tagged_entry_bad_link",
+        "link_tag_validation",
+        "get_entry",
+        "create_priv_entry"
+
+    ]);
+    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
+    dna.uuid = uuid.into();
+
+    // TODO: construct test DNA using the auto-generated JSON feature
+    // The code below is fragile!
+    // We have to manually construct a Dna struct that reflects what we defined using define_zome!
+    // in wasm-test/src/lib.rs.
+    // In a production setting, hc would read the auto-generated JSON to make sure the Dna struct
+    // matches up. We should do the same in test.
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        entry_types.insert(
+            EntryType::from("validation_package_tester"),
+            EntryTypeDef::new(),
+        );
+        entry_types.insert(
+            EntryType::from("empty_validation_response_tester"),
+            EntryTypeDef::new(),
+        );
+        entry_types.insert(
+            EntryType::from("private test entry"),
+            EntryTypeDef::new(),
+        );
+        let test_entry_type = &mut entry_types
+            .get_mut(&EntryType::from("testEntryType"))
+            .unwrap();
+        test_entry_type.links_to.push(LinksTo {
+            target_type: String::from("testEntryType"),
+            link_type: String::from("test"),
+        });
+
+        test_entry_type.links_to.push(LinksTo {
+            target_type:String::from("testEntryType"),
+            link_type: String::from("intergration test"),
+        });
+    }
+
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        let mut link_validator = EntryTypeDef::new();
+        link_validator.links_to.push(LinksTo {
+            target_type: String::from("link_validator"),
+            link_type: String::from("longer"),
+        });
+        entry_types.insert(EntryType::from("link_validator"), link_validator);
+    }
+
+    let (context, test_logger,signal_recieve) =
+        test_context_and_logger_with_network_name_and_signal(&agent_name.into(), Some(&dna.uuid));
+    let mut hc =
+        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
+
+    // Run the holochain instance
+    hc.start().expect("couldn't start");
+    (hc, test_logger,signal_recieve)
+}
+
+
+pub fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
+    let cap_call = {
+        let context = hc.context()?;
+        let token = context.get_public_token().unwrap();
+        make_cap_request_for_call(
+            context.clone(),
+            token,
+            fn_name,
+            JsonString::from_json(params),
+        )
+    };
+    hc.call("test_zome", cap_call, fn_name, params)
 }

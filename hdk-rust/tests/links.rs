@@ -285,6 +285,12 @@ pub fn test_links_with_load()
     let result = make_test_call(&mut hc, "delete_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 
+    //query for deleted links
+    let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag me","status":"deleted"}"#,|cond|cond.links().len()==1,6);
+    let expected_links = expected_result.unwrap().clone();
+    assert!(expected_links.links()len(),1);
+    
+    //try get links and load with nothing, not sure of necessary more of a type system check
     let expected_result = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==0,6);
     let expected_links = expected_result.unwrap().clone();
 

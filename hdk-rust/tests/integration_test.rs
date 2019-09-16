@@ -14,7 +14,6 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
 
-#[cfg(not(windows))]
 use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
@@ -60,8 +59,7 @@ use std::{
     thread,
     time::Duration,
 };
-use tests::test_c
-
+use test_utils::{create_wasm_from_file,test_context_and_logger_with_network_name_and_signal,create_test_dna_with_defs};
 //
 // These empty function definitions below are needed for the windows linker
 //
@@ -360,7 +358,12 @@ fn start_holochain_instance<T: Into<String>>(
         "list_secrets",
         "create_and_link_tagged_entry",
         "get_my_entries_by_tag",
-        "my_entries_with_load"
+        "my_entries_with_load",
+        "delete_link_tagged_entry",
+        "my_entries_immediate_timeout",
+        "create_and_link_tagged_entry_bad_link",
+        "link_tag_validation"
+
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -1029,6 +1032,10 @@ fn create_tag_and_retrieve()
 
 }
 
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub struct TestEntryType {
+    stuff: String,
+}
 
 #[test]
 pub fn test_links_with_load()
@@ -1039,19 +1046,74 @@ pub fn test_links_with_load()
     let expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
 
     let mut result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
+    println!("result {:?}",result);
     let mut expected_result : ZomeApiResult<Vec<TestEntryType>> =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
     let mut tries = 0;
     let mut expected_links = expected_result.unwrap().clone();
     while expected_links.len()!=1 && tries <5
     {
-        result = make_test_call(&mut hc, "get_my_entries_by_tag", r#"{}"#);
+        result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
         expected_result =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
         expected_links = expected_result.unwrap();
         thread::sleep(Duration::from_secs(10));
         tries = tries+1;
     }
-    assert_eq!(expected_links[0].stuff,"message me".to_string())
+    assert_eq!(expected_links[0].stuff,"message me".to_string());
+
+    let mut result = make_test_call(&mut hc, "delete_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+
+    let mut expected_result : ZomeApiResult<Vec<TestEntryType>> =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
+    let mut tries = 0;
+    let mut expected_links = expected_result.unwrap().clone();
+    while expected_links.len()==0 && tries <6
+    {
+        result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
+        expected_result =serde_json::from_str::<ZomeApiResult<Vec<TestEntryType>>>(&result.clone().unwrap().to_string()).unwrap();
+        expected_links = expected_result.unwrap();
+        thread::sleep(Duration::from_secs(10));
+        tries = tries+1;
+    }
+
+    assert_eq!(expected_links.len(),0);
+   
 }
+
+
+#[test]
+pub fn test_links_with_immediate_timeout()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry", "alice");
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
+
+    let mut result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
+    let mut expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
+    assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":"Timeout","file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
+}
+
+#[test]
+pub fn test_bad_links()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("create_and_link_tagged_entry_bad_link", "alice");
+    let result = make_test_call(&mut hc, "create_and_link_tagged_entry_bad_link", r#"{"content" : "message",tag:"maiffins"}"#);
+
+    let mut expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
+    assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":{"ErrorGeneric":"Base for link not found"},"file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
+
+}
+
+
+#[test]
+pub fn test_invalid_target_link()
+{
+    let (mut hc, _,signal_receiver) = start_holochain_instance("link_tag_validation", "alice");
+    let result = make_test_call(&mut hc, "link_tag_validation", r#"{"stuff1" : "first","stuff2":"second","tag":"muffins"}"#);
+    
+    let mut expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
+    assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":{"ValidationFailed":"invalid tag"},"file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
+
+}
+
 
 
 

@@ -8,7 +8,7 @@ extern crate serde_derive;
 extern crate boolinator;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate test_utils;
+
 
 use boolinator::Boolinator;
 use hdk::{
@@ -25,7 +25,7 @@ use hdk::{
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryOptions, GetEntryResult},
-        get_links::GetLinksResult,
+        get_links::{GetLinksResult,GetLinksOptions},
         query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
@@ -48,8 +48,11 @@ use holochain_wasm_utils::{
     },
 };
 use std::{convert::TryFrom, time::Duration};
-use test_utils::TestEntryType;
 
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub struct TestEntryType {
+    stuff: String,
+}
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct CommitOutputStruct {
@@ -244,7 +247,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     Ok(entry_1.address())
 }
 
-pub fn handle_create_tagged_post(content: String, tag: String) -> Address {
+pub fn handle_create_tagged_entry(content: String, tag: String) -> Address {
 
     
     let test_entry_to_create_1 = Entry::App(
@@ -268,7 +271,29 @@ pub fn handle_create_tagged_post(content: String, tag: String) -> Address {
     test_entry_to_create_2.address()
 }
 
-pub fn handle_delete_tagged_post(content: String, tag: String) -> ZomeApiResult<()> {
+pub fn handle_create_tagged_entry_bad_link(content: String, tag: String) -> ZomeApiResult<()> {
+
+    
+    let test_entry_to_create_1 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let test_entry_to_create_2 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+
+    hdk::link_entries(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
+    Ok(())
+}
+
+pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult<()> {
 
     
     let test_entry_to_create_1 = Entry::App(
@@ -515,6 +540,25 @@ fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
     ))
 }
 
+fn handle_link_tag_validation(stuff1: String, stuff2: String,tag:String) -> ZomeApiResult<()> {
+    let app_entry_type = AppEntryType::from("link_validator");
+    let entry_value1 = JsonString::from(TestEntryType { stuff: stuff1 });
+    let entry_value2 = JsonString::from(TestEntryType { stuff: stuff2 });
+    let entry1 = Entry::App(app_entry_type.clone(), entry_value1.clone());
+    let entry2 = Entry::App(app_entry_type.clone(), entry_value2.clone());
+
+    let _ = hdk::commit_entry(&entry1)?;
+    let _ = hdk::commit_entry(&entry2)?;
+
+    hdk::link_entries(
+        &entry1.address(),
+        &entry2.address(),
+        "longer",
+        &tag,
+    )?;
+    Ok(())
+}
+
 fn hdk_test_app_entry_type() -> AppEntryType {
     AppEntryType::from("testEntryType")
 }
@@ -584,6 +628,26 @@ pub fn handle_my_entries_by_tag(tag:Option<String>) -> ZomeApiResult<GetLinksRes
         hdk::get_links(&address, LinkMatch::Any, LinkMatch::Any)
     }
 
+}
+
+pub fn handle_my_entries_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    
+    hdk::get_links_with_options(
+        &test_entry_to_create.address(),
+        LinkMatch::Exactly("intergration test"),
+        LinkMatch::Any,
+        GetLinksOptions {
+            timeout: 0.into(),
+            ..Default::default()
+        },
+    )
 }
 
 pub fn handle_my_entries_with_load(tag: Option<String>) -> ZomeApiResult<Vec<TestEntryType>> {
@@ -720,25 +784,34 @@ define_zome! {
                             LinkValidationData::LinkAdd{link,validation_data:_} => link.clone(),
                             LinkValidationData::LinkRemove{link,validation_data:_} => link.clone()
                         };
-                        let base = link.link().base();
-                        let target = link.link().target();
-                        let base = match hdk::get_entry(&base)? {
-                            Some(entry) => match entry {
-                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                _ => Err("System entry found")?
-                            },
-                            None => Err("Base not found")?,
-                        };
 
-                        let target = match hdk::get_entry(&target)? {
-                            Some(entry) => match entry {
-                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                _ => Err("System entry found")?,
-                            }
-                            None => Err("Target not found")?,
-                        };
-                        (target.stuff.len() > base.stuff.len())
-                            .ok_or("Target stuff is not longer".to_string())
+                        if link.link().tag()=="muffins"
+                        {
+                            Err("invalid tag".into())
+                        }
+                        else
+                        {
+                            let base = link.link().base();
+                            let target = link.link().target();
+                            let base = match hdk::get_entry(&base)? {
+                                Some(entry) => match entry {
+                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                    _ => Err("System entry found")?
+                                },
+                                None => Err("Base not found")?,
+                            };
+
+                            let target = match hdk::get_entry(&target)? {
+                                Some(entry) => match entry {
+                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                    _ => Err("System entry found")?,
+                                }
+                                None => Err("Target not found")?,
+                            };
+                            (target.stuff.len() > base.stuff.len())
+                                .ok_or("Target stuff is not longer".to_string())
+                        }
+                        
                     }
 
                 )
@@ -869,6 +942,12 @@ define_zome! {
             handler: handle_link_validation
         }
 
+        link_tag_validation: {
+            inputs: |stuff1: String, stuff2: String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_link_tag_validation
+        }
+
         check_call: {
             inputs: | |,
             outputs: |result: ZomeApiResult<JsonString>|,
@@ -896,7 +975,13 @@ define_zome! {
         create_and_link_tagged_entry : {
             inputs : |content:String,tag:String|,
             outputs : |result : Address|,
-            handler : handle_create_tagged_post
+            handler : handle_create_tagged_entry
+        }
+
+        create_and_link_tagged_entry_bad_link : {
+            inputs : |content:String,tag:String|,
+            outputs : |result : ZomeApiResult<()>|,
+            handler : handle_create_tagged_entry_bad_link
         }
 
         get_my_entries_by_tag : {
@@ -965,8 +1050,14 @@ define_zome! {
         delete_link_tagged_entry :
         {
             inputs : |content:String,tag:String|,
-            outputs : |result : Address|,
-            handler : handle_create_tagged_post
+            outputs : |result : ZomeApiResult<()>|,
+            handler : handle_delete_tagged_entry
+        }
+
+        my_entries_immediate_timeout: {
+            inputs: | |,
+            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
+            handler: handle_my_entries_immediate_timeout
         }
         
     ]

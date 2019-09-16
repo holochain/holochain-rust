@@ -25,7 +25,7 @@ use hdk::{
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryOptions, GetEntryResult},
-        get_links::{GetLinksResult,GetLinksOptions},
+        get_links::{GetLinksResult,GetLinksOptions,LinksStatusRequestKind},
         query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
@@ -622,8 +622,10 @@ fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
 
-pub fn handle_my_entries_by_tag(tag:Option<String>) -> ZomeApiResult<GetLinksResult> {
-    
+pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> {
+
+   
+
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -633,13 +635,19 @@ pub fn handle_my_entries_by_tag(tag:Option<String>) -> ZomeApiResult<GetLinksRes
     );
     let address = hdk::entry_address(&test_entry_to_create)?;
 
+    let link_query_options = GetLinksOptions {
+             status_request : maybe_status.unwrap_or(LinksStatusRequestKind::Live),
+            ..Default::default()
+        };
+
     if let Some(tag_matched) = tag
     {
-        hdk::get_links(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched))
+        
+        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched),link_query_options)
     } 
     else
     {
-        hdk::get_links(&address, LinkMatch::Any, LinkMatch::Any)
+        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Any,link_query_options)
     }
 
 }
@@ -1017,7 +1025,7 @@ define_zome! {
         }
 
         get_my_entries_by_tag : {
-            inputs : |tag:Option<String>|,
+            inputs : |tag:Option<String>,status : Option<LinksStatusRequestKind>|,
             outputs : |result : ZomeApiResult<GetLinksResult>|,
             handler : handle_my_entries_by_tag
         }
@@ -1104,6 +1112,7 @@ define_zome! {
             outputs: |result: ZomeApiResult<Address>|,
             handler: handle_create_priv_entry
         }
+
     
     ]
 

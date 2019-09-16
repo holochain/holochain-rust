@@ -53,7 +53,7 @@ use std::{
     thread,
     time::Duration,
 };
-use test_utils::{start_holochain_instance,make_test_call};
+use test_utils::{empty_string_validation_fail_entry,example_valid_entry_result,wait_for_zome_result,start_holochain_instance,make_test_call,example_valid_entry_address,TestEntry,example_valid_entry,example_valid_entry_params};
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -259,7 +259,7 @@ pub fn create_and_retrieve_private_entry()
     let zome_call = format!(r#"{{"address":"{}"}}"#,expected_result.unwrap());
 
     let _result = make_test_call(&mut hc, "get_entry", &zome_call);
-    let expected_result = wait_for_links::<Option<Entry>>(&mut hc,"get_entry",&zome_call,|maybe_entry|maybe_entry.is_some(),6);
+    let expected_result = wait_for_zome_result::<Option<Entry>>(&mut hc,"get_entry",&zome_call,|maybe_entry|maybe_entry.is_some(),6);
     let entry = expected_result.expect("Could not get entry for test");
     assert_eq!(entry.unwrap().address(),HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp"))
 

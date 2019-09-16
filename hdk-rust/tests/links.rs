@@ -53,7 +53,7 @@ use std::{
     thread,
     time::Duration,
 };
-use test_utils::{start_holochain_instance,make_test_call};
+use test_utils::{start_holochain_instance,make_test_call,example_valid_entry_params,example_valid_entry_address,TestEntry,wait_for_zome_result};
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -278,14 +278,14 @@ pub fn test_links_with_load()
     let result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
     println!("result {:?}",result);
 
-    let expected_result  = wait_for_links::<Vec<TestEntryType>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==1,6);
+    let expected_result  = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==1,6);
     let expected_links = expected_result.expect("Could not get links for test");
     assert_eq!(expected_links[0].stuff,"message me".to_string());
 
     let result = make_test_call(&mut hc, "delete_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected_result = wait_for_links::<Vec<TestEntryType>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==0,6);
+    let expected_result = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==0,6);
     let expected_links = expected_result.unwrap().clone();
 
     assert_eq!(expected_links.len(),0);
@@ -332,17 +332,17 @@ fn create_tag_and_retrieve()
     assert!(result.is_ok(), "result = {:?}", result);
     let _expected_zome : Address =serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
 
-    let expected_result = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag another me"}"#,|cond|cond.links().len()==1,6);
+    let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag another me"}"#,|cond|cond.links().len()==1,6);
     let expected_links = expected_result.unwrap().clone();
     assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));
     assert!(expected_links.links().iter().any(|s|s.address ==HashString::from("QmeuyJUoXHnU9GJT2LxnnNMmjDbvq1GGsa99pjmo1gPo4Y")));
 
-    let expected_result = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag me"}"#,|cond|cond.links().len()==1,6);
+    let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag me"}"#,|cond|cond.links().len()==1,6);
     let expected_links = expected_result.unwrap().clone();
     assert!(expected_links.links().iter().any(|s| s.tag=="tag me"));
     assert!(expected_links.links().iter().any(|s| s.address ==HashString::from("QmPdCLGkzp9daTcwbKePno9SySameXGRqdM4TfTGkju6Mo")));
     
-    let expected_result = wait_for_links::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{}"#,|cond|cond.links().len()==2,6);
+    let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{}"#,|cond|cond.links().len()==2,6);
     let expected_links = expected_result.unwrap().clone();
     assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));
     assert!(expected_links.links().iter().any(|s| s.tag=="tag me"));

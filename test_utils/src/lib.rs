@@ -44,6 +44,8 @@ use holochain_wasm_utils::{
     api_serialization::get_entry::{GetEntryResult, StatusRequestKind}
 };
 
+use hdk::error::{ZomeApiResult,ZomeApiError};
+
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
     fs::File,
@@ -52,6 +54,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
     time::Duration,
+    thread
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -519,13 +522,12 @@ pub fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> Holoch
 }
 
 
-#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
-/// dupes wasm_test::EntryStruct;
-struct TestEntry {
-    stuff: String,
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson,Clone)]
+pub struct TestEntry {
+    pub stuff: String,
 }
 
-fn example_valid_entry() -> Entry {
+pub fn example_valid_entry() -> Entry {
     Entry::App(
         test_app_entry_type().into(),
         TestEntry {
@@ -535,7 +537,7 @@ fn example_valid_entry() -> Entry {
     )
 }
 
-fn empty_string_validation_fail_entry() -> Entry {
+pub fn empty_string_validation_fail_entry() -> Entry {
     Entry::App(
         "empty_validation_response_tester".into(),
         TestEntry {
@@ -545,7 +547,7 @@ fn empty_string_validation_fail_entry() -> Entry {
     )
 }
 
-fn example_valid_entry_result() -> GetEntryResult {
+pub fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {
         entry: entry.clone(),
@@ -555,13 +557,35 @@ fn example_valid_entry_result() -> GetEntryResult {
     GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
 }
 
-fn example_valid_entry_params() -> String {
+pub fn example_valid_entry_params() -> String {
     format!(
         "{{\"entry\":{}}}",
         String::from(JsonString::from(example_valid_entry())),
     )
 }
 
-fn example_valid_entry_address() -> Address {
+pub fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
+}
+
+
+pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
+{
+    let result = make_test_call(holochain, zome_call, params);
+    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
+
+    let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
+                                            .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
+    
+    let value = expected_result.clone()?;
+    if !boolean_condition(value) && tries >0
+    {
+        println!("What is this");
+        thread::sleep(Duration::from_secs(10));
+        wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
+    }
+    else
+    {
+        expected_result
+    }
 }

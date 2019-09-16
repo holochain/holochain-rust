@@ -53,7 +53,7 @@ use std::{
     thread,
     time::Duration,
 };
-use test_utils::{start_holochain_instance,make_test_call};
+use test_utils::{start_holochain_instance,make_test_call,example_valid_entry_address,TestEntry,example_valid_entry_params,wait_for_zome_result};
 //
 // These empty function definitions below are needed for the windows linker
 //
@@ -280,7 +280,7 @@ fn can_invalidate_invalid_commit() {
         &json!({"entry":
             Entry::App(
                 test_app_entry_type().into(),
-                EntryStruct {
+                TestEntry {
                     stuff: "FAIL".into(),
                 }.into(),
             )
@@ -376,14 +376,14 @@ fn can_roundtrip_links() {
     // expected results
     let entry_2 = Entry::App(
         "testEntryType".into(),
-        EntryStruct {
+        TestEntry {
             stuff: "entry2".into(),
         }
         .into(),
     );
     let entry_3 = Entry::App(
         "testEntryType".into(),
-        EntryStruct {
+        TestEntry {
             stuff: "entry3".into(),
         }
         .into(),
@@ -583,7 +583,7 @@ fn can_send_and_receive() {
 
     let entry_committed_by_receive = Entry::App(
         "testEntryType".into(),
-        EntryStruct {
+        TestEntry {
             stuff: String::from("TEST"),
         }
         .into(),
@@ -620,29 +620,6 @@ fn sleep_smoke_test() {
 pub struct TestEntryType {
     stuff: String,
 }
-
-
-pub fn wait_for_links<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
-{
-    let result = make_test_call(holochain, zome_call, params);
-    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
-
-    let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
-                                            .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
-    
-    let value = expected_result.clone()?;
-    if !boolean_condition(value) && tries >0
-    {
-        println!("What is this");
-        thread::sleep(Duration::from_secs(10));
-        wait_for_links(holochain,zome_call,params,boolean_condition,tries-1)
-    }
-    else
-    {
-        expected_result
-    }
-}
-
 
 
 

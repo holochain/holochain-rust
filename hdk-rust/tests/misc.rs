@@ -7,12 +7,9 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate holochain_json_derive;
+
 
 
 use hdk::error::ZomeApiResult;
@@ -28,7 +25,7 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     hash::HashString,

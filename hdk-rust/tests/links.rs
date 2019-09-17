@@ -14,7 +14,7 @@ use hdk::error::ZomeApiResult;
 
 
 use holochain_core_types::{
-    error::{RibosomeEncodedValue, RibosomeEncodingBits},
+    error::{RibosomeEncodedValue, RibosomeEncodingBits,HolochainError},
 };
 
 

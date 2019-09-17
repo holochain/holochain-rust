@@ -25,8 +25,7 @@ use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
 };
-#[cfg(not(windows))]
-use holochain_core_types::{error::CoreError};
+
 
 
 use holochain_wasm_utils::{

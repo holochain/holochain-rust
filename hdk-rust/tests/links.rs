@@ -5,47 +5,26 @@ extern crate holochain_json_api;
 extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate holochain_json_derive;
+
 
 use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
 
 
 use holochain_core_types::{
-    crud_status::CrudStatus,
-    dna::{
-        fn_declarations::{FnDeclaration, TraitFns},
-        zome::{ZomeFnDeclarations, ZomeTraits},
-    },
-    entry::{
-        entry_type::test_app_entry_type,
-        Entry,
-    },
-    
-    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
 
-use holochain_persistence_api::{
-    cas::content::{AddressableContent},
-    hash::HashString,
-};
+use holochain_persistence_api::hash::HashString;
 #[cfg(not(windows))]
 use holochain_core_types::{error::CoreError};
 
 
 use holochain_wasm_utils::{
-    api_serialization::{
-        get_entry::{GetEntryResult, StatusRequestKind},
-        get_links::{GetLinksResult, LinksResult},
-    },
+    api_serialization::get_links::GetLinksResult
 };
 
 use test_utils::{start_holochain_instance,make_test_call,TestEntry,wait_for_zome_result};
@@ -255,7 +234,7 @@ pub fn test_bad_links()
 pub fn test_links_with_immediate_timeout()
 {
     let (mut hc, _,_signal_receiver) = start_holochain_instance("test_links_with_immediate_timeout", "alice");
-    make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
+    make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#).expect("Could not call make call method");
 
     let result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
     let expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
@@ -269,7 +248,6 @@ pub fn test_links_with_load()
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
    
-    let _result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
 
     let expected_result  = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==1,6);
     let expected_links = expected_result.expect("Could not get links for test");

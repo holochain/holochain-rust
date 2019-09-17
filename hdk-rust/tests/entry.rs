@@ -7,29 +7,17 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
-#[macro_use]
-extern crate holochain_json_derive;
+
 
 
 use hdk::error::ZomeApiResult;
 
 
 use holochain_core_types::{
-    crud_status::CrudStatus,
-    dna::{
-        fn_declarations::{FnDeclaration, TraitFns},
-        zome::{ZomeFnDeclarations, ZomeTraits},
-    },
-    entry::{
-        entry_type::test_app_entry_type,
-        Entry,
-    },
-    
-    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    entry::Entry,
+    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
 use holochain_json_api::{json::JsonString};
@@ -46,12 +34,7 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryResult, StatusRequestKind},
     },
 };
-use std::{
-    collections::BTreeMap,
-    path::PathBuf,
-    thread,
-    time::Duration,
-};
+use std::path::PathBuf;
 use test_utils::{empty_string_validation_fail_entry,example_valid_entry_result,wait_for_zome_result,start_holochain_instance,make_test_call,example_valid_entry_address,example_valid_entry,example_valid_entry_params};
 
 //
@@ -257,7 +240,6 @@ pub fn create_and_retrieve_private_entry()
     let expected_result : ZomeApiResult<Address> = serde_json::from_str::<ZomeApiResult<Address>>(&result.clone().unwrap().to_string()).unwrap();
     let zome_call = format!(r#"{{"address":"{}"}}"#,expected_result.unwrap());
 
-    let _result = make_test_call(&mut hc, "get_entry", &zome_call);
     let expected_result = wait_for_zome_result::<Option<Entry>>(&mut hc,"get_entry",&zome_call,|maybe_entry|maybe_entry.is_some(),6);
     let entry = expected_result.expect("Could not get entry for test");
     assert_eq!(entry.unwrap().address(),HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp"))

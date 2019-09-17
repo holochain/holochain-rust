@@ -10,6 +10,7 @@ let
  # @see https://github.com/rust-lang/rustfmt/issues/3685
  script = pkgs.writeShellScriptBin name
  ''
+ set -euo pipefail
  echo "checking rust formatting"
  for p in \
   hc \

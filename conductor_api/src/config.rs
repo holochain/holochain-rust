@@ -128,6 +128,7 @@ pub struct Configuration {
 pub enum PassphraseServiceConfig {
     Cmd,
     UnixSocket { path: String },
+    WindowsPipe{path:String},
     Mock { passphrase: String },
 }
 

@@ -38,10 +38,11 @@ use std::{
     thread,
     time::Duration,
 };
-
 use boolinator::Boolinator;
 #[cfg(unix)]
 use conductor::passphrase_manager::PassphraseServiceUnixSocket;
+#[cfg(windows)]
+use conductor::passphrase_manager::PassphraseServiceWindowsSocket;
 use conductor::passphrase_manager::{
     PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
 };
@@ -189,25 +190,33 @@ impl Conductor {
             println!();
         }
 
-        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
-            if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> = match config.passphrase_service.clone()
+        {
+            PassphraseServiceConfig::UnixSocket { path } =>
             {
-                #[cfg(not(unix))]
+                 #[cfg(not(unix))]
                 let _ = path;
                 #[cfg(not(unix))]
                 panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
 
                 #[cfg(unix)]
                 Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
-            } else {
-                match config.passphrase_service.clone() {
-                    PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
-                    PassphraseServiceConfig::Mock { passphrase } => {
-                        Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
-                    }
-                    _ => unreachable!(),
-                }
-            };
+            },
+            PassphraseServiceConfig::WindowsPipe { path } =>
+            {
+                #[cfg(not(windows))]
+                let _ = path;
+                #[cfg(not(windows))]
+                panic!("Named pipes are not available on non-Windows systems. Can't create a PassphraseServiceUnixSocket.");
+
+                #[cfg(windows)]
+                let passphrase_serivce = PassphraseServiceWindowsSocket::new(path);
+                #[cfg(windows)]
+                Arc::new(Mutex::new(passphrase_serivce))
+            },
+            PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+            PassphraseServiceConfig::Mock { passphrase } =>Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+        };
 
         Conductor {
             instances: HashMap::new(),

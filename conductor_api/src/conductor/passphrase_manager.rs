@@ -1,7 +1,13 @@
+#[cfg(windows)]
+extern crate named_pipe;
+#[cfg(windows)]
+use self::named_pipe::PipeOptions;
+use std::io::Read;
+use std::io::{BufRead,BufReader};
+
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use lib3h_sodium::secbuf::SecBuf;
-#[cfg(unix)]
 use log::Level;
 use std::{
     io::{self, Write},
@@ -11,9 +17,10 @@ use std::{
 };
 
 #[cfg(unix)]
-use std::io::{BufRead, BufReader};
-#[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
+
+
+
 
 /// We are caching the passphrase for 10 minutes.
 const PASSPHRASE_CACHE_DURATION_SECS: u64 = 600;
@@ -159,6 +166,67 @@ impl PassphraseServiceUnixSocket {
     }
 }
 
+#[cfg(windows)]
+pub struct PassphraseServiceWindowsSocket{
+    pub path : String
+}
+
+
+#[cfg(windows)]
+impl PassphraseServiceWindowsSocket
+{
+    pub fn new(path:String) -> PassphraseServiceWindowsSocket
+    {
+        PassphraseServiceWindowsSocket
+        {
+            path
+        }
+    }
+}
+
+#[cfg(windows)]
+impl PassphraseService for PassphraseServiceWindowsSocket
+{
+    fn request_passphrase(&self) ->Result<SecBuf,HolochainError>
+    {
+        log_debug!("Passphrase needed. using windows unix socket passphrase service...");
+        let connection_pipe = PipeOptions::new(self.path.clone()).single()?;
+        
+        //wait for 5 minutes if problem try again
+        connection_pipe.wait_ms(300000).map(|pipe_server_result|{
+            let pipe = pipe_server_result.expect("Problem creating pipe server for windows");
+            io_request_passphrase(pipe)
+            
+        })
+        .unwrap_or_else(|_|{
+            log_debug!("No one connected via socket yet. trying again...");
+            thread::sleep(Duration::from_millis(500));
+            self.request_passphrase()
+        })
+    }
+}
+
+fn io_request_passphrase<S:Read + Write>(mut stream : S) ->Result<SecBuf,HolochainError>
+{
+    log_debug!("Sending passphrase request...");
+    stream.write_all(b"request_passphrase")?;
+    log_debug!("Passphrase request sent.");
+    let mut passphrase_string = String::new();
+    log_debug!("Reading passphrase from socket...");
+    let mut buf_read = BufReader::new(stream);
+    buf_read.read_line(&mut passphrase_string)?;
+    // Move passphrase in secure memory
+    let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
+    let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+    passphrase_buf.write(0, passphrase_bytes.as_slice())?;
+
+    // Overwrite the unsafe passphrase memory with zeros
+    for byte in passphrase_bytes.iter_mut() {
+        *byte = 0u8;
+    }
+
+    Ok(passphrase_buf)
+}
 #[cfg(unix)]
 impl Drop for PassphraseServiceUnixSocket {
     fn drop(&mut self) {
@@ -178,7 +246,7 @@ impl PassphraseService for PassphraseServiceUnixSocket {
         log_debug!("We have an open connection to a passphrase provider.");
 
         // Request and read passphrase from socket
-        let mut passphrase_string = {
+        let passphrase_buf = {
             let mut stream_option = self.stream.lock().expect(
                 "Could not lock mutex holding unix domain socket connection for passphrase service",
             );
@@ -189,30 +257,8 @@ impl PassphraseService for PassphraseServiceUnixSocket {
                 .expect("Error accepting unix socket connection for passphrase service");
 
             log_debug!("Sending passphrase request via unix socket...");
-            stream
-                .get_mut()
-                .write_all(b"request_passphrase")
-                .expect("Could not write to passphrase socket");
-            log_debug!("Passphrase request sent.");
-            let mut passphrase_string = String::new();
-            log_debug!("Reading passphrase from socket...");
-            stream
-                .read_line(&mut passphrase_string)
-                .expect("Could not read from passphrase socket");
-            log_debug!("Got passphrase. All fine.");
-            passphrase_string
+            io_request_passphrase(stream.get_mut())
         };
-
-        // Move passphrase in secure memory
-        let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
-        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
-        passphrase_buf.write(0, passphrase_bytes.as_slice())?;
-
-        // Overwrite the unsafe passphrase memory with zeros
-        for byte in passphrase_bytes.iter_mut() {
-            *byte = 0u8;
-        }
-
-        Ok(passphrase_buf)
+        passphrase_buf
     }
 }

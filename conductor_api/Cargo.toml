@@ -44,6 +44,10 @@ log = "=0.4.8"
 logging = { path = "../logging" }
 nickel = "=0.11.0"
 
+[target.'cfg(windows)'.dependencies]
+named_pipe = "=0.4.1"
+
+
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 tempfile = "=3.0.7"

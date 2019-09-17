@@ -16,8 +16,8 @@ extern crate holochain_json_derive;
 
 use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
-use holochain_conductor_api::{*};
-use holochain_core::signal::{Signal,UserSignal};
+
+
 use holochain_core_types::{
     crud_status::CrudStatus,
     dna::{
@@ -32,28 +32,23 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_json_api::{error::JsonError, json::JsonString};
+
 use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent},
+    cas::content::{AddressableContent},
     hash::HashString,
 };
 #[cfg(not(windows))]
 use holochain_core_types::{error::CoreError};
 
-use holochain_core_types::entry::EntryWithMeta;
+
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
         get_links::{GetLinksResult, LinksResult},
     },
 };
-use std::{
-    collections::BTreeMap,
-    path::PathBuf,
-    thread,
-    time::Duration,
-};
-use test_utils::{start_holochain_instance,make_test_call,example_valid_entry_params,example_valid_entry_address,TestEntry,wait_for_zome_result};
+
+use test_utils::{start_holochain_instance,make_test_call,TestEntry,wait_for_zome_result};
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -274,7 +269,7 @@ pub fn test_links_with_load()
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
    
-    let result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
+    let _result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
 
     let expected_result  = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==1,6);
     let expected_links = expected_result.expect("Could not get links for test");

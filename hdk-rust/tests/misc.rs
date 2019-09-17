@@ -14,16 +14,12 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
 
-use hdk::error::ZomeApiError;
+
 use hdk::error::ZomeApiResult;
-use holochain_conductor_api::{*};
+
 use holochain_core::signal::{Signal,UserSignal};
 use holochain_core_types::{
     crud_status::CrudStatus,
-    dna::{
-        fn_declarations::{FnDeclaration, TraitFns},
-        zome::{ZomeFnDeclarations, ZomeTraits},
-    },
     entry::{
         entry_type::test_app_entry_type,
         Entry,
@@ -40,20 +36,18 @@ use holochain_persistence_api::{
 #[cfg(not(windows))]
 use holochain_core_types::{error::CoreError};
 
-use holochain_core_types::entry::EntryWithMeta;
+
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryResult, StatusRequestKind},
         get_links::{GetLinksResult, LinksResult},
     },
 };
 use std::{
-    collections::BTreeMap,
     path::PathBuf,
     thread,
     time::Duration,
 };
-use test_utils::{start_holochain_instance,make_test_call,example_valid_entry_address,TestEntry,example_valid_entry_params,wait_for_zome_result};
+use test_utils::{start_holochain_instance,make_test_call,example_valid_entry_address,TestEntry,example_valid_entry_params};
 //
 // These empty function definitions below are needed for the windows linker
 //

@@ -14,10 +14,10 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
 
-use hdk::error::ZomeApiError;
+
 use hdk::error::ZomeApiResult;
-use holochain_conductor_api::{*};
-use holochain_core::signal::{Signal,UserSignal};
+
+
 use holochain_core_types::{
     crud_status::CrudStatus,
     dna::{
@@ -32,7 +32,7 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_api::{json::JsonString};
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
@@ -40,11 +40,10 @@ use holochain_persistence_api::{
 #[cfg(not(windows))]
 use holochain_core_types::{error::CoreError};
 
-use holochain_core_types::entry::EntryWithMeta;
+
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
-        get_links::{GetLinksResult, LinksResult},
     },
 };
 use std::{
@@ -53,7 +52,7 @@ use std::{
     thread,
     time::Duration,
 };
-use test_utils::{empty_string_validation_fail_entry,example_valid_entry_result,wait_for_zome_result,start_holochain_instance,make_test_call,example_valid_entry_address,TestEntry,example_valid_entry,example_valid_entry_params};
+use test_utils::{empty_string_validation_fail_entry,example_valid_entry_result,wait_for_zome_result,start_holochain_instance,make_test_call,example_valid_entry_address,example_valid_entry,example_valid_entry_params};
 
 //
 // These empty function definitions below are needed for the windows linker

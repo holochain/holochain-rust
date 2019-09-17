@@ -60,6 +60,7 @@ with holonix.pkgs;
    }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./rust {
+    holonix = holonix;
     pkgs = holonix.pkgs;
    }).buildInputs
 

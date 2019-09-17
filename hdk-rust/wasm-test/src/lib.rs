@@ -48,11 +48,20 @@ use holochain_wasm_utils::{
     },
 };
 use std::{convert::TryFrom, time::Duration};
-use test_utils::TestEntry;
+
+#[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
+pub struct TestEntryType {
+    stuff: String,
+}
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct CommitOutputStruct {
     address: String,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
+struct EntryStruct {
+    stuff: String,
 }
 
 #[no_mangle]
@@ -158,7 +167,7 @@ fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
 fn handle_link_two_entries() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry1".into(),
         }
         .into(),
@@ -167,7 +176,7 @@ fn handle_link_two_entries() -> ZomeApiResult<Address> {
 
     let entry_2 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry2".into(),
         }
         .into(),
@@ -181,7 +190,7 @@ fn handle_link_two_entries() -> ZomeApiResult<Address> {
 fn handle_remove_link() -> ZomeApiResult<()> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry1".into(),
         }
         .into(),
@@ -190,7 +199,7 @@ fn handle_remove_link() -> ZomeApiResult<()> {
 
     let entry_2 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry2".into(),
         }
         .into(),
@@ -208,7 +217,7 @@ fn handle_remove_link() -> ZomeApiResult<()> {
 fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry1".into(),
         }
         .into(),
@@ -217,7 +226,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
 
     let entry_2 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry2".into(),
         }
         .into(),
@@ -226,7 +235,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
 
     let entry_3 = Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry3".into(),
         }
         .into(),
@@ -365,7 +374,7 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     // Query Zome entry
     let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry1".into(),
         }
         .into(),
@@ -381,7 +390,7 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     // Query Zome entries
     let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry2".into(),
         }
         .into(),
@@ -389,7 +398,7 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     .unwrap();
     let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: "entry3".into(),
         }
         .into(),
@@ -592,7 +601,7 @@ fn handle_hash(content:String) ->ZomeApiResult<Address>
 {
     hdk::entry_address(&Entry::App(
         "testEntryType".into(),
-        TestEntry {
+        EntryStruct {
             stuff: content.into(),
         }
         .into(),
@@ -854,7 +863,7 @@ define_zome! {
         // should be able to commit an entry
         let entry = Entry::App(
             "testEntryType".into(),
-            TestEntry {
+            EntryStruct {
                 stuff: "called from init".into(),
             }
             .into(),
@@ -894,7 +903,7 @@ define_zome! {
         {
             let entry = Entry::App(
                 "testEntryType".into(),
-                TestEntry {
+                EntryStruct {
                     stuff: payload.clone(),
                 }
                 .into(),

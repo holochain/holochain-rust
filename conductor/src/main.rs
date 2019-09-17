@@ -28,7 +28,7 @@ use holochain_conductor_api::{
 use holochain_core_types::error::HolochainError;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
-use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc,time::Duration,thread};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -114,7 +114,7 @@ fn main() {
                 },
                 _ => 
                 {
-                      ()
+                      loop{thread::sleep(Duration::from_secs(5))}
                 }
             }
 

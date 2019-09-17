@@ -19,7 +19,6 @@ use holochain_core_types::{
 
 
 use holochain_persistence_api::hash::HashString;
-#[cfg(not(windows))]
 use holochain_core_types::{error::CoreError};
 
 
@@ -27,7 +26,8 @@ use holochain_wasm_utils::{
     api_serialization::get_links::GetLinksResult
 };
 
-use test_utils::{start_holochain_instance,make_test_call,TestEntry,wait_for_zome_result};
+
+use test_utils::{start_holochain_instance,make_test_call,TestEntry,wait_for_zome_result,generate_zome_internal_error};
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -213,9 +213,9 @@ pub fn test_invalid_target_link()
 {
     let (mut hc, _,_signal_receiver) = start_holochain_instance("test_invalid_target_link", "alice");
     let result = make_test_call(&mut hc, "link_tag_validation", r#"{"stuff1" : "first","stuff2":"second","tag":"muffins"}"#);
-    
     let expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
-    assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":{"ValidationFailed":"invalid tag"},"file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
+    let zome_internal_error = generate_zome_internal_error(String::from(r#"{"ValidationFailed":"invalid tag"}"#));
+    assert_eq!(expected_result.unwrap_err(),zome_internal_error)
 
 }
 
@@ -224,9 +224,10 @@ pub fn test_bad_links()
 {
     let (mut hc, _,_signal_receiver) = start_holochain_instance("test_bad_links", "alice");
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry_bad_link", r#"{"content" : "message","tag":"maiffins"}"#);
-
+    
     let expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
-    assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":{"ErrorGeneric":"Base for link not found"},"file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
+    let zome_internal_error = generate_zome_internal_error(String::from(r#"{"ErrorGeneric":"Base for link not found"}"#));
+    assert_eq!(expected_result.unwrap_err(),zome_internal_error);
 
 }
 
@@ -238,7 +239,8 @@ pub fn test_links_with_immediate_timeout()
 
     let result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
     let expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
-    assert_eq!(expected_result.unwrap_err(),ZomeApiError::Internal(r#"{"kind":"Timeout","file":"core\\src\\nucleus\\ribosome\\runtime.rs","line":"225"}"#.to_string()));
+    let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));;
+    assert_eq!(expected_result.unwrap_err(),zome_internal_error);
 }
 
 #[test]
@@ -270,7 +272,6 @@ pub fn test_links_with_load()
 }
 
 #[test]
-#[cfg(not(windows))]
 fn can_validate_links() {
     let (mut hc, _,_) = start_holochain_instance("can_validate_links", "alice");
     let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;

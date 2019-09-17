@@ -588,3 +588,18 @@ pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,param
         expected_result
     }
 }
+
+
+pub fn generate_zome_internal_error(error_kind:String)->ZomeApiError
+{
+    let path = PathBuf::new()
+              .join("core")
+              .join("src")
+              .join("nucleus")
+              .join("ribosome")
+              .join("runtime.rs");
+    let path_string = path.as_path().to_str().expect("path should have been created");
+    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\"].join(""));
+    let error_string = format!(r#"{{"kind":{},"file":"{}","line":"225"}}"#,error_kind,formatted_path_string);
+    ZomeApiError::Internal(error_string)
+}

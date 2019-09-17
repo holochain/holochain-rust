@@ -28,8 +28,9 @@ module.exports = {
           players,
           api => Object.assign(api, {
             callSync: async (...b) => {
-              await api.call(...b)
+              const result = await api.call(...b)
               await s.consistency()
+              return result
             }
           })
         )

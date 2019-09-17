@@ -10,31 +10,26 @@ extern crate serde_json;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 
-
-
 use hdk::error::ZomeApiResult;
-
 
 use holochain_core_types::{
     entry::Entry,
     error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
-use holochain_json_api::{json::JsonString};
+use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
 };
 
-
-
-use holochain_wasm_utils::{
-    api_serialization::{
-        get_entry::{GetEntryResult, StatusRequestKind},
-    },
-};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult, StatusRequestKind};
 use std::path::PathBuf;
-use test_utils::{empty_string_validation_fail_entry,example_valid_entry_result,wait_for_zome_result,start_holochain_instance,make_test_call,example_valid_entry_address,example_valid_entry,example_valid_entry_params};
+use test_utils::{
+    empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
+    example_valid_entry_params, example_valid_entry_result, make_test_call,
+    start_holochain_instance, wait_for_zome_result,
+};
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -214,10 +209,9 @@ pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
 
-
 #[test]
 fn hash_entry() {
-    let (mut hc, _,_) = start_holochain_instance("hash_entry", "alice");
+    let (mut hc, _, _) = start_holochain_instance("hash_entry", "alice");
     let params = r#"{"content":"this is to hash"}"#;
     let result = make_test_call(&mut hc, "hash_entry", &params);
     assert_eq!(
@@ -231,35 +225,48 @@ fn hash_entry() {
 }
 
 #[test]
-pub fn create_and_retrieve_private_entry()
-{
-    let (mut hc, _,_signal_receiver) = start_holochain_instance("create_and_retrieve_private_entry", "alice");
-    let result = make_test_call(&mut hc, "create_priv_entry", r#"{"content":"check this out"}"#);
+pub fn create_and_retrieve_private_entry() {
+    let (mut hc, _, _signal_receiver) =
+        start_holochain_instance("create_and_retrieve_private_entry", "alice");
+    let result = make_test_call(
+        &mut hc,
+        "create_priv_entry",
+        r#"{"content":"check this out"}"#,
+    );
 
-    let expected_result : ZomeApiResult<Address> = serde_json::from_str::<ZomeApiResult<Address>>(&result.clone().unwrap().to_string()).unwrap();
-    let zome_call = format!(r#"{{"address":"{}"}}"#,expected_result.unwrap());
+    let expected_result: ZomeApiResult<Address> =
+        serde_json::from_str::<ZomeApiResult<Address>>(&result.clone().unwrap().to_string())
+            .unwrap();
+    let zome_call = format!(r#"{{"address":"{}"}}"#, expected_result.unwrap());
 
-    let expected_result = wait_for_zome_result::<Option<Entry>>(&mut hc,"get_entry",&zome_call,|maybe_entry|maybe_entry.is_some(),6);
+    let expected_result = wait_for_zome_result::<Option<Entry>>(
+        &mut hc,
+        "get_entry",
+        &zome_call,
+        |maybe_entry| maybe_entry.is_some(),
+        6,
+    );
     let entry = expected_result.expect("Could not get entry for test");
-    assert_eq!(entry.unwrap().address(),HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp"))
-
+    assert_eq!(
+        entry.unwrap().address(),
+        HashString::from("QmYop82eqkWo5f9eLx8dj89ppGGyE11zmEGQy8jMF3nVxp")
+    )
 }
 
 #[test]
-pub fn test_bad_entry()
-{
-    let (mut hc, _,_signal_receiver) = start_holochain_instance("test_bad_entry", "alice");
+pub fn test_bad_entry() {
+    let (mut hc, _, _signal_receiver) = start_holochain_instance("test_bad_entry", "alice");
     let result = make_test_call(&mut hc, "get_entry", r#"{"address":"aba"}"#);
-    
-    let expected_result : ZomeApiResult<Option<Entry>> = serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string()).unwrap();
-    assert_eq!(expected_result.unwrap(),None)
 
+    let expected_result: ZomeApiResult<Option<Entry>> =
+        serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string())
+            .unwrap();
+    assert_eq!(expected_result.unwrap(), None)
 }
-
 
 #[test]
 fn can_round_trip() {
-    let (mut hc, test_logger,_) = start_holochain_instance("can_round_trip", "alice");
+    let (mut hc, test_logger, _) = start_holochain_instance("can_round_trip", "alice");
     let result = make_test_call(
         &mut hc,
         "send_tweet",
@@ -277,7 +284,7 @@ fn can_round_trip() {
 
 #[test]
 fn can_get_entry_ok() {
-    let (mut hc, _,_) = start_holochain_instance("can_get_entry_ok", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_get_entry_ok", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -312,7 +319,7 @@ fn can_get_entry_ok() {
 
 #[test]
 fn can_get_entry_bad() {
-    let (mut hc, _,_) = start_holochain_instance("can_get_entry_bad", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
 
     let result = make_test_call(
@@ -351,7 +358,7 @@ fn can_get_entry_bad() {
 
 #[test]
 fn can_commit_entry() {
-    let (mut hc, _,_) = start_holochain_instance("can_commit_entry", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_commit_entry", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
@@ -368,8 +375,9 @@ fn can_commit_entry() {
 }
 #[test]
 fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _,_) = start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
+    let (mut hc, _, _) =
         start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
+    start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(

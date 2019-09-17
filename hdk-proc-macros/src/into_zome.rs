@@ -196,7 +196,8 @@ impl IntoZome for syn::ItemMod {
             .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, mut func| {
                 // Drop the EntryDef attribute on the functions so this doesn't recurse
-                func.attrs = func.attrs
+                func.attrs = func
+                    .attrs
                     .into_iter()
                     .filter(|attr| !attr.path.is_ident(ENTRY_DEF_ATTRIBUTE))
                     .collect();
@@ -207,8 +208,8 @@ impl IntoZome for syn::ItemMod {
 
     fn extract_traits(&self) -> ZomeTraits {
         funcs_iter(self)
-	    .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
-	    .fold(BTreeMap::new(), |mut acc, func| {
+        .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
+        .fold(BTreeMap::new(), |mut acc, func| {
             let func_name = func.ident.to_string();
             func.attrs
             .iter()
@@ -216,25 +217,25 @@ impl IntoZome for syn::ItemMod {
             .for_each(|attr| {
                 let meta = attr.parse_meta().unwrap();
                 match meta {
-                	syn::Meta::List(meta_list) => {
-		                meta_list.nested.iter().for_each(|e| {
-		                    if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
-		                        let trait_name = lit.value().clone();
-		                        if acc.get(&trait_name).is_none() {
-		                            acc.insert(trait_name.clone(), TraitFns::new());
-		                        }
-		                        acc.get_mut(&trait_name).unwrap().functions.push(func_name.clone());
-		                    }
-		                });
-                	},
-                	syn::Meta::Word(_) => emit_warning(&func.ident,
+                    syn::Meta::List(meta_list) => {
+                        meta_list.nested.iter().for_each(|e| {
+                            if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
+                                let trait_name = lit.value().clone();
+                                if acc.get(&trait_name).is_none() {
+                                    acc.insert(trait_name.clone(), TraitFns::new());
+                                }
+                                acc.get_mut(&trait_name).unwrap().functions.push(func_name.clone());
+                            }
+                        });
+                    },
+                    syn::Meta::Word(_) => emit_warning(&func.ident,
                         "Function is tagged as zome_fn but is not exposed via a Holochain trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?"),
-                	_ => emit_error(&func.ident,
+                    _ => emit_error(&func.ident,
                         "zome_fn must be preceded by a comma delimited list of Holochain traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")"),
                 }
             });
-	        acc
-	    })
+            acc
+        })
     }
 
     // For this implementation the `extra` is all the content of the module that is not tagged as special

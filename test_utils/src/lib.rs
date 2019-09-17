@@ -568,19 +568,24 @@ pub fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
-
+//this polls for the zome result until it satisfies a the boolean condition or elapses a number of tries.
 pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
 {
+    //make zome call
     let result = make_test_call(holochain, zome_call, params);
     let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
-
+    
+    //serialize into ZomeApiResult type
     let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
                                             .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
-    
     let value = expected_result.clone()?;
+    
+    //check if condition is satisifed
     if !boolean_condition(value) && tries >0
     {
         thread::sleep(Duration::from_secs(10));
+        
+        //recursively call function again and decrement tries so far
         wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
     }
     else

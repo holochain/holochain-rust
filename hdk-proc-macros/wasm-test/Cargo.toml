@@ -1,6 +1,6 @@
 [package]
 name = "test-proc-macro"
-version = "0.0.30-alpha5"
+version = "0.0.30-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

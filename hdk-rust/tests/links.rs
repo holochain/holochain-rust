@@ -260,7 +260,7 @@ pub fn test_bad_links()
 pub fn test_links_with_immediate_timeout()
 {
     let (mut hc, _,_signal_receiver) = start_holochain_instance("test_links_with_immediate_timeout", "alice");
-    let _result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
+    make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
 
     let result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
     let expected_result : ZomeApiResult<()> = serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
@@ -273,10 +273,8 @@ pub fn test_links_with_load()
     let (mut hc, _,_signal_receiver) = start_holochain_instance("test_links_with_load", "alice");
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    let _expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
-
+   
     let result = make_test_call(&mut hc, "my_entries_with_load", r#"{}"#);
-    println!("result {:?}",result);
 
     let expected_result  = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==1,6);
     let expected_links = expected_result.expect("Could not get links for test");
@@ -286,9 +284,9 @@ pub fn test_links_with_load()
     assert!(result.is_ok(), "result = {:?}", result);
 
     //query for deleted links
-    let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag me","status":"deleted"}"#,|cond|cond.links().len()==1,6);
+    let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag me","status":"Deleted"}"#,|cond|cond.links().len()==1,6);
     let expected_links = expected_result.unwrap().clone();
-    assert!(expected_links.links()len(),1);
+    assert_eq!(expected_links.links().len(),1);
     
     //try get links and load with nothing, not sure of necessary more of a type system check
     let expected_result = wait_for_zome_result::<Vec<TestEntry>>(&mut hc,"my_entries_with_load",r#"{}"#,|cond|cond.len()==0,6);
@@ -332,12 +330,10 @@ fn create_tag_and_retrieve()
     let (mut hc, _,_signal_receiver) = start_holochain_instance("create_tag_and_retrieve", "alice");
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me","tag":"tag me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    let _expected_zome : Address = serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
 
     let result = make_test_call(&mut hc, "create_and_link_tagged_entry", r#"{"content": "message me once","tag":"tag another me"}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    let _expected_zome : Address =serde_json::from_str::<Address>(&result.unwrap().to_string()).unwrap();
-
+ 
     let expected_result = wait_for_zome_result::<GetLinksResult>(&mut hc,"get_my_entries_by_tag",r#"{"tag" : "tag another me"}"#,|cond|cond.links().len()==1,6);
     let expected_links = expected_result.unwrap().clone();
     assert!(expected_links.links().iter().any(|s| s.tag=="tag another me"));

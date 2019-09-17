@@ -580,7 +580,6 @@ pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,param
     let value = expected_result.clone()?;
     if !boolean_condition(value) && tries >0
     {
-        println!("What is this");
         thread::sleep(Duration::from_secs(10));
         wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
     }

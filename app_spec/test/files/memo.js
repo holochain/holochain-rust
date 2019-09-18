@@ -1,33 +1,4 @@
 module.exports = scenario => {
-
-    scenario('create_memo', async (s, t, { alice }) => {
-
-        const content = "Reminder: Buy some HOT."
-        const params = { content }
-        const result = await alice.app.call("blog", "create_memo", params)
-      
-        t.ok(result.Ok)
-        t.notOk(result.Err)
-        t.equal(result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
-      })
-      
-      scenario('my_memos', async (s, t, { alice }) => {
-      
-        const content = "Reminder: Buy some HOT."
-        const params = { content }
-        const create_memo_result = await alice.app.call("blog", "create_memo", params)
-      
-        t.ok(create_memo_result.Ok)
-        t.notOk(create_memo_result.Err)
-        t.equal(create_memo_result.Ok, "QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i")
-      
-        const my_memos_result = await alice.app.call("blog", "my_memos", {})
-      
-        t.ok(my_memos_result.Ok)
-        t.notOk(my_memos_result.Err)
-        t.deepEqual(my_memos_result.Ok, ["QmV8f47UiisfMYxqpTe7DA65eLJ9jqNvaeTNSVPC7ZVd4i"])
-      })
-      
       
       scenario('get_memo_returns_none', async (s, t, { alice, bob}) => {
       

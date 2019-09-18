@@ -246,7 +246,7 @@ pub fn create_arbitrary_test_dna() -> Dna {
 pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     test_context_and_logger_with_bootstrap_nodes
         (agent_name, network_name, vec![])
 }
@@ -256,8 +256,9 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
     agent_name: &str,
     network_name: Option<&str>,
     bootstrap_nodes: Vec<url::Url>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
+    let (signal,recieve) = signal_channel();
     let logger = test_logger();
     (
         Arc::new({
@@ -277,6 +278,7 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
                 .spawn()
         }),
         logger,
+        recieve
     )
 }
 
@@ -309,12 +311,12 @@ pub fn test_context_and_logger_with_network_name_and_signal(
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     test_context_and_logger_with_network_name(agent_name, None)
 }
 
 pub fn test_context(agent_name: &str) -> Arc<Context> {
-    let (context, _) = test_context_and_logger(agent_name);
+    let (context, _,_) = test_context_and_logger(agent_name);
     context
 }
 
@@ -394,9 +396,10 @@ where
 }
 
 
-pub fn start_holochain_instance<T: Into<String>>(
+pub fn start_holochain_instance<T:Into<String>>(
     uuid: T,
     agent_name: T,
+    endpoints : Vec<url::Url>
 ) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
     // Setup the holochain instance
 
@@ -506,8 +509,7 @@ pub fn start_holochain_instance<T: Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger,signal_recieve) =
-        test_context_and_logger_with_network_name_and_signal(&agent_name.into(), Some(&dna.uuid));
+    let (context,test_logger,signal_recieve) = test_context_and_logger_with_bootstrap_nodes(&dna.uuid,Some(&agent_name.into()),endpoints);
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 

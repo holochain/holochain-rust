@@ -5,7 +5,7 @@ use crate::memory::{
 };
 use holochain_json_api::json::JsonString;
 use memory::allocation::{AllocationResult, Length};
-use std::{convert::TryInto, os::raw::c_char, slice, cmp::max};
+use std::{cmp::max, convert::TryInto, os::raw::c_char, slice};
 
 impl WasmStack {
     /// Write in wasm memory according to stack state.

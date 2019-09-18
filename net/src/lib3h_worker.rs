@@ -11,7 +11,7 @@ use lib3h::{
 };
 
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
-use lib3h_tracing::Lib3hSpan;
+use holochain_tracing::HSpan;
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
@@ -41,7 +41,7 @@ impl Lib3hWorker {
         Ok(Lib3hWorker {
             handler,
             net_engine: LegacyLib3h::new("core",GhostEngine::new(
-                Lib3hSpan::fixme(),
+                HSpan::fixme(),
                 Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                 real_config,
                 // TODO generate this automatically in the lib3h api
@@ -55,7 +55,7 @@ impl Lib3hWorker {
     pub fn with_memory_transport(handler: NetHandler, real_config: EngineConfig) -> NetResult<Self> {
 
         let ghost_engine = GhostEngine::new(
-            Lib3hSpan::fixme(),
+            HSpan::fixme(),
             Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
             real_config.clone(),
             // TODO generate this automatically in the lib3h api

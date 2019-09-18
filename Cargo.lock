@@ -418,7 +418,7 @@ dependencies = [
 [[package]]
 name = "detach"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 
 [[package]]
 name = "difference"
@@ -1110,12 +1110,12 @@ dependencies = [
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
- "lib3h_tracing 0.0.1 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.30-alpha6",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1233,6 +1233,17 @@ dependencies = [
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "unwrap_to 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "holochain_tracing"
+version = "0.0.1"
+source = "git+https://github.com/holochain/holochain-tracing#3dbb2192671cb62afa76e9681d3dadb7b98c8073"
+dependencies = [
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustracing 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustracing_jaeger 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1514,17 +1525,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lib3h"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_discovery 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
- "lib3h_tracing 0.0.1 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_zombie_actor 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1542,7 +1553,7 @@ dependencies = [
 [[package]]
 name = "lib3h_crypto_api"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1552,7 +1563,7 @@ dependencies = [
 [[package]]
 name = "lib3h_discovery"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 dependencies = [
  "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1560,7 +1571,7 @@ dependencies = [
 [[package]]
 name = "lib3h_protocol"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1575,7 +1586,7 @@ dependencies = [
 [[package]]
 name = "lib3h_sodium"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
@@ -1585,25 +1596,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib3h_tracing"
-version = "0.0.1"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
-dependencies = [
- "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustracing 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustracing_jaeger 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "lib3h_zombie_actor"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#b277bcecfc082b8c06b91c2452bab88c9b3f0a95"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
- "lib3h_tracing 0.0.1 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
+ "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "predicates 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3821,6 +3821,7 @@ dependencies = [
 "checksum holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0889292ea98f04fe061b87ab4cba78b0a1237f00b2630aa10aabc7d93285fb46"
 "checksum holochain_persistence_mem 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1bb505b3bbf11fb0e1927b445481451e81501512d80b08460a4a4443d6c4dce0"
 "checksum holochain_persistence_pickle 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "e81bd8492aeedff664b98f1cd39b6de1e1c4ad3766a9a11df9dd78b35db5a7be"
+"checksum holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)" = "<none>"
 "checksum hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "21ceb46a83a85e824ef93669c8b390009623863b5c195d1ba747292c0c72f94e"
 "checksum http 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "372bcb56f939e449117fb0869c2e8fd8753a8223d92a172c6e808cf123a5b6e4"
 "checksum http_req 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "23fdb3445813f5f5e7fdb9d93df8f1c7e382237f2656b21c42e93e3a63e25c11"
@@ -3851,7 +3852,6 @@ dependencies = [
 "checksum lib3h_discovery 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)" = "<none>"
 "checksum lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)" = "<none>"
 "checksum lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)" = "<none>"
-"checksum lib3h_tracing 0.0.1 (git+https://github.com/holochain/lib3h?branch=ghost-actor)" = "<none>"
 "checksum lib3h_zombie_actor 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)" = "<none>"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
 "checksum libflate 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)" = "d9135df43b1f5d0e333385cb6e7897ecd1a43d7d11b91ac003f4d2c2d2401fdd"

@@ -28,11 +28,16 @@ use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
 use wasmi::MemoryInstance;
 use wasmi::memory_units::Pages;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation;
-use test_utils::TestEntry;
 
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
-struct OtherTestEntry {
+struct TestStruct {
+    value: String,
+    list: Vec<String>,
+}
+
+#[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
+struct OtherTestStruct {
     other: String,
     list: Vec<String>,
 }
@@ -326,7 +331,7 @@ pub extern "C" fn store_struct_as_json(_: RibosomeEncodingBits) -> RibosomeEncod
     let mut stack = WasmStack::default();
     assert_eq!(0, MemoryInt::from(stack.top()));
 
-    let obj = TestEntry {
+    let obj = TestStruct {
         value: "first".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     };
@@ -356,7 +361,7 @@ pub extern "C" fn load_json_struct(_: RibosomeEncodingBits) -> RibosomeEncodingB
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
-    let maybe_test_struct: Result<TestEntry, HolochainError> = load_ribosome_encoded_json(encoded);
+    let maybe_test_struct: Result<TestStruct, HolochainError> = load_ribosome_encoded_json(encoded);
     match maybe_test_struct {
         Ok(test_struct) => {
             return_code_for_allocation_result(
@@ -387,7 +392,7 @@ pub extern "C" fn stacked_json(_: RibosomeEncodingBits) -> RibosomeEncodingBits 
 pub extern "C" fn stacked_json_struct(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let mut stack = WasmStack::default();
 
-    let first = match stack.write_json(TestEntry {
+    let first = match stack.write_json(TestStruct {
         value: "first".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     }) {
@@ -395,7 +400,7 @@ pub extern "C" fn stacked_json_struct(_: RibosomeEncodingBits) -> RibosomeEncodi
         Err(first_error) => return first_error.as_ribosome_encoding(),
     };
 
-    if let Err(second_error) = stack.write_json(TestEntry {
+    if let Err(second_error) = stack.write_json(TestStruct {
         value: "second".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     }) {
@@ -419,7 +424,7 @@ pub extern "C" fn store_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBit
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
-    let obj = TestEntry {
+    let obj = TestStruct {
         value: "first".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     };
@@ -435,7 +440,7 @@ pub extern "C" fn load_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits
     let mut stack = WasmStack::default();
 
     let encoded = 1 << 32;
-    let maybe_test_struct: Result<TestEntry, HolochainError> = load_ribosome_encoded_json(encoded);
+    let maybe_test_struct: Result<TestStruct, HolochainError> = load_ribosome_encoded_json(encoded);
     let test_struct = match maybe_test_struct {
         Ok(test_struct) => test_struct,
         Err(holochain_error) => return RibosomeEncodedValue::from(holochain_error).into(),
@@ -451,7 +456,7 @@ pub extern "C" fn load_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits
 pub extern "C" fn stacked_mix(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let mut stack = WasmStack::default();
 
-    if let Err(first_error) = stack.write_json(TestEntry {
+    if let Err(first_error) = stack.write_json(TestStruct {
         value: "first".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     }) {
@@ -471,7 +476,7 @@ pub extern "C" fn stacked_mix(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
         return fourth_error.as_ribosome_encoding();
     }
 
-    if let Err(fifth_error) = stack.write_json(TestEntry {
+    if let Err(fifth_error) = stack.write_json(TestStruct {
         value: "fifth".to_string(),
         list: vec!["fifthlist".to_string()],
     }) {

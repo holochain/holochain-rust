@@ -1,7 +1,17 @@
+
+
+///////////////////////////////////
+///
+///
+///            TODO
+///
+///
+////////////////////////////////////
+
 const path = require('path')
 const tape = require('tape')
 
-const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
+const { Orchestrator, Config, tapeExecutor } = require('@holochain/try-o-rama')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"

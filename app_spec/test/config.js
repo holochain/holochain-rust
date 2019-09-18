@@ -17,6 +17,9 @@ module.exports = {
       app1: dna,
       app2: dna2,
     },
+    bridges: [
+      Config.bridge('test-bridge', 'app1', 'app2')
+    ]
   }),
 
 

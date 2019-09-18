@@ -275,9 +275,10 @@ module.exports = scenario => {
       })
 
 
-      scenario('get_sources_from_link', async (s, t, { alice, bob }) => {
+      scenario('get_sources_from_link', async (s, t) => {
+      const { alice, bob } = await s.players({alice: one, bob: one}, true)
 
-        await alice.app.callSync("blog", "create_post", {
+        await alice.callSync('app', "blog", "create_post", {
           "content": "Holo world", "in_reply_to": null
         });
 

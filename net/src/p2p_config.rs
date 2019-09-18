@@ -1,5 +1,5 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::EngineConfig;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 
@@ -55,8 +55,8 @@ impl From<&'static str> for P2pBackendKind {
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub enum BackendConfig {
     Json(serde_json::Value),
-    Lib3h(RealEngineConfig),
-    Memory(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -165,9 +165,9 @@ impl P2pConfig {
         P2pConfig::new(
             P2pBackendKind::MEMORY,
             BackendConfig::Memory(
-                RealEngineConfig {
-                    tls_config: lib3h::transport_wss::TlsConfig::Unencrypted,
-                    socket_type: "mem".into(),
+                EngineConfig {
+                    //need to fix the transport configs
+                    transport_configs: Vec::new(),
                     bootstrap_nodes,
                     work_dir: "".into(),
                     log_level: 'd',
@@ -247,7 +247,7 @@ impl P2pConfig {
 /// Utility functions to extract config elements
 impl P2pConfig {
 
-    pub fn real_engine_config(self) -> Option<RealEngineConfig> {
+    pub fn real_engine_config(self) -> Option<EngineConfig> {
         match self.backend_config {
             BackendConfig::Lib3h(config) =>
                 Some(config),

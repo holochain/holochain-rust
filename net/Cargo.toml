@@ -13,11 +13,12 @@ lib3h = { git = "https://github.com/holochain/lib3h", branch = "ghost-actor" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "ghost-actor" }
 lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "ghost-actor" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "ghost-actor" }
+lib3h_tracing = { git = "https://github.com/holochain/lib3h", branch = "ghost-actor" }
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.7"
+holochain_persistence_api = "=0.0.8"
 lazy_static = "=1.2.0"
 libc = "=0.2.58"
 reqwest = "=0.9.11"

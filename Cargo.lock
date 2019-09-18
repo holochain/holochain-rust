@@ -787,7 +787,7 @@ dependencies = [
  "holochain_core_types 0.0.30-alpha6",
  "holochain_dpki 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.30-alpha6",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -823,7 +823,7 @@ dependencies = [
  "holochain_core_types 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.30-alpha6",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -890,10 +890,10 @@ dependencies = [
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_net 0.0.30-alpha6",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_file 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_mem 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_pickle 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_mem 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_pickle 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.30-alpha6",
  "hyper 0.12.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -960,7 +960,7 @@ dependencies = [
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_net 0.0.30-alpha6",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_mem 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.30-alpha6",
@@ -996,7 +996,7 @@ dependencies = [
  "holochain_conductor_api 0.0.30-alpha6",
  "holochain_core 0.0.30-alpha6",
  "holochain_core_types 0.0.30-alpha6",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1018,7 +1018,7 @@ dependencies = [
  "holochain_core 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1042,7 +1042,7 @@ version = "0.0.30-alpha6"
 dependencies = [
  "holochain_core_types 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1053,7 +1053,7 @@ dependencies = [
  "bip39 0.6.0-beta.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_core_types 0.0.30-alpha6",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1109,12 +1109,13 @@ dependencies = [
  "holochain_core_types 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
+ "lib3h_tracing 0.0.1 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.30-alpha6",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1210,6 +1211,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "holochain_persistence_file"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_test 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "holochain_persistence_mem"
 version = "0.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1226,13 +1243,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "holochain_persistence_pickle"
-version = "0.0.7"
+name = "holochain_persistence_mem"
+version = "0.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_test 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "holochain_persistence_pickle"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pickledb 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1252,7 +1285,7 @@ dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_core_types 0.0.30-alpha6",
  "holochain_net 0.0.30-alpha6",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
  "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
@@ -1273,7 +1306,7 @@ dependencies = [
  "holochain_core_types 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3848,8 +3881,10 @@ dependencies = [
 "checksum holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "1518588717c2b5960dd08244d10f2f8b2b40021f0bbcd63ca5858ef81e0d3374"
 "checksum holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "b6147eb544e7b64c104f530ef9477068b0045f16bb20f984d1d3750624eb294f"
 "checksum holochain_persistence_file 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "e3fbeb4659a3b60095440ef44ab4bf51981fc91b00b047fce794ee12231a66b3"
+"checksum holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0889292ea98f04fe061b87ab4cba78b0a1237f00b2630aa10aabc7d93285fb46"
 "checksum holochain_persistence_mem 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "132965256aff7489e68056a46ebfa743a4c1e3ce81f830bdfd97adc3179e2a87"
-"checksum holochain_persistence_pickle 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "9630f10d16486a67e8d8b5ad7627857d29158ab28d222d1569a0926e3b2bf6a2"
+"checksum holochain_persistence_mem 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1bb505b3bbf11fb0e1927b445481451e81501512d80b08460a4a4443d6c4dce0"
+"checksum holochain_persistence_pickle 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "e81bd8492aeedff664b98f1cd39b6de1e1c4ad3766a9a11df9dd78b35db5a7be"
 "checksum hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "21ceb46a83a85e824ef93669c8b390009623863b5c195d1ba747292c0c72f94e"
 "checksum http 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "372bcb56f939e449117fb0869c2e8fd8753a8223d92a172c6e808cf123a5b6e4"
 "checksum http_req 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "23fdb3445813f5f5e7fdb9d93df8f1c7e382237f2656b21c42e93e3a63e25c11"

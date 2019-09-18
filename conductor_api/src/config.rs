@@ -23,7 +23,7 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::EngineConfig;
 
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
@@ -808,8 +808,8 @@ fn default_address() -> String {
 #[serde(tag = "type")]
 pub enum NetworkConfig {
     N3h(N3hConfig),
-    Lib3h(RealEngineConfig),
-    Memory(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

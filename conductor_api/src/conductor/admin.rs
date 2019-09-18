@@ -48,6 +48,7 @@ pub trait ConductorAdmin {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError>;
     fn remove_instance_from_interface(
         &mut self,
@@ -210,7 +211,7 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
-        let instance = self.instantiate_from_config(id, Some(&new_config))?;
+        let instance = self.instantiate_from_config(id, Some(&mut new_config))?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
         self.config = new_config;
@@ -301,6 +302,7 @@ impl ConductorAdmin for Conductor {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+        alias: &Option<String>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -327,6 +329,7 @@ impl ConductorAdmin for Conductor {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
                         id: instance_id.clone(),
+                        alias: alias.clone(),
                     });
                 }
                 interface
@@ -1359,7 +1362,6 @@ type = 'http'"#,
     }
 
     #[test]
-    #[cfg(any(not(windows), feature = "broken-tests"))]
     fn test_add_instance_to_interface() {
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
@@ -1405,7 +1407,8 @@ type = 'http'"#,
         assert_eq!(
             conductor.add_instance_to_interface(
                 &String::from("websocket interface"),
-                &String::from("new-instance-2")
+                &String::from("new-instance-2"),
+                &None,
             ),
             Ok(())
         );

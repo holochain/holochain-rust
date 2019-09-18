@@ -17,6 +17,7 @@
 extern crate holochain_conductor_api;
 extern crate holochain_core_types;
 extern crate lib3h_sodium;
+#[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
 
@@ -25,6 +26,7 @@ use holochain_conductor_api::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
+#[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
@@ -37,6 +39,21 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
+pub enum SignalConfiguration {
+    Unix,
+    Windows,
+}
+
+impl Default for SignalConfiguration {
+    fn default() -> Self {
+        if cfg!(target_os = "windows") {
+            SignalConfiguration::Windows
+        } else {
+            SignalConfiguration::Unix
+        }
+    }
+}
+
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
     lib3h_sodium::check_init();
@@ -45,8 +62,7 @@ fn main() {
         .config
         .unwrap_or(config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
-    let termination_signals =
-        Signals::new(&[SIGINT, SIGTERM]).expect("Couldn't create signals list");
+
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(()) => {
@@ -70,24 +86,32 @@ fn main() {
                     .expect("Could not start UI servers!");
             }
 
-            for _sig in termination_signals.forever() {
-                let mut conductor_guard = CONDUCTOR.lock().unwrap();
-                let conductor = std::mem::replace(&mut *conductor_guard, None);
-                let refs = Arc::strong_count(&CONDUCTOR);
-                if refs == 1 {
-                    println!("Gracefully shutting down conductor...");
-                } else {
-                    println!(
-                        "Explicitly shutting down conductor. {} other threads were referencing it, so if unwrap errors follow, that might be why.",
-                        refs - 1
-                    );
-                    conductor
-                        .expect("No conductor running")
-                        .shutdown()
-                        .expect("Error shutting down conductor");
+            match SignalConfiguration::default() {
+                #[cfg(unix)]
+                SignalConfiguration::Unix => {
+                    let termination_signals =
+                        Signals::new(&[SIGINT, SIGTERM]).expect("Couldn't create signals list");
+                    for _sig in termination_signals.forever() {
+                        let mut conductor_guard = CONDUCTOR.lock().unwrap();
+                        let conductor = std::mem::replace(&mut *conductor_guard, None);
+                        let refs = Arc::strong_count(&CONDUCTOR);
+                        if refs == 1 {
+                            println!("Gracefully shutting down conductor...");
+                        } else {
+                            println!(
+                                    "Explicitly shutting down conductor. {} other threads were referencing it, so if unwrap errors follow, that might be why.",
+                                    refs - 1
+                                );
+                            conductor
+                                .expect("No conductor running")
+                                .shutdown()
+                                .expect("Error shutting down conductor");
+                        }
+                        break;
+                        // NB: conductor is dropped here and should shut down itself
+                    }
                 }
-                break;
-                // NB: conductor is dropped here and should shut down itself
+                _ => (),
             }
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),

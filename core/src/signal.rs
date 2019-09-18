@@ -10,7 +10,7 @@ use std::thread;
 #[serde(tag = "signal_type")]
 pub enum Signal {
     Trace(ActionWrapper),
-    Consistency(ConsistencySignal),
+    Consistency(ConsistencySignal<String>),
     User(UserSignal),
 }
 

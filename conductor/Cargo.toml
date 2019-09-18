@@ -1,6 +1,6 @@
 [package]
 name = "holochain"
-version = "0.0.28-alpha1"
+version = "0.0.30-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -8,7 +8,9 @@ holochain_core_types = { path = "../core_types" }
 holochain_conductor_api = { path = "../conductor_api" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "bootstrap-connect" }
 holochain_common = { path = "../common" }
-signal-hook = "=0.1.9"
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"
+[target.'cfg(unix)'.dependencies]
+signal-hook = "=0.1.10"
+

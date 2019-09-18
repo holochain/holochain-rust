@@ -456,6 +456,15 @@ impl Configuration {
         self.agents.iter().find(|ac| &ac.id == id).cloned()
     }
 
+    /// Returns the agent configuration with the given ID if present
+    pub fn update_agent_address_by_id(&mut self, id: &str, agent_id: &AgentId) {
+        self.agents.iter_mut().for_each(|ac| {
+            if &ac.id == id {
+                ac.public_address = agent_id.pub_sign_key.clone()
+            }
+        })
+    }
+
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
@@ -709,9 +718,22 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
+/// An instance reference makes an instance available in the scope
+/// of an interface.
+/// Since UIs usually hard-code the name with which they reference an instance,
+/// we need to decouple that name used by the UI from the internal ID of
+/// the instance. That is what the optional `alias` field provides.
+/// Given that there is 1-to-1 relationship between UIs and interfaces,
+/// by setting an alias for available instances in the UI's interface
+/// each UI can have its own unique handle for shared instances.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceReferenceConfiguration {
+    /// ID of the instance that is made available in the interface
     pub id: String,
+
+    /// A local name under which the instance gets mounted in the
+    /// interface's scope
+    pub alias: Option<String>,
 }
 
 /// A bridge enables an instance to call zome functions of another instance.

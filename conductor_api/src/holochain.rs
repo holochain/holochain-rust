@@ -107,7 +107,11 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 
-use holochain_core::state::StateWrapper;
+use holochain_core::{
+    state::StateWrapper,
+    state_dump::{address_to_content_and_type, StateDump},
+};
+use holochain_persistence_api::cas::content::Address;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
@@ -260,6 +264,26 @@ impl Holochain {
     pub fn set_conductor_api(&mut self, api: IoHandler) -> Result<(), HolochainInstanceError> {
         self.context()?.conductor_api.reset(api);
         Ok(())
+    }
+
+    pub fn get_state_dump(&self) -> Result<StateDump, HolochainInstanceError> {
+        self.check_instance()?;
+        Ok(StateDump::from(self.context.clone().expect(
+            "Context must be Some since we've checked it with check_instance()? above",
+        )))
+    }
+
+    pub fn get_type_and_content_from_cas(
+        &self,
+        address: &Address,
+    ) -> Result<(String, String), HolochainInstanceError> {
+        self.check_instance()?;
+        Ok(address_to_content_and_type(
+            address,
+            self.context
+                .clone()
+                .expect("Context must be Some since we've checked it with check_instance()? above"),
+        )?)
     }
 }
 

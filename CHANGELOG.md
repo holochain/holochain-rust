@@ -2,6 +2,134 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.30-alpha6] - 2019-09-17
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha5] - 2019-09-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha4] - 2019-09-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha23] - 2019-09-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha2] - 2019-09-15
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha1] - 2019-09-15
+
+### Added
+
+* Adds EncryptedSeed and seed.encrypt() allow for easy passphrase encrypting/decrypting of any of the existing seed types. Adds the MnemonicableSeed trait allows seeds to be converted to/from BIP39 mnemonics. [#1687](https://github.com/holochain/holochain-rust/pull/1687) 
+* added nix for `hc-conductor-install` and `hc-conductor-uninstall` based on `cargo` [#1689](https://github.com/holochain/holochain-rust/pull/1689)
+* When loading a hand-written or generated conductor config containing a TestAgent (`test_agent = true`), rewrite the config file so that the test agent's `public_address` is correct, rather than the arbitrary value that was specified before the `public_address` was actually known. [#1692](https://github.com/holochain/holochain-rust/pull/1692)
+
+### Changed
+
+* ConsistencySignal "events" are now serialized to strings before being emitted. [#1691](https://github.com/holochain/holochain-rust/pull/1691)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.29-alpha2] - 2019-08-26
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.29-alpha1] - 2019-08-26
+
+### Added
+
+* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658) 
+* Conductor API debug functions added: 
+    * `debug/running_instances`: returns array of running instance IDs
+    * `debug/state_dump`: returns a state dump for a given instance
+    * `debug/fetch_cas`: returns the content for a given entry address and instance ID
+  
+  Also added the source to the state dump.
+  [#1661](https://github.com/holochain/holochain-rust/pull/1661)
+
+* Add `alias` to instance references in interfaces to decouple hard-coded instance references in hApp UIs from conductor configs. [#1676](https://github.com/holochain/holochain-rust/pull/1676)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.28-alpha1] - 2019-08-18
 
 ### Added

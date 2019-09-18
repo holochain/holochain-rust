@@ -5,7 +5,7 @@ let
   script-n3h = pkgs.writeShellScriptBin name-n3h ''
   set -euo pipefail
   hc-cli-install
-  hc-conductor-rust-install
+  hc-conductor-install
   (cd app_spec && APP_SPEC_NETWORK_TYPE="n3h" ./build_and_test.sh);
   '';
 

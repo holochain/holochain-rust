@@ -357,6 +357,34 @@ fn can_get_entry_bad() {
 }
 
 #[test]
+fn update_same_entry_bad()
+{
+    let (mut hc, _, _) = start_holochain_instance("update_same_entry_bad", "alice");
+    let result = make_test_call(
+        &mut hc,
+        "check_commit_entry",
+        r#"{ "content": "test"}"#
+    );
+    println!("\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
+    let expected_result : ZomeApiResult<Address> =serde_json::from_str::<ZomeApiResult<Address>>(&call_result).expect("Coudl not deserialize value");
+    let update_string = format!(r#"{{ "content": "test",old_entry_address : "{}""}}"#
+    let result = make_test_call(
+        &mut hc,
+        "update_test_entry",
+        &update_string
+    );
+
+    let zome_internal = generate_zome_internal_error(String::from(r#""WorkflowFailed""#));
+    assert_eq!(
+        zome_internal,
+        expected_result.unwrap_err()
+    );
+}
+
+
+#[test]
 fn can_commit_entry() {
     let (mut hc, _, _) = start_holochain_instance("can_commit_entry", "alice");
 

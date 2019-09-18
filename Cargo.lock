@@ -788,7 +788,7 @@ dependencies = [
  "holochain_dpki 0.0.30-alpha6",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_file 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.30-alpha6",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",

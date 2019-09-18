@@ -1,5 +1,5 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h::engine::EngineConfig;
+use lib3h::engine::{EngineConfig,TransportConfig};
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 
@@ -167,7 +167,7 @@ impl P2pConfig {
             BackendConfig::Memory(
                 EngineConfig {
                     //need to fix the transport configs
-                    transport_configs: Vec::new(),
+                    transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
                     bootstrap_nodes,
                     work_dir: "".into(),
                     log_level: 'd',

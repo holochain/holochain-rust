@@ -736,8 +736,6 @@ impl Conductor {
     ) -> Result<Holochain, String> {
         let mut self_config = self.config.clone();
         let config = maybe_config.unwrap_or(&mut self_config);
-            id, maybe_config
-        ));
         let _ = config.check_consistency(&mut self.dna_loader)?;
 
         config

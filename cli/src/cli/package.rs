@@ -73,8 +73,8 @@ impl Packager {
             "Compiling a Rust based Zome to WASM depends on having Rust installed.",
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
-                "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14",
+                "Make sure to be running inside a nix-shell or from a nix-env installation.",
+                "See https://docs.holochain.love for more information.",
             ]),
         )?;
         if !should_continue {
@@ -447,7 +447,7 @@ mod tests {
 
         [dependencies]
         hdk = {github='xxx', tag='99.99.99-alpha99'}
-      
+
     "#
         )
         .expect("Could not compare"));
@@ -460,7 +460,7 @@ mod tests {
 
         [dependencies]
         hdk = {github='xxx', tag='0.0.0-alpha1'}
-      
+
     "#
         )
         .expect("Could not compare"))

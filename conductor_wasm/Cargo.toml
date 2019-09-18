@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_wasm"
-version = "0.0.29-alpha2"
+version = "0.0.30-alpha6"
 authors = ["neonphog <neonphog@gmail.com>"]
 edition = "2018"
 

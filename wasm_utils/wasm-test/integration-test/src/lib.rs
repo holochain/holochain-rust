@@ -29,7 +29,6 @@ use wasmi::MemoryInstance;
 use wasmi::memory_units::Pages;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation;
 
-
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
     value: String,

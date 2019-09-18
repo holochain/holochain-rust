@@ -47,6 +47,7 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
+pub mod network;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

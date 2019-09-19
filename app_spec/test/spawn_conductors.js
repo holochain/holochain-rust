@@ -62,7 +62,6 @@ bind_url = "mem://${tmpPath}"
 dht_custom_config = []
 dht_timeout_threshold = 8000
 dht_gossip_interval = 500
-log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 [[network.transport_configs]]
 type="{Memory = 'app-spec-memory'}"

@@ -56,18 +56,14 @@ state_dump = true
 
 [network]
 type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
-tls_config = "Unencrypted"
-socket_type = "mem"
 work_dir = ""
 log_level = "d"
 bind_url = "mem://${tmpPath}"
 dht_custom_config = []
 dht_timeout_threshold = 8000
 dht_gossip_interval = 500
-n3h_log_level = "${debugging ? 'i' : 'e'}"
+log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
-n3h_mode = "REAL"
-n3h_persistence_path = "${n3hPath}"
 transport_configs =[[{Memory = "app-spec-memory"}]]
     `
 

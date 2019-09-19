@@ -38,8 +38,7 @@ pub fn get_entry_from_agent_chain(
     let maybe_header = &agent
         .chain_store()
         .iter(&top_header)
-        .filter(|header| header.entry_address() == address)
-        .next();
+        .find(|header| header.entry_address() == address);
 
     if maybe_header.is_none() {
         return Ok(None);
@@ -141,8 +140,8 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
-pub fn get_entry_with_meta<'a>(
-    context: &'a Arc<Context>,
+pub fn get_entry_with_meta(
+    context: &Arc<Context>,
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry

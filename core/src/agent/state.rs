@@ -88,9 +88,7 @@ impl AgentState {
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
             .or_else(|| Some(self.initial_agent_address.clone()))
-            .ok_or(HolochainError::ErrorGeneric(
-                "Agent entry not found".to_string(),
-            ))
+            .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))
     }
 
     pub fn get_agent(&self) -> HcResult<AgentId> {
@@ -100,9 +98,8 @@ impl AgentState {
             .content_storage()
             .read()?
             .fetch(&agent_entry_address)?;
-        let agent_entry_json = maybe_agent_entry_json.ok_or(HolochainError::ErrorGeneric(
-            "Agent entry not found".to_string(),
-        ))?;
+        let agent_entry_json = maybe_agent_entry_json
+            .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 
         let agent_entry: Entry = agent_entry_json.try_into()?;
         match agent_entry {
@@ -166,6 +163,7 @@ impl AddressableContent for AgentStateSnapshot {
 /// poll and retrieve
 // @TODO abstract this to a standard trait
 // @see https://github.com/holochain/holochain-rust/issues/196
+#[allow(clippy::large_enum_variant)]
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
     FetchEntry(Option<Entry>),
@@ -420,14 +418,14 @@ pub mod tests {
         let agent_state = test_agent_state(Some(context.agent_id.address()));
         let state = State::new_with_agent(context.clone(), agent_state.clone());
 
-        let header =
-            create_new_chain_header(
-                &test_entry(),
-                &agent_state,
-                &StateWrapper::from(state),
-                &None,
-                &vec![]
-            ).unwrap();
+        let header = create_new_chain_header(
+            &test_entry(),
+            &agent_state,
+            &StateWrapper::from(state),
+            &None,
+            &vec![],
+        )
+        .unwrap();
         let agent_id = context.agent_id.clone();
         assert_eq!(
             header,

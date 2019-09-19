@@ -99,6 +99,7 @@ pub enum QueryPayload {
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug, Serialize)]
 #[serde(tag = "action_type", content = "data")]
+#[allow(clippy::large_enum_variant)]
 pub enum Action {
     // ----------------
     // Agent actions:

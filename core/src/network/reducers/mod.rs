@@ -102,10 +102,10 @@ pub fn send(
         .as_mut()
         .map(|network| {
             network
-                .send(json_message.into())
+                .send(json_message)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
-        .ok_or(HolochainError::ErrorGeneric(
+        .ok_or_else(|| HolochainError::ErrorGeneric(
             "Network not initialized".to_string(),
         ))?
 }

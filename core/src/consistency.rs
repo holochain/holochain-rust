@@ -54,6 +54,7 @@ impl From<ConsistencySignalE> for ConsistencySignal<String> {
 type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
 
 #[derive(Clone, Debug, Serialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum ConsistencyEvent {
     // CAUSES
     Publish(Address),                                   // -> Hold
@@ -137,7 +138,9 @@ impl ConsistencyModel {
                         _ => None,
                     });
                     let mut pending = vec![hold];
-                    meta.map(|m| pending.push(m));
+                    if let Some(m) = meta {
+                        pending.push(m)
+                    }
                     let signal = ConsistencySignal::new_pending(
                         Publish(address.clone()),
                         Validators,

@@ -61,6 +61,7 @@ where
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+#[allow(clippy::large_enum_variant)]
 pub enum Entry {
     #[serde(serialize_with = "serialize_app_entry")]
     #[serde(deserialize_with = "deserialize_app_entry")]
@@ -70,7 +71,6 @@ pub enum Entry {
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkData),
-    #[allow(clippy::large_enum_variant)]
     LinkRemove((LinkData, Vec<Address>)),
     LinkList(LinkList),
     ChainHeader(ChainHeader),

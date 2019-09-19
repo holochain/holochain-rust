@@ -62,11 +62,11 @@ impl<'de> Visitor<'de> for PendingValidationKeyStringVisitor {
         let parts: Vec<String> = value.split("__").map(|s| s.to_string()).collect();
         let address = parts
             .first()
-            .ok_or(Error::custom("No address found"))?
+            .ok_or_else(|| Error::custom("No address found"))?
             .to_owned();
         let workflow = parts
             .last()
-            .ok_or(Error::custom("No workflow found"))?
+            .ok_or_else(|| Error::custom("No workflow found"))?
             .to_owned();
         Ok(PendingValidationKey::new(
             address.into(),

@@ -122,14 +122,12 @@ const registerAllScenarios = () => {
     return f
   }
 
-  require('./regressions')(registerer(orchestratorSimpleInMemory))
-  require('./test')(registerer(orchestratorSimpleInMemory))
   require('./regressions')(registerer(orchestratorSimple))
-  require('./files/test')(registerer(orchestratorSimple))
-  require('./files/entry')(registerer(orchestratorSimple))
-  require('./files/links')(registerer(orchestratorSimple))
-  require('./files/memo')(registerer(orchestratorSimple))
-  require('./files/crypto')(registerer(orchestratorSimple))
+  require('./files/test')(registerer(orchestratorSimpleInMemory))
+  require('./files/entry')(registerer(orchestratorSimpleInMemory))
+  require('./files/links')(registerer(orchestratorSimpleInMemory))
+  require('./files/memo')(registerer(orchestratorSimpleInMemory))
+  require('./files/crypto')(registerer(orchestratorSimpleInMemory))
   // require('./multi-dna')(registerer(orchestratorMultiDna))
   require('./validate-agent-test')(registerer(orchestratorValidateAgent))
 

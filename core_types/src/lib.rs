@@ -30,6 +30,7 @@ extern crate regex;
 extern crate maplit;
 extern crate hcid;
 extern crate wasmi;
+extern crate lib3h_protocol;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;

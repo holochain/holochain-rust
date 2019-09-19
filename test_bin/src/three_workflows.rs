@@ -58,15 +58,12 @@ pub fn setup_three_nodes(
 
         // Connect nodes between them
         println!("Connect Alex to Billy ({})", node2_binding);
-        alex.send(
-            Lib3hClientProtocol::Connect(ConnectData {
-                request_id: "alex_to_billy_request_id".into(),
-                peer_uri: url::Url::parse(node2_binding.clone().as_str())
-                    .expect("well formed node 2 uri (billy)"),
-                network_id: "".into(),
-            })
-            .into(),
-        )?;
+        alex.send(Lib3hClientProtocol::Connect(ConnectData {
+            request_id: "alex_to_billy_request_id".into(),
+            peer_uri: url::Url::parse(node2_binding.clone().as_str())
+                .expect("well formed node 2 uri (billy)"),
+            network_id: "".into(),
+        }))?;
         // Make sure Peers are connected
         let result_a = alex
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
@@ -87,22 +84,19 @@ pub fn setup_three_nodes(
 
         // Connect nodes between them
         println!("Connect  Camille to Billy ({})", node2_binding);
-        camille.send(
-            Lib3hClientProtocol::Connect(ConnectData {
-                request_id: "camille_to_billy_request_id".into(),
-                peer_uri: url::Url::parse(node2_binding.clone().as_str())
-                    .expect("well formed billy (node2) ur"),
-                network_id: "".into(),
-            })
-            .into(),
-        )?;
+        camille.send(Lib3hClientProtocol::Connect(ConnectData {
+            request_id: "camille_to_billy_request_id".into(),
+            peer_uri: url::Url::parse(node2_binding.clone().as_str())
+                .expect("well formed billy (node2) ur"),
+            network_id: "".into(),
+        }))?;
 
         // Make sure Peers are connected
 
         let result_b = billy
             .wait_lib3h(Box::new(one_is_where!(
                 Lib3hServerProtocol::Connected(data),
-                { data.request_id == String::from("camille_to_billy_request_id") }
+                { data.request_id == "camille_to_billy_request_id" }
             )))
             .unwrap();
         println!("got connect result on Billy: {:?}", result_b);
@@ -111,7 +105,7 @@ pub fn setup_three_nodes(
         let result_c = camille
             .wait_lib3h(Box::new(one_is_where!(
                 Lib3hServerProtocol::Connected(data),
-                { data.request_id == String::from("fixme") }
+                { data.request_id == "fixme" }
             )))
             .unwrap();
         println!("got connect result on Camille: {:?}", result_c);
@@ -120,7 +114,7 @@ pub fn setup_three_nodes(
         let result_a = alex
             .wait_lib3h(Box::new(one_is_where!(
                 Lib3hServerProtocol::Connected(data),
-                { data.request_id == String::from("fixme") }
+                { data.request_id == "fixme" }
             )))
             .unwrap();
         println!("got connect result on Alex: {:?}", result_a);

@@ -380,12 +380,10 @@ pub fn test_memory_network_config(
     bootstrap_nodes: Vec<url::Url>,
 ) -> P2pConfig {
     network_name
-        .map(|name| {
-        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend())
-        })
-        .unwrap_or(P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(
-            bootstrap_nodes,
-        ))
+        .map(|name| P2pConfig::new_with_memory_backend_bootstrap_nodes(name, bootstrap_nodes.clone()))
+        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes))
+    
+       
 }
 
 #[cfg(test)]

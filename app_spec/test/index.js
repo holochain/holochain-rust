@@ -1,6 +1,5 @@
 const { Orchestrator, tapeExecutor, singleConductor, combine  } = require('@holochain/try-o-rama')
 
-const spawnConductor = require('./spawn_conductors')
 const { callSyncMiddleware } = require('./config')
 
 // This constant serves as a check that we haven't accidentally disabled scenario tests.

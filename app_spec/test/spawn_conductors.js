@@ -55,7 +55,6 @@ ${debugging ? '': 'pattern = "^debug"'}
 state_dump = true
 
 [network]
-type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
 work_dir = ""
 log_level = "d"
 bind_url = "mem://${tmpPath}"

@@ -65,7 +65,7 @@ dht_gossip_interval = 500
 log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 [[network.transport_configs]]
-type={Memory = "app-spec-memory"}
+type="{Memory = 'app-spec-memory'}"
     `
 
     return config

@@ -1,4 +1,4 @@
-use holochain_core_types::{
+use crate::{
     chain_header::ChainHeader, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};

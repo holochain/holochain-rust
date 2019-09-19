@@ -14,7 +14,7 @@ let
   script-memory = pkgs.writeShellScriptBin name-memory ''
   set -euo pipefail
   hc-cli-install
-  hc-conductor-rust-install
+  hc-conductor-install
   (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
   '';
 in

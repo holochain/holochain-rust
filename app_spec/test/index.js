@@ -19,7 +19,8 @@ const orchestrator = new Orchestrator({
     callSyncMiddleware,
     tapeExecutor(require('tape')),
   ),
-  debugLog: false
+  debugLog: false,
+  networking: 'memory',
 })
 
 require('./regressions')(orchestrator.registerScenario)

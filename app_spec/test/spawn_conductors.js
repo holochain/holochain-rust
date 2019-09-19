@@ -55,6 +55,7 @@ ${debugging ? '': 'pattern = "^debug"'}
 state_dump = true
 
 [network]
+type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
 work_dir = ""
 log_level = "d"
 bind_url = "mem://${tmpPath}"
@@ -63,7 +64,8 @@ dht_timeout_threshold = 8000
 dht_gossip_interval = 500
 log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
-transport_configs =[[{Memory = "app-spec-memory"}]]
+[[network.transport_configs]]
+type={Memory = "app-spec-memory"}
     `
 
     return config

@@ -68,8 +68,7 @@ n3h_log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"
 n3h_persistence_path = "${n3hPath}"
-[[network.transport_configs]]
-Memory="app-spec-config"
+transport_configs =[[{Memory = "app-spec-memory"}]]
     `
 
     return config

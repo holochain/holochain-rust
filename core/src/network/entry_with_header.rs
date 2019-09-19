@@ -25,9 +25,9 @@ fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, Holoc
         .content_storage()
         .read()?
         .fetch(address)?
-        .ok_or("Entry not found".to_string())?;
+        .ok_or_else(|| HolochainError::from("Entry not found"))?;
     let s: Entry = json.try_into()?;
-    Ok(s.into())
+    Ok(s)
 }
 
 pub fn fetch_entry_with_header(
@@ -37,7 +37,7 @@ pub fn fetch_entry_with_header(
     let entry = fetch_entry_from_cas(address, state)?;
 
     let header = find_chain_header(&entry, &StateWrapper::from(state.clone()))
-        .ok_or("No header found for entry".to_string())?;
+        .ok_or_else(|| HolochainError::from("No header found for entry"))?;
 
     Ok(EntryWithHeader::new(entry, header))
 }

@@ -17,6 +17,7 @@ jobs:
   steps:
    - checkout
    - run: nix-shell --run hc-test-fmt
+   - run: nix-shell --run hn-rust-clippy
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
@@ -100,10 +101,6 @@ jobs:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-
-   - run:
-       name: install cli
-       command: nix-shell --run hc-cli-install
 
    - run:
       name: test cli

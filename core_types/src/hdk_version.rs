@@ -67,9 +67,9 @@ impl ToString for HDKVersion {
         ]
         .join(".");
         let life_cycle = match self.lifecycle {
-            Lifecycle::Alpha(num) => vec!["Alpha", &num.to_string()].join(""),
-            Lifecycle::Beta(num) => vec!["Beta", &num.to_string()].join(""),
-            Lifecycle::Stable(num) => vec!["Stable", &num.to_string()].join(""),
+            Lifecycle::Alpha(num) => vec!["alpha", &num.to_string()].join(""),
+            Lifecycle::Beta(num) => vec!["beta", &num.to_string()].join(""),
+            Lifecycle::Stable(num) => vec!["stable", &num.to_string()].join(""),
         };
         vec![version, life_cycle].join("-")
     }
@@ -77,10 +77,10 @@ impl ToString for HDKVersion {
 
 impl HDKVersion {
     pub fn new(version_string: &str) -> HcResult<HDKVersion> {
-        let mut splits = version_string.split("-");
+        let mut splits = version_string.split('-');
         let version = splits.next().ok_or("Could not get version")?;
 
-        let mut version_splits = version.split(".");
+        let mut version_splits = version.trim_start_matches('v').split('.');
         let versioning = (
             version_splits
                 .next()

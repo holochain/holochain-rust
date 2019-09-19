@@ -80,7 +80,7 @@ pub fn setup_two_nodes(
         alex.send(Lib3hClientProtocol::Connect(ConnectData {
             request_id: "alex_send_connect".into(),
             peer_uri: url::Url::parse(node2_binding.as_str())
-                .expect(format!("malformed node2 url: {:?}", node2_binding).as_str()),
+                .unwrap_or_else(|_| panic!("malformed node2 url: {:?}", node2_binding)),
             network_id: "alex_to_node2".into(),
         }))?;
 
@@ -264,7 +264,7 @@ pub fn dht_two_aspects_test(
     log_i!("got HandleStoreEntryAspect on node A: {:?}", json);
     let store_data_1 = unwrap_to!(json => Lib3hServerProtocol::HandleStoreEntryAspect);
     let entry_address_1 = ENTRY_ADDRESS_1.clone();
-    let aspect_address: HashString = store_data_1.entry_aspect.aspect_address.clone().into();
+    let aspect_address: HashString = store_data_1.entry_aspect.aspect_address.clone();
 
     assert_eq!(store_data_1.entry_address, entry_address_1);
     assert!(aspect_address == *ASPECT_ADDRESS_1 || aspect_address == *ASPECT_ADDRESS_2);
@@ -283,7 +283,7 @@ pub fn dht_two_aspects_test(
     assert_ne!(store_data_1, store_data_2);
     assert_eq!(store_data_2.entry_address, entry_address_1);
 
-    let aspect_address_2: HashString = store_data_2.entry_aspect.aspect_address.clone().into();
+    let aspect_address_2: HashString = store_data_2.entry_aspect.aspect_address.clone();
 
     assert!(aspect_address_2 == *ASPECT_ADDRESS_1 || aspect_address_2 == *ASPECT_ADDRESS_2);
     assert!(
@@ -329,7 +329,7 @@ pub fn dht_two_aspects_test(
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
     let query_result_aspect_address: HashString =
-        query_result.aspect_list[0].aspect_address.clone().into();
+        query_result.aspect_list[0].aspect_address.clone();
 
     assert!(
         query_result_aspect_address == *ASPECT_ADDRESS_1
@@ -648,7 +648,7 @@ pub fn two_authors_test(
     assert_eq!(query_data.entry_address, entry_address_1);
     assert_eq!(query_result.entry_address.clone(), query_data.entry_address);
     assert_eq!(query_result.aspect_list.len(), 2);
-    let aspect_address_1: HashString = query_result.aspect_list[0].aspect_address.clone().into();
+    let aspect_address_1: HashString = query_result.aspect_list[0].aspect_address.clone();
 
     assert!(aspect_address_1 == *ASPECT_ADDRESS_1 || aspect_address_1 == *ASPECT_ADDRESS_2);
     // Done

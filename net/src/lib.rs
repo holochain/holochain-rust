@@ -45,5 +45,6 @@ pub mod error;
 pub mod ipc;
 pub mod ipc_net_worker;
 pub mod lib3h_worker;
+pub mod sim1h_worker;
 pub mod p2p_config;
 pub mod p2p_network;

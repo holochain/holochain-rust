@@ -67,7 +67,8 @@ dht_timeout_threshold = 8000
 dht_gossip_interval = 500
 bootstrap_nodes = []
 [[network.transport_configs]]
-type="{Memory = "app-spec-memory"}"
+type="Memory"
+Memory="live"
     `
 
     return config

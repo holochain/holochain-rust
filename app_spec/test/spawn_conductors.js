@@ -68,6 +68,7 @@ n3h_log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"
 n3h_persistence_path = "${n3hPath}"
+transport_configs = [[Memory="live"]]
     `
 
     return config

@@ -125,6 +125,7 @@ impl EntryHistory {
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum GetEntryResultType {
     Single(GetEntryResultItem),
     All(EntryHistory),

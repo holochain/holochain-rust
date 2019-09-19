@@ -9,7 +9,7 @@ use crate::{
 /// the entry's address.
 /// Corresponds to a prior AddPendingValidation Action.
 #[allow(unknown_lints)]
-#[allow(needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn reduce_remove_pending_validation(
     state: &mut NucleusState,
     _root_state: &State,

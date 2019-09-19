@@ -344,7 +344,7 @@ impl TestNode {
             Err(res) => Lib3hClientProtocol::FailureResult(res),
             Ok(fetch) => Lib3hClientProtocol::HandleFetchEntryResult(fetch),
         };
-        self.send(json_msg.into()).expect("Sending failed");
+        self.send(json_msg).expect("Sending failed");
         fetch_res
     }
 
@@ -458,7 +458,7 @@ impl TestNode {
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
             from_agent_id: self.agent_id.to_string().into(),
-            content: response_content.into(),
+            content: response_content,
         };
         self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(
             response.clone(),

@@ -50,7 +50,7 @@ pub async fn remove_link_workflow(
         })?;
 
     let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
+        .ok_or_else(|| "Could not get validation package from source".to_string())?;
     log_debug!(context, "workflow/remove_link: got validation package!");
 
     // 2. Create validation data struct

@@ -56,6 +56,7 @@ state_dump = true
 
 [network]
 type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
+network_id = "{nickname="app_spec",id="app_spec_memory"}"
 work_dir = ""
 log_level = "d"
 bind_url = "mem://${tmpPath}"
@@ -64,7 +65,7 @@ dht_timeout_threshold = 8000
 dht_gossip_interval = 500
 bootstrap_nodes = []
 [[network.transport_configs]]
-type="{Memory = 'app-spec-memory'}"
+type="{Memory = "app-spec-memory"}"
     `
 
     return config

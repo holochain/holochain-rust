@@ -418,7 +418,7 @@ dependencies = [
 [[package]]
 name = "detach"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 
 [[package]]
 name = "difference"
@@ -1525,7 +1525,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lib3h"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
@@ -1553,7 +1553,7 @@ dependencies = [
 [[package]]
 name = "lib3h_crypto_api"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1563,7 +1563,7 @@ dependencies = [
 [[package]]
 name = "lib3h_discovery"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 dependencies = [
  "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1571,7 +1571,7 @@ dependencies = [
 [[package]]
 name = "lib3h_protocol"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1586,7 +1586,7 @@ dependencies = [
 [[package]]
 name = "lib3h_sodium"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=ghost-actor)",
@@ -1598,7 +1598,7 @@ dependencies = [
 [[package]]
 name = "lib3h_zombie_actor"
 version = "0.0.10"
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0841b007db06f35a6fdea4c0376ad6f9fd7f6be8"
+source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#a0c2571557fbdb8c5003f0a8b94d1ccb201db31a"
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",

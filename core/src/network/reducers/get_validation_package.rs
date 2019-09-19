@@ -11,7 +11,7 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
     let source_address = &header
         .provenances()
         .first()
-        .ok_or(HolochainError::ErrorGeneric(
+        .ok_or_else(|| HolochainError::ErrorGeneric(
             "No source found in ChainHeader".to_string(),
         ))?
         .source();

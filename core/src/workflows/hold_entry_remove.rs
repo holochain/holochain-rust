@@ -37,7 +37,7 @@ pub async fn hold_remove_workflow(
         HolochainError::ValidationPending
     })?;
     let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
+        .ok_or_else(|| "Could not get validation package from source".to_string())?;
 
     // 2. Create validation data struct
     let validation_data = ValidationData {

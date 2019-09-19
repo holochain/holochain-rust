@@ -33,7 +33,7 @@ fn conductor_callback<S: Into<String>>(
 
     let response = handler
         .handle_request_sync(&request)
-        .ok_or(HolochainError::new("Callback failed"))?;
+        .ok_or("Callback failed")?;
 
     let response = JsonRpc::parse(&response)?;
 

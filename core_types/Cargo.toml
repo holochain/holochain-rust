@@ -33,7 +33,7 @@ uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"
 crossbeam-channel = "=0.3.8"
-lib3h_protocol = "=0.0.10"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

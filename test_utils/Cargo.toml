@@ -25,4 +25,4 @@ crossbeam-channel = "=0.3.8"
 lazy_static = "=1.2.0"
 jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 base64 = "=0.10.1"
-url = "=1.7.2"
+url = "=2.1.0"

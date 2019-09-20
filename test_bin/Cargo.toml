@@ -18,7 +18,7 @@ backtrace = "=0.3.27"
 multihash = "=0.8.0"
 crossbeam-channel = "=0.3.8"
 bincode = "=1.1.4"
-url = "=1.7.2"
+url = "=2.1.0"
 snowflake = "=1.3.0"
 [[bin]]
 name = "holochain_test_bin"

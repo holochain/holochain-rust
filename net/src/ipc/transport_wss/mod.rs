@@ -304,7 +304,7 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                         }
                         Err(e.into())
                     }
-                    Err(tungstenite::error::Error::ConnectionClosed(_)) => {
+                    Err(tungstenite::error::Error::ConnectionClosed) => {
                         // close event will be published
                         Ok(())
                     }

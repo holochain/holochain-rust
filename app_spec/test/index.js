@@ -123,7 +123,7 @@ const registerAllScenarios = () => {
   }
 
   require('./regressions')(registerer(orchestratorSimpleInMemory))
-  require('./test')(registerer(orchestratorSimpleInMemory))
+  //require('./test')(registerer(orchestratorSimpleInMemory))
   require('./regressions')(registerer(orchestratorSimple))
   require('./files/test')(registerer(orchestratorSimple))
   require('./files/entry')(registerer(orchestratorSimple))

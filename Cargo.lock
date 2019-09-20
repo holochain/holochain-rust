@@ -1546,11 +1546,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lib3h"
 version = "0.0.10"
-<<<<<<< HEAD
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0d727aa3473b9921a9d5db1892f7dcc5bd102b39"
-=======
 source = "git+https://github.com/holochain/lib3h?branch=develop#af87369d4abec8d89863fdef2938d09044150abc"
->>>>>>> origin/lib3h-client-protocol-integration-transport-memory
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",
@@ -1578,11 +1574,7 @@ dependencies = [
 [[package]]
 name = "lib3h_crypto_api"
 version = "0.0.10"
-<<<<<<< HEAD
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0d727aa3473b9921a9d5db1892f7dcc5bd102b39"
-=======
 source = "git+https://github.com/holochain/lib3h?branch=develop#af87369d4abec8d89863fdef2938d09044150abc"
->>>>>>> origin/lib3h-client-protocol-integration-transport-memory
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1592,11 +1584,7 @@ dependencies = [
 [[package]]
 name = "lib3h_discovery"
 version = "0.0.10"
-<<<<<<< HEAD
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0d727aa3473b9921a9d5db1892f7dcc5bd102b39"
-=======
 source = "git+https://github.com/holochain/lib3h?branch=develop#af87369d4abec8d89863fdef2938d09044150abc"
->>>>>>> origin/lib3h-client-protocol-integration-transport-memory
 dependencies = [
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1604,11 +1592,7 @@ dependencies = [
 [[package]]
 name = "lib3h_protocol"
 version = "0.0.10"
-<<<<<<< HEAD
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0d727aa3473b9921a9d5db1892f7dcc5bd102b39"
-=======
 source = "git+https://github.com/holochain/lib3h?branch=develop#af87369d4abec8d89863fdef2938d09044150abc"
->>>>>>> origin/lib3h-client-protocol-integration-transport-memory
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1622,11 +1606,7 @@ dependencies = [
 [[package]]
 name = "lib3h_sodium"
 version = "0.0.10"
-<<<<<<< HEAD
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0d727aa3473b9921a9d5db1892f7dcc5bd102b39"
-=======
 source = "git+https://github.com/holochain/lib3h?branch=develop#af87369d4abec8d89863fdef2938d09044150abc"
->>>>>>> origin/lib3h-client-protocol-integration-transport-memory
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",
@@ -1638,11 +1618,7 @@ dependencies = [
 [[package]]
 name = "lib3h_zombie_actor"
 version = "0.0.10"
-<<<<<<< HEAD
-source = "git+https://github.com/holochain/lib3h?branch=ghost-actor#0d727aa3473b9921a9d5db1892f7dcc5bd102b39"
-=======
 source = "git+https://github.com/holochain/lib3h?branch=develop#af87369d4abec8d89863fdef2938d09044150abc"
->>>>>>> origin/lib3h-client-protocol-integration-transport-memory
 dependencies = [
  "backtrace 0.3.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",

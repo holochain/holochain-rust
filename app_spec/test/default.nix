@@ -14,10 +14,19 @@ let
   script-memory = pkgs.writeShellScriptBin name-memory ''
   set -euo pipefail
   hc-cli-install
-  hc-conductor-rust-install
+  hc-conductor-install
   (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
+  '';
+
+  name-sim1h = "hc-app-spec-test-sim1h";
+
+  script-sim1h = pkgs.writeShellScriptBin name-sim1h ''
+  set -euo pipefail
+  hc-cli-install
+  hc-conductor-install
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim1h" ./build_and_test.sh);
   '';
 in
 {
- buildInputs = [ script-n3h script-memory ];
+ buildInputs = [ script-n3h script-memory script-sim1h ];
 }

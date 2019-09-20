@@ -17,7 +17,17 @@ let
   hc-conductor-install
   (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
   '';
+
+  name-websocket = "hc-app-spec-test-websocket";
+
+  script-websocket = pkgs.writeShellScriptBin name-websocket ''
+  set -euo pipefail
+  hc-cli-install
+  hc-conductor-install
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="websocket" ./build_and_test.sh);
+  '';
+
 in
 {
- buildInputs = [ script-n3h script-memory ];
+ buildInputs = [ script-n3h script-memory script-websocket ];
 }

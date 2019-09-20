@@ -14,7 +14,7 @@ process.on('unhandledRejection', error => {
 
 var transport_config= 'memory';
 
-if ${APP_SPEC_TRANSPORT_TYPE} =="websocket"
+if process.env.APP_SPEC_TRANSPORT_TYPE =="websocket"
 {
   transport_config = "websocket"
 }

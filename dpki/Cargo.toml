@@ -8,7 +8,7 @@ edition = "2018"
 lazy_static = "=1.2.0"
 base64 = "=0.10.1"
 holochain_core_types = { path = "../core_types" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "ghost-actor" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "develop" }
 holochain_persistence_api = "=0.0.8"
 serde = "=1.0.89"
 serde_derive = "=1.0.89"

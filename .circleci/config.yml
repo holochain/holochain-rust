@@ -210,6 +210,7 @@ workflows:
    - fmt
    - app-spec-tests-n3h
    - app-spec-tests-memory
+   - app-spec-tests-websocket
    # @todo reimplement proc tests properly
    # i.e. don't copy and paste app spec and expec it to work with stale state
    # - app-spec-proc-tests

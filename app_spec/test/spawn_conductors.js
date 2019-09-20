@@ -76,7 +76,7 @@ if (process.env.APP_SPEC_TRANSPORT_TYPE =="memory")
 }
 else if (process.env.APP_SPEC_TRANSPORT_TYPE =="websocket")
 {
-    config +='data="unencrypted"'
+    config +='data="Unencrypted"'
 }
 
     return config

@@ -4,7 +4,6 @@ module.exports = scenario => {
 
 scenario('calling get_links before link_entries makes no difference', async (s, t) => {
   const { alice } = await s.players({alice: one}, true)
-  console.log("ALISE", alice)
 
   const get1 = await alice.call('app', "blog", "my_posts", {})
   t.ok(get1.Ok)

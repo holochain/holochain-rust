@@ -1,11 +1,11 @@
 {
   "devDependencies": {},
   "dependencies": {
-    "@holochain/try-o-rama": "0.1.0-rc.7",
+    "@holochain/try-o-rama": "github:holochain/quadrama",
     "faucet": "0.0.1",
-    "json3": "*",
+    "json3": "^3.3.3",
     "sleep": "^5.2.3",
-    "tape": "^4.9.1"
+    "tape": "^4.11.0"
   },
   "scripts": {
     "test": "./run.sh",

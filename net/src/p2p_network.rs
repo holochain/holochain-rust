@@ -18,6 +18,7 @@ use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3
 use crossbeam_channel;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
+use crate::sim1h_worker::Sim1hWorker;
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
@@ -80,6 +81,15 @@ impl P2pNetwork {
                 Ok(Box::new(Lib3hWorker::with_memory_transport(h, backend_config.clone())?)
                    as Box<dyn NetWorker>)
             }),
+            // Create an Sim1hWorker
+            P2pBackendKind::SIM1H => Box::new(move |h| {
+                let backend_config = match &p2p_config.clone().backend_config {
+                    BackendConfig::Sim1h(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting memory")),
+                };
+                Ok(Box::new(Sim1hWorker::new(h, backend_config)?)
+                    as Box<dyn NetWorker>)
+            }),
         };
 
         let (t, rx) = crossbeam_channel::unbounded();
@@ -126,7 +136,8 @@ impl P2pNetwork {
     fn should_wait_for_p2p_ready(p2p_config: &P2pConfig) -> bool {
         match p2p_config.backend_kind {
             P2pBackendKind::LIB3H |
-            P2pBackendKind::MEMORY => false,
+            P2pBackendKind::MEMORY |
+            P2pBackendKind::SIM1H => false,
             P2pBackendKind::N3H => true
         }
     }

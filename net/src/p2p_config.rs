@@ -1,5 +1,6 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig,TransportConfig};
+use crate::sim1h_worker::Sim1hConfig;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 
@@ -12,6 +13,7 @@ pub enum P2pBackendKind {
     MEMORY,
     N3H,
     LIB3H,
+    SIM1H,
 }
 
 impl FromStr for P2pBackendKind {
@@ -21,6 +23,7 @@ impl FromStr for P2pBackendKind {
             "MEMORY" => Ok(P2pBackendKind::MEMORY),
             "N3H" => Ok(P2pBackendKind::N3H),
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
+            "SIM1H" => Ok(P2pBackendKind::SIM1H),
             _ => Err(()),
         }
     }
@@ -32,6 +35,7 @@ impl From<P2pBackendKind> for String {
             P2pBackendKind::MEMORY => "MEMORY",
             P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
+            P2pBackendKind::SIM1H => "SIM1H",
         })
     }
 }
@@ -57,6 +61,7 @@ pub enum BackendConfig {
     Json(serde_json::Value),
     Lib3h(EngineConfig),
     Memory(EngineConfig),
+    Sim1h(Sim1hConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -253,7 +258,8 @@ impl P2pConfig {
                 Some(config),
             BackendConfig::Memory(config) =>
                 Some(config),
-            BackendConfig::Json(_) => None
+            BackendConfig::Json(_) => None,
+            BackendConfig::Sim1h(_) => None,
         }
     }
 }

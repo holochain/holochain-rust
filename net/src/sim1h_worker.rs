@@ -4,6 +4,7 @@ use crate::connection::{
     net_connection::{NetHandler, NetWorker},
     NetResult,
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::{
     engine::{ghost_engine_wrapper::LegacyLib3h},
     error::Lib3hError
@@ -11,6 +12,11 @@ use lib3h::{
 use sim1h::ghost_actor::SimGhostActor;
 
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+
+#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
+pub struct Sim1hConfig{
+    pub dynamo_url: String,
+}
 
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically
 #[allow(non_snake_case)]
@@ -29,9 +35,8 @@ impl Sim1hWorker {
 
 impl Sim1hWorker {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
-    pub fn new(handler: NetHandler) -> NetResult<Self> {
-    	// TODO: Don't be stupd and actualy take this as a param
-    	let ghost_engine = SimGhostActor::new(&"http://derp:8000".into());
+    pub fn new(handler: NetHandler, config: Sim1hConfig) -> NetResult<Self> {
+    	let ghost_engine = SimGhostActor::new(&config.dynamo_url);
     	Ok(Self {
     		handler,
     		net_engine: LegacyLib3h::new("core", ghost_engine),
@@ -89,7 +94,15 @@ mod tests {
 		let handler = NetHandler::new(Box::new(move |message| {
 			s.send(message).map_err(|e| e.into())
 		}));
-		(Sim1hWorker::new(handler).unwrap(), r)
+		(
+            Sim1hWorker::new(
+                handler,
+                Sim1hConfig{
+                    dynamo_url:"http://derp:8000".into()
+                }
+            ).unwrap(),
+            r,
+        )
 	}
 
     #[test]

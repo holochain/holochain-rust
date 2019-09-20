@@ -1273,8 +1273,6 @@ impl Conductor {
             ))
         })?;
 
-        println!("serialize_configuration {:?}", self.config);
-
         file.write(serialize_configuration(&self.config)?.as_bytes())
             .map_err(|_| {
                 HolochainError::ErrorGeneric(format!(

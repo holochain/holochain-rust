@@ -28,6 +28,7 @@ use super::{
 use crossbeam_channel::{unbounded, Receiver};
 use holochain_net::connection::net_connection::NetHandler;
 use multihash::Hash;
+use lib3h_protocol::data_types::Opaque;
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -460,7 +461,7 @@ impl TestNode {
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
             from_agent_id: self.agent_id.to_string().into(),
-            content: response_content,
+            content: Opaque::from(response_content),
         };
         self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(
             response.clone(),

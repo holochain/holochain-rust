@@ -99,7 +99,7 @@ pub fn send(
         .as_mut()
         .map(|network| {
             network
-                .send(json_message)
+                .send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric(

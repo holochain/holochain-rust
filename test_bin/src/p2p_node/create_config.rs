@@ -1,6 +1,8 @@
 use holochain_net::{p2p_config::*, tweetlog::*};
 use p2p_node::lib3h::engine::{EngineConfig,TransportConfig};
 use std::path::Path;
+use super::lib3h::engine::GatewayId;
+use lib3h_protocol::Address;
 
 /// Create a P2pConfig for an IPC node that uses n3h and possibily a specific folder.
 /// Return the generated P2pConfig and the created tempdir if no dir was provided.
@@ -115,6 +117,10 @@ pub(crate) fn create_lib3h_config(
         None => P2pConfig {
             backend_kind: P2pBackendKind::LIB3H,
             backend_config: BackendConfig::Lib3h(EngineConfig {
+                network_id: GatewayId {
+                    nickname: "".into(),
+                    id: Address::new(),
+                },
                 transport_configs : vec![TransportConfig::Memory("Live".to_string())],
                 bootstrap_nodes,
                 work_dir: Path::new(&dir).to_path_buf(),

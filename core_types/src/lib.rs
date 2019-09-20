@@ -29,8 +29,8 @@ extern crate regex;
 #[macro_use]
 extern crate maplit;
 extern crate hcid;
-extern crate wasmi;
 extern crate lib3h_protocol;
+extern crate wasmi;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
@@ -44,11 +44,11 @@ pub mod chain_migrate;
 pub mod dna;
 pub mod hdk_version;
 pub mod link;
+pub mod network;
 pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
-pub mod network;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

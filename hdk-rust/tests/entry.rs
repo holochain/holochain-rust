@@ -211,7 +211,7 @@ pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
 #[test]
 fn hash_entry() {
-    let (mut hc, _, _) = start_holochain_instance("hash_entry", "alice",Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("hash_entry", "alice", Vec::new());
     let params = r#"{"content":"this is to hash"}"#;
     let result = make_test_call(&mut hc, "hash_entry", &params);
     assert_eq!(
@@ -227,7 +227,7 @@ fn hash_entry() {
 #[test]
 pub fn create_and_retrieve_private_entry() {
     let (mut hc, _, _signal_receiver) =
-        start_holochain_instance("create_and_retrieve_private_entry", "alice",Vec::new());
+        start_holochain_instance("create_and_retrieve_private_entry", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "create_priv_entry",
@@ -255,7 +255,8 @@ pub fn create_and_retrieve_private_entry() {
 
 #[test]
 pub fn test_bad_entry() {
-    let (mut hc, _, _signal_receiver) = start_holochain_instance("test_bad_entry", "alice",Vec::new());
+    let (mut hc, _, _signal_receiver) =
+        start_holochain_instance("test_bad_entry", "alice", Vec::new());
     let result = make_test_call(&mut hc, "get_entry", r#"{"address":"aba"}"#);
 
     let expected_result: ZomeApiResult<Option<Entry>> =
@@ -266,7 +267,7 @@ pub fn test_bad_entry() {
 
 #[test]
 fn can_round_trip() {
-    let (mut hc, test_logger, _) = start_holochain_instance("can_round_trip", "alice",Vec::new());
+    let (mut hc, test_logger, _) = start_holochain_instance("can_round_trip", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "send_tweet",
@@ -284,7 +285,7 @@ fn can_round_trip() {
 
 #[test]
 fn can_get_entry_ok() {
-    let (mut hc, _, _) = start_holochain_instance("can_get_entry_ok", "alice",Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("can_get_entry_ok", "alice", Vec::new());
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -319,7 +320,7 @@ fn can_get_entry_ok() {
 
 #[test]
 fn can_get_entry_bad() {
-    let (mut hc, _, _) = start_holochain_instance("can_get_entry_bad", "alice",Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("can_get_entry_bad", "alice", Vec::new());
     // Call the exposed wasm function that calls the Commit API function
 
     let result = make_test_call(
@@ -358,7 +359,7 @@ fn can_get_entry_bad() {
 
 #[test]
 fn can_commit_entry() {
-    let (mut hc, _, _) = start_holochain_instance("can_commit_entry", "alice",Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("can_commit_entry", "alice", Vec::new());
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
@@ -375,8 +376,11 @@ fn can_commit_entry() {
 }
 #[test]
 fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _, _) =
-        start_holochain_instance("can_return_empty_string_as_validation_fail", "alice",Vec::new());
+    let (mut hc, _, _) = start_holochain_instance(
+        "can_return_empty_string_as_validation_fail",
+        "alice",
+        Vec::new(),
+    );
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(

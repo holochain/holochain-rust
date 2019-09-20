@@ -18,7 +18,7 @@ let
   (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
   '';
 
-  name-memory = "hc-app-spec-test-websocket";
+  name-websocket = "hc-app-spec-test-websocket";
 
   script-memory = pkgs.writeShellScriptBin name-websocket ''
   set -euo pipefail
@@ -27,8 +27,6 @@ let
   (cd app_spec && APP_SPEC_NETWORK_TYPE="websocket" ./build_and_test.sh);
   '';
 
-  name-memory = "hc-app-spec-test-websocket";
-  
 in
 {
  buildInputs = [ script-n3h script-memory ];

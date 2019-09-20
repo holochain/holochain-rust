@@ -67,7 +67,7 @@ bootstrap_nodes = []
 nickname = "app_spec"
 id="app_spec_memory"
 [[network.transport_configs]]
-type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
+type="${process.env.APP_SPEC_TRANSPORT_TYPE || 'n3h'}"
     `
 
 if (process.env.APP_SPEC_TRANSPORT_TYPE =="memory")

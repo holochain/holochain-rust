@@ -19,7 +19,7 @@ const orchestrator = new Orchestrator({
     tapeExecutor(require('tape')),
   ),
   debugLog: false,
-  networking: 'memory',
+  networking: process.env.APP_SPEC_TRANSPORT_TYPE =="memory" : "memory" ? "websocket"
 })
 
 require('./regressions')(orchestrator.registerScenario)
@@ -35,9 +35,10 @@ require('./multi-dna')(orchestrator.registerScenario)
 // Check to see that we haven't accidentally disabled a bunch of scenarios
 const num = orchestrator.numRegistered()
 if (num < MIN_EXPECTED_SCENARIOS) {
-  console.error(`Expected at least ${MIN_EXPECTED_SCENARIOS} scenarios, but only ${num} were registered!`)
+  console.error("Expected at least ${MIN_EXPECTED_SCENARIOS} scenarios, but only ${num} were registered!")
   process.exit(1)
-} else {
+} 
+else {
   console.log(`Registered ${num} scenarios (at least ${MIN_EXPECTED_SCENARIOS} were expected)`)
 }
 

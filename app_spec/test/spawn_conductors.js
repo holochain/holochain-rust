@@ -4,7 +4,7 @@ const os = require('os')
 const path = require('path')
 
 const genConfig = (adminPort, debugging, tmpPath, n3hPath) => {
-    const config = `
+var config = `
 persistence_dir = "${tmpPath}"
 
 agents = []

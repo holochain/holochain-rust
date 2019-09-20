@@ -24,7 +24,7 @@ instances = []
     port = ${adminPort}
 
 [logger]
-type="info"
+type="debug"
 [[logger.rules.rules]]
 exclude = true
 pattern = ".*parity.*"

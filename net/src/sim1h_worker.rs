@@ -10,9 +10,8 @@ use lib3h::{
     error::Lib3hError
 };
 use sim1h::ghost_actor::SimGhostActor;
-
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
-
+use log::debug;
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig{
     pub dynamo_url: String,
@@ -50,6 +49,7 @@ impl NetWorker for Sim1hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+        debug!(">>NET>> {:?}", data);
         self.net_engine.post(data.clone())?;
         // Done
         Ok(())
@@ -57,10 +57,12 @@ impl NetWorker for Sim1hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        println!("sim1h tick");
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
             for msg in output {
+                debug!("<<NET<< {:?}", msg);
                 self.handler.handle(Ok(msg))?;
             }
         }

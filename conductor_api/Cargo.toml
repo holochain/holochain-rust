@@ -14,8 +14,12 @@ holochain_persistence_file = "=0.0.8"
 holochain_persistence_pickle = "=0.0.8"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+#lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+#lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h = { path = "../../lib3h/crates/lib3h" }
+lib3h_sodium = { path = "../../lib3h/crates/sodium" }
+
+
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

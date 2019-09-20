@@ -7,8 +7,10 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 holochain_core_types = { path = "../core_types" }
 holochain_persistence_api = "=0.0.8"
 holochain_net = { path = "../net" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+#lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h = { path = "../../lib3h/crates/lib3h" }
+#lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h_protocol = { path = "../../lib3h/crates/lib3h_protocol" }
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 tempfile = "=3.0.7"
 failure = "=0.1.5"

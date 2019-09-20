@@ -85,6 +85,17 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-memory
 
+ app-spec-tests-memory:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+
+   - run:
+       name: app spec tests
+       command: nix-shell --run hc-app-spec-test-websocket
+
  app-spec-proc-tests:
   docker:
    - image: holochain/holonix:latest

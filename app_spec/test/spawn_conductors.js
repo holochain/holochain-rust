@@ -67,9 +67,17 @@ bootstrap_nodes = []
 nickname = "app_spec"
 id="app_spec_memory"
 [[network.transport_configs]]
-type="memory"
-data="app-spec-memory"
+type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
     `
+
+if (process.env.APP_SPEC_NETWORK_TYPE =="memory")
+{
+    config += 'data="app-spec-memory"'
+}
+else if (process.env.APP_SPEC_NETWORK_TYPE =="websocket")
+{
+    config +='data="unencrypted"'
+}
 
     return config
 }

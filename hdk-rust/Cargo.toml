@@ -16,8 +16,8 @@ holochain_json_derive = "=0.0.17"
 holochain_persistence_api = "=0.0.8"
 pretty_assertions = "=0.6.1"
 env_logger = "=0.6.1"
-url = "=2.1.0"
 
+url = "=1.7.2"
 [dev-dependencies]
 test_utils = { path = "../test_utils" }
 holochain_conductor_api = { path = "../conductor_api" }

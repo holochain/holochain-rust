@@ -20,7 +20,7 @@ let
 
   name-websocket = "hc-app-spec-test-websocket";
 
-  script-memory = pkgs.writeShellScriptBin name-websocket ''
+  script-websocket = pkgs.writeShellScriptBin name-websocket ''
   set -euo pipefail
   hc-cli-install
   hc-conductor-install

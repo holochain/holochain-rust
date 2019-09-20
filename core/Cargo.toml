@@ -50,7 +50,7 @@ clokwerk = "=0.1.0"
 crossbeam-channel = "=0.3.8"
 regex = "=1.1.2"
 env_logger = "=0.6.1"
-url = "=1.7.2"
+url = { version = "=2.1.0", features = ["serde"] }
 
 [dev-dependencies]
 wabt = "=0.7.4"

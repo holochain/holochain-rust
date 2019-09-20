@@ -10,6 +10,8 @@ use crate::ipc::transport::{
     TransportResult,
 };
 
+use reqwest;
+
 // -- some internal types for readability -- //
 
 type TlsConnectResult<T> = Result<TlsStream<T>, native_tls::HandshakeError<T>>;
@@ -280,8 +282,11 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
             WssStreamState::TlsReady(socket) => {
                 info.last_msg = std::time::Instant::now();
                 *did_work = true;
+                //quick fix, url parsed in does not support tungstenite trait, converted to reqwest as a quick patch
+                let reqwest_url = reqwest::Url::parse(&info.url.clone().to_string())
+                                  .map_err(|_|TransportError::new("Could not parse url".to_string()))?;
                 info.stateful_socket = self
-                    .priv_ws_handshake(&info.id, tungstenite::client(info.url.clone(), socket))?;
+                    .priv_ws_handshake(&info.id, tungstenite::client(reqwest_url, socket))?;
                 Ok(())
             }
             WssStreamState::WssMidHandshake(socket) => {

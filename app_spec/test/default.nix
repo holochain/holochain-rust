@@ -29,5 +29,5 @@ let
 
 in
 {
- buildInputs = [ script-n3h script-memory ];
+ buildInputs = [ script-n3h script-memory script-websocket ];
 }

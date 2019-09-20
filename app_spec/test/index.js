@@ -12,6 +12,13 @@ process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
+var transport_config= 'memory';
+
+if process.env.APP_SPEC_TRANSPORT_TYPE =="websocket"
+{
+  transport_config = "websocket"
+}
+
 const orchestrator = new Orchestrator({
   middleware: combine(
     singleConductor,
@@ -19,7 +26,7 @@ const orchestrator = new Orchestrator({
     tapeExecutor(require('tape')),
   ),
   debugLog: false,
-  networking: process.env.APP_SPEC_TRANSPORT_TYPE =="memory" : "memory" ? "websocket"
+  networking: transport_config
 })
 
 require('./regressions')(orchestrator.registerScenario)

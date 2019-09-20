@@ -1031,7 +1031,7 @@ dependencies = [
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",
- "lib3h_protocol 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "objekt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1143,36 +1143,6 @@ dependencies = [
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tungstenite 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "holochain_persistence_api"
-version = "0.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-channel-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-core-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-executor-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-io-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-sink-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-util-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "objekt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1631,20 +1601,6 @@ dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_protocol"
-version = "0.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "url_serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3539,15 +3495,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "url_serde"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "utf-8"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3916,7 +3863,6 @@ dependencies = [
 "checksum hmac 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5dcb5e64cda4c23119ab41ba960d1e170a774c8e4b9d9e6a9bc18aabf5e59695"
 "checksum holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)" = "7411832f446f09ea53ce2ca789fd2acd86ad29cc08d6d3c903474c2fada54ca5"
 "checksum holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)" = "b82510813b7164094ca380651f81350d461fb695f4580c4d25d9f52bcc5e1f5d"
-"checksum holochain_persistence_api 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "1518588717c2b5960dd08244d10f2f8b2b40021f0bbcd63ca5858ef81e0d3374"
 "checksum holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "b6147eb544e7b64c104f530ef9477068b0045f16bb20f984d1d3750624eb294f"
 "checksum holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0889292ea98f04fe061b87ab4cba78b0a1237f00b2630aa10aabc7d93285fb46"
 "checksum holochain_persistence_mem 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1bb505b3bbf11fb0e1927b445481451e81501512d80b08460a4a4443d6c4dce0"
@@ -3952,7 +3898,6 @@ dependencies = [
 "checksum lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)" = "<none>"
 "checksum lib3h_discovery 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)" = "<none>"
 "checksum lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)" = "<none>"
-"checksum lib3h_protocol 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)" = "85c3a939d09e8afcd50f62c6f885193304333e3be99a483992235241751e4280"
 "checksum lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)" = "<none>"
 "checksum lib3h_zombie_actor 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)" = "<none>"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
@@ -4156,7 +4101,6 @@ dependencies = [
 "checksum unwrap_to 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cad414b2eed757c1b6f810f8abc814e298a9c89176b21fae092c7a87756fb839"
 "checksum url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "dd4e7c0d531266369519a4aa4f399d748bd37043b00bde1e4ff1f60a120b355a"
 "checksum url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "75b414f6c464c879d7f9babf951f23bc3743fb7313c081b2e6ca719067ea9d61"
-"checksum url_serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "74e7d099f1ee52f823d4bdd60c93c3602043c728f5db3b97bdb548467f7bddea"
 "checksum utf-8 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)" = "05e42f7c18b8f902290b009cde6d651262f956c98bc51bca4cd1d511c9cd85c7"
 "checksum utf8-ranges 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b4ae116fef2b7fea257ed6440d3cfcff7f190865f170cdad00bb6465bf18ecba"
 "checksum utf8parse 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8772a4ccbb4e89959023bc5b7cb8623a795caa7092d99f3aa9501b9484d4557d"

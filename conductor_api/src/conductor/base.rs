@@ -320,8 +320,7 @@ impl Conductor {
                                                 interface_config
                                                     .instances
                                                     .iter()
-                                                    .find(|instance| instance.id == *instance_id)
-                                                    .is_some()
+                                                    .any(|instance| instance.id == *instance_id)
                                             })
                                             .collect();
                                         println!("INTERFACEs for SIGNAL: {:?}", interfaces);
@@ -330,14 +329,14 @@ impl Conductor {
                                 };
 
                             for interface in interfaces_with_instance {
-                                broadcasters.get(&interface.id).map(|broadcaster| {
+                                if let Some(broadcaster) = broadcasters.get(&interface.id) {
                                     if let Err(error) = broadcaster.send(SignalWrapper {
                                         signal: signal.clone(),
                                         instance_id: instance_id.clone(),
                                     }) {
                                         notify(error.to_string());
                                     }
-                                });
+                                };
                             }
                         }
                     }
@@ -377,13 +376,9 @@ impl Conductor {
 
     pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
         {
-            let kill_switch =
-                self.interface_threads
-                    .get(id)
-                    .ok_or(HolochainError::ErrorGeneric(format!(
-                        "Interface {} not found.",
-                        id
-                    )))?;
+            let kill_switch = self.interface_threads.get(id).ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!("Interface {} not found.", id))
+            })?;
             notify(format!("Stopping interface {}", id));
             kill_switch.send(()).map_err(|err| {
                 let message = format!("Error stopping interface: {}", err);
@@ -399,7 +394,7 @@ impl Conductor {
         notify(format!("Start interface by id: {}", id));
         self.config
             .interface_by_id(id)
-            .ok_or(format!("Interface does not exist: {}", id))
+            .ok_or_else(|| format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
     }
 
@@ -409,7 +404,7 @@ impl Conductor {
             notify(format!("Starting server \"{}|\"", id));
             server
                 .start()
-                .expect(&format!("Couldn't start server {}", id));
+                .unwrap_or_else(|_| panic!("Couldn't start server {}", id));
             notify(format!("Server started for \"{}\"", id))
         });
         Ok(())
@@ -439,18 +434,18 @@ impl Conductor {
                         .bridges
                         .iter()
                         .find(|b| b.handle == handle)
-                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
-                            handle.clone(),
-                        ))?;
+                        .ok_or_else(|| {
+                            HolochainInstanceError::RequiredBridgeMissing(handle.clone())
+                        })?;
                     self.instances
                         .get(&bridge_config.callee_id)
-                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
-                            handle.clone(),
-                        ))?
+                        .ok_or_else(|| {
+                            HolochainInstanceError::RequiredBridgeMissing(handle.clone())
+                        })?
                         .read()
                         .unwrap()
                         .active()
-                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(handle))?;
+                        .ok_or_else(|| HolochainInstanceError::RequiredBridgeMissing(handle))?;
                 }
             }
         }
@@ -535,14 +530,9 @@ impl Conductor {
     }
 
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
-        notify("spawn network".into());
-        let network_config = self
-            .config
-            .clone()
-            .network
-            .ok_or(HolochainError::ErrorGeneric(
-                "attempt to spawn network when not configured".to_string(),
-            ))?;
+        let network_config = self.config.clone().network.ok_or_else(|| {
+            HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string())
+        })?;
 
         match network_config {
             NetworkConfig::N3h(config) => {
@@ -708,13 +698,14 @@ impl Conductor {
 
         for ui_interface_config in config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));
-            let bundle_config =
-                config
-                    .ui_bundle_by_id(&ui_interface_config.bundle)
-                    .ok_or(format!(
+            let bundle_config = config
+                .ui_bundle_by_id(&ui_interface_config.bundle)
+                .ok_or_else(|| {
+                    format!(
                         "UI interface {} references bundle with id {} but no such bundle found",
                         &ui_interface_config.id, &ui_interface_config.bundle
-                    ))?;
+                    )
+                })?;
             let connected_dna_interface = ui_interface_config
                 .clone()
                 .dna_interface
@@ -746,7 +737,7 @@ impl Conductor {
 
         config
             .instance_by_id(&id)
-            .ok_or(String::from("Instance not found in config"))
+            .ok_or_else(|| String::from("Instance not found in config"))
             .and_then(|instance_config| {
                 // Build context:
                 let mut context_builder = ContextBuilder::new();
@@ -832,7 +823,7 @@ impl Conductor {
                         // If the file is correctly loaded, meaning it exists in the file system,
                         // we can operate on its computed DNA hash
                         Ok(dna) => {
-                            let dna_hash_computed_from_file = HashString::from(dna.address());
+                            let dna_hash_computed_from_file = dna.address();
                             Conductor::check_dna_consistency_from_all_sources(
                                 &context,
                                 &dna_hash_from_conductor_config,
@@ -941,9 +932,7 @@ impl Conductor {
             api_builder = api_builder.with_agent_decryption_callback(
                 self.get_keybundle_for_agent(&instance_config.agent)?,
             );
-            let keystore = self
-                .get_keystore_for_agent(&instance_config.agent)
-                .map_err(|err| format!("{}", err))?;
+            let keystore = self.get_keystore_for_agent(&instance_config.agent)?;
             api_builder = api_builder.with_agent_keystore_functions(keystore);
         }
 
@@ -1097,7 +1086,7 @@ impl Conductor {
             let agent_config = self
                 .config
                 .agent_by_id(agent_id)
-                .ok_or(format!("Agent '{}' not found", agent_id))?;
+                .ok_or_else(|| format!("Agent '{}' not found", agent_id))?;
             if let Some(true) = agent_config.holo_remote_key {
                 return Err("agent is holo_remote, no keystore".to_string());
             }
@@ -1152,9 +1141,7 @@ impl Conductor {
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
-        let keystore = self
-            .get_keystore_for_agent(agent_id)
-            .map_err(|err| format!("{}", err))?;
+        let keystore = self.get_keystore_for_agent(agent_id)?;
         let mut keystore = keystore.lock().unwrap();
         let keybundle = keystore
             .get_keybundle(PRIMARY_KEYBUNDLE_ID)
@@ -1200,7 +1187,7 @@ impl Conductor {
             dest.display()
         ));
         fs::create_dir_all(dest).map_err(|_| {
-            HolochainError::ErrorGeneric(format!("Could not directory structure {:?}", dest).into())
+            HolochainError::ErrorGeneric(format!("Could not directory structure {:?}", dest))
         })?;
         fs_extra::dir::copy(&source, &dest, &fs_extra::dir::CopyOptions::new())
             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
@@ -1280,25 +1267,24 @@ impl Conductor {
 
     pub fn save_config(&self) -> Result<(), HolochainError> {
         fs::create_dir_all(&self.config.persistence_dir).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!(
-                    "Could not directory structure {:?}",
-                    self.config.persistence_dir
-                )
-                .into(),
-            )
+            HolochainError::ErrorGeneric(format!(
+                "Could not directory structure {:?}",
+                self.config.persistence_dir
+            ))
         })?;
         let mut file = File::create(&self.config_path()).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!("Could not create file at {:?}", self.config_path()).into(),
-            )
+            HolochainError::ErrorGeneric(format!(
+                "Could not create file at {:?}",
+                self.config_path()
+            ))
         })?;
 
         file.write(serialize_configuration(&self.config)?.as_bytes())
             .map_err(|_| {
-                HolochainError::ErrorGeneric(
-                    format!("Could not save config to {:?}", self.config_path()).into(),
-                )
+                HolochainError::ErrorGeneric(format!(
+                    "Could not save config to {:?}",
+                    self.config_path()
+                ))
             })?;
         Ok(())
     }
@@ -1320,7 +1306,7 @@ impl Conductor {
                 e.to_string()
             ))
         })?;
-        serde_json::to_writer_pretty(&file, dna.into())?;
+        serde_json::to_writer_pretty(&file, dna)?;
         Ok(path)
     }
 

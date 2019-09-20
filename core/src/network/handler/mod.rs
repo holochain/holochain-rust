@@ -314,7 +314,7 @@ fn get_meta_aspects(
                     &eavi.value(),
                     &Timeout::default(),
                 ))?
-                .ok_or(HolochainError::from(
+                .ok_or_else(|| HolochainError::from(
                     "Entry linked in EAV not found! This should never happen.",
                 ))?;
             let header = value_entry.headers[0].to_owned();

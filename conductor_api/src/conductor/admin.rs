@@ -90,7 +90,7 @@ impl ConductorAdmin for Conductor {
     ) -> Result<HashString, HolochainError> {
         let path_string = path
             .to_str()
-            .ok_or(HolochainError::ConfigError("invalid path".into()))?;
+            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
         let mut dna =
             Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string.into()).map_err(|e| {
                 HolochainError::ConfigError(format!(
@@ -126,7 +126,7 @@ impl ConductorAdmin for Conductor {
         };
         let config_path_str = config_path
             .to_str()
-            .ok_or(HolochainError::ConfigError("invalid path".into()))?;
+            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
 
         let new_dna = DnaConfiguration {
             id: id.clone(),
@@ -203,9 +203,9 @@ impl ConductorAdmin for Conductor {
             storage: StorageConfiguration::Pickle {
                 path: storage_path
                     .to_str()
-                    .ok_or(HolochainError::ConfigError(
-                        format!("invalid path {:?}", storage_path).into(),
-                    ))?
+                    .ok_or_else(|| {
+                        HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
+                    })?
                     .into(),
             },
         };
@@ -241,9 +241,9 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
-        self.instances.remove(id).map(|instance| {
+        if let Some(instance) = self.instances.remove(id) {
             instance.write().unwrap().kill();
-        });
+        }
         let _ = self.start_signal_multiplexer();
 
         notify(format!("Removed instance \"{}\".", id));
@@ -308,10 +308,12 @@ impl ConductorAdmin for Conductor {
 
         if new_config
             .interface_by_id(interface_id)
-            .ok_or(HolochainError::ErrorGeneric(format!(
-                "Interface with ID {} not found",
-                interface_id
-            )))?
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!(
+                    "Interface with ID {} not found",
+                    interface_id
+                ))
+            })?
             .instances
             .iter()
             .any(|i| i.id == *instance_id)
@@ -357,10 +359,12 @@ impl ConductorAdmin for Conductor {
 
         if !new_config
             .interface_by_id(interface_id)
-            .ok_or(HolochainError::ErrorGeneric(format!(
-                "Interface with ID {} not found",
-                interface_id
-            )))?
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!(
+                    "Interface with ID {} not found",
+                    interface_id
+                ))
+            })?
             .instances
             .iter()
             .any(|i| i.id == *instance_id)

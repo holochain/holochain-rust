@@ -28,7 +28,7 @@ fn reduce_respond_query_inner(network_state: &mut NetworkState,network_query_res
             space_address: network_state.dna_address.clone().unwrap(),
             responder_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry_address: query_data.entry_address.clone(),
-            query_result: query_result_json.to_string().into_bytes().into(),
+            query_result: query_result_json.to_string().into_bytes(),
         }),
     )
 }

@@ -38,7 +38,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     state.dna_address = Some(network_settings.dna_address.clone());
     state.agent_id = Some(network_settings.agent_id.clone());
 
-    if let Err(err) = network_lock.as_mut().unwrap().send(json.into()) {
+    if let Err(err) = network_lock.as_mut().unwrap().send(json) {
         println!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
         println!("Failed to initialize network!");
         let _ = network_lock.take().unwrap().stop();

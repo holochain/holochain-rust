@@ -8,7 +8,6 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, thread};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -46,7 +45,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 ))
                 .spawn(move || {
                     if let Err(error) = context.block_on(handle_custom_direct_message(
-                        Address::from(message_data.from_agent_id),
+                        message_data.from_agent_id,
                         message_data.request_id,
                         custom_direct_message,
                         context.clone(),
@@ -71,7 +70,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 ))
                 .spawn(move || {
                     context.block_on(respond_validation_package_request(
-                        Address::from(message_data.from_agent_id),
+                        message_data.from_agent_id,
                         message_data.request_id,
                         address,
                         context.clone(),

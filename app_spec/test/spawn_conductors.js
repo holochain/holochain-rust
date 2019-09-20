@@ -67,8 +67,8 @@ bootstrap_nodes = []
 nickname = "app_spec"
 id="app_spec_memory"
 [[network.transport_configs]]
-type="Memory"
-Memory="live"
+type="memory"
+data="app-spec-memory"
     `
 
     return config

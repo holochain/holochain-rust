@@ -70,11 +70,11 @@ id="app_spec_memory"
 type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
     `
 
-if (process.env.APP_SPEC_NETWORK_TYPE =="memory")
+if (process.env.APP_SPEC_TRANSPORT_TYPE =="memory")
 {
     config += 'data="app-spec-memory"'
 }
-else if (process.env.APP_SPEC_NETWORK_TYPE =="websocket")
+else if (process.env.APP_SPEC_TRANSPORT_TYPE =="websocket")
 {
     config +='data="unencrypted"'
 }

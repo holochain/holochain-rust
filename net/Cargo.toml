@@ -17,6 +17,7 @@ lib3h_protocol = { path = "../../lib3h/crates/lib3h_protocol" }
 lib3h_crypto_api = { path = "../../lib3h/crates/crypto_api" }
 #lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_sodium = { path = "../../lib3h/crates/sodium" }
+lib3h_tracing = { path = "../../lib3h/crates/tracing" }
 #sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
 sim1h = { path = "../../sim1h/crates/sim1h" }
 holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch = "master" }

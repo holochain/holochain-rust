@@ -8,7 +8,7 @@ pub extern crate holochain_core_types;
 #[macro_use]
 pub extern crate holochain_json_derive;
 pub extern crate holochain_json_api;
-extern crate holochain_persistence_api;
+pub extern crate holochain_persistence_api;
 
 /// ignore api_serialization because it is nothing but structs to hold serialization
 #[cfg_attr(tarpaulin, skip)]

@@ -460,7 +460,7 @@ impl TestNode {
             request_id: msg.request_id,
             to_agent_id: msg.from_agent_id.clone(),
             from_agent_id: self.agent_id.to_string().into(),
-            content: response_content,
+            content: response_content.into(),
         };
         self.send(Lib3hClientProtocol::HandleSendDirectMessageResult(
             response.clone(),

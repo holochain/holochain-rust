@@ -1,32 +1,14 @@
 { pkgs }:
 let
-  name-n3h = "hc-app-spec-test-n3h";
+  name = "hc-app-spec-test";
 
-  script-n3h = pkgs.writeShellScriptBin name-n3h ''
+  script = pkgs.writeShellScriptBin name ''
   set -euo pipefail
   hc-cli-install
   hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="n3h" ./build_and_test.sh);
-  '';
-
-  name-memory = "hc-app-spec-test-memory";
-
-  script-memory = pkgs.writeShellScriptBin name-memory ''
-  set -euo pipefail
-  hc-cli-install
-  hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
-  '';
-
-  name-sim1h = "hc-app-spec-test-sim1h";
-
-  script-sim1h = pkgs.writeShellScriptBin name-sim1h ''
-  set -euo pipefail
-  hc-cli-install
-  hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim1h" ./build_and_test.sh);
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="$@" ./build_and_test.sh);
   '';
 in
 {
- buildInputs = [ script-n3h script-memory script-sim1h ];
+ buildInputs = [ script ];
 }

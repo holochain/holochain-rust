@@ -3,7 +3,6 @@ use lib3h::engine::{EngineConfig, TransportConfig, GatewayId};
 use crate::sim1h_worker::Sim1hConfig;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
-use lib3h_protocol::Address;
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -172,10 +171,7 @@ impl P2pConfig {
             P2pBackendKind::MEMORY,
             BackendConfig::Memory(
                 EngineConfig {
-                    network_id: GatewayId {
-                        nickname: "".into(),
-                        id: Address::new(),
-                    },
+                    network_id : GatewayId { nickname : server_name.into(),id: server_name.into()},
                     //need to fix the transport configs
                     transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
                     bootstrap_nodes,

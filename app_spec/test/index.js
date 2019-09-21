@@ -14,12 +14,12 @@ process.on('unhandledRejection', error => {
 
 var transport_config = 'memory';
 
-if (process.env.APP_SPEC_TRANSPORT_TYPE =="websocket")
+if (process.env.APP_SPEC_NETWORK_TYPE === "websocket")
 {
   transport_config = "websocket"
 }
 
-if (process.env.APP_SPEC_TRANSPORT_TYPE =="sim1h")
+if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
 {
   transport_config = {
     type: 'sim1h',

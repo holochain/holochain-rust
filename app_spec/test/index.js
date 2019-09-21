@@ -12,11 +12,19 @@ process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
-var transport_config= 'memory';
+var transport_config = 'memory';
 
 if (process.env.APP_SPEC_TRANSPORT_TYPE =="websocket")
 {
   transport_config = "websocket"
+}
+
+if (process.env.APP_SPEC_TRANSPORT_TYPE =="sim1h")
+{
+  transport_config = {
+    type: 'sim1h',
+    dynamo_url: "http://localhost:8000",
+  }
 }
 
 const orchestrator = new Orchestrator({
@@ -25,8 +33,10 @@ const orchestrator = new Orchestrator({
     callSyncMiddleware,
     tapeExecutor(require('tape')),
   ),
-  debugLog: false,
-  networking: transport_config
+  globalConfig: {
+    logger: true,
+    network: transport_config
+  }
 })
 
 require('./regressions')(orchestrator.registerScenario)

@@ -13,6 +13,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Removed
 
 ### Fixed
-
+- Throw error when attempting to update entry with same hash [#1718](https://github.com/holochain/holochain-rust/pull/1718)
 ### Security
 

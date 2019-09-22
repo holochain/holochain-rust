@@ -696,23 +696,23 @@ pub fn handle_commit_test_entry(content:String) ->ZomeApiResult<Address>
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
         TestEntryType {
-            stuff:"stub".into()
+            stuff:content.into()
         }
         .into(),
     );
-    hdk::commit_entry(test_entry_to_create)
+    hdk::commit_entry(&test_entry_to_create)
 }
 
-pub fn handle_commit_update_test_entry(content : String,old_entry_address : Address) ->ZomeApiResult<Address>
+pub fn handle_commit_update_test_entry(content : String,old_entry_address : Address) ->ZomeApiResult<()>
 {
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
         TestEntryType {
-            stuff:"stub".into()
+            stuff:content.into()
         }
         .into(),
     );
-    hdk::update_entry(test_entry_to_create,old_entry_address)?;
+    hdk::update_entry(test_entry_to_create,&old_entry_address)?;
     Ok(())
 }
 
@@ -1057,15 +1057,15 @@ define_zome! {
 
         commit_test_entry : 
         {
-            input : |content : String|,
-            outputs : |result : ZomeApiResult<Address>|
+            inputs :|content : String|,
+            outputs : |result : ZomeApiResult<Address>|,
             handler : handle_commit_test_entry
         }
 
         update_test_entry : 
         {
-            input :   |content : String,old_entry_address : Address|,
-            outputs : |result : ZomeApiResult<()>|
+            inputs :   |content : String,old_entry_address : Address|,
+            outputs : |result : ZomeApiResult<()>|,
             handler : handle_commit_update_test_entry
         }
 

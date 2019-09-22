@@ -369,7 +369,7 @@ fn update_same_entry_bad()
     assert!(result.is_ok(), "result = {:?}", result);
     let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
     let expected_result : ZomeApiResult<Address> =serde_json::from_str::<ZomeApiResult<Address>>(&call_result).expect("Coudl not deserialize value");
-    let update_string = format!(r#"{{ "content": "test",old_entry_address : "{}""}}"#
+    let update_string = format!(r#"{{ "content": "test",old_entry_address : "{}""}}"#,expected_result.unwrap().unwrap());
     let result = make_test_call(
         &mut hc,
         "update_test_entry",

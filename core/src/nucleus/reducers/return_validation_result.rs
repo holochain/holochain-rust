@@ -13,5 +13,5 @@ pub fn reduce_return_validation_result(
     let ((id, hash), validation_result) = unwrap_to!(action => Action::ReturnValidationResult);
     state
         .validation_results
-        .insert((id.clone(), hash.clone()), validation_result.clone());
+        .insert((*id, hash.clone()), validation_result.clone());
 }

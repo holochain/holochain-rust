@@ -52,15 +52,14 @@ pub fn setup_two_lib3h_nodes(
 
         // Connect nodes between them
         log_i!("connect: node2_binding = {}", node2_binding);
-        alex.send(
-            Lib3hClientProtocol::Connect(lib3h_protocol::data_types::ConnectData {
+        alex.send(Lib3hClientProtocol::Connect(
+            lib3h_protocol::data_types::ConnectData {
                 request_id: "connect_req_1".into(),
                 peer_uri: Url::parse(billy.p2p_binding.clone().as_str())
                     .expect("well formed peer uri"),
                 network_id: "FIXME".into(),
-            })
-            .into(),
-        )?;
+            },
+        ))?;
 
         // Make sure Peers are connected
         let result_a = alex

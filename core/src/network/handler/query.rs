@@ -60,7 +60,7 @@ fn get_links(
             let link_add_entry_args = GetEntryArgs {
                 address: link_add_address.clone(),
                 options: GetEntryOptions {
-                    headers: headers.clone(),
+                    headers,
                     ..Default::default()
                 },
             };
@@ -82,14 +82,14 @@ fn get_links(
                             .map(|single_entry| match single_entry {
                                 Entry::LinkAdd(link_add) => Ok(GetLinkData::new(
                                     link_add_address.clone(),
-                                    crud.clone(),
+                                    crud,
                                     link_add.link().target().clone(),
                                     tag.clone(),
                                     maybe_entry_headers,
                                 )),
                                 Entry::LinkRemove(link_remove) => Ok(GetLinkData::new(
                                     link_add_address.clone(),
-                                    crud.clone(),
+                                    crud,
                                     link_remove.0.link().target().clone(),
                                     tag.clone(),
                                     maybe_entry_headers,
@@ -104,7 +104,7 @@ fn get_links(
                         "Single Entry required for Get Entry".to_string(),
                     )),
                 })
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
+                .unwrap_or_else(|_| Err(HolochainError::ErrorGeneric(
                     "Could Not Get Entry for Link Data".to_string(),
                 )))
         })

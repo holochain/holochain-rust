@@ -224,10 +224,7 @@ impl Keystore {
     /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
     /// representation in `cache`.
     fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
-        let blob = self
-            .secrets
-            .get(id_str)
-            .ok_or(HolochainError::new("Secret not found"))?;
+        let blob = self.secrets.get(id_str).ok_or("Secret not found")?;
 
         let mut default_passphrase =
             SecBuf::with_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
@@ -251,10 +248,7 @@ impl Keystore {
     /// This expects an unencrypted named secret in `cache`, encrypts it and stores the
     /// encrypted representation in `secrets`.
     fn encrypt(&mut self, id_str: &String) -> HcResult<()> {
-        let secret = self
-            .cache
-            .get(id_str)
-            .ok_or(HolochainError::new("Secret not found"))?;
+        let secret = self.cache.get(id_str).ok_or("Secret not found")?;
         let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
         self.check_passphrase(&mut passphrase)?;
         let blob = match *secret.lock()? {

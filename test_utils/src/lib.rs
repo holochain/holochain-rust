@@ -569,6 +569,7 @@ pub fn example_valid_entry_address() -> Address {
 }
 
 //this polls for the zome result until it satisfies a the boolean condition or elapses a number of tries.
+//only use this for get requests please
 pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
 {
     //make zome call

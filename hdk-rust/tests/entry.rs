@@ -10,7 +10,7 @@ extern crate serde_json;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 
-use hdk::error::ZomeApiResult;
+use hdk::error::{ZomeApiResult,ZomeApiError};
 
 use holochain_core_types::{
     entry::Entry,
@@ -28,7 +28,7 @@ use std::path::PathBuf;
 use test_utils::{
     empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
     example_valid_entry_params, example_valid_entry_result, make_test_call,
-    start_holochain_instance, wait_for_zome_result,
+    start_holochain_instance, wait_for_zome_result
 };
 
 //
@@ -362,23 +362,23 @@ fn update_same_entry_bad()
     let (mut hc, _, _) = start_holochain_instance("update_same_entry_bad", "alice");
     let result = make_test_call(
         &mut hc,
-        "check_commit_entry",
+        "commit_test_entry",
         r#"{ "content": "test"}"#
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
     let expected_result : ZomeApiResult<Address> =serde_json::from_str::<ZomeApiResult<Address>>(&call_result).expect("Coudl not deserialize value");
-    let update_string = format!(r#"{{ "content": "test",old_entry_address : "{}""}}"#,expected_result.unwrap().unwrap());
+    let update_string = format!(r#"{{ "content": "test","old_entry_address" : "{}"}}"#,expected_result.unwrap());
     let result = make_test_call(
         &mut hc,
         "update_test_entry",
         &update_string
     );
-
-    let zome_internal = generate_zome_internal_error(String::from(r#""WorkflowFailed""#));
+    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
+    let expected_result : ZomeApiResult<()> =serde_json::from_str::<ZomeApiResult<()>>(&call_result).expect("Coudl not deserialize value");
     assert_eq!(
-        zome_internal,
+        ZomeApiError::Internal("Workflow failed".to_string()),
         expected_result.unwrap_err()
     );
 }

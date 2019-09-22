@@ -810,16 +810,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdk-proc-macros"
-version = "0.0.30-alpha6"
-dependencies = [
- "hdk 0.0.30-alpha6",
- "proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.15.31 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "heck"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -69,7 +69,13 @@ impl Sim1hWorker {
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let ClientToLib3h::JoinSpace(space_data)= ClientToLib3h::from(data);
                 let log_context = "ClientToLib3h::JoinSpace";
-                Ok(Lib3hServerProtocol::from(join_space(&log_context, &self.dynamo_db_client, &space_data)?))
+                join_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData{
+                    request_id: space_data.request_id,
+                    space_address: space_data.space_address,
+                    to_agent_id: space_data.agent_id,
+                    result_info: Opaque::new(),
+                }))
             }
             // Order the p2p module to leave the network of the specified space.
             Lib3hClientProtocol::LeaveSpace(space_data) => {

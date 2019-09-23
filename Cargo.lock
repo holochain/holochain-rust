@@ -1241,6 +1241,7 @@ dependencies = [
  "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",
  "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.30-alpha6",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",

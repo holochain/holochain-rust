@@ -272,8 +272,8 @@ mod tests {
 
         let space_data = SpaceData {
             request_id: String::from("request-id-0"),
-            space_address: Address::new(),
-            agent_id: Address::new(),
+            space_address: Address::from("test-space-address"),
+            agent_id: Address::from("test-agent-id"),
         };
         let message = Lib3hClientProtocol::JoinSpace(space_data);
 

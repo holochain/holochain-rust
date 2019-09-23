@@ -9,7 +9,7 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
+sim1h = { git = "https://github.com/holochain/sim1h", branch = "make-ghost-actor-optional" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "develop" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "develop" }
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "develop" }

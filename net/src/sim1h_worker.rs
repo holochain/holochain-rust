@@ -14,7 +14,20 @@ use lib3h_protocol::{
 use log::{debug, warn};
 use sim1h::{
     dht::bbdht::dynamodb::client::{client_from_endpoint, Client},
-    workflow::from_client::join_space::join_space,
+    workflow::{
+        from_client::{
+            fetch_entry::fetch_entry, hold_entry::hold_entry, join_space::join_space,
+            leave_space::leave_space, publish_entry::publish_entry,
+            query_entry::query_entry_aspects, send_direct_message::send_direct_message,
+        },
+        to_client::{
+            handle_fetch_entry::handle_fetch_entry,
+            handle_get_authoring_entry_list::handle_get_authoring_entry_list,
+            handle_get_gossiping_entry_list::handle_get_gossiping_entry_list,
+            handle_query_entry::handle_query_entry,
+            handle_send_direct_message::handle_send_direct_message,
+        },
+    },
 };
 use url::Url;
 
@@ -89,7 +102,9 @@ impl Sim1hWorker {
             }
             // Order the p2p module to leave the network of the specified space.
             Lib3hClientProtocol::LeaveSpace(space_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::LeaveSpace";
+                leave_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: space_data.request_id,
                     space_address: space_data.space_address,
                     to_agent_id: space_data.agent_id,
@@ -100,7 +115,9 @@ impl Sim1hWorker {
             // -- Direct Messaging -- //
             // Send a message directly to another agent on the network
             Lib3hClientProtocol::SendDirectMessage(dm_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::SendDirectMessage";
+                send_direct_message(&log_context, &self.dynamo_db_client, &dm_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: dm_data.request_id,
                     space_address: dm_data.space_address,
                     to_agent_id: dm_data.to_agent_id,
@@ -109,7 +126,9 @@ impl Sim1hWorker {
             }
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
+                handle_send_direct_message(&log_context, &self.dynamo_db_client, &dm_data);
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: dm_data.request_id,
                     space_address: dm_data.space_address,
                     to_agent_id: dm_data.to_agent_id,
@@ -119,7 +138,9 @@ impl Sim1hWorker {
             // -- Entry -- //
             // Request an Entry from the dht network
             Lib3hClientProtocol::FetchEntry(fetch_entry_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::FetchEntry";
+                fetch_entry(&log_context, &self.dynamo_db_client, &fetch_entry_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: fetch_entry_data.request_id,
                     space_address: fetch_entry_data.space_address,
                     to_agent_id: fetch_entry_data.provider_agent_id,
@@ -128,7 +149,13 @@ impl Sim1hWorker {
             }
             // Successful data response for a `HandleFetchEntryData` request
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::HandleFetchEntryResult";
+                handle_fetch_entry(
+                    &log_context,
+                    &self.dynamo_db_client,
+                    &fetch_entry_result_data,
+                );
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: fetch_entry_result_data.request_id,
                     space_address: fetch_entry_result_data.space_address,
                     to_agent_id: fetch_entry_result_data.provider_agent_id,
@@ -137,7 +164,9 @@ impl Sim1hWorker {
             }
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::PublishEntry";
+                publish_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: "".into(),
                     space_address: provided_entry_data.space_address,
                     to_agent_id: provided_entry_data.provider_agent_id,
@@ -146,7 +175,9 @@ impl Sim1hWorker {
             }
             // Tell network module Core is holding this entry
             Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::HoldEntry";
+                hold_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: "".into(),
                     space_address: provided_entry_data.space_address,
                     to_agent_id: provided_entry_data.provider_agent_id,
@@ -155,7 +186,9 @@ impl Sim1hWorker {
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::QueryEntry";
+                query_entry_aspects(&log_context, &self.dynamo_db_client, &query_entry_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: query_entry_data.request_id,
                     space_address: query_entry_data.space_address,
                     to_agent_id: query_entry_data.requester_agent_id,
@@ -164,7 +197,13 @@ impl Sim1hWorker {
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::HandleQueryEntryResult";
+                handle_query_entry(
+                    &log_context,
+                    &self.dynamo_db_client,
+                    &query_entry_result_data,
+                );
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: query_entry_result_data.request_id,
                     space_address: query_entry_result_data.space_address,
                     to_agent_id: query_entry_result_data.requester_agent_id,
@@ -174,7 +213,13 @@ impl Sim1hWorker {
 
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
+                handle_get_authoring_entry_list(
+                    &log_context,
+                    &self.dynamo_db_client,
+                    &entry_list_data,
+                );
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: entry_list_data.request_id,
                     space_address: entry_list_data.space_address,
                     to_agent_id: entry_list_data.provider_agent_id,
@@ -182,7 +227,13 @@ impl Sim1hWorker {
                 }))
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
-                Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
+                let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
+                handle_get_gossiping_entry_list(
+                    &log_context,
+                    &self.dynamo_db_client,
+                    &entry_list_data,
+                );
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: entry_list_data.request_id,
                     space_address: entry_list_data.space_address,
                     to_agent_id: entry_list_data.provider_agent_id,

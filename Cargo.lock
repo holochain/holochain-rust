@@ -3151,7 +3151,7 @@ dependencies = [
 [[package]]
 name = "sim1h"
 version = "0.0.1"
-source = "git+https://github.com/holochain/sim1h?branch=make-ghost-actor-optional#a7bc4b0f3d1bf0ec4e07b9df7f8fe4f7a72b3062"
+source = "git+https://github.com/holochain/sim1h?branch=make-ghost-actor-optional#4ea8448842914d0ff73ac1d702ef5dfce3865856"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=develop)",

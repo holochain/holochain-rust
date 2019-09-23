@@ -13,6 +13,7 @@ lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integrat
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h_tracing = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 #sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
 sim1h = { path = "../../sim1h/crates/sim1h" }
 holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch = "master" }
@@ -39,6 +40,7 @@ crossbeam-channel = "=0.3.8"
 parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
 logging = { path = "../logging" }
+log = "0.4.8"
 
 [features]
 

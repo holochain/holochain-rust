@@ -108,8 +108,13 @@ impl Sim1hWorker {
             Lib3hClientProtocol::LeaveSpace(space_data) => {
                 let log_context = "ClientToLib3h::LeaveSpace";
                 println!("handlingmessage {:?}", log_context);
-                let result = leave_space(&log_context, &self.dynamo_db_client, &space_data)?;
-                Ok(result.into())
+                let _ = leave_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
+                    request_id: space_data.request_id,
+                    space_address: space_data.space_address,
+                    to_agent_id: space_data.agent_id,
+                    result_info: Opaque::new(),
+                }))
             }
 
             // -- Direct Messaging -- //

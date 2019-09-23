@@ -101,12 +101,10 @@ pub fn example_link_add() -> LinkData {
 pub mod tests {
 
     use crate::{
-        agent::test_agent_id,
-        chain_header::test_chain_header,
         entry::{test_entry_a, test_entry_b, Entry},
         link::{
-            link_data::LinkData,
-            tests::{example_link, example_link_action_kind, example_link_type},
+            link_data::{example_link_add},
+            example_link, example_link_action_kind, example_link_type,
         },
     };
     use holochain_json_api::json::JsonString;

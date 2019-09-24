@@ -43,23 +43,23 @@ module.exports = scenario => {
       
         //bob expects zero links
         t.ok(bob_agent_posts_expect_empty.Ok)
-        t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
-        //alice expects zero alice
+        t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0); // #!# fails with expected: 0 actual: 2
+        //alice expects zero links
         t.ok(alice_agent_posts_expect_empty.Ok)
         t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
-      
       
         //different chain hash up to this point so we should be able to create a link with the same data
         await alice.app.callSync("simple", "create_link",{ "base":alice.app.agentId, "target": "Posty" })
       
-        //get alice posts
-        const alice_posts_not_empty = await bob.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+        //get posts as Alice and as Bob
+        const alice_posts_not_empty = await alice.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+        const bob_posts_not_empty = await bob.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
       
          //expect 1 post
         t.ok(alice_posts_not_empty.Ok)
         t.equal(alice_posts_not_empty.Ok.links.length, 1);
-      
-      
+        t.ok(bob_posts_not_empty.Ok)
+        t.equal(bob_posts_not_empty.Ok.links.length, 1); //#!# fails with expected: 1 actual: 2      
       })
       
 

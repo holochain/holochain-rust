@@ -173,7 +173,7 @@ impl EncryptingKeyPair {
         Self { public, private }
     }
 
-    /// encrypt some arbitrary data with the signing private key
+    /// encrypt some arbitrary data with the encryption private key
     /// @param {SecBuf} data - the data to encrypt
     /// @param {output} encrypted_data - result of data encryption
     pub fn encrypt(&mut self, data: &mut SecBuf, encrypted_data: &mut SecBuf) -> HcResult<()> {
@@ -202,7 +202,7 @@ impl EncryptingKeyPair {
         Ok(())
     }
 
-    /// decrypt some arbitrary data with the signing private key
+    /// decrypt some arbitrary data with the encryption private key
     /// @param {SecBuf} cipher - the data to decrypt
     /// @param{SecBuf} data - the decrypted data
     pub fn decrypt(
@@ -212,8 +212,9 @@ impl EncryptingKeyPair {
     ) -> HcResult<()> {
         let cipher_length = cipher.len() - lib3h_sodium::aead::NONCEBYTES;
 
-        //get nonce from buffer
-        let mut cipher_slice = &**cipher.read_lock();
+        //get nonce from cipher+none buffer
+        let mut nonce = cipher.clone_partial(cipher_length, lib3h_sodium::aead::NONCEBYTES);
+        /*
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
         let nonce_slice_from_cipher = cipher_slice
             .iter()
@@ -221,8 +222,11 @@ impl EncryptingKeyPair {
             .cloned()
             .collect::<Vec<u8>>();
         nonce.from_array(&nonce_slice_from_cipher)?;
+         */
 
-        //get cipher only from buffer
+        //get cipher only from cipher+nonce buffer
+        let mut cipher_no_nonce = cipher.clone_partial(0, cipher_length); 
+        /*
         let cipher_no_nonce_slice = cipher_slice
             .iter()
             .cloned()
@@ -230,7 +234,7 @@ impl EncryptingKeyPair {
             .collect::<Vec<u8>>();
         let mut cipher_no_nonce = SecBuf::with_insecure(cipher_length);
         cipher_no_nonce.from_array(&cipher_no_nonce_slice)?;
-
+        */
         lib3h_sodium::aead::dec(
             &mut decrypted_message,
             &mut self.private,

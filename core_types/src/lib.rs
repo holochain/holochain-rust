@@ -30,6 +30,7 @@ extern crate regex;
 extern crate maplit;
 extern crate hcid;
 extern crate wasmi;
+extern crate lib3h_protocol;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
@@ -47,6 +48,7 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
+pub mod network;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

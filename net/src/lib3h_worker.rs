@@ -10,7 +10,7 @@ use lib3h::{
     error::Lib3hError
 };
 
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol,uri::Lib3hUri};
 use holochain_tracing::HSpan;
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -28,7 +28,7 @@ pub struct Lib3hWorker {
 
 
 impl Lib3hWorker {
-    pub fn advertise(self) -> url::Url {
+    pub fn advertise(self) -> Lib3hUri {
         self.net_engine.advertise()
     }
 
@@ -96,7 +96,7 @@ impl NetWorker for Lib3hWorker {
 
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {
-        Some(self.net_engine.advertise())
+        Some(self.net_engine.advertise().0)
     }
 
     /// Set the advertise as worker's endpoint

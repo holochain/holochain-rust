@@ -54,6 +54,7 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
+use lib3h_protocol::uri::Lib3hUri;
 use signal_wrapper::SignalWrapper;
 use static_file_server::ConductorStaticFileServer;
 use static_server_impls::NickelStaticServer as StaticServer;
@@ -589,7 +590,7 @@ impl Conductor {
                 BackendConfig::Memory(mut config) => {
                     config.bootstrap_nodes =
                         if config.bootstrap_nodes.is_empty() && !urls.is_empty()
-                        { vec![urls[0].clone()] }
+                        { vec![Lib3hUri(urls[0].clone())] }
                         else
                         { config.bootstrap_nodes.clone() };
                     let mut p2p_config = p2p_config.clone();

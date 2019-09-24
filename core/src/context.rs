@@ -41,6 +41,9 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+
+use lib3h_protocol::uri::Lib3hUri;
+
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
@@ -379,11 +382,13 @@ pub fn test_memory_network_config(
     network_name: Option<&str>,
     bootstrap_nodes: Vec<url::Url>,
 ) -> P2pConfig {
+    let lib3h_uri = bootstrap_nodes
+        .into_iter()
+        .map(|lib| Lib3hUri(lib))
+        .collect::<Vec<_>>();
     network_name
-        .map(|name| P2pConfig::new_with_memory_backend_bootstrap_nodes(name, bootstrap_nodes.clone()))
-        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes))
-    
-       
+        .map(|name| P2pConfig::new_with_memory_backend_bootstrap_nodes(name, lib3h_uri.clone()))
+        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(lib3h_uri))
 }
 
 #[cfg(test)]

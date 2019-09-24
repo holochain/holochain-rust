@@ -137,6 +137,7 @@ extern crate json_patch;
 extern crate pretty_assertions;
 extern crate base64;
 extern crate lib3h;
+extern crate lib3h_protocol;
 #[macro_use]
 extern crate nickel;
 

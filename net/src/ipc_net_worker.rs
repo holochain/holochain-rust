@@ -12,6 +12,8 @@ use crate::connection::{
 use lib3h_protocol::{
     data_types::ConnectData, protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
+    uri::Lib3hUri
+
 };
 
 use std::collections::HashMap;
@@ -247,7 +249,7 @@ impl IpcNetWorker {
             };
             self.receive(Lib3hClientProtocol::Connect(ConnectData {
                 request_id: snowflake::ProcessUniqueId::new().to_string(),
-                peer_uri: uri,
+                peer_location: Lib3hUri(uri),
                 network_id: "".to_string(),
             }))?
         }

@@ -9,7 +9,7 @@ holochain_core = { path = "../core" }
 holochain_common = { path = "../common" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "develop" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.8"
 holochain_persistence_file = "=0.0.8"

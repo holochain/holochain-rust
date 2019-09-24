@@ -11,9 +11,9 @@ tempfile = "=3.0.7"
 failure = "=0.1.5"
 # sim1h = { path = "../../sim1h/crates/sim1h" }
 sim1h = { git = "https://github.com/holochain/sim1h", branch = "make-ghost-actor-optional" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "develop" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "develop" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "develop" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch = "master" }
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }

@@ -29,8 +29,8 @@ toml = "=0.5.0"
 holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "develop" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "develop" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.8"

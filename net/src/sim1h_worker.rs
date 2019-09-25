@@ -21,8 +21,6 @@ use sim1h::{
             send_direct_message::send_direct_message,
         },
         to_client::{
-            handle_fetch_entry::handle_fetch_entry,
-            handle_get_authoring_entry_list::handle_get_authoring_entry_list,
             handle_get_gossiping_entry_list::handle_get_gossiping_entry_list,
             handle_query_entry::handle_query_entry,
             handle_send_direct_message::handle_send_direct_message,
@@ -32,6 +30,8 @@ use sim1h::{
 use std::io::{self, Write};
 use url::Url;
 use sim1h::workflow::to_client::process_pending_requests_to_client;
+use sim1h::workflow::to_client_response::handle_get_authoring_entry_list_result::handle_get_authoring_entry_list_result;
+use sim1h::workflow::to_client_response::handle_fetch_entry_result::handle_fetch_entry_result;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig {
@@ -150,17 +150,19 @@ impl Sim1hWorker {
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 let log_context = "ClientToLib3h::HandleFetchEntryResult";
                 println!("handlingmessage {:?}", log_context);
-                handle_fetch_entry(
+                handle_fetch_entry_result(
                     &log_context,
                     &self.dynamo_db_client,
                     &fetch_entry_result_data,
-                );
-                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
-                    request_id: fetch_entry_result_data.request_id,
-                    space_address: fetch_entry_result_data.space_address,
-                    to_agent_id: fetch_entry_result_data.provider_agent_id,
-                    result_info: Opaque::new(),
-                }))
+                ).map(|_| {
+                    Lib3hServerProtocol::SuccessResult(GenericResultData {
+                        request_id: fetch_entry_result_data.request_id,
+                        space_address: fetch_entry_result_data.space_address,
+                        to_agent_id: fetch_entry_result_data.provider_agent_id,
+                        result_info: Opaque::new(),
+                    })
+                }).map_err(|bb_dht_error| bb_dht_error.into())
+
             }
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
@@ -214,9 +216,8 @@ impl Sim1hWorker {
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 println!("handlingmessage {:?}", log_context);
-                handle_get_authoring_entry_list(
+                handle_get_authoring_entry_list_result(
                     &log_context,
-                    &self.dynamo_db_client,
                     &entry_list_data,
                 );
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {

@@ -22,7 +22,7 @@ pub fn run(
     conductor_config: Configuration,
 ) -> DefaultResult<()> {
     if package {
-        cli::package(true, dna_path)?;
+        cli::package(true, dna_path, json!({}))?;
     }
 
     mount_conductor_from_config(conductor_config);

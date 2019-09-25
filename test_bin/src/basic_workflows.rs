@@ -9,6 +9,7 @@ use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
+    uri::Lib3hUri
 };
 use p2p_node::test_node::TestNode;
 
@@ -79,8 +80,8 @@ pub fn setup_two_nodes(
         println!("connect: node2_binding = {}", node2_binding);
         alex.send(Lib3hClientProtocol::Connect(ConnectData {
             request_id: "alex_send_connect".into(),
-            peer_uri: url::Url::parse(node2_binding.as_str())
-                .unwrap_or_else(|_| panic!("malformed node2 url: {:?}", node2_binding)),
+            peer_location: Lib3hUri(url::Url::parse(node2_binding.as_str())
+                .unwrap_or_else(|_| panic!("malformed node2 url: {:?}", node2_binding))),
             network_id: "alex_to_node2".into(),
         }))?;
 
@@ -91,7 +92,7 @@ pub fn setup_two_nodes(
         println!("got connect result A: {:?}", result_a);
         one_let!(Lib3hServerProtocol::Connected(d) = result_a {
            assert_eq!(d.request_id, "alex_send_connect");
-           assert_eq!(d.uri, node2_binding);
+           assert_eq!(d.uri, Lib3hUri(node2_binding.clone()));
         });
         let result_b = billy
             .wait_lib3h(Box::new(one_is!(Lib3hServerProtocol::Connected(_))))
@@ -99,7 +100,7 @@ pub fn setup_two_nodes(
         println!("got connect result B: {:?}", result_b);
         one_let!(Lib3hServerProtocol::Connected(d) = result_b {
            assert_eq!(d.request_id, "alex_send_connect");
-           assert_eq!(d.uri, node2_binding);
+           assert_eq!(d.uri, Lib3hUri(node2_binding));
         });
     } else {
         println!("can connect is false")

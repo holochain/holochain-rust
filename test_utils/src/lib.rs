@@ -7,6 +7,7 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate holochain_json_derive;
+extern crate lib3h_protocol;
 
 pub mod mock_signing;
 
@@ -58,6 +59,7 @@ use std::{
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
+use lib3h_protocol::uri::Lib3hUri;
 
 
 
@@ -259,6 +261,7 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
     let (signal,recieve) = signal_channel();
+    let bootstrap_nodes = bootstrap_nodes.into_iter().map(|s|Lib3hUri(s)).collect::<Vec<_>>();
     let logger = test_logger();
     (
         Arc::new({

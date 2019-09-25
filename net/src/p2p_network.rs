@@ -179,7 +179,7 @@ impl NetSend for P2pNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib3h_protocol::data_types::ConnectData;
+    use lib3h_protocol::{data_types::ConnectData,uri::Lib3hUri};
 
     #[test]
     fn it_should_create_memory_network() {
@@ -188,7 +188,7 @@ mod tests {
         let mut res = P2pNetwork::new(handler.clone(), p2p).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
-            peer_uri: url::Url::parse("mem://test".into()).expect("well formed memory network url"),
+            peer_location: Lib3hUri(url::Url::parse("mem://test".into()).expect("well formed memory network url")),
             network_id: "test_net_id".into(),
         };
 

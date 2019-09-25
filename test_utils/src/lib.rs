@@ -7,7 +7,7 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate lib3h_protocol;
+
 
 pub mod mock_signing;
 

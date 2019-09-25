@@ -254,9 +254,11 @@ fn get_content_aspect(
     context: Arc<Context>,
 ) -> Result<EntryAspect, HolochainError> {
     let state = context.state()
-        .ok_or(HolochainError::InitializationFailed(
-            String::from("In get_content_aspect: no state found")
-        ))?;
+        .ok_or_else(|| {
+            HolochainError::InitializationFailed(
+                String::from("In get_content_aspect: no state found")
+            )
+        })?;
 
     // Optimistically look for entry in chain...
     let maybe_chain_header = state.agent()

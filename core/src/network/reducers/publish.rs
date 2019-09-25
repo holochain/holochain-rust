@@ -157,7 +157,7 @@ fn reduce_publish_inner(
             }
         }),
         _ => Err(HolochainError::NotImplemented(
-            format!("reduce_publish_inner not implemented for {}", entry_with_header.entry.entry_type()).into(),
+            format!("reduce_publish_inner not implemented for {}", entry_with_header.entry.entry_type()),
         )),
     }
 }

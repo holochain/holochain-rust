@@ -31,6 +31,7 @@ use sim1h::{
 };
 use std::io::{self, Write};
 use url::Url;
+use sim1h::workflow::to_client::process_pending_requests_to_client;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig {
@@ -259,7 +260,7 @@ impl NetWorker for Sim1hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        debug!(">>NET>> {:?}", data);
+        debug!("CORE>>>NET {:?}", data);
         self.inbox.push(data);
         Ok(())
     }
@@ -274,10 +275,21 @@ impl NetWorker for Sim1hWorker {
             io::stdout().flush()?;
         }
         let mut did_something = false;
+        for request in process_pending_requests_to_client() {
+            debug!("NET>?>CORE {:?}", request);
+            let request = Lib3hServerProtocol::from(request);
+            if let Err(error) = self.handler.handle(Ok(request)) {
+                warn!("Error returned from network handler in Sim1h: {:?}", error);
+            }
+
+            did_something = true;
+        }
+
         let messages = self.inbox.drain(..).collect::<Vec<_>>();
         for data in messages {
             match self.handle_client_message(data) {
                 Ok(response) => {
+                    debug!("NET>!>CORE {:?}", response);
                     if let Err(error) = self.handler.handle(Ok(response)) {
                         warn!("Error returned from network handler in Sim1h: {:?}", error);
                     }

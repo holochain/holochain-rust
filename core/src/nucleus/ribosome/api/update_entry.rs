@@ -30,11 +30,6 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         }
     };
 
-    if entry_args.new_entry.address()==entry_args.address
-    {
-        log_error!(context, "zome: trying to update with same entry");
-        return ribosome_error_code!(WorkflowFailed);
-    }
 
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
@@ -51,8 +46,13 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         return ribosome_error_code!(EntryNotFound);
     }
     let latest_entry = entry_result.latest().unwrap();
-    
 
+    if entry_args.new_entry.address()==latest_entry.address()
+    {
+        log_error!(context, "zome: trying to update with same entry");
+        return ribosome_error_code!(WorkflowFailed);
+    }
+    
     // Create Chain Entry
     let entry = entry_args.new_entry.clone();
 

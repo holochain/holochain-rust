@@ -38,7 +38,7 @@ impl Default for GetLinksOptions {
     }
 }
 
-#[derive(Deserialize,Clone, Serialize, Debug, DefaultJson)]
+#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson)]
 pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,
@@ -46,7 +46,7 @@ pub struct LinksResult {
     pub status: CrudStatus,
 }
 
-#[derive(Deserialize,Clone, Serialize, Debug, DefaultJson)]
+#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResult {
     links: Vec<LinksResult>,
 }
@@ -61,13 +61,11 @@ impl GetLinksResult {
         GetLinksResult { links }
     }
 
-    pub fn tags(&self) -> Vec<String>
-    {
+    pub fn tags(&self) -> Vec<String> {
         self.links.iter().map(|s| s.tag.clone()).collect()
     }
 
-    pub fn links(&self) -> Vec<LinksResult>
-    {
+    pub fn links(&self) -> Vec<LinksResult> {
         self.links.clone()
     }
 

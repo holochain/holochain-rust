@@ -1,5 +1,5 @@
-use chrono::{offset::FixedOffset, DateTime};
 use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
+use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use lib3h_protocol::data_types::EntryAspectData;
@@ -163,8 +163,8 @@ impl fmt::Debug for EntryAspect {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use chrono::{offset::FixedOffset, DateTime};
     use crate::chain_header::test_chain_header;
+    use chrono::{offset::FixedOffset, DateTime};
 
     #[test]
     fn can_convert_into_entry_aspect_data() {

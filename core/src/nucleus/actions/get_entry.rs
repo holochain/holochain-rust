@@ -7,13 +7,12 @@ use holochain_core_types::{
 };
 
 use holochain_persistence_api::{
-    cas::{content::Address, storage::ContentAddressableStorage},
+    cas::{content::{Address, AddressableContent}, storage::ContentAddressableStorage},
     eav::IndexFilter,
 };
 
 use std::{
     collections::BTreeSet,
-    convert::TryInto,
     str::FromStr,
     sync::{Arc, RwLock},
 };
@@ -22,10 +21,12 @@ pub(crate) fn get_entry_from_cas(
     storage: &Arc<RwLock<dyn ContentAddressableStorage>>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let json = (*storage.read().unwrap()).fetch(&address)?;
-
-    let entry: Option<Entry> = json.and_then(|js| js.try_into().ok());
-    Ok(entry)
+    if let Some(json) = (*storage.read().unwrap()).fetch(&address)? {
+        let entry = Entry::try_from_content(&json)?;
+        Ok(Some(entry))
+    } else {
+        Ok(None) // no errors but entry is not in CAS
+    }
 }
 
 pub fn get_entry_from_agent_chain(

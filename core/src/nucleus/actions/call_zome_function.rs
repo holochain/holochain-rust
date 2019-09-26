@@ -138,9 +138,9 @@ pub fn validate_call(
 ) -> Result<(String, DnaWasm), HolochainError> {
     // make sure the dna, zome and function exists and return pretty errors if they don't
     let (dna_name, code) = {
-        let state = context.state().ok_or(HolochainError::ErrorGeneric(
-            "Context not initialized".to_string(),
-        ))?;
+        let state = context.state().ok_or_else(||
+            HolochainError::ErrorGeneric("Context not initialized".to_string())
+        )?;
 
         let nucleus_state = state.nucleus();
         let dna = nucleus_state

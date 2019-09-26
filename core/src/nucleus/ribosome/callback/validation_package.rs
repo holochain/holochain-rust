@@ -109,6 +109,7 @@ pub fn get_validation_package_definition(
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),
         EntryType::CapTokenGrant => JsonString::from(ValidationPackageDefinition::Entry),
         EntryType::AgentId => JsonString::from(ValidationPackageDefinition::Entry),
+        EntryType::ChainHeader => JsonString::from(ValidationPackageDefinition::Entry), 
         _ => Err(HolochainError::NotImplemented(
             "get_validation_package_definition/3".into(),
         ))?,

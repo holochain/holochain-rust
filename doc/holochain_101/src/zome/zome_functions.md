@@ -234,7 +234,7 @@ define_zome! {
 }
 ```
 
-To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.4/hdk-rust/wasm-test/src/lib.rs).
+To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/develop/hdk-rust/wasm-test/src/lib.rs).
 
 ### Adding Traits:
 

@@ -41,15 +41,15 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
     let toml: Value = toml::from_str(cargo_toml)?;
     let dependancies = toml
         .get("dependencies")
-        .ok_or(format_err!("Could not get dependencies"))?;
+        .ok_or_else(|| format_err!("Could not get dependencies"))?;
     let hdk = dependancies
         .get("hdk")
-        .ok_or(format_err!("Could not get HDK"))?;
+        .ok_or_else(|| format_err!("Could not get HDK"))?;
     let tag = hdk
         .get("tag")
-        .ok_or(format_err!("Could not get HDK tag"))?
+        .ok_or_else(|| format_err!("Could not get HDK tag"))?
         .as_str()
-        .ok_or(format_err!("Could not parse string"))?;
+        .ok_or_else(|| format_err!("Could not parse string"))?;
     let hdk_version_from_toml = HDKVersion::new(tag)?;
     Ok(hdk_version == &hdk_version_from_toml)
 }
@@ -71,8 +71,8 @@ impl Packager {
             "Compiling a Rust based Zome to WASM depends on having Rust installed.",
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
-                "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14",
+                "Make sure to be running inside a nix-shell or from a nix-env installation.",
+                "See https://docs.holochain.love for more information.",
             ]),
         )?;
         if !should_continue {
@@ -445,7 +445,7 @@ mod tests {
 
         [dependencies]
         hdk = {github='xxx', tag='99.99.99-alpha99'}
-      
+
     "#
         )
         .expect("Could not compare"));
@@ -458,7 +458,7 @@ mod tests {
 
         [dependencies]
         hdk = {github='xxx', tag='0.0.0-alpha1'}
-      
+
     "#
         )
         .expect("Could not compare"))

@@ -22,13 +22,13 @@ use sim1h::{
         state::Sim1hState,
         to_client::{
             handle_get_gossiping_entry_list::handle_get_gossiping_entry_list,
-            handle_send_direct_message::handle_send_direct_message,
         },
         to_client_response::handle_fetch_entry_result::handle_fetch_entry_result,
     },
 };
 use std::io::{self, Write};
 use url::Url;
+use sim1h::workflow::to_client::send_direct_message_result::send_direct_message_result;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig {
@@ -122,14 +122,19 @@ impl Sim1hWorker {
             Lib3hClientProtocol::SendDirectMessage(dm_data) => {
                 let log_context = "ClientToLib3h::SendDirectMessage";
                 println!("handlingmessage {:?}", log_context);
-                let result = send_direct_message(&log_context, &self.dynamo_db_client, &dm_data)?;
-                Ok(result.into())
+                let _ = send_direct_message(&log_context, &self.dynamo_db_client, &dm_data)?;
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
+                    request_id: dm_data.request_id,
+                    space_address: dm_data.space_address,
+                    to_agent_id: dm_data.from_agent_id,
+                    result_info: Opaque::new(),
+                }))
             }
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
                 let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
                 println!("handlingmessage {:?}", log_context);
-                handle_send_direct_message(&log_context, &self.dynamo_db_client, &dm_data);
+                send_direct_message_result(&log_context, &self.dynamo_db_client, &dm_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: dm_data.request_id,
                     space_address: dm_data.space_address,

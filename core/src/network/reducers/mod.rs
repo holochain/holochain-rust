@@ -5,6 +5,7 @@ pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
+pub mod publish_header_entry;
 pub mod resolve_direct_connection;
 pub mod respond_authoring_list;
 pub mod respond_fetch;
@@ -25,6 +26,7 @@ use crate::{
             handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
             publish::reduce_publish,
+            publish_header_entry::reduce_publish_header_entry,
             resolve_direct_connection::reduce_resolve_direct_connection,
             respond_authoring_list::reduce_respond_authoring_list,
             respond_fetch::reduce_respond_fetch_data,
@@ -58,6 +60,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
+        Action::PublishHeaderEntry(_) => Some(reduce_publish_header_entry),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
         Action::RespondAuthoringList(_) => Some(reduce_respond_authoring_list),
         Action::RespondGossipList(_) => Some(reduce_respond_gossip_list),

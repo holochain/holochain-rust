@@ -58,7 +58,7 @@ const orchestrator = new Orchestrator({
   middleware,
   globalConfig: {
       logger: {
-          type: "trace",
+          type: "debug",
           rules: {
               rules: [
                   {
@@ -79,9 +79,19 @@ const orchestrator = new Orchestrator({
                   },
                   {
                       exclude: true,
+                      pattern: ".*rusoto_core.*"
+                  },
+                  {
+                      exclude: true,
+                      pattern: ".*want.*"
+                  },
+                  {
+                      exclude: true,
                       pattern: ".*rpc.*"
                   }
-              ]}
+              ]
+          },
+          state_dump: true,
       },
     network: transport_config
   }

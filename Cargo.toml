@@ -14,7 +14,8 @@ members = [
   "hdk-rust",
   "net",
   "test_bin",
-  "benchmarks"
+  "benchmarks",
+  "logging"
 ]
 exclude = [
   "test_utils",

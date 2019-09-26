@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.25-alpha1"
+version = "0.0.30-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -14,13 +14,13 @@ snowflake = { version = "=1.3.0", features = ["serde_support"] }
 bitflags = "=1.0.4"
 wasmi = "=0.4.4"
 failure = "=0.1.5"
-futures-preview = "=0.3.0-alpha.16"
-futures-core-preview = "=0.3.0-alpha.16"
-futures-channel-preview = "=0.3.0-alpha.16"
-futures-executor-preview = "=0.3.0-alpha.16"
-futures-io-preview = "=0.3.0-alpha.16"
-futures-sink-preview = "=0.3.0-alpha.16"
-futures-util-preview = "=0.3.0-alpha.16"
+futures-preview = "=0.3.0-alpha.17"
+futures-core-preview = "=0.3.0-alpha.17"
+futures-channel-preview = "=0.3.0-alpha.17"
+futures-executor-preview = "=0.3.0-alpha.17"
+futures-io-preview = "=0.3.0-alpha.17"
+futures-sink-preview = "=0.3.0-alpha.17"
+futures-util-preview = "=0.3.0-alpha.17"
 lazy_static = "=1.2.0"
 unwrap_to = "=0.1.0"
 num-traits = "=0.2.6"
@@ -29,15 +29,17 @@ toml = "=0.5.0"
 holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
-lib3h_protocol = "=0.0.8"
-lib3h_sodium = "=0.0.8"
-holochain_json_derive = "=0.0.15"
-holochain_json_api = "=0.0.15"
-holochain_persistence_api = "=0.0.6"
-holochain_persistence_file = "=0.0.6"
-holochain_persistence_mem = "=0.0.6"
+lib3h_protocol = "=0.0.10"
+lib3h_sodium = "=0.0.10"
+holochain_json_derive = "=0.0.17"
+holochain_json_api = "=0.0.17"
+holochain_persistence_api = "=0.0.7"
+holochain_persistence_file = "=0.0.7"
+holochain_persistence_mem = "=0.0.7"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
+log = "=0.4.8"
+logging = { path = "../logging" }
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"

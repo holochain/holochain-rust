@@ -19,7 +19,13 @@ extern crate holochain_wasm_utils;
 extern crate holochain_json_derive;
 #[macro_use]
 extern crate pretty_assertions;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate logging;
 
+#[macro_use]
+pub mod macros;
 pub mod action;
 pub mod agent;
 pub mod consistency;
@@ -37,6 +43,7 @@ pub mod persister;
 pub mod scheduled_jobs;
 pub mod signal;
 pub mod state;
+pub mod state_dump;
 pub mod workflows;
 
 mod conductor_api;

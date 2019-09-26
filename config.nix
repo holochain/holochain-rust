@@ -1,11 +1,12 @@
 let
- release-commit = "ecc3cfc1b50b73fa32456031b08e790ddaebac49";
- current = "0.0.25-alpha1";
- previous = "0.0.24-alpha2";
+ release-commit = "14c5aa15daa70d8564c0c16dc538fce36086764e";
+ current = "0.0.30-alpha6";
+ previous = "0.0.30-alpha5";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
- tag = current;
- holonix-version = "0.0.20";
+ tag = "v${current}";
+ holonix-version = "v0.0.34";
+ holonix-sha256 = "0rzwd12p9ni9s87gznshvr9kanw5l7wz3dalcm962hpm1y7zw463";
 in
 rec {
 
@@ -28,7 +29,7 @@ rec {
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "0k8d66dl9cwhikwl8a24gxald12lvbl4zf0jxfak9snpnb5mnlnm";
+   sha256 = holonix-sha256;
 
    # the github owner of the holonix repo
    owner = "holochain";
@@ -60,6 +61,8 @@ hn-release-hook-preflight-manual
 hn-release-hook-version-rust
 hn-release-hook-version-readme
 hc-cli-release-hook-version
+# refresh root Cargo.lock file
+cargo update
 '';
 
    # publish artifacts to the world

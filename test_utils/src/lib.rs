@@ -3,6 +3,10 @@
 extern crate lazy_static;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate holochain_json_derive;
 
 pub mod mock_signing;
 
@@ -13,7 +17,7 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::Signal,
+    signal::{Signal,signal_channel,SignalReceiver}
 };
 use holochain_core_types::{
    dna::{
@@ -24,14 +28,23 @@ use holochain_core_types::{
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
-    entry::entry_type::{AppEntryType, EntryType},
+    entry::{entry_type::{AppEntryType, EntryType,test_app_entry_type},{Entry,EntryWithMeta}},
+    crud_status::CrudStatus
+  
 };
 use holochain_persistence_api::{
-    cas::content::AddressableContent,
+    cas::content::{AddressableContent,Address}
 };
-use holochain_json_api::json::JsonString;
+use holochain_json_api::{json::JsonString,error::JsonError};
 
 use holochain_net::p2p_config::P2pConfig;
+
+use holochain_wasm_utils::{
+    wasm_target_dir,
+    api_serialization::get_entry::{GetEntryResult, StatusRequestKind}
+};
+
+use hdk::error::{ZomeApiResult,ZomeApiError};
 
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
@@ -41,9 +54,13 @@ use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
     time::Duration,
+    thread
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
+
+
+
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
@@ -167,6 +184,22 @@ pub fn create_test_defs_with_fn_names(fn_names: Vec<String>) -> (ZomeFnDeclarati
     (functions, traits)
 }
 
+
+pub fn create_test_defs_with_hc_public_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut traitfns = TraitFns::new();
+    let mut fn_declarations = Vec::new();
+
+    for fn_name in fn_names {
+        traitfns.functions.push(String::from(fn_name));
+        let mut fn_decl = FnDeclaration::new();
+        fn_decl.name = String::from(fn_name);
+        fn_declarations.push(fn_decl);
+    }
+    let mut traits = BTreeMap::new();
+    traits.insert("hc_public".to_string(), traitfns);
+    (fn_declarations, traits)
+}
+
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_defs(
     zome_name: &str,
@@ -214,23 +247,54 @@ pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    let (signal,_) = signal_channel();
     let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
         Arc::new({
             let mut builder = ContextBuilder::new()
                 .with_agent(agent.clone())
-                .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                 .expect("Tempdir must be accessible")
-                .with_conductor_api(mock_signing::mock_conductor_api(agent));
+                .with_conductor_api(mock_signing::mock_conductor_api(agent))
+                .with_signals(signal);
             if let Some(network_name) = network_name {
                 let config = P2pConfig::new_with_memory_backend(network_name);
                 builder = builder.with_p2p_config(config);
             }
-            builder.spawn()
+            builder
+                .with_instance_name("test_context_instance")
+                .spawn()
         }),
         logger,
+    )
+}
+
+pub fn test_context_and_logger_with_network_name_and_signal(
+    agent_name: &str,
+    network_name: Option<&str>,
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
+    let (signal,reciever) = signal_channel();
+    let agent = mock_signing::registered_test_agent(agent_name);
+    let logger = test_logger();
+    (
+        Arc::new({
+            let mut builder = ContextBuilder::new()
+                .with_agent(agent.clone())
+                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                .expect("Tempdir must be accessible")
+                .with_conductor_api(mock_signing::mock_conductor_api(agent))
+                .with_signals(signal);
+            if let Some(network_name) = network_name {
+                let config = P2pConfig::new_with_memory_backend(network_name);
+                builder = builder.with_p2p_config(config);
+            }
+            builder
+                .with_instance_name("test_context_instance")
+                .spawn()
+        }),
+        logger,
+        reciever
     )
 }
 
@@ -291,6 +355,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
             .with_conductor_api(mock_signing::mock_conductor_api(agent))
+            .with_instance_name("fake_instance_name")
             .spawn(),
     )
 }
@@ -316,4 +381,231 @@ where
             _ => continue,
         }
     }
+}
+
+
+pub fn start_holochain_instance<T: Into<String>>(
+    uuid: T,
+    agent_name: T,
+) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
+    // Setup the holochain instance
+
+    let mut wasm_path = PathBuf::new();
+    let wasm_dir_component: PathBuf = wasm_target_dir(
+        &String::from("hdk-rust").into(),
+        &String::from("wasm-test").into(),
+    );
+    wasm_path.push(wasm_dir_component);
+    let wasm_path_component: PathBuf = [
+        String::from("wasm32-unknown-unknown"),
+        String::from("release"),
+        String::from("test_globals.wasm"),
+    ]
+    .iter()
+    .collect();
+    wasm_path.push(wasm_path_component);
+
+    let wasm = create_wasm_from_file(&wasm_path);
+
+    let defs = create_test_defs_with_hc_public_fn_names(vec![
+        "check_global",
+        "check_commit_entry",
+        "check_commit_entry_macro",
+        "check_get_entry_result",
+        "check_get_entry",
+        "send_tweet",
+        "commit_validation_package_tester",
+        "link_two_entries",
+        "links_roundtrip_create",
+        "links_roundtrip_get",
+        "links_roundtrip_get_and_load",
+        "link_validation",
+        "check_query",
+        "check_app_entry_address",
+        "check_sys_entry_address",
+        "check_call",
+        "check_call_with_args",
+        "send_message",
+        "sleep",
+        "remove_link",
+        "get_entry_properties",
+        "emit_signal",
+        "show_env",
+        "hash_entry",
+        "sign_message",
+        "verify_message",
+        "add_seed",
+        "add_key",
+        "get_pubkey",
+        "list_secrets",
+        "create_and_link_tagged_entry",
+        "get_my_entries_by_tag",
+        "my_entries_with_load",
+        "delete_link_tagged_entry",
+        "my_entries_immediate_timeout",
+        "create_and_link_tagged_entry_bad_link",
+        "link_tag_validation",
+        "get_entry",
+        "create_priv_entry"
+
+    ]);
+    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
+    dna.uuid = uuid.into();
+
+    // TODO: construct test DNA using the auto-generated JSON feature
+    // The code below is fragile!
+    // We have to manually construct a Dna struct that reflects what we defined using define_zome!
+    // in wasm-test/src/lib.rs.
+    // In a production setting, hc would read the auto-generated JSON to make sure the Dna struct
+    // matches up. We should do the same in test.
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        entry_types.insert(
+            EntryType::from("validation_package_tester"),
+            EntryTypeDef::new(),
+        );
+        entry_types.insert(
+            EntryType::from("empty_validation_response_tester"),
+            EntryTypeDef::new(),
+        );
+        entry_types.insert(
+            EntryType::from("private test entry"),
+            EntryTypeDef::new(),
+        );
+        let test_entry_type = &mut entry_types
+            .get_mut(&EntryType::from("testEntryType"))
+            .unwrap();
+        test_entry_type.links_to.push(LinksTo {
+            target_type: String::from("testEntryType"),
+            link_type: String::from("test"),
+        });
+
+        test_entry_type.links_to.push(LinksTo {
+            target_type:String::from("testEntryType"),
+            link_type: String::from("intergration test"),
+        });
+    }
+
+    {
+        let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
+        let mut link_validator = EntryTypeDef::new();
+        link_validator.links_to.push(LinksTo {
+            target_type: String::from("link_validator"),
+            link_type: String::from("longer"),
+        });
+        entry_types.insert(EntryType::from("link_validator"), link_validator);
+    }
+
+    let (context, test_logger,signal_recieve) =
+        test_context_and_logger_with_network_name_and_signal(&agent_name.into(), Some(&dna.uuid));
+    let mut hc =
+        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
+
+    // Run the holochain instance
+    hc.start().expect("couldn't start");
+    (hc, test_logger,signal_recieve)
+}
+
+
+pub fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
+    let cap_call = {
+        let context = hc.context()?;
+        let token = context.get_public_token().unwrap();
+        make_cap_request_for_call(
+            context.clone(),
+            token,
+            fn_name,
+            JsonString::from_json(params),
+        )
+    };
+    hc.call("test_zome", cap_call, fn_name, params)
+}
+
+
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson,Clone)]
+pub struct TestEntry {
+    pub stuff: String,
+}
+
+pub fn example_valid_entry() -> Entry {
+    Entry::App(
+        test_app_entry_type().into(),
+        TestEntry {
+            stuff: "non fail".into(),
+        }
+        .into(),
+    )
+}
+
+pub fn empty_string_validation_fail_entry() -> Entry {
+    Entry::App(
+        "empty_validation_response_tester".into(),
+        TestEntry {
+            stuff: "should fail with empty string".into(),
+        }
+        .into(),
+    )
+}
+
+pub fn example_valid_entry_result() -> GetEntryResult {
+    let entry = example_valid_entry();
+    let entry_with_meta = &EntryWithMeta {
+        entry: entry.clone(),
+        crud_status: CrudStatus::Live,
+        maybe_link_update_delete: None,
+    };
+    GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
+}
+
+pub fn example_valid_entry_params() -> String {
+    format!(
+        "{{\"entry\":{}}}",
+        String::from(JsonString::from(example_valid_entry())),
+    )
+}
+
+pub fn example_valid_entry_address() -> Address {
+    Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
+}
+
+//this polls for the zome result until it satisfies a the boolean condition or elapses a number of tries.
+//only use this for get requests please
+pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
+{
+    //make zome call
+    let result = make_test_call(holochain, zome_call, params);
+    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
+    
+    //serialize into ZomeApiResult type
+    let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
+                                            .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
+    let value = expected_result.clone()?;
+    
+    //check if condition is satisifed
+    if !boolean_condition(value) && tries >0
+    {
+        thread::sleep(Duration::from_secs(10));
+        
+        //recursively call function again and decrement tries so far
+        wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
+    }
+    else
+    {
+        expected_result
+    }
+}
+
+
+pub fn generate_zome_internal_error(error_kind:String)->ZomeApiError
+{
+    let path = PathBuf::new()
+              .join("core")
+              .join("src")
+              .join("nucleus")
+              .join("ribosome")
+              .join("runtime.rs");
+    let path_string = path.as_path().to_str().expect("path should have been created");
+    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\"].join(""));
+    let error_string = format!(r#"{{"kind":{},"file":"{}","line":"225"}}"#,error_kind,formatted_path_string);
+    ZomeApiError::Internal(error_string)
 }

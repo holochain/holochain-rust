@@ -195,9 +195,12 @@ impl IntoZome for syn::ItemMod {
         funcs_iter(self)
             .filter(is_tagged_with(ENTRY_DEF_ATTRIBUTE))
             .fold(Vec::new(), |mut acc, mut func| {
-                // TODO: drop all attributes on the fn. This may cause problems
-                // and really should only drop the ENTRY_DEF_ATTRIBUTE
-                func.attrs = Vec::new();
+                // Drop the EntryDef attribute on the functions so this doesn't recurse
+                func.attrs = func
+                    .attrs
+                    .into_iter()
+                    .filter(|attr| !attr.path.is_ident(ENTRY_DEF_ATTRIBUTE))
+                    .collect();
                 acc.push(func);
                 acc
             })
@@ -208,7 +211,10 @@ impl IntoZome for syn::ItemMod {
 	    .filter(is_tagged_with(ZOME_FN_ATTRIBUTE))
 	    .fold(BTreeMap::new(), |mut acc, func| {
             let func_name = func.ident.to_string();
-            func.attrs.iter().for_each(|attr| { // this will error if zome fn has multiple attriutes defined
+            func.attrs
+            .iter()
+            .filter(|attr| attr.path.is_ident(ZOME_FN_ATTRIBUTE))
+            .for_each(|attr| {
                 let meta = attr.parse_meta().unwrap();
                 match meta {
                 	syn::Meta::List(meta_list) => {
@@ -223,9 +229,9 @@ impl IntoZome for syn::ItemMod {
 		                });
                 	},
                 	syn::Meta::Word(_) => emit_warning(&func.ident,
-                        "Function is tagged as zome_fn but is not exposed via a trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?"),
+                        "Function is tagged as zome_fn but is not exposed via a Holochain trait. Did you mean to expose it publicly '#[zome_fn(\"hc_public\")]'?"),
                 	_ => emit_error(&func.ident,
-                        "zome_fn must be preceded by a comma delimited list of traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")"),
+                        "zome_fn must be preceded by a comma delimited list of Holochain traits e.g. #[zome_fn(\"hc_public\", \"custom_trait\")"),
                 }
             });
 	        acc

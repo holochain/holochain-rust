@@ -51,15 +51,15 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_call failed to deserialize: {:?}",
+            log_error!(context,
+                "zome: invoke_call failed to deserialize: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
 
-    let result = if input.instance_handle == String::from(THIS_INSTANCE) {
+    let result = if input.instance_handle ==THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
@@ -70,12 +70,12 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
             }
         }
         local_call(runtime, input.clone()).map_err(|error| {
-            context.log(format!("err/zome-to-zome-call/[{:?}]: {:?}", input, error));
+            log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
         })
     } else {
         bridge_call(runtime, input.clone()).map_err(|error| {
-            context.log(format!("err/bridge-call/[{:?}]: {:?}", input, error));
+            log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })
     };
@@ -118,7 +118,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 
     let response = handler
         .handle_request_sync(&request)
-        .ok_or("Bridge call failed".to_string())?;
+        .ok_or("Bridge call failed")?;
 
     let response = JsonRpc::parse(&response)?;
 

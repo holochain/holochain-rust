@@ -17,6 +17,7 @@ pub mod get_entry;
 pub mod get_links;
 pub mod keystore;
 pub mod link_entries;
+pub mod meta;
 pub mod query;
 pub mod receive;
 pub mod send;

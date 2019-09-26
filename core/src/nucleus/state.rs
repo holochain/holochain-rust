@@ -10,11 +10,12 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use serde::{
+    de::{Error, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 use snowflake;
-use std::{collections::HashMap, convert::TryFrom};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
-use serde::de::{Visitor, Error};
-use std::fmt;
+use std::{collections::HashMap, convert::TryFrom, fmt};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -55,23 +56,29 @@ impl<'de> Visitor<'de> for PendingValidationKeyStringVisitor {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where E: Error {
-        let parts: Vec<String> = value.split("__").map(|s|s.to_string()).collect();
-        let address = parts.first().ok_or(Error::custom("No address found"))?.to_owned();
-        let workflow = parts.last().ok_or(Error::custom("No workflow found"))?.to_owned();
+    where
+        E: Error,
+    {
+        let parts: Vec<String> = value.split("__").map(|s| s.to_string()).collect();
+        let address = parts
+            .first()
+            .ok_or_else(|| Error::custom("No address found"))?
+            .to_owned();
+        let workflow = parts
+            .last()
+            .ok_or_else(|| Error::custom("No workflow found"))?
+            .to_owned();
         Ok(PendingValidationKey::new(
             address.into(),
-            ValidatingWorkflow::try_from(workflow)
-                .map_err(|e| Error::custom(e.to_string()))?
+            ValidatingWorkflow::try_from(workflow).map_err(|e| Error::custom(e.to_string()))?,
         ))
     }
-
 }
 
 impl<'de> Deserialize<'de> for PendingValidationKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_str(PendingValidationKeyStringVisitor)
     }

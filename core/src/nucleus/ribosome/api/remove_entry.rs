@@ -26,10 +26,10 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Exit on error
     if try_address.is_err() {
-        context.log(format!(
-            "err/zome: invoke_remove_entry failed to deserialize Address: {:?}",
+        log_error!(context,
+            "zome: invoke_remove_entry failed to deserialize Address: {:?}",
             args_str
-        ));
+        );
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let deleted_entry_address = try_address.unwrap();
@@ -44,10 +44,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         .block_on(get_entry_result_workflow(&context, &get_args));
 
     if let Err(err) = maybe_entry_result {
-        context.log(format!(
-            "err/zome: get_entry_result_workflow failed: {:?}",
-            err
-        ));
+        log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
         return ribosome_error_code!(WorkflowFailed);
     }
 

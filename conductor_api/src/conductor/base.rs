@@ -8,15 +8,11 @@ use crate::{
     dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
-    logger::DebugLogger,
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
-use holochain_core::{
-    logger::{ChannelLogger, Logger},
-    signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -29,6 +25,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -43,8 +40,12 @@ use std::{
 };
 
 use boolinator::Boolinator;
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceCmd};
-use config::AgentConfiguration;
+#[cfg(unix)]
+use conductor::passphrase_manager::PassphraseServiceUnixSocket;
+use conductor::passphrase_manager::{
+    PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+};
+use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -103,7 +104,7 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
-    logger: DebugLogger,
+    logger: FastLogger,
     p2p_config: Option<P2pConfig>,
     network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
@@ -122,6 +123,12 @@ impl Drop for Conductor {
 
         self.shutdown()
             .unwrap_or_else(|err| println!("Error during shutdown, continuing anyway: {:?}", err));
+
+        // Flushing the logger's buffer writer
+        self.logger.flush();
+        // Do not shut down the logging thread if there is multiple concurrent conductor thread
+        // like during unit testing because they all use the same registered logger
+        // self.logger.shutdown();
 
         if let Some(network) = self.n3h_keepalive_network.take() {
             if let Err(err) = network.stop() {
@@ -150,15 +157,29 @@ pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> 
 pub type UiDirCopier =
     Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
-// preparing for having conductor notifiers go to one of the log streams
+/// preparing for having conductor notifiers go to one of the log streams
 pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
-        let rules = config.logger.rules.clone();
         lib3h_sodium::check_init();
+        let _rules = config.logger.rules.clone();
+        let mut logger_builder = FastLoggerBuilder::new();
+        logger_builder.set_level_from_str(&config.logger.logger_level.as_str());
+
+        for rule in config.logger.rules.rules.iter() {
+            logger_builder.add_rule_filter(RuleFilter::new(
+                rule.pattern.as_str(),
+                rule.exclude,
+                rule.color.as_ref().unwrap_or(&String::default()).as_str(),
+            ));
+        }
+
+        let logger = logger_builder
+            .build()
+            .expect("Fail to instanciate the logging factory.");
 
         if config.ui_bundles.len() > 0 || config.ui_interfaces.len() > 0 {
             println!();
@@ -167,6 +188,26 @@ impl Conductor {
             println!("{}", std::iter::repeat("!").take(20).collect::<String>());
             println!();
         }
+
+        let passphrase_service: Arc<Mutex<dyn PassphraseService + Send>> =
+            if let PassphraseServiceConfig::UnixSocket { path } = config.passphrase_service.clone()
+            {
+                #[cfg(not(unix))]
+                let _ = path;
+                #[cfg(not(unix))]
+                panic!("Unix domain sockets are not available on non-Unix systems. Can't create a PassphraseServiceUnixSocket.");
+
+                #[cfg(unix)]
+                Arc::new(Mutex::new(PassphraseServiceUnixSocket::new(path)))
+            } else {
+                match config.passphrase_service.clone() {
+                    PassphraseServiceConfig::Cmd => Arc::new(Mutex::new(PassphraseServiceCmd {})),
+                    PassphraseServiceConfig::Mock { passphrase } => {
+                        Arc::new(Mutex::new(PassphraseServiceMock { passphrase }))
+                    }
+                    _ => unreachable!(),
+                }
+            };
 
         Conductor {
             instances: HashMap::new(),
@@ -181,12 +222,10 @@ impl Conductor {
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
-            logger: DebugLogger::new(rules),
+            logger,
             p2p_config: None,
             network_spawn: None,
-            passphrase_manager: Arc::new(PassphraseManager::new(Arc::new(Mutex::new(
-                PassphraseServiceCmd {},
-            )))),
+            passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
         }
@@ -229,7 +268,7 @@ impl Conductor {
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
 
-        self.log("starting signal loop".into());
+        debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
@@ -281,8 +320,7 @@ impl Conductor {
                                                 interface_config
                                                     .instances
                                                     .iter()
-                                                    .find(|instance| instance.id == *instance_id)
-                                                    .is_some()
+                                                    .any(|instance| instance.id == *instance_id)
                                             })
                                             .collect();
                                         println!("INTERFACEs for SIGNAL: {:?}", interfaces);
@@ -291,14 +329,14 @@ impl Conductor {
                                 };
 
                             for interface in interfaces_with_instance {
-                                broadcasters.get(&interface.id).map(|broadcaster| {
+                                if let Some(broadcaster) = broadcasters.get(&interface.id) {
                                     if let Err(error) = broadcaster.send(SignalWrapper {
                                         signal: signal.clone(),
                                         instance_id: instance_id.clone(),
                                     }) {
                                         notify(error.to_string());
                                     }
-                                });
+                                };
                             }
                         }
                     }
@@ -338,13 +376,9 @@ impl Conductor {
 
     pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
         {
-            let kill_switch =
-                self.interface_threads
-                    .get(id)
-                    .ok_or(HolochainError::ErrorGeneric(format!(
-                        "Interface {} not found.",
-                        id
-                    )))?;
+            let kill_switch = self.interface_threads.get(id).ok_or_else(|| {
+                HolochainError::ErrorGeneric(format!("Interface {} not found.", id))
+            })?;
             notify(format!("Stopping interface {}", id));
             kill_switch.send(()).map_err(|err| {
                 let message = format!("Error stopping interface: {}", err);
@@ -359,7 +393,7 @@ impl Conductor {
     pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
         self.config
             .interface_by_id(id)
-            .ok_or(format!("Interface does not exist: {}", id))
+            .ok_or_else(|| format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
     }
 
@@ -368,7 +402,7 @@ impl Conductor {
         self.static_servers.iter_mut().for_each(|(id, server)| {
             server
                 .start()
-                .expect(&format!("Couldn't start server {}", id));
+                .unwrap_or_else(|_| panic!("Couldn't start server {}", id));
             notify(format!("Server started for \"{}\"", id))
         });
         Ok(())
@@ -398,18 +432,18 @@ impl Conductor {
                         .bridges
                         .iter()
                         .find(|b| b.handle == handle)
-                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
-                            handle.clone(),
-                        ))?;
+                        .ok_or_else(|| {
+                            HolochainInstanceError::RequiredBridgeMissing(handle.clone())
+                        })?;
                     self.instances
                         .get(&bridge_config.callee_id)
-                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(
-                            handle.clone(),
-                        ))?
+                        .ok_or_else(|| {
+                            HolochainInstanceError::RequiredBridgeMissing(handle.clone())
+                        })?
                         .read()
                         .unwrap()
                         .active()
-                        .ok_or(HolochainInstanceError::RequiredBridgeMissing(handle))?;
+                        .ok_or_else(|| HolochainInstanceError::RequiredBridgeMissing(handle))?;
                 }
             }
         }
@@ -493,13 +527,9 @@ impl Conductor {
     }
 
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
-        let network_config = self
-            .config
-            .clone()
-            .network
-            .ok_or(HolochainError::ErrorGeneric(
-                "attempt to spawn network when not configured".to_string(),
-            ))?;
+        let network_config = self.config.clone().network.ok_or_else(|| {
+            HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string())
+        })?;
 
         match network_config {
             NetworkConfig::N3h(config) => {
@@ -597,7 +627,7 @@ impl Conductor {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
 
-        let config = self.config.clone();
+        let mut config = self.config.clone();
         self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
@@ -608,14 +638,14 @@ impl Conductor {
             // which will be the case at least for the DPKI instance which got started
             // specifically in `self.dpki_bootstrap()` above.
             if !self.instances.contains_key(&id) {
-                let instance =
-                    self.instantiate_from_config(&id, Some(&config))
-                        .map_err(|error| {
-                            format!(
-                                "Error while trying to create instance \"{}\": {}",
-                                id, error
-                            )
-                        })?;
+                let instance = self
+                    .instantiate_from_config(&id, Some(&mut config))
+                    .map_err(|error| {
+                        format!(
+                            "Error while trying to create instance \"{}\": {}",
+                            id, error
+                        )
+                    })?;
 
                 self.instances
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
@@ -624,13 +654,14 @@ impl Conductor {
 
         for ui_interface_config in config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));
-            let bundle_config =
-                config
-                    .ui_bundle_by_id(&ui_interface_config.bundle)
-                    .ok_or(format!(
+            let bundle_config = config
+                .ui_bundle_by_id(&ui_interface_config.bundle)
+                .ok_or_else(|| {
+                    format!(
                         "UI interface {} references bundle with id {} but no such bundle found",
                         &ui_interface_config.id, &ui_interface_config.bundle
-                    ))?;
+                    )
+                })?;
             let connected_dna_interface = ui_interface_config
                 .clone()
                 .dna_interface
@@ -654,24 +685,34 @@ impl Conductor {
     pub fn instantiate_from_config(
         &mut self,
         id: &String,
-        maybe_config: Option<&Configuration>,
+        maybe_config: Option<&mut Configuration>,
     ) -> Result<Holochain, String> {
-        let self_config = self.config.clone();
-        let config = maybe_config.unwrap_or(&self_config);
+        let mut self_config = self.config.clone();
+        let config = maybe_config.unwrap_or(&mut self_config);
         let _ = config.check_consistency(&mut self.dna_loader)?;
 
         config
             .instance_by_id(&id)
-            .ok_or(String::from("Instance not found in config"))
+            .ok_or_else(|| String::from("Instance not found in config"))
             .and_then(|instance_config| {
                 // Build context:
                 let mut context_builder = ContextBuilder::new();
 
                 // Agent:
-                let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-                let agent_id = self.agent_config_to_id(&agent_config)?;
+                let agent_id = &instance_config.agent;
+                let agent_config = config.agent_by_id(agent_id).unwrap();
+                let agent_address = self.agent_config_to_id(&agent_config)?;
+                if agent_config.test_agent.unwrap_or_default() {
+                    // Modify the config so that the public_address is correct.
+                    // (The public_address is simply ignored for test_agents, as
+                    // it is generated from the agent's name instead of read from
+                    // a physical keyfile)
+                    config.update_agent_address_by_id(agent_id, &agent_address);
+                    self.config = config.clone();
+                    self.save_config()?;
+                }
 
-                context_builder = context_builder.with_agent(agent_id.clone());
+                context_builder = context_builder.with_agent(agent_address.clone());
 
                 context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
@@ -704,12 +745,7 @@ impl Conductor {
                     }
                 }
 
-                if config.logger.logger_type == "debug" {
-                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
-                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
-                    )));
-                }
-
+                let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id, config)?;
                 context_builder = context_builder.with_conductor_api(api);
@@ -719,7 +755,7 @@ impl Conductor {
                 }
 
                 // Spawn context
-                let context = context_builder.spawn();
+                let context = context_builder.with_instance_name(&instance_name).spawn();
 
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
@@ -743,7 +779,7 @@ impl Conductor {
                         // If the file is correctly loaded, meaning it exists in the file system,
                         // we can operate on its computed DNA hash
                         Ok(dna) => {
-                            let dna_hash_computed_from_file = HashString::from(dna.address());
+                            let dna_hash_computed_from_file = dna.address();
                             Conductor::check_dna_consistency_from_all_sources(
                                 &context,
                                 &dna_hash_from_conductor_config,
@@ -751,8 +787,8 @@ impl Conductor {
                                 &dna_hash_computed_from_file, &dna_file)?;
                         },
                         Err(_) => {
-                            let msg = format!("err/Conductor: Could not load DNA file {:?}.", &dna_file);
-                            context.log(msg);
+                            let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
+                            log_error!(context, "{}", msg);
 
                             // If something is wrong with the DNA file, we only
                             // check the 2 primary sources of DNA's hashes
@@ -762,11 +798,11 @@ impl Conductor {
                                 Ok(_) => (),
                                 Err(e) => {
                                     let msg = format!("\
-                                    err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                    Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
                                     '{}' != '{}'",
                                     &dna_hash_from_conductor_config,
                                     &dna_hash_computed);
-                                    context.log(msg);
+                                    log_error!(context, "{}", msg);
 
                                     return Err(e.to_string());
                                 }
@@ -848,9 +884,7 @@ impl Conductor {
             api_builder = api_builder.with_agent_decryption_callback(
                 self.get_keybundle_for_agent(&instance_config.agent)?,
             );
-            let keystore = self
-                .get_keystore_for_agent(&instance_config.agent)
-                .map_err(|err| format!("{}", err))?;
+            let keystore = self.get_keystore_for_agent(&instance_config.agent)?;
             api_builder = api_builder.with_agent_keystore_functions(keystore);
         }
 
@@ -934,7 +968,8 @@ impl Conductor {
                                 '{}' != '{}'",
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -952,7 +987,8 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -967,7 +1003,7 @@ impl Conductor {
                                 &dna_file,
                                 &dna_hash_computed,
                                 &dna_hash_computed_from_file);
-                ctx.log(msg);
+                log_debug!(ctx, "{}", msg);
 
                 return Err(e);
             }
@@ -1002,7 +1038,7 @@ impl Conductor {
             let agent_config = self
                 .config
                 .agent_by_id(agent_id)
-                .ok_or(format!("Agent '{}' not found", agent_id))?;
+                .ok_or_else(|| format!("Agent '{}' not found", agent_id))?;
             if let Some(true) = agent_config.holo_remote_key {
                 return Err("agent is holo_remote, no keystore".to_string());
             }
@@ -1057,9 +1093,7 @@ impl Conductor {
         &mut self,
         agent_id: &String,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
-        let keystore = self
-            .get_keystore_for_agent(agent_id)
-            .map_err(|err| format!("{}", err))?;
+        let keystore = self.get_keystore_for_agent(agent_id)?;
         let mut keystore = keystore.lock().unwrap();
         let keybundle = keystore
             .get_keybundle(PRIMARY_KEYBUNDLE_ID)
@@ -1105,7 +1139,7 @@ impl Conductor {
             dest.display()
         ));
         fs::create_dir_all(dest).map_err(|_| {
-            HolochainError::ErrorGeneric(format!("Could not directory structure {:?}", dest).into())
+            HolochainError::ErrorGeneric(format!("Could not directory structure {:?}", dest))
         })?;
         fs_extra::dir::copy(&source, &dest, &fs_extra::dir::CopyOptions::new())
             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
@@ -1113,28 +1147,31 @@ impl Conductor {
     }
 
     fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
-        let instance_ids: Vec<String> = interface_config
-            .instances
-            .iter()
-            .map(|i| i.id.clone())
-            .collect();
+        let mut conductor_api_builder = ConductorApiBuilder::new();
+        for instance_ref_config in interface_config.instances.iter() {
+            let id = &instance_ref_config.id;
+            let name = instance_ref_config.alias.as_ref().unwrap_or(id).clone();
 
-        let instance_subset: InstanceMap = self
-            .instances
-            .iter()
-            .filter(|(id, _)| instance_ids.contains(&id))
-            .map(|(id, val)| (id.clone(), val.clone()))
-            .collect();
+            let instance = self.instances.get(id);
+            let instance_config = self.config.instance_by_id(id);
+            if instance.is_none() || instance_config.is_none() {
+                continue;
+            }
 
-        let mut conductor_api_builder = ConductorApiBuilder::new()
-            .with_instances(instance_subset)
-            .with_instance_configs(self.config.instances.clone());
+            let instance = instance.unwrap();
+            let instance_config = instance_config.unwrap();
+
+            conductor_api_builder = conductor_api_builder
+                .with_named_instance(name.clone(), instance.clone())
+                .with_named_instance_config(name.clone(), instance_config)
+        }
 
         if interface_config.admin {
             conductor_api_builder = conductor_api_builder
                 .with_admin_dna_functions()
                 .with_admin_ui_functions()
-                .with_test_admin_functions();
+                .with_test_admin_functions()
+                .with_debug_functions();
         }
 
         conductor_api_builder.spawn()
@@ -1149,17 +1186,14 @@ impl Conductor {
         let (broadcaster, _handle) = iface
             .run(dispatcher, kill_switch_rx)
             .map_err(|error| {
-                self.log(format!(
-                    "err/conductor: Error running interface '{}': {}",
+                error!(
+                    "conductor: Error running interface '{}': {}",
                     interface_config.id, error
-                ));
+                );
                 error
             })
             .unwrap();
-        self.log(format!(
-            "debug/conductor: adding broadcaster to map {:?}",
-            broadcaster
-        ));
+        debug!("conductor: adding broadcaster to map {:?}", broadcaster);
 
         {
             self.interface_broadcasters
@@ -1169,13 +1203,6 @@ impl Conductor {
         }
 
         kill_switch_tx
-    }
-
-    fn log(&self, msg: String) {
-        self.logger
-            .get_sender()
-            .send(("conductor".to_string(), msg))
-            .unwrap()
     }
 
     pub fn dna_dir_path(&self) -> PathBuf {
@@ -1192,25 +1219,24 @@ impl Conductor {
 
     pub fn save_config(&self) -> Result<(), HolochainError> {
         fs::create_dir_all(&self.config.persistence_dir).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!(
-                    "Could not directory structure {:?}",
-                    self.config.persistence_dir
-                )
-                .into(),
-            )
+            HolochainError::ErrorGeneric(format!(
+                "Could not directory structure {:?}",
+                self.config.persistence_dir
+            ))
         })?;
         let mut file = File::create(&self.config_path()).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!("Could not create file at {:?}", self.config_path()).into(),
-            )
+            HolochainError::ErrorGeneric(format!(
+                "Could not create file at {:?}",
+                self.config_path()
+            ))
         })?;
 
         file.write(serialize_configuration(&self.config)?.as_bytes())
             .map_err(|_| {
-                HolochainError::ErrorGeneric(
-                    format!("Could not save config to {:?}", self.config_path()).into(),
-                )
+                HolochainError::ErrorGeneric(format!(
+                    "Could not save config to {:?}",
+                    self.config_path()
+                ))
             })?;
         Ok(())
     }
@@ -1232,7 +1258,7 @@ impl Conductor {
                 e.to_string()
             ))
         })?;
-        serde_json::to_writer_pretty(&file, dna.into())?;
+        serde_json::to_writer_pretty(&file, dna)?;
         Ok(path)
     }
 

@@ -74,7 +74,7 @@ fn resolve_action_handler(
 ) -> Option<fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>)> {
     match action_wrapper.action() {
         Action::Commit(_, _) => Some(handle_commit),
-        Action::Get(_) => Some(handle_get),
+        Action::Query(_) => Some(handle_get),
         _ => None,
     }
 }

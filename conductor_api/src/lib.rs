@@ -90,6 +90,7 @@
 /// }
 /// ```
 extern crate holochain_common;
+#[macro_use]
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
@@ -102,6 +103,9 @@ extern crate holochain_persistence_file;
 extern crate holochain_persistence_mem;
 extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;
+#[macro_use]
+extern crate log;
+extern crate logging;
 
 extern crate chrono;
 extern crate crossbeam_channel;

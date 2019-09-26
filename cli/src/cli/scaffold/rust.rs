@@ -6,6 +6,7 @@ use crate::{
 };
 use colored::*;
 use holochain_common::env_vars::EnvVar;
+use holochain_core_types::hdk_version::HDK_VERSION;
 use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
@@ -13,7 +14,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use toml::{self, value::Value};
-
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
 pub const LIB_RS_PATH: &str = "src/lib.rs";
 
@@ -46,11 +46,8 @@ fn generate_cargo_toml(name: &str, contents: &str, template: &str) -> DefaultRes
     let edition_default = Value::from("\"TODO\"");
 
     let maybe_version = EnvVar::ScaffoldVersion.value().ok();
-    let version_default = if maybe_version.is_some() {
-        maybe_version.unwrap()
-    } else {
-        String::from("tag = \"0.0.25-alpha1\"")
-    };
+    let version_default = maybe_version
+        .unwrap_or_else(|| vec!["tag = \"v", &*HDK_VERSION.to_string(), "\""].join(""));
     let maybe_package = config.get("package");
 
     let name = Value::from(name);

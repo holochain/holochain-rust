@@ -35,6 +35,10 @@ with holonix.pkgs;
     pkgs = holonix.pkgs;
    }).buildInputs
 
+   ++ (holonix.pkgs.callPackage ./conductor {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
    ++ (holonix.pkgs.callPackage ./conductor_wasm {
     pkgs = holonix.pkgs;
    }).buildInputs
@@ -56,6 +60,7 @@ with holonix.pkgs;
    }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./rust {
+    holonix = holonix;
     pkgs = holonix.pkgs;
    }).buildInputs
 

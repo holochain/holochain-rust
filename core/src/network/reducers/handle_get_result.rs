@@ -6,9 +6,9 @@ pub fn reduce_handle_get_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (maybe_entry, key) = unwrap_to!(action => crate::action::Action::HandleGetResult);
+    let (payload, key) = unwrap_to!(action => crate::action::Action::HandleQuery);
 
     network_state
-        .get_entry_with_meta_results
-        .insert(key.clone(), Some(Ok(maybe_entry.clone())));
+        .get_query_results
+        .insert(key.clone(), Some(Ok(payload.clone())));
 }

@@ -13,7 +13,7 @@ scenario('send ping', async (s, t) => {
       const { alice, bob } = await s.players({alice: one, bob: one}, true)
   const params = { to_agent: bob.info('app').agentAddress, message: "hello" }
   const result = await alice.call('app', "blog", "ping", params)
-    t.deepEqual(result, { Ok: { msg_type:"response", body: "got hello from HcSCIv3cPT5kegjoqgXM7nVU8rFbd9pyg5oOYUz9PSryp5mb7DKhCsXCS768pua" } })
+    t.deepEqual(result, { Ok: { msg_type:"response", body: `got hello from ${alice.info('app').agentAddress}` } })
 })
 
 

@@ -12,11 +12,22 @@ process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
-var transport_config = 'memory';
+let transport_config = 'memory';
+let middleware = combine(
+  singleConductor,  // by default, combine conductors into a single conductor for in-memory networking
+  callSyncMiddleware,
+  tapeExecutor(require('tape')),
+);
 
 if (process.env.APP_SPEC_NETWORK_TYPE === "websocket")
 {
   transport_config = "websocket"
+
+  // omit singleConductor
+  middleware = combine(
+    callSyncMiddleware,
+    tapeExecutor(require('tape')),
+  );
 }
 
 if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
@@ -25,14 +36,16 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
     type: 'sim1h',
     dynamo_url: "http://localhost:8000",
   }
+
+  // omit singleConductor
+  middleware = combine(
+    callSyncMiddleware,
+    tapeExecutor(require('tape')),
+  );
 }
 
 const orchestrator = new Orchestrator({
-  middleware: combine(
-    singleConductor,
-    callSyncMiddleware,
-    tapeExecutor(require('tape')),
-  ),
+  middleware,
   globalConfig: {
     logger: true,
     network: transport_config

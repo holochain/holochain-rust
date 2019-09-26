@@ -52,6 +52,8 @@ pub async fn validate_agent_entry(
         .collect();
 
     if errors.is_empty() {
+        // Why do I see the println here but not the log??
+        println!("workflow/validate_agent_entry: JUST CHECKING");
         log_debug!(context, "Validating agent entry success!: {:?}", results);
         Ok(())
     } else {

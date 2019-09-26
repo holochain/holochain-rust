@@ -161,6 +161,18 @@ impl P2pConfig {
        Self::new_with_memory_backend_bootstrap_nodes(server_name, vec![])
     }
 
+    pub fn new_with_sim1h_backend(dynamo_path : &str) -> Self
+    {
+        P2pConfig::new(
+            P2pBackendKind::SIM1H,
+            BackendConfig::Sim1h(
+                Sim1hConfig {
+                    dynamo_url : dynamo_path.into()
+                }),
+                None,
+        )
+    }
+
      pub fn new_with_memory_backend_bootstrap_nodes(
         server_name: &str, bootstrap_nodes: Vec<url::Url>) -> Self {
 
@@ -309,9 +321,9 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let server_name = "memory_test";
+        let server_name = "localhost:8000";
         let p2p_config =
-            P2pConfig::from_str(&P2pConfig::new_with_memory_backend(server_name).as_str()).unwrap();
+            P2pConfig::from_str(&P2pConfig::new_with_sim1h_backend(server_name).as_str()).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);

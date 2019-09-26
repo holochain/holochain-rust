@@ -377,11 +377,10 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_memory_network_config(
     network_name: Option<&str>,
-    bootstrap_nodes: Vec<url::Url>,
+    _bootstrap_nodes: Vec<url::Url>,
 ) -> P2pConfig {
     network_name
-        .map(|name| P2pConfig::new_with_memory_backend_bootstrap_nodes(name, bootstrap_nodes.clone()))
-        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes))
+        .map(|_| P2pConfig::new_with_sim1h_backend("locahost:8000")).expect("Could not create p2p config")
 }
 
 #[cfg(test)]

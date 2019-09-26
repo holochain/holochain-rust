@@ -12,6 +12,15 @@ process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
+const dumbWaiter = interval => (run, f) => run(s => {
+  f(Object.assign({}, s, {
+    consistency: () => new Promise(resolve => {
+      console.log(`dumbWaiter is waiting ${interval}ms...`)
+      setTimeout(resolve, interval)
+    })
+  }))
+})
+
 let transport_config = 'memory';
 let middleware = combine(
   singleConductor,  // by default, combine conductors into a single conductor for in-memory networking
@@ -39,6 +48,7 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
 
   // omit singleConductor
   middleware = combine(
+    dumbWaiter(1000),
     callSyncMiddleware,
     tapeExecutor(require('tape')),
   );

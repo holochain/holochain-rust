@@ -16,22 +16,19 @@ use sim1h::{
     dht::bbdht::dynamodb::client::{client_from_endpoint, Client},
     workflow::{
         from_client::{
-            fetch_entry::fetch_entry, hold_entry::hold_entry, join_space::join_space,
-            leave_space::leave_space, publish_entry::publish_entry, query_entry::query_entry,
+            fetch_entry::fetch_entry, leave_space::leave_space, publish_entry::publish_entry,
             send_direct_message::send_direct_message,
         },
+        state::Sim1hState,
         to_client::{
             handle_get_gossiping_entry_list::handle_get_gossiping_entry_list,
-            handle_query_entry::handle_query_entry,
             handle_send_direct_message::handle_send_direct_message,
         },
+        to_client_response::handle_fetch_entry_result::handle_fetch_entry_result,
     },
 };
 use std::io::{self, Write};
 use url::Url;
-use sim1h::workflow::to_client::process_pending_requests_to_client;
-use sim1h::workflow::to_client_response::handle_get_authoring_entry_list_result::handle_get_authoring_entry_list_result;
-use sim1h::workflow::to_client_response::handle_fetch_entry_result::handle_fetch_entry_result;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig {
@@ -45,15 +42,14 @@ pub struct Sim1hWorker {
     dynamo_db_client: Client,
     inbox: Vec<Lib3hClientProtocol>,
     num_ticks: u32,
+    state: Sim1hState,
 }
 
 impl Sim1hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
     }
-}
 
-impl Sim1hWorker {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn new(handler: NetHandler, config: Sim1hConfig) -> NetResult<Self> {
         let dynamo_db_client = client_from_endpoint(config.dynamo_url);
@@ -62,6 +58,7 @@ impl Sim1hWorker {
             dynamo_db_client,
             inbox: Vec::new(),
             num_ticks: 0,
+            state: Sim1hState::default(),
         })
     }
 
@@ -97,7 +94,9 @@ impl Sim1hWorker {
                 //let ClientToLib3h::JoinSpace(space_data)= ClientToLib3h::from(data);
                 let log_context = "ClientToLib3h::JoinSpace";
                 println!("handlingmessage {:?}", log_context);
-                let _ = join_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                let _ = self
+                    .state
+                    .join_space(&log_context, &self.dynamo_db_client, &space_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: space_data.request_id,
                     space_address: space_data.space_address,
@@ -154,15 +153,16 @@ impl Sim1hWorker {
                     &log_context,
                     &self.dynamo_db_client,
                     &fetch_entry_result_data,
-                ).map(|_| {
+                )
+                .map(|_| {
                     Lib3hServerProtocol::SuccessResult(GenericResultData {
                         request_id: fetch_entry_result_data.request_id,
                         space_address: fetch_entry_result_data.space_address,
                         to_agent_id: fetch_entry_result_data.provider_agent_id,
                         result_info: Opaque::new(),
                     })
-                }).map_err(|bb_dht_error| bb_dht_error.into())
-
+                })
+                .map_err(|bb_dht_error| bb_dht_error.into())
             }
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
@@ -180,7 +180,11 @@ impl Sim1hWorker {
             Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 println!("handlingmessage {:?}", log_context);
-                hold_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
+                self.state.hold_entry(
+                    &log_context,
+                    &self.dynamo_db_client,
+                    &provided_entry_data,
+                )?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: "".into(),
                     space_address: provided_entry_data.space_address,
@@ -192,18 +196,27 @@ impl Sim1hWorker {
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
                 println!("handlingmessage {:?}", log_context);
-                let result = query_entry(&log_context, &self.dynamo_db_client, &query_entry_data)?;
-                Ok(result.into())
+
+                // TODO: hook up, use result
+                let _result = self.state.query_entry(
+                    &log_context,
+                    &self.dynamo_db_client,
+                    &query_entry_data,
+                )?;
+                // Ok(result.into())
+                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
+                    request_id: "".into(),
+                    space_address: query_entry_data.space_address,
+                    to_agent_id: query_entry_data.requester_agent_id,
+                    result_info: Opaque::new(),
+                }))
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
                 let log_context = "ClientToLib3h::HandleQueryEntryResult";
                 println!("handlingmessage {:?}", log_context);
-                handle_query_entry(
-                    &log_context,
-                    &self.dynamo_db_client,
-                    &query_entry_result_data,
-                );
+                self.state
+                    .handle_query_entry_result(&log_context, &query_entry_result_data);
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: query_entry_result_data.request_id,
                     space_address: query_entry_result_data.space_address,
@@ -216,10 +229,8 @@ impl Sim1hWorker {
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 println!("handlingmessage {:?}", log_context);
-                handle_get_authoring_entry_list_result(
-                    &log_context,
-                    &entry_list_data,
-                );
+                self.state
+                    .handle_get_authoring_entry_list_result(&log_context, &entry_list_data);
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: entry_list_data.request_id,
                     space_address: entry_list_data.space_address,
@@ -276,10 +287,19 @@ impl NetWorker for Sim1hWorker {
             io::stdout().flush()?;
         }
         let mut did_something = false;
-        for request in process_pending_requests_to_client() {
+        for request in self.state.process_pending_requests_to_client() {
             debug!("NET>?>CORE {:?}", request);
             let request = Lib3hServerProtocol::from(request);
             if let Err(error) = self.handler.handle(Ok(request)) {
+                warn!("Error returned from network handler in Sim1h: {:?}", error);
+            }
+
+            did_something = true;
+        }
+        for response in self.state.process_pending_responses_to_client() {
+            debug!("NET>!>CORE {:?}", response);
+            let response = Lib3hServerProtocol::from(response);
+            if let Err(error) = self.handler.handle(Ok(response)) {
                 warn!("Error returned from network handler in Sim1h: {:?}", error);
             }
 

@@ -77,10 +77,10 @@ impl ToString for HDKVersion {
 
 impl HDKVersion {
     pub fn new(version_string: &str) -> HcResult<HDKVersion> {
-        let mut splits = version_string.split("-");
+        let mut splits = version_string.split('-');
         let version = splits.next().ok_or("Could not get version")?;
 
-        let mut version_splits = version.split(".");
+        let mut version_splits = version.trim_start_matches('v').split('.');
         let versioning = (
             version_splits
                 .next()

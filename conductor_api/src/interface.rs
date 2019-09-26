@@ -132,12 +132,12 @@ impl ConductorApiBuilder {
             let public_id_str = Self::get_as_string("instance_id", &params_map)?;
             let id = instance_ids_map
                 .get(&PublicInstanceIdentifier::from(public_id_str))
-                .ok_or(jsonrpc_core::Error::invalid_params(
+                .ok_or_else(|| jsonrpc_core::Error::invalid_params(
                     "instance identifier invalid",
                 ))?;
             let instance = instances
                 .get(id)
-                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
+                .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
             let hc_lock = instance.clone();
             let hc_lock_inner = hc_lock.clone();
             let mut hc = hc_lock_inner.write().unwrap();
@@ -286,15 +286,16 @@ impl ConductorApiBuilder {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
             .as_str()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` is not a valid json string",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` is not a valid json string",
+                    &key
+                ))
+            })?
             .to_string())
     }
 
@@ -305,15 +306,13 @@ impl ConductorApiBuilder {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
             .as_bool()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` has to be a boolean",
-                &key
-            )))?)
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` has to be a boolean", &key))
+            })?)
     }
 
     fn get_as_int<T: Into<String>>(
@@ -323,15 +322,13 @@ impl ConductorApiBuilder {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
             .as_i64()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` has to be an integer",
-                &key
-            )))?)
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` has to be an integer", &key))
+            })?)
     }
 
     /// This adds functions to remotely change any aspect of the conductor config.
@@ -470,10 +467,12 @@ impl ConductorApiBuilder {
                     Some(value) => Some(
                         value
                             .as_str()
-                            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                                "`{}` is not a valid json string",
-                                &value
-                            )))?
+                            .ok_or_else(|| {
+                                jsonrpc_core::Error::invalid_params(format!(
+                                    "`{}` is not a valid json string",
+                                    &value
+                                ))
+                            })?
                             .into(),
                     ),
                     None => None,

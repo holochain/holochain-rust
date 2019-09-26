@@ -24,7 +24,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         dna_name,
         dna_address: Address::from(""),
         agent_id_str: JsonString::from(call_data.context.agent_id.clone()).to_string(),
-        agent_address: Address::from(call_data.context.agent_id.address()),
+        agent_address: call_data.context.agent_id.address(),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),

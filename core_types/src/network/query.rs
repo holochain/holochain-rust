@@ -1,4 +1,4 @@
-use holochain_core_types::{
+use crate::{
     chain_header::ChainHeader, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -54,6 +54,7 @@ pub enum NetworkQuery {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
     Links(GetLinksNetworkResult, String, String),

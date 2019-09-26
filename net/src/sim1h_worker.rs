@@ -292,7 +292,7 @@ impl NetWorker for Sim1hWorker {
             io::stdout().flush()?;
         }
         let mut did_something = false;
-        for request in self.state.process_pending_requests_to_client() {
+        for request in self.state.process_pending_requests_to_client(&self.dynamo_db_client) {
             debug!("NET>?>CORE {:?}", request);
             let request = Lib3hServerProtocol::from(request);
             if let Err(error) = self.handler.handle(Ok(request)) {

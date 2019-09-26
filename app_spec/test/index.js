@@ -57,7 +57,32 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
 const orchestrator = new Orchestrator({
   middleware,
   globalConfig: {
-    logger: true,
+      logger: {
+          type: "trace",
+          rules: {
+              rules: [
+                  {
+                      exclude: true,
+                      pattern: ".*parity.*"
+                  },
+                  {
+                      exclude: true,
+                      pattern: ".*mio.*"
+                  },
+                  {
+                      exclude: true,
+                      pattern: ".*tokio.*"
+                  },
+                  {
+                      exclude: true,
+                      pattern: ".*hyper.*"
+                  },
+                  {
+                      exclude: true,
+                      pattern: ".*rpc.*"
+                  }
+              ]}
+      },
     network: transport_config
   }
 })

@@ -316,6 +316,7 @@ mod tests {
                 id: "hc-run-dna".to_string(),
                 file: temp_path.to_str().unwrap().to_string(),
                 hash: dna.address().to_string(),
+                uuid: Default::default(),
             }
         )
     }

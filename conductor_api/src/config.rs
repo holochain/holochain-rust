@@ -478,6 +478,15 @@ impl Configuration {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
+    /// Returns the DNA configuration with the given ID if present
+    pub fn update_dna_hash_by_id(&mut self, id: &str, hash: String) -> bool {
+        self.dnas
+            .iter_mut()
+            .find(|dc| &dc.id == id)
+            .map(|dna| dna.hash = hash)
+            .is_some()
+    }
+
     /// Returns the instance configuration with the given ID if present
     pub fn instance_by_id(&self, id: &str) -> Option<InstanceConfiguration> {
         self.instances.iter().find(|ic| &ic.id == id).cloned()

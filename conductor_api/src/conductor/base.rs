@@ -681,7 +681,7 @@ impl Conductor {
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(&mut self, id: &String) -> Result<Holochain, String> {
-        let _ = self.config.check_consistency(&mut self.dna_loader)?;
+        self.config.check_consistency(&mut self.dna_loader)?;
 
         self.config
             .instance_by_id(&id)
@@ -750,7 +750,11 @@ impl Conductor {
 
                 // Get DNA
 
-                let mut dna_config = self.config.dna_by_id(&instance_config.dna).unwrap();
+                // self.config.dnas.iter_mut().fing(|dna_config| dna_config.id == instance_config.dna)
+                // .map(|dna_config| {
+
+                // })
+                let dna_config = self.config.dna_by_id(&instance_config.dna).unwrap();
                 let dna_file = PathBuf::from(&dna_config.file);
                 let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
                     HolochainError::ConfigError(format!(
@@ -763,7 +767,8 @@ impl Conductor {
                 match dna_config.uuid {
                     Some(uuid) => {
                         dna.uuid = uuid;
-                        dna_config.hash = dna.address().to_string();
+                        self.config.update_dna_hash_by_id(&dna_config.id, dna.address().to_string());
+                        self.save_config()?;
                     },
                     None => {
                         // This is where we are checking the consistency between DNAs: for now we compare

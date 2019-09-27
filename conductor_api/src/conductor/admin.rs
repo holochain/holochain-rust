@@ -116,7 +116,7 @@ impl ConductorAdmin for Conductor {
             json_patch::merge(&mut dna.properties, &props);
         }
 
-        if let Some(uuid) = uuid {
+        if let Some(uuid) = uuid.clone() {
             dna.uuid = uuid;
         }
 
@@ -132,6 +132,7 @@ impl ConductorAdmin for Conductor {
             id: id.clone(),
             file: config_path_str.into(),
             hash: dna.address().to_string(),
+            uuid,
         };
 
         let mut new_config = self.config.clone();
@@ -822,11 +823,13 @@ type = 'cmd'"#
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: String::from("new-dna.dna.json"),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );
@@ -902,11 +905,13 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );
@@ -1007,11 +1012,13 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );
@@ -1073,16 +1080,19 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),
                     file: new_dna_path.to_string_lossy().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );

@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     network::{
         entry_with_header::EntryWithHeader,
-        actions::get_entry::get_entry,
+        actions::query::{query, QueryMethod},
     },
     nucleus::{
         ribosome::callback::{
@@ -19,6 +19,7 @@ use holochain_core_types::{
     },
     chain_header::ChainHeader,
     time::Timeout,
+    network::query::NetworkQueryResult,
 };
 
 use std::sync::Arc;
@@ -33,8 +34,8 @@ async fn all_chain_headers_before_header_dht(
     let mut headers = Vec::new();
 
     while let Some(next_header_addr) = current_header.link() {
-        let get_entry_result = await!(get_entry(context.clone(), next_header_addr.clone(), Timeout::new(GET_TIMEOUT_MS)));
-        if let Ok(Some(EntryWithMetaAndHeader{entry_with_meta: EntryWithMeta{entry: Entry::ChainHeader(chain_header), ..}, ..})) = get_entry_result {
+        let get_entry_result = await!(query(context.clone(), QueryMethod::Entry(next_header_addr.clone()), Timeout::new(GET_TIMEOUT_MS)));
+        if let Ok(NetworkQueryResult::Entry(Some(EntryWithMetaAndHeader{entry_with_meta: EntryWithMeta{entry: Entry::ChainHeader(chain_header), ..}, ..}))) = get_entry_result {
             headers.push(chain_header.clone());
             current_header = chain_header;
         } else {
@@ -56,8 +57,8 @@ async fn public_chain_entries_from_headers_dht(
         .collect::<Vec<_>>();
     let mut entries = Vec::new();
     for header in public_headers {
-        let get_entry_result = await!(get_entry(context.clone(), header.entry_address().clone(), Timeout::new(GET_TIMEOUT_MS)));
-        if let Ok(Some(EntryWithMetaAndHeader{entry_with_meta: EntryWithMeta{entry, ..}, ..})) = get_entry_result {
+        let get_entry_result = await!(query(context.clone(), QueryMethod::Entry(header.entry_address().clone()), Timeout::new(GET_TIMEOUT_MS)));
+        if let Ok(NetworkQueryResult::Entry(Some(EntryWithMetaAndHeader{entry_with_meta: EntryWithMeta{entry, ..}, ..}))) = get_entry_result {
             entries.push(entry.clone());
         } else {
             return Err(HolochainError::ErrorGeneric(
@@ -72,8 +73,7 @@ pub (crate) async fn try_make_validation_package_dht(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
-    context.log(format!("Constructing validation package from DHT for entry with address: {}", entry_with_header.header.entry_address()));
-
+    log_debug!(context, "Constructing validation package from DHT for entry with address: {}", entry_with_header.header.entry_address());
     let entry = &entry_with_header.entry;
     let entry_header = entry_with_header.header.clone();
 

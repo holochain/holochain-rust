@@ -7,7 +7,7 @@ module.exports = scenario => {
         const message = "Hello everyone! Time to start the secret meeting";
 
         const SignResult = await bob.call('app', "converse", "sign_message", { key_id:"", message: message });
-        t.deepEqual(SignResult, { Ok: 'N4wF/U1By7TA4H3k9i+5r8IGYzRMTi59mr/XZOpz8Ydj85mbupUk6tHMf/owgjJo43Vu1lja7ZFKGOFQnpa0Bw==' });
+        t.ok(SignResult.Ok);
 
         const provenance = [bob.info('app').agentAddress, SignResult.Ok];
 

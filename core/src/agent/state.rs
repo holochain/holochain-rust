@@ -421,7 +421,7 @@ pub mod tests {
         let header = create_new_chain_header(
             &test_entry(),
             &agent_state,
-            &StateWrapper::from(state.clone()),
+            &StateWrapper::from(state),
             &None,
             &vec![],
         )

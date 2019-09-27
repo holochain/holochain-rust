@@ -804,56 +804,62 @@ impl Conductor {
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
                 let dna_file = PathBuf::from(&dna_config.file);
-                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
+                let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
                     HolochainError::ConfigError(format!(
                         "Could not load DNA file \"{}\"",
                         dna_config.file
                     ))
                 })?;
 
-                // This is where we are checking the consistency between DNAs: for now we compare
-                // the hash provided in the TOML Conductor config file with the computed hash of
-                // the loaded dna.
-                {
-                    let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
-                    let dna_hash_computed = &dna.address();
 
-                    match Arc::get_mut(&mut self.dna_loader)
-                        .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
-                        // If the file is correctly loaded, meaning it exists in the file system,
-                        // we can operate on its computed DNA hash
-                        Ok(dna) => {
-                            let dna_hash_computed_from_file = dna.address();
-                            Conductor::check_dna_consistency_from_all_sources(
-                                &context,
-                                &dna_hash_from_conductor_config,
-                                &dna_hash_computed,
-                                &dna_hash_computed_from_file, &dna_file)?;
-                        },
-                        Err(_) => {
-                            let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
-                            log_error!(context, "{}", msg);
+                match dna_config.uuid {
+                    Some(uuid) => dna.uuid = uuid,
+                    None => {
+                        // This is where we are checking the consistency between DNAs: for now we compare
+                        // the hash provided in the TOML Conductor config file with the computed hash of
+                        // the loaded dna.
+                        // NB: we only do this is if the uuid is not set
+                        let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
+                        let dna_hash_computed = &dna.address();
 
-                            // If something is wrong with the DNA file, we only
-                            // check the 2 primary sources of DNA's hashes
-                            match Conductor::check_dna_consistency(
-                                &dna_hash_from_conductor_config,
-                                &dna_hash_computed) {
-                                Ok(_) => (),
-                                Err(e) => {
-                                    let msg = format!("\
-                                    Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
-                                    '{}' != '{}'",
+                        match Arc::get_mut(&mut self.dna_loader)
+                            .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
+                            // If the file is correctly loaded, meaning it exists in the file system,
+                            // we can operate on its computed DNA hash
+                            Ok(dna) => {
+                                let dna_hash_computed_from_file = dna.address();
+                                Conductor::check_dna_consistency_from_all_sources(
+                                    &context,
                                     &dna_hash_from_conductor_config,
-                                    &dna_hash_computed);
-                                    log_error!(context, "{}", msg);
+                                    &dna_hash_computed,
+                                    &dna_hash_computed_from_file, &dna_file)?;
+                            },
+                            Err(_) => {
+                                let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
+                                log_error!(context, "{}", msg);
 
-                                    return Err(e.to_string());
+                                // If something is wrong with the DNA file, we only
+                                // check the 2 primary sources of DNA's hashes
+                                match Conductor::check_dna_consistency(
+                                    &dna_hash_from_conductor_config,
+                                    &dna_hash_computed) {
+                                    Ok(_) => (),
+                                    Err(e) => {
+                                        let msg = format!("\
+                                        Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                        '{}' != '{}'",
+                                        &dna_hash_from_conductor_config,
+                                        &dna_hash_computed);
+                                        log_error!(context, "{}", msg);
+
+                                        return Err(e.to_string());
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
+
                 let context = Arc::new(context);
                                Holochain::load(context.clone())
                     .and_then(|hc| {

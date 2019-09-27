@@ -19,7 +19,6 @@ use crate::{
             store::*,
         },
     },
-    nucleus,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::*;
@@ -32,6 +31,8 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
+use crate::nucleus::actions::get_entry::get_entry_from_cas;
+use crate::network::entry_with_header::EntryWithHeader;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -274,35 +275,67 @@ fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,
 ) -> Result<EntryAspect, HolochainError> {
-    let entry_with_meta =
-        nucleus::actions::get_entry::get_entry_with_meta(&context, entry_address.clone())?
-            .ok_or(HolochainError::EntryNotFoundLocally)?;
+    let state = context.state()
+        .ok_or_else(|| {
+            HolochainError::InitializationFailed(
+                String::from("In get_content_aspect: no state found")
+            )
+        })?;
 
-    let _ = entry_with_meta
+    // Optimistically look for entry in chain...
+    let maybe_chain_header = state.agent()
+        .iter_chain()
+        .find(|ref chain_header| chain_header.entry_address() == entry_address);
+
+    // If we have found a header for the requested entry in the chain...
+    let maybe_entry_with_header = if let Some(header) = maybe_chain_header {
+        // ... we can just get the content from the chain CAS
+        Some(EntryWithHeader {
+            entry: get_entry_from_cas(&state.agent().chain_store().content_storage(), header.entry_address())?
+                .expect("Could not find entry in chain CAS, but header is chain"),
+            header
+        })
+    } else {
+        // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
+        if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)? {
+            // If we have it in the DHT cas that's good,
+            // but then we have to get the header like this:
+            let headers = context
+                .state()
+                .expect("Could not get state for handle_fetch_entry")
+                .get_headers(entry_address.clone())
+                .map_err(|error| {
+                    let err_message = format!(
+                        "net/fetch/get_content_aspect: Error trying to get headers {:?}",
+                        error
+                    );
+                    log_error!(context, "{}", err_message.clone());
+                    HolochainError::ErrorGeneric(err_message)
+                })?;
+            if headers.len() > 0 {
+                // TODO: this is just taking the first header..
+                // We should actually transform all headers into EntryAspect::Headers and just the first one
+                // into an EntryAspect content (What about ordering? Using the headers timestamp?)
+                Some(EntryWithHeader{entry, header: headers[0].clone()})
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    };
+
+    let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
+
+    let _ = entry_with_header
         .entry
         .entry_type()
         .can_publish(&context)
         .ok_or(HolochainError::EntryIsPrivate)?;
 
-    let headers = context
-        .state()
-        .expect("Could not get state for handle_fetch_entry")
-        .get_headers(entry_address.clone())
-        .map_err(|error| {
-            let err_message = format!(
-                "net/fetch/get_content_aspect: Error trying to get headers {:?}",
-                error
-            );
-            log_error!(context, "{}", err_message.clone());
-            HolochainError::ErrorGeneric(err_message)
-        })?;
-
-    // TODO: this is just taking the first header..
-    // We should actually transform all headers into EntryAspect::Headers and just the first one
-    // into an EntryAspect content (What about ordering? Using the headers timestamp?)
     Ok(EntryAspect::Content(
-        entry_with_meta.entry,
-        headers[0].clone(),
+        entry_with_header.entry,
+        entry_with_header.header,
     ))
 }
 

@@ -814,7 +814,7 @@ impl Conductor {
                 // This is where we are checking the consistency between DNAs: for now we compare
                 // the hash provided in the TOML Conductor config file with the computed hash of
                 // the loaded dna.
-                {
+                if dna_config.uuid.is_none() {
                     let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
                     let dna_hash_computed = &dna.address();
 

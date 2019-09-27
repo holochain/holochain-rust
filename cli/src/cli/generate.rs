@@ -13,10 +13,10 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
     let zome_name = zome_path
         .components()
         .last()
-        .ok_or(format_err!("New zome path must have a target directory"))?
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?
         .as_os_str()
         .to_str()
-        .ok_or(format_err!("Zome path contains invalid characters"))?;
+        .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
 
     // match against all supported templates
     let url = match scaffold.as_ref() {
@@ -44,11 +44,11 @@ fn apply_template_substitution(root_path: &PathBuf, context: Context) -> Default
     let zome_name_component = root_path
         .components()
         .last()
-        .ok_or(format_err!("New zome path must have a target directory"))?;
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?;
     let template_glob_path: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
     let template_glob = template_glob_path
         .to_str()
-        .ok_or(format_err!("Zome path contains invalid characters"))?;
+        .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
 
     let templater =
         Tera::new(template_glob).map_err(|_| format_err!("Could not load repo for templating"))?;
@@ -59,7 +59,7 @@ fn apply_template_substitution(root_path: &PathBuf, context: Context) -> Default
                 if path.is_file() {
                     let template_id: PathBuf = path
                         .components()
-                        .skip_while(|c| !(c == &zome_name_component))
+                        .skip_while(|c| c != &zome_name_component)
                         .skip(1)
                         .collect();
                     let result = templater
@@ -69,7 +69,7 @@ fn apply_template_substitution(root_path: &PathBuf, context: Context) -> Default
                         .write(true)
                         .truncate(true)
                         .open(path)?;
-                    file.write(result.as_bytes())?;
+                    file.write_all(result.as_bytes())?;
                 }
             }
             Err(e) => println!("{:?}", e),

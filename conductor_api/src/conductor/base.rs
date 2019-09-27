@@ -460,7 +460,7 @@ impl Conductor {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        notify(format!("Start all instances"));
+        notify("Start all instances".to_string());
         self.config
             .instances
             .iter()

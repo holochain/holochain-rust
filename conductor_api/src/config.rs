@@ -817,6 +817,7 @@ fn default_address() -> String {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkConfig {
     N3h(N3hConfig),
     Lib3h(EngineConfig),

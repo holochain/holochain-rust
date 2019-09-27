@@ -88,14 +88,13 @@ impl ConductorAdmin for Conductor {
         properties: Option<&serde_json::Value>,
         uuid: Option<String>,
     ) -> Result<HashString, HolochainError> {
-        let mut dna =
-            Arc::get_mut(&mut self.dna_loader).unwrap()(&path).map_err(|e| {
-                HolochainError::ConfigError(format!(
-                    "Could not load DNA file {:?}, Error: {}",
-                    path,
-                    e.to_string()
-                ))
-            })?;
+        let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&path).map_err(|e| {
+            HolochainError::ConfigError(format!(
+                "Could not load DNA file {:?}, Error: {}",
+                path,
+                e.to_string()
+            ))
+        })?;
 
         if let Some(provided_hash) = expected_hash {
             let actual_hash = dna.address();
@@ -194,9 +193,7 @@ impl ConductorAdmin for Conductor {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::Pickle {
-                path: storage_path,
-            },
+            storage: StorageConfiguration::Pickle { path: storage_path },
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;

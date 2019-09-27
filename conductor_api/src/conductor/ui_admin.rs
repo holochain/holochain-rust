@@ -64,7 +64,8 @@ impl ConductorUiAdmin for Conductor {
         self.save_config()?;
         notify(format!(
             "Installed UI bundle from {} as \"{}\"",
-            path.display(), id
+            path.display(),
+            id
         ));
         Ok(())
     }

@@ -1253,11 +1253,7 @@ impl Conductor {
 
     pub fn save_dna_to(&self, dna: &Dna, path: PathBuf) -> Result<PathBuf, HolochainError> {
         let file = File::create(&path).map_err(|e| {
-            HolochainError::ConfigError(format!(
-                "Error writing DNA to {:?}, {:?}",
-                path,
-                e
-            ))
+            HolochainError::ConfigError(format!("Error writing DNA to {:?}, {:?}", path, e))
         })?;
         serde_json::to_writer_pretty(&file, dna)?;
         Ok(path)

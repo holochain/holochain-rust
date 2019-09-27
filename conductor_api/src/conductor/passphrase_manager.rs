@@ -11,11 +11,11 @@ use std::{
 };
 
 #[cfg(unix)]
-use std::path::PathBuf;
-#[cfg(unix)]
 use std::io::{BufRead, BufReader};
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
+#[cfg(unix)]
+use std::path::PathBuf;
 
 /// We are caching the passphrase for 10 minutes.
 const PASSPHRASE_CACHE_DURATION_SECS: u64 = 600;

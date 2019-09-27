@@ -89,8 +89,6 @@ macro_rules! log_error {
     )
 }
 
-
-
 #[test]
 fn context_log_macro_test() {
     use std::sync::{Arc, RwLock, Mutex};
@@ -102,9 +100,8 @@ fn context_log_macro_test() {
     use crate::context::Context;
     use tempfile::tempdir;
 
-
     let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path()).unwrap(),
+        FilesystemStorage::new(tempdir().unwrap().path()).unwrap(),
     ));
     let ctx = Context::new(
         "LOG-TEST-ID",
@@ -113,8 +110,7 @@ fn context_log_macro_test() {
         file_storage.clone(),
         file_storage.clone(),
         Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path())
-                .unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
         )),
         P2pConfig::new_with_unique_memory_backend(),
         None,

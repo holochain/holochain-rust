@@ -72,8 +72,7 @@ pub mod test {
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path())
-                    .unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
             )),
             P2pConfig::new_with_unique_memory_backend(),
             None,

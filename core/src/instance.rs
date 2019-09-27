@@ -480,8 +480,7 @@ pub mod tests {
                 Some(observer_channel.clone()),
                 file_storage.clone(),
                 Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path())
-                        .unwrap(),
+                    EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
                 )),
                 test_memory_network_config(network_name),
                 false,
@@ -502,8 +501,7 @@ pub mod tests {
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path())
-                    .unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
             )),
             test_memory_network_config(network_name),
             None,
@@ -517,8 +515,7 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_agent_state(network_name: Option<&str>) -> Arc<Context> {
-        let file_system =
-            FilesystemStorage::new(tempdir().unwrap().path()).unwrap();
+        let file_system = FilesystemStorage::new(tempdir().unwrap().path()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
             "test-context-with-agent-state-instance",
@@ -527,8 +524,7 @@ pub mod tests {
             cas.clone(),
             cas.clone(),
             Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path())
-                    .unwrap(),
+                EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
             )),
             test_memory_network_config(network_name),
             None,

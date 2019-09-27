@@ -48,7 +48,7 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
 
   // omit singleConductor
   middleware = combine(
-    dumbWaiter(1000),
+    // dumbWaiter(1000),
     callSyncMiddleware,
     tapeExecutor(require('tape')),
   );

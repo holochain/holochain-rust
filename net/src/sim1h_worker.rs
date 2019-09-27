@@ -22,13 +22,13 @@ use sim1h::{
         state::Sim1hState,
         to_client::{
             handle_get_gossiping_entry_list::handle_get_gossiping_entry_list,
+            send_direct_message_result::send_direct_message_result,
         },
         to_client_response::handle_fetch_entry_result::handle_fetch_entry_result,
     },
 };
 use std::io::{self, Write};
 use url::Url;
-use sim1h::workflow::to_client::send_direct_message_result::send_direct_message_result;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig {
@@ -185,11 +185,7 @@ impl Sim1hWorker {
             Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 println!("handlingmessage {:?}", log_context);
-                self.state.hold_entry(
-                    &log_context,
-                    &self.dynamo_db_client,
-                    &provided_entry_data,
-                )?;
+                Sim1hState::hold_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: "".into(),
                     space_address: provided_entry_data.space_address,
@@ -292,7 +288,12 @@ impl NetWorker for Sim1hWorker {
             io::stdout().flush()?;
         }
         let mut did_something = false;
-        for request in self.state.process_pending_requests_to_client() {
+        for request in self
+            .state
+            .process_pending_requests_to_client(&self.dynamo_db_client)
+            // .map_err(|err| err.to_string().into())
+            .expect("TODO, map Sim1hError")
+        {
             debug!("NET>?>CORE {:?}", request);
             let request = Lib3hServerProtocol::from(request);
             if let Err(error) = self.handler.handle(Ok(request)) {

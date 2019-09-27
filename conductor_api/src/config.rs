@@ -659,6 +659,8 @@ pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
+    #[serde(default)]
+    pub uuid: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {

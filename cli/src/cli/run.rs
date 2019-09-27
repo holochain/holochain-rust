@@ -133,6 +133,7 @@ fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
             .expect("Expected DNA path to be valid unicode")
             .to_string(),
         hash: dna.address().to_string(),
+        uuid: None,
     }
 }
 

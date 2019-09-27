@@ -255,7 +255,7 @@ pub fn test_context_and_logger_with_network_name(
 pub fn test_context_and_logger_with_bootstrap_nodes(
     agent_name: &str,
     network_name: Option<&str>,
-    bootstrap_nodes: Vec<url::Url>,
+    _bootstrap_nodes: Vec<url::Url>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
     let (signal,recieve) = signal_channel();
@@ -269,8 +269,7 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
             if let Some(network_name) = network_name {
-                let config = P2pConfig::new_with_memory_backend_bootstrap_nodes(
-                    network_name, bootstrap_nodes);
+                let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
                 builder = builder.with_p2p_config(config);
             }
             builder
@@ -297,8 +296,8 @@ pub fn test_context_and_logger_with_network_name_and_signal(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
-            if let Some(network_name) = network_name {
-                let config = P2pConfig::new_with_memory_backend(network_name);
+            if let Some(_) = network_name {
+                let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
                 builder = builder.with_p2p_config(config);
             }
             builder

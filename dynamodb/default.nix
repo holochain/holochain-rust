@@ -28,7 +28,13 @@ let
  mkdir -p $TMP/dynamodb
  ${pkgs.jdk}/bin/java -Djava.library.path=./DynamoDBLocal_lib/ -jar ./DynamoDBLocal.jar -dbPath "$TMP/dynamodb" "$@"
  '';
+
+ inMemory = pkgs.writeShellScriptBin "dynamodb-memory"
+ ''
+  cd ${dynamo-jar}
+  ${pkgs.jdk}/bin/java -Djava.library.path=./DynamoDBLocal_lib/ -jar ./DynamoDBLocal.jar -inMemory "$@"
+  '';
 in
 {
- buildInputs = [ pkgs.jdk script ];
+ buildInputs = [ pkgs.jdk script inMemory ];
 }

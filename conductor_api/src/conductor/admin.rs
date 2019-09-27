@@ -194,7 +194,6 @@ impl ConductorAdmin for Conductor {
         dna_id: &String,
         agent_id: &String,
     ) -> Result<(), HolochainError> {
-        let mut new_config = self.config.clone();
         let storage_path = self.instance_storage_dir_path().join(id.clone());
         fs::create_dir_all(&storage_path)?;
         let new_instance_config = InstanceConfiguration {
@@ -210,12 +209,11 @@ impl ConductorAdmin for Conductor {
                     .into(),
             },
         };
-        new_config.instances.push(new_instance_config);
-        new_config.check_consistency(&mut self.dna_loader)?;
-        let instance = self.instantiate_from_config(id, Some(&mut new_config))?;
+        self.config.instances.push(new_instance_config);
+        self.config.check_consistency(&mut self.dna_loader)?;
+        let instance = self.instantiate_from_config(id)?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
-        self.config = new_config;
         self.save_config()?;
         let _ = self.start_signal_multiplexer();
         Ok(())
@@ -540,7 +538,7 @@ impl ConductorAdmin for Conductor {
 
         // Rebuild and reset caller's conductor api so it sees the bridge handle
         let id = &new_bridge.caller_id;
-        let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
+        let new_conductor_api = self.build_conductor_api(id.clone())?;
         let mut instance = self.instances.get(id)?.write()?;
         instance.set_conductor_api(new_conductor_api)?;
 

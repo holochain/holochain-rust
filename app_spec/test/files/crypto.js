@@ -65,7 +65,7 @@ module.exports = scenario => {
 
     })
 
-    scenario('capabilities grant and claim', async (s, t) => {
+    scenario.skip('capabilities grant and claim', async (s, t) => {
       const { alice, bob } = await s.players({alice: one, bob: one}, true)
 
         // Ask for alice to grant a token for bob  (it's hard-coded for bob in re function for now)

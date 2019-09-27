@@ -32,7 +32,8 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: {:?}", link);
     log_debug!(context, "workflow/hold_link: getting validation package...");
     // 1. Get hold of validation package
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
+    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+        .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
             log_debug!(context, "workflow/hold_link: {}", message);
@@ -66,12 +67,12 @@ pub async fn hold_link_workflow(
 
     // 3. Validate the entry
     log_debug!(context, "workflow/hold_link: validate...");
-    await!(validate_entry(
+    validate_entry(
         entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
-    ))
+    ).await
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
@@ -94,12 +95,16 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry in the local DHT shard
-    await!(add_link(&link_add, &context))?;
+    add_link(&link_add, &context).await?;
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
-    await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
-    log_debug!(context, "workflow/hold_entry: added! {:?}", entry_with_header);
+    hold_entry_workflow(&entry_with_header, context.clone()).await?;
+    log_debug!(
+        context,
+        "workflow/hold_entry: added! {:?}",
+        entry_with_header
+    );
 
     //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())

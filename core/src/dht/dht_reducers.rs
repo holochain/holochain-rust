@@ -432,5 +432,4 @@ pub mod tests {
 
         assert_eq!(&entry, &result_entry,);
     }
-
 }

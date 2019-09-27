@@ -183,5 +183,4 @@ pub mod tests {
             get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
         }));
     }
-
 }

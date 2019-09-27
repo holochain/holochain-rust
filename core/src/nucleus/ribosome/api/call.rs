@@ -538,5 +538,4 @@ pub mod tests {
         );
         assert!(check_capability(context.clone(), &zome_call));
     }
-
 }

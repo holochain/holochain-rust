@@ -17,10 +17,11 @@ use std::{pin::Pin, sync::Arc};
 pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    await!(PublishFuture {
+    PublishFuture {
         context: context.clone(),
         action: action_wrapper,
-    })
+    }
+    .await
 }
 
 /// PublishFuture resolves to ActionResponse

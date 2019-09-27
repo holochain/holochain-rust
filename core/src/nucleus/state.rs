@@ -215,5 +215,4 @@ pub mod tests {
     pub fn test_nucleus_state() -> NucleusState {
         NucleusState::new()
     }
-
 }

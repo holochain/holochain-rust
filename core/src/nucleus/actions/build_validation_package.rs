@@ -177,11 +177,12 @@ pub async fn build_validation_package<'a>(
             .expect("Could not spawn thread for build_validation_package");
     }
 
-    await!(ValidationPackageFuture {
+    ValidationPackageFuture {
         context: context.clone(),
         key: id,
         error: None,
-    })
+    }
+    .await
 }
 
 // given a slice of headers return the entries for those marked public

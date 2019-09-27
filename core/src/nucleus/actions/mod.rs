@@ -135,5 +135,4 @@ pub mod tests {
         let (instance, _context) = instance(None);
         assert!(instance.state().nucleus().has_initialized());
     }
-
 }

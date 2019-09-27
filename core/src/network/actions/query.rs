@@ -78,10 +78,11 @@ pub async fn query(
         })
         .expect("Could not spawn thread for get timeout");
 
-    await!(QueryFuture {
+    QueryFuture {
         context: context.clone(),
         key: key.clone(),
-    })
+    }
+    .await
 }
 
 /// GetEntryFuture resolves to a HcResult<Entry>.

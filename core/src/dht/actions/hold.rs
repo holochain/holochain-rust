@@ -16,7 +16,7 @@ pub async fn hold_entry(
     let address = entry_wh.entry.address();
     let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.to_owned()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    await!(HoldEntryFuture { context, address })
+    HoldEntryFuture { context, address }.await
 }
 
 pub struct HoldEntryFuture {

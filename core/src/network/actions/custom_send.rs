@@ -40,10 +40,11 @@ pub async fn custom_send(
         })
         .expect("Could not spawn thread for custom_send timeout");
 
-    await!(SendResponseFuture {
+    SendResponseFuture {
         context: context.clone(),
         id,
-    })
+    }
+    .await
 }
 
 /// SendResponseFuture waits for a result to show up in NetworkState::custom_direct_message_replys

@@ -875,5 +875,4 @@ pub mod tests {
         assert_eq!(set.matches("src/bar/baz/foo.rs"), vec![2, 3]); // *.rs no longer matches, due to '/' separators
         assert_eq!(set.matches("foo.rs"), vec![0, 3]); // but, any number of leading '/' are matched by a '**/...'
     }
-
 }

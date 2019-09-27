@@ -86,42 +86,37 @@ pub async fn validate_entry(
         // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
         EntryType::Dna => Ok(()),
 
-        EntryType::App(app_entry_type) => await!(app_entry::validate_app_entry(
-            entry.clone(),
-            app_entry_type.clone(),
-            context,
-            link,
-            validation_data
-        )),
+        EntryType::App(app_entry_type) => {
+            app_entry::validate_app_entry(
+                entry.clone(),
+                app_entry_type.clone(),
+                context,
+                link,
+                validation_data,
+            )
+            .await
+        }
 
-        EntryType::LinkAdd => await!(link_entry::validate_link_entry(
-            entry.clone(),
-            validation_data,
-            context
-        )),
+        EntryType::LinkAdd => {
+            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+        }
 
-        EntryType::LinkRemove => await!(link_entry::validate_link_entry(
-            entry.clone(),
-            validation_data,
-            context
-        )),
+        EntryType::LinkRemove => {
+            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+        }
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => await!(remove_entry::validate_remove_entry(
-            entry.clone(),
-            validation_data,
-            context
-        )),
+        EntryType::Deletion => {
+            remove_entry::validate_remove_entry(entry.clone(), validation_data, context).await
+        }
 
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),
 
-        EntryType::AgentId => await!(agent_entry::validate_agent_entry(
-            entry.clone(),
-            validation_data,
-            context,
-        )),
+        EntryType::AgentId => {
+            agent_entry::validate_agent_entry(entry.clone(), validation_data, context).await
+        }
 
         // chain headers always pass for now. In future this should check that the entry is valid
         EntryType::ChainHeader => Ok(()), 

@@ -238,5 +238,4 @@ pub mod tests {
 
         assert_ne!(result1, result2);
     }
-
 }

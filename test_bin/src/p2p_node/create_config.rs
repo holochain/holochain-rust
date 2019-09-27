@@ -1,7 +1,7 @@
 use holochain_net::{p2p_config::*, tweetlog::*};
+use lib3h_protocol::uri::Lib3hUri;
 use p2p_node::lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use std::path::Path;
- use lib3h_protocol::uri::Lib3hUri;
 
 /// Create a P2pConfig for an IPC node that uses n3h and possibily a specific folder.
 /// Return the generated P2pConfig and the created tempdir if no dir was provided.
@@ -91,7 +91,10 @@ pub(crate) fn create_lib3h_config(
     maybe_dir_path: Option<String>,
 ) -> (P2pConfig, Option<tempfile::TempDir>) {
     // Create temp directory if no dir was provided
-    let bootstrap_nodes = bootstrap_nodes.into_iter().map(|s|Lib3hUri(s)).collect::<Vec<_>>();
+    let bootstrap_nodes = bootstrap_nodes
+        .into_iter()
+        .map(|s| Lib3hUri(s))
+        .collect::<Vec<_>>();
     let mut maybe_dir_ref = None;
     let dir = if let Some(dir_path) = maybe_dir_path {
         dir_path

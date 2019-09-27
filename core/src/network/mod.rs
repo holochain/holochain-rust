@@ -220,12 +220,14 @@ pub mod tests {
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = "get_validation_package_roundtrip".to_string();
 
+        let network = Some("get_validation_package_roundtrip");
+
         let (_instance1, context1) =
-            test_instance_and_context_by_name(dna.clone(), "alice1", Some("get_validation_package_roundtrip")).unwrap();
+            test_instance_and_context_by_name(dna.clone(), "alice1", network.clone()).unwrap();
         let context1_url = context1
             .network().lock().as_ref().unwrap().p2p_endpoint();
         let (_instance2, context2) =
-            test_instance_and_context_with_bootstrap_nodes(dna.clone(), "bob1", Some("get_validation_package_roundtrip2"), vec![context1_url]).unwrap();
+            test_instance_and_context_with_bootstrap_nodes(dna.clone(), "bob1", network, vec![context1_url]).unwrap();
 
         let entry = test_entry();
         context1

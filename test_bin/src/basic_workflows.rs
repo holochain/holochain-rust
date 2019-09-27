@@ -9,7 +9,7 @@ use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-    uri::Lib3hUri
+    uri::Lib3hUri,
 };
 use p2p_node::test_node::TestNode;
 
@@ -80,8 +80,10 @@ pub fn setup_two_nodes(
         println!("connect: node2_binding = {}", node2_binding);
         alex.send(Lib3hClientProtocol::Connect(ConnectData {
             request_id: "alex_send_connect".into(),
-            peer_location: Lib3hUri(url::Url::parse(node2_binding.as_str())
-                .unwrap_or_else(|_| panic!("malformed node2 url: {:?}", node2_binding))),
+            peer_location: Lib3hUri(
+                url::Url::parse(node2_binding.as_str())
+                    .unwrap_or_else(|_| panic!("malformed node2 url: {:?}", node2_binding)),
+            ),
             network_id: "alex_to_node2".into(),
         }))?;
 

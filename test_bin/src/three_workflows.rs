@@ -8,7 +8,7 @@ use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-    uri::Lib3hUri
+    uri::Lib3hUri,
 };
 
 use holochain_persistence_api::cas::content::Address;
@@ -61,8 +61,10 @@ pub fn setup_three_nodes(
         println!("Connect Alex to Billy ({})", node2_binding);
         alex.send(Lib3hClientProtocol::Connect(ConnectData {
             request_id: "alex_to_billy_request_id".into(),
-            peer_location: Lib3hUri(url::Url::parse(node2_binding.clone().as_str())
-                .expect("well formed node 2 uri (billy)")),
+            peer_location: Lib3hUri(
+                url::Url::parse(node2_binding.clone().as_str())
+                    .expect("well formed node 2 uri (billy)"),
+            ),
             network_id: "".into(),
         }))?;
         // Make sure Peers are connected
@@ -87,8 +89,10 @@ pub fn setup_three_nodes(
         println!("Connect  Camille to Billy ({})", node2_binding);
         camille.send(Lib3hClientProtocol::Connect(ConnectData {
             request_id: "camille_to_billy_request_id".into(),
-            peer_location: Lib3hUri(url::Url::parse(node2_binding.clone().as_str())
-                .expect("well formed billy (node2) ur")),
+            peer_location: Lib3hUri(
+                url::Url::parse(node2_binding.clone().as_str())
+                    .expect("well formed billy (node2) ur"),
+            ),
             network_id: "".into(),
         }))?;
 

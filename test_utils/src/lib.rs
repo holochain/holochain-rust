@@ -31,7 +31,7 @@ use holochain_core_types::{
     },
     entry::{entry_type::{AppEntryType, EntryType,test_app_entry_type},{Entry,EntryWithMeta}},
     crud_status::CrudStatus
-  
+
 };
 use holochain_persistence_api::{
     cas::content::{AddressableContent,Address}
@@ -585,22 +585,22 @@ pub fn example_valid_entry_address() -> Address {
 
 //this polls for the zome result until it satisfies a the boolean condition or elapses a number of tries.
 //only use this for get requests please
-pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
+pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone
 {
     //make zome call
     let result = make_test_call(holochain, zome_call, params);
     let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
-    
+
     //serialize into ZomeApiResult type
     let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
                                             .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
     let value = expected_result.clone()?;
-    
+
     //check if condition is satisifed
     if !boolean_condition(value) && tries >0
     {
         thread::sleep(Duration::from_secs(10));
-        
+
         //recursively call function again and decrement tries so far
         wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
     }
@@ -623,4 +623,16 @@ pub fn generate_zome_internal_error(error_kind:String)->ZomeApiError
     let formatted_path_string = path_string.replace("\\",&vec!["\\","\\"].join(""));
     let error_string = format!(r#"{{"kind":{},"file":"{}","line":"225"}}"#,error_kind,formatted_path_string);
     ZomeApiError::Internal(error_string)
+}
+
+// TODO do this for all crate tests somehow
+pub fn enable_logging_for_test() {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "trace");
+    }
+    let _ = env_logger::builder()
+        .default_format_timestamp(false)
+        .default_format_module_path(false)
+        .is_test(true)
+        .try_init();
 }

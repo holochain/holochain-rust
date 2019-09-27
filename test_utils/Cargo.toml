@@ -27,3 +27,4 @@ lazy_static = "=1.2.0"
 jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 base64 = "=0.10.1"
 url = { version = "=2.1.0", features = ["serde"] }
+env_logger = "=0.6.1"

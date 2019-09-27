@@ -4,9 +4,9 @@ use holochain_net::{
     tweetlog::TWEETLOG,
 };
 use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 #[cfg_attr(tarpaulin, skip)]
 use lib3h_protocol::uri::Lib3hUri;
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use p2p_node::test_node::TestNode;
 use std::str;
 use url::Url;
@@ -57,8 +57,9 @@ pub fn setup_two_lib3h_nodes(
         alex.send(Lib3hClientProtocol::Connect(
             lib3h_protocol::data_types::ConnectData {
                 request_id: "connect_req_1".into(),
-                peer_location: Lib3hUri(Url::parse(billy.p2p_binding.clone().as_str())
-                    .expect("well formed peer uri")),
+                peer_location: Lib3hUri(
+                    Url::parse(billy.p2p_binding.clone().as_str()).expect("well formed peer uri"),
+                ),
                 network_id: "FIXME".into(),
             },
         ))?;

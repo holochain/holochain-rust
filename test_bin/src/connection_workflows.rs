@@ -12,7 +12,7 @@ use lib3h_protocol::{
     data_types::{ConnectData, EntryData},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-    uri::Lib3hUri
+    uri::Lib3hUri,
 };
 
 use p2p_node::test_node::TestNode;
@@ -76,8 +76,10 @@ pub(crate) fn two_nodes_disconnect_test(
         // TODO BLOCKER determine correct values
         Lib3hClientProtocol::Connect(ConnectData {
             request_id: "alex_connect_billy_request_id".into(),
-            peer_location: Lib3hUri(url::Url::parse(billy.p2p_binding.clone().as_str())
-                .expect("well-formed billy p2p binding uri")),
+            peer_location: Lib3hUri(
+                url::Url::parse(billy.p2p_binding.clone().as_str())
+                    .expect("well-formed billy p2p binding uri"),
+            ),
             network_id: "alex_connect_billy_network_id".into(),
         }),
     )?;

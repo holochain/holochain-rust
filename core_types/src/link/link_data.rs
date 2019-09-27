@@ -103,8 +103,7 @@ pub mod tests {
     use crate::{
         entry::{test_entry_a, test_entry_b, Entry},
         link::{
-            link_data::{example_link_add},
-            example_link, example_link_action_kind, example_link_type,
+            example_link, example_link_action_kind, example_link_type, link_data::example_link_add,
         },
     };
     use holochain_json_api::json::JsonString;

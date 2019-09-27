@@ -27,10 +27,9 @@ use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
 use std::path::PathBuf;
 use test_utils::{
     empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
-    example_valid_entry_params, example_valid_entry_result, make_test_call,
-    start_holochain_instance, wait_for_zome_result,generate_zome_internal_error
+    example_valid_entry_params, example_valid_entry_result, generate_zome_internal_error,
+    make_test_call, start_holochain_instance, wait_for_zome_result,
 };
-
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -263,7 +262,10 @@ pub fn test_bad_entry() {
     let expected_result: ZomeApiResult<Option<Entry>> =
         serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string())
             .unwrap();
-    assert_eq!(expected_result.unwrap_err(), generate_zome_internal_error(String::from(r#""Timeout""#)));
+    assert_eq!(
+        expected_result.unwrap_err(),
+        generate_zome_internal_error(String::from(r#""Timeout""#))
+    );
 }
 
 #[test]
@@ -341,7 +343,8 @@ fn can_get_entry_bad() {
         ))),
     );
     assert!(result.is_ok(), "result = {:?}", result);
-    let expected: ZomeApiResult<()> = Err(generate_zome_internal_error(String::from(r#""Timeout""#)));
+    let expected: ZomeApiResult<()> =
+        Err(generate_zome_internal_error(String::from(r#""Timeout""#)));
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
@@ -353,7 +356,8 @@ fn can_get_entry_bad() {
         ))),
     );
     assert!(result.is_ok(), "result = {:?}", result);
-    let expected: ZomeApiResult<()> = Err(generate_zome_internal_error(String::from(r#""Timeout""#)));
+    let expected: ZomeApiResult<()> =
+        Err(generate_zome_internal_error(String::from(r#""Timeout""#)));
     assert_eq!(result.unwrap(), JsonString::from(expected));
 }
 

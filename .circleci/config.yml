@@ -72,40 +72,40 @@ jobs:
 
    - run:
        name: app spec tests
-       command: nix-shell --run "hc-app-spec-test sim1h"
+       command: nix-shell --run hc-app-spec-test-sim1h
 
- app-spec-tests-n3h:
-  docker:
-   - image: holochain/holochain-rust:latest
-  resource_class: xlarge
-  steps:
-   - checkout
-
-   - run:
-       name: app spec tests
-       command: nix-shell --run "hc-app-spec-test n3h"
-
- app-spec-tests-memory:
-  docker:
-   - image: holochain/holochain-rust:latest
-  resource_class: xlarge
-  steps:
-   - checkout
-
-   - run:
-       name: app spec tests
-       command: nix-shell --run "hc-app-spec-test memory"
-
- app-spec-tests-websocket:
-  docker:
-   - image: holochain/holochain-rust:latest
-  resource_class: xlarge
-  steps:
-   - checkout
-
-   - run:
-       name: app spec tests
-       command: nix-shell --run "hc-app-spec-test websocket"
+# app-spec-tests-n3h:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test n3h"
+#
+# app-spec-tests-memory:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test memory"
+#
+# app-spec-tests-websocket:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test websocket"
 
  app-spec-proc-tests:
   docker:

@@ -45,7 +45,7 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
         .unwrap()
         .zomes
         .get(&zome_name)
-        .ok_or(HolochainError::new(&format!(
+        .ok_or_else(|| HolochainError::new(&format!(
             "No Ribosome found for Zome '{}'",
             zome_name
         )))?
@@ -107,9 +107,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         wasm_instance
             .invoke_export(
                 &fn_name,
-                &[RuntimeValue::I64(
-                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
-                )],
+                &[RuntimeValue::I64(encoded_allocation_of_input as RibosomeRuntimeBits)],
                 mut_runtime,
             )
             .map_err(|err| {
@@ -143,12 +141,10 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 err_code.as_str()
             );
             match &runtime.data {
-                WasmCallData::ZomeCall(d) => d
-                    .context
-                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
-                WasmCallData::CallbackCall(d) => d
-                    .context
-                    .log(format!("{}, when calling: {:?}", log_message, d.call)),
+                WasmCallData::ZomeCall(d) =>
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
+                WasmCallData::CallbackCall(d) =>
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
                 _ => {}
             };
         }
@@ -185,10 +181,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     // Log & done
     // @TODO make this more sophisticated (truncation or something)
     // right now we have tests that return multiple wasm pages (64k+ bytes) so this is very spammy
-    // runtime.context.log(format!(
-    //     "debug/zome: Zome Function '{}' returned: {}",
+    // runtime. log_debug!(context, "zome: Zome Function '{}' returned: {}",
     //     zome_call.fn_name, return_log_msg,
-    // ));
+    // );
     let _ = return_log_msg;
     return return_result;
 }

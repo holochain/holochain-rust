@@ -15,6 +15,10 @@ use std::{
     sync::Arc,
 };
 
+use cli::scaffold::rust::CARGO_FILE_NAME;
+
+use holochain_core_types::hdk_version::{HDKVersion, HDK_VERSION};
+
 pub const CODE_DIR_NAME: &str = "code";
 
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
@@ -35,6 +39,23 @@ pub const META_CONFIG_SECTION_NAME: &str = "config_file";
 
 pub type Object = Map<String, Value>;
 
+fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultResult<bool> {
+    let toml: Value = toml::from_str(cargo_toml)?;
+    let dependancies = toml
+        .get("dependencies")
+        .ok_or_else(|| format_err!("Could not get dependencies"))?;
+    let hdk = dependancies
+        .get("hdk")
+        .ok_or_else(|| format_err!("Could not get HDK"))?;
+    let tag = hdk
+        .get("tag")
+        .ok_or_else(|| format_err!("Could not get HDK tag"))?
+        .as_str()
+        .ok_or_else(|| format_err!("Could not parse string"))?;
+    let hdk_version_from_toml = HDKVersion::new(tag)?;
+    Ok(hdk_version == &hdk_version_from_toml)
+}
+
 struct Packager {
     strip_meta: bool,
 }
@@ -52,8 +73,8 @@ impl Packager {
             "Compiling a Rust based Zome to WASM depends on having Rust installed.",
             Some(vec![
                 "Compiling to WASM also requires adding WASM as a compile target.",
-                "For this, also run:",
-                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-07-14",
+                "Make sure to be running inside a nix-shell or from a nix-env installation.",
+                "See https://docs.holochain.love for more information.",
             ]),
         )?;
         if !should_continue {
@@ -65,10 +86,26 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = Value::from(self.bundle_recurse(&std::env::current_dir()?)?);
+        let current_dir = std::env::current_dir()?;
+        let dir_obj_bundle = Value::from(self.bundle_recurse(&current_dir).map_err(|e| {
+            format_err!(
+                "Couldn't traverse DNA in directory {:?}: {}",
+                &current_dir,
+                e
+            )
+        })?);
 
-        let dna_json = JsonString::from_json(&dir_obj_bundle.to_string());
-        let dna = Dna::try_from(dna_json)?;
+        let dna_str =
+            serde_json::to_string_pretty(&dir_obj_bundle).expect("failed to make pretty DNA");
+        let dna_json = JsonString::from_json(&dna_str);
+
+        let dna = Dna::try_from(dna_json).map_err(|e| {
+            format_err!(
+                "Couldn't create a DNA from the bundle, got error {}\nJSON bundle was:\n {}",
+                e,
+                &dna_str
+            )
+        })?;
 
         let out_file = File::create(&output)
             .map_err(|e| format_err!("Couldn't create DNA output file {:?}; {}", output, e))?;
@@ -204,6 +241,36 @@ impl Packager {
                     meta_tree.insert(file_name.clone(), META_BIN_ID.into());
 
                     let build = Build::from_file(build_config)?;
+                    if build.steps.iter().any(|s| s.command == "cargo") {
+                        let directories = node
+                            .read_dir()?
+                            .collect::<Result<Vec<_>, _>>()
+                            .unwrap_or_default();
+
+                        directories
+                        .iter()
+                        .map(|p|p.path())
+                        .filter(|path| path.ends_with(CARGO_FILE_NAME))
+                        .for_each(|read_path|{
+
+                            File::open(read_path.clone())
+                            .map(|mut read_file|{
+                                let mut contents = String::new();
+                                read_file
+                                .read_to_string(&mut contents)
+                                .map(|_|{
+                                    hdk_version_compare(&HDK_VERSION,&*contents)
+                                    .map(|hdk_match|{
+                                        if let false = hdk_match
+                                        {
+                                            eprintln!("WARNING: The HDK version found in {:?} does not match the current version.\n If you are seeing compilation problems, update the version in your Cargo.toml files to the current version: {}", read_path, HDK_VERSION.to_string())
+                                        }
+                                    }).unwrap_or_default()
+                                }).unwrap_or_else(|_|eprintln!("Could not read hdk from zome file and cannnot verify mismatch."))
+                            }).unwrap_or_else(|_|eprintln!("Could not open zome file and cannnot verify mismatch, check if cargo toml is in use"))
+
+                        });
+                    }
 
                     let wasm = build.run(&node)?;
 
@@ -316,14 +383,11 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 
 #[cfg(test)]
 // too slow!
-#[cfg(feature = "broken-tests")]
 mod tests {
     use super::*;
-    use crate::cli::init::tests::gen_dir;
-    use assert_cmd::prelude::*;
-    use std::{path::PathBuf, process::Command};
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn package_and_unpack_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
@@ -373,6 +437,37 @@ mod tests {
     }
 
     #[test]
+    fn hdk_version_compare_test() {
+        //compare same
+        let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
+        assert!(hdk_version_compare(
+            &hdk_version,
+            r#"
+        name = 'stuff'
+
+        [dependencies]
+        hdk = {github='xxx', tag='99.99.99-alpha99'}
+
+    "#
+        )
+        .expect("Could not compare"));
+
+        let hdk_version = HDKVersion::new("99.99.99-alpha99").expect("cannot create hdk version");
+        assert!(!hdk_version_compare(
+            &hdk_version,
+            r#"
+        name = 'stuff'
+
+        [dependencies]
+        hdk = {github='xxx', tag='0.0.0-alpha1'}
+
+    "#
+        )
+        .expect("Could not compare"))
+    }
+
+    #[test]
+    #[cfg(feature = "broken-tests")]
     fn aborts_if_multiple_json_in_root() {
         let shared_space = gen_dir();
 
@@ -401,6 +496,7 @@ mod tests {
 
     #[test]
     /// A test ensuring that packaging and unpacking a project results in the very same project
+    #[cfg(feature = "broken-tests")]
     fn package_reverse() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
@@ -451,6 +547,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn auto_compilation() {
         let shared_space = gen_dir();
 

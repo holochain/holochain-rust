@@ -2,7 +2,6 @@
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the conductor.
 use chrono::Local;
-use holochain_common::env_vars::EnvVar;
 use std::sync::{mpsc, Arc, Mutex};
 
 /// trait that defines the logging functionality that holochain_core requires
@@ -12,28 +11,6 @@ pub trait Logger: Send {
     // Dump all held logs
     fn dump(&self) -> String {
         String::new()
-    }
-}
-#[derive(Clone)]
-pub struct SimpleLogger {
-    // log: Vec<String>,
-}
-// ignore this in test coverage as it is only side effects
-#[cfg_attr(tarpaulin, skip)]
-impl Logger for SimpleLogger {
-    fn log(&mut self, msg: String) {
-        // note that this behaviour is documented within
-        // holochain_common::env_vars module and should be updated
-        // if this logic changes
-        if EnvVar::SimpleLoggerMute.value().is_err() {
-            let date = Local::now();
-            println!(
-                "{} {:?}:{}",
-                date.format("%Y-%m-%d %H:%M:%S"),
-                std::thread::current().id(),
-                msg
-            );
-        }
     }
 }
 
@@ -94,12 +71,6 @@ pub fn default_handler(msg: String) {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-
-    #[test]
-    fn simple_logger_smoke_test() {
-        let mut logger_test = SimpleLogger {};
-        logger_test.log("Example Log".to_string());
-    }
 
     #[test]
     fn test_test_logger() {

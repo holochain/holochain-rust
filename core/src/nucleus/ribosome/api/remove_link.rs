@@ -1,16 +1,17 @@
 use crate::{
     network::{
-        actions::get_links::get_links,
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
+        actions::query::{query, QueryMethod},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::author_entry::author_entry
+    workflows::author_entry::author_entry,
 };
 
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
+    time::Timeout,
 };
 use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions},
@@ -31,10 +32,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            context.log(format!(
-                "err/zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
+            log_error!(context,
+                "zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -44,10 +45,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
-            context.log(format!(
-                "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+            log_error!(context,
+                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -65,37 +66,43 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         tag: link.tag().clone(),
         options: GetLinksOptions::default(),
     };
-    let config = GetLinksQueryConfiguration
-    {
-        headers : false
-    };
-    let links_result = context.block_on(get_links(
-        context.clone(),
-        &get_links_args,
-        GetLinksNetworkQuery::Links(config)
-    ));
-    if links_result.is_err() {
-        context.log("err/zome : Could not get links for remove_link method");
+    let config = GetLinksQueryConfiguration { headers: false };
+    let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+    let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
+    if response_result.is_err() {
+        log_error!("zome : Could not get links for remove_link method.");
         ribosome_error_code!(WorkflowFailed)
     } else {
-        let links = links_result.expect("This is supposed to not fail");
-        let links = match links {
-            GetLinksNetworkResult::Links(links) => links,
-            _ => return ribosome_error_code!(WorkflowFailed),
+        let response = response_result.expect("Could not get response");
+        let links_result = match response {
+            NetworkQueryResult::Links(query, _, _) => Ok(query),
+            NetworkQueryResult::Entry(_) => Err(HolochainError::ErrorGeneric(
+                "Could not get links for type".to_string(),
+            )),
         };
-        let filtered_links = links
-            .into_iter()
-            .filter(|link_for_filter|&link_for_filter.target == link.target())
-            .map(|s|s.address)
-            .collect::<Vec<_>>();
+        if links_result.is_err() {
+        log_error!(context, "zome : Could not get links for remove_link method");
+            ribosome_error_code!(WorkflowFailed)
+        } else {
+            let links = links_result.expect("This is supposed to not fail");
+            let links = match links {
+                GetLinksNetworkResult::Links(links) => links,
+                _ => return ribosome_error_code!(WorkflowFailed),
+            };
+            let filtered_links = links
+                .into_iter()
+                .filter(|link_for_filter| &link_for_filter.target == link.target())
+                .map(|s| s.address)
+                .collect::<Vec<_>>();
 
-        let entry = Entry::LinkRemove((link_remove, filtered_links));
+            let entry = Entry::LinkRemove((link_remove, filtered_links));
 
-        // Wait for future to be resolved
-        let result: Result<(), HolochainError> = context
-            .block_on(author_entry(&entry, None, &context, &vec![]))
-            .map(|_| ());
+            // Wait for future to be resolved
+            let result: Result<(), HolochainError> = context
+                .block_on(author_entry(&entry, None, &context, &vec![]))
+                .map(|_| ());
 
-        runtime.store_result(result)
+            runtime.store_result(result)
+        }
     }
 }

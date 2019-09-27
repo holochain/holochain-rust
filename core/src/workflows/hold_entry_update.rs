@@ -27,8 +27,8 @@ pub async fn hold_update_workflow(
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
-            context.log(format!("debug/workflow/hold_update: {}", message));
-            context.log(format!("debug/workflow/hold_update: Error was: {:?}", err));
+            log_debug!(context, "workflow/hold_update: {}", message);
+            log_debug!(context, "workflow/hold_update: Error was: {:?}", err);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 Vec::new(),
@@ -38,12 +38,12 @@ pub async fn hold_update_workflow(
             HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
+        .ok_or_else(|| "Could not get validation package from source".to_string())?;
 
     // get link from header
     let link = header
         .link_update_delete()
-        .ok_or("Could not get link update from header".to_string())?;
+        .ok_or_else(|| "Could not get link update from header".to_string())?;
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -60,7 +60,7 @@ pub async fn hold_update_workflow(
     ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            context.log(format!("debug/workflow/hold_update: Entry update could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
+            log_debug!(context, "workflow/hold_update: Entry update could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
@@ -69,11 +69,10 @@ pub async fn hold_update_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log(format!(
-                "info/workflow/hold_update: Entry update {:?} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/hold_update: Entry update {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
 

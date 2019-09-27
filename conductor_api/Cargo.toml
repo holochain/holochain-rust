@@ -1,21 +1,21 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.25-alpha1"
+version = "0.0.30-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
-holochain_json_derive = "=0.0.15"
-holochain_json_api = "=0.0.15"
-holochain_persistence_api = "=0.0.6"
-holochain_persistence_mem = "=0.0.6"
-holochain_persistence_file = "=0.0.6"
-holochain_persistence_pickle = "=0.0.6"
+holochain_json_derive = "=0.0.17"
+holochain_json_api = "=0.0.17"
+holochain_persistence_api = "=0.0.7"
+holochain_persistence_mem = "=0.0.7"
+holochain_persistence_file = "=0.0.7"
+holochain_persistence_pickle = "=0.0.7"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h ="=0.0.8"
-lib3h_sodium = "=0.0.8"
+lib3h ="=0.0.10"
+lib3h_sodium = "=0.0.10"
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
@@ -40,6 +40,8 @@ rpassword = "=2.1.0"
 base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"
+log = "=0.4.8"
+logging = { path = "../logging" }
 nickel = "=0.11.0"
 
 [dev-dependencies]

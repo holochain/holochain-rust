@@ -1,13 +1,14 @@
 pub mod actions;
 pub mod direct_message;
-pub mod entry_aspect;
 pub mod entry_with_header;
 pub mod handler;
-pub mod query;
 pub mod reducers;
 pub mod state;
 #[cfg(test)]
 pub mod test_utils;
+
+pub use holochain_core_types::network::query;
+pub use holochain_core_types::network::entry_aspect;
 
 #[cfg(test)]
 pub mod tests {
@@ -16,10 +17,11 @@ pub mod tests {
         instance::tests::test_instance_and_context_by_name,
         network::{
             actions::{
-                get_entry::get_entry, get_links::get_links,
-                get_validation_package::get_validation_package, publish::publish,
+                query::{query, QueryMethod},
+                get_validation_package::get_validation_package,
+                publish::publish,
             },
-            query::{GetLinksNetworkQuery, GetLinksNetworkResult,GetLinksQueryConfiguration},
+            query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
             test_utils::test_wat_always_valid,
         },
         workflows::author_entry::author_entry,
@@ -67,13 +69,13 @@ pub mod tests {
         while maybe_entry_with_meta.is_none() && loop_count < 10 {
             loop_count += 1;
             std::thread::sleep(std::time::Duration::from_millis(100));
-            let result = context2.block_on(get_entry(
+            let result = context2.block_on(query(
                 context2.clone(),
-                entry.address(),
+                QueryMethod::Entry(entry.address().clone()),
                 Default::default(),
             ));
             assert!(result.is_ok(), "get_entry() result = {:?}", result);
-            maybe_entry_with_meta = result.unwrap();
+            maybe_entry_with_meta = unwrap_to!(result.unwrap()=>NetworkQueryResult::Entry).clone();
         }
         assert!(
             maybe_entry_with_meta.is_some(),
@@ -298,26 +300,25 @@ pub mod tests {
             options: Default::default(),
         };
 
-        let config = GetLinksQueryConfiguration
-        {
-            headers : false
-        };
-        let maybe_links = context2.block_on(get_links(
-            context2.clone(),
-            &get_links_args,
-            GetLinksNetworkQuery::Links(config),
-        ));
+        let config = GetLinksQueryConfiguration { headers: false };
+        let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+        let maybe_links = context2.block_on(query(context2.clone(), method, Default::default()));
 
         assert!(maybe_links.is_ok());
-        let links = maybe_links.unwrap();
+        let link_results = maybe_links.unwrap();
+        let links = match link_results {NetworkQueryResult::Links(query,_,_)=>query,_=>panic!("Could not get query")};
         let links = unwrap_to!(links=>GetLinksNetworkResult::Links);
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
-            ((links[0].address.clone(),links[0].crud_status.clone()) == (entry_addresses[1].clone(), CrudStatus::Live)
-                || (links[0].address.clone(),links[0].crud_status.clone()) == (entry_addresses[2].clone(), CrudStatus::Live))
-                && ((links[1].address.clone(),links[0].crud_status.clone()) == (entry_addresses[1].clone(), CrudStatus::Live)
-                    || (links[1].address.clone(),links[0].crud_status.clone()) == (entry_addresses[2].clone(), CrudStatus::Live))
+            ((links[0].address.clone(), links[0].crud_status.clone())
+                == (entry_addresses[1].clone(), CrudStatus::Live)
+                || (links[0].address.clone(), links[0].crud_status.clone())
+                    == (entry_addresses[2].clone(), CrudStatus::Live))
+                && ((links[1].address.clone(), links[0].crud_status.clone())
+                    == (entry_addresses[1].clone(), CrudStatus::Live)
+                    || (links[1].address.clone(), links[0].crud_status.clone())
+                        == (entry_addresses[2].clone(), CrudStatus::Live))
         );
     }
 }

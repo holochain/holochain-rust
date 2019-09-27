@@ -120,10 +120,12 @@ fn agent_configuration() -> AgentConfiguration {
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
-    let dna = Conductor::load_dna(dna_path).expect(&format!(
-        "Could not load DNA file {}",
-        dna_path.to_str().expect("No DNA file path given")
-    ));
+    let dna = Conductor::load_dna(dna_path).unwrap_or_else(|_| {
+        panic!(
+            "Could not load DNA file {}",
+            dna_path.to_str().expect("No DNA file path given")
+        )
+    });
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: dna_path
@@ -182,6 +184,7 @@ fn interface_configuration(
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
             id: INSTANCE_CONFIG_ID.into(),
+            alias: None,
         }],
     })
 }
@@ -190,7 +193,7 @@ fn interface_configuration(
 fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
-        logger_type: "debug".to_string(),
+        logger_level: "debug".to_string(),
         rules: if logging {
             LogRules::default()
         } else {
@@ -356,6 +359,7 @@ mod tests {
                 admin: true,
                 instances: vec![InstanceReferenceConfiguration {
                     id: "test-instance".to_string(),
+                    alias: None,
                 }],
             }
         );
@@ -370,6 +374,7 @@ mod tests {
                 admin: true,
                 instances: vec![InstanceReferenceConfiguration {
                     id: "test-instance".to_string(),
+                    alias: None,
                 }],
             }
         );

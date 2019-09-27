@@ -8,7 +8,7 @@ use crate::{
         actions::add_pending_validation::add_pending_validation, validation::ValidationError,
     },
     scheduled_jobs::pending_validations::ValidatingWorkflow,
-    workflows::{validation_package,hold_entry::hold_entry_workflow}
+    workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
     entry::Entry,
@@ -29,27 +29,25 @@ pub async fn hold_link_workflow(
     };
     let link = link_add.link().clone();
 
-    context.log(format!("debug/workflow/hold_link: {:?}", link));
-    context.log(format!(
-        "debug/workflow/hold_link: getting validation package..."
-    ));
+    log_debug!(context, "workflow/hold_link: {:?}", link);
+    log_debug!(context, "workflow/hold_link: getting validation package...");
     // 1. Get hold of validation package
     let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
         .map_err(|err| {
-         let message = "Could not get validation package from source! -> Add to pending...";
-         context.log(format!("debug/workflow/hold_link: {}", message));
-         context.log(format!("debug/workflow/hold_link: Error was: {:?}", err));
-         add_pending_validation(
-             entry_with_header.to_owned(),
-             Vec::new(),
-             ValidatingWorkflow::HoldLink,
-             context.clone(),
-         );
-         HolochainError::ValidationPending
+            let message = "Could not get validation package from source! -> Add to pending...";
+            log_debug!(context, "workflow/hold_link: {}", message);
+            log_debug!(context, "workflow/hold_link: Error was: {:?}", err);
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::HoldLink,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
-        context.log(format!("debug/workflow/hold_link: {}", message));
+        log_debug!(context, "workflow/hold_link: {}", message);
         add_pending_validation(
             entry_with_header.to_owned(),
             Vec::new(),
@@ -58,7 +56,7 @@ pub async fn hold_link_workflow(
         );
         HolochainError::ValidationPending
     })?;
-    context.log(format!("debug/workflow/hold_link: got validation package"));
+    log_debug!(context, "workflow/hold_link: got validation package");
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -67,7 +65,7 @@ pub async fn hold_link_workflow(
     };
 
     // 3. Validate the entry
-    context.log(format!("debug/workflow/hold_link: validate..."));
+    log_debug!(context, "workflow/hold_link: validate...");
     await!(validate_entry(
         entry_with_header.entry.clone(),
         None,
@@ -76,7 +74,7 @@ pub async fn hold_link_workflow(
     ))
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            context.log(format!("debug/workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies));
+            log_debug!(context, "workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
             add_pending_validation(
                 entry_with_header.to_owned(),
                 dependencies.clone(),
@@ -85,42 +83,36 @@ pub async fn hold_link_workflow(
             );
             HolochainError::ValidationPending
         } else {
-            context.log(format!(
-                "info/workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
+            log_warn!(context, "workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
                 err,
-            ));
+            );
             HolochainError::from(err)
         }
 
     })?;
-    context.log(format!("debug/workflow/hold_link: is valid!"));
+    log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry in the local DHT shard
     await!(add_link(&link_add, &context))?;
-    context.log(format!("debug/workflow/hold_link: added! {:?}", link));
+    log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
     await!(hold_entry_workflow(&entry_with_header, context.clone()))?;
-    context.log(format!("debug/workflow/hold_entry: added! {:?}", entry_with_header));
+    log_debug!(context, "workflow/hold_entry: added! {:?}", entry_with_header);
 
     //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
 }
 
 #[cfg(test)]
-// too slow!
 #[cfg(feature = "broken-tests")]
+// too slow!
 pub mod tests {
     use super::*;
-    use crate::{
-        network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
+    use crate::{ nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
-    use futures::executor::block_on;
-    use holochain_core_types::{
-        cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
-    };
-    use test_utils::*;
+    use holochain_core_types::{chain_header::test_chain_header,agent::test_agent_id,link::link_data::LinkData, entry::test_entry_with_value};
 
     #[test]
     /// Test that an invalid link will be rejected by this workflow.
@@ -142,25 +134,26 @@ pub mod tests {
         let (_, context1) =
             test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
         let netname = Some("test_reject_invalid_link_on_remove_workflow");
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
-
+  
         // Commit entry on attackers node
-        let entry = test_entry();
+        let entry = test_entry_with_value("{\"stuff\":\"test entry value\"}");
+        
         let entry_address = context1
-            .block_on(author_entry(&entry, None, &context1))
+            .block_on(author_entry(&entry, None, &context1,&Vec::new()))
             .unwrap();
 
         let link_add = LinkData::new_add(
-            &entry_address,
-            &entry_address,
+            &entry_address.address,
+            &entry_address.address,
             "test-tag",
+            "test-link",
             test_chain_header(),
             test_agent_id(),
         );
         let link_entry = Entry::LinkAdd(link_add);
-
+  
         let _ = context1
-            .block_on(author_entry(&link_entry, None, &context1))
+            .block_on(author_entry(&link_entry, None, &context1,&Vec::new()))
             .unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
@@ -172,12 +165,13 @@ pub mod tests {
             entry: link_entry,
             header,
         };
-
+      
         // Call hold_entry_workflow on victim DHT node
-        let result = context2.block_on(hold_link_workflow(&entry_with_header, &context2));
+        let result = context2.block_on(hold_link_workflow(&entry_with_header, context2.clone()));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());
+        
         assert_eq!(
             result.err().unwrap(),
             HolochainError::ValidationFailed(String::from("FAIL wat")),

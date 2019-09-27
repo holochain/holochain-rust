@@ -16,7 +16,7 @@ pub(crate) fn create_ipc_config(
         dir_path
     } else {
         let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-        let dir_path = dir_ref.path().clone().to_string_lossy().to_string();
+        let dir_path = dir_ref.path().to_string_lossy().to_string();
         maybe_dir_ref = Some(dir_ref);
         dir_path
     };
@@ -94,7 +94,7 @@ pub(crate) fn create_lib3h_config(
         dir_path
     } else {
         let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
-        let dir_path = dir_ref.path().clone().to_string_lossy().to_string();
+        let dir_path = dir_ref.path().to_string_lossy().to_string();
         maybe_dir_ref = Some(dir_ref);
         dir_path
     };
@@ -121,6 +121,8 @@ pub(crate) fn create_lib3h_config(
                 log_level: 'd',
                 bind_url: url::Url::parse("fixme://bind_url").unwrap(),
                 dht_custom_config: vec![],
+                dht_gossip_interval: 500,
+                dht_timeout_threshold: 3000,
             }),
             maybe_end_user_config: None,
         },

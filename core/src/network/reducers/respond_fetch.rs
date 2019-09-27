@@ -44,7 +44,7 @@ pub fn reduce_respond_fetch_data(
     let result = reduce_respond_fetch_data_inner(network_state, fetch_data, maybe_entry);
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::RespondFetch(match result {
+        ActionResponse::Respond(match result {
             Ok(_) => Ok(()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         }),

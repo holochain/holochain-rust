@@ -95,19 +95,25 @@ pub async fn validate_entry(
             validation_data
         )),
 
-        EntryType::LinkAdd => {
-            await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))
-        }
+        EntryType::LinkAdd => await!(link_entry::validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
-        EntryType::LinkRemove => {
-            await!(link_entry::validate_link_entry(entry.clone(), validation_data, context))
-        }
+        EntryType::LinkRemove => await!(link_entry::validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => {
-            await!(remove_entry::validate_remove_entry(entry.clone(), validation_data, context))
-        }
+        EntryType::Deletion => await!(remove_entry::validate_remove_entry(
+            entry.clone(),
+            validation_data,
+            context
+        )),
 
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(()),
@@ -117,6 +123,9 @@ pub async fn validate_entry(
             validation_data,
             context,
         )),
+
+        // chain headers always pass for now. In future this should check that the entry is valid
+        EntryType::ChainHeader => Ok(()), 
 
         _ => Err(ValidationError::NotImplemented),
     }
@@ -140,11 +149,11 @@ pub fn entry_to_validation_data(
                             validation_data: validation_data.clone(),
                         })
                     })
-                    .unwrap_or(Err(HolochainError::ErrorGeneric(
+                    .unwrap_or_else(|_| Err(HolochainError::ErrorGeneric(
                         "Could not find Entry".to_string(),
                     )))
             })
-            .unwrap_or(Ok(EntryValidationData::Create {
+            .unwrap_or_else(|| Ok(EntryValidationData::Create {
                 entry: entry.clone(),
                 validation_data: validation_data.clone(),
             })),
@@ -158,7 +167,7 @@ pub fn entry_to_validation_data(
                         validation_data: validation_data.clone(),
                     })
                 })
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
+                .unwrap_or_else(|_| Err(HolochainError::ErrorGeneric(
                     "Could not find Entry".to_string(),
                 )))
         }
@@ -181,14 +190,10 @@ fn get_entry_with_header(
         address,
         &Timeout::default(),
     ))?;
-    let entry_with_meta = pair.ok_or(HolochainError::ErrorGeneric(
-        "Could not get chain".to_string(),
-    ))?;
+    let entry_with_meta = pair.ok_or("Could not get chain")?;
     let latest_header = entry_with_meta
         .headers
         .last()
-        .ok_or(HolochainError::ErrorGeneric(
-            "Could not get last entry from chain".to_string(),
-        ))?;
+        .ok_or("Could not get last entry from chain")?;
     Ok((entry_with_meta.entry_with_meta, latest_header.clone()))
 }

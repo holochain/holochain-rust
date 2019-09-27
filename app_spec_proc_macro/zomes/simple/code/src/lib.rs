@@ -90,6 +90,7 @@ pub mod simple {
         Entry::App("simple".into(), Simple::new(content).into())
     }
 
+    /// doc comments are allowed on entry defs
     #[entry_def]
     pub fn simple_entry_def() -> ValidatingEntryType {
           definition()
@@ -115,6 +116,7 @@ pub mod simple {
         }
     }
 
+    /// doc comments are allowed on zome functions
     #[zome_fn("hc_public")]
     fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
         hdk::get_entry(&address)

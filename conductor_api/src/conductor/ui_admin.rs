@@ -53,7 +53,7 @@ impl ConductorUiAdmin for Conductor {
 
         let path_string = path
             .to_str()
-            .ok_or(HolochainError::ConfigError("invalid path".into()))?;
+            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
 
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
@@ -94,7 +94,7 @@ impl ConductorUiAdmin for Conductor {
             .ui_interfaces
             .clone()
             .into_iter()
-            .filter(|ui_interface| ui_interface.bundle == id.to_string());
+            .filter(|ui_interface| ui_interface.bundle == *id);
 
         for bundle_interface in to_remove {
             self.remove_ui_interface(&bundle_interface.id)?;
@@ -150,9 +150,7 @@ impl ConductorUiAdmin for Conductor {
 
         self.static_servers
             .remove(id)
-            .ok_or(HolochainError::ErrorGeneric(
-                "Could not remove server".into(),
-            ))?;
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not remove server".into()))?;
 
         Ok(())
     }
@@ -220,6 +218,7 @@ root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -269,6 +268,7 @@ id = 'test-bundle-id'"#,
         );
         toml = add_line(toml, format!("root_dir = '{}'", dest.display()));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -312,6 +312,7 @@ id = 'test-bundle-id'"#,
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -387,6 +388,7 @@ reroute_to_root = true"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
@@ -456,6 +458,7 @@ root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 

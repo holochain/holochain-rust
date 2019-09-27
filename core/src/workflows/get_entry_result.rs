@@ -1,4 +1,8 @@
-use crate::{context::Context, network, nucleus};
+use crate::{
+    context::Context,
+    network::{self, actions::query::{QueryMethod},query::NetworkQueryResult},
+    nucleus,
+};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
@@ -19,21 +23,28 @@ pub async fn get_entry_with_meta_workflow<'a>(
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+    let method = QueryMethod::Entry(address.clone());
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
-        await!(network::actions::get_entry::get_entry(
+        let response = await!(network::actions::query::query(
             context.clone(),
-            address.clone(),
+            method.clone(),
             timeout.clone(),
-        ))
+        ))?;
+        match response {
+            NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
+            _ => Err(HolochainError::ErrorGeneric(
+                "Wrong respond type for Entry".to_string(),
+            )),
+        }
     } else {
         // 3. If we've found the entry locally we also need to get the header from the local state:
-        let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric(
+        let entry = maybe_entry_with_meta.ok_or_else(|| HolochainError::ErrorGeneric(
             "Could not get entry".to_string(),
         ))?;
         match context
             .state()
-            .ok_or(HolochainError::ErrorGeneric(
+            .ok_or_else(|| HolochainError::ErrorGeneric(
                 "Could not get state".to_string(),
             ))?
             .get_headers(address.clone())
@@ -43,11 +54,17 @@ pub async fn get_entry_with_meta_workflow<'a>(
                 headers,
             })),
             Err(_) => {
-                await!(network::actions::get_entry::get_entry(
+                let response = await!(network::actions::query::query(
                     context.clone(),
-                    address.clone(),
+                    method.clone(),
                     timeout.clone(),
-                ))
+                ))?;
+                match response {
+                    NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
+                    _ => Err(HolochainError::ErrorGeneric(
+                        "Wrong respond type for Entry".to_string(),
+                    )),
+                }
             }
         }
     }

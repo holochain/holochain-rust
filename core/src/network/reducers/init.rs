@@ -38,7 +38,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
     state.dna_address = Some(network_settings.dna_address.clone());
     state.agent_id = Some(network_settings.agent_id.clone());
 
-    if let Err(err) = network_lock.as_mut().unwrap().send(json.into()) {
+    if let Err(err) = network_lock.as_mut().unwrap().send(json) {
         println!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
         println!("Failed to initialize network!");
         let _ = network_lock.take().unwrap().stop();
@@ -51,7 +51,6 @@ pub mod test {
     use super::*;
     use crate::{
         context::Context,
-        logger::test_logger,
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
@@ -67,8 +66,8 @@ pub mod test {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
+            "Test-context-instance",
             AgentId::generate_fake("Terence"),
-            test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),

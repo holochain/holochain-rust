@@ -20,7 +20,6 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
-//use logging::rule::Rule;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
@@ -108,19 +107,67 @@ pub struct Configuration {
     /// Which signals to emit
     #[serde(default)]
     pub signals: SignalConfig,
+
+    /// Configure how the conductor should prompt the user for the passphrase to lock/unlock keystores.
+    /// The conductor is independent of the specialized implementation of the trait
+    /// PassphraseService. It just needs something to provide a passphrase when needed.
+    /// This config setting selects one of the available services (i.e. CLI prompt, IPC, mock)
+    #[serde(default)]
+    pub passphrase_service: PassphraseServiceConfig,
+}
+
+/// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.
+/// In the context of a UI that wraps the conductor, this way of providing passphrases
+/// is not feasible.
+/// Setting the type to "unixsocket" and providing a path to a file socket enables
+/// arbitrary UIs to connect to the conductor and prompt the user for a passphrase.
+/// The according `PassphraseServiceUnixSocket` will send a request message over the socket
+/// then receives bytes as passphrase until a newline is sent.
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum PassphraseServiceConfig {
+    Cmd,
+    UnixSocket { path: String },
+    Mock { passphrase: String },
+}
+
+impl Default for PassphraseServiceConfig {
+    fn default() -> PassphraseServiceConfig {
+        PassphraseServiceConfig::Cmd
+    }
 }
 
 pub fn default_persistence_dir() -> PathBuf {
     holochain_common::paths::config_root().join("conductor")
 }
 
-/// There might be different kinds of loggers in the future.
-/// Currently there is a "debug" and "simple" logger.
-/// TODO: make this an enum
+/// This is a config helper structure used to interface with the holochain logging subcrate.
+/// Custom rules/filter can be applied to logging, in fact they are used by default in Holochain to
+/// filter the logs from its dependencies.
+///
+/// ```rust
+/// extern crate holochain_conductor_api;
+/// use holochain_conductor_api::{logger,config};
+/// let mut rules = logger::LogRules::new();
+/// // Filtering out all the logs from our dependencies
+/// rules
+///     .add_rule(".*", true, None)
+///     .expect("Invalid logging rule.");
+/// // And logging back all Holochain logs
+/// rules
+///     .add_rule("^holochain", false, None)
+///     .expect("Invalid logging rule.");
+///
+/// let lc = config::LoggerConfiguration {
+///     logger_level: "debug".to_string(),
+///     rules: rules,
+///     state_dump: true,
+///     };
+/// ```
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
-    pub logger_type: String,
+    pub logger_level: String,
     #[serde(default)]
     pub rules: LogRules,
     //    pub file: Option<String>,
@@ -131,7 +178,7 @@ pub struct LoggerConfiguration {
 impl Default for LoggerConfiguration {
     fn default() -> LoggerConfiguration {
         LoggerConfiguration {
-            logger_type: "debug".into(),
+            logger_level: "debug".into(),
             rules: Default::default(),
             state_dump: false,
         }
@@ -200,10 +247,12 @@ impl Configuration {
                             .bridges
                             .iter()
                             .find(|b| b.handle == handle)
-                            .ok_or(format!(
-                                "Required bridge '{}' for instance '{}' missing",
-                                handle, instance.id
-                            ))?;
+                            .ok_or_else(|| {
+                                format!(
+                                    "Required bridge '{}' for instance '{}' missing",
+                                    handle, instance.id
+                                )
+                            })?;
                     }
                 }
             }
@@ -258,6 +307,16 @@ impl Configuration {
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
+        #[cfg(not(unix))]
+        {
+            if let PassphraseServiceConfig::UnixSocket { path } = self.passphrase_service.clone() {
+                let _ = path;
+                return Err(String::from(
+                    "Passphrase service type 'unixsocket' is not available on non-Unix systems",
+                ));
+            }
+        }
+
         Ok(())
     }
 
@@ -271,10 +330,12 @@ impl Configuration {
         //
         let caller_config = self
             .instance_by_id(&bridge_config.caller_id)
-            .ok_or(format!(
-                "Instance configuration \"{}\" not found, mentioned in bridge",
-                bridge_config.caller_id
-            ))?;
+            .ok_or_else(|| {
+                format!(
+                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                    bridge_config.caller_id
+                )
+            })?;
 
         let caller_dna_config = self.dna_by_id(&caller_config.dna).ok_or_else(|| {
             format!(
@@ -298,10 +359,12 @@ impl Configuration {
         //
         let callee_config = self
             .instance_by_id(&bridge_config.callee_id)
-            .ok_or(format!(
-                "Instance configuration \"{}\" not found, mentioned in bridge",
-                bridge_config.callee_id
-            ))?;
+            .ok_or_else(|| {
+                format!(
+                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                    bridge_config.callee_id
+                )
+            })?;
 
         let callee_dna_config = self.dna_by_id(&callee_config.dna).ok_or_else(|| {
             format!(
@@ -332,10 +395,12 @@ impl Configuration {
             }
         }
 
-        let bridge = maybe_bridge.ok_or(format!(
-            "No bridge definition with handle '{}' found in {}'s DNA",
-            bridge_config.handle, bridge_config.caller_id,
-        ))?;
+        let bridge = maybe_bridge.ok_or_else(|| {
+            format!(
+                "No bridge definition with handle '{}' found in {}'s DNA",
+                bridge_config.handle, bridge_config.caller_id,
+            )
+        })?;
 
         match bridge.reference {
             BridgeReference::Address { ref dna_address } => {
@@ -397,6 +462,15 @@ impl Configuration {
     /// Returns the agent configuration with the given ID if present
     pub fn agent_by_id(&self, id: &str) -> Option<AgentConfiguration> {
         self.agents.iter().find(|ac| &ac.id == id).cloned()
+    }
+
+    /// Returns the agent configuration with the given ID if present
+    pub fn update_agent_address_by_id(&mut self, id: &str, agent_id: &AgentId) {
+        self.agents.iter_mut().for_each(|ac| {
+            if &ac.id == id {
+                ac.public_address = agent_id.pub_sign_key.clone()
+            }
+        })
     }
 
     /// Returns the DNA configuration with the given ID if present
@@ -652,9 +726,22 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
+/// An instance reference makes an instance available in the scope
+/// of an interface.
+/// Since UIs usually hard-code the name with which they reference an instance,
+/// we need to decouple that name used by the UI from the internal ID of
+/// the instance. That is what the optional `alias` field provides.
+/// Given that there is 1-to-1 relationship between UIs and interfaces,
+/// by setting an alias for available instances in the UI's interface
+/// each UI can have its own unique handle for shared instances.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceReferenceConfiguration {
+    /// ID of the instance that is made available in the interface
     pub id: String,
+
+    /// A local name under which the instance gets mounted in the
+    /// interface's scope
+    pub alias: Option<String>,
 }
 
 /// A bridge enables an instance to call zome functions of another instance.
@@ -957,7 +1044,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.logger_level, "debug");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {
@@ -1053,7 +1140,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.logger_level, "debug");
         assert_eq!(config.logger.rules.rules.len(), 1);
 
         assert_eq!(config.network, None);

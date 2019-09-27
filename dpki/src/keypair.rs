@@ -182,7 +182,7 @@ impl EncryptingKeyPair {
 
         //data to represent encryption data length
         let cipher_length = data.len() + lib3h_sodium::aead::ABYTES;
-        let mut cipher = SecBuf::with_insecure(cipher_length.clone());
+        let mut cipher = SecBuf::with_insecure(cipher_length);
 
         //data is encrypted and cipher is populated
         lib3h_sodium::aead::enc(data, &mut self.private, None, &mut nonce, &mut cipher)?;
@@ -217,7 +217,7 @@ impl EncryptingKeyPair {
         let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
         let nonce_slice_from_cipher = cipher_slice
             .iter()
-            .skip(cipher_length.clone())
+            .skip(cipher_length)
             .cloned()
             .collect::<Vec<u8>>();
         nonce.from_array(&nonce_slice_from_cipher)?;

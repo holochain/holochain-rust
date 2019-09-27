@@ -7,7 +7,7 @@ const spawnConductor = require('./spawn_conductors')
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
 // (But never over)
-const MIN_EXPECTED_SCENARIOS = 49
+const MIN_EXPECTED_SCENARIOS = 30
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -68,13 +68,24 @@ const registerAllScenarios = () => {
   // test cases if there is any Promise awaiting in between test declarations.
   let numRegistered = 0
 
-  const registerer = orchestrator => (...info) => {
-    numRegistered += 1
-    return orchestrator.registerScenario(...info)
+  const registerer = orchestrator => {
+    const f = (...info) => {
+      numRegistered += 1
+      return orchestrator.registerScenario(...info)
+    }
+    f.only = (...info) => {
+      numRegistered += 1
+      return orchestrator.registerScenario.only(...info)
+    }
+    return f
   }
 
   require('./regressions')(registerer(orchestratorSimple))
-  require('./test')(registerer(orchestratorSimple))
+  require('./files/test')(registerer(orchestratorSimple))
+  require('./files/entry')(registerer(orchestratorSimple))
+  require('./files/links')(registerer(orchestratorSimple))
+  require('./files/memo')(registerer(orchestratorSimple))
+  require('./files/crypto')(registerer(orchestratorSimple))
   // require('./multi-dna')(registerer(orchestratorMultiDna))
   require('./validate-agent-test')(registerer(orchestratorValidateAgent))
 

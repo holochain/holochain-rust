@@ -20,10 +20,9 @@ pub fn invoke_sign_one_time(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         Ok(sign_input) => sign_input,
         // Exit on error
         Err(err) => {
-            context.log(format!(
-                "err/zome: invoke_sign_one_time failed to deserialize OneTimeSignArgs: {:?} got err: {:?}",
+            log_error!(context, "zome: invoke_sign_one_time failed to deserialize OneTimeSignArgs: {:?} got err: {:?}",
                 args_str, err
-            ));
+            );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

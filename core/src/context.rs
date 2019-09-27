@@ -380,11 +380,11 @@ pub fn test_memory_network_config(
     _bootstrap_nodes: Vec<url::Url>,
 ) -> P2pConfig {
     network_name
-        .map(|_| P2pConfig::new_with_sim1h_backend("locahost:8000")).expect("Could not create p2p config")
-        })
-        .unwrap_or_else(|| {
-            P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes)
-        })
+        .map(|_| P2pConfig::new_with_sim1h_backend("locahost:8000"))
+        .expect("Could not create p2p config")
+    // .unwrap_or_else(|| {
+    //     P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes)
+    // })
 }
 
 #[cfg(test)]

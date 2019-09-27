@@ -80,8 +80,7 @@ pub(crate) fn two_nodes_disconnect_test(
             peer_uri: url::Url::parse(billy.p2p_binding.clone().as_str())
                 .expect("well-formed billy p2p binding uri"),
             network_id: "alex_connect_billy_network_id".into(),
-        })
-        .into(),
+        }),
     )?;
     // Make sure Peers are connected
     let result_a = alex

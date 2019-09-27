@@ -1,13 +1,14 @@
 pub mod actions;
 pub mod direct_message;
-pub mod entry_aspect;
 pub mod entry_with_header;
 pub mod handler;
-pub mod query;
 pub mod reducers;
 pub mod state;
 #[cfg(test)]
 pub mod test_utils;
+
+pub use holochain_core_types::network::query;
+pub use holochain_core_types::network::entry_aspect;
 
 #[cfg(test)]
 pub mod tests {

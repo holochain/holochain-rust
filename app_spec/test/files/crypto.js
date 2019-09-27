@@ -22,6 +22,7 @@ module.exports = scenario => {
       t.deepEqual(DecryptResult.Ok, message);
     })
     
+    
     scenario('secrets', async (s, t, { alice }) => {
         const ListResult = await alice.app.call("converse", "list_secrets", { });
         // it should start out with the genesis made seed

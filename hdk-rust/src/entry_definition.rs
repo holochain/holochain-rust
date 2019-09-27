@@ -19,15 +19,15 @@ pub type AgentValidator = Box<dyn FnMut(EntryValidationData<AgentId>) -> Result<
 pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> Result<(), String> + Sync>;
 
 /// This struct represents a complete entry type definition.
-/// It wraps [EntryTypeDef](struct.EntryTypeDef.html) defined in the DNA crate
+/// It wraps [EntryTypeDef](holochain_core_types::dna::entry_types::EntryTypeDef) defined in the DNA crate
 /// which only represents the static parts that show up in the JSON definition
 /// of an entry type.
 /// What is missing from there is the validation callbacks that can not be defined as JSON
 /// and are added here as Box<FnMut> objects (types PackageCreator, Validator, LinkValidator)
 ///
-/// Instances of this struct are expected and used in the [define_zome! macro](macro.define_zome.html).
+/// Instances of this struct are expected and used in the [define_zome! macro](define_zome!).
 /// Although possible, a DNA developer does not need to create these instances directly but instead
-/// should use the [entry! macro](macro.entry.html) for a clean syntax.
+/// should use the [entry! macro](entry!) for a clean syntax.
 pub struct ValidatingEntryType {
     /// Name of the entry type
     pub name: EntryType,
@@ -44,11 +44,11 @@ pub struct ValidatingEntryType {
 
 /// Similar to ValidatingEntryType, this provides the dynamic aspects of link definitions,
 /// the validation callbacks, and thus completes the structs in the DNA crate.
-/// The [entry! macro](macro.entry.html) expects an array of links that are represented by
+/// The [entry! macro](entry!) expects an array of links that are represented by
 /// instances of this struct.
 ///
 /// DNA developers don't need to use this type directly but instead should use the
-/// [link!](macro.link.html), [to!](macro.to.html) or [from!](macro.from.html) macro.
+/// [link!](link!), [to!](to!) or [from!](from!) macro.
 pub struct ValidatingLinkDefinition {
     /// Is this link defined as pointing from this entry type to some other type,
     /// or from the other type to this?
@@ -65,27 +65,27 @@ pub struct ValidatingLinkDefinition {
 }
 
 /// The `entry` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [define_zome](macro.define_zome.html) macro.
+/// for use within the [define_zome](define_zome!) macro.
 /// It has 7 component parts:
 /// 1. name: `name` is simply the descriptive name of the entry type, such as "post", or "user".
-///      It is what must be given as the `entry_type_name` argument when calling [commit_entry](fn.commit_entry.html) and the other data read/write functions.
+///      It is what must be given as the `entry_type_name` argument when calling [commit_entry](api::commit_entry()) and the other data read/write functions.
 /// 2. description: `description` is something that is primarily for human readers of your code, just describe this entry type
 /// 3. sharing: `sharing` defines what distribution over the DHT, or not, occurs with entries of this type, possible values
-///      are defined in the [Sharing](../core_types/entry/dna/zome/entry_types/enum.Sharing.html) enum
+///      are defined in the [Sharing](holochain_core_types::dna::entry_types::Sharing) enum
 /// 4. native_type: `native_type` references a given Rust struct, which provides a clear schema for entries of this type.
 /// 5. validation_package: `validation_package` is a special identifier, which declares which data is required from peers
 ///      when attempting to validate entries of this type.
-///      Possible values are found within [ValidationPackageDefinition](enum.ValidationPackageDefinition.html)
+///      Possible values are found within [ValidationPackageDefinition](ValidationPackageDefinition)
 /// 6. validation: `validation` is a callback function which will be called any time that a
-///      (DHT) node processes or stores this entry, triggered through actions such as [commit_entry](fn.commit_entry.html), [update_entry](fn.update_entry.html), [remove_entry](fn.remove_entry.html).
+///      (DHT) node processes or stores this entry, triggered through actions such as [commit_entry](api::commit_entry()), [update_entry](api::update_entry()), [remove_entry](api::remove_entry()).
 ///      It always expects two arguments, the first of which is the entry attempting to be validated,
 ///      the second is the validation `context`, which offers a variety of metadata useful for validation.
-///      See [ValidationData](struct.ValidationData.html) for more details.
+///      See [ValidationData](ValidationData) for more details.
 /// 7. links: `links` is a vector of link definitions represented by `ValidatingLinkDefinition`.
 ///     Links can be defined with the `link!` macro or, more concise, with either the `to!` or `from!` macro,
 ///     to define an association pointing from this entry type to another, or one that points back from
 ///     the other entry type to this one.
-///     See [link!](macro.link.html), [to!](macro.to.html) and [from!](macro.to.html) for more details.
+///     See [link!](link!), [to!](to!) and [from!](from!) for more details.
 /// # Examples
 /// The following is a standalone Rust file that exports a function which can be called
 /// to get a `ValidatingEntryType` of a "post".
@@ -254,28 +254,28 @@ macro_rules! entry {
 }
 
 /// The `link` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [entry](macro.entry.html) macro.
+/// for use within the [entry](entry!) macro.
 /// It has 5 component parts:
 /// 1. direction: `direction` defines if this entry type (in which the link is defined) points
 ///     to another entry, or if it is referenced from another entry.
 ///     The latter is needed in cases where the definition of the entry to link from is not
 ///     accessible because it is a system entry type (AGENT_ADDRESS), or the other entry is
 ///     defined in library zome.
-///     Must be of type [LinkDirection](struct.LinkDirection.html), so either `hdk::LinkDirection::To`
+///     Must be of type [LinkDirection](LinkDirection), so either `hdk::LinkDirection::To`
 ///     or `hdk::LinkDirection::From`.
 /// 2. other_type: `other_type` is the entry type this link connects to. If direction is `to` this
 ///     would be the link target, if direction is `from` this defines the link's base type.
 /// 3. link_type: `link_type` is the name of this association and thus the handle by which it can be retrieved
-///     if given to [get_links()](fn.get_links.html) in conjunction with the base address.
+///     if given to [get_links()](api::get_links()) in conjunction with the base address.
 /// 4. validation_package: Similar to entries, links have to be validated.
 ///        `validation_package` is a special identifier, which declares which data is required from peers
 ///         when attempting to validate entries of this type.
-///         Possible values are found within [ValidationPackageDefinition](enum.ValidationPackageDefinition.html)
+///         Possible values are found within [ValidationPackageDefinition](ValidationPackageDefinition)
 /// 5. validation: `validation` is a callback function which will be called any time that a
-///         (DHT) node processes or stores a link of this kind, triggered through the link actions [link_entries](fn.commit_entry.html) and [remove_link]().
+///         (DHT) node processes or stores a link of this kind, triggered through the link actions [link_entries](api::commit_entry()) and [remove_link](api::remove_link()).
 ///         It always expects three arguments, the first being the base and the second the target of the link.
 ///         The third is the validation `context`, which offers a variety of metadata useful for validation.
-///         See [ValidationData](struct.ValidationData.html) for more details.
+///         See [ValidationData](ValidationData) for more details.
 #[macro_export]
 macro_rules! link {
     (
@@ -310,8 +310,8 @@ macro_rules! link {
 }
 
 /// The `to` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [entry](macro.entry.html) macro.
-/// It is a convenience wrapper around [link!](macro.link.html) that has all the
+/// for use within the [entry](entry!) macro.
+/// It is a convenience wrapper around [link!](link!) that has all the
 /// same properties except for the direction which gets set to `LinkDirection::To`.
 #[macro_export]
 macro_rules! to {
@@ -334,8 +334,8 @@ macro_rules! to {
 }
 
 /// The `from` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [entry](macro.entry.html) macro.
-/// It is a convenience wrapper around [link!](macro.link.html) that has all the
+/// for use within the [entry](entry!) macro.
+/// It is a convenience wrapper around [link!](link!) that has all the
 /// same properties except for the direction which gets set to `LinkDirection::From`.
 #[macro_export]
 macro_rules! from {

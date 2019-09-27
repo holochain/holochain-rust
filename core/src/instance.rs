@@ -29,6 +29,8 @@ use std::{
     thread,
     time::Duration,
 };
+use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::Ordering;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -176,7 +178,7 @@ impl Instance {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
-        (*instance_is_alive.lock().unwrap()) = true;
+        instance_is_alive.store(true, Ordering::Relaxed);
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
@@ -184,7 +186,7 @@ impl Instance {
             ))
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
-                while !kill_receiver.try_recv().is_ok() {
+                while kill_receiver.try_recv().is_err() {
                     if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
                         // Ping can happen often, and should be as lightweight as possible
                         if *action_wrapper.action() != Action::Ping {
@@ -198,7 +200,7 @@ impl Instance {
                         }
                     }
                 }
-                (*instance_is_alive.lock().unwrap()) = false;
+                instance_is_alive.store(false, Relaxed);
             });
     }
 
@@ -278,18 +280,18 @@ impl Instance {
                 );
             });
 
-            self.consistency_model
+            if let Some(signal) = self.consistency_model
                 .process_action(action_wrapper.action())
-                .map(|signal| {
-                    tx.send(Signal::Consistency(signal.into()))
-                        .unwrap_or_else(|e| {
+            {
+                tx.send(Signal::Consistency(signal.into())).unwrap_or_else(|e| {
                             log_warn!(
                                 context,
                                 "reduce: Signal channel is closed! No signals can be sent ({:?}).",
                                 e
                             );
-                        });
                 });
+            }
+
         }
     }
 
@@ -327,7 +329,7 @@ impl Instance {
     pub fn save(&self) -> HcResult<()> {
         self.persister
             .as_ref()
-            .ok_or(HolochainError::new(
+            .ok_or_else(||HolochainError::new(
                 "Instance::save() called without persister set.",
             ))?
             .try_lock()
@@ -335,6 +337,7 @@ impl Instance {
             .save(&self.state())
     }
 
+    #[allow(clippy::needless_lifetimes)]
     pub async fn shutdown_network(&self) -> HcResult<()> {
         await!(network::actions::shutdown::shutdown(
             self.state.clone(),

@@ -3,7 +3,7 @@ use colored::*;
 use failure::Error;
 use std::{
     io::ErrorKind,
-    path::{Path, PathBuf},
+    path::Path,
     process::{Command, Stdio},
 };
 

@@ -51,17 +51,16 @@ when unlocking the keybundle to use within a Holochain conductor."
     };
 
     keystore.save(path.clone())?;
-    let path_str = path.to_str().unwrap();
 
     if quiet {
         println!("{}", pub_key);
-        println!("{}", path_str);
+        println!("{}", path.display());
     } else {
         println!("");
         println!("Succesfully created new agent keystore.");
         println!("");
         println!("Public address: {}", pub_key);
-        println!("Keystore written to: {}", path_str);
+        println!("Keystore written to: {}", path.display());
         println!("");
         println!("You can set this file in a conductor config as keystore_file for an agent.");
     }

@@ -316,7 +316,7 @@ pub mod tests {
 
     pub fn test_chain_store() -> ChainStore {
         ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
+            FilesystemStorage::new(tempdir().unwrap().path())
                 .expect("could not create chain store"),
         )))
     }

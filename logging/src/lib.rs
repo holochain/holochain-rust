@@ -162,7 +162,7 @@ use std::{
     default::Default,
     env,
     io::{self, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
     thread,
     ops::Drop,
@@ -459,8 +459,8 @@ impl<'a> FastLoggerBuilder {
     }
 
     /// Returns the file path of the logs in the case we want to redirect them to a file.
-    pub fn file_path(&self) -> Option<&PathBuf> {
-        self.file_path.as_ref()
+    pub fn file_path(&self) -> Option<&Path> {
+        self.file_path.as_ref().map(|p| &**p)
     }
 
     /// Registers a [FastLogger] as the comsumer of [log] facade so it becomes static and any further
@@ -875,7 +875,7 @@ fn logger_conf_deserialization_test() {
     assert_eq!(flb.level(), Level::Debug);
 
     // File dump check
-    assert_eq!(flb.file_path(), Some(&PathBuf::from("humpty_dumpty.log")));
+    assert_eq!(flb.file_path(), Some(Path::new("humpty_dumpty.log")));
 }
 
 #[test]
@@ -897,7 +897,7 @@ fn fastloggerbuilder_conf_deserialization_test() {
     assert_eq!(flb.level(), Level::Debug);
 
     // File dump check
-    assert_eq!(flb.file_path(), Some(&PathBuf::from("humpty_dumpty.log")));
+    assert_eq!(flb.file_path(), Some(Path::new("humpty_dumpty.log")));
 }
 
 #[test]

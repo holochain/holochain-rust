@@ -121,8 +121,8 @@ const DNA_CONFIG_ID: &str = "hc-run-dna";
 
 fn dna_configuration(dna_path: PathBuf) -> DnaConfiguration {
     let dna = Conductor::load_dna(&dna_path).expect(&format!(
-        "Could not load DNA file {}",
-        dna_path.to_str().expect("No DNA file path given")
+        "Could not load DNA file {:?}",
+        dna_path
     ));
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),

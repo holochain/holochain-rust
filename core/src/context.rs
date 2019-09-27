@@ -364,7 +364,7 @@ pub mod tests {
         use crate::*;
 
         let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            FilesystemStorage::new(tempdir().unwrap().path()).unwrap(),
         ));
         let ctx = Context::new(
             "LOG-TEST-ID",
@@ -373,7 +373,7 @@ pub mod tests {
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                EavFileStorage::new(tempdir().unwrap().path())
                     .unwrap(),
             )),
             P2pConfig::new_with_unique_memory_backend(),
@@ -407,7 +407,7 @@ pub mod tests {
     #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
         let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            FilesystemStorage::new(tempdir().unwrap().path()).unwrap(),
         ));
         let mut context = Context::new(
             "test_deadlock_instance",
@@ -416,7 +416,7 @@ pub mod tests {
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                EavFileStorage::new(tempdir().unwrap().path())
                     .unwrap(),
             )),
             P2pConfig::new_with_unique_memory_backend(),

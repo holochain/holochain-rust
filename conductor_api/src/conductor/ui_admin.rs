@@ -51,13 +51,9 @@ impl ConductorUiAdmin for Conductor {
             false => path,
         };
 
-        let path_string = path
-            .to_str()
-            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
-
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
-            root_dir: path_string.into(),
+            root_dir: path.clone(),
             hash: None,
         };
 
@@ -68,7 +64,7 @@ impl ConductorUiAdmin for Conductor {
         self.save_config()?;
         notify(format!(
             "Installed UI bundle from {} as \"{}\"",
-            path_string, id
+            path.display(), id
         ));
         Ok(())
     }

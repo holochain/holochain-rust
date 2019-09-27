@@ -1254,9 +1254,9 @@ impl Conductor {
     pub fn save_dna_to(&self, dna: &Dna, path: PathBuf) -> Result<PathBuf, HolochainError> {
         let file = File::create(&path).map_err(|e| {
             HolochainError::ConfigError(format!(
-                "Error writing DNA to {}, {}",
-                path.to_str().unwrap().to_string(),
-                e.to_string()
+                "Error writing DNA to {:?}, {:?}",
+                path,
+                e
             ))
         })?;
         serde_json::to_writer_pretty(&file, dna)?;
@@ -1371,7 +1371,7 @@ pub mod tests {
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &Path| {
-            Ok(match path.to_str().unwrap().as_ref() {
+            Ok(match path.to_str().unwrap() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
                 "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
@@ -1387,7 +1387,7 @@ pub mod tests {
     pub fn test_key_loader() -> KeyLoader {
         let loader = Box::new(
             |path: &Path, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
-                match path.to_str().unwrap().as_ref() {
+                match path.to_str().unwrap() {
                     "holo_tester1.key" => Ok(test_keystore(1)),
                     "holo_tester2.key" => Ok(test_keystore(2)),
                     "holo_tester3.key" => Ok(test_keystore(3)),

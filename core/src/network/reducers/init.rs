@@ -63,7 +63,7 @@ pub mod test {
 
     fn test_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+            FilesystemStorage::new(tempdir().unwrap().path()).unwrap(),
         ));
         let mut context = Context::new(
             "Test-context-instance",
@@ -72,7 +72,7 @@ pub mod test {
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                EavFileStorage::new(tempdir().unwrap().path())
                     .unwrap(),
             )),
             P2pConfig::new_with_unique_memory_backend(),

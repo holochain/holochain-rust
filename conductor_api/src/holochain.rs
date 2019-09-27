@@ -42,7 +42,7 @@
 //! // But for now:
 //! let dna = test_utils::create_arbitrary_test_dna();
 //! let dir = tempdir().unwrap();
-//! let storage_directory_path = dir.path().to_str().unwrap();
+//! let storage_directory_path = dir.path();
 //!
 //! // We need to provide a cryptographic key that represents the agent.
 //! // Creating a new random one on the fly:
@@ -324,7 +324,7 @@ mod tests {
                     .with_agent(agent.clone())
                     .with_signals(signal_tx)
                     .with_conductor_api(mock_conductor_api(agent))
-                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                    .with_file_storage(tempdir().unwrap().path())
                     .unwrap()
                     .spawn(),
             ),

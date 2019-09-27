@@ -395,7 +395,7 @@ mod tests {
 
             Command::main_binary()
                 .unwrap()
-                .args(&["init", temp_dir_path.to_str().unwrap()])
+                .args(&["init", temp_dir_path.into()])
                 .assert()
                 .success();
 
@@ -403,7 +403,9 @@ mod tests {
 
             Command::main_binary()
                 .unwrap()
-                .args(&["package", "-o", bundle_file_path.to_str().unwrap()])
+                .arg("package")
+                .arg("-o")
+                .arg(&bundle_file_path)
                 .current_dir(&temp_dir_path)
                 .assert()
                 .success();
@@ -416,11 +418,9 @@ mod tests {
             Command::main_binary()
                 .unwrap()
                 .current_dir(&shared_file_path)
-                .args(&[
-                    "unpack",
-                    TEST_DNA_FILE_NAME,
-                    temp_dir_path.to_str().unwrap(),
-                ])
+                .arg("unpack")
+                .arg(TEST_DNA_FILE_NAME)
+                .arg(temp_dir_path)
                 .assert()
                 .success();
         }
@@ -476,7 +476,8 @@ mod tests {
         // Initialize and package a project
         Command::main_binary()
             .unwrap()
-            .args(&["init", root_path.to_str().unwrap()])
+            .arg("init")
+            .arg(root_path)
             .assert()
             .success();
 
@@ -511,7 +512,8 @@ mod tests {
         // Initialize and package a project
         Command::main_binary()
             .unwrap()
-            .args(&["init", source_path.to_str().unwrap()])
+            .arg("init")
+            .arg(source_path)
             .assert()
             .success();
 
@@ -519,7 +521,9 @@ mod tests {
 
         Command::main_binary()
             .unwrap()
-            .args(&["package", "-o", bundle_file_path.to_str().unwrap()])
+            .arg("package")
+            .arg("-o")
+            .arg(bundle_file_path)
             .current_dir(&source_path)
             .assert()
             .success();
@@ -530,11 +534,9 @@ mod tests {
 
         Command::main_binary()
             .unwrap()
-            .args(&[
-                "unpack",
-                bundle_file_path.to_str().unwrap(),
-                dest_path.to_str().unwrap(),
-            ])
+            .arg("unpack")
+            .arg(bundle_file_path)
+            .arg(dest_path)
             .assert()
             .success();
 
@@ -556,7 +558,8 @@ mod tests {
         Command::main_binary()
             .unwrap()
             .current_dir(&root_path)
-            .args(&["init", root_path.to_str().unwrap()])
+            .arg("init")
+            .arg(root_path)
             .assert()
             .success();
 

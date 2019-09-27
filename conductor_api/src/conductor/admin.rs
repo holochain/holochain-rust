@@ -89,10 +89,10 @@ impl ConductorAdmin for Conductor {
         uuid: Option<String>,
     ) -> Result<HashString, HolochainError> {
         let mut dna =
-            Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string).map_err(|e| {
+            Arc::get_mut(&mut self.dna_loader).unwrap()(&path).map_err(|e| {
                 HolochainError::ConfigError(format!(
                     "Could not load DNA file {:?}, Error: {}",
-                    path_string,
+                    path,
                     e.to_string()
                 ))
             })?;
@@ -119,15 +119,12 @@ impl ConductorAdmin for Conductor {
 
         let config_path = match copy {
             true => self.save_dna(&dna)?,
-            false => PathBuf::from(path_string),
+            false => path.clone(),
         };
-        let config_path_str = config_path
-            .to_str()
-            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
 
         let new_dna = DnaConfiguration {
             id: id.clone(),
-            file: config_path_str.into(),
+            file: config_path,
             hash: dna.address().to_string(),
         };
 
@@ -136,7 +133,7 @@ impl ConductorAdmin for Conductor {
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
-        notify(format!("Installed DNA from {} as {:?}", path_string, id));
+        notify(format!("Installed DNA from {:?} as {:?}", path, id));
         Ok(dna.address())
     }
 
@@ -198,12 +195,7 @@ impl ConductorAdmin for Conductor {
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
             storage: StorageConfiguration::Pickle {
-                path: storage_path
-                    .to_str()
-                    .ok_or_else(|| {
-                        HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
-                    })?
-                    .into(),
+                path: storage_path,
             },
         };
         new_config.instances.push(new_instance_config);
@@ -632,7 +624,7 @@ pub mod tests {
             .expect("Could not get current dir")
             .join("tmp-test")
             .join(test_name);
-        format!("persistence_dir = \'{}\'", persist_dir.to_str().unwrap()).to_string()
+        format!("persistence_dir = \'{}\'", persist_dir.display())
     }
 
     pub fn header_block(test_name: &str) -> String {

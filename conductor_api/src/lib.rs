@@ -1,4 +1,4 @@
-//! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
+//! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path()).unwrap()));
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
 

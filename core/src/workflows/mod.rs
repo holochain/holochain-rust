@@ -91,32 +91,32 @@ async fn validation_package(
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally. 
     // This will work if the entry doesn't need a chain to validate or if this agent is the author:
-    context.log(format!("validation_package:{} - Trying to build locally", entry_with_header.entry.address()));
+    log_debug!(context, "validation_package:{} - Trying to build locally", entry_with_header.entry.address());
     if let Ok(package) = await!(try_make_local_validation_package(
         &entry_with_header,
         context.clone()
     )) {
-        context.log(format!("validation_package:{} - Successfully built locally", entry_with_header.entry.address()));
+        log_debug!(context, "validation_package:{} - Successfully built locally", entry_with_header.entry.address());
         return Ok(Some(package))
     }
 
     // 2. Try and get it from the author
-    context.log(format!("validation_package:{} - Trying to retrieve from author", entry_with_header.entry.address()));
+    log_debug!(context, "validation_package:{} - Trying to retrieve from author", entry_with_header.entry.address());
     if let Ok(Some(package)) = await!(get_validation_package(
         entry_with_header.header.clone(),
         &context
     )) {
-        context.log(format!("validation_package:{} - Successfully retrieved from author", entry_with_header.entry.address()));
+        log_debug!(context, "validation_package:{} - Successfully retrieved from author", entry_with_header.entry.address());
         return Ok(Some(package))
     }
 
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))
-    context.log(format!("validation_package:{} - Trying to build from published headers", entry_with_header.entry.address()));
+    log_debug!(context, "validation_package:{} - Trying to build from published headers", entry_with_header.entry.address());
     if let Ok(package) = await!(try_make_validation_package_dht(
         &entry_with_header,
         context.clone()
     )) {
-        context.log(format!("validation_package:{} - Successfully built from published headers", entry_with_header.entry.address()));
+        log_debug!(context, "validation_package:{} - Successfully built from published headers", entry_with_header.entry.address());
         return Ok(Some(package))
     }   
 

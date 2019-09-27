@@ -321,7 +321,7 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let server_name = "localhost:8000";
+        let server_name = "http://localhost:8000";
         let p2p_config =
             P2pConfig::from_str(&P2pConfig::new_with_sim1h_backend(server_name).as_str()).unwrap();
         let json_str = p2p_config.as_str();

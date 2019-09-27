@@ -603,7 +603,7 @@ impl Conductor {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
-            P2pConfig::new_with_sim1h_backend("localhost:8000")
+            P2pConfig::new_with_sim1h_backend("http://localhost:8000")
         })
     }
 

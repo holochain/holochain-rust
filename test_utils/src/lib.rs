@@ -269,7 +269,7 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
             if let Some(network_name) = network_name {
-                let config = P2pConfig::new_with_sim1h_backend("localhost:8000");
+                let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
                 builder = builder.with_p2p_config(config);
             }
             builder
@@ -296,8 +296,8 @@ pub fn test_context_and_logger_with_network_name_and_signal(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
-            if let Some(_network_name) = network_name {
-                let config = P2pConfig::new_with_sim1h_backend("localhost:8000");
+            if let Some(_) = network_name {
+                let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
                 builder = builder.with_p2p_config(config);
             }
             builder

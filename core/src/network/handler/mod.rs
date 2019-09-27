@@ -28,7 +28,7 @@ use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::{
-    data_types::{DirectMessageData, StoreEntryAspectData, GenericResultData},
+    data_types::{DirectMessageData, GenericResultData, StoreEntryAspectData},
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
@@ -103,10 +103,16 @@ MessageData {{
     )
 }
 
-
 // TODO Implement a failure workflow?
-fn handle_failure_result(context: &Arc<Context>, failure_data: GenericResultData) -> Result<(), HolochainError> {
-    log_warn!(context, "handle_failure_result: unhandle failure={:?}", failure_data);
+fn handle_failure_result(
+    context: &Arc<Context>,
+    failure_data: GenericResultData,
+) -> Result<(), HolochainError> {
+    log_warn!(
+        context,
+        "handle_failure_result: unhandle failure={:?}",
+        failure_data
+    );
     Ok(())
 }
 
@@ -117,8 +123,11 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
         if let Err(err) = message {
-            log_warn!(context,
-                "net/handle: received error msg from lib3h server: {:?}", err);
+            log_warn!(
+                context,
+                "net/handle: received error msg from lib3h server: {:?}",
+                err
+            );
             return Ok(());
         }
         match message.unwrap() {
@@ -132,9 +141,11 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
+                    println!("SKIPPING STORE");
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleStoreEntryAspect: {}",
                     format_store_data(&dht_entry_data)
                 );
@@ -144,7 +155,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
                 );
@@ -158,7 +170,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                log_error!(context,
+                log_error!(
+                    context,
                     "net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
                 );
@@ -167,7 +180,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleQueryEntry: {:?}",
                     query_entry_data
                 );
@@ -187,7 +201,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleQueryEntryResult: {:?}",
                     query_entry_result_data
                 );
@@ -201,7 +216,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleSendMessage: {}",
                     format_message_data(&message_data)
                 );
@@ -215,7 +231,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: SendMessageResult: {}",
                     format_message_data(&message_data)
                 );
@@ -314,9 +331,9 @@ fn get_meta_aspects(
                     &eavi.value(),
                     &Timeout::default(),
                 ))?
-                .ok_or_else(|| HolochainError::from(
-                    "Entry linked in EAV not found! This should never happen.",
-                ))?;
+                .ok_or_else(|| {
+                    HolochainError::from("Entry linked in EAV not found! This should never happen.")
+                })?;
             let header = value_entry.headers[0].to_owned();
 
             match eavi.attribute() {

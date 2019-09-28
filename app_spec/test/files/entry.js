@@ -57,15 +57,17 @@ module.exports = scenario => {
 
       })
 
-      scenario('update_post', async (s, t) => {
+      scenario.only('update_post', async (s, t) => {
       const { alice, bob } = await s.players({alice: one, bob: one}, true)
         const content = "Hello Holo world 123"
         const in_reply_to = null
         const params = { content, in_reply_to }
 
         //commit version 1
-        const createResult = await alice.callSync('app', "blog", "create_post", params)
+        const createResult = await alice.call('app', "blog", "create_post", params)
         t.ok(createResult.Ok)
+
+        await s.consistency()
 
         //get v1
         const updatedPostV1 = await alice.call('app', "blog", "get_post", { post_address: createResult.Ok })
@@ -76,21 +78,23 @@ module.exports = scenario => {
         //update to version 2
         const updatePostContentV2 = { content: "Hello Holo V2", date_created: "now" };
         const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo V2" }
-        const UpdateResultV2 = await bob.callSync('app', "blog", "update_post", updateParamsV2)
+        const UpdateResultV2 = await bob.call('app', "blog", "update_post", updateParamsV2)
         t.ok(UpdateResultV2.Ok)
         t.notOk(UpdateResultV2.Err)
+
+        await s.consistency()
 
         //get v2 using initial adderss
         const updatedPostv2Initial = await alice.call('app', "blog", "get_post", { post_address: createResult.Ok })
         t.ok(updatedPostv2Initial.Ok)
         t.notOk(updatedPostv2Initial.Err)
-        t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), updatePostContentV2)
+        t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), updatePostContentV2)  // 8
 
         //get v2 latest address
         const updatedPostv2Latest = await alice.call('app', "blog", "get_post", { post_address: UpdateResultV2.Ok })
         t.ok(updatedPostv2Latest.Ok)
         t.notOk(updatedPostv2Latest.Err)
-        t.deepEqual(JSON.parse(updatedPostv2Latest.Ok.App[1]), updatePostContentV2)
+        t.deepEqual(JSON.parse(updatedPostv2Latest.Ok.App[1]), updatePostContentV2)  // 11
 
 
         //get v1 using initial address
@@ -108,9 +112,11 @@ module.exports = scenario => {
         //update to version 3
         const UpdatePostV3Content = { content: "Hello Holo V3", date_created: "now" };
         const updateParamsV3 = { post_address: createResult.Ok, new_content: "Hello Holo V3" }
-        const UpdateResultV3 = await alice.callSync('app', "blog", "update_post", updateParamsV3)
+        const UpdateResultV3 = await alice.call('app', "blog", "update_post", updateParamsV3)
         t.ok(UpdateResultV3.Ok)
         t.notOk(UpdateResultV3.Err)
+
+        await s.consistency()
 
         //get v3 using initial adderss
         const updatedPostV3Initial = await alice.call('app', "blog", "get_post", { post_address: createResult.Ok })
@@ -127,9 +133,11 @@ module.exports = scenario => {
         //update to version 4
         const updatePostV4Content = { content: "Hello Holo V4", date_created: "now" };
         const updateParamsV4 = { post_address: createResult.Ok, new_content: "Hello Holo V4" }
-        const UpdateResultV4 = await alice.callSync('app', "blog", "update_post", updateParamsV4)
+        const UpdateResultV4 = await alice.call('app', "blog", "update_post", updateParamsV4)
         t.notOk(UpdateResultV4.Err)
         t.ok(UpdateResultV4.Ok)
+
+        await s.consistency()
 
         //get history entry v4
         const entryHistoryV4Params = { post_address: UpdateResultV4.Ok }

@@ -1,7 +1,7 @@
 {
   "devDependencies": {},
   "dependencies": {
-    "@holochain/try-o-rama": "github:holochain/quadrama",
+    "@holochain/try-o-rama": "github:holochain/try-o-rama",
     "faucet": "0.0.1",
     "json3": "^3.3.3",
     "sleep": "^5.2.3",

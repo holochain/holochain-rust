@@ -56,6 +56,10 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
 
 const orchestrator = new Orchestrator({
   middleware,
+  waiter: {
+    softTimeout: 5000,
+    hardTimeout: 10000,
+  },
   globalConfig: {
       logger: {
           type: "debug",

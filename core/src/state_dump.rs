@@ -1,15 +1,13 @@
-use crate::nucleus::ZomeFnCall;
-use crate::action::QueryKey;
-use holochain_core_types::{entry::Entry, error::HolochainError};
+use crate::{
+    action::QueryKey, context::Context, network::direct_message::DirectMessage,
+    nucleus::ZomeFnCall, scheduled_jobs::pending_validations::ValidatingWorkflow,
+};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use crate::network::direct_message::DirectMessage;
-use crate::scheduled_jobs::pending_validations::ValidatingWorkflow;
-use crate::context::Context;
 use std::{convert::TryInto, sync::Arc};
-use holochain_core_types::chain_header::ChainHeader;
 
 #[derive(Serialize)]
-pub struct PendingValidationDump{
+pub struct PendingValidationDump {
     pub address: Address,
     pub dependencies: Vec<Address>,
     pub workflow: ValidatingWorkflow,
@@ -53,10 +51,9 @@ impl From<Arc<Context>> for StateDump {
             //using iter so that we don't copy this again and again if it is a scheduled job that runs everytime
             //it might be slow if copied
             .iter()
-            .filter(|(_,result)|result.is_none())
-            .map(|(key,_)|key.clone())
+            .filter(|(_, result)| result.is_none())
+            .map(|(key, _)| key.clone())
             .collect();
-
 
         let validation_package_flows: Vec<Address> = network
             .get_validation_package_results
@@ -74,20 +71,25 @@ impl From<Arc<Context>> for StateDump {
         let pending_validations = nucleus
             .pending_validations
             .into_iter()
-            .map(|(pending_validation_key, pending_validation)| {
-                PendingValidationDump {
+            .map(
+                |(pending_validation_key, pending_validation)| PendingValidationDump {
                     address: pending_validation_key.address,
                     workflow: pending_validation_key.workflow,
                     dependencies: pending_validation.dependencies.clone(),
-                }
-            })
+                },
+            )
             .collect::<Vec<PendingValidationDump>>();
 
         let held_entries = dht.get_all_held_entry_addresses().clone();
 
         StateDump {
-            running_calls, query_flows, validation_package_flows, direct_message_flows,
-            pending_validations, held_entries, source_chain
+            running_calls,
+            query_flows,
+            validation_package_flows,
+            direct_message_flows,
+            pending_validations,
+            held_entries,
+            source_chain,
         }
     }
 }
@@ -96,7 +98,11 @@ pub fn address_to_content_and_type(
     address: &Address,
     context: Arc<Context>,
 ) -> Result<(String, String), HolochainError> {
-    let raw_content = context.dht_storage.read()?.fetch(address)??;
+    let raw_content = context
+        .dht_storage
+        .read()?
+        .fetch(address)?
+        .ok_or(HolochainError::EntryNotFoundLocally)?;
     let maybe_entry: Result<Entry, _> = raw_content.clone().try_into();
     if let Ok(entry) = maybe_entry {
         let mut entry_type = entry.entry_type().to_string();

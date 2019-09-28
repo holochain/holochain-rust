@@ -1,6 +1,6 @@
-use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h::engine::{EngineConfig, TransportConfig, GatewayId};
 use crate::sim1h_worker::Sim1hConfig;
+use holochain_json_api::{error::JsonError, json::JsonString};
+use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 
@@ -156,46 +156,48 @@ impl P2pConfig {
         }
     }
 
-    pub fn new_with_memory_backend(
-        server_name: &str) -> Self {
-       Self::new_with_memory_backend_bootstrap_nodes(server_name, vec![])
+    pub fn new_with_memory_backend(server_name: &str) -> Self {
+        Self::new_with_memory_backend_bootstrap_nodes(server_name, vec![])
     }
 
-    pub fn new_with_sim1h_backend(dynamo_path : &str) -> Self
-    {
+    pub fn new_with_sim1h_backend(dynamo_path: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::SIM1H,
-            BackendConfig::Sim1h(
-                Sim1hConfig {
-                    dynamo_url : dynamo_path.into()
-                }),
-                None,
+            BackendConfig::Sim1h(Sim1hConfig {
+                dynamo_url: dynamo_path.into(),
+            }),
+            None,
         )
     }
 
-     pub fn new_with_memory_backend_bootstrap_nodes(
-        server_name: &str, bootstrap_nodes: Vec<url::Url>) -> Self {
-
-        let host_name =
-            server_name.replace(":", "_").replace(" ", "_").replace(",", "_");
+    pub fn new_with_memory_backend_bootstrap_nodes(
+        server_name: &str,
+        bootstrap_nodes: Vec<url::Url>,
+    ) -> Self {
+        let host_name = server_name
+            .replace(":", "_")
+            .replace(" ", "_")
+            .replace(",", "_");
 
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            BackendConfig::Memory(
-                EngineConfig {
-                    network_id : GatewayId { nickname : server_name.into(),id: server_name.into()},
-                    //need to fix the transport configs
-                    transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
-                    bootstrap_nodes,
-                    work_dir: "".into(),
-                    log_level: 'd',
-                    bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())
-                        .expect(format!("invalid memory server url: {}", server_name).as_str()),
-                    dht_custom_config: vec![],
-                    dht_timeout_threshold: 2000,
-                    dht_gossip_interval: 20
-                }),
-                None,
+            BackendConfig::Memory(EngineConfig {
+                network_id: GatewayId {
+                    nickname: server_name.into(),
+                    id: server_name.into(),
+                },
+                //need to fix the transport configs
+                transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
+                bootstrap_nodes,
+                work_dir: "".into(),
+                log_level: 'd',
+                bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())
+                    .expect(format!("invalid memory server url: {}", server_name).as_str()),
+                dht_custom_config: vec![],
+                dht_timeout_threshold: 2000,
+                dht_gossip_interval: 20,
+            }),
+            None,
         )
     }
 
@@ -203,12 +205,14 @@ impl P2pConfig {
         Self::new_with_unique_memory_backend_bootstrap_nodes(vec![])
     }
 
-    pub fn new_with_unique_memory_backend_bootstrap_nodes(
-        bootstrap_nodes: Vec<url::Url>) -> Self {
-        Self::new_with_memory_backend_bootstrap_nodes(&format!(
-            "memory-auto-{}",
-            snowflake::ProcessUniqueId::new().to_string()
-        ), bootstrap_nodes)
+    pub fn new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes: Vec<url::Url>) -> Self {
+        Self::new_with_memory_backend_bootstrap_nodes(
+            &format!(
+                "memory-auto-{}",
+                snowflake::ProcessUniqueId::new().to_string()
+            ),
+            bootstrap_nodes,
+        )
     }
 
     pub fn unique_memory_backend_json() -> serde_json::Value {
@@ -261,16 +265,12 @@ impl P2pConfig {
     }
 }
 
-
 /// Utility functions to extract config elements
 impl P2pConfig {
-
     pub fn real_engine_config(self) -> Option<EngineConfig> {
         match self.backend_config {
-            BackendConfig::Lib3h(config) =>
-                Some(config),
-            BackendConfig::Memory(config) =>
-                Some(config),
+            BackendConfig::Lib3h(config) => Some(config),
+            BackendConfig::Memory(config) => Some(config),
             BackendConfig::Json(_) => None,
             BackendConfig::Sim1h(_) => None,
         }

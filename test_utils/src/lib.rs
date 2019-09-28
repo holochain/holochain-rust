@@ -17,10 +17,11 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::{Signal,signal_channel,SignalReceiver}
+    signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-   dna::{
+    crud_status::CrudStatus,
+    dna::{
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo, Sharing},
         fn_declarations::{FnDeclaration, TraitFns},
         traits::ReservedTraitNames,
@@ -28,23 +29,22 @@ use holochain_core_types::{
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
-    entry::{entry_type::{AppEntryType, EntryType,test_app_entry_type},{Entry,EntryWithMeta}},
-    crud_status::CrudStatus
-  
+    entry::{
+        entry_type::{test_app_entry_type, AppEntryType, EntryType},
+        Entry, EntryWithMeta,
+    },
 };
-use holochain_persistence_api::{
-    cas::content::{AddressableContent,Address}
-};
-use holochain_json_api::{json::JsonString,error::JsonError};
+use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_net::p2p_config::P2pConfig;
 
 use holochain_wasm_utils::{
+    api_serialization::get_entry::{GetEntryResult, StatusRequestKind},
     wasm_target_dir,
-    api_serialization::get_entry::{GetEntryResult, StatusRequestKind}
 };
 
-use hdk::error::{ZomeApiResult,ZomeApiError};
+use hdk::error::{ZomeApiError, ZomeApiResult};
 
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
@@ -53,14 +53,11 @@ use std::{
     io::prelude::*,
     path::PathBuf,
     sync::{Arc, Mutex},
+    thread,
     time::Duration,
-    thread
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
-
-
-
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
@@ -184,8 +181,9 @@ pub fn create_test_defs_with_fn_names(fn_names: Vec<String>) -> (ZomeFnDeclarati
     (functions, traits)
 }
 
-
-pub fn create_test_defs_with_hc_public_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
+pub fn create_test_defs_with_hc_public_fn_names(
+    fn_names: Vec<&str>,
+) -> (ZomeFnDeclarations, ZomeTraits) {
     let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
 
@@ -246,9 +244,8 @@ pub fn create_arbitrary_test_dna() -> Dna {
 pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
-    test_context_and_logger_with_bootstrap_nodes
-        (agent_name, network_name, vec![])
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
+    test_context_and_logger_with_bootstrap_nodes(agent_name, network_name, vec![])
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -256,9 +253,9 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
     agent_name: &str,
     network_name: Option<&str>,
     _bootstrap_nodes: Vec<url::Url>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
-    let (signal,recieve) = signal_channel();
+    let (signal, recieve) = signal_channel();
     let logger = test_logger();
     (
         Arc::new({
@@ -268,24 +265,22 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
-            if let Some(network_name) = network_name {
+            if let Some(_network_name) = network_name {
                 let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
                 builder = builder.with_p2p_config(config);
             }
-            builder
-                .with_instance_name("test_context_instance")
-                .spawn()
+            builder.with_instance_name("test_context_instance").spawn()
         }),
         logger,
-        recieve
+        recieve,
     )
 }
 
 pub fn test_context_and_logger_with_network_name_and_signal(
     agent_name: &str,
     network_name: Option<&str>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
-    let (signal,reciever) = signal_channel();
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
+    let (signal, reciever) = signal_channel();
     let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
@@ -300,22 +295,22 @@ pub fn test_context_and_logger_with_network_name_and_signal(
                 let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
                 builder = builder.with_p2p_config(config);
             }
-            builder
-                .with_instance_name("test_context_instance")
-                .spawn()
+            builder.with_instance_name("test_context_instance").spawn()
         }),
         logger,
-        reciever
+        reciever,
     )
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
+pub fn test_context_and_logger(
+    agent_name: &str,
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
     test_context_and_logger_with_network_name(agent_name, None)
 }
 
 pub fn test_context(agent_name: &str) -> Arc<Context> {
-    let (context, _,_) = test_context_and_logger(agent_name);
+    let (context, _, _) = test_context_and_logger(agent_name);
     context
 }
 
@@ -394,12 +389,11 @@ where
     }
 }
 
-
-pub fn start_holochain_instance<T:Into<String>>(
+pub fn start_holochain_instance<T: Into<String>>(
     uuid: T,
     agent_name: T,
-    endpoints : Vec<url::Url>
-) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
+    endpoints: Vec<url::Url>,
+) -> (Holochain, Arc<Mutex<TestLogger>>, SignalReceiver) {
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
@@ -458,8 +452,7 @@ pub fn start_holochain_instance<T:Into<String>>(
         "create_and_link_tagged_entry_bad_link",
         "link_tag_validation",
         "get_entry",
-        "create_priv_entry"
-
+        "create_priv_entry",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -480,10 +473,7 @@ pub fn start_holochain_instance<T:Into<String>>(
             EntryType::from("empty_validation_response_tester"),
             EntryTypeDef::new(),
         );
-        entry_types.insert(
-            EntryType::from("private test entry"),
-            EntryTypeDef::new(),
-        );
+        entry_types.insert(EntryType::from("private test entry"), EntryTypeDef::new());
         let test_entry_type = &mut entry_types
             .get_mut(&EntryType::from("testEntryType"))
             .unwrap();
@@ -493,7 +483,7 @@ pub fn start_holochain_instance<T:Into<String>>(
         });
 
         test_entry_type.links_to.push(LinksTo {
-            target_type:String::from("testEntryType"),
+            target_type: String::from("testEntryType"),
             link_type: String::from("intergration test"),
         });
     }
@@ -508,17 +498,24 @@ pub fn start_holochain_instance<T:Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context,test_logger,signal_recieve) = test_context_and_logger_with_bootstrap_nodes(&dna.uuid,Some(&agent_name.into()),endpoints);
+    let (context, test_logger, signal_recieve) = test_context_and_logger_with_bootstrap_nodes(
+        &dna.uuid,
+        Some(&agent_name.into()),
+        endpoints,
+    );
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
-    (hc, test_logger,signal_recieve)
+    (hc, test_logger, signal_recieve)
 }
 
-
-pub fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
+pub fn make_test_call(
+    hc: &mut Holochain,
+    fn_name: &str,
+    params: &str,
+) -> HolochainResult<JsonString> {
     let cap_call = {
         let context = hc.context()?;
         let token = context.get_public_token().unwrap();
@@ -532,8 +529,7 @@ pub fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> Holoch
     hc.call("test_zome", cap_call, fn_name, params)
 }
 
-
-#[derive(Deserialize, Serialize, Default, Debug, DefaultJson,Clone)]
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson, Clone)]
 pub struct TestEntry {
     pub stuff: String,
 }
@@ -581,42 +577,56 @@ pub fn example_valid_entry_address() -> Address {
 
 //this polls for the zome result until it satisfies a the boolean condition or elapses a number of tries.
 //only use this for get requests please
-pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
+pub fn wait_for_zome_result<'a, T>(
+    holochain: &mut Holochain,
+    zome_call: &str,
+    params: &str,
+    boolean_condition: fn(T) -> bool,
+    tries: i8,
+) -> ZomeApiResult<T>
+where
+    T: hdk::serde::de::DeserializeOwned + Clone,
 {
     //make zome call
     let result = make_test_call(holochain, zome_call, params);
-    let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
-    
+    let call_result = result
+        .clone()
+        .expect("Could not wait for condition as result is malformed")
+        .to_string();
+
     //serialize into ZomeApiResult type
-    let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
-                                            .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
+    let expected_result: ZomeApiResult<T> = serde_json::from_str::<ZomeApiResult<T>>(&call_result)
+        .map_err(|_| {
+            ZomeApiError::Internal(format!("Error converting serde result for {}", zome_call))
+        })?;
     let value = expected_result.clone()?;
-    
+
     //check if condition is satisifed
-    if !boolean_condition(value) && tries >0
-    {
+    if !boolean_condition(value) && tries > 0 {
         thread::sleep(Duration::from_secs(10));
-        
+
         //recursively call function again and decrement tries so far
-        wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
-    }
-    else
-    {
+        wait_for_zome_result(holochain, zome_call, params, boolean_condition, tries - 1)
+    } else {
         expected_result
     }
 }
 
-
-pub fn generate_zome_internal_error(error_kind:String)->ZomeApiError
-{
+pub fn generate_zome_internal_error(error_kind: String) -> ZomeApiError {
     let path = PathBuf::new()
-              .join("core")
-              .join("src")
-              .join("nucleus")
-              .join("ribosome")
-              .join("runtime.rs");
-    let path_string = path.as_path().to_str().expect("path should have been created");
-    let formatted_path_string = path_string.replace("\\",&vec!["\\","\\"].join(""));
-    let error_string = format!(r#"{{"kind":{},"file":"{}","line":"225"}}"#,error_kind,formatted_path_string);
+        .join("core")
+        .join("src")
+        .join("nucleus")
+        .join("ribosome")
+        .join("runtime.rs");
+    let path_string = path
+        .as_path()
+        .to_str()
+        .expect("path should have been created");
+    let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\"].join(""));
+    let error_string = format!(
+        r#"{{"kind":{},"file":"{}","line":"225"}}"#,
+        error_kind, formatted_path_string
+    );
     ZomeApiError::Internal(error_string)
 }

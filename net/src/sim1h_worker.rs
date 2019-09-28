@@ -66,6 +66,7 @@ impl Sim1hWorker {
         &mut self,
         data: Lib3hClientProtocol,
     ) -> NetResult<Lib3hServerProtocol> {
+        debug!("handle_client_message: {:?}", data);
         match data {
             // Success response to a request (any Command with an `request_id` field.)
             Lib3hClientProtocol::SuccessResult(generic_result_data) => {
@@ -314,7 +315,7 @@ impl NetWorker for Sim1hWorker {
 
         let messages = self.inbox.drain(..).collect::<Vec<_>>();
         for data in messages {
-            match self.handle_client_message(data) {
+            match self.handle_client_message(data.clone()) {
                 Ok(response) => {
                     debug!("NET>!>CORE {:?}", response);
                     if let Err(error) = self.handler.handle(Ok(response)) {
@@ -322,6 +323,9 @@ impl NetWorker for Sim1hWorker {
                     }
                 }
                 Err(error) => {
+                    // XXX: why is this merely a warning?
+                    // This can mean, among other things, that the content aspect could
+                    // not be retrieved for an entry
                     warn!("Error handling client message in Sim1hWorker: {:?}", error);
                 }
             }

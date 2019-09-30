@@ -309,6 +309,16 @@ impl Keystore {
         Ok(())
     }
 
+    pub fn add_seed(&mut self, dst_id_str: &str, seed: &[u8]) -> HcResult<()> {
+        let dst_id = self.check_dst_identifier(dst_id_str)?;
+        let mut seed_buf = SecBuf::with_secure(seed.len());
+        seed_buf.from_array(seed)?;
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
+        self.cache.insert(dst_id.clone(), secret);
+        self.encrypt(&dst_id)?;
+        Ok(())
+    }
+
     fn check_dst_identifier(&self, dst_id_str: &str) -> HcResult<String> {
         let dst_id = dst_id_str.to_string();
         if self.secrets.contains_key(&dst_id) {

@@ -318,9 +318,11 @@ fn get_content_aspect(
                 // into an EntryAspect content (What about ordering? Using the headers timestamp?)
                 Some(EntryWithHeader{entry, header: headers[0].clone()})
             } else {
+                debug!("GET CONTENT ASPECT: entry found in cas, but then couldn't find a header");
                 None
             }
         } else {
+            debug!("GET CONTENT ASPECT: entry not found in cas");
             None
         }
     };

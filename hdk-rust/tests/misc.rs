@@ -225,50 +225,6 @@ fn can_use_globals() {
 }
 
 #[test]
-fn can_commit_entry() {
-    let (mut hc, _,_) = start_holochain_instance("can_commit_entry", "alice");
-
-    // Call the exposed wasm function that calls the Commit API function
-    let result = make_test_call(
-        &mut hc,
-        "check_commit_entry",
-        &String::from(JsonString::from(example_valid_entry())),
-    );
-    println!("\t result = {:?}", result);
-    assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(example_valid_entry_address()),
-    );
-}
-
-#[test]
-fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _,_) = start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
-
-    // Call the exposed wasm function that calls the Commit API function
-    let result = make_test_call(
-        &mut hc,
-        "check_commit_entry",
-        &String::from(JsonString::from(empty_string_validation_fail_entry())),
-    );
-    let path = PathBuf::new()
-        .join("core")
-        .join("src")
-        .join("nucleus")
-        .join("ribosome")
-        .join("runtime.rs");
-    let path_string = path
-        .as_path()
-        .to_str()
-        .expect("path should have been created");
-    let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
-    let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
-
-    assert_eq!(result.unwrap(), JsonString::from_json(&result_format));
-}
-
-#[test]
 fn can_commit_entry_macro() {
     let (mut hc, _, _) = start_holochain_instance("can_commit_entry_macro", "alice");
     // Call the exposed wasm function that calls the Commit API function

@@ -127,7 +127,7 @@ async fn validation_package(
 
 
 #[cfg(test)]
-pub mod tests {
+pub mod tests { 
     use crate::network::entry_with_header::EntryWithHeader;
     use super::validation_package;
     use crate::workflows::author_entry::author_entry;
@@ -137,10 +137,10 @@ pub mod tests {
     use holochain_json_api::json::JsonString;
 
     #[test]
-    fn test_simulate_author_offline() {
+    fn test_simulate_packge_direct_from_author() {
         let mut dna = test_dna();
-        dna.uuid = "test_simulate_author_offline".to_string();
-        let netname = Some("test_simulate_author_offline, the network");
+        dna.uuid = "test_simulate_packge_direct_from_author".to_string();
+        let netname = Some("test_simulate_packge_direct_from_author, the network");
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
 

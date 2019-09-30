@@ -1,3 +1,5 @@
+use crate::agent::state::create_entry_with_header_for_header;
+use logging::prelude::*;
 pub mod fetch;
 pub mod lists;
 pub mod query;
@@ -10,6 +12,7 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
+        entry_with_header::EntryWithHeader,
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
@@ -18,20 +21,19 @@ use crate::{
             store::*,
         },
     },
+    nucleus::actions::get_entry::get_entry_from_cas,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::*;
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::{
     data_types::{DirectMessageData, StoreEntryAspectData},
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
-use crate::nucleus::actions::get_entry::get_entry_from_cas;
-use crate::network::entry_with_header::EntryWithHeader;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -130,7 +132,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleStoreEntryAspect: {}",
                     format_store_data(&dht_entry_data)
                 );
@@ -140,7 +143,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &fetch_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
                 );
@@ -154,7 +158,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
 
-                log_error!(context,
+                log_error!(
+                    context,
                     "net/handle: unexpected HandleFetchEntryResult: {:?}",
                     fetch_result_data
                 );
@@ -163,7 +168,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_dna(&my_dna_address, &query_entry_data.space_address.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleQueryEntry: {:?}",
                     query_entry_data
                 );
@@ -183,7 +189,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 ) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleQueryEntryResult: {:?}",
                     query_entry_result_data
                 );
@@ -197,7 +204,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: HandleSendMessage: {}",
                     format_message_data(&message_data)
                 );
@@ -211,7 +219,8 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
                     return Ok(());
                 }
-                log_debug!(context,
+                log_debug!(
+                    context,
                     "net/handle: SendMessageResult: {}",
                     format_message_data(&message_data)
                 );
@@ -253,53 +262,73 @@ fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,
 ) -> Result<EntryAspect, HolochainError> {
-    let state = context.state()
-        .ok_or_else(|| {
-            HolochainError::InitializationFailed(
-                String::from("In get_content_aspect: no state found")
-            )
-        })?;
+    let state = context.state().ok_or_else(|| {
+        HolochainError::InitializationFailed(String::from("In get_content_aspect: no state found"))
+    })?;
 
     // Optimistically look for entry in chain...
-    let maybe_chain_header = state.agent()
+    let maybe_chain_header = state
+        .agent()
         .iter_chain()
-        .find(|ref chain_header| chain_header.entry_address() == entry_address);
+        .find(|ref chain_header| chain_header.address() == *entry_address)
+        .map(|h| (h, true))
+        .or_else(|| {
+            state
+                .agent()
+                .iter_chain()
+                .find(|ref chain_header| chain_header.entry_address() == entry_address)
+                .map(|h| (h, false))
+        });
 
     // If we have found a header for the requested entry in the chain...
-    let maybe_entry_with_header = if let Some(header) = maybe_chain_header {
-        // ... we can just get the content from the chain CAS
-        Some(EntryWithHeader {
-            entry: get_entry_from_cas(&state.agent().chain_store().content_storage(), header.entry_address())?
+    let maybe_entry_with_header = match maybe_chain_header {
+        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, &header)?),
+        Some((header, false)) => {
+            // ... we can just get the content from the chain CAS
+            Some(EntryWithHeader {
+                entry: get_entry_from_cas(
+                    &state.agent().chain_store().content_storage(),
+                    header.entry_address(),
+                )?
                 .expect("Could not find entry in chain CAS, but header is chain"),
-            header
-        })
-    } else {
-        // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-        if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)? {
-            // If we have it in the DHT cas that's good,
-            // but then we have to get the header like this:
-            let headers = context
-                .state()
-                .expect("Could not get state for handle_fetch_entry")
-                .get_headers(entry_address.clone())
-                .map_err(|error| {
-                    let err_message = format!(
-                        "net/fetch/get_content_aspect: Error trying to get headers {:?}",
-                        error
+                header,
+            })
+        }
+        None => {
+            // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
+            if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
+            {
+                // If we have it in the DHT cas that's good,
+                // but then we have to get the header like this:
+                let headers = context
+                    .state()
+                    .expect("Could not get state for handle_fetch_entry")
+                    .get_headers(entry_address.clone())
+                    .map_err(|error| {
+                        let err_message = format!(
+                            "net/fetch/get_content_aspect: Error trying to get headers {:?}",
+                            error
+                        );
+                        log_error!(context, "{}", err_message.clone());
+                        HolochainError::ErrorGeneric(err_message)
+                    })?;
+                if headers.len() > 0 {
+                    // TODO: this is just taking the first header..
+                    // We should actually transform all headers into EntryAspect::Headers and just the first one
+                    // into an EntryAspect content (What about ordering? Using the headers timestamp?)
+                    Some(EntryWithHeader {
+                        entry,
+                        header: headers[0].clone(),
+                    })
+                } else {
+                    debug!(
+                        "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"
                     );
-                    log_error!(context, "{}", err_message.clone());
-                    HolochainError::ErrorGeneric(err_message)
-                })?;
-            if headers.len() > 0 {
-                // TODO: this is just taking the first header..
-                // We should actually transform all headers into EntryAspect::Headers and just the first one
-                // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                Some(EntryWithHeader{entry, header: headers[0].clone()})
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
         }
     };
 
@@ -342,9 +371,9 @@ fn get_meta_aspects(
                     &eavi.value(),
                     &Timeout::default(),
                 ))?
-                .ok_or_else(|| HolochainError::from(
-                    "Entry linked in EAV not found! This should never happen.",
-                ))?;
+                .ok_or_else(|| {
+                    HolochainError::from("Entry linked in EAV not found! This should never happen.")
+                })?;
             let header = value_entry.headers[0].to_owned();
 
             match eavi.attribute() {

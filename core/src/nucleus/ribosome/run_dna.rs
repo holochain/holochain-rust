@@ -45,7 +45,7 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
         .unwrap()
         .zomes
         .get(&zome_name)
-        .ok_or(HolochainError::new(&format!(
+        .ok_or_else(|| HolochainError::new(&format!(
             "No Ribosome found for Zome '{}'",
             zome_name
         )))?
@@ -107,9 +107,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         wasm_instance
             .invoke_export(
                 &fn_name,
-                &[RuntimeValue::I64(
-                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
-                )],
+                &[RuntimeValue::I64(encoded_allocation_of_input as RibosomeRuntimeBits)],
                 mut_runtime,
             )
             .map_err(|err| {

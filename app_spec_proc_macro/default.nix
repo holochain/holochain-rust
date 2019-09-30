@@ -6,7 +6,7 @@ let
   # thats why this is here
   script = pkgs.writeShellScriptBin name ''
   hc-cli-install \
-  && hc-conductor-rust-install \
+  && hc-conductor-install \
   && (cd app_spec_proc_macro && ./build_and_test.sh);
   '';
 in

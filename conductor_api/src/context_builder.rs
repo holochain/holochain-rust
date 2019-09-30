@@ -143,25 +143,26 @@ impl ContextBuilder {
     pub fn spawn(self) -> Context {
         let chain_storage = self
             .chain_storage
-            .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
+            .unwrap_or_else(|| Arc::new(RwLock::new(MemoryStorage::new())));
         let dht_storage = self
             .dht_storage
-            .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
+            .unwrap_or_else(|| Arc::new(RwLock::new(MemoryStorage::new())));
         let eav_storage = self
             .eav_storage
-            .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
+            .unwrap_or_else(|| Arc::new(RwLock::new(EavMemoryStorage::new())));
 
         Context::new(
             &self
                 .instance_name
-                .unwrap_or("Anonymous-instance".to_string()),
-            self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
+                .unwrap_or_else(|| "Anonymous-instance".to_string()),
+            self.agent_id
+                .unwrap_or_else(|| AgentId::generate_fake("alice")),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
             eav_storage,
             self.p2p_config
-                .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
+                .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
             self.state_dump_logging,

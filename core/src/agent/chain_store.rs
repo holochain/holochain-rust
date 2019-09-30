@@ -82,11 +82,11 @@ impl ChainStore {
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
         // create a pattern-match engine to select the EntryTypes we want.
-        fn is_glob(c: &char) -> bool {
-            "./*[]{}".chars().any(|y| y == *c)
+        fn is_glob(c: char) -> bool {
+            "./*[]{}".chars().any(|y| y == c)
         }
         fn is_glob_str(s: &str) -> bool {
-            s.chars().any(|c| is_glob(&c))
+            s.chars().any(|c| is_glob(c))
         }
 
         // Unpack options; start == 0 --> start at beginning, limit == 0 --> take all remaining

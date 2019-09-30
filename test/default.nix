@@ -6,7 +6,6 @@ let
   ''
   set -euo pipefail
   hc-test-fmt
-  hc-qt-c-bindings-test
   hc-rust-test
   hc-app-spec-test
   '';

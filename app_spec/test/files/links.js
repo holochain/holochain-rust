@@ -43,48 +43,25 @@ module.exports = scenario => {
       
         //bob expects zero links
         t.ok(bob_agent_posts_expect_empty.Ok)
-        t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0);
-        //alice expects zero alice
+        t.equal(bob_agent_posts_expect_empty.Ok.links.length, 0); // #!# fails with expected: 0 actual: 2
+        //alice expects zero links
         t.ok(alice_agent_posts_expect_empty.Ok)
         t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
-      
       
         //different chain hash up to this point so we should be able to create a link with the same data
         await alice.app.callSync("simple", "create_link",{ "base":alice.app.agentId, "target": "Posty" })
       
-        //get alice posts
-        const alice_posts_not_empty = await bob.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+        //get posts as Alice and as Bob
+        const alice_posts_not_empty = await alice.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
+        const bob_posts_not_empty = await bob.app.call("simple", "get_my_links",{ "base": alice.app.agentId,"status_request" : "Live" })
       
          //expect 1 post
         t.ok(alice_posts_not_empty.Ok)
         t.equal(alice_posts_not_empty.Ok.links.length, 1);
-      
-      
+        t.ok(bob_posts_not_empty.Ok)
+        t.equal(bob_posts_not_empty.Ok.links.length, 1); //#!# fails with expected: 1 actual: 2      
       })
       
-      scenario('get_links_and_load with a delete_post', async (s, t, { alice }) => {
-      
-        //create post
-        const alice_create_post_result = await alice.app.callSync("blog", "create_post",
-          { "content": "Posty", "in_reply_to": "" }
-        )
-      
-        const alice_get_post_result1 = await alice.app.callSync("blog", "my_posts_with_load",
-          { "tag": null }
-        )
-      
-        t.ok(alice_get_post_result1.Ok)
-        t.equal(alice_get_post_result1.Ok.length, 1);
-      
-        //remove link by alicce
-        await alice.app.callSync("blog", "delete_post", { "content": "Posty", "in_reply_to": "" })
-      
-        const alice_get_post_result2 = await alice.app.callSync("blog", "my_posts_with_load",
-          { "tag": null }
-        )
-        t.ok(alice_get_post_result2.Ok)
-        t.equal(alice_get_post_result2.Ok.length, 0);
-      })
 
       scenario('delete_post_with_bad_link', async (s, t, { alice, bob }) => {
 
@@ -293,69 +270,9 @@ module.exports = scenario => {
       
       })
 
-      scenario('tagged link validation', async (s, t, { alice }) => {
-        const result1 = await alice.app.callSync("blog", "create_tagged_post", {
-          content: "Achieving a light and fluffy texture",
-          tag: "muffins"
-        })
-        t.ok(result1.Err)  // the linking of the entry should fail because `muffins` is the banned tag
-      
-        const getResult = await alice.app.callSync("blog", "my_posts", {})
-        t.equal(getResult.Ok.links.length, 0)
-      })
+    
+    
 
-      scenario('create_post with bad reply to', async (s, t, { alice }) => {
-        const content = "Holo world"
-        const in_reply_to = "bad"
-        const params = { content, in_reply_to }
-        const result = await alice.app.call("blog", "create_post", params)
-      
-        // bad in_reply_to is an error condition
-        t.ok(result.Err)
-        t.notOk(result.Ok)
-        const error = JSON.parse(result.Err.Internal)
-        t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
-        t.ok(error.file)
-        t.ok(error.line)
-      })
-
-      scenario('posts_by_agent', async (s, t, { alice }) => {
-
-        const agent = "Bob"
-        const params = { agent }
-      
-        const result = await alice.app.call("blog", "posts_by_agent", params)
-      
-        t.deepEqual(result.Ok, { links: [] })
-      })
-
-      scenario('my_posts', async (s, t, { alice }) => {
-
-        await alice.app.callSync("blog", "create_post",
-          { "content": "Holo world", "in_reply_to": "" }
-        )
-      
-        await alice.app.callSync("blog", "create_post",
-          { "content": "Another post", "in_reply_to": "" }
-        )
-      
-        const result = await alice.app.call("blog", "my_posts", {})
-      
-        t.equal(result.Ok.links.length, 2)
-      })
-
-      scenario('my_posts_immediate_timeout', async (s, t, { alice }) => {
-
-        await alice.app.call("blog", "create_post",
-          { "content": "Holo world", "in_reply_to": "" }
-        )
-      
-        const result = await alice.app.call("blog", "my_posts_immediate_timeout", {})
-      
-        t.ok(result.Err)
-        console.log(result)
-        t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
-      })
       
       scenario('get_sources_from_link', async (s, t, { alice, bob }) => {
       

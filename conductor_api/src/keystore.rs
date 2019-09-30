@@ -652,7 +652,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_keystore_add_random_seed() {
+    fn test_keystore_add_seed_functions() {
         let mut keystore = new_test_keystore(random_test_passphrase());
 
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
@@ -663,6 +663,13 @@ pub mod tests {
                 "identifier already exists".to_string()
             ))
         );
+
+        let seed = [0u8; SEED_SIZE];
+        assert_eq!(keystore.add_seed("my_custom_seed", &seed), Ok(()));
+        assert_eq!(keystore.list(), vec![
+            "my_root_seed".to_string(),
+            "my_custom_seed".to_string()
+        ]);
     }
 
     #[test]

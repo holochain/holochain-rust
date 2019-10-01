@@ -663,13 +663,28 @@ pub mod tests {
                 "identifier already exists".to_string()
             ))
         );
-
-        let seed = [0u8; SEED_SIZE];
+        // Confirm we can round-trip a specific seed value through the Keystore
+        let seed: [u8; SEED_SIZE] = [
+            0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+           10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+           20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+           30, 31
+        ];
         assert_eq!(keystore.add_seed("my_custom_seed", &seed), Ok(()));
         assert_eq!(keystore.list(), vec![
+            "my_custom_seed".to_string(),
             "my_root_seed".to_string(),
-            "my_custom_seed".to_string()
         ]);
+
+        let got_seed = match *keystore.get("my_custom_seed").unwrap().lock().unwrap() {
+            Secret::Seed(ref mut buf) => {
+                let lock = buf.read_lock();
+                format!("{:?}", *lock)
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(got_seed,
+                   "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]");
     }
 
     #[test]

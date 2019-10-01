@@ -23,7 +23,10 @@ const dumbWaiter = interval => (run, f) => run(s =>
 
 let transport_config = 'memory';
 let middleware = combine(
-  singleConductor,  // by default, combine conductors into a single conductor for in-memory networking
+  // by default, combine conductors into a single conductor for in-memory networking
+  // NB: this middleware makes a really huge difference! and it's not very well tested,
+  // as of Oct 1 2019. So, keep an eye out.
+  singleConductor,
   callSyncMiddleware,
   tapeExecutor(require('tape')),
 );

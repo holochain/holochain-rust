@@ -57,7 +57,7 @@ module.exports = scenario => {
 
       })
 
-      scenario.only('update_post', async (s, t) => {
+      scenario('update_post', async (s, t) => {
       const { alice, bob } = await s.players({alice: one, bob: one}, true)
         const content = "Hello Holo world 123"
         const in_reply_to = null
@@ -212,19 +212,30 @@ module.exports = scenario => {
 
       scenario('get sources', async (s, t) => {
         const { alice, bob, carol } = await s.players({ alice: one, bob: one, carol: one }, true)
+
         const params = { content: 'whatever', in_reply_to: null }
+
         const address = await alice.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
         const address1 = await alice.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
         const address2 = await bob.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
         const address3 = await carol.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
+
         t.equal(address, address1)
         t.equal(address, address2)
         t.equal(address, address3)
-        const sources1 = (await alice.call('app', 'blog', 'get_sources', { address })).Ok.sort()
-        const sources2 = (await bob.call('app', 'blog', 'get_sources', { address })).Ok.sort()
-        const sources3 = (await carol.call('app', 'blog', 'get_sources', { address })).Ok.sort()
+
+        const sources1 = await alice.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())
+        const sources2 = await bob.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())
+        const sources3 = await carol.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())
+
         // NB: alice shows up twice because she published the same entry twice
-        const expected = [alice.info('app').agentAddress, alice.info('app').agentAddress, bob.info('app').agentAddress, carol.info('app').agentAddress].sort()
+        const expected = [
+          alice.info('app').agentAddress,
+          alice.info('app').agentAddress,
+          bob.info('app').agentAddress,
+          carol.info('app').agentAddress
+        ].sort()
+
         t.deepEqual(sources1, expected)
         t.deepEqual(sources2, expected)
         t.deepEqual(sources3, expected)

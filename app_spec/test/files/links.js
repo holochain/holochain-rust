@@ -52,11 +52,11 @@ module.exports = scenario => {
         t.equal(alice_agent_posts_expect_empty.Ok.links.length, 0);
 
         //different chain hash up to this point so we should be able to create a link with the same data
-        await alice.callSync("app", "simple", "create_link",{ "base": alice.info('app').agentId, "target": "Posty" })
+        await alice.callSync("app", "simple", "create_link", { "base": alice.info('app').agentAddress, "target": "Posty" })
 
         //get posts as Alice and as Bob
-        const alice_posts_not_empty = await alice.call("app", "simple", "get_my_links",{ "base": alice.info('app').agentId, "status_request" : "Live" })
-        const bob_posts_not_empty = await bob.call("app", "simple", "get_my_links",{ "base": alice.info('app').agentId, "status_request" : "Live" })
+        const alice_posts_not_empty = await alice.call("app", "simple", "get_my_links", { "base": alice.info('app').agentAddress, "status_request" : "Live" })
+        const bob_posts_not_empty = await bob.call("app", "simple", "get_my_links", { "base": alice.info('app').agentAddress, "status_request" : "Live" })
 
          //expect 1 post
         t.ok(alice_posts_not_empty.Ok)

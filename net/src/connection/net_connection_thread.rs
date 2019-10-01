@@ -15,6 +15,9 @@ use std::{
 
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
+const TICK_SLEEP_MIN_MS: u64 = 100;
+const TICK_SLEEP_MAX_MS: u64 = 10_000;
+
 /// Struct for holding a network connection running on a separate thread.
 /// It is itself a NetSend, and spawns a NetWorker.
 pub struct NetConnectionThread {
@@ -60,7 +63,7 @@ impl NetConnectionThread {
                 .expect("Sending endpoint address should work.");
             drop(send_endpoint);
             // Loop as long owner wants to
-            let mut sleep_duration_us = 100_u64;
+            let mut sleep_duration_ms = TICK_SLEEP_MIN_MS;
             while can_keep_running_child.load(Ordering::Relaxed) {
                 // Check if we received something from parent (NetConnectionThread::send())
                 let mut did_something = false;
@@ -92,15 +95,15 @@ impl NetConnectionThread {
 
                 // Increase sleep duration if nothing was received or sent
                 if did_something {
-                    sleep_duration_us = 100_u64;
+                    sleep_duration_ms = TICK_SLEEP_MIN_MS;
                 } else {
-                    sleep_duration_us *= 2_u64;
-                    if sleep_duration_us > 10_000_u64 {
-                        sleep_duration_us = 10_000_u64;
+                    sleep_duration_ms *= 2_u64;
+                    if sleep_duration_ms > TICK_SLEEP_MAX_MS {
+                        sleep_duration_ms = TICK_SLEEP_MAX_MS;
                     }
                 }
                 // Sleep
-                thread::sleep(time::Duration::from_micros(sleep_duration_us));
+                thread::sleep(time::Duration::from_millis(sleep_duration_ms));
             }
             // Stop the worker
             worker.stop().unwrap_or_else(|e| {

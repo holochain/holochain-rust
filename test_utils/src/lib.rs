@@ -446,7 +446,9 @@ pub fn start_holochain_instance<T: Into<String>>(
         "create_and_link_tagged_entry_bad_link",
         "link_tag_validation",
         "get_entry",
-        "create_priv_entry"
+        "create_priv_entry",
+        "commit_test_entry",
+        "update_test_entry"
 
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);

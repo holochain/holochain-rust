@@ -10,7 +10,7 @@ extern crate serde_json;
 extern crate hdk;
 extern crate holochain_wasm_utils;
 
-use hdk::error::ZomeApiResult;
+use hdk::error::{ZomeApiError, ZomeApiResult};
 
 use holochain_core_types::{
     entry::Entry,
@@ -354,6 +354,37 @@ fn can_get_entry_bad() {
     assert!(result.is_ok(), "result = {:?}", result);
     let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
+}
+
+#[test]
+fn update_same_entry_bad() {
+    let (mut hc, _, _) = start_holochain_instance("update_same_entry_bad", "alice");
+    let result = make_test_call(&mut hc, "commit_test_entry", r#"{ "content": "test"}"#);
+    println!("\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let call_result = result
+        .clone()
+        .expect("Could not wait for condition as result is malformed")
+        .to_string();
+    let expected_result: ZomeApiResult<Address> =
+        serde_json::from_str::<ZomeApiResult<Address>>(&call_result)
+            .expect("Coudl not deserialize value");
+    let update_string = format!(
+        r#"{{ "content": "test","old_entry_address" : "{}"}}"#,
+        expected_result.unwrap()
+    );
+    let result = make_test_call(&mut hc, "update_test_entry", &update_string);
+    let call_result = result
+        .clone()
+        .expect("Could not wait for condition as result is malformed")
+        .to_string();
+    let expected_result: ZomeApiResult<()> =
+        serde_json::from_str::<ZomeApiResult<()>>(&call_result)
+            .expect("Coudl not deserialize value");
+    assert_eq!(
+        ZomeApiError::Internal("Workflow failed".to_string()),
+        expected_result.unwrap_err()
+    );
 }
 
 #[test]

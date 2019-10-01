@@ -691,6 +691,31 @@ pub fn handle_get_entry(address:Address) -> ZomeApiResult<Option<Entry>>
     hdk::get_entry(&address)
 }
 
+pub fn handle_commit_test_entry(content:String) ->ZomeApiResult<Address>
+{
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content.into()
+        }
+        .into(),
+    );
+    hdk::commit_entry(&test_entry_to_create)
+}
+
+pub fn handle_commit_update_test_entry(content : String,old_entry_address : Address) ->ZomeApiResult<()>
+{
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content.into()
+        }
+        .into(),
+    );
+    hdk::update_entry(test_entry_to_create,&old_entry_address)?;
+    Ok(())
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -1028,6 +1053,20 @@ define_zome! {
             inputs : |tag:Option<String>,status : Option<LinksStatusRequestKind>|,
             outputs : |result : ZomeApiResult<GetLinksResult>|,
             handler : handle_my_entries_by_tag
+        }
+
+        commit_test_entry : 
+        {
+            inputs :|content : String|,
+            outputs : |result : ZomeApiResult<Address>|,
+            handler : handle_commit_test_entry
+        }
+
+        update_test_entry : 
+        {
+            inputs :   |content : String,old_entry_address : Address|,
+            outputs : |result : ZomeApiResult<()>|,
+            handler : handle_commit_update_test_entry
         }
 
         // check_sys_entry_address: {

@@ -48,9 +48,8 @@ module.exports = scenario => {
       
         const updateParamsV2 = { post_address: createResult.Ok, new_content: "Hello Holo world 321" }
         const UpdateResultV2 = await bob.app.callSync("blog", "update_post", updateParamsV2)
-        t.deepEqual(JSON.parse(UpdateResultV2.Err.Internal).kind.ValidationFailed, "Trying to modify with same data");
-      
-      
+        t.deepEqual(UpdateResultV2.Err, { Internal: 'Workflow failed' });
+    
       })
       
       scenario('update_post', async (s, t, { alice, bob }) => {

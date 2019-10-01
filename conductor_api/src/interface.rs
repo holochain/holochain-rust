@@ -129,11 +129,12 @@ impl ConductorApiBuilder {
 
         self.io.add_method("call", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+            let public_id_str = PublicInstanceIdentifier::from(instance_id);
             let id = instance_ids_map
-                .get(&PublicInstanceIdentifier::from(public_id_str))
+                .get(&public_id_str)
                 .ok_or_else(|| jsonrpc_core::Error::invalid_params(
-                    "instance identifier invalid",
+                    format!("instance identifier invalid: {:?}", public_id_str)
                 ))?;
             let instance = instances
                 .get(id)

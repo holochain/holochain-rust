@@ -164,9 +164,9 @@ fn interface_configuration(
     interface_type: &str,
     port: u16,
 ) -> DefaultResult<InterfaceConfiguration> {
-    let driver = if interface_type == &String::from("websocket") {
+    let driver = if interface_type == "websocket" {
         InterfaceDriver::Websocket { port }
-    } else if interface_type == &String::from("http") {
+    } else if interface_type == "http" {
         InterfaceDriver::Http { port }
     } else {
         return Err(format_err!("unknown interface type: {}", interface_type));

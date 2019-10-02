@@ -2427,23 +2427,23 @@ pub mod tests {
     fn test_start_stop_instance() {
         let mut conductor = test_conductor(10051, 10052);
         assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
+            conductor.start_instance("test-instance-1"),
             Ok(()),
         );
         assert_eq!(
-            conductor.start_instance(&String::from("test-instance-1")),
+            conductor.start_instance("test-instance-1"),
             Err(HolochainInstanceError::InstanceAlreadyActive),
         );
         assert_eq!(
-            conductor.start_instance(&String::from("non-existant-id")),
+            conductor.start_instance("non-existant-id"),
             Err(HolochainInstanceError::NoSuchInstance),
         );
         assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
+            conductor.stop_instance("test-instance-1"),
             Ok(())
         );
         assert_eq!(
-            conductor.stop_instance(&String::from("test-instance-1")),
+            conductor.stop_instance("test-instance-1"),
             Err(HolochainInstanceError::InstanceNotActiveYet),
         );
     }

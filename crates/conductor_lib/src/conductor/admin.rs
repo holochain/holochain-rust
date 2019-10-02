@@ -1103,9 +1103,9 @@ id = 'new-dna'"#,
             .expect("Could not install DNA");
 
         let add_result = conductor.add_instance(
-            &String::from("new-instance"),
-            &String::from("new-dna"),
-            &String::from("test-agent-1"),
+            "new-instance",
+            "new-dna",
+            "test-agent-1",
         );
 
         assert_eq!(add_result, Ok(()));
@@ -1167,7 +1167,7 @@ id = 'new-instance'"#,
         let mut conductor = create_test_conductor(test_name, 3002);
 
         assert_eq!(
-            conductor.remove_instance(&String::from("test-instance-1")),
+            conductor.remove_instance("test-instance-1"),
             Ok(()),
         );
 
@@ -1215,7 +1215,7 @@ type = 'websocket'"#,
         let test_name = "test_uninstall_dna";
         let mut conductor = create_test_conductor(test_name, 3003);
 
-        assert_eq!(conductor.uninstall_dna(&String::from("test-dna")), Ok(()),);
+        assert_eq!(conductor.uninstall_dna("test-dna"), Ok(()),);
 
         let mut config_contents = String::new();
         let mut file =
@@ -1316,7 +1316,7 @@ type = 'http'"#,
             .is_some());
 
         assert_eq!(
-            conductor.remove_interface(&String::from("websocket interface")),
+            conductor.remove_interface("websocket interface"),
             Ok(())
         );
 
@@ -1386,17 +1386,17 @@ type = 'http'"#,
 
         assert_eq!(
             conductor.add_instance(
-                &String::from("new-instance-2"),
-                &String::from("new-dna"),
-                &String::from("test-agent-1")
+                "new-instance-2",
+                "new-dna",
+                "test-agent-1",
             ),
             Ok(())
         );
 
         assert_eq!(
             conductor.add_instance_to_interface(
-                &String::from("websocket interface"),
-                &String::from("new-instance-2"),
+                "websocket interface",
+                "new-instance-2",
                 &None,
             ),
             Ok(())
@@ -1483,8 +1483,8 @@ type = 'websocket'"#,
 
         assert_eq!(
             conductor.remove_instance_from_interface(
-                &String::from("websocket interface"),
-                &String::from("test-instance-1")
+                "websocket interface",
+                "test-instance-1"
             ),
             Ok(())
         );
@@ -1579,7 +1579,7 @@ public_address = '{}'"#,
         let mut conductor = create_test_conductor(test_name, 3010);
 
         assert_eq!(
-            conductor.remove_agent(&String::from("test-agent-2")),
+            conductor.remove_agent("test-agent-2"),
             Ok(()),
         );
 
@@ -1666,8 +1666,8 @@ handle = 'my favourite instance!'"#,
 
         assert_eq!(
             conductor.remove_bridge(
-                &String::from("test-instance-1"),
-                &String::from("test-instance-2")
+                "test-instance-1",
+                "test-instance-2"
             ),
             Ok(()),
         );

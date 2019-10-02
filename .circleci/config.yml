@@ -6,12 +6,12 @@ jobs:
  build:
   docker:
    - image: holochain/holochain-rust:latest
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
    - run:
        name: DynamoDB
-       command: nix-shell --run dynamodb-memory -port 8001
+       command: nix-shell --run "dynamodb-memory -port 8001"
        background: true
    - run: nix-shell --run hc-rust-test
 
@@ -133,7 +133,7 @@ jobs:
    - checkout
    - run:
        name: DynamoDB
-       command: nix-shell --run dynamodb-memory -port 8002
+       command: nix-shell --run "dynamodb-memory -port 8002"
        background: true
    - run:
        name: app spec cluster tests

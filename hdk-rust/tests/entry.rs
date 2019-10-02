@@ -23,12 +23,12 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult,StatusRequestKind};
+use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult, StatusRequestKind};
 use std::path::PathBuf;
 use test_utils::{
     empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
-    example_valid_entry_params, example_valid_entry_result,
-    make_test_call, start_holochain_instance, wait_for_zome_result,
+    example_valid_entry_params, example_valid_entry_result, make_test_call,
+    start_holochain_instance, wait_for_zome_result,
 };
 
 //
@@ -375,10 +375,8 @@ fn can_commit_entry() {
 }
 #[test]
 fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _, _) = start_holochain_instance(
-        "can_return_empty_string_as_validation_fail",
-        "alice"
-    );
+    let (mut hc, _, _) =
+        start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(

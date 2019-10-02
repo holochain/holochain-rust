@@ -305,9 +305,6 @@ impl NetWorker for Sim1hWorker {
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
         self.num_ticks += 1;
-        if self.num_ticks % 10 == 0 {
-            print!("10ticks ");
-        }
         if self.num_ticks % 100 == 0 {
             io::stdout().flush()?;
         }

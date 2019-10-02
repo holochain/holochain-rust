@@ -242,7 +242,7 @@ impl Keystore {
         })?;
 
         self.cache
-            .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
+            .insert(id_str.to_string(), Arc::new(Mutex::new(secret)));
         Ok(())
     }
 
@@ -269,7 +269,7 @@ impl Keystore {
                 key.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone())
             }
         }?;
-        self.secrets.insert(id_str.clone(), blob);
+        self.secrets.insert(id_str.to_string(), blob);
         Ok(())
     }
 

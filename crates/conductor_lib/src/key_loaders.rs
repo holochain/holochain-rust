@@ -33,13 +33,13 @@ pub fn test_keystore_loader() -> KeyLoader {
 /// Create a deterministic test key from the SHA256 of the given name string.
 pub fn test_keystore(agent_name: &str) -> Keystore {
     let mut keystore = Keystore::new(
-        mock_passphrase_manager(agent_name.clone()),
+        mock_passphrase_manager(agent_name.to_string()),
         test_hash_config(),
     )
     .unwrap();
 
     // Create seed from name
-    let mut name = SecBuf::with_insecure_from_string(agent_name.clone());
+    let mut name = SecBuf::with_insecure_from_string(agent_name.to_string());
     let mut seed = SecBuf::with_insecure(SEED_SIZE);
     sha256(&mut name, &mut seed).expect("Could not hash test agent name");
 

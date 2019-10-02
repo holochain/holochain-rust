@@ -1141,7 +1141,7 @@ impl Conductor {
             }
 
             self.agent_keys
-                .insert(agent_id.clone(), Arc::new(Mutex::new(keystore)));
+                .insert(agent_id.to_string(), Arc::new(Mutex::new(keystore)));
         }
         let keystore_ref = self.agent_keys.get(agent_id).unwrap();
         Ok(keystore_ref.clone())

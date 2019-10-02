@@ -197,7 +197,7 @@ impl ConductorAdmin for Conductor {
         self.config = new_config;
         let instance = self.instantiate_from_config(id)?;
         self.instances
-            .insert(id.clone(), Arc::new(RwLock::new(instance)));
+            .insert(id.to_string(), Arc::new(RwLock::new(instance)));
         self.save_config()?;
         let _ = self.start_signal_multiplexer();
         Ok(())
@@ -313,7 +313,7 @@ impl ConductorAdmin for Conductor {
             .map(|mut interface| {
                 if interface.id == *interface_id {
                     interface.instances.push(InstanceReferenceConfiguration {
-                        id: instance_id.clone(),
+                        id: instance_id.to_string(),
                         alias: alias.clone(),
                     });
                 }

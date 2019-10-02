@@ -11,7 +11,7 @@ jobs:
    - checkout
    - run:
        name: DynamoDB
-       command: dynamodb-memory -port 8001
+       command: nix-shell --run dynamodb-memory -port 8001
        background: true
    - run: nix-shell --run hc-rust-test
 
@@ -75,7 +75,7 @@ jobs:
    - checkout
    - run:
        name: DynamoDB
-       command: dynamodb-memory
+       command: nix-shell --run dynamodb-memory
        background: true
    - run:
        name: app spec tests
@@ -133,7 +133,7 @@ jobs:
    - checkout
    - run:
        name: DynamoDB
-       command: dynamodb-memory -port 8002
+       command: nix-shell --run dynamodb-memory -port 8002
        background: true
    - run:
        name: app spec cluster tests

@@ -370,7 +370,7 @@ impl Conductor {
         }
     }
 
-    pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
+    pub fn stop_interface_by_id(&mut self, id: &str) -> Result<(), HolochainError> {
         {
             let kill_switch = self.interface_threads.get(id).ok_or_else(|| {
                 HolochainError::ErrorGeneric(format!("Interface {} not found.", id))
@@ -386,7 +386,7 @@ impl Conductor {
         Ok(())
     }
 
-    pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
+    pub fn start_interface_by_id(&mut self, id: &str) -> Result<(), String> {
         notify(format!("Start interface by id: {}", id));
         self.config
             .interface_by_id(id)
@@ -406,7 +406,7 @@ impl Conductor {
         Ok(())
     }
 
-    pub fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+    pub fn start_instance(&mut self, id: &str) -> Result<(), HolochainInstanceError> {
         let mut instance = self.instances.get(id)?.write().unwrap();
         notify(format!("Starting instance \"{}\"...", id));
 
@@ -448,7 +448,7 @@ impl Conductor {
         instance.start()
     }
 
-    pub fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+    pub fn stop_instance(&mut self, id: &str) -> Result<(), HolochainInstanceError> {
         let instance = self.instances.get(id)?;
         notify(format!("Stopping instance \"{}\"...", id));
         instance.write().unwrap().stop()
@@ -732,7 +732,7 @@ impl Conductor {
 
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
-    pub fn instantiate_from_config(&mut self, id: &String) -> Result<Holochain, String> {
+    pub fn instantiate_from_config(&mut self, id: &str) -> Result<Holochain, String> {
         self.config.check_consistency(&mut self.dna_loader)?;
 
         self.config
@@ -994,7 +994,7 @@ impl Conductor {
     /// Meant to be used in conductor executable to first try to load all keys (which will trigger
     /// passphrase prompts) before bootstrapping the whole config and have prompts appear
     /// in between other initialization output.
-    pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
+    pub fn check_load_key_for_agent(&mut self, agent_id: &str) -> Result<(), String> {
         if let Some(true) = self
             .config
             .agent_by_id(agent_id)
@@ -1094,7 +1094,7 @@ impl Conductor {
     /// to do so.
     pub fn get_keystore_for_agent(
         &mut self,
-        agent_id: &String,
+        agent_id: &str,
     ) -> Result<Arc<Mutex<Keystore>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
@@ -1152,7 +1152,7 @@ impl Conductor {
     /// to do so.
     pub fn get_keybundle_for_agent(
         &mut self,
-        agent_id: &String,
+        agent_id: &str,
     ) -> Result<Arc<Mutex<KeyBundle>>, String> {
         let keystore = self.get_keystore_for_agent(agent_id)?;
         let mut keystore = keystore.lock().unwrap();

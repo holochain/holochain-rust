@@ -582,7 +582,7 @@ impl Configuration {
 
     /// Removes the instance given by id and all mentions of it in other elements so
     /// that the config is guaranteed to be valid afterwards if it was before.
-    pub fn save_remove_instance(mut self, id: &String) -> Self {
+    pub fn save_remove_instance(mut self, id: &str) -> Self {
         self.instances = self
             .instances
             .into_iter()

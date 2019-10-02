@@ -66,7 +66,7 @@ pub struct LinkDefinitionPath {
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
 pub fn find_link_definition_by_type(
-    link_type: &String,
+    link_type: &str,
     context: &Arc<Context>,
 ) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");

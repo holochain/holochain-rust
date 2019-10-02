@@ -37,7 +37,7 @@ use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
-fn is_my_dna(my_dna_address: &String, dna_address: &String) -> bool {
+fn is_my_dna(my_dna_address: &str, dna_address: &str) -> bool {
     my_dna_address == dna_address
 }
 

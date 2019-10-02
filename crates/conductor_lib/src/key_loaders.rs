@@ -31,7 +31,7 @@ pub fn test_keystore_loader() -> KeyLoader {
 }
 
 /// Create a deterministic test key from the SHA256 of the given name string.
-pub fn test_keystore(agent_name: &String) -> Keystore {
+pub fn test_keystore(agent_name: &str) -> Keystore {
     let mut keystore = Keystore::new(
         mock_passphrase_manager(agent_name.clone()),
         test_hash_config(),

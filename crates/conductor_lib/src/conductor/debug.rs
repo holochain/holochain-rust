@@ -5,11 +5,11 @@ use holochain_persistence_api::cas::content::Address;
 
 pub trait ConductorDebug {
     fn running_instances(&self) -> Result<Vec<String>, HolochainError>;
-    fn state_dump_for_instance(&self, instance_id: &String) -> Result<StateDump, HolochainError>;
+    fn state_dump_for_instance(&self, instance_id: &str) -> Result<StateDump, HolochainError>;
     fn get_type_and_content_from_cas(
         &self,
         address: &Address,
-        instance_id: &String,
+        instance_id: &str,
     ) -> Result<(String, String), HolochainError>;
 }
 
@@ -18,7 +18,7 @@ impl ConductorDebug for Conductor {
         Ok(self.instances.keys().cloned().collect())
     }
 
-    fn state_dump_for_instance(&self, instance_id: &String) -> Result<StateDump, HolochainError> {
+    fn state_dump_for_instance(&self, instance_id: &str) -> Result<StateDump, HolochainError> {
         let hc = self.instances.get(instance_id)?;
         Ok(hc.read().unwrap().get_state_dump()?)
     }
@@ -26,7 +26,7 @@ impl ConductorDebug for Conductor {
     fn get_type_and_content_from_cas(
         &self,
         address: &Address,
-        instance_id: &String,
+        instance_id: &str,
     ) -> Result<(String, String), HolochainError> {
         let hc = self.instances.get(instance_id)?;
         Ok(hc.read().unwrap().get_type_and_content_from_cas(address)?)

@@ -33,27 +33,27 @@ pub trait ConductorAdmin {
         properties: Option<&serde_json::Value>,
         uuid: Option<String>,
     ) -> Result<HashString, HolochainError>;
-    fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn uninstall_dna(&mut self, id: &str) -> Result<(), HolochainError>;
     fn add_instance(
         &mut self,
-        id: &String,
-        dna_id: &String,
-        agent_id: &String,
+        id: &str,
+        dna_id: &str,
+        agent_id: &str,
     ) -> Result<(), HolochainError>;
-    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn remove_instance(&mut self, id: &str) -> Result<(), HolochainError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration)
         -> Result<(), HolochainError>;
-    fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn remove_interface(&mut self, id: &str) -> Result<(), HolochainError>;
     fn add_instance_to_interface(
         &mut self,
-        interface_id: &String,
-        instance_id: &String,
+        interface_id: &str,
+        instance_id: &str,
         alias: &Option<String>,
     ) -> Result<(), HolochainError>;
     fn remove_instance_from_interface(
         &mut self,
-        interface_id: &String,
-        instance_id: &String,
+        interface_id: &str,
+        instance_id: &str,
     ) -> Result<(), HolochainError>;
     fn add_agent(
         &mut self,
@@ -61,12 +61,12 @@ pub trait ConductorAdmin {
         name: String,
         holo_remote_key: Option<&str>,
     ) -> Result<String, HolochainError>;
-    fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn remove_agent(&mut self, id: &str) -> Result<(), HolochainError>;
     fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError>;
     fn remove_bridge(
         &mut self,
-        caller_id: &String,
-        callee_id: &String,
+        caller_id: &str,
+        callee_id: &str,
     ) -> Result<(), HolochainError>;
 }
 
@@ -141,7 +141,7 @@ impl ConductorAdmin for Conductor {
     /// Also removes all instances and their mentions from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
-    fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn uninstall_dna(&mut self, id: &str) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.dnas = new_config
             .dnas
@@ -183,9 +183,9 @@ impl ConductorAdmin for Conductor {
 
     fn add_instance(
         &mut self,
-        id: &String,
-        dna_id: &String,
-        agent_id: &String,
+        id: &str,
+        dna_id: &str,
+        agent_id: &str,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         let storage_path = self.instance_storage_dir_path().join(id.clone());
@@ -211,7 +211,7 @@ impl ConductorAdmin for Conductor {
     /// Also removes all mentions of that instance from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
-    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_instance(&mut self, id: &str) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
         new_config = new_config.save_remove_instance(id);
@@ -254,7 +254,7 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
-    fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_interface(&mut self, id: &str) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
         if !new_config
@@ -287,8 +287,8 @@ impl ConductorAdmin for Conductor {
 
     fn add_instance_to_interface(
         &mut self,
-        interface_id: &String,
-        instance_id: &String,
+        interface_id: &str,
+        instance_id: &str,
         alias: &Option<String>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
@@ -339,8 +339,8 @@ impl ConductorAdmin for Conductor {
 
     fn remove_instance_from_interface(
         &mut self,
-        interface_id: &String,
-        instance_id: &String,
+        interface_id: &str,
+        instance_id: &str,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -460,7 +460,7 @@ impl ConductorAdmin for Conductor {
         Ok(public_address)
     }
 
-    fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_agent(&mut self, id: &str) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if !new_config.agents.iter().any(|i| i.id == *id) {
             return Err(HolochainError::ErrorGeneric(format!(
@@ -540,8 +540,8 @@ impl ConductorAdmin for Conductor {
 
     fn remove_bridge(
         &mut self,
-        caller_id: &String,
-        callee_id: &String,
+        caller_id: &str,
+        callee_id: &str,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if !new_config

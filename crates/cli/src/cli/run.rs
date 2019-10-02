@@ -74,7 +74,7 @@ pub fn hc_run_configuration(
     port: u16,
     persist: bool,
     networked: bool,
-    interface_type: &String,
+    interface_type: &str,
     logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
@@ -161,7 +161,7 @@ fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguratio
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 fn interface_configuration(
-    interface_type: &String,
+    interface_type: &str,
     port: u16,
 ) -> DefaultResult<InterfaceConfiguration> {
     let driver = if interface_type == &String::from("websocket") {

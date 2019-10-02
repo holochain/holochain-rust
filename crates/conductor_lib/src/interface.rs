@@ -1238,7 +1238,7 @@ pub mod tests {
 
     /// checks that the response is a valid JSON string containing a `result` field which is stringified JSON
     ///
-    fn unwrap_response_if_valid(response_str: &String) -> String {
+    fn unwrap_response_if_valid(response_str: &str) -> String {
         let result = &serde_json::from_str::<serde_json::Value>(response_str)
             .expect("Response not valid JSON")["result"];
         result.to_string()

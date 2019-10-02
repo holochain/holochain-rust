@@ -73,7 +73,10 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       - name: DynamoDB
+       - command: dynamodb-memory
+       - background: true
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h

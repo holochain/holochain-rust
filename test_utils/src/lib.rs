@@ -482,9 +482,9 @@ pub fn start_holochain_instance<T: Into<String>>(
             }
             else
             {
-                TestNodeConfig::Memory
+                TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
             }
-    }).unwrap_or(TestNodeConfig::Memory);
+    }).unwrap_or(TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH))
     let (context, test_logger, signal_recieve) = create_test_context_with_logger_and_signal(
         &dna.uuid,
         Some(&agent_name.into()),

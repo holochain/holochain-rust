@@ -62,7 +62,7 @@ use wabt::Wat2Wasm;
 
 lazy_static!
 {
-    pub static ref DYNAMO_DB_LOCAL_TEST_HOST_PATH: &'static str = "http://localhost:8000";
+    pub static ref DYNAMO_DB_LOCAL_TEST_HOST_PATH: &'static str = "http://localhost:8001";
     
   
 }

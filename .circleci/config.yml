@@ -9,6 +9,10 @@ jobs:
   resource_class: large
   steps:
    - checkout
+   - run:
+       - name: DynamoDB
+       - command: dynamodb-memory -port 8001
+       - background: true
    - run: nix-shell --run hc-rust-test
 
  fmt:

@@ -63,11 +63,7 @@ pub trait ConductorAdmin {
     ) -> Result<String, HolochainError>;
     fn remove_agent(&mut self, id: &str) -> Result<(), HolochainError>;
     fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError>;
-    fn remove_bridge(
-        &mut self,
-        caller_id: &str,
-        callee_id: &str,
-    ) -> Result<(), HolochainError>;
+    fn remove_bridge(&mut self, caller_id: &str, callee_id: &str) -> Result<(), HolochainError>;
 }
 
 impl ConductorAdmin for Conductor {
@@ -538,11 +534,7 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
-    fn remove_bridge(
-        &mut self,
-        caller_id: &str,
-        callee_id: &str,
-    ) -> Result<(), HolochainError> {
+    fn remove_bridge(&mut self, caller_id: &str, callee_id: &str) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if !new_config
             .bridges

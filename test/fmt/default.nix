@@ -23,7 +23,6 @@ let
   hdk-proc-macros \
   holochain_net \
   holochain_dpki \
-  holochain_test_bin \
   benchmarks
  do
   echo "checking ''${p}"

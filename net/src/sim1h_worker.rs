@@ -42,7 +42,7 @@ pub struct Sim1hWorker {
     dynamo_db_client: Client,
     inbox: Vec<Lib3hClientProtocol>,
     num_ticks: u32,
-    state: Sim1hState,
+    state: Option<Sim1hState>,
 }
 
 impl Sim1hWorker {
@@ -58,8 +58,13 @@ impl Sim1hWorker {
             dynamo_db_client,
             inbox: Vec::new(),
             num_ticks: 0,
-            state: Sim1hState::default(),
+            state: None,
         })
+    }
+
+    fn fail_uninitialized(mut data: GenericResultData) -> NetResult<Lib3hServerProtocol> {
+        data.result_info = Opaque::from("Attempt to use Sim1hState before initialized (before space was joined)");
+        Ok(Lib3hServerProtocol::FailureResult(data))
     }
 
     fn handle_client_message(
@@ -95,9 +100,8 @@ impl Sim1hWorker {
                 //let ClientToLib3h::JoinSpace(space_data)= ClientToLib3h::from(data);
                 let log_context = "ClientToLib3h::JoinSpace";
                 println!("handlingmessage {:?}", log_context);
-                let _ = self
-                    .state
-                    .join_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                let (_, state) = Sim1hState::join_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                self.state = Some(state);
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: space_data.request_id,
                     space_address: space_data.space_address,
@@ -199,46 +203,61 @@ impl Sim1hWorker {
                 let log_context = "ClientToLib3h::QueryEntry";
                 println!("handlingmessage {:?}", log_context);
 
-                // TODO: hook up, use result
-                let _result = self.state.query_entry(
-                    &log_context,
-                    &self.dynamo_db_client,
-                    &query_entry_data,
-                )?;
-                // Ok(result.into())
-                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
+                let generic = GenericResultData {
                     request_id: "".into(),
-                    space_address: query_entry_data.space_address,
-                    to_agent_id: query_entry_data.requester_agent_id,
+                    space_address: query_entry_data.space_address.clone(),
+                    to_agent_id: query_entry_data.requester_agent_id.clone(),
                     result_info: Opaque::new(),
-                }))
+                };
+                match self.state.as_mut() {
+                    Some(state) => {
+                        state.query_entry(
+                            &log_context,
+                            &self.dynamo_db_client,
+                            &query_entry_data,
+                        )?;
+                        Ok(Lib3hServerProtocol::SuccessResult(generic))
+                    },
+                    None => Self::fail_uninitialized(generic)
+                }
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
                 let log_context = "ClientToLib3h::HandleQueryEntryResult";
                 println!("handlingmessage {:?}", log_context);
-                self.state
-                    .handle_query_entry_result(&log_context, &query_entry_result_data);
-                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
-                    request_id: query_entry_result_data.request_id,
-                    space_address: query_entry_result_data.space_address,
-                    to_agent_id: query_entry_result_data.requester_agent_id,
+                let generic = GenericResultData {
+                    request_id: query_entry_result_data.request_id.clone(),
+                    space_address: query_entry_result_data.space_address.clone(),
+                    to_agent_id: query_entry_result_data.requester_agent_id.clone(),
                     result_info: Opaque::new(),
-                }))
+                };
+
+                match self.state.as_mut() {
+                    Some(state) => {
+                        state.handle_query_entry_result(&log_context, &query_entry_result_data);
+                        Ok(Lib3hServerProtocol::SuccessResult(generic))
+                    }
+                    None => Self::fail_uninitialized(generic)
+                }
             }
 
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 println!("handlingmessage {:?}", log_context);
-                self.state
-                    .handle_get_authoring_entry_list_result(&log_context, &entry_list_data);
-                Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
-                    request_id: entry_list_data.request_id,
-                    space_address: entry_list_data.space_address,
-                    to_agent_id: entry_list_data.provider_agent_id,
+                let generic = GenericResultData {
+                    request_id: entry_list_data.request_id.clone(),
+                    space_address: entry_list_data.space_address.clone(),
+                    to_agent_id: entry_list_data.provider_agent_id.clone(),
                     result_info: Opaque::new(),
-                }))
+                };
+                match self.state.as_mut() {
+                    Some(state) => {
+                        state.handle_get_authoring_entry_list_result(&log_context, &entry_list_data);
+                        Ok(Lib3hServerProtocol::SuccessResult(generic))
+                    }
+                    None => Self::fail_uninitialized(generic)
+                }
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
@@ -289,28 +308,29 @@ impl NetWorker for Sim1hWorker {
             io::stdout().flush()?;
         }
         let mut did_something = false;
-        for request in self
-            .state
-            .process_pending_requests_to_client(&self.dynamo_db_client)
-            // .map_err(|err| err.to_string().into())
-            .expect("TODO, map Sim1hError")
-        {
-            debug!("NET>?>CORE {:?}", request);
-            let request = Lib3hServerProtocol::from(request);
-            if let Err(error) = self.handler.handle(Ok(request)) {
-                warn!("Error returned from network handler in Sim1h: {:?}", error);
-            }
+        if let Some(state) = &mut self.state {
+            for request in state
+                .process_pending_requests_to_client(&self.dynamo_db_client)
+                // .map_err(|err| err.to_string().into())
+                .expect("TODO, map Sim1hError")
+            {
+                debug!("NET>?>CORE {:?}", request);
+                let request = Lib3hServerProtocol::from(request);
+                if let Err(error) = self.handler.handle(Ok(request)) {
+                    warn!("Error returned from network handler in Sim1h: {:?}", error);
+                }
 
-            did_something = true;
-        }
-        for response in self.state.process_pending_responses_to_client() {
-            debug!("NET>!>CORE {:?}", response);
-            let response = Lib3hServerProtocol::from(response);
-            if let Err(error) = self.handler.handle(Ok(response)) {
-                warn!("Error returned from network handler in Sim1h: {:?}", error);
+                did_something = true;
             }
+            for response in state.process_pending_responses_to_client() {
+                debug!("NET>!>CORE {:?}", response);
+                let response = Lib3hServerProtocol::from(response);
+                if let Err(error) = self.handler.handle(Ok(response)) {
+                    warn!("Error returned from network handler in Sim1h: {:?}", error);
+                }
 
-            did_something = true;
+                did_something = true;
+            }
         }
 
         let messages = self.inbox.drain(..).collect::<Vec<_>>();

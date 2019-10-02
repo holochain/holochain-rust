@@ -7,6 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -19,7 +20,11 @@ pub async fn custom_send(
     timeout: Timeout,
     context: Arc<Context>,
 ) -> Result<String, HolochainError> {
-    let id = ProcessUniqueId::new().to_string();
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .collect();
+    let id = format!("{}-{}", ProcessUniqueId::new().to_string(), rand_string);
     let direct_message = DirectMessage::Custom(custom_direct_message);
     let direct_message_data = DirectMessageData {
         address: to_agent,

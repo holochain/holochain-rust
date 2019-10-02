@@ -7,7 +7,9 @@ use crate::{
         net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
         net_connection_thread::NetConnectionThread,
         NetResult,
+        
     },
+    in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
     lib3h_worker::Lib3hWorker,
     p2p_config::*,
@@ -72,7 +74,7 @@ impl P2pNetwork {
                         as Box<dyn NetWorker>)
                 })
             }
-            // Create an InMemoryWorker
+            // Create an InMemoryWorker Ghost Engine Worker
             P2pBackendKind::GhostEngineMemory => Box::new(move |h| {
                 let backend_config = match &p2p_config.clone().backend_config {
                     BackendConfig::Memory(config) => config.clone(),
@@ -80,6 +82,11 @@ impl P2pNetwork {
                 };
                 Ok(Box::new(Lib3hWorker::with_memory_transport(h, backend_config.clone())?)
                    as Box<dyn NetWorker>)
+            }),
+
+            // Create an InMemoryWorker
+            P2pBackendKind::LegacyInMemory => Box::new(move |h| {
+                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
             }),
             // Create an Sim1hWorker
             P2pBackendKind::SIM1H => Box::new(move |h| {
@@ -137,7 +144,8 @@ impl P2pNetwork {
         match p2p_config.backend_kind {
             P2pBackendKind::LIB3H |
             P2pBackendKind::GhostEngineMemory |
-            P2pBackendKind::SIM1H => false,
+            P2pBackendKind::SIM1H |
+            P2pBackendKind::LegacyInMemory => false,
             P2pBackendKind::N3H => true
         }
     }

@@ -251,9 +251,9 @@ pub fn create_arbitrary_test_dna() -> Dna {
 #[derive(Clone,Deserialize)]
 pub enum TestNodeConfig
 {
-    MemoryLib3h(Vec<url::Url>),
+    MemoryGhostEngine(Vec<url::Url>),
     Sim1h(&'static str),
-    Memory
+    LegacyInMemory
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -277,8 +277,8 @@ pub fn create_test_context_with_logger_and_signal(
             {
                 let config = match test_config{
                     TestNodeConfig::Sim1h(dynamo_db_path) => P2pConfig::new_with_sim1h_backend(&dynamo_db_path),
-                    TestNodeConfig::MemoryLib3h(boostrap_nodes) => P2pConfig::new_with_memory_lib3h_backend(network_name,boostrap_nodes),
-                    _=>P2pConfig::new_with_sim1h_backend(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
+                    TestNodeConfig::MemoryGhostEngine(boostrap_nodes) => P2pConfig::new_with_memory_lib3h_backend(network_name,boostrap_nodes),
+                    TestNodeConfig::LegacyInMemory=>P2pConfig::new_with_memory_backend(network_name)
                 };
                 builder = builder.with_p2p_config(config);
             }
@@ -476,11 +476,15 @@ pub fn start_holochain_instance<T: Into<String>>(
             {
                 unimplemented!("lib3h configuration should be set up in the env")
             }
-            else
+            else if test_config=="sim1g"
             {
                 TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
             }
-    }).unwrap_or(TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH));
+            else 
+            {
+                TestNodeConfig::LegacyInMemory
+            }
+    }).unwrap_or(TestNodeConfig::LegacyInMemory);
     let (context, test_logger, signal_recieve) = create_test_context_with_logger_and_signal(
         &dna.uuid,
         Some(&agent_name.into()),

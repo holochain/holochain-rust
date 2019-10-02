@@ -14,6 +14,7 @@ pub enum P2pBackendKind {
     N3H,
     LIB3H,
     SIM1H,
+    LegacyInMemory
 }
 
 impl FromStr for P2pBackendKind {
@@ -24,6 +25,7 @@ impl FromStr for P2pBackendKind {
             "N3H" => Ok(P2pBackendKind::N3H),
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
             "SIM1H" => Ok(P2pBackendKind::SIM1H),
+            "LegacyInMemory" =>Ok(P2pBackendKind::LegacyInMemory),
             _ => Err(()),
         }
     }
@@ -36,6 +38,7 @@ impl From<P2pBackendKind> for String {
             P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
             P2pBackendKind::SIM1H => "SIM1H",
+            P2pBackendKind::LegacyInMemory =>"LegacyInMemory"
         })
     }
 }
@@ -55,7 +58,6 @@ impl From<&'static str> for P2pBackendKind {
 //--------------------------------------------------------------------------------------------------
 // P2pConfig
 //--------------------------------------------------------------------------------------------------
-
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub enum BackendConfig {
     Json(serde_json::Value),
@@ -158,7 +160,7 @@ impl P2pConfig {
 
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
-            P2pBackendKind::GhostEngineMemory,
+            P2pBackendKind::LegacyInMemory,
             BackendConfig::Json(Self::memory_backend_json(server_name)),
             None,
         )
@@ -206,7 +208,10 @@ impl P2pConfig {
     }
 
     pub fn new_with_unique_memory_backend() -> Self {
-        Self::new_with_unique_memory_backend_bootstrap_nodes(vec![])
+        Self::new_with_memory_backend(&format!(
+            "memory-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
     }
 
     pub fn new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes: Vec<url::Url>) -> Self {

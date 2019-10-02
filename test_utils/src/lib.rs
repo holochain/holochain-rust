@@ -55,9 +55,17 @@ use std::{
     sync::{Arc, Mutex},
     thread,
     time::Duration,
+    env
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
+
+lazy_static!
+{
+    pub static ref DYNAMO_DB_LOCAL_TEST_HOST_PATH: &'static str = "http://localhost:8000";
+    
+  
+}
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
@@ -240,19 +248,19 @@ pub fn create_arbitrary_test_dna() -> Dna {
     create_test_dna_with_wat("test_zome", Some(wat))
 }
 
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger_with_network_name(
-    agent_name: &str,
-    network_name: Option<&str>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
-    test_context_and_logger_with_bootstrap_nodes(agent_name, network_name, vec![])
+#[derive(Clone,Deserialize)]
+pub enum TestNodeConfig
+{
+    MemoryLib3h(Vec<url::Url>),
+    Sim1h(&'static str),
+    Memory
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger_with_bootstrap_nodes(
+pub fn create_test_context_with_logger_and_signal(
     agent_name: &str,
     network_name: Option<&str>,
-    _bootstrap_nodes: Vec<url::Url>,
+    test_config : TestNodeConfig,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
     let (signal, recieve) = signal_channel();
@@ -265,8 +273,13 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
-            if let Some(_network_name) = network_name {
-                let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
+            if let Some(network_name) = network_name 
+            {
+                let config = match test_config{
+                    TestNodeConfig::Sim1h(dynamo_db_path) => P2pConfig::new_with_sim1h_backend(&dynamo_db_path),
+                    TestNodeConfig::MemoryLib3h(boostrap_nodes) => P2pConfig::new_with_memory_lib3h_backend(network_name,boostrap_nodes),
+                    _=>P2pConfig::new_with_sim1h_backend(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
+                };
                 builder = builder.with_p2p_config(config);
             }
             builder.with_instance_name("test_context_instance").spawn()
@@ -274,44 +287,6 @@ pub fn test_context_and_logger_with_bootstrap_nodes(
         logger,
         recieve,
     )
-}
-
-pub fn test_context_and_logger_with_network_name_and_signal(
-    agent_name: &str,
-    network_name: Option<&str>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
-    let (signal, reciever) = signal_channel();
-    let agent = mock_signing::registered_test_agent(agent_name);
-    let logger = test_logger();
-    (
-        Arc::new({
-            let mut builder = ContextBuilder::new()
-                .with_agent(agent.clone())
-                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
-                .expect("Tempdir must be accessible")
-                .with_conductor_api(mock_signing::mock_conductor_api(agent))
-                .with_signals(signal);
-            if let Some(_) = network_name {
-                let config = P2pConfig::new_with_sim1h_backend("http://localhost:8000");
-                builder = builder.with_p2p_config(config);
-            }
-            builder.with_instance_name("test_context_instance").spawn()
-        }),
-        logger,
-        reciever,
-    )
-}
-
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger(
-    agent_name: &str,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
-    test_context_and_logger_with_network_name(agent_name, None)
-}
-
-pub fn test_context(agent_name: &str) -> Arc<Context> {
-    let (context, _, _) = test_context_and_logger(agent_name);
-    context
 }
 
 /// calculates the native Rust hash
@@ -391,8 +366,7 @@ where
 
 pub fn start_holochain_instance<T: Into<String>>(
     uuid: T,
-    agent_name: T,
-    endpoints: Vec<url::Url>,
+    agent_name: T
 ) -> (Holochain, Arc<Mutex<TestLogger>>, SignalReceiver) {
     // Setup the holochain instance
 
@@ -497,11 +471,24 @@ pub fn start_holochain_instance<T: Into<String>>(
         });
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
-
-    let (context, test_logger, signal_recieve) = test_context_and_logger_with_bootstrap_nodes(
+    let test_config = env::var("INTEGRATION-TEST-CONFIG").map(|test_config|{
+            if test_config =="lib3h"
+            {
+                unimplemented!("lib3h configuration should be set up in the env")
+            }
+            else if test_config =="sim1h"
+            {
+                TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
+            }
+            else
+            {
+                TestNodeConfig::Memory
+            }
+    }).unwrap_or(TestNodeConfig::Memory);
+    let (context, test_logger, signal_recieve) = create_test_context_with_logger_and_signal(
         &dna.uuid,
         Some(&agent_name.into()),
-        endpoints,
+        test_config
     );
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");

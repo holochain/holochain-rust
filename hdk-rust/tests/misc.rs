@@ -15,9 +15,9 @@ use hdk::error::ZomeApiResult;
 
 use holochain_core::signal::{Signal, UserSignal};
 use holochain_core_types::{
-    crud_status::CrudStatus,
-    entry::{entry_type::test_app_entry_type, Entry},
-    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    entry::{entry_type::test_app_entry_type,Entry},
+    error::{ RibosomeEncodedValue, RibosomeEncodingBits},
+    
 };
 
 use holochain_json_api::json::JsonString;
@@ -26,8 +26,8 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksResult};
-use std::{path::PathBuf, thread, time::Duration};
+
+use std::{path::PathBuf};
 use test_utils::{
     example_valid_entry_address, example_valid_entry_params, make_test_call,
     start_holochain_instance, TestEntry,
@@ -212,13 +212,13 @@ pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
 #[test]
 fn can_use_globals() {
-    let (mut hc, _, _) = start_holochain_instance("can_use_globals", "alice", Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("can_use_globals", "alice");
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa"
+            "HcScig9W6jFsqqfdohnIQrED7bJ99aezxvQRx5XMVjvge5p8x7sT4HcP4Bhceuz"
         ))),
         "result = {:?}",
         result
@@ -227,7 +227,7 @@ fn can_use_globals() {
 
 #[test]
 fn can_commit_entry_macro() {
-    let (mut hc, _, _) = start_holochain_instance("can_commit_entry_macro", "alice", Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("can_commit_entry_macro", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -245,7 +245,7 @@ fn can_commit_entry_macro() {
 #[test]
 fn can_invalidate_invalid_commit() {
     let (mut hc, _, _) =
-        start_holochain_instance("can_invalidate_invalid_commit", "alice", Vec::new());
+        start_holochain_instance("can_invalidate_invalid_commit", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -279,7 +279,7 @@ fn can_invalidate_invalid_commit() {
 #[test]
 fn has_populated_validation_data() {
     let (mut hc, _, _) =
-        start_holochain_instance("has_populated_validation_data", "alice", Vec::new());
+        start_holochain_instance("has_populated_validation_data", "alice");
 
     //
     // Add two entries to chain to have something to check ValidationData on
@@ -322,149 +322,11 @@ fn has_populated_validation_data() {
     */
 }
 
-#[test]
-fn can_link_entries() {
-    let (mut hc, _, _) = start_holochain_instance("can_link_entries", "alice", Vec::new());
 
-    let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
-    assert!(result.is_ok(), "\t result = {:?}", result);
-}
-
-#[test]
-fn can_remove_link() {
-    let (mut hc, _, _) = start_holochain_instance("can_remove_link", "alice", Vec::new());
-
-    let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
-    assert!(result.is_ok(), "\t result = {:?}", result);
-}
-
-#[test]
-#[cfg(test)]
-fn can_roundtrip_links() {
-    let (mut hc, _, _) = start_holochain_instance("can_roundtrip_links", "alice", Vec::new());
-    // Create links
-    let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
-    let maybe_address: Result<Address, String> =
-        serde_json::from_str(&String::from(result.unwrap())).unwrap();
-    let entry_address = maybe_address.unwrap();
-
-    // expected results
-    let entry_2 = Entry::App(
-        "testEntryType".into(),
-        TestEntry {
-            stuff: "entry2".into(),
-        }
-        .into(),
-    );
-    let entry_3 = Entry::App(
-        "testEntryType".into(),
-        TestEntry {
-            stuff: "entry3".into(),
-        }
-        .into(),
-    );
-    let entry_address_2 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
-    let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
-
-    let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-        LinksResult {
-            address: entry_address_2.clone(),
-            headers: Vec::new(),
-            tag: "test-tag".into(),
-            status: CrudStatus::Live,
-        },
-        LinksResult {
-            address: entry_address_3.clone(),
-            headers: Vec::new(),
-            tag: "test-tag".into(),
-            status: CrudStatus::Live,
-        },
-    ]));
-    let expected_links = JsonString::from(expected_links);
-
-    let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-        Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
-
-    let expected_links_reversed: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![
-            LinksResult {
-                address: entry_address_3.clone(),
-                headers: Vec::new(),
-                tag: "test-tag".into(),
-                status: CrudStatus::Live,
-            },
-            LinksResult {
-                address: entry_address_2.clone(),
-                headers: Vec::new(),
-                tag: "test-tag".into(),
-                status: CrudStatus::Live,
-            },
-        ]));
-    let expected_links_reversed = JsonString::from(expected_links_reversed);
-
-    let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-        Ok(vec![Ok(entry_3.clone()), Ok(entry_2.clone())]);
-
-    // Polling loop because the links have to get pushed over the in-memory network and then validated
-    // which includes requesting a validation package and receiving it over the in-memory network.
-    // All of that happens asynchronously and takes longer depending on computing resources
-    // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
-    let mut both_links_present = false;
-    let mut tries = 0;
-    let mut result_of_get = JsonString::from_json("{}");
-    while !both_links_present && tries < 10 {
-        tries = tries + 1;
-        // Now get_links on the base and expect both to be there
-        let maybe_result_of_get = make_test_call(
-            &mut hc,
-            "links_roundtrip_get",
-            &format!(r#"{{"address": "{}"}}"#, entry_address),
-        );
-        let maybe_result_of_load = make_test_call(
-            &mut hc,
-            "links_roundtrip_get_and_load",
-            &format!(r#"{{"address": "{}"}}"#, entry_address),
-        );
-
-        assert!(
-            maybe_result_of_get.is_ok(),
-            "maybe_result_of_get = {:?}",
-            maybe_result_of_get
-        );
-        assert!(
-            maybe_result_of_load.is_ok(),
-            "maybe_result_of_load = {:?}",
-            maybe_result_of_load
-        );
-
-        result_of_get = maybe_result_of_get.unwrap();
-        let result_of_load = maybe_result_of_load.unwrap();
-
-        println!(
-            "can_roundtrip_links: result_of_load - try {}:\n {:?}\n expecting:\n {:?}",
-            tries, result_of_load, &expected_entries,
-        );
-
-        let ordering1: bool = result_of_get == expected_links;
-        let entries_ordering1: bool = result_of_load == JsonString::from(expected_entries.clone());
-
-        let ordering2: bool = result_of_get == expected_links_reversed;
-        let entries_ordering2: bool =
-            result_of_load == JsonString::from(expected_entries_reversed.clone());
-
-        both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
-        if !both_links_present {
-            // Wait for links to be validated and propagated
-            thread::sleep(Duration::from_millis(500));
-        }
-    }
-
-    assert!(both_links_present, "result = {:?}", result_of_get);
-}
 
 #[test]
 fn can_check_query() {
-    let (mut hc, _, _) = start_holochain_instance("can_check_query", "alice", Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("can_check_query", "alice");
 
     let result = make_test_call(
         &mut hc,
@@ -483,7 +345,7 @@ fn can_check_query() {
 #[test]
 fn can_check_app_entry_address() {
     let (mut hc, _, _) =
-        start_holochain_instance("can_check_app_entry_address", "alice", Vec::new());
+        start_holochain_instance("can_check_app_entry_address", "alice");
 
     let result = make_test_call(&mut hc, "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -497,7 +359,7 @@ fn can_check_app_entry_address() {
 #[test]
 fn can_check_sys_entry_address() {
     let (mut hc, _, _) =
-        start_holochain_instance("can_check_sys_entry_address", "alice", Vec::new());
+        start_holochain_instance("can_check_sys_entry_address", "alice");
 
     let _result = make_test_call(&mut hc, "check_sys_entry_address", r#"{}"#);
     // TODO
@@ -545,9 +407,11 @@ fn can_check_call_with_args() {
 }
 
 #[test]
+#[cfg(feature = "broken-tests")]
+//lib3h in memory specific test
 fn can_send_and_receive() {
-    let (mut hc, _, _) = start_holochain_instance("can_send_and_receive", "alice", Vec::new());
-    let endpoint = hc
+    let (mut hc, _, _) = start_holochain_instance("can_send_and_receive", "alice");
+    let _endpoint = hc
         .context()
         .expect("context")
         .network()
@@ -559,7 +423,7 @@ fn can_send_and_receive() {
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
 
-    let (mut hc2, _, _) = start_holochain_instance("can_send_and_receive", "bob", vec![endpoint]);
+    let (mut hc2, _, _) = start_holochain_instance("can_send_and_receive", "bob");
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -592,18 +456,18 @@ fn can_send_and_receive() {
 
 #[test]
 fn sleep_smoke_test() {
-    let (mut hc, _, _) = start_holochain_instance("sleep_smoke_test", "alice", Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("sleep_smoke_test", "alice");
     let result = make_test_call(&mut hc, "sleep", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }
 
 #[test]
 fn show_env() {
-    let (mut hc, _, _) = start_holochain_instance("show_env", "alice", Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("show_env", "alice");
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
-    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{{"cap_token":"QmSbEonVd9pmUxQqAS87a6CkdMPUsrjYLshW9eYz3wJkZ1","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]}},"properties":"{{}}"}}}}"#,dna_address);
+    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmSbEonVd9pmUxQqAS87a6CkdMPUsrjYLshW9eYz3wJkZ1","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,dna_address);
     let json_result = Ok(JsonString::from_json(&format));
 
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);
@@ -613,7 +477,7 @@ fn show_env() {
 
 #[test]
 fn test_signal() {
-    let (mut hc, _, signal_receiver) = start_holochain_instance("test_signal", "alice", Vec::new());
+    let (mut hc, _, signal_receiver) = start_holochain_instance("test_signal", "alice");
     let params = r#"{"message":"test message"}"#;
     let result = make_test_call(&mut hc, "emit_signal", &params);
     assert!(result.is_ok());
@@ -634,7 +498,7 @@ fn test_signal() {
 
 #[test]
 fn test_get_entry_properties() {
-    let (mut hc, _, _) = start_holochain_instance("test_get_entry_properties", "alice", Vec::new());
+    let (mut hc, _, _) = start_holochain_instance("test_get_entry_properties", "alice");
     let result = make_test_call(
         &mut hc,
         "get_entry_properties",

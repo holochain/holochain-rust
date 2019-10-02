@@ -157,7 +157,11 @@ impl P2pConfig {
     }
 
     pub fn new_with_memory_backend(server_name: &str) -> Self {
-        Self::new_with_memory_backend_bootstrap_nodes(server_name, vec![])
+        P2pConfig::new(
+            P2pBackendKind::MEMORY,
+            BackendConfig::Json(Self::memory_backend_json(server_name)),
+            None,
+        )
     }
 
     pub fn new_with_sim1h_backend(dynamo_path: &str) -> Self {
@@ -170,7 +174,7 @@ impl P2pConfig {
         )
     }
 
-    pub fn new_with_memory_backend_bootstrap_nodes(
+    pub fn new_with_memory_lib3h_backend(
         server_name: &str,
         bootstrap_nodes: Vec<url::Url>,
     ) -> Self {
@@ -206,7 +210,7 @@ impl P2pConfig {
     }
 
     pub fn new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes: Vec<url::Url>) -> Self {
-        Self::new_with_memory_backend_bootstrap_nodes(
+        Self::new_with_memory_lib3h_backend(
             &format!(
                 "memory-auto-{}",
                 snowflake::ProcessUniqueId::new().to_string()

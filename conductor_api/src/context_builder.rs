@@ -186,7 +186,10 @@ mod tests {
             .with_conductor_api(mock_conductor_api(agent.clone()))
             .spawn();
         assert_eq!(context.agent_id, agent);
-        assert_eq!(P2pBackendKind::LegacyInMemory, context.p2p_config.backend_kind);
+        assert_eq!(
+            P2pBackendKind::LegacyInMemory,
+            context.p2p_config.backend_kind
+        );
     }
 
     #[test]

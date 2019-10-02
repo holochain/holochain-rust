@@ -10,23 +10,24 @@ extern crate test_utils;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
 
-use holochain_core_types::{error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},entry::Entry,crud_status::CrudStatus};
+use holochain_core_types::{
+    crud_status::CrudStatus,
+    entry::Entry,
+    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+};
 use holochain_json_api::json::JsonString;
 
 use holochain_core_types::error::CoreError;
-use holochain_persistence_api::{hash::HashString,cas::content::Address};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
-
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksResult};
+use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksResult};
 
 use test_utils::{
     generate_zome_internal_error, make_test_call, start_holochain_instance, wait_for_zome_result,
     TestEntry,
 };
 
-use std::{thread,time::Duration};
-
-
+use std::{thread, time::Duration};
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -224,8 +225,7 @@ pub fn test_invalid_target_link() {
 
 #[test]
 pub fn test_bad_links() {
-    let (mut hc, _, _signal_receiver) =
-        start_holochain_instance("test_bad_links", "alice");
+    let (mut hc, _, _signal_receiver) = start_holochain_instance("test_bad_links", "alice");
     let result = make_test_call(
         &mut hc,
         "create_and_link_tagged_entry_bad_link",
@@ -260,15 +260,14 @@ pub fn test_links_with_immediate_timeout() {
 
 #[test]
 pub fn test_links_with_load() {
-    let (mut hc, _, _signal_receiver) =
-        start_holochain_instance("test_links_with_load", "alice");
+    let (mut hc, _, _signal_receiver) = start_holochain_instance("test_links_with_load", "alice");
     let result = make_test_call(
         &mut hc,
         "create_and_link_tagged_entry",
         r#"{"content": "message me","tag":"tag me"}"#,
     );
     assert!(result.is_ok(), "result = {:?}", result);
-     
+
     let expected_result = wait_for_zome_result::<Vec<TestEntry>>(
         &mut hc,
         "my_entries_with_load",

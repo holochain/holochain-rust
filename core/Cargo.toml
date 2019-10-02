@@ -29,13 +29,13 @@ toml = "=0.5.0"
 holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
-lib3h_protocol = "=0.0.10"
-lib3h_sodium = "=0.0.10"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h.git", branch="201910/version-0.0.11" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h.git", branch="201910/version-0.0.11" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.7"
-holochain_persistence_file = "=0.0.7"
-holochain_persistence_mem = "=0.0.7"
+holochain_persistence_api = "=0.0.8"
+holochain_persistence_file = "=0.0.8"
+holochain_persistence_mem = "=0.0.8"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
 log = "=0.4.8"

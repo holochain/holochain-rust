@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
     utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, SEED_SIZE, DEVICE_CTX, REVOKE_CTX, AUTH_CTX,
+    AGENT_ID_CTX, AUTH_CTX, DEVICE_CTX, REVOKE_CTX, SEED_SIZE,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
@@ -73,12 +73,16 @@ pub trait SeedTrait {
     }
 }
 
+
+/// Implement the API to create new Seeds from BIP39 Mnemonics, and to output various Seeds as BIP32
+/// Mnemonics.  Some formats require mutability in order to perform this conversion; for example, a
+/// Seed w/ a SecBuf will require it to be set to readable before its contents can be accessed.
 pub trait MnemonicableSeed
 where
     Self: Sized,
 {
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self>;
-    fn get_mnemonic(&mut self) -> HcResult<String>;
+    fn get_mnemonic(&self) -> HcResult<String>;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -118,7 +122,7 @@ impl Seed {
             SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(self.buf))),
             SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(self.buf))),
             SeedType::Revocation => Ok(TypedSeed::Revocation(RevocationSeed::new(self.buf))),
-            SeedType::Auth => Ok(TypedSeed::Auth(AuthSeed::new(self.buf))),           
+            SeedType::Auth => Ok(TypedSeed::Auth(AuthSeed::new(self.buf))),
             _ => Err(HolochainError::ErrorGeneric(
                 "Seed does not have specific behavior for its type".to_string(),
             )),
@@ -146,14 +150,16 @@ impl MnemonicableSeed for Seed {
 
     /// Generate a mnemonic for the seed.
     // TODO: We need some way of zeroing the internal memory used by mnemonic
-    fn get_mnemonic(&mut self) -> HcResult<String> {
-        let entropy = self.buf.read_lock();
+    fn get_mnemonic(&self) -> HcResult<String> {
+        let mut buf = self.buf.clone();
+        let entropy = buf.read_lock();
         let e = &*entropy;
         let mnemonic = Mnemonic::from_entropy(e, Language::English).map_err(|e| {
             HolochainError::ErrorGeneric(format!("Error generating Mnemonic phrase: {}", e))
         })?;
         Ok(mnemonic.into_phrase())
     }
+
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -234,7 +240,7 @@ impl DeviceSeed {
     }
 
     /// generate a device pin seed by applying pwhash of pin with this seed as the salt
-    /// @param {string} pin - should be >= 4 characters 1-9
+    /// @param {string} pin - should be >= 4 characters 0-9
     /// @return {DevicePinSeed} Resulting Device Pin Seed
     pub fn generate_device_pin_seed(
         &mut self,
@@ -323,7 +329,10 @@ impl RevocationSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
         RevocationSeed {
-            inner: Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), SeedType::Revocation),
+            inner: Seed::new_with_initializer(
+                SeedInitializer::Seed(seed_buf),
+                SeedType::Revocation,
+            ),
         }
     }
 
@@ -332,7 +341,12 @@ impl RevocationSeed {
         let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
         let context = SeedContext::new(DEVICE_CTX);
         let mut context = context.to_sec_buf();
-        kdf::derive(&mut ref_seed_buf, derivation_index, &mut context, &mut self.inner.buf)?;
+        kdf::derive(
+            &mut ref_seed_buf,
+            derivation_index,
+            &mut context,
+            &mut self.inner.buf,
+        )?;
         Ok(KeyBundle::new_from_seed_buf(&mut ref_seed_buf)?)
     }
 }
@@ -368,7 +382,12 @@ impl AuthSeed {
         let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
         let context = SeedContext::new(DEVICE_CTX);
         let mut context = context.to_sec_buf();
-        kdf::derive(&mut ref_seed_buf, derivation_index, &mut context, &mut self.inner.buf)?;
+        kdf::derive(
+            &mut ref_seed_buf,
+            derivation_index,
+            &mut context,
+            &mut self.inner.buf,
+        )?;
         Ok(KeyBundle::new_from_seed_buf(&mut ref_seed_buf)?)
     }
 }
@@ -434,7 +453,7 @@ impl MnemonicableSeed for EncryptedSeed {
     /// Generate a mnemonic for the seed.
     /// Encrypted seeds produce a 48 word mnemonic as the encrypted output also contains auth bytes and salt bytes
     /// which adds an extra 32 bytes. This fits nicely into two 24 word BIP39 mnemonics.
-    fn get_mnemonic(&mut self) -> HcResult<String> {
+    fn get_mnemonic(&self) -> HcResult<String> {
         let bytes: Vec<u8> = self
             .data
             .cipher
@@ -627,7 +646,7 @@ mod tests {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
         };
-        let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
+        let enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
         assert_eq!(
@@ -635,7 +654,7 @@ mod tests {
             MnemonicType::Words24.word_count() * 2
         );
 
-        let mut enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
+        let enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
         let mut seed_2 = match enc_seed_2
             .decrypt("some passphrase".to_string(), None)
             .unwrap()

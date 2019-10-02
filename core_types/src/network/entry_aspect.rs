@@ -104,7 +104,7 @@ impl Into<EntryAspectData> for EntryAspect {
         EntryAspectData {
             type_hint,
             aspect_address,
-            aspect: aspect_json.to_bytes(),
+            aspect: aspect_json.to_bytes().into(),
             publish_ts: ts.timestamp() as u64,
         }
     }

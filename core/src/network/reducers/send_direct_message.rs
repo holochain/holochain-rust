@@ -97,7 +97,7 @@ mod tests {
         let handler = create_handler(&context, dna_address.to_string());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            p2p_config: test_memory_network_config(netname, vec![]),
+            p2p_config: test_memory_network_config(netname),
             dna_address: "reduce_send_direct_message_timeout_test".into(),
             agent_id: String::from("alice"),
             handler,

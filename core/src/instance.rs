@@ -430,19 +430,17 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        test_context_and_logger_with_bootstrap_nodes(
+        test_context_and_logger_with_in_memory_network(
             agent_name,
-            network_name,
-            vec![]
+            network_name
         )
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_and_logger_with_bootstrap_nodes(
+    pub fn test_context_and_logger_with_in_memory_network(
         agent_name: &str,
-        network_name: Option<&str>,
-        bootstrap_nodes: Vec<url::Url>,
+        network_name: Option<&str>
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
         let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
@@ -456,7 +454,7 @@ pub mod tests {
                 content_storage.clone(),
                 content_storage.clone(),
                 meta_storage,
-                test_memory_network_config(network_name, bootstrap_nodes),
+                test_memory_network_config(network_name),
                 None,
                 None,
                 false,
@@ -473,11 +471,10 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_bootstrap_nodes(
-        agent_name: &str, network_name: Option<&str>,
-        bootstrap_nodes: Vec<url::Url>) -> Arc<Context> {
-        let (context, _) = test_context_and_logger_with_bootstrap_nodes(
-            agent_name, network_name, bootstrap_nodes);
+    pub fn test_context_with_memory_network(
+        agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
+        let (context, _) = test_context_and_logger_with_in_memory_network(
+            agent_name, network_name);
         context
     }
 
@@ -507,7 +504,7 @@ pub mod tests {
                         .unwrap(),
                 )),
                 // TODO should bootstrap nodes be set here?
-                test_memory_network_config(network_name, vec![]),
+                test_memory_network_config(network_name),
                 false,
             )
             .unwrap(),
@@ -530,7 +527,7 @@ pub mod tests {
                     .unwrap(),
             )),
             // TODO BLOCKER should bootstrap nodes be set here?
-            test_memory_network_config(network_name, vec![]),
+            test_memory_network_config(network_name),
             None,
             None,
             false,
@@ -556,7 +553,7 @@ pub mod tests {
                     .unwrap(),
             )),
             // TODO BLOCKER should bootstrap nodes be set here?
-            test_memory_network_config(network_name, vec![]),
+            test_memory_network_config(network_name),
             None,
             None,
             false,
@@ -594,20 +591,19 @@ pub mod tests {
         name: &str,
         network_name: Option<&str>,
         ) -> Result<(Instance, Arc<Context>), String> {
-        test_instance_and_context_with_bootstrap_nodes(dna, name, network_name, vec![])
+        test_instance_and_context_with_memory_network_nodes(dna,name,network_name)
     }
 
     /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance_and_context_with_bootstrap_nodes(
+    pub fn test_instance_and_context_with_memory_network_nodes(
         dna: Dna,
         name: &str,
-        network_name: Option<&str>,
-        bootstrap_nodes : Vec<url::Url>,
+        network_name: Option<&str>
     ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context_with_bootstrap_nodes(
-            name, network_name, bootstrap_nodes);
+        let context = test_context_with_memory_network(
+            name, network_name);
         let mut instance = Instance::new(context.clone());
         let context = instance.initialize(Some(dna.clone()), context.clone())?;
 

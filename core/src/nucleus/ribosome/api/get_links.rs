@@ -46,7 +46,7 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         context::Context,
         dht::actions::add_link::add_link,
-        instance::tests::{test_instance_and_context, test_context_and_logger_with_bootstrap_nodes},
+        instance::tests::{test_instance_and_context, test_context_and_logger_with_in_memory_network},
         nucleus::ribosome::{
             api::{tests::*, ZomeApiFunction},
             Defn,
@@ -100,9 +100,8 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
         let netname2 = format!("{}-2", netname);
-        let (instance, context1) = test_instance_and_context(dna, Some(netname)).expect("Could not create test instance");
-        let context1_p2p_endpoint = context1.network().lock().as_ref().unwrap().p2p_endpoint();
-        let (context, _) = test_context_and_logger_with_bootstrap_nodes("joan", Some(netname2.as_str()), vec![context1_p2p_endpoint]);
+        let (instance, _) = test_instance_and_context(dna, Some(netname)).expect("Could not create test instance");
+        let (context, _) = test_context_and_logger_with_in_memory_network("joan", Some(netname2.as_str()));
         let arc_context = instance.initialize_context(context);
         (instance, arc_context)
     }

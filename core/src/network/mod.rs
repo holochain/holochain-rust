@@ -16,7 +16,7 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         instance::tests::{
             test_instance_and_context_by_name,
-            test_instance_and_context_with_bootstrap_nodes,
+            test_instance_and_context_with_memory_network_nodes,
         },
         network::{
             actions::{
@@ -222,10 +222,8 @@ pub mod tests {
 
         let (_instance1, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", Some("get_validation_package_roundtrip")).unwrap();
-        let context1_url = context1
-            .network().lock().as_ref().unwrap().p2p_endpoint();
         let (_instance2, context2) =
-            test_instance_and_context_with_bootstrap_nodes(dna.clone(), "bob1", Some("get_validation_package_roundtrip2"), vec![context1_url]).unwrap();
+            test_instance_and_context_with_memory_network_nodes(dna.clone(), "bob1", Some("get_validation_package_roundtrip2")).unwrap();
 
         let entry = test_entry();
         context1

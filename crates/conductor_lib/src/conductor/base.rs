@@ -169,7 +169,8 @@ impl Conductor {
             logger_builder.add_rule_filter(RuleFilter::new(
                 rule.pattern.as_str(),
                 rule.exclude,
-                rule.color.as_ref().unwrap_or(&String::default()).as_str(),
+                // FIXME(timotree3): Use .as_deref() instead once we update nightly
+                rule.color.as_ref().map(|s| &**s).unwrap_or_default(),
             ));
         }
 

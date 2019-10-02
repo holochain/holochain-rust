@@ -57,11 +57,8 @@ ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
 
 [network]
-type = "n3h"
-n3h_log_level = "${debugging ? 'i' : 'e'}"
-bootstrap_nodes = []
-n3h_mode = "REAL"
-n3h_persistence_path = "${n3hPath}"
+type = "sim1h"
+dynamo_url = "http://localhost:8002"
     `
 
   return { config, adminPort, instancePort }

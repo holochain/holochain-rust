@@ -124,7 +124,10 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       - name: DynamoDB
+       - command: dynamodb-memory -port 8002
+       - background: true
    - run:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test

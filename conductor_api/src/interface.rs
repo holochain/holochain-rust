@@ -748,12 +748,16 @@ impl ConductorApiBuilder {
             });
 
         self.io.add_method("debug/state_dump", move |params| {
+            println!("debug/state_dump BEGIN");
             let params_map = Self::unwrap_params_map(params)?;
             let instance_id = Self::get_as_string("instance_id", &params_map)?;
 
             let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+            println!("debug/state_dump RETURNED");
+            let output = serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?;
+            println!("debug/state_dump VALUE: {}", output);
 
-            Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
+            Ok(output)
         });
 
         self.io.add_method("debug/fetch_cas", move |params| {

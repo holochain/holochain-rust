@@ -28,9 +28,7 @@ impl Broadcaster {
         match self {
             Broadcaster::Ws(sender) => sender
                 .send(ws::Message::Text(msg.into().to_string()))
-                .map_err(|e| {
-                    HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e))
-                })?,
+                .map_err(|e| HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e)))?,
             Broadcaster::Noop => (),
         }
         Ok(())

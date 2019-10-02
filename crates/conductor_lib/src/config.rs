@@ -884,9 +884,8 @@ pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
     T: Deserialize<'a>,
 {
-    toml::from_str::<T>(toml).map_err(|e| {
-        HolochainError::IoError(format!("Error loading configuration: {}", e))
-    })
+    toml::from_str::<T>(toml)
+        .map_err(|e| HolochainError::IoError(format!("Error loading configuration: {}", e)))
 }
 
 pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {

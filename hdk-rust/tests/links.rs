@@ -274,7 +274,7 @@ pub fn test_links_with_load() {
         "my_entries_with_load",
         r#"{}"#,
         |cond| cond.len() == 1,
-        9,
+        12,
     );
     println!("got first links");
     let expected_links = expected_result.expect("Could not get links for test");
@@ -293,10 +293,9 @@ pub fn test_links_with_load() {
         "get_my_entries_by_tag",
         r#"{"tag" : "tag me","status":"Deleted"}"#,
         |cond| cond.links().len() == 1,
-        6,
+        12,
     );
     let expected_links = expected_result.unwrap().clone();
-    assert_eq!(expected_links.links(),vec![]);
     assert_eq!(expected_links.links().len(), 1);
 
     //try get links and load with nothing, not sure of necessary more of a type system check
@@ -305,7 +304,7 @@ pub fn test_links_with_load() {
         "my_entries_with_load",
         r#"{}"#,
         |cond| cond.len() == 0,
-        6,
+        12,
     );
     let expected_links = expected_result.unwrap().clone();
 

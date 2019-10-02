@@ -773,7 +773,7 @@ impl Conductor {
                     StorageConfiguration::File { path } => {
                         context_builder =
                             context_builder.with_file_storage(path).map_err(|hc_err| {
-                                format!("Error creating context: {}", hc_err.to_string())
+                                format!("Error creating context: {}", hc_err)
                             })?
                     }
                     StorageConfiguration::Memory => {
@@ -784,7 +784,7 @@ impl Conductor {
                             context_builder
                                 .with_pickle_storage(path)
                                 .map_err(|hc_err| {
-                                    format!("Error creating context: {}", hc_err.to_string())
+                                    format!("Error creating context: {}", hc_err)
                                 })?
                     }
                 }

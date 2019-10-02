@@ -122,7 +122,7 @@ pub extern "C" fn check_commit_entry(
     let entry: Entry = match load_ribosome_encoded_json(encoded_allocation_of_input) {
         Ok(entry) => entry,
         Err(hc_err) => {
-            hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
+            hdk::debug(format!("ERROR: {:?}", hc_err)).ok();
             return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed)
                 .into();
         }
@@ -497,7 +497,7 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     let maybe_hash = hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
-        Address::from(hdk::PUBLIC_TOKEN.to_string()),
+        Address::from(hdk::PUBLIC_TOKEN),
         "check_app_entry_address",
         empty_dumpty,
     );
@@ -515,7 +515,7 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
-        Address::from(hdk::PUBLIC_TOKEN.to_string()),
+        Address::from(hdk::PUBLIC_TOKEN),
         "check_commit_entry_macro",
         JsonString::from(CommitEntryInput {
             entry: hdk_test_entry(),
@@ -888,7 +888,7 @@ define_zome! {
         let _call_result = hdk::call(
             hdk::THIS_INSTANCE,
             "test_zome",
-            Address::from(hdk::PUBLIC_TOKEN.to_string()),
+            Address::from(hdk::PUBLIC_TOKEN),
             "check_app_entry_address",
             JsonString::empty_object(),
         )?;
@@ -910,8 +910,8 @@ define_zome! {
                 .into(),
             );
             match hdk::commit_entry(&entry) {
-                Ok(address) => format!("Committed: '{}' / address: {}", payload, address.to_string()),
-                Err(error) => format!("Error committing in receive: '{}'", error.to_string()),
+                Ok(address) => format!("Committed: '{}' / address: {}", payload, address),
+                Err(error) => format!("Error committing in receive: '{}'", error),
             }
         }
     }

@@ -277,7 +277,7 @@ pub fn test_links_with_load() {
     );
     println!("got first links");
     let expected_links = expected_result.expect("Could not get links for test");
-    assert_eq!(expected_links[0].stuff, "message me".to_string());
+    assert_eq!(expected_links[0].stuff, "message me");
 
     let result = make_test_call(
         &mut hc,

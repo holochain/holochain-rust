@@ -186,7 +186,7 @@ pub fn expected_serialized_entry_content() -> JsonString {
 /// the correct address for test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn expected_entry_address() -> Address {
-    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq".to_string())
+    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
 }
 
 /// dummy entry, same as test_entry()

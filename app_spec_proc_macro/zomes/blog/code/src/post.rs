@@ -139,9 +139,9 @@ mod tests {
         let date_created = "bar";
         let post = Post::new(content, date_created);
 
-        assert_eq!(content.to_string(), post.content(),);
+        assert_eq!(content, post.content(),);
 
-        assert_eq!(date_created.to_string(), post.date_created(),);
+        assert_eq!(date_created, post.date_created(),);
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod tests {
                 entry,
                 validation_data
             }),
-            Err("Content too long".to_string()),
+            Err("Content too long"),
         );
 
         let post_definition_link = post_definition.links.first().unwrap();

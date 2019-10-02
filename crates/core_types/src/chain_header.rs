@@ -184,7 +184,7 @@ pub mod tests {
     }
 
     pub fn test_header_address() -> Address {
-        Address::from("Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd".to_string())
+        Address::from("Qmc1n5gbUU2QKW6is9ENTqmaTcEjYMBwNkcACCxe3bBDnd")
     }
 
     #[test]

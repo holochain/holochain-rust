@@ -885,7 +885,7 @@ where
     T: Deserialize<'a>,
 {
     toml::from_str::<T>(toml).map_err(|e| {
-        HolochainError::IoError(format!("Error loading configuration: {}", e.to_string()))
+        HolochainError::IoError(format!("Error loading configuration: {}", e))
     })
 }
 

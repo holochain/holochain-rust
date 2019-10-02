@@ -73,12 +73,12 @@ impl IpcNetWorker {
             .as_object()
             .unwrap()
             .iter()
-            .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string().into()))
+            .map(|(k, v)| (k.to_string(), v.as_str().unwrap().into()))
             .collect();
         // create a new IpcNetWorker witch spawns the n3h process
         return IpcNetWorker::priv_new_with_spawn(
             handler,
-            spawn_config["workDir"].as_str().unwrap().to_string().into(),
+            spawn_config["workDir"].as_str().unwrap().into(),
             enduser_config,
             env,
             bootstrap_nodes,

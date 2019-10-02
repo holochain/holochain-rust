@@ -40,7 +40,6 @@ pub fn generate(zome_name: &Path, language: &str) -> DefaultResult<()> {
     let zome_name_string = zome_name
         .to_str()
         .expect("Invalid zome path given")
-        .to_string()
         .replace("/", "_")
         .replace("zomes_", "");
 

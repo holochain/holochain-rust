@@ -9,6 +9,10 @@ jobs:
   resource_class: large
   steps:
    - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory -port 8001
+       background: true
    - run: nix-shell --run hc-rust-test
 
  fmt:
@@ -69,7 +73,10 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h
@@ -124,7 +131,10 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory -port 8002
+       background: true
    - run:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test

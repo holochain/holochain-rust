@@ -24,11 +24,7 @@ let
   set -euo pipefail
   hc-cli-install
   hc-conductor-install
-  dynamodb-memory &
-  echo $! > dynamodb.pid
   (cd app_spec && APP_SPEC_NETWORK_TYPE="sim1h" ./build_and_test.sh);
-  kill `cat dynamodb.pid`
-  rm dynamodb.pid
   '';
 in
 {

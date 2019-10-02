@@ -476,7 +476,7 @@ pub fn start_holochain_instance<T: Into<String>>(
             {
                 unimplemented!("lib3h configuration should be set up in the env")
             }
-            else if test_config=="sim1g"
+            else if test_config=="sim1h"
             {
                 TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
             }

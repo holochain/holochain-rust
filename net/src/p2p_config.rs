@@ -10,7 +10,7 @@ use std::{fs::File, io::prelude::*, str::FromStr};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
-    MEMORY,
+    GhostEngineMemory,
     N3H,
     LIB3H,
     SIM1H,
@@ -20,7 +20,7 @@ impl FromStr for P2pBackendKind {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "MEMORY" => Ok(P2pBackendKind::MEMORY),
+            "GhostEngineMemory" => Ok(P2pBackendKind::GhostEngineMemory),
             "N3H" => Ok(P2pBackendKind::N3H),
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
             "SIM1H" => Ok(P2pBackendKind::SIM1H),
@@ -32,7 +32,7 @@ impl FromStr for P2pBackendKind {
 impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
-            P2pBackendKind::MEMORY => "MEMORY",
+            P2pBackendKind::GhostEngineMemory => "GhostEngineMemory",
             P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
             P2pBackendKind::SIM1H => "SIM1H",
@@ -158,7 +158,7 @@ impl P2pConfig {
 
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
-            P2pBackendKind::MEMORY,
+            P2pBackendKind::GhostEngineMemory,
             BackendConfig::Json(Self::memory_backend_json(server_name)),
             None,
         )
@@ -184,7 +184,7 @@ impl P2pConfig {
             .replace(",", "_");
 
         P2pConfig::new(
-            P2pBackendKind::MEMORY,
+            P2pBackendKind::GhostEngineMemory,
             BackendConfig::Memory(EngineConfig {
                 network_id: GatewayId {
                     nickname: server_name.into(),

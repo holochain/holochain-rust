@@ -73,7 +73,7 @@ impl P2pNetwork {
                 })
             }
             // Create an InMemoryWorker
-            P2pBackendKind::MEMORY => Box::new(move |h| {
+            P2pBackendKind::GhostEngineMemory => Box::new(move |h| {
                 let backend_config = match &p2p_config.clone().backend_config {
                     BackendConfig::Memory(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting memory")),
@@ -136,7 +136,7 @@ impl P2pNetwork {
     fn should_wait_for_p2p_ready(p2p_config: &P2pConfig) -> bool {
         match p2p_config.backend_kind {
             P2pBackendKind::LIB3H |
-            P2pBackendKind::MEMORY |
+            P2pBackendKind::GhostEngineMemory |
             P2pBackendKind::SIM1H => false,
             P2pBackendKind::N3H => true
         }

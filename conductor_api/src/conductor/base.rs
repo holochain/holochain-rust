@@ -642,7 +642,7 @@ impl Conductor {
                 config
             }
             NetworkConfig::Memory(config) => P2pConfig {
-                backend_kind: P2pBackendKind::MEMORY,
+                backend_kind: P2pBackendKind::GhostEngineMemory,
                 backend_config: BackendConfig::Memory(config),
                 maybe_end_user_config: None,
             },

@@ -1058,7 +1058,7 @@ id = 'new-dna'"#,
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
                 .unwrap();
         let original_hash = new_dna.address();
-        new_dna.uuid = uuid;
+        new_dna.uuid = uuid.clone();
         let new_hash = new_dna.address();
         assert_ne!(original_hash, new_hash);
 
@@ -1084,13 +1084,13 @@ id = 'new-dna'"#,
                     id: String::from("new-dna-with-uuid-1"),
                     file: new_dna_path.to_string_lossy().to_string(),
                     hash: String::from(new_dna.address()),
-                    uuid: Default::default(),
+                    uuid: Some(uuid.clone()),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
-                    uuid: Default::default(),
+                    uuid: Some(uuid.clone()),
                 },
             ]
         );

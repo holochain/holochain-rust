@@ -1102,11 +1102,7 @@ id = 'new-dna'"#,
             )
             .expect("Could not install DNA");
 
-        let add_result = conductor.add_instance(
-            "new-instance",
-            "new-dna",
-            "test-agent-1",
-        );
+        let add_result = conductor.add_instance("new-instance", "new-dna", "test-agent-1");
 
         assert_eq!(add_result, Ok(()));
 
@@ -1166,10 +1162,7 @@ id = 'new-instance'"#,
         let test_name = "test_remove_instance";
         let mut conductor = create_test_conductor(test_name, 3002);
 
-        assert_eq!(
-            conductor.remove_instance("test-instance-1"),
-            Ok(()),
-        );
+        assert_eq!(conductor.remove_instance("test-instance-1"), Ok(()),);
 
         let mut config_contents = String::new();
         let mut file =
@@ -1315,10 +1308,7 @@ type = 'http'"#,
             .get("websocket interface")
             .is_some());
 
-        assert_eq!(
-            conductor.remove_interface("websocket interface"),
-            Ok(())
-        );
+        assert_eq!(conductor.remove_interface("websocket interface"), Ok(()));
 
         let mut config_contents = String::new();
         let mut file =
@@ -1385,20 +1375,12 @@ type = 'http'"#,
             .expect("Could not install DNA");
 
         assert_eq!(
-            conductor.add_instance(
-                "new-instance-2",
-                "new-dna",
-                "test-agent-1",
-            ),
+            conductor.add_instance("new-instance-2", "new-dna", "test-agent-1",),
             Ok(())
         );
 
         assert_eq!(
-            conductor.add_instance_to_interface(
-                "websocket interface",
-                "new-instance-2",
-                &None,
-            ),
+            conductor.add_instance_to_interface("websocket interface", "new-instance-2", &None,),
             Ok(())
         );
 
@@ -1482,10 +1464,7 @@ type = 'websocket'"#,
         //    .is_some());
 
         assert_eq!(
-            conductor.remove_instance_from_interface(
-                "websocket interface",
-                "test-instance-1"
-            ),
+            conductor.remove_instance_from_interface("websocket interface", "test-instance-1"),
             Ok(())
         );
 
@@ -1578,10 +1557,7 @@ public_address = '{}'"#,
         let test_name = "test_remove_agent";
         let mut conductor = create_test_conductor(test_name, 3010);
 
-        assert_eq!(
-            conductor.remove_agent("test-agent-2"),
-            Ok(()),
-        );
+        assert_eq!(conductor.remove_agent("test-agent-2"), Ok(()),);
 
         let mut config_contents = String::new();
         let mut file =
@@ -1665,10 +1641,7 @@ handle = 'my favourite instance!'"#,
         assert_eq!(config_contents, toml,);
 
         assert_eq!(
-            conductor.remove_bridge(
-                "test-instance-1",
-                "test-instance-2"
-            ),
+            conductor.remove_bridge("test-instance-1", "test-instance-2"),
             Ok(()),
         );
 

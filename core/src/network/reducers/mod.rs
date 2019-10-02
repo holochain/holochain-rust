@@ -48,6 +48,7 @@ use holochain_net::connection::net_connection::NetSend;
 use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
 
 use holochain_persistence_api::cas::content::Address;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
@@ -120,7 +121,11 @@ pub fn send_message(
     to_agent_id: &Address,
     message: DirectMessage,
 ) -> Result<(), HolochainError> {
-    let id = ProcessUniqueId::new().to_string();
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .collect();
+    let id = format!("{}-{}", ProcessUniqueId::new().to_string(), rand_string);
 
     let content_json_string: JsonString = message.to_owned().into();
     let content = content_json_string.to_bytes();

@@ -300,20 +300,20 @@ mod tests {
     #[test]
     fn test_dna_configuration() {
         let dna = Dna::new();
-        let temp_path = tempdir()
-            .expect("Could not get tempdir")
-            .path()
-            .join("test_dna.json");
-        create_dir(temp_path.parent().unwrap()).expect("Could not create temporary directory");
-        let out_file = File::create(&temp_path).expect("Could not create temp file for test DNA");
+        let temp_dir = tempdir()
+            .expect("Could not get tempdir");
+        let temp_dir_path = temp_dir.path();
+        create_dir(temp_dir_path).expect("Could not create temporary directory");
+        let out_path = temp_dir_path.join("test_dna.json");
+        let out_file = File::create(&out_path).expect("Could not create temp file for test DNA");
         serde_json::to_writer_pretty(&out_file, &dna).expect("Could not write test DNA to file");
 
-        let dna_config = super::dna_configuration(&temp_path);
+        let dna_config = super::dna_configuration(&out_path);
         assert_eq!(
             dna_config,
             DnaConfiguration {
                 id: "hc-run-dna".to_string(),
-                file: temp_path.to_str().unwrap().to_string(),
+                file: out_path.to_str().unwrap().to_string(),
                 hash: dna.address().to_string(),
             }
         )

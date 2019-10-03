@@ -24,7 +24,6 @@ use holochain_persistence_api::{
 };
 
 use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult, StatusRequestKind};
-use std::path::PathBuf;
 use test_utils::{
     empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
     example_valid_entry_params, example_valid_entry_result, make_test_call,
@@ -385,16 +384,8 @@ fn can_return_empty_string_as_validation_fail() {
         "check_commit_entry",
         &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
-    let path = PathBuf::new()
-        .join("core")
-        .join("src")
-        .join("nucleus")
-        .join("ribosome")
-        .join("runtime.rs");
-    let path_string = path
-        .as_path()
-        .to_str()
-        .expect("path should have been created");
+    let path_string = "core/src/nucleus/ribosome/runtime.rs";
+
     let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
     let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
 

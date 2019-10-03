@@ -26,7 +26,7 @@ use holochain_persistence_api::{
 };
 
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksResult};
-use std::{path::PathBuf, thread, time::Duration};
+use std::{thread, time::Duration};
 use test_utils::{
     example_valid_entry_address, example_valid_entry_params, make_test_call,
     start_holochain_instance, TestEntry,
@@ -258,16 +258,7 @@ fn can_invalidate_invalid_commit() {
         })
         .to_string(),
     );
-    let path = PathBuf::new()
-        .join("core")
-        .join("src")
-        .join("nucleus")
-        .join("ribosome")
-        .join("runtime.rs");
-    let path_string = path
-        .as_path()
-        .to_str()
-        .expect("path should have been created");
+    let path_string = "core/src/nucleus/ribosome/runtime.rs";
     let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
     let error_string = format!("{{\"Err\":{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"",formatted_path_string);
     assert!(result.is_ok(), "result = {:?}", result);

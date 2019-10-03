@@ -168,12 +168,11 @@ pub mod tests {
     #[test]
     fn setup_test_folder_test() {
         let dir = gen_dir();
-        let dir_path_buf = &dir.path().to_path_buf();
-        setup_test_folder(dir_path_buf, &TEST_DIR_NAME).expect("Test folder not set up");
-
-        assert!(dir_path_buf.join(&TEST_DIR_NAME).join("index.js").exists());
-        assert!(dir_path_buf
-            .join(&TEST_DIR_NAME)
+        let dir_path = dir.path();
+        setup_test_folder(&dir_path.to_path_buf(), &TEST_DIR_NAME).expect("Test folder not set up");
+        let test_dir = dir_path.join(&TEST_DIR_NAME);
+        assert!(test_dir.join("index.js").exists());
+        assert!(test_dir
             .join("package.json")
             .exists());
     }

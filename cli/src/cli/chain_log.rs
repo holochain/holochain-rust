@@ -16,7 +16,12 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
     let storage_path = storage_path.ok_or_else(|| {
         format_err!("Please specify the path to CAS storage with the --path option.")
     })?;
-    let cas_path = storage_path.join(instance_id).join("cas");
+    let cas_path = {
+        let mut path = storage_path;
+        path.push(instance_id);
+        path.push("cas");
+        path
+    };
     let chain_store = ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
         FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),
     )));

@@ -46,7 +46,7 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         context::Context,
         dht::actions::add_link::add_link,
-        instance::tests::{test_context_and_logger, test_instance},
+        instance::tests::{test_instance_and_context, test_context_and_logger_with_in_memory_network},
         nucleus::ribosome::{
             api::{tests::*, ZomeApiFunction},
             Defn,
@@ -75,6 +75,7 @@ pub mod tests {
             tag: tag.to_regex_string().unwrap(),
             options: Default::default(),
         };
+        println!("GetLinksArgs: {:?}", args);
         serde_json::to_string(&args)
             .expect("args should serialize")
             .into_bytes()
@@ -98,16 +99,16 @@ pub mod tests {
     fn initialize_context(netname: &str) -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
-        let netname = Some(netname);
-        let instance = test_instance(dna, netname).expect("Could not create test instance");
-
-        let (context, _) = test_context_and_logger("joan", netname);
+        let netname2 = format!("{}-2", netname);
+        let (instance, _) = test_instance_and_context(dna, Some(netname)).expect("Could not create test instance");
+        let (context, _) = test_context_and_logger_with_in_memory_network("joan", Some(netname2.as_str()));
         let arc_context = instance.initialize_context(context);
         (instance, arc_context)
     }
 
     pub fn add_links(initialized_context: Arc<Context>, links: Vec<Link>) {
         links.iter().for_each(|link| {
+            println!("adding link {:?}", link);
             assert!(initialized_context //commit the AddLink entry first
                 .block_on(commit_entry(
                     link.add_entry(test_chain_header(), test_agent_id()),
@@ -121,7 +122,8 @@ pub mod tests {
                     &initialized_context
                 ))
                 .is_ok());
-        });
+            println!("added link {:?}", link);
+         });
     }
 
     pub fn get_links(
@@ -136,8 +138,22 @@ pub mod tests {
         )
     }
 
+    // TODO do this for all crate tests somehow
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
+
+
     #[test]
     fn returns_list_of_links() {
+        enable_logging_for_test();
         // setup the instance and links
         let (_instance, initialized_context) = initialize_context("returns_list_of_links");
         let entry_addresses = add_test_entries(initialized_context.clone());

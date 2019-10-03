@@ -24,18 +24,51 @@ instances = []
     port = ${adminPort}
 
 [logger]
-type = "debug"
+type="info"
+[[logger.rules.rules]]
+exclude = true
+pattern = ".*parity.*"
+[[logger.rules.rules]]
+exclude = true
+pattern = ".*tokio.*"
+[[logger.rules.rules]]
+exclude = true
+pattern = ".*mio.*"
+[[logger.rules.rules]]
+exclude = true
+pattern = "@MirrorDht@ now:"
+[[logger.rules.rules]]
+exclude = true
+pattern = " - output: false 0"
+[[logger.rules.rules]]
+exclude = true
+pattern = "process.*START"
+[[logger.rules.rules]]
+exclude = true
+pattern = "process.*END"
+[[logger.rules.rules]]
+exclude = true
+pattern = "MemoryServer mem:"
 ${debugging ? '' : '[[logger.rules.rules]]'}
 ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
 state_dump = true
 
 [network]
-type="n3h"
+type="${process.env.APP_SPEC_NETWORK_TYPE || 'n3h'}"
+tls_config = "Unencrypted"
+socket_type = "mem"
+work_dir = ""
+log_level = "d"
+bind_url = "mem://${tmpPath}"
+dht_custom_config = []
+dht_timeout_threshold = 8000
+dht_gossip_interval = 500
 n3h_log_level = "${debugging ? 'i' : 'e'}"
 bootstrap_nodes = []
 n3h_mode = "REAL"
 n3h_persistence_path = "${n3hPath}"
+dynamo_url = "http://localhost:8000"
     `
 
     return config

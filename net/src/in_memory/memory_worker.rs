@@ -91,6 +91,11 @@ impl NetWorker for InMemoryWorker {
         }
         Ok(did_something)
     }
+    
+    /// Set the advertise as worker's endpoint
+    fn p2p_endpoint(&self) -> Option<url::Url> {
+        None
+    }
 
     /// stop the net worker
     fn stop(self: Box<Self>) -> NetResult<()> {

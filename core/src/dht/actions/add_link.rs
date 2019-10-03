@@ -42,7 +42,7 @@ impl Future for AddLinkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             match state.dht().actions().get(&self.action) {
                 Some(Ok(_)) => Poll::Ready(Ok(())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),

@@ -632,7 +632,7 @@ impl InMemoryServer {
             request_id: msg.request_id.clone(),
             requester_agent_id: msg.requester_agent_id.clone(),
             responder_agent_id: msg.requester_agent_id.clone(),
-            query_result: vec![],
+            query_result: vec![].into(),
         });
         self.priv_send_one(
             &dna_address,

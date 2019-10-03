@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
+    network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
@@ -23,7 +24,8 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
 };
-use holochain_net::p2p_config::P2pConfig;
+
+use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -42,6 +44,25 @@ use std::{
 };
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
+
+pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
+
+impl P2pNetworkWrapper {
+    pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
+        return P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"));
+    }
+}
+
+pub struct P2pNetworkMutexGuardWrapper<'a>(std::sync::MutexGuard<'a, Option<P2pNetwork>>);
+
+impl<'a> P2pNetworkMutexGuardWrapper<'a> {
+    pub fn as_ref(&self) -> Result<&P2pNetwork, HolochainError> {
+        match self.0.as_ref() {
+            Some(s) => Ok(s),
+            None => Err(HolochainError::ErrorGeneric("no network".into())),
+        }
+    }
+}
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like persister
@@ -168,6 +189,28 @@ impl Context {
 
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
+    }
+
+    /// Try to acquire read-lock on the state.
+    /// Returns immediately either with the lock or with None if the lock
+    /// is occupied already.
+    /// Also returns None if the context was not initialized with a state.
+    pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
+        self.state
+            .as_ref()
+            .map(|s| s.try_read().ok())
+            .unwrap_or(None)
+    }
+
+    pub fn network(&self) -> P2pNetworkWrapper {
+        P2pNetworkWrapper(match self.network_state() {
+            Some(s) => s.network.clone(),
+            None => Arc::new(Mutex::new(None)),
+        })
+    }
+
+    pub fn network_state(&self) -> Option<Arc<NetworkState>> {
+        self.state().map(move |state| state.network())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {

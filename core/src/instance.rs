@@ -432,6 +432,18 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+        test_context_and_logger_with_in_memory_network(
+            agent_name,
+            network_name
+        )
+    }
+
+    /// create a test context and TestLogger pair so we can use the logger in assertions
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_context_and_logger_with_in_memory_network(
+        agent_name: &str,
+        network_name: Option<&str>
+    ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
         let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
         let meta_storage = Arc::new(RwLock::new(EavMemoryStorage::new()));
@@ -460,6 +472,14 @@ pub mod tests {
         context
     }
 
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_context_with_memory_network(
+        agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
+        let (context, _) = test_context_and_logger_with_in_memory_network(
+            agent_name, network_name);
+        context
+    }
+
     /// create a test context
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
@@ -485,6 +505,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
+                // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name),
                 false,
             )
@@ -507,6 +528,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
+            // TODO BLOCKER should bootstrap nodes be set here?
             test_memory_network_config(network_name),
             None,
             None,
@@ -532,6 +554,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
+            // TODO BLOCKER should bootstrap nodes be set here?
             test_memory_network_config(network_name),
             None,
             None,
@@ -564,15 +587,25 @@ pub mod tests {
         test_instance_and_context_by_name(dna, "jane", network_name)
     }
 
-    /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
         network_name: Option<&str>,
+        ) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_with_memory_network_nodes(dna,name,network_name)
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context_with_memory_network_nodes(
+        dna: Dna,
+        name: &str,
+        network_name: Option<&str>
     ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context(name, network_name);
+        let context = test_context_with_memory_network(
+            name, network_name);
         let mut instance = Instance::new(context.clone());
         let context = instance.initialize(Some(dna.clone()), context.clone())?;
 

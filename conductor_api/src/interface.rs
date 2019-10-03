@@ -1328,7 +1328,7 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"instance identifier invalid"},"id":"0"}"#
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`zome` param not provided"},"id":"0"}"#
         );
 
         let response_str = handler

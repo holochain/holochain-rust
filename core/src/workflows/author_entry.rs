@@ -1,11 +1,14 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    entry::CanPublish,
-    network::actions::publish::publish,
+    network::actions::{
+        publish::publish,
+        publish_header_entry::publish_header_entry,
+    },
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
+    entry::CanPublish,
 };
 
 use holochain_core_types::{
@@ -95,15 +98,25 @@ pub async fn author_entry<'a>(
           address
         );
     }
+
+    // 5. Publish the header for all types (including private entries)
+    log_debug!(context, "debug/workflow/authoring_entry/{}: publishing header...", address);
+    await!(publish_header_entry(entry.address(), &context))?;
+    log_debug!(context, "debug/workflow/authoring_entry/{}: header published!", address);
+
     Ok(CommitEntryResult::new(addr))
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::author_entry;
+    use crate::nucleus::actions::get_entry::get_entry_from_dht;
     use crate::nucleus::actions::tests::*;
-    use holochain_core_types::entry::test_entry_with_value;
-    use holochain_json_api::json::JsonString;
+    use holochain_core_types::{
+        entry::{test_entry_with_value, Entry},
+        chain_header::ChainHeader,
+    };
+    use holochain_persistence_api::cas::content::AddressableContent;
     use std::{thread, time};
 
     // TODO do this for all crate tests somehow
@@ -143,31 +156,153 @@ pub mod tests {
             .address();
         thread::sleep(time::Duration::from_millis(500));
 
-        let mut json: Option<JsonString> = None;
+        let mut entry: Option<Entry> = None;
         let mut tries = 0;
-        while json.is_none() && tries < 5 {
+        while entry.is_none() && tries < 100 {
             tries = tries + 1;
             {
-                let state = &context2.state().unwrap();
-                json = state
-                    .dht()
-                    .content_storage()
-                    .read()
-                    .unwrap()
-                    .fetch(&entry_address)
-                    .expect("could not fetch from CAS");
+                entry = get_entry_from_dht(&context2, &entry_address).expect("Could not retrieve entry from DHT");
             }
-            println!("Try {}: {:?}", tries, json);
-            if json.is_none() {
+            println!("Try {}: {:?}", tries, entry);
+            if entry.is_none() {
                 thread::sleep(time::Duration::from_millis(1000));
             }
         }
-
-        let x: String = json.unwrap().to_string();
         assert_eq!(
-            x,
-            "{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"test entry value\\\"}\"]}"
-                .to_string(),
+            entry,
+            Some(test_entry_with_value("{\"stuff\":\"test entry value\"}"))
+        );
+    }
+
+    #[test]
+    /// test that the header of an entry can be retrieved directly by its hash by another agent connected
+    /// via the in-memory network
+    fn test_commit_with_dht_publish_header_is_published() {
+        let mut dna = test_dna();
+        dna.uuid = "test_commit_with_dht_publish_header_is_published".to_string();
+        let netname = Some("test_commit_with_dht_publish_header_is_published, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
+
+        let entry_address = context1
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
+                None,
+                &context1,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+
+        thread::sleep(time::Duration::from_millis(500));
+
+        // get the header from the top of Jill's chain
+        let state = &context1.state().unwrap();
+        let header = state.get_headers(entry_address)
+            .expect("Could not retrieve headers from authors chain")
+            .into_iter()
+            .next()
+            .expect("No headers were found for this entry in the authors chain");
+        let header_entry = Entry::ChainHeader(header);
+
+        // try and load it by its address as Jack. This means it has been communicated over the mock network
+        let mut entry: Option<Entry> = None;
+        let mut tries = 0;
+        while entry.is_none() && tries < 10 {
+            tries = tries + 1;
+            {
+                entry = get_entry_from_dht(&context2, &header_entry.address()).expect("Could not retrieve entry from DHT");
+            }
+            println!("Try {}: {:?}", tries, entry);
+            if entry.is_none() {
+                thread::sleep(time::Duration::from_millis(1000));
+            }
+        }
+        assert_eq!(
+            entry,
+            Some(header_entry),
+        );
+    }
+
+
+    #[test]
+    /// test that all headers are published so an agents local chain can be reconstructed by another agent
+    fn test_reconstruct_chain_via_published_headers() {
+        let mut dna = test_dna();
+        dna.uuid = "test_reconstruct_chain_via_published_headers".to_string();
+        let netname = Some("test_reconstruct_chain_via_published_headers, the network");
+        // the ordering of these is important. Jack will get Jills DNA and AgentId headers but not visa-versa
+        let (_instance2, context2) = instance_by_name("jack", dna.clone(), netname);
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+
+        // Jill publishes an entry
+        context1
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value number 1\"}"),
+                None,
+                &context1,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+        thread::sleep(time::Duration::from_millis(500));
+
+        // Jill publishes another entry
+        context1
+            .block_on(author_entry(
+                &test_entry_with_value("{\"stuff\":\"test entry value number 2\"}"),
+                None,
+                &context1,
+                &vec![],
+            ))
+            .unwrap()
+            .address();
+        thread::sleep(time::Duration::from_millis(500));
+
+        // collect Jills local chain
+        let state = &context1.state().unwrap();
+        let jill_headers: Vec<ChainHeader> = state
+            .agent()
+            .iter_chain()
+            .collect();
+        let header = jill_headers.first().expect("Must be at least one header in chain");
+
+        // jack retrieves the top header addresss and reconstructs the Jills local chain by following the header back-links
+        let mut jack_headers: Vec<ChainHeader> = Vec::new();
+        let mut next_header_addr = header.address();
+        loop {
+            let mut entry: Option<Entry> = None;
+            let mut tries = 0;
+            while entry.is_none() && tries < 10 {
+                tries = tries + 1;
+                {
+                    entry = get_entry_from_dht(&context2, &next_header_addr).expect("Could not retrieve entry from DHT");
+                }
+                println!("Try {}: {:?}", tries, entry);
+                if entry.is_none() {
+                    thread::sleep(time::Duration::from_millis(1000));
+                }
+            }
+            if let Some(Entry::ChainHeader(header)) = entry {
+                jack_headers.push(header.clone());
+                if let Some(next_addr) = header.link() {
+                    next_header_addr = next_addr
+                } else {
+                    break // chain has been followed to the genesis entry
+                }
+            } else {
+                panic!(format!("Could not retrieve header at address: {}", next_header_addr))
+            }
+        }
+
+        assert_eq!(
+            jack_headers.len(),
+            4,
+        );
+
+        assert_eq!(
+            jack_headers,
+            jill_headers,
         );
     }
 }

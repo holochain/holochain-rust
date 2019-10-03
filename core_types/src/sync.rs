@@ -73,26 +73,26 @@ pub fn spawn_hc_guard_watcher() {
                     if timeout {
                         let mut b = backtrace.clone();
                         b.resolve();
-                        println!("IMMORTAL LOCK GUARD!!! puid={:?} backtrace:\n{:?}", puid, b);
+                        debug!("IMMORTAL LOCK GUARD!!! puid={:?} backtrace:\n{:?}", puid, b);
                         print_pending_locks();
                     }
                     !timeout
                 })
                 .cloned()
                 .collect();
-            println!("spawn_hc_guard_watcher: num={:?}", guards.len());
+            debug!("spawn_hc_guard_watcher: num={:?}", guards.len());
             for (puid, instant, _) in guards.iter() {
-                println!("{:?} {:?}", puid, instant);
+                debug!("{:?} {:?}", puid, instant);
             }
         }
         thread::sleep(Duration::from_millis(3000));
     });
-    println!("spawn_hc_guard_watcher: SPAWNED");
+    debug!("spawn_hc_guard_watcher: SPAWNED");
 }
 
 fn print_pending_locks() {
     for (i, (puid, kind, instant, backtrace)) in PENDING_LOCKS.lock().iter().enumerate() {
-        println!("PENDING LOCK #{}, locktype={:?}, pending for {:?}, puid={:?}, backtrace:\n{:?}", i, kind, Instant::now().duration_since(*instant), puid, backtrace);
+        debug!("PENDING LOCK #{}, locktype={:?}, pending for {:?}, puid={:?}, backtrace:\n{:?}", i, kind, Instant::now().duration_since(*instant), puid, backtrace);
     }
 }
 
@@ -233,7 +233,7 @@ macro_rules! mutex_impl {
                         // if let Some(puid) = puid {
                         //     PENDING_LOCKS.lock().retain(|(p, _, _, _)| *p != puid);
                         // } else {
-                        //     println!("warn/_try_lock_until: no pending lock to remove");
+                        //     debug!("warn/_try_lock_until: no pending lock to remove");
                         // }
                         Ok(v)
                     },
@@ -284,7 +284,7 @@ fn try_lock_ok<T, P>(result: Result<T, TryLockError<P>>) -> Option<T> {
         Ok(v) => Some(v),
         Err(TryLockError::WouldBlock) => None,
         Err(TryLockError::Poisoned(err)) => {
-            println!("try_lock_ok found poisoned lock! {:?}", err);
+            debug!("try_lock_ok found poisoned lock! {:?}", err);
             None
         }
     }

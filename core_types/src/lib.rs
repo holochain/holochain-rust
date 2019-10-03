@@ -56,6 +56,10 @@ pub mod sync;
 pub mod time;
 pub mod ugly;
 pub mod validation;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate logging;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

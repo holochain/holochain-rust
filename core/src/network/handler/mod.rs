@@ -143,7 +143,6 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {
-                    println!("SKIPPING STORE");
                     return Ok(());
                 }
                 log_debug!(

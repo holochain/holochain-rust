@@ -103,7 +103,6 @@ impl Sim1hWorker {
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let ClientToLib3h::JoinSpace(space_data)= ClientToLib3h::from(data);
                 let log_context = "ClientToLib3h::JoinSpace";
-                println!("handlingmessage {:?}", log_context);
                 let (_, state) = Sim1hState::join_space(&log_context, &self.dynamo_db_client, &space_data)?;
                 self.state = Some(state);
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
@@ -116,7 +115,6 @@ impl Sim1hWorker {
             // Order the p2p module to leave the network of the specified space.
             Lib3hClientProtocol::LeaveSpace(space_data) => {
                 let log_context = "ClientToLib3h::LeaveSpace";
-                println!("handlingmessage {:?}", log_context);
                 let _ = leave_space(&log_context, &self.dynamo_db_client, &space_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: space_data.request_id,
@@ -130,7 +128,6 @@ impl Sim1hWorker {
             // Send a message directly to another agent on the network
             Lib3hClientProtocol::SendDirectMessage(dm_data) => {
                 let log_context = "ClientToLib3h::SendDirectMessage";
-                println!("handlingmessage {:?}", log_context);
                 let _ = send_direct_message(&log_context, &self.dynamo_db_client, &dm_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: dm_data.request_id,
@@ -142,7 +139,6 @@ impl Sim1hWorker {
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
                 let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
-                println!("handlingmessage {:?}", log_context);
                 send_direct_message_result(&log_context, &self.dynamo_db_client, &dm_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: dm_data.request_id,
@@ -155,14 +151,12 @@ impl Sim1hWorker {
             // Request an Entry from the dht network
             Lib3hClientProtocol::FetchEntry(fetch_entry_data) => {
                 let log_context = "ClientToLib3h::FetchEntry";
-                println!("handlingmessage {:?}", log_context);
                 let result = fetch_entry(&log_context, &self.dynamo_db_client, &fetch_entry_data)?;
                 Ok(result.into())
             }
             // Successful data response for a `HandleFetchEntryData` request
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 let log_context = "ClientToLib3h::HandleFetchEntryResult";
-                println!("handlingmessage {:?}", log_context);
                 handle_fetch_entry_result(
                     &log_context,
                     &self.dynamo_db_client,
@@ -181,7 +175,6 @@ impl Sim1hWorker {
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
                 let log_context = "ClientToLib3h::PublishEntry";
-                println!("handlingmessage {:?}", log_context);
                 publish_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: "".into(),
@@ -193,7 +186,6 @@ impl Sim1hWorker {
             // Tell network module Core is holding this entry
             Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
-                println!("handlingmessage {:?}", log_context);
                 Sim1hState::hold_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: "".into(),
@@ -205,7 +197,6 @@ impl Sim1hWorker {
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
-                println!("handlingmessage {:?}", log_context);
 
                 let generic = GenericResultData {
                     request_id: "".into(),
@@ -228,7 +219,6 @@ impl Sim1hWorker {
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
                 let log_context = "ClientToLib3h::HandleQueryEntryResult";
-                println!("handlingmessage {:?}", log_context);
                 let generic = GenericResultData {
                     request_id: query_entry_result_data.request_id.clone(),
                     space_address: query_entry_result_data.space_address.clone(),
@@ -248,7 +238,6 @@ impl Sim1hWorker {
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
-                println!("handlingmessage {:?}", log_context);
                 let generic = GenericResultData {
                     request_id: entry_list_data.request_id.clone(),
                     space_address: entry_list_data.space_address.clone(),
@@ -265,7 +254,6 @@ impl Sim1hWorker {
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
-                println!("handlingmessage {:?}", log_context);
                 handle_get_gossiping_entry_list(
                     &log_context,
                     &self.dynamo_db_client,

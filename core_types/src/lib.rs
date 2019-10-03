@@ -51,8 +51,8 @@ pub mod hdk_version;
 pub mod link;
 pub mod network;
 pub mod signature;
-pub mod time;
 pub mod sync;
+pub mod time;
 pub mod ugly;
 pub mod validation;
 

@@ -4,17 +4,17 @@
 mod dna_error;
 mod ribosome_error;
 
-use sync::HcLockError;
 pub use self::{dna_error::*, ribosome_error::*};
+use sync::HcLockError;
 
 use self::HolochainError::*;
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use holochain_persistence_api::{error::PersistenceError, hash::HashString};
-use lib3h_crypto_api::CryptoError;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
+use holochain_persistence_api::{error::PersistenceError, hash::HashString};
+use lib3h_crypto_api::CryptoError;
 
 use serde_json::Error as SerdeError;
 use std::{

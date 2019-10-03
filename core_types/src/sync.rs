@@ -1,11 +1,11 @@
-use snowflake::ProcessUniqueId;
 use backtrace::Backtrace;
+use snowflake::ProcessUniqueId;
 
 use std::{
     ops::{Deref, DerefMut},
     sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError},
-    time::{Duration, Instant},
     thread,
+    time::{Duration, Instant},
 };
 
 const LOCK_TIMEOUT_SECS: u64 = 90;
@@ -57,38 +57,39 @@ impl HcLockError {
 pub type HcLockResult<T> = Result<T, HcLockError>;
 
 lazy_static! {
-    static ref GUARDS: Mutex<Vec<(ProcessUniqueId, Instant, Backtrace)>> =
-        Mutex::new(Vec::new());
+    static ref GUARDS: Mutex<Vec<(ProcessUniqueId, Instant, Backtrace)>> = Mutex::new(Vec::new());
 }
 
 pub fn spawn_hc_guard_watcher() {
-    let _ = thread::spawn(move || {
-        loop {
-            {
-                let mut guards = GUARDS.lock().expect("someone poisoned the GUARDS");
-                *guards = guards.iter().filter(|(puid, instant, backtrace)| {
-                    let timeout = Instant::now().duration_since(*instant).as_secs() > LOCK_TIMEOUT_SECS;
+    let _ = thread::spawn(move || loop {
+        {
+            let mut guards = GUARDS.lock().expect("someone poisoned the GUARDS");
+            *guards = guards
+                .iter()
+                .filter(|(puid, instant, backtrace)| {
+                    let timeout =
+                        Instant::now().duration_since(*instant).as_secs() > LOCK_TIMEOUT_SECS;
                     if timeout {
                         let mut b = backtrace.clone();
                         b.resolve();
                         println!("IMMORTAL LOCK GUARD!!! puid={:?} backtrace:\n{:?}", puid, b);
                     }
                     !timeout
-                }).cloned().collect();
-                println!("spawn_hc_guard_watcher: num={:?}", guards.len());
-                for (puid, instant, _) in guards.iter() {
-                    println!("{:?} {:?}", puid, instant);
-                }
+                })
+                .cloned()
+                .collect();
+            println!("spawn_hc_guard_watcher: num={:?}", guards.len());
+            for (puid, instant, _) in guards.iter() {
+                println!("{:?} {:?}", puid, instant);
             }
-            thread::sleep(Duration::from_millis(3000));
         }
+        thread::sleep(Duration::from_millis(3000));
     });
     println!("spawn_hc_guard_watcher: SPAWNED");
 }
 
 ///////////////////////////////////////////////////////////////
 /// GUARDS
-
 
 pub struct HcMutexGuard<'a, T: ?Sized> {
     puid: ProcessUniqueId,
@@ -98,17 +99,23 @@ pub struct HcMutexGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcMutexGuard<'a, T> {
     pub fn new(inner: MutexGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid.clone(), Instant::now(), Backtrace::new_unresolved()));
+        GUARDS.lock().expect("someone poisoned the GUARDS").push((
+            puid,
+            Instant::now(),
+            Backtrace::new_unresolved(),
+        ));
         Self { puid, inner }
     }
 }
 
 impl<'a, T: ?Sized> Drop for HcMutexGuard<'a, T> {
     fn drop(&mut self) {
-        GUARDS.lock().expect("someone poisoned the GUARDS").retain(|(puid, _, _)| *puid != self.puid)
+        GUARDS
+            .lock()
+            .expect("someone poisoned the GUARDS")
+            .retain(|(puid, _, _)| *puid != self.puid)
     }
 }
-
 
 pub struct HcRwLockReadGuard<'a, T: ?Sized> {
     puid: ProcessUniqueId,
@@ -118,17 +125,23 @@ pub struct HcRwLockReadGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockReadGuard<'a, T> {
     pub fn new(inner: RwLockReadGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid.clone(), Instant::now(), Backtrace::new_unresolved()));
+        GUARDS.lock().expect("someone poisoned the GUARDS").push((
+            puid,
+            Instant::now(),
+            Backtrace::new_unresolved(),
+        ));
         Self { puid, inner }
     }
 }
 
 impl<'a, T: ?Sized> Drop for HcRwLockReadGuard<'a, T> {
     fn drop(&mut self) {
-        GUARDS.lock().expect("someone poisoned the GUARDS").retain(|(puid, _, _)| *puid != self.puid)
+        GUARDS
+            .lock()
+            .expect("someone poisoned the GUARDS")
+            .retain(|(puid, _, _)| *puid != self.puid)
     }
 }
-
 
 pub struct HcRwLockWriteGuard<'a, T: ?Sized> {
     puid: ProcessUniqueId,
@@ -138,17 +151,23 @@ pub struct HcRwLockWriteGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockWriteGuard<'a, T> {
     pub fn new(inner: RwLockWriteGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid.clone(), Instant::now(), Backtrace::new_unresolved()));
+        GUARDS.lock().expect("someone poisoned the GUARDS").push((
+            puid,
+            Instant::now(),
+            Backtrace::new_unresolved(),
+        ));
         Self { puid, inner }
     }
 }
 
 impl<'a, T: ?Sized> Drop for HcRwLockWriteGuard<'a, T> {
     fn drop(&mut self) {
-        GUARDS.lock().expect("someone poisoned the GUARDS").retain(|(puid, _, _)| *puid != self.puid)
+        GUARDS
+            .lock()
+            .expect("someone poisoned the GUARDS")
+            .retain(|(puid, _, _)| *puid != self.puid)
     }
 }
-
 
 // TODO: impl as appropriate
 // AsRef<InnerType>
@@ -227,15 +246,15 @@ impl<T: ?Sized> HcMutex<T> {
                     } else {
                         std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
                         self.try_lock_until(deadline)
-                    }    
+                    }
                 }
-            }
+            },
         }
     }
 
     pub fn try_lock(&self) -> HcLockResult<HcMutexGuard<T>> {
         let bts = update_backtraces(&self.backtraces);
-        (&*self)
+        (*self)
             .inner
             .try_lock()
             .map_err(|err| match err {
@@ -286,15 +305,15 @@ impl<T: ?Sized> HcRwLock<T> {
                     } else {
                         std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
                         self.try_read_until(deadline)
-                    }    
+                    }
                 }
-            }
+            },
         }
     }
 
     pub fn try_read(&self) -> HcLockResult<HcRwLockReadGuard<T>> {
         let bts = update_backtraces(&self.backtraces);
-        (&*self)
+        (*self)
             .inner
             .try_read()
             .map_err(|err| match err {
@@ -316,7 +335,6 @@ impl<T: ?Sized> HcRwLock<T> {
         self.try_write_until(deadline)
     }
 
-
     fn try_write_until(&self, deadline: Instant) -> HcLockResult<HcRwLockWriteGuard<T>> {
         match self.try_write() {
             Ok(v) => Ok(v),
@@ -328,15 +346,15 @@ impl<T: ?Sized> HcRwLock<T> {
                     } else {
                         std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
                         self.try_write_until(deadline)
-                    }    
+                    }
                 }
-            }
+            },
         }
     }
 
     pub fn try_write(&self) -> HcLockResult<HcRwLockWriteGuard<T>> {
         let bts = update_backtraces(&self.backtraces);
-        (&*self)
+        (*self)
             .inner
             .try_write()
             .map_err(|err| match err {

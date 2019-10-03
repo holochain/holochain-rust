@@ -8,7 +8,7 @@ use std::{
     thread,
 };
 
-const LOCK_TIMEOUT_SECS: u64 = 50;
+const LOCK_TIMEOUT_SECS: u64 = 90;
 const LOCK_POLL_INTERVAL_MS: u64 = 10;
 
 #[derive(Debug)]

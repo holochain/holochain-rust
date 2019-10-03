@@ -395,6 +395,7 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "sim1h")]
     #[test]
     fn call_to_boostrap_fails() {
         let (mut worker, r) = test_worker();

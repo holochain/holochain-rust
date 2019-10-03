@@ -7,6 +7,7 @@ build = "build.rs"
 [dependencies]
 arrayref = "=0.3.5"
 base64 = "=0.10.1"
+backtrace = "=0.3.27"
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
@@ -20,20 +21,24 @@ futures-executor-preview = "=0.3.0-alpha.17"
 futures-io-preview = "=0.3.0-alpha.17"
 futures-sink-preview = "=0.3.0-alpha.17"
 futures-util-preview = "=0.3.0-alpha.17"
+mashup = "0.1.9"
 wasmi = "=0.4.4"
 hcid = "=0.0.6"
 rust-base58 = "=0.0.4"
 snowflake = "=1.3.0"
 objekt= "=0.1.2"
-holochain_persistence_api = "=0.0.7"
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+holochain_persistence_api = "=0.0.8"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-lib3h_crypto_api = "=0.0.10"
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"
 crossbeam-channel = "=0.3.8"
-lib3h_protocol = "=0.0.10"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+parking_lot ="=0.9.0"
+log = "=0.4.8"
+logging = { path = "../logging" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

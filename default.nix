@@ -24,6 +24,17 @@ with holonix.pkgs;
  dev-shell = stdenv.mkDerivation (holonix.shell // {
   name = "dev-shell";
 
+    shellHook = holonix.pkgs.lib.concatStrings [''
+    # environment variables used by rust tests directly
+    export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+    export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    # config file used by aws cli tool
+    export AWS_CONFIG_FILE=`pwd`/.aws/config
+    RUST_LOG=sim1h=trace
+    ''
+    holonix.shell.shellHook
+    ];
+
   buildInputs = [ ]
    ++ holonix.shell.buildInputs
 
@@ -68,6 +79,15 @@ with holonix.pkgs;
    ++ (holonix.pkgs.callPackage ./test {
     pkgs = holonix.pkgs;
    }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./.aws {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./dynamodb {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
   ;
  });
 }

@@ -753,7 +753,8 @@ impl ConductorApiBuilder {
 
             let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
             println!("debug/state_dump RETURNED");
-            let output = serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?;
+            let output =
+                serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?;
             println!("debug/state_dump VALUE: {}", output);
 
             Ok(output)

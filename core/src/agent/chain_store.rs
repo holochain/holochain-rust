@@ -305,8 +305,8 @@ pub mod tests {
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
+        sync::HcRwLock as RwLock,
         time::test_iso_8601,
-        sync::{HcRwLock as RwLock}
     };
     use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;

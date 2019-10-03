@@ -1,9 +1,9 @@
 use backtrace::Backtrace;
+use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
-use parking_lot::{Mutex,MutexGuard,RwLock,RwLockReadGuard,RwLockWriteGuard};
 use std::{
     ops::{Deref, DerefMut},
-    sync::{TryLockError},
+    sync::TryLockError,
     thread,
     time::{Duration, Instant},
 };
@@ -99,20 +99,16 @@ pub struct HcMutexGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcMutexGuard<'a, T> {
     pub fn new(inner: MutexGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().push((
-            puid,
-            Instant::now(),
-            Backtrace::new_unresolved(),
-        ));
+        GUARDS
+            .lock()
+            .push((puid, Instant::now(), Backtrace::new_unresolved()));
         Self { puid, inner }
     }
 }
 
 impl<'a, T: ?Sized> Drop for HcMutexGuard<'a, T> {
     fn drop(&mut self) {
-        GUARDS
-            .lock()
-            .retain(|(puid, _, _)| *puid != self.puid)
+        GUARDS.lock().retain(|(puid, _, _)| *puid != self.puid)
     }
 }
 
@@ -124,20 +120,16 @@ pub struct HcRwLockReadGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockReadGuard<'a, T> {
     pub fn new(inner: RwLockReadGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().push((
-            puid,
-            Instant::now(),
-            Backtrace::new_unresolved(),
-        ));
+        GUARDS
+            .lock()
+            .push((puid, Instant::now(), Backtrace::new_unresolved()));
         Self { puid, inner }
     }
 }
 
 impl<'a, T: ?Sized> Drop for HcRwLockReadGuard<'a, T> {
     fn drop(&mut self) {
-        GUARDS
-            .lock()
-            .retain(|(puid, _, _)| *puid != self.puid)
+        GUARDS.lock().retain(|(puid, _, _)| *puid != self.puid)
     }
 }
 
@@ -149,20 +141,16 @@ pub struct HcRwLockWriteGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockWriteGuard<'a, T> {
     pub fn new(inner: RwLockWriteGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().push((
-            puid,
-            Instant::now(),
-            Backtrace::new_unresolved(),
-        ));
+        GUARDS
+            .lock()
+            .push((puid, Instant::now(), Backtrace::new_unresolved()));
         Self { puid, inner }
     }
 }
 
 impl<'a, T: ?Sized> Drop for HcRwLockWriteGuard<'a, T> {
     fn drop(&mut self) {
-        GUARDS
-            .lock()
-            .retain(|(puid, _, _)| *puid != self.puid)
+        GUARDS.lock().retain(|(puid, _, _)| *puid != self.puid)
     }
 }
 
@@ -255,8 +243,7 @@ impl<T: ?Sized> HcMutex<T> {
             .inner
             .try_lock()
             .map(|inner| HcMutexGuard::new(inner))
-            .ok_or_else(||HcLockError::new(LockType::Lock, bts, HcLockErrorKind::HcLockTimeout))
-             
+            .ok_or_else(|| HcLockError::new(LockType::Lock, bts, HcLockErrorKind::HcLockTimeout))
     }
 }
 
@@ -308,8 +295,7 @@ impl<T: ?Sized> HcRwLock<T> {
             .inner
             .try_read()
             .map(|inner| HcRwLockReadGuard::new(inner))
-            .ok_or_else(||(HcLockError::new(LockType::Read, bts, HcLockErrorKind::HcLockTimeout)))
-            
+            .ok_or_else(|| (HcLockError::new(LockType::Read, bts, HcLockErrorKind::HcLockTimeout)))
     }
 }
 
@@ -343,10 +329,7 @@ impl<T: ?Sized> HcRwLock<T> {
             .inner
             .try_write()
             .map(|inner| HcRwLockWriteGuard::new(inner))
-            .ok_or_else(||
-            {
-                    (HcLockError::new(LockType::Write, bts, HcLockErrorKind::HcLockTimeout))
-            })
+            .ok_or_else(|| (HcLockError::new(LockType::Write, bts, HcLockErrorKind::HcLockTimeout)))
     }
 }
 
@@ -365,7 +348,7 @@ fn try_lock_ok<T, P>(result: Result<T, TryLockError<P>>) -> Option<T> {
 }
 
 fn update_backtraces(mutex: &Mutex<Vec<Backtrace>>) -> Option<Vec<Backtrace>> {
-    if let Some(mut bts) = try_lock_ok::<_,()>(mutex.try_lock().ok_or(TryLockError::WouldBlock)) {
+    if let Some(mut bts) = try_lock_ok::<_, ()>(mutex.try_lock().ok_or(TryLockError::WouldBlock)) {
         bts.push(Backtrace::new_unresolved());
         Some(bts.clone())
     } else {

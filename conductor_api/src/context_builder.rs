@@ -3,7 +3,7 @@ use holochain_core_types::{
     agent::AgentId,
     eav::Attribute,
     error::HolochainError,
-    sync::{HcMutex as Mutex, HcRwLock as RwLock},
+    sync::{HcRwLock as RwLock},
 };
 use holochain_net::p2p_config::P2pConfig;
 use holochain_persistence_api::{
@@ -158,7 +158,7 @@ impl ContextBuilder {
                 .unwrap_or_else(|| "Anonymous-instance".to_string()),
             self.agent_id
                 .unwrap_or_else(|| AgentId::generate_fake("alice")),
-            Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
             eav_storage,

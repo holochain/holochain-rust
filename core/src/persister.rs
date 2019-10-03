@@ -21,7 +21,7 @@ use crate::{
 use std::sync::{Arc};
 
 /// trait that defines the persistence functionality that holochain_core requires
-pub trait Persister: Send {
+pub trait Persister: Send + Sync {
     // @TODO how does save/load work with snowflake IDs?
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness

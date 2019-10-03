@@ -54,7 +54,7 @@ pub mod test {
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
-    use holochain_core_types::{agent::AgentId, sync::{HcMutex as Mutex, HcRwLock as RwLock}};
+    use holochain_core_types::{agent::AgentId, sync::{HcRwLock as RwLock}};
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -68,7 +68,7 @@ pub mod test {
         let mut context = Context::new(
             "Test-context-instance",
             AgentId::generate_fake("Terence"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(

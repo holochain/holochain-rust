@@ -22,7 +22,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    sync::{HcMutex as Mutex, HcRwLock as RwLock, HcMutexGuard as MutexGuard, HcRwLockReadGuard as RwLockReadGuard},
+    sync::{HcMutex as Mutex, HcMutexGuard as MutexGuard, HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
 };
 
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -72,7 +72,7 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
 pub struct Context {
     pub(crate) instance_name: String,
     pub agent_id: AgentId,
-    pub persister: Arc<Mutex<dyn Persister>>,
+    pub persister: Arc<RwLock<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<Sender<ActionWrapper>>,
     pub observer_channel: Option<Sender<Observer>>,
@@ -117,7 +117,7 @@ impl Context {
     pub fn new(
         instance_name: &str,
         agent_id: AgentId,
-        persister: Arc<Mutex<dyn Persister>>,
+        persister: Arc<RwLock<dyn Persister>>,
         chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
@@ -151,7 +151,7 @@ impl Context {
     pub fn new_with_channels(
         instance_name: &str,
         agent_id: AgentId,
-        persister: Arc<Mutex<dyn Persister>>,
+        persister: Arc<RwLock<dyn Persister>>,
         action_channel: Option<Sender<ActionWrapper>>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
@@ -391,9 +391,9 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::persister::SimplePersister;
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId,sync::{ HcRwLock as RwLock}};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::{Arc};
     use tempfile;
 
     #[test]
@@ -406,7 +406,7 @@ pub mod tests {
         let ctx = Context::new(
             "LOG-TEST-ID",
             AgentId::generate_fake("Bilbo"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
@@ -449,7 +449,7 @@ pub mod tests {
         let mut context = Context::new(
             "test_deadlock_instance",
             AgentId::generate_fake("Terence"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(

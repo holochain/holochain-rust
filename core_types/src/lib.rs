@@ -36,6 +36,7 @@ extern crate maplit;
 extern crate hcid;
 extern crate lib3h_protocol;
 extern crate wasmi;
+extern crate parking_lot;
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;

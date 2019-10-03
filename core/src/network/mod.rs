@@ -16,15 +16,18 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         instance::tests::{
             test_instance_and_context_by_name
+            //test_instance_and_context_with_memory_network_nodes,
         },
         network::{
             actions::{
                 query::{query, QueryMethod},
+                //get_validation_package::get_validation_package,
                 publish::publish,
             },
             query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
             test_utils::test_wat_always_valid,
         }
+        //workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
         agent::test_agent_id,
@@ -38,6 +41,8 @@ pub mod tests {
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use test_utils::*;
 
+    // TODO: Bring the old in-memory network up to speed and turn on this test again!
+    #[cfg(feature = "broken-tests")]
     // TODO do this for all crate tests somehow
     //dry this out
     #[allow(dead_code)]
@@ -211,6 +216,8 @@ pub mod tests {
         );
     }
 
+    // TODO: Bring the old in-memory network up to speed and turn on this test again!
+    #[cfg(feature = "broken-tests")]
     #[test]
     #[cfg(feature="broken-tests")]
     fn get_validation_package_roundtrip() {

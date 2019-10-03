@@ -408,6 +408,8 @@ pub mod tests {
         assert!(result.is_err());
     }
 
+    // TODO: Bring the old in-memory network up to speed and turn on this test again!
+    #[cfg(feature = "broken-tests")]
     #[test]
     #[cfg(feature="broken-tests")]
     pub fn reduce_hold_test() {

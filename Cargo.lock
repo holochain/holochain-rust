@@ -3195,7 +3195,7 @@ dependencies = [
 [[package]]
 name = "sim1h"
 version = "0.0.1"
-source = "git+https://github.com/holochain/sim1h#73419e676a7b13aa91b19d44a089b497e653353f"
+source = "git+https://github.com/holochain/sim1h#b3d306b8e74ddf4dbdeda3b3fc239866de4514ee"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",

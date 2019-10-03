@@ -15,9 +15,8 @@ use hdk::error::ZomeApiResult;
 
 use holochain_core::signal::{Signal, UserSignal};
 use holochain_core_types::{
-    entry::{entry_type::test_app_entry_type,Entry},
-    error::{ RibosomeEncodedValue, RibosomeEncodingBits},
-    
+    entry::{entry_type::test_app_entry_type, Entry},
+    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
 use holochain_json_api::json::JsonString;
@@ -26,8 +25,7 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-
-use std::{path::PathBuf};
+use std::path::PathBuf;
 use test_utils::{
     example_valid_entry_address, example_valid_entry_params, make_test_call,
     start_holochain_instance, TestEntry,
@@ -244,8 +242,7 @@ fn can_commit_entry_macro() {
 
 #[test]
 fn can_invalidate_invalid_commit() {
-    let (mut hc, _, _) =
-        start_holochain_instance("can_invalidate_invalid_commit", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_invalidate_invalid_commit", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -278,8 +275,7 @@ fn can_invalidate_invalid_commit() {
 
 #[test]
 fn has_populated_validation_data() {
-    let (mut hc, _, _) =
-        start_holochain_instance("has_populated_validation_data", "alice");
+    let (mut hc, _, _) = start_holochain_instance("has_populated_validation_data", "alice");
 
     //
     // Add two entries to chain to have something to check ValidationData on
@@ -322,8 +318,6 @@ fn has_populated_validation_data() {
     */
 }
 
-
-
 #[test]
 fn can_check_query() {
     let (mut hc, _, _) = start_holochain_instance("can_check_query", "alice");
@@ -344,8 +338,7 @@ fn can_check_query() {
 
 #[test]
 fn can_check_app_entry_address() {
-    let (mut hc, _, _) =
-        start_holochain_instance("can_check_app_entry_address", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_check_app_entry_address", "alice");
 
     let result = make_test_call(&mut hc, "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -358,8 +351,7 @@ fn can_check_app_entry_address() {
 
 #[test]
 fn can_check_sys_entry_address() {
-    let (mut hc, _, _) =
-        start_holochain_instance("can_check_sys_entry_address", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_check_sys_entry_address", "alice");
 
     let _result = make_test_call(&mut hc, "check_sys_entry_address", r#"{}"#);
     // TODO

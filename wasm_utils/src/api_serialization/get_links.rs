@@ -38,7 +38,7 @@ impl Default for GetLinksOptions {
     }
 }
 
-#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson,PartialEq)]
+#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson, PartialEq)]
 pub struct LinksResult {
     pub address: Address,
     pub headers: Vec<ChainHeader>,

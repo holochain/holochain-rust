@@ -375,9 +375,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 /// single instance may simply pass None and get a unique network name, but tests which require two
 /// instances to be on the same network need to ensure both contexts use the same network name.
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_memory_network_config(
-    network_name: Option<&str>
-) -> P2pConfig {
+pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
      .unwrap_or_else(|| {

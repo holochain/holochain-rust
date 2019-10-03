@@ -30,6 +30,8 @@ use sim1h::{
 use std::io::{self, Write};
 use url::Url;
 
+static DYNAMO_REGION: &str = "holochain-testing";
+
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim1hConfig {
     pub dynamo_url: String,
@@ -52,7 +54,9 @@ impl Sim1hWorker {
 
     /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn new(handler: NetHandler, config: Sim1hConfig) -> NetResult<Self> {
-        let dynamo_db_client = client_from_endpoint(config.dynamo_url);
+        let dynamo_db_client = client_from_endpoint(
+            config.dynamo_url,
+            DYNAMO_REGION.to_string());
         Ok(Self {
             handler,
             dynamo_db_client,
@@ -301,9 +305,6 @@ impl NetWorker for Sim1hWorker {
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
         self.num_ticks += 1;
-        if self.num_ticks % 10 == 0 {
-            print!("10ticks ");
-        }
         if self.num_ticks % 100 == 0 {
             io::stdout().flush()?;
         }
@@ -365,6 +366,7 @@ impl NetWorker for Sim1hWorker {
     }
 }
 
+#[cfg(feature = "sim1h")]
 #[cfg(test)]
 mod tests {
 
@@ -394,7 +396,7 @@ mod tests {
             r,
         )
     }
-
+    
     #[test]
     #[cfg(feature="broken-tests")]
     fn call_to_boostrap_fails() {

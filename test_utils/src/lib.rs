@@ -471,10 +471,13 @@ pub fn start_holochain_instance<T: Into<String>>(
         });
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
-    let test_config = env::var("INTEGRATION-TEST-CONFIG").map(|test_config|{
+
+    //set this environmental variable to set up the backend for running tests.
+    //if none has been set it will default to the legacy in memory worker implementation
+    let test_config = env::var("INTEGRATION_TEST_CONFIG").map(|test_config|{
             if test_config =="lib3h"
             {
-                unimplemented!("lib3h configuration should be set up in the env")
+                TestNodeConfig::MemoryGhostEngine(vec![])
             }
             else if test_config=="sim1h"
             {

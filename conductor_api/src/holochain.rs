@@ -231,7 +231,7 @@ impl Holochain {
 
     /// call a function in a zome
     pub fn call(
-        &mut self,
+        &self,
         zome: &str,
         cap: CapabilityRequest,
         fn_name: &str,

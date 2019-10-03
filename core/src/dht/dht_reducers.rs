@@ -176,7 +176,6 @@ pub mod tests {
     };
     use holochain_persistence_api::cas::content::AddressableContent;
 
-
     #[test]
     fn reduce_hold_entry_test() {
         let context = test_context("bob", None);
@@ -411,7 +410,7 @@ pub mod tests {
     // TODO: Bring the old in-memory network up to speed and turn on this test again!
     #[cfg(feature = "broken-tests")]
     #[test]
-    #[cfg(feature="broken-tests")]
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_hold_test() {
         let context = test_context("bill", None);
         let store = test_store(context.clone());

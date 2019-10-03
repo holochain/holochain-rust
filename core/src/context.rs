@@ -389,9 +389,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
-     .unwrap_or_else(|| {
-         P2pConfig::new_with_unique_memory_backend()
-     })
+        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend())
 }
 
 #[cfg(test)]

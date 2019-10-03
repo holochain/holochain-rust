@@ -1,11 +1,8 @@
-use holochain_core_types::{error::HolochainError, sync::{HcRwLock as RwLock}};
+use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
 use jsonrpc_core::IoHandler;
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{
-    fmt,
-    sync::{Arc},
-};
+use std::{fmt, sync::Arc};
 
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 

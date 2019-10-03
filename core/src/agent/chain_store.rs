@@ -3,17 +3,14 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
-    sync::{HcRwLock as RwLock},
+    sync::HcRwLock as RwLock,
 };
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
 };
 
-use std::{
-    str::FromStr,
-    sync::{Arc},
-};
+use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct ChainStore {
@@ -49,7 +46,7 @@ impl ChainStore {
         ChainStore { content_storage }
     }
 
-    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>>{
+    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
 

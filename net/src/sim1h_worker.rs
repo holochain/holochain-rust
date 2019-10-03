@@ -366,6 +366,7 @@ impl NetWorker for Sim1hWorker {
     }
 }
 
+#[cfg(feature = "sim1h")]
 #[cfg(test)]
 mod tests {
 
@@ -394,8 +395,7 @@ mod tests {
             r,
         )
     }
-
-    #[cfg(feature = "sim1h")]
+    
     #[test]
     fn call_to_boostrap_fails() {
         let (mut worker, r) = test_worker();

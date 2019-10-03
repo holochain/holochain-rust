@@ -3,13 +3,13 @@ use crate::{
     network::{actions::ActionResponse, direct_message::DirectMessage,query::NetworkQueryResult},
 };
 use boolinator::*;
-use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
+use holochain_core_types::{error::HolochainError, validation::ValidationPackage, sync::{HcMutex as Mutex}};
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc},
 };
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;

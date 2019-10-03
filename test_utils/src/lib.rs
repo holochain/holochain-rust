@@ -33,6 +33,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,
     },
+    sync::{HcMutex as Mutex},
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -52,7 +53,7 @@ use std::{
     hash::{Hash, Hasher},
     io::prelude::*,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc},
     thread,
     time::Duration,
     env
@@ -63,8 +64,6 @@ use wabt::Wat2Wasm;
 lazy_static!
 {
     pub static ref DYNAMO_DB_LOCAL_TEST_HOST_PATH: &'static str = "http://localhost:8001";
-    
-  
 }
 
 /// Load WASM from filesystem

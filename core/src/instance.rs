@@ -19,13 +19,14 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
     ugly::lax_send_sync,
 };
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{
-    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{Arc},
     thread,
     time::Duration,
 };
@@ -43,7 +44,7 @@ pub struct Instance {
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<dyn Persister>>>,
+    persister: Option<Arc<RwLock<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
 }
@@ -332,7 +333,7 @@ impl Instance {
             .ok_or_else(||HolochainError::new(
                 "Instance::save() called without persister set.",
             ))?
-            .try_lock()
+            .try_write()
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
     }
@@ -405,6 +406,7 @@ pub mod tests {
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
+        sync::{HcMutex as Mutex, HcRwLock as RwLock}
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -414,7 +416,7 @@ pub mod tests {
     use crate::persister::SimplePersister;
 
     use std::{
-        sync::{Arc, Mutex},
+        sync::{Arc},
         thread::sleep,
         time::Duration,
     };
@@ -450,7 +452,7 @@ pub mod tests {
             Arc::new(Context::new(
                 "Test-context-and-logger-instance",
                 agent,
-                Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
+                Arc::new(RwLock::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
                 content_storage.clone(),
                 meta_storage,
@@ -494,7 +496,7 @@ pub mod tests {
             Context::new_with_channels(
                 "Test-context-with-channels-instance",
                 agent,
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
                 None,
                 Some(observer_channel.clone()),
@@ -519,7 +521,7 @@ pub mod tests {
         let mut context = Context::new(
             "test-context-with-state-instance",
             registered_test_agent("Florence"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
@@ -545,7 +547,7 @@ pub mod tests {
         let mut context = Context::new(
             "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
-            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             cas.clone(),
             Arc::new(RwLock::new(

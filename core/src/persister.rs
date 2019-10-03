@@ -4,7 +4,10 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    error::HolochainError,
+    sync::{HcRwLock as RwLock},
+};
 
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent, Content},
@@ -15,10 +18,10 @@ use crate::{
     dht::dht_store::{DhtStoreSnapshot, DHT_STORE_SNAPSHOT_ADDRESS},
     state::StateWrapper,
 };
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 
 /// trait that defines the persistence functionality that holochain_core requires
-pub trait Persister: Send {
+pub trait Persister: Send + Sync {
     // @TODO how does save/load work with snowflake IDs?
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness

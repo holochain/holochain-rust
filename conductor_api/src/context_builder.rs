@@ -1,21 +1,22 @@
-use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-
-use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
-
-use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
-
+use holochain_core::{context::Context, persister::SimplePersister, signal::SignalSender};
+use holochain_core_types::{
+    agent::AgentId,
+    eav::Attribute,
+    error::HolochainError,
+    sync::{HcRwLock as RwLock},
+};
+use holochain_net::p2p_config::P2pConfig;
 use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
-
-use holochain_core::{context::Context, persister::SimplePersister, signal::SignalSender};
-use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
-use holochain_net::p2p_config::P2pConfig;
+use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
+use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
 use jsonrpc_core::IoHandler;
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::Arc,
 };
 
 /// This type helps building [context objects](struct.Context.html) that need to be
@@ -157,7 +158,7 @@ impl ContextBuilder {
                 .unwrap_or_else(|| "Anonymous-instance".to_string()),
             self.agent_id
                 .unwrap_or_else(|| AgentId::generate_fake("alice")),
-            Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
             eav_storage,

@@ -230,11 +230,11 @@ macro_rules! mutex_impl {
             fn $_try_lock_until_fn(&self, deadline: Instant, puid: Option<ProcessUniqueId>) -> HcLockResult<$guard<T>> {
                 match self.$try_lock_fn() {
                     Ok(v) => {
-                        if let Some(puid) = puid {
-                            PENDING_LOCKS.lock().retain(|(p, _, _, _)| *p != puid);
-                        } else {
-                            println!("warn/_try_lock_until: no pending lock to remove");
-                        }
+                        // if let Some(puid) = puid {
+                        //     PENDING_LOCKS.lock().retain(|(p, _, _, _)| *p != puid);
+                        // } else {
+                        //     println!("warn/_try_lock_until: no pending lock to remove");
+                        // }
                         Ok(v)
                     },
                     Err(err) => match err.kind {
@@ -242,7 +242,7 @@ macro_rules! mutex_impl {
                         HcLockErrorKind::HcLockTimeout => {
                             let puid = if puid.is_none() {
                                 let p = ProcessUniqueId::new();
-                                PENDING_LOCKS.lock().push((p, LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
+                                // PENDING_LOCKS.lock().push((p, LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
                                 Some(p)
                             } else { 
                                 puid 

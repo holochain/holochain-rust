@@ -22,7 +22,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
+    sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard, HcMutex as Mutex, HcMutexGuard as MutexGuard},
 };
 
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -53,7 +53,7 @@ impl P2pNetworkWrapper {
     }
 }
 
-pub struct P2pNetworkMutexGuardWrapper<'a>(std::sync::MutexGuard<'a, Option<P2pNetwork>>);
+pub struct P2pNetworkMutexGuardWrapper<'a>(MutexGuard<'a, Option<P2pNetwork>>);
 
 impl<'a> P2pNetworkMutexGuardWrapper<'a> {
     pub fn as_ref(&self) -> Result<&P2pNetwork, HolochainError> {

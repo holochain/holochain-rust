@@ -35,9 +35,6 @@ use holochain_core_types::{
     },
     sync::{HcMutex as Mutex},
 };
-use holochain_persistence_api::{
-    cas::content::{AddressableContent,Address}
-};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 

@@ -19,13 +19,14 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    sync::{HcMutex as Mutex, HcRwLock as RwLock},
     ugly::lax_send_sync,
 };
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{
-    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{Arc, RwLockReadGuard},
     thread,
     time::Duration,
 };

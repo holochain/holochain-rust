@@ -5,7 +5,7 @@ use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
+    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance, sync::{HcMutex as Mutex, HcRwLock as RwLock}
 };
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_json_api::json::JsonString;
@@ -18,7 +18,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc},
     thread,
 };
 

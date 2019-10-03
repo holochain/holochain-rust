@@ -7,7 +7,10 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    error::HolochainError, 
+    sync::{HcRwLock as RwLock}
+};
 
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
@@ -15,7 +18,7 @@ use json_patch;
 use std::{
     fs::{self, create_dir_all},
     path::PathBuf,
-    sync::{Arc, RwLock},
+    sync::{Arc},
     thread::sleep,
     time::Duration,
 };

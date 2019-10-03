@@ -19,6 +19,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate snowflake;
+// #[macro_use] extern crate shrinkwraprs;
 #[macro_use]
 extern crate holochain_json_derive;
 extern crate holochain_json_api;
@@ -47,6 +48,7 @@ pub mod link;
 pub mod network;
 pub mod signature;
 pub mod time;
+pub mod sync;
 pub mod ugly;
 pub mod validation;
 

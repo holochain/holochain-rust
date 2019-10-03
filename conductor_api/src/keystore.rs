@@ -2,6 +2,7 @@ use holochain_core_types::{
     agent::Base32,
     error::{HcResult, HolochainError},
     signature::Signature,
+    sync::{HcMutex as Mutex}
 };
 use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
@@ -27,7 +28,7 @@ use std::{
     fs::File,
     io::prelude::*,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc},
 };
 
 const PCHECK_HEADER_SIZE: usize = 8;

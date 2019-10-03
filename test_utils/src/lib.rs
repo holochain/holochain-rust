@@ -17,7 +17,8 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::{Signal,signal_channel,SignalReceiver}
+    signal::{Signal,signal_channel,SignalReceiver},
+    sync::{HcMutex as Mutex}
 };
 use holochain_core_types::{
    dna::{
@@ -52,7 +53,7 @@ use std::{
     hash::{Hash, Hasher},
     io::prelude::*,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc},
     time::Duration,
     thread
 };

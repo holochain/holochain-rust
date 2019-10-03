@@ -16,6 +16,7 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
+    sync::{HcRwLock as RwLock},
 };
 
 use holochain_persistence_api::{
@@ -30,7 +31,7 @@ use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{
     collections::HashSet,
     convert::TryInto,
-    sync::{Arc, RwLock},
+    sync::{Arc},
 };
 
 /// The Store of the Holochain instance Object, according to Redux pattern.

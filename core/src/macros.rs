@@ -93,11 +93,11 @@ macro_rules! log_error {
 
 #[test]
 fn context_log_macro_test() {
-    use std::sync::{Arc, RwLock, Mutex};
+    use std::sync::{Arc};
     use holochain_persistence_file::eav::file::EavFileStorage;
     use holochain_net::p2p_config::P2pConfig;
     use crate::persister::SimplePersister;
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId, sync::{HcMutex as Mutex, HcRwLock as RwLock}};
     use holochain_persistence_file::cas::file::FilesystemStorage;
     use crate::context::Context;
     use tempfile::tempdir;

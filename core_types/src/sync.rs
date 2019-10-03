@@ -98,7 +98,7 @@ pub struct HcMutexGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcMutexGuard<'a, T> {
     pub fn new(inner: MutexGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid.clone(), Instant::now(), Backtrace::new_unresolved()));
+        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid, Instant::now(), Backtrace::new_unresolved()));
         Self { puid, inner }
     }
 }
@@ -118,7 +118,7 @@ pub struct HcRwLockReadGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockReadGuard<'a, T> {
     pub fn new(inner: RwLockReadGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid.clone(), Instant::now(), Backtrace::new_unresolved()));
+        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid, Instant::now(), Backtrace::new_unresolved()));
         Self { puid, inner }
     }
 }
@@ -138,7 +138,7 @@ pub struct HcRwLockWriteGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockWriteGuard<'a, T> {
     pub fn new(inner: RwLockWriteGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid.clone(), Instant::now(), Backtrace::new_unresolved()));
+        GUARDS.lock().expect("someone poisoned the GUARDS").push((puid, Instant::now(), Backtrace::new_unresolved()));
         Self { puid, inner }
     }
 }
@@ -235,7 +235,7 @@ impl<T: ?Sized> HcMutex<T> {
 
     pub fn try_lock(&self) -> HcLockResult<HcMutexGuard<T>> {
         let bts = update_backtraces(&self.backtraces);
-        (&*self)
+        (*self)
             .inner
             .try_lock()
             .map_err(|err| match err {
@@ -294,7 +294,7 @@ impl<T: ?Sized> HcRwLock<T> {
 
     pub fn try_read(&self) -> HcLockResult<HcRwLockReadGuard<T>> {
         let bts = update_backtraces(&self.backtraces);
-        (&*self)
+        (*self)
             .inner
             .try_read()
             .map_err(|err| match err {
@@ -336,7 +336,7 @@ impl<T: ?Sized> HcRwLock<T> {
 
     pub fn try_write(&self) -> HcLockResult<HcRwLockWriteGuard<T>> {
         let bts = update_backtraces(&self.backtraces);
-        (&*self)
+        (*self)
             .inner
             .try_write()
             .map_err(|err| match err {

@@ -1,9 +1,9 @@
 use backtrace::Backtrace;
+use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
-use parking_lot::{Mutex,MutexGuard,RwLock,RwLockReadGuard,RwLockWriteGuard};
 use std::{
     ops::{Deref, DerefMut},
-    sync::{TryLockError},
+    sync::TryLockError,
     thread,
     time::{Duration, Instant},
 };
@@ -58,7 +58,8 @@ pub type HcLockResult<T> = Result<T, HcLockError>;
 
 lazy_static! {
     static ref GUARDS: Mutex<Vec<(ProcessUniqueId, Instant, Backtrace)>> = Mutex::new(Vec::new());
-    static ref PENDING_LOCKS: Mutex<Vec<(ProcessUniqueId, LockType, Instant, Backtrace)>> = Mutex::new(Vec::new());
+    static ref PENDING_LOCKS: Mutex<Vec<(ProcessUniqueId, LockType, Instant, Backtrace)>> =
+        Mutex::new(Vec::new());
 }
 
 pub fn spawn_hc_guard_watcher() {
@@ -92,7 +93,14 @@ pub fn spawn_hc_guard_watcher() {
 
 fn print_pending_locks() {
     for (i, (puid, kind, instant, backtrace)) in PENDING_LOCKS.lock().iter().enumerate() {
-        println!("PENDING LOCK #{}, locktype={:?}, pending for {:?}, puid={:?}, backtrace:\n{:?}", i, kind, Instant::now().duration_since(*instant), puid, backtrace);
+        println!(
+            "PENDING LOCK #{}, locktype={:?}, pending for {:?}, puid={:?}, backtrace:\n{:?}",
+            i,
+            kind,
+            Instant::now().duration_since(*instant),
+            puid,
+            backtrace
+        );
     }
 }
 
@@ -101,7 +109,6 @@ fn print_pending_locks() {
 
 macro_rules! guard_struct {
     ($HcGuard:ident, $Guard:ident) => {
-
         pub struct $HcGuard<'a, T: ?Sized> {
             puid: ProcessUniqueId,
             inner: $Guard<'a, T>,
@@ -110,20 +117,16 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                GUARDS.lock().push((
-                    puid,
-                    Instant::now(),
-                    Backtrace::new_unresolved(),
-                ));
+                GUARDS
+                    .lock()
+                    .push((puid, Instant::now(), Backtrace::new_unresolved()));
                 Self { puid, inner }
             }
         }
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                GUARDS
-                    .lock()
-                    .retain(|(puid, _, _)| *puid != self.puid)
+                GUARDS.lock().retain(|(puid, _, _)| *puid != self.puid)
             }
         }
     };
@@ -174,11 +177,9 @@ impl<'a, T: ?Sized> DerefMut for HcRwLockWriteGuard<'a, T> {
     }
 }
 
-
 // /////////////////////////////////////////////////////////////
 // MUTEXES
 
- 
 #[derive(Debug)]
 pub struct HcMutex<T: ?Sized> {
     backtraces: Mutex<Vec<Backtrace>>,
@@ -193,7 +194,6 @@ impl<T> HcMutex<T> {
         }
     }
 }
-
 
 #[derive(Debug)]
 pub struct HcRwLock<T: ?Sized> {
@@ -210,24 +210,24 @@ impl<T> HcRwLock<T> {
     }
 }
 
-
 macro_rules! mutex_impl {
     ($HcMutex: ident, $Mutex: ident, $guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $_try_lock_until_fn:ident ) => {
-
         impl<T: ?Sized> $HcMutex<T> {
-
             pub fn $lock_fn(&self) -> HcLockResult<$guard<T>> {
                 // let bts = update_backtraces(&self.backtraces);
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
                 self.$try_lock_until_fn(deadline)
             }
 
-
             fn $try_lock_until_fn(&self, deadline: Instant) -> HcLockResult<$guard<T>> {
                 self.$_try_lock_until_fn(deadline, None)
             }
 
-            fn $_try_lock_until_fn(&self, deadline: Instant, puid: Option<ProcessUniqueId>) -> HcLockResult<$guard<T>> {
+            fn $_try_lock_until_fn(
+                &self,
+                deadline: Instant,
+                puid: Option<ProcessUniqueId>,
+            ) -> HcLockResult<$guard<T>> {
                 match self.$try_lock_fn() {
                     Ok(v) => {
                         // if let Some(puid) = puid {
@@ -236,7 +236,7 @@ macro_rules! mutex_impl {
                         //     println!("warn/_try_lock_until: no pending lock to remove");
                         // }
                         Ok(v)
-                    },
+                    }
                     Err(err) => match err.kind {
                         HcLockErrorKind::HcLockPoisonError => Err(err),
                         HcLockErrorKind::HcLockTimeout => {
@@ -244,8 +244,8 @@ macro_rules! mutex_impl {
                                 let p = ProcessUniqueId::new();
                                 // PENDING_LOCKS.lock().push((p, LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
                                 Some(p)
-                            } else { 
-                                puid 
+                            } else {
+                                puid
                             };
                             if let None = deadline.checked_duration_since(Instant::now()) {
                                 Err(err)
@@ -264,17 +264,44 @@ macro_rules! mutex_impl {
                     .inner
                     .$try_lock_fn()
                     .map(|inner| $guard::new(inner))
-                    .ok_or_else(||HcLockError::new(LockType::$lock_type, bts, HcLockErrorKind::HcLockTimeout))
+                    .ok_or_else(|| {
+                        HcLockError::new(LockType::$lock_type, bts, HcLockErrorKind::HcLockTimeout)
+                    })
             }
         }
     };
 }
 
-
-mutex_impl!(HcMutex, Mutex, HcMutexGuard, Lock, lock, try_lock, try_lock_until, _try_lock_until);
-mutex_impl!(HcRwLock, RwLock, HcRwLockReadGuard, Read, read, try_read, try_read_until, _try_read_until);
-mutex_impl!(HcRwLock, RwLock, HcRwLockWriteGuard, Write, write, try_write, try_write_until, _try_write_until);
-
+mutex_impl!(
+    HcMutex,
+    Mutex,
+    HcMutexGuard,
+    Lock,
+    lock,
+    try_lock,
+    try_lock_until,
+    _try_lock_until
+);
+mutex_impl!(
+    HcRwLock,
+    RwLock,
+    HcRwLockReadGuard,
+    Read,
+    read,
+    try_read,
+    try_read_until,
+    _try_read_until
+);
+mutex_impl!(
+    HcRwLock,
+    RwLock,
+    HcRwLockWriteGuard,
+    Write,
+    write,
+    try_write,
+    try_write_until,
+    _try_write_until
+);
 
 ///////////////////////////////////////////////////////////////
 /// HELPERS
@@ -291,7 +318,7 @@ fn try_lock_ok<T, P>(result: Result<T, TryLockError<P>>) -> Option<T> {
 }
 
 fn update_backtraces(mutex: &Mutex<Vec<Backtrace>>) -> Option<Vec<Backtrace>> {
-    if let Some(mut bts) = try_lock_ok::<_,()>(mutex.try_lock().ok_or(TryLockError::WouldBlock)) {
+    if let Some(mut bts) = try_lock_ok::<_, ()>(mutex.try_lock().ok_or(TryLockError::WouldBlock)) {
         bts.push(Backtrace::new_unresolved());
         Some(bts.clone())
     } else {

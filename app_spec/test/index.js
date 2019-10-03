@@ -5,7 +5,7 @@ const { callSyncMiddleware } = require('./config')
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
 // (But never over)
-const MIN_EXPECTED_SCENARIOS = 19
+const MIN_EXPECTED_SCENARIOS = 30
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -117,7 +117,7 @@ require('./multi-dna')(orchestrator.registerScenario)
 // Check to see that we haven't accidentally disabled a bunch of scenarios
 const num = orchestrator.numRegistered()
 if (num < MIN_EXPECTED_SCENARIOS) {
-  console.error("Expected at least ${MIN_EXPECTED_SCENARIOS} scenarios, but only ${num} were registered!")
+  console.error(`Expected at least ${MIN_EXPECTED_SCENARIOS} scenarios, but only ${num} were registered!`)
   process.exit(1)
 }
 else {

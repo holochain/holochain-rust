@@ -379,11 +379,10 @@ pub fn test_memory_network_config(
     network_name: Option<&str>
 ) -> P2pConfig {
     network_name
-        .map(|_| P2pConfig::new_with_unique_memory_backend())
-        .expect("Could not create p2p config")
-    // .unwrap_or_else(|| {
-    //     P2pConfig::new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes)
-    // })
+        .map(|name| P2pConfig::new_with_memory_backend(name))
+     .unwrap_or_else(|| {
+         P2pConfig::new_with_unique_memory_backend()
+     })
 }
 
 #[cfg(test)]

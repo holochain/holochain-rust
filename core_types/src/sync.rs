@@ -126,7 +126,6 @@ macro_rules! guard_struct {
                     .retain(|(puid, _, _)| *puid != self.puid)
             }
         }
-
     };
 }
 
@@ -266,7 +265,6 @@ macro_rules! mutex_impl {
                     .$try_lock_fn()
                     .map(|inner| $guard::new(inner))
                     .ok_or_else(||HcLockError::new(LockType::$lock_type, bts, HcLockErrorKind::HcLockTimeout))
-                     
             }
         }
     };

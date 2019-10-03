@@ -751,13 +751,6 @@ impl ConductorApiBuilder {
             let instance_id = Self::get_as_string("instance_id", &params_map)?;
 
             let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
-<<<<<<< Updated upstream
-=======
-            println!("debug/state_dump RETURNED");
-            let output =
-                serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?;
-            println!("debug/state_dump VALUE: {}", output);
->>>>>>> Stashed changes
 
             Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
         });

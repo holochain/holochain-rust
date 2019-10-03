@@ -5,6 +5,7 @@ extern crate holochain_json_api;
 extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
+extern crate url;
 #[macro_use]
 extern crate serde_json;
 extern crate hdk;
@@ -211,7 +212,7 @@ pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
 #[test]
 fn can_use_globals() {
-    let (mut hc, _, _) = start_holochain_instance("can_use_globals", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_use_globals", "alice", Vec::new());
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert_eq!(
@@ -226,7 +227,7 @@ fn can_use_globals() {
 
 #[test]
 fn can_commit_entry_macro() {
-    let (mut hc, _, _) = start_holochain_instance("can_commit_entry_macro", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_commit_entry_macro", "alice", Vec::new());
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -243,7 +244,8 @@ fn can_commit_entry_macro() {
 
 #[test]
 fn can_invalidate_invalid_commit() {
-    let (mut hc, _, _) = start_holochain_instance("can_invalidate_invalid_commit", "alice");
+    let (mut hc, _, _) =
+        start_holochain_instance("can_invalidate_invalid_commit", "alice", Vec::new());
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -276,7 +278,8 @@ fn can_invalidate_invalid_commit() {
 
 #[test]
 fn has_populated_validation_data() {
-    let (mut hc, _, _) = start_holochain_instance("has_populated_validation_data", "alice");
+    let (mut hc, _, _) =
+        start_holochain_instance("has_populated_validation_data", "alice", Vec::new());
 
     //
     // Add two entries to chain to have something to check ValidationData on
@@ -321,7 +324,7 @@ fn has_populated_validation_data() {
 
 #[test]
 fn can_link_entries() {
-    let (mut hc, _, _) = start_holochain_instance("can_link_entries", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_link_entries", "alice", Vec::new());
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -329,7 +332,7 @@ fn can_link_entries() {
 
 #[test]
 fn can_remove_link() {
-    let (mut hc, _, _) = start_holochain_instance("can_remove_link", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_remove_link", "alice", Vec::new());
 
     let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -338,7 +341,7 @@ fn can_remove_link() {
 #[test]
 #[cfg(test)]
 fn can_roundtrip_links() {
-    let (mut hc, _, _) = start_holochain_instance("can_roundtrip_links", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_roundtrip_links", "alice", Vec::new());
     // Create links
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =
@@ -461,7 +464,7 @@ fn can_roundtrip_links() {
 
 #[test]
 fn can_check_query() {
-    let (mut hc, _, _) = start_holochain_instance("can_check_query", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_check_query", "alice", Vec::new());
 
     let result = make_test_call(
         &mut hc,
@@ -479,7 +482,8 @@ fn can_check_query() {
 
 #[test]
 fn can_check_app_entry_address() {
-    let (mut hc, _, _) = start_holochain_instance("can_check_app_entry_address", "alice");
+    let (mut hc, _, _) =
+        start_holochain_instance("can_check_app_entry_address", "alice", Vec::new());
 
     let result = make_test_call(&mut hc, "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -492,7 +496,8 @@ fn can_check_app_entry_address() {
 
 #[test]
 fn can_check_sys_entry_address() {
-    let (mut hc, _, _) = start_holochain_instance("can_check_sys_entry_address", "alice");
+    let (mut hc, _, _) =
+        start_holochain_instance("can_check_sys_entry_address", "alice", Vec::new());
 
     let _result = make_test_call(&mut hc, "check_sys_entry_address", r#"{}"#);
     // TODO
@@ -541,12 +546,20 @@ fn can_check_call_with_args() {
 
 #[test]
 fn can_send_and_receive() {
-    let (mut hc, _, _) = start_holochain_instance("can_send_and_receive", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_send_and_receive", "alice", Vec::new());
+    let endpoint = hc
+        .context()
+        .expect("context")
+        .network()
+        .lock()
+        .as_ref()
+        .unwrap()
+        .p2p_endpoint();
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
 
-    let (mut hc2, _, _) = start_holochain_instance("can_send_and_receive", "bob");
+    let (mut hc2, _, _) = start_holochain_instance("can_send_and_receive", "bob", vec![endpoint]);
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -579,14 +592,14 @@ fn can_send_and_receive() {
 
 #[test]
 fn sleep_smoke_test() {
-    let (mut hc, _, _) = start_holochain_instance("sleep_smoke_test", "alice");
+    let (mut hc, _, _) = start_holochain_instance("sleep_smoke_test", "alice", Vec::new());
     let result = make_test_call(&mut hc, "sleep", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }
 
 #[test]
 fn show_env() {
-    let (mut hc, _, _) = start_holochain_instance("show_env", "alice");
+    let (mut hc, _, _) = start_holochain_instance("show_env", "alice", Vec::new());
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
@@ -600,7 +613,7 @@ fn show_env() {
 
 #[test]
 fn test_signal() {
-    let (mut hc, _, signal_receiver) = start_holochain_instance("test_signal", "alice");
+    let (mut hc, _, signal_receiver) = start_holochain_instance("test_signal", "alice", Vec::new());
     let params = r#"{"message":"test message"}"#;
     let result = make_test_call(&mut hc, "emit_signal", &params);
     assert!(result.is_ok());
@@ -621,7 +634,7 @@ fn test_signal() {
 
 #[test]
 fn test_get_entry_properties() {
-    let (mut hc, _, _) = start_holochain_instance("test_get_entry_properties", "alice");
+    let (mut hc, _, _) = start_holochain_instance("test_get_entry_properties", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "get_entry_properties",

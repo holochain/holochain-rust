@@ -1,3 +1,5 @@
+use logging::prelude::*;
+
 use super::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
     NetResult,
@@ -21,7 +23,7 @@ pub struct NetConnectionThread {
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
     pub endpoint: String,
-    pub p2p_endpoint: String,
+    pub p2p_endpoint: url::Url,
 }
 
 impl NetSend for NetConnectionThread {
@@ -51,9 +53,7 @@ impl NetConnectionThread {
         // Spawn worker thread
         let thread = thread::Builder::new().name(format!("net_worker_thread/{}", ProcessUniqueId::new().to_string())).spawn(move || {
             // Create worker
-            let mut worker = worker_factory(handler).unwrap_or_else(|e| {
-                panic!("Failure while attempting to create network worker with provided P2pConfig. Error: {:?}", e)
-            });
+            let mut worker = worker_factory(handler).expect("able to create worker");
             // Get endpoint and send it to owner (NetConnectionThread)
             send_endpoint
                 .send((worker.endpoint(), worker.p2p_endpoint()))
@@ -71,7 +71,7 @@ impl NetConnectionThread {
                         // Have the worker handle it
                         did_something = true;
                         worker.receive(data).unwrap_or_else(|e| {
-                            eprintln!("Error occured in p2p network module, on receive: {:?}", e)
+                            debug!("Error occured in p2p network module, on receive: {:?}", e)
                         });
                         Ok(())
                     })
@@ -87,7 +87,7 @@ impl NetConnectionThread {
                         Ok(())
                     })
                     .unwrap_or_else(|e| {
-                        eprintln!("Error occured in p2p network module, on tick: {:?}", e)
+                        error!("Error occured in p2p network module, on tick: {:?}", e)
                     });
 
                 // Increase sleep duration if nothing was received or sent
@@ -104,7 +104,7 @@ impl NetConnectionThread {
             }
             // Stop the worker
             worker.stop().unwrap_or_else(|e| {
-                eprintln!("Error occured in p2p network module on stop: {:?}", e)
+                error!("Error occured in p2p network module on stop: {:?}", e)
             });
         }).expect("Could not spawn net connection thread");
 
@@ -115,9 +115,7 @@ impl NetConnectionThread {
         let endpoint = endpoint
             .expect("Should have an endpoint address")
             .to_string();
-        let p2p_endpoint = p2p_endpoint
-            .expect("Should hav a p2p_endpoint address")
-            .to_string();
+        let p2p_endpoint = p2p_endpoint.unwrap_or(url::Url::parse("null:").unwrap());
 
         // Done
         Ok(NetConnectionThread {
@@ -154,14 +152,19 @@ mod tests {
 
     struct DefWorker;
 
-    impl NetWorker for DefWorker {}
+    impl NetWorker for DefWorker {
+        fn p2p_endpoint(&self) -> Option<url::Url> {
+            Some(url::Url::parse("test://def-worker").unwrap())
+        }
+    }
 
-    fn success_server_result(result_info: Vec<u8>) -> Lib3hServerProtocol {
+
+    fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocol {
         Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info,
+            result_info : result_info.clone().into(),
         })
     }
 
@@ -170,7 +173,7 @@ mod tests {
             request_id: "test_req_id".into(),
             space_address: HashString::from("test_space"),
             to_agent_id: HashString::from("test-agent"),
-            result_info,
+            result_info : result_info.into(),
         })
     }
 
@@ -195,7 +198,7 @@ mod tests {
     impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
             self.handler
-                .handle(Ok(success_server_result("tick".to_string().into_bytes())))?;
+                .handle(Ok(success_server_result(&"tick".to_string().into_bytes())))?;
             Ok(true)
         }
 
@@ -203,9 +206,13 @@ mod tests {
             match data {
                 Lib3hClientProtocol::SuccessResult(data) => self
                     .handler
-                    .handle(Ok(success_server_result(data.result_info))),
+                    .handle(Ok(success_server_result(&*data.result_info))),
                 msg => panic!("unexpected client protocol message in receive: {:?}", msg),
             }
+        }
+
+        fn p2p_endpoint(&self) -> Option<url::Url> {
+            Some(url::Url::parse("test://simple-worker").unwrap())
         }
     }
 
@@ -233,7 +240,7 @@ mod tests {
 
             match tmp {
                 Lib3hServerProtocol::SuccessResult(generic_data) => {
-                    if generic_data.result_info == "tick".to_string().into_bytes() {
+                    if generic_data.result_info == "tick".to_string().into_bytes().into() {
                         continue;
                     } else {
                         res = generic_data.result_info;
@@ -244,7 +251,7 @@ mod tests {
             }
         }
 
-        assert_eq!("test".to_string().into_bytes(), res);
+        assert_eq!("test".to_string().into_bytes(), *res);
 
         con.stop().unwrap();
     }
@@ -267,7 +274,7 @@ mod tests {
 
         match res {
             Lib3hServerProtocol::SuccessResult(generic_data) => {
-                assert_eq!("tick".to_string().into_bytes(), generic_data.result_info)
+                assert_eq!("tick".to_string().into_bytes(), *generic_data.result_info)
             }
             msg => panic!("unexpected message received: {:?}", msg),
         }

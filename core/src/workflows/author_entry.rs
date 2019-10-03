@@ -103,7 +103,7 @@ pub async fn author_entry<'a>(
     log_debug!(context, "debug/workflow/authoring_entry/{}: publishing header...", address);
     await!(publish_header_entry(entry.address(), &context))?;
     log_debug!(context, "debug/workflow/authoring_entry/{}: header published!", address);
-    
+
     Ok(CommitEntryResult::new(addr))
 }
 
@@ -119,14 +119,31 @@ pub mod tests {
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::{thread, time};
 
+    // TODO do this for all crate tests somehow
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
+
     #[test]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
+
+        enable_logging_for_test();
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
         let netname = Some("test_commit_with_dht_publish, the network");
-        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname.clone());
+        let context1_url = context1
+            .network().lock().as_ref().unwrap().p2p_endpoint();
+        let (_instance2, context2) = instance_with_bootstrap_nodes(
+            "jack", dna, netname, vec![context1_url]);
 
         let entry_address = context1
             .block_on(author_entry(
@@ -141,7 +158,7 @@ pub mod tests {
 
         let mut entry: Option<Entry> = None;
         let mut tries = 0;
-        while entry.is_none() && tries < 120 {
+        while entry.is_none() && tries < 100 {
             tries = tries + 1;
             {
                 entry = get_entry_from_dht(&context2, &entry_address).expect("Could not retrieve entry from DHT");
@@ -265,7 +282,7 @@ pub mod tests {
                 if entry.is_none() {
                     thread::sleep(time::Duration::from_millis(1000));
                 }
-            }   
+            }
             if let Some(Entry::ChainHeader(header)) = entry {
                 jack_headers.push(header.clone());
                 if let Some(next_addr) = header.link() {

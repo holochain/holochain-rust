@@ -93,7 +93,7 @@ pub fn reduce(
 /// that lives in the NetworkState.
 pub fn send(
     network_state: &mut NetworkState,
-    json_message: Lib3hClientProtocol,
+    msg: Lib3hClientProtocol,
 ) -> Result<(), HolochainError> {
     network_state
         .network
@@ -102,7 +102,7 @@ pub fn send(
         .as_mut()
         .map(|network| {
             network
-                .send(json_message)
+                .send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric(
@@ -129,7 +129,7 @@ pub fn send_message(
         space_address,
         to_agent_id: to_agent_id.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content,
+        content : content.into(),
     };
 
     let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;

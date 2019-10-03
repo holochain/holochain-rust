@@ -14,7 +14,10 @@ pub use holochain_core_types::network::entry_aspect;
 pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
-        instance::tests::test_instance_and_context_by_name,
+        instance::tests::{
+            test_instance_and_context_by_name,
+            test_instance_and_context_with_bootstrap_nodes,
+        },
         network::{
             actions::{
                 query::{query, QueryMethod},
@@ -37,6 +40,18 @@ pub mod tests {
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use test_utils::*;
+
+    // TODO do this for all crate tests somehow
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
 
     // TODO: Should wait for a success or saturation response from the network module after Publish
     #[test]
@@ -199,13 +214,20 @@ pub mod tests {
 
     #[test]
     fn get_validation_package_roundtrip() {
-        let netname = Some("get_validation_package_roundtrip");
+        enable_logging_for_test();
+
         let wat = &test_wat_always_valid();
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
-        dna.uuid = netname.unwrap().to_string();
+        dna.uuid = "get_validation_package_roundtrip".to_string();
+
+        let network = Some("get_validation_package_roundtrip");
 
         let (_instance1, context1) =
-            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
+            test_instance_and_context_by_name(dna.clone(), "alice1", network.clone()).unwrap();
+        let context1_url = context1
+            .network().lock().as_ref().unwrap().p2p_endpoint();
+        let (_instance2, context2) =
+            test_instance_and_context_with_bootstrap_nodes(dna.clone(), "bob1", network, vec![context1_url]).unwrap();
 
         let entry = test_entry();
         context1
@@ -217,8 +239,6 @@ pub mod tests {
             .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
 
-        let (_instance2, context2) =
-            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
         let result = context2.block_on(get_validation_package(header.clone(), &context2));
 
         assert!(result.is_ok(), "actual result: {:?}", result);

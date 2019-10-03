@@ -18,8 +18,8 @@ use holochain_persistence_api::hash::HashString;
 use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 
 use test_utils::{
-    generate_zome_internal_error, make_test_call, start_holochain_instance, wait_for_zome_result,
-    TestEntry,
+    enable_logging_for_test, generate_zome_internal_error, make_test_call,
+    start_holochain_instance, wait_for_zome_result, TestEntry,
 };
 
 //
@@ -202,8 +202,9 @@ pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
 #[test]
 pub fn test_invalid_target_link() {
+    enable_logging_for_test();
     let (mut hc, _, _signal_receiver) =
-        start_holochain_instance("test_invalid_target_link", "alice");
+        start_holochain_instance("test_invalid_target_link", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "link_tag_validation",
@@ -218,7 +219,9 @@ pub fn test_invalid_target_link() {
 
 #[test]
 pub fn test_bad_links() {
-    let (mut hc, _, _signal_receiver) = start_holochain_instance("test_bad_links", "alice");
+    enable_logging_for_test();
+    let (mut hc, _, _signal_receiver) =
+        start_holochain_instance("test_bad_links", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "create_and_link_tagged_entry_bad_link",
@@ -236,7 +239,7 @@ pub fn test_bad_links() {
 #[test]
 pub fn test_links_with_immediate_timeout() {
     let (mut hc, _, _signal_receiver) =
-        start_holochain_instance("test_links_with_immediate_timeout", "alice");
+        start_holochain_instance("test_links_with_immediate_timeout", "alice", Vec::new());
     make_test_call(
         &mut hc,
         "create_and_link_tagged_entry",
@@ -253,7 +256,9 @@ pub fn test_links_with_immediate_timeout() {
 
 #[test]
 pub fn test_links_with_load() {
-    let (mut hc, _, _signal_receiver) = start_holochain_instance("test_links_with_load", "alice");
+    enable_logging_for_test();
+    let (mut hc, _, _signal_receiver) =
+        start_holochain_instance("test_links_with_load", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "create_and_link_tagged_entry",
@@ -304,7 +309,8 @@ pub fn test_links_with_load() {
 
 #[test]
 fn can_validate_links() {
-    let (mut hc, _, _) = start_holochain_instance("can_validate_links", "alice");
+    enable_logging_for_test();
+    let (mut hc, _, _) = start_holochain_instance("can_validate_links", "alice", Vec::new());
     let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;
     let result = make_test_call(&mut hc, "link_validation", params_ok);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -331,8 +337,10 @@ fn can_validate_links() {
 
 #[test]
 fn create_tag_and_retrieve() {
+    enable_logging_for_test();
+
     let (mut hc, _, _signal_receiver) =
-        start_holochain_instance("create_tag_and_retrieve", "alice");
+        start_holochain_instance("create_tag_and_retrieve", "alice", Vec::new());
     let result = make_test_call(
         &mut hc,
         "create_and_link_tagged_entry",

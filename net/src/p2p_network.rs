@@ -8,7 +8,6 @@ use crate::{
         net_connection_thread::NetConnectionThread,
         NetResult,
     },
-    in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
     lib3h_worker::Lib3hWorker,
     p2p_config::*,
@@ -41,8 +40,10 @@ impl P2pNetwork {
         };
 
         let p2p_config_str = p2p_config.clone().as_str();
+        let p2p_config2 = p2p_config.clone();
+
         // Provide worker factory depending on backend kind
-        let worker_factory: NetWorkerFactory = match p2p_config.clone().backend_kind {
+        let worker_factory: NetWorkerFactory = match &p2p_config.clone().backend_kind {
             // Create an IpcNetWorker with the passed backend config
             P2pBackendKind::N3H => {
                 let enduser_config = p2p_config
@@ -60,25 +61,30 @@ impl P2pNetwork {
             }
             // Create a Lib3hWorker
             P2pBackendKind::LIB3H => {
-                let backend_config = match p2p_config.clone().backend_config {
+                let backend_config = match &p2p_config.clone().backend_config {
                     BackendConfig::Lib3h(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
                 };
 
                 Box::new(move |h| {
-                    Ok(Box::new(Lib3hWorker::new(h, backend_config.clone())?)
+                    Ok(Box::new(Lib3hWorker::with_wss_transport(h, backend_config.clone())?)
                         as Box<dyn NetWorker>)
                 })
             }
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
-                Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
+                let backend_config = match &p2p_config.clone().backend_config {
+                    BackendConfig::Memory(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting memory")),
+                };
+                Ok(Box::new(Lib3hWorker::with_memory_transport(h, backend_config.clone())?)
+                   as Box<dyn NetWorker>)
             }),
         };
 
         let (t, rx) = crossbeam_channel::unbounded();
         let tx = t.clone();
-        let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
+        let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config2.clone()) {
             NetHandler::new(Box::new(move |message| {
                 let unwrapped = message.unwrap();
                 let message = unwrapped.clone();
@@ -109,7 +115,7 @@ impl P2pNetwork {
                     e
                 )
             })?;
-        if Self::should_wait_for_p2p_ready(&p2p_config.clone()) {
+        if Self::should_wait_for_p2p_ready(&p2p_config2.clone()) {
             P2pNetwork::wait_p2p_ready(&rx);
         }
 
@@ -119,8 +125,9 @@ impl P2pNetwork {
 
     fn should_wait_for_p2p_ready(p2p_config: &P2pConfig) -> bool {
         match p2p_config.backend_kind {
-            P2pBackendKind::N3H | P2pBackendKind::MEMORY => true,
-            P2pBackendKind::LIB3H => false,
+            P2pBackendKind::LIB3H |
+            P2pBackendKind::MEMORY => false,
+            P2pBackendKind::N3H => true
         }
     }
 
@@ -151,7 +158,7 @@ impl P2pNetwork {
         self.connection.endpoint.clone()
     }
 
-    pub fn p2p_endpoint(&self) -> String {
+    pub fn p2p_endpoint(&self) -> url::Url {
         self.connection.p2p_endpoint.clone()
     }
 }
@@ -172,7 +179,7 @@ impl NetSend for P2pNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib3h_protocol::data_types::ConnectData;
+    use lib3h_protocol::{data_types::ConnectData,uri::Lib3hUri};
 
     #[test]
     fn it_should_create_memory_network() {
@@ -181,7 +188,7 @@ mod tests {
         let mut res = P2pNetwork::new(handler.clone(), p2p).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
-            peer_uri: url::Url::parse("mem://test".into()).expect("well formed memory network url"),
+            peer_location: Lib3hUri(url::Url::parse("mem://test".into()).expect("well formed memory network url")),
             network_id: "test_net_id".into(),
         };
 

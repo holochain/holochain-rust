@@ -430,6 +430,20 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+        test_context_and_logger_with_bootstrap_nodes(
+            agent_name,
+            network_name,
+            vec![]
+        )
+    }
+
+    /// create a test context and TestLogger pair so we can use the logger in assertions
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_context_and_logger_with_bootstrap_nodes(
+        agent_name: &str,
+        network_name: Option<&str>,
+        bootstrap_nodes: Vec<url::Url>,
+    ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
         let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
         let meta_storage = Arc::new(RwLock::new(EavMemoryStorage::new()));
@@ -442,7 +456,7 @@ pub mod tests {
                 content_storage.clone(),
                 content_storage.clone(),
                 meta_storage,
-                test_memory_network_config(network_name),
+                test_memory_network_config(network_name, bootstrap_nodes),
                 None,
                 None,
                 false,
@@ -455,6 +469,15 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context(agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
         let (context, _) = test_context_and_logger(agent_name, network_name);
+        context
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_context_with_bootstrap_nodes(
+        agent_name: &str, network_name: Option<&str>,
+        bootstrap_nodes: Vec<url::Url>) -> Arc<Context> {
+        let (context, _) = test_context_and_logger_with_bootstrap_nodes(
+            agent_name, network_name, bootstrap_nodes);
         context
     }
 
@@ -483,7 +506,8 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                test_memory_network_config(network_name),
+                // TODO should bootstrap nodes be set here?
+                test_memory_network_config(network_name, vec![]),
                 false,
             )
             .unwrap(),
@@ -505,7 +529,8 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            test_memory_network_config(network_name),
+            // TODO BLOCKER should bootstrap nodes be set here?
+            test_memory_network_config(network_name, vec![]),
             None,
             None,
             false,
@@ -530,7 +555,8 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            test_memory_network_config(network_name),
+            // TODO BLOCKER should bootstrap nodes be set here?
+            test_memory_network_config(network_name, vec![]),
             None,
             None,
             false,
@@ -562,15 +588,26 @@ pub mod tests {
         test_instance_and_context_by_name(dna, "jane", network_name)
     }
 
-    /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
         network_name: Option<&str>,
+        ) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_with_bootstrap_nodes(dna, name, network_name, vec![])
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context_with_bootstrap_nodes(
+        dna: Dna,
+        name: &str,
+        network_name: Option<&str>,
+        bootstrap_nodes : Vec<url::Url>,
     ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context(name, network_name);
+        let context = test_context_with_bootstrap_nodes(
+            name, network_name, bootstrap_nodes);
         let mut instance = Instance::new(context.clone());
         let context = instance.initialize(Some(dna.clone()), context.clone())?;
 

@@ -1,5 +1,6 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::{EngineConfig,TransportConfig,GatewayId};
+use lib3h_protocol::uri::Lib3hUri;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 
@@ -55,7 +56,8 @@ impl From<&'static str> for P2pBackendKind {
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub enum BackendConfig {
     Json(serde_json::Value),
-    Lib3h(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -150,19 +152,50 @@ impl P2pConfig {
         }
     }
 
-    pub fn new_with_memory_backend(server_name: &str) -> Self {
+    pub fn new_with_memory_backend(
+        server_name: &str) -> Self {
+       Self::new_with_memory_backend_bootstrap_nodes(server_name, vec![])
+    }
+
+     pub fn new_with_memory_backend_bootstrap_nodes(
+        server_name: &str, bootstrap_nodes: Vec<Lib3hUri>) -> Self {
+
+        let host_name =
+            server_name.replace(":", "_").replace(" ", "_").replace(",", "_");
+        
+        let uri = url::Url::parse(format!("mem://{}", host_name).as_str())
+                 .expect(format!("invalid memory server url: {}", server_name).as_str());
+        let lib_uri = Lib3hUri(uri);
+
         P2pConfig::new(
             P2pBackendKind::MEMORY,
-            BackendConfig::Json(Self::memory_backend_json(server_name)),
-            None,
+            BackendConfig::Memory(
+                EngineConfig {
+                    network_id : GatewayId { nickname : server_name.into(),id: server_name.into()},
+                    //need to fix the transport configs
+                    transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
+                    bootstrap_nodes,
+                    work_dir: "".into(),
+                    log_level: 'd',
+                    bind_url: lib_uri,
+                    dht_custom_config: vec![],
+                    dht_timeout_threshold: 2000,
+                    dht_gossip_interval: 20
+                }),
+                None,
         )
     }
 
     pub fn new_with_unique_memory_backend() -> Self {
-        Self::new_with_memory_backend(&format!(
+        Self::new_with_unique_memory_backend_bootstrap_nodes(vec![])
+    }
+
+    pub fn new_with_unique_memory_backend_bootstrap_nodes(
+        bootstrap_nodes: Vec<Lib3hUri>) -> Self {
+        Self::new_with_memory_backend_bootstrap_nodes(&format!(
             "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
-        ))
+        ), bootstrap_nodes)
     }
 
     pub fn unique_memory_backend_json() -> serde_json::Value {
@@ -211,6 +244,21 @@ impl P2pConfig {
                 Err(_) => return P2pConfig::default_end_user_config(),
                 Ok(json) => json,
             },
+        }
+    }
+}
+
+
+/// Utility functions to extract config elements
+impl P2pConfig {
+
+    pub fn real_engine_config(self) -> Option<EngineConfig> {
+        match self.backend_config {
+            BackendConfig::Lib3h(config) =>
+                Some(config),
+            BackendConfig::Memory(config) =>
+                Some(config),
+            BackendConfig::Json(_) => None
         }
     }
 }

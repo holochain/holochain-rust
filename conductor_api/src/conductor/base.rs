@@ -54,6 +54,7 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 use interface::{ConductorApiBuilder, InstanceMap, Interface};
+use lib3h_protocol::uri::Lib3hUri;
 use signal_wrapper::SignalWrapper;
 use static_file_server::ConductorStaticFileServer;
 use static_server_impls::NickelStaticServer as StaticServer;
@@ -391,6 +392,7 @@ impl Conductor {
     }
 
     pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
+        notify(format!("Start interface by id: {}", id));
         self.config
             .interface_by_id(id)
             .ok_or_else(|| format!("Interface does not exist: {}", id))
@@ -400,6 +402,7 @@ impl Conductor {
     pub fn start_all_static_servers(&mut self) -> Result<(), String> {
         notify("Starting all servers".into());
         self.static_servers.iter_mut().for_each(|(id, server)| {
+            notify(format!("Starting server \"{}|\"", id));
             server
                 .start()
                 .unwrap_or_else(|_| panic!("Couldn't start server {}", id));
@@ -458,6 +461,7 @@ impl Conductor {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        notify(format!("Start all instances"));
         self.config
             .instances
             .iter()
@@ -559,6 +563,7 @@ impl Conductor {
                 );
                 Ok(spawn_result)
             }
+            NetworkConfig::Memory(_) => unimplemented!(),
             NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
                 "Lib3h Network not implemented".to_string(),
             )),
@@ -566,7 +571,35 @@ impl Conductor {
     }
 
     fn get_p2p_config(&self) -> P2pConfig {
-        self.p2p_config.clone().unwrap_or_else(|| {
+        self.p2p_config.clone().map(|p2p_config| {
+
+          // TODO replace this hack with a discovery service trait
+          let urls : Vec<url::Url> = self.instances.values().map(|instance| {
+                    instance
+                        .read()
+                        .unwrap()
+                        .context()
+                        .unwrap()
+                        .network()
+                        .lock()
+                        .as_ref()
+                        .unwrap()
+                        .p2p_endpoint()
+                }).collect();
+            match p2p_config.to_owned().backend_config {
+                BackendConfig::Memory(mut config) => {
+                    config.bootstrap_nodes =
+                        if config.bootstrap_nodes.is_empty() && !urls.is_empty()
+                        { vec![Lib3hUri(urls[0].clone())] }
+                        else
+                        { config.bootstrap_nodes.clone() };
+                    let mut p2p_config = p2p_config.clone();
+                    p2p_config.backend_config = BackendConfig::Memory(config);
+                    p2p_config
+                },
+                _ => p2p_config.clone()
+            }
+        }).unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
@@ -608,6 +641,11 @@ impl Conductor {
                 self.n3h_keepalive_network = Some(network);
                 config
             }
+            NetworkConfig::Memory(config) => P2pConfig {
+                backend_kind: P2pBackendKind::MEMORY,
+                backend_config: BackendConfig::Memory(config),
+                maybe_end_user_config: None,
+            },
             NetworkConfig::Lib3h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::LIB3H,
                 backend_config: BackendConfig::Lib3h(config),
@@ -621,6 +659,7 @@ impl Conductor {
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
     pub fn boot_from_config(&mut self) -> Result<(), String> {
+        notify("conductor: boot_from_config".into());
         let _ = self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
@@ -810,11 +849,10 @@ impl Conductor {
                         }
                     }
                 }
-
                 let context = Arc::new(context);
-                Holochain::load(context.clone())
+                               Holochain::load(context.clone())
                     .and_then(|hc| {
-                        notify(format!(
+                       notify(format!(
                             "Successfully loaded instance {} from storage",
                             id.clone()
                         ));
@@ -824,7 +862,7 @@ impl Conductor {
                         // NoneError just means it didn't find a pre-existing state
                         // that's not a problem and so isn't logged as such
                         if loading_error == HolochainError::from(NoneError) {
-                            notify("No chain found in the store".to_string());
+                           notify("No chain found in the store".to_string());
                         } else {
                             notify(format!(
                                 "Failed to load instance {} from storage: {:?}",
@@ -833,7 +871,8 @@ impl Conductor {
                             ));
                         }
                         notify("Initializing new chain...".to_string());
-                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                        Holochain::new(dna, context)
+                        .map_err(|hc_err| hc_err.to_string())
                     })
             })
     }
@@ -843,6 +882,10 @@ impl Conductor {
         instance_id: String,
         config: &Configuration,
     ) -> Result<IoHandler, HolochainError> {
+        notify(format!(
+            "conductor: build_conductor_api instance_id={}, config={:?}",
+            instance_id, config
+        ));
         let instance_config = config.instance_by_id(&instance_id)?;
         let agent_id = instance_config.agent.clone();
         let agent_config = config.agent_by_id(&agent_id)?;

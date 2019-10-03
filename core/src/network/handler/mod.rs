@@ -1,3 +1,4 @@
+use logging::prelude::*;
 pub mod fetch;
 pub mod lists;
 pub mod query;
@@ -26,7 +27,7 @@ use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::{
-    data_types::{DirectMessageData, StoreEntryAspectData},
+    data_types::{DirectMessageData, StoreEntryAspectData, GenericResultData},
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
@@ -57,7 +58,7 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
 // and combining it with the top-level fields in a formatted and indented output.
 fn format_store_data(data: &StoreEntryAspectData) -> String {
     let aspect_json =
-        JsonString::from_json(&String::from_utf8(data.entry_aspect.aspect.clone()).unwrap());
+        JsonString::from_json(std::str::from_utf8(&*data.entry_aspect.aspect.clone()).unwrap());
     let aspect = EntryAspect::try_from(aspect_json).unwrap();
     format!(
         r#"
@@ -84,7 +85,7 @@ StoreEntryAspectData {{
 
 // See comment on fn format_store_data() - same reason for this function.
 fn format_message_data(data: &DirectMessageData) -> String {
-    let message_json = JsonString::from_json(&String::from_utf8(data.content.clone()).unwrap());
+    let message_json = JsonString::from_json(std::str::from_utf8(&*data.content.clone()).unwrap());
     let message = DirectMessage::try_from(message_json).unwrap();
     format!(
         r#"
@@ -103,28 +104,32 @@ MessageData {{
     )
 }
 
+
+// TODO Implement a failure workflow?
+fn handle_failure_result(context: &Arc<Context>, failure_data: GenericResultData) -> Result<(), HolochainError> {
+    log_warn!(context, "handle_failure_result: unhandle failure={:?}", failure_data);
+    Ok(())
+}
+
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
 pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
-        let message = message.unwrap();
-        // log_trace!(context, "net/handle:({}): {:?}",
-        //   context.agent_id.nick, message
-        // );
-
-        let maybe_json_msg = Lib3hServerProtocol::try_from(message);
-        if let Err(_) = maybe_json_msg {
+        if let Err(err) = message {
+            log_warn!(context,
+                "net/handle: received error msg from lib3h server: {:?}", err);
             return Ok(());
         }
-        match maybe_json_msg.unwrap() {
+        match message.unwrap() {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
                 }
+
                 log_warn!(context, "net/handle: FailureResult: {:?}", failure_data);
-                // TODO: Handle the reception of a FailureResult
+                handle_failure_result(&context, failure_data).expect("handle_failure_result")
             }
             Lib3hServerProtocol::HandleStoreEntryAspect(dht_entry_data) => {
                 if !is_my_dna(&my_dna_address, &dht_entry_data.space_address.to_string()) {

@@ -8,6 +8,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate holochain_json_derive;
 
+
 pub mod mock_signing;
 
 use crossbeam_channel::Receiver;
@@ -30,7 +31,7 @@ use holochain_core_types::{
     },
     entry::{entry_type::{AppEntryType, EntryType,test_app_entry_type},{Entry,EntryWithMeta}},
     crud_status::CrudStatus
-  
+
 };
 use holochain_persistence_api::{
     cas::content::{AddressableContent,Address}
@@ -58,6 +59,7 @@ use std::{
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
+use lib3h_protocol::uri::Lib3hUri;
 
 
 
@@ -246,9 +248,20 @@ pub fn create_arbitrary_test_dna() -> Dna {
 pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
-) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let (signal,_) = signal_channel();
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
+    test_context_and_logger_with_bootstrap_nodes
+        (agent_name, network_name, vec![])
+}
+
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_context_and_logger_with_bootstrap_nodes(
+    agent_name: &str,
+    network_name: Option<&str>,
+    bootstrap_nodes: Vec<url::Url>,
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
+    let (signal,recieve) = signal_channel();
+    let bootstrap_nodes = bootstrap_nodes.into_iter().map(|s|Lib3hUri(s)).collect::<Vec<_>>();
     let logger = test_logger();
     (
         Arc::new({
@@ -259,7 +272,8 @@ pub fn test_context_and_logger_with_network_name(
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
             if let Some(network_name) = network_name {
-                let config = P2pConfig::new_with_memory_backend(network_name);
+                let config = P2pConfig::new_with_memory_backend_bootstrap_nodes(
+                    network_name, bootstrap_nodes);
                 builder = builder.with_p2p_config(config);
             }
             builder
@@ -267,6 +281,7 @@ pub fn test_context_and_logger_with_network_name(
                 .spawn()
         }),
         logger,
+        recieve
     )
 }
 
@@ -299,12 +314,12 @@ pub fn test_context_and_logger_with_network_name_and_signal(
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>,SignalReceiver) {
     test_context_and_logger_with_network_name(agent_name, None)
 }
 
 pub fn test_context(agent_name: &str) -> Arc<Context> {
-    let (context, _) = test_context_and_logger(agent_name);
+    let (context, _,_) = test_context_and_logger(agent_name);
     context
 }
 
@@ -384,9 +399,10 @@ where
 }
 
 
-pub fn start_holochain_instance<T: Into<String>>(
+pub fn start_holochain_instance<T:Into<String>>(
     uuid: T,
     agent_name: T,
+    endpoints : Vec<url::Url>
 ) -> (Holochain, Arc<Mutex<TestLogger>>,SignalReceiver) {
     // Setup the holochain instance
 
@@ -496,8 +512,7 @@ pub fn start_holochain_instance<T: Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger,signal_recieve) =
-        test_context_and_logger_with_network_name_and_signal(&agent_name.into(), Some(&dna.uuid));
+    let (context,test_logger,signal_recieve) = test_context_and_logger_with_bootstrap_nodes(&dna.uuid,Some(&agent_name.into()),endpoints);
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
@@ -570,22 +585,22 @@ pub fn example_valid_entry_address() -> Address {
 
 //this polls for the zome result until it satisfies a the boolean condition or elapses a number of tries.
 //only use this for get requests please
-pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone 
+pub fn wait_for_zome_result<'a,T>(holochain: &mut Holochain,zome_call:&str,params:&str, boolean_condition:fn(T)->bool,tries:i8) -> ZomeApiResult<T> where T: hdk::serde::de::DeserializeOwned + Clone
 {
     //make zome call
     let result = make_test_call(holochain, zome_call, params);
     let call_result = result.clone().expect("Could not wait for condition as result is malformed").to_string();
-    
+
     //serialize into ZomeApiResult type
     let expected_result : ZomeApiResult<T> =serde_json::from_str::<ZomeApiResult<T>>(&call_result)
                                             .map_err(|_|ZomeApiError::Internal(format!("Error converting serde result for {}",zome_call)))?;
     let value = expected_result.clone()?;
-    
+
     //check if condition is satisifed
     if !boolean_condition(value) && tries >0
     {
         thread::sleep(Duration::from_secs(10));
-        
+
         //recursively call function again and decrement tries so far
         wait_for_zome_result(holochain,zome_call,params,boolean_condition,tries-1)
     }
@@ -608,4 +623,16 @@ pub fn generate_zome_internal_error(error_kind:String)->ZomeApiError
     let formatted_path_string = path_string.replace("\\",&vec!["\\","\\"].join(""));
     let error_string = format!(r#"{{"kind":{},"file":"{}","line":"225"}}"#,error_kind,formatted_path_string);
     ZomeApiError::Internal(error_string)
+}
+
+// TODO do this for all crate tests somehow
+pub fn enable_logging_for_test() {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "trace");
+    }
+    let _ = env_logger::builder()
+        .default_format_timestamp(false)
+        .default_format_module_path(false)
+        .is_test(true)
+        .try_init();
 }

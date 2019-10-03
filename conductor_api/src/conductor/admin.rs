@@ -194,6 +194,7 @@ impl ConductorAdmin for Conductor {
         dna_id: &String,
         agent_id: &String,
     ) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
         let storage_path = self.instance_storage_dir_path().join(id.clone());
         fs::create_dir_all(&storage_path)?;
         let new_instance_config = InstanceConfiguration {
@@ -209,8 +210,9 @@ impl ConductorAdmin for Conductor {
                     .into(),
             },
         };
-        self.config.instances.push(new_instance_config);
-        self.config.check_consistency(&mut self.dna_loader)?;
+        new_config.instances.push(new_instance_config);
+        new_config.check_consistency(&mut self.dna_loader)?;
+        self.config = new_config;
         let instance = self.instantiate_from_config(id)?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));

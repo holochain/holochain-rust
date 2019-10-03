@@ -34,25 +34,18 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
-        let target_path: PathBuf = [
-            String::from("src"),
-            String::from("nucleus"),
-            String::from("actions"),
-            String::from("wasm-test"),
-        ]
-        .iter()
-        .collect();
-        let target_dir = wasm_target_dir(&String::from("core").into(), &target_path);
-        let mut wasm_path = PathBuf::new();
-        let wasm_path_component: PathBuf = [
-            "wasm32-unknown-unknown",
-            "release",
-            "nucleus_actions_tests.wasm",
-        ]
-        .iter()
-        .collect();
-        wasm_path.push(target_dir);
-        wasm_path.push(wasm_path_component);
+        let target_path = {
+            let mut path = PathBuf::new();
+            path.push("src");
+            path.push("nucleus");
+            path.push("actions");
+            path.push("wasm-test");
+            path
+        };
+        let mut wasm_path = wasm_target_dir(&String::from("core").into(), &target_path);
+        wasm_path.push("wasm32-unknown-unknown");
+        wasm_path.push("release");
+        wasm_path.push("nucleus_actions_tests.wasm");
 
         let wasm = create_wasm_from_file(&wasm_path);
 

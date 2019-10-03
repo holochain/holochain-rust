@@ -11,7 +11,7 @@ use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
-    path::{Path, PathBuf},
+    path::Path,
 };
 use toml::{self, value::Value};
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
@@ -81,14 +81,13 @@ impl RustScaffold {
     pub fn new(package_name: &str, macro_style: HdkMacroStyle) -> RustScaffold {
         let target_dir = wasm_target_dir(&package_name.into(), &String::new().into());
         let mut artifact_name = target_dir.clone();
-        let artifact_path_component: PathBuf = [
-            String::from("wasm32-unknown-unknown"),
-            String::from("release"),
-            format!("{}.wasm", &package_name),
-        ]
-        .iter()
-        .collect();
-        artifact_name.push(artifact_path_component);
+        artifact_name.push("wasm32-unknown-unknown");
+        artifact_name.push("release");
+        // TODO: if `package_name` can't contain `.`s then
+        // avoid allocation by using
+        // artifact_name.push(package_name);
+        // artifact_name.set_extension(".wasm");
+        artifact_name.push(format!("{}.wasm", &package_name));
 
         let target_dir_flag = &match target_dir.to_str() {
             Some(dir) => format!("--target-dir={}", dir),

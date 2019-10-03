@@ -29,7 +29,6 @@ use holochain_core_types::{
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
-    crud_status::CrudStatus,
     entry::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,

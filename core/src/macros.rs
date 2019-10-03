@@ -97,7 +97,7 @@ fn context_log_macro_test() {
     use holochain_persistence_file::eav::file::EavFileStorage;
     use holochain_net::p2p_config::P2pConfig;
     use crate::persister::SimplePersister;
-    use holochain_core_types::{agent::AgentId, sync::{HcMutex as Mutex, HcRwLock as RwLock}};
+    use holochain_core_types::{agent::AgentId, sync::{HcRwLock as RwLock}};
     use holochain_persistence_file::cas::file::FilesystemStorage;
     use crate::context::Context;
     use tempfile::tempdir;
@@ -109,7 +109,7 @@ fn context_log_macro_test() {
     let ctx = Context::new(
         "LOG-TEST-ID",
         AgentId::generate_fake("Bilbo"),
-        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
         file_storage.clone(),
         file_storage.clone(),
         Arc::new(RwLock::new(

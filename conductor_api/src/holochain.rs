@@ -302,14 +302,14 @@ mod tests {
     };
     use holochain_core_types::{
         dna::capabilities::CapabilityRequest,
-        sync::{HcMutex as Mutex, HcRwLock as RwLock},
+        sync::{HcMutex as Mutex},
     };
     use holochain_json_api::json::RawString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
         path::PathBuf,
-        sync::{Arc, Mutex},
+        sync::{Arc},
     };
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,

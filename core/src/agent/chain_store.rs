@@ -306,6 +306,7 @@ pub mod tests {
             test_entry, test_entry_b, test_entry_c, Entry,
         },
         time::test_iso_8601,
+        sync::{HcRwLock as RwLock}
     };
     use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;
@@ -313,7 +314,7 @@ pub mod tests {
     use tempfile;
 
     pub fn test_chain_store() -> ChainStore {
-        ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
+        ChainStore::new(std::sync::Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
                 .expect("could not create chain store"),
         )))

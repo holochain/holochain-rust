@@ -17,8 +17,7 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     nucleus::actions::call_zome_function::make_cap_request_for_call,
-    signal::{Signal,signal_channel,SignalReceiver},
-    sync::{HcMutex as Mutex}
+    signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
    dna::{
@@ -29,9 +28,12 @@ use holochain_core_types::{
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
-    entry::{entry_type::{AppEntryType, EntryType,test_app_entry_type},{Entry,EntryWithMeta}},
-    crud_status::CrudStatus
-  
+    crud_status::CrudStatus,
+    entry::{
+        entry_type::{test_app_entry_type, AppEntryType, EntryType},
+        Entry, EntryWithMeta,
+    },
+    sync::{HcMutex as Mutex},
 };
 use holochain_persistence_api::{
     cas::content::{AddressableContent,Address}

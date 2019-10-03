@@ -21,7 +21,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    sync::{HcMutex as Mutex, HcRwLock as RwLock},
+    sync::{HcMutex as Mutex, HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
 };
 use holochain_net::p2p_config::P2pConfig;
 use holochain_persistence_api::{
@@ -35,7 +35,7 @@ use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering::Relaxed},
-        Arc, RwLockReadGuard,
+        Arc,
     },
     thread::sleep,
     time::Duration,

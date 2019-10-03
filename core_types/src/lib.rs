@@ -5,6 +5,7 @@
 //! crates, but that don't include Holochain itself.
 #![feature(try_trait)]
 #![feature(never_type)]
+#![feature(checked_duration_since)]
 #![warn(unused_extern_crates)]
 
 extern crate backtrace;
@@ -30,6 +31,8 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+// #[macro_use]
+// extern crate shrinkwraprs;
 extern crate hcid;
 extern crate lib3h_protocol;
 extern crate wasmi;

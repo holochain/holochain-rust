@@ -36,7 +36,7 @@ impl Future for HoldEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             if state
                 .dht()
                 .content_storage()
@@ -50,9 +50,7 @@ impl Future for HoldEntryFuture {
                 Poll::Pending
             }
         } else {
-            Poll::Ready(Err(HolochainError::ErrorGeneric(
-                "State not initialized".to_string(),
-            )))
+            Poll::Pending
         }
     }
 }

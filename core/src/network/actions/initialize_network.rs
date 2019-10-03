@@ -70,7 +70,7 @@ impl Future for InitNetworkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             if state.network().network.lock().unwrap().is_some()
                 && state.network().dna_address.is_some()
                 && state.network().agent_id.is_some()

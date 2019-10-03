@@ -191,6 +191,17 @@ impl Context {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 
+    /// Try to acquire read-lock on the state.
+    /// Returns immediately either with the lock or with None if the lock
+    /// is occupied already.
+    /// Also returns None if the context was not initialized with a state.
+    pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
+        self.state
+            .as_ref()
+            .map(|s| s.try_read().ok())
+            .unwrap_or(None)
+    }
+
     pub fn network(&self) -> P2pNetworkWrapper {
         P2pNetworkWrapper(match self.network_state() {
             Some(s) => s.network.clone(),

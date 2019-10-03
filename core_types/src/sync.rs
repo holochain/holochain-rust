@@ -58,6 +58,7 @@ pub type HcLockResult<T> = Result<T, HcLockError>;
 
 lazy_static! {
     static ref GUARDS: Mutex<Vec<(ProcessUniqueId, Instant, Backtrace)>> = Mutex::new(Vec::new());
+    static ref PENDING_LOCKS: Mutex<Vec<(ProcessUniqueId, LockType, Instant, Backtrace)>> = Mutex::new(Vec::new());
 }
 
 pub fn spawn_hc_guard_watcher() {
@@ -73,6 +74,7 @@ pub fn spawn_hc_guard_watcher() {
                         let mut b = backtrace.clone();
                         b.resolve();
                         println!("IMMORTAL LOCK GUARD!!! puid={:?} backtrace:\n{:?}", puid, b);
+                        print_pending_locks();
                     }
                     !timeout
                 })
@@ -88,83 +90,49 @@ pub fn spawn_hc_guard_watcher() {
     println!("spawn_hc_guard_watcher: SPAWNED");
 }
 
-///////////////////////////////////////////////////////////////
-/// GUARDS
-
-pub struct HcMutexGuard<'a, T: ?Sized> {
-    puid: ProcessUniqueId,
-    inner: MutexGuard<'a, T>,
-}
-
-impl<'a, T: ?Sized> HcMutexGuard<'a, T> {
-    pub fn new(inner: MutexGuard<'a, T>) -> Self {
-        let puid = ProcessUniqueId::new();
-        GUARDS.lock().push((
-            puid,
-            Instant::now(),
-            Backtrace::new_unresolved(),
-        ));
-        Self { puid, inner }
+fn print_pending_locks() {
+    for (i, (puid, kind, instant, backtrace)) in PENDING_LOCKS.lock().iter().enumerate() {
+        println!("PENDING LOCK #{}, locktype={:?}, pending for {:?}, puid={:?}, backtrace:\n{:?}", i, kind, Instant::now().duration_since(*instant), puid, backtrace);
     }
 }
 
-impl<'a, T: ?Sized> Drop for HcMutexGuard<'a, T> {
-    fn drop(&mut self) {
-        GUARDS
-            .lock()
-            .retain(|(puid, _, _)| *puid != self.puid)
-    }
+// /////////////////////////////////////////////////////////////
+// GUARDS
+
+macro_rules! guard_struct {
+    ($HcGuard:ident, $Guard:ident) => {
+
+        pub struct $HcGuard<'a, T: ?Sized> {
+            puid: ProcessUniqueId,
+            inner: $Guard<'a, T>,
+        }
+
+        impl<'a, T: ?Sized> $HcGuard<'a, T> {
+            pub fn new(inner: $Guard<'a, T>) -> Self {
+                let puid = ProcessUniqueId::new();
+                GUARDS.lock().push((
+                    puid,
+                    Instant::now(),
+                    Backtrace::new_unresolved(),
+                ));
+                Self { puid, inner }
+            }
+        }
+
+        impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
+            fn drop(&mut self) {
+                GUARDS
+                    .lock()
+                    .retain(|(puid, _, _)| *puid != self.puid)
+            }
+        }
+
+    };
 }
 
-pub struct HcRwLockReadGuard<'a, T: ?Sized> {
-    puid: ProcessUniqueId,
-    inner: RwLockReadGuard<'a, T>,
-}
-
-impl<'a, T: ?Sized> HcRwLockReadGuard<'a, T> {
-    pub fn new(inner: RwLockReadGuard<'a, T>) -> Self {
-        let puid = ProcessUniqueId::new();
-        GUARDS.lock().push((
-            puid,
-            Instant::now(),
-            Backtrace::new_unresolved(),
-        ));
-        Self { puid, inner }
-    }
-}
-
-impl<'a, T: ?Sized> Drop for HcRwLockReadGuard<'a, T> {
-    fn drop(&mut self) {
-        GUARDS
-            .lock()
-            .retain(|(puid, _, _)| *puid != self.puid)
-    }
-}
-
-pub struct HcRwLockWriteGuard<'a, T: ?Sized> {
-    puid: ProcessUniqueId,
-    inner: RwLockWriteGuard<'a, T>,
-}
-
-impl<'a, T: ?Sized> HcRwLockWriteGuard<'a, T> {
-    pub fn new(inner: RwLockWriteGuard<'a, T>) -> Self {
-        let puid = ProcessUniqueId::new();
-        GUARDS.lock().push((
-            puid,
-            Instant::now(),
-            Backtrace::new_unresolved(),
-        ));
-        Self { puid, inner }
-    }
-}
-
-impl<'a, T: ?Sized> Drop for HcRwLockWriteGuard<'a, T> {
-    fn drop(&mut self) {
-        GUARDS
-            .lock()
-            .retain(|(puid, _, _)| *puid != self.puid)
-    }
-}
+guard_struct!(HcMutexGuard, MutexGuard);
+guard_struct!(HcRwLockReadGuard, RwLockReadGuard);
+guard_struct!(HcRwLockWriteGuard, RwLockWriteGuard);
 
 // TODO: impl as appropriate
 // AsRef<InnerType>
@@ -207,9 +175,11 @@ impl<'a, T: ?Sized> DerefMut for HcRwLockWriteGuard<'a, T> {
     }
 }
 
-///////////////////////////////////////////////////////////////
-/// MUTEX
 
+// /////////////////////////////////////////////////////////////
+// MUTEXES
+
+ 
 #[derive(Debug)]
 pub struct HcMutex<T: ?Sized> {
     backtraces: Mutex<Vec<Backtrace>>,
@@ -225,43 +195,6 @@ impl<T> HcMutex<T> {
     }
 }
 
-impl<T: ?Sized> HcMutex<T> {
-    pub fn lock(&self) -> HcLockResult<HcMutexGuard<T>> {
-        // let bts = update_backtraces(&self.backtraces);
-        let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
-        self.try_lock_until(deadline)
-    }
-
-    fn try_lock_until(&self, deadline: Instant) -> HcLockResult<HcMutexGuard<T>> {
-        match self.try_lock() {
-            Ok(v) => Ok(v),
-            Err(err) => match err.kind {
-                HcLockErrorKind::HcLockPoisonError => Err(err),
-                HcLockErrorKind::HcLockTimeout => {
-                    if let None = deadline.checked_duration_since(Instant::now()) {
-                        Err(err)
-                    } else {
-                        std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
-                        self.try_lock_until(deadline)
-                    }
-                }
-            },
-        }
-    }
-
-    pub fn try_lock(&self) -> HcLockResult<HcMutexGuard<T>> {
-        let bts = update_backtraces(&self.backtraces);
-        (*self)
-            .inner
-            .try_lock()
-            .map(|inner| HcMutexGuard::new(inner))
-            .ok_or_else(||HcLockError::new(LockType::Lock, bts, HcLockErrorKind::HcLockTimeout))
-             
-    }
-}
-
-///////////////////////////////////////////////////////////////
-/// RwLock
 
 #[derive(Debug)]
 pub struct HcRwLock<T: ?Sized> {
@@ -278,77 +211,72 @@ impl<T> HcRwLock<T> {
     }
 }
 
-impl<T: ?Sized> HcRwLock<T> {
-    pub fn read(&self) -> HcLockResult<HcRwLockReadGuard<T>> {
-        // let bts = update_backtraces(&self.backtraces);
-        let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
-        self.try_read_until(deadline)
-    }
 
-    fn try_read_until(&self, deadline: Instant) -> HcLockResult<HcRwLockReadGuard<T>> {
-        match self.try_read() {
-            Ok(v) => Ok(v),
-            Err(err) => match err.kind {
-                HcLockErrorKind::HcLockPoisonError => Err(err),
-                HcLockErrorKind::HcLockTimeout => {
-                    if let None = deadline.checked_duration_since(Instant::now()) {
-                        Err(err)
-                    } else {
-                        std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
-                        self.try_read_until(deadline)
-                    }
+macro_rules! mutex_impl {
+    ($HcMutex: ident, $Mutex: ident, $guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $_try_lock_until_fn:ident ) => {
+
+        impl<T: ?Sized> $HcMutex<T> {
+
+            pub fn $lock_fn(&self) -> HcLockResult<$guard<T>> {
+                // let bts = update_backtraces(&self.backtraces);
+                let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
+                self.$try_lock_until_fn(deadline)
+            }
+
+
+            fn $try_lock_until_fn(&self, deadline: Instant) -> HcLockResult<$guard<T>> {
+                self.$_try_lock_until_fn(deadline, None)
+            }
+
+            fn $_try_lock_until_fn(&self, deadline: Instant, puid: Option<ProcessUniqueId>) -> HcLockResult<$guard<T>> {
+                match self.$try_lock_fn() {
+                    Ok(v) => {
+                        if let Some(puid) = puid {
+                            PENDING_LOCKS.lock().retain(|(p, _, _, _)| *p != puid);
+                        } else {
+                            println!("warn/_try_lock_until: no pending lock to remove");
+                        }
+                        Ok(v)
+                    },
+                    Err(err) => match err.kind {
+                        HcLockErrorKind::HcLockPoisonError => Err(err),
+                        HcLockErrorKind::HcLockTimeout => {
+                            let puid = if puid.is_none() {
+                                let p = ProcessUniqueId::new();
+                                PENDING_LOCKS.lock().push((p, LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
+                                Some(p)
+                            } else { 
+                                puid 
+                            };
+                            if let None = deadline.checked_duration_since(Instant::now()) {
+                                Err(err)
+                            } else {
+                                std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
+                                self.$_try_lock_until_fn(deadline, puid)
+                            }
+                        }
+                    },
                 }
-            },
-        }
-    }
+            }
 
-    pub fn try_read(&self) -> HcLockResult<HcRwLockReadGuard<T>> {
-        let bts = update_backtraces(&self.backtraces);
-        (*self)
-            .inner
-            .try_read()
-            .map(|inner| HcRwLockReadGuard::new(inner))
-            .ok_or_else(||(HcLockError::new(LockType::Read, bts, HcLockErrorKind::HcLockTimeout)))
-            
-    }
+            pub fn $try_lock_fn(&self) -> HcLockResult<$guard<T>> {
+                let bts = update_backtraces(&self.backtraces);
+                (*self)
+                    .inner
+                    .$try_lock_fn()
+                    .map(|inner| $guard::new(inner))
+                    .ok_or_else(||HcLockError::new(LockType::$lock_type, bts, HcLockErrorKind::HcLockTimeout))
+                     
+            }
+        }
+    };
 }
 
-impl<T: ?Sized> HcRwLock<T> {
-    pub fn write(&self) -> HcLockResult<HcRwLockWriteGuard<T>> {
-        // let bts = update_backtraces(&self.backtraces);
-        let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
-        self.try_write_until(deadline)
-    }
 
-    fn try_write_until(&self, deadline: Instant) -> HcLockResult<HcRwLockWriteGuard<T>> {
-        match self.try_write() {
-            Ok(v) => Ok(v),
-            Err(err) => match err.kind {
-                HcLockErrorKind::HcLockPoisonError => Err(err),
-                HcLockErrorKind::HcLockTimeout => {
-                    if let None = deadline.checked_duration_since(Instant::now()) {
-                        Err(err)
-                    } else {
-                        std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
-                        self.try_write_until(deadline)
-                    }
-                }
-            },
-        }
-    }
+mutex_impl!(HcMutex, Mutex, HcMutexGuard, Lock, lock, try_lock, try_lock_until, _try_lock_until);
+mutex_impl!(HcRwLock, RwLock, HcRwLockReadGuard, Read, read, try_read, try_read_until, _try_read_until);
+mutex_impl!(HcRwLock, RwLock, HcRwLockWriteGuard, Write, write, try_write, try_write_until, _try_write_until);
 
-    pub fn try_write(&self) -> HcLockResult<HcRwLockWriteGuard<T>> {
-        let bts = update_backtraces(&self.backtraces);
-        (*self)
-            .inner
-            .try_write()
-            .map(|inner| HcRwLockWriteGuard::new(inner))
-            .ok_or_else(||
-            {
-                    (HcLockError::new(LockType::Write, bts, HcLockErrorKind::HcLockTimeout))
-            })
-    }
-}
 
 ///////////////////////////////////////////////////////////////
 /// HELPERS

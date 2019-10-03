@@ -29,10 +29,12 @@ use holochain_core_types::{
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
+    crud_status::CrudStatus,
     entry::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,
     },
+    sync::{HcMutex as Mutex},
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -52,7 +54,7 @@ use std::{
     hash::{Hash, Hasher},
     io::prelude::*,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc},
     thread,
     time::Duration,
     env

@@ -17,6 +17,7 @@ use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
     error::{HcResult, HolochainError},
+    sync::{HcMutex as Mutex, HcRwLock as RwLock}
 };
 use key_loaders::test_keystore;
 
@@ -34,7 +35,7 @@ use std::{
     io::prelude::*,
     option::NoneError,
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc},
     thread,
     time::Duration,
 };

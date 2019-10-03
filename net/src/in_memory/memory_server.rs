@@ -16,12 +16,13 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 
+use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::ConnectedData;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     str::FromStr,
-    sync::{mpsc, Mutex, RwLock},
+    sync::{mpsc},
 };
 use url::Url;
 

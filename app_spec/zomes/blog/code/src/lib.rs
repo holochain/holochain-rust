@@ -33,11 +33,6 @@ define_zome! {
     ]
 
     init: || {{
-
-   //     let agent_addr: Address = AGENT_ADDRESS.to_string().into();
-        // TODO should we allow sending messages to self?
-//        let send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
-  //      dbg!("send_result: {:?}",  send_result);
         Ok(())
     }}
 

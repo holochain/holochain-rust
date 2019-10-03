@@ -1,9 +1,9 @@
 use backtrace::Backtrace;
 use snowflake::ProcessUniqueId;
-
+use parking_lot::{Mutex,MutexGuard,RwLock,RwLockReadGuard,RwLockWriteGuard};
 use std::{
     ops::{Deref, DerefMut},
-    sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError},
+    sync::{TryLockError},
     thread,
     time::{Duration, Instant},
 };
@@ -63,7 +63,7 @@ lazy_static! {
 pub fn spawn_hc_guard_watcher() {
     let _ = thread::spawn(move || loop {
         {
-            let mut guards = GUARDS.lock().expect("someone poisoned the GUARDS");
+            let mut guards = GUARDS.lock();
             *guards = guards
                 .iter()
                 .filter(|(puid, instant, backtrace)| {
@@ -99,7 +99,7 @@ pub struct HcMutexGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcMutexGuard<'a, T> {
     pub fn new(inner: MutexGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((
+        GUARDS.lock().push((
             puid,
             Instant::now(),
             Backtrace::new_unresolved(),
@@ -112,7 +112,6 @@ impl<'a, T: ?Sized> Drop for HcMutexGuard<'a, T> {
     fn drop(&mut self) {
         GUARDS
             .lock()
-            .expect("someone poisoned the GUARDS")
             .retain(|(puid, _, _)| *puid != self.puid)
     }
 }
@@ -125,7 +124,7 @@ pub struct HcRwLockReadGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockReadGuard<'a, T> {
     pub fn new(inner: RwLockReadGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((
+        GUARDS.lock().push((
             puid,
             Instant::now(),
             Backtrace::new_unresolved(),
@@ -138,7 +137,6 @@ impl<'a, T: ?Sized> Drop for HcRwLockReadGuard<'a, T> {
     fn drop(&mut self) {
         GUARDS
             .lock()
-            .expect("someone poisoned the GUARDS")
             .retain(|(puid, _, _)| *puid != self.puid)
     }
 }
@@ -151,7 +149,7 @@ pub struct HcRwLockWriteGuard<'a, T: ?Sized> {
 impl<'a, T: ?Sized> HcRwLockWriteGuard<'a, T> {
     pub fn new(inner: RwLockWriteGuard<'a, T>) -> Self {
         let puid = ProcessUniqueId::new();
-        GUARDS.lock().expect("someone poisoned the GUARDS").push((
+        GUARDS.lock().push((
             puid,
             Instant::now(),
             Backtrace::new_unresolved(),
@@ -164,7 +162,6 @@ impl<'a, T: ?Sized> Drop for HcRwLockWriteGuard<'a, T> {
     fn drop(&mut self) {
         GUARDS
             .lock()
-            .expect("someone poisoned the GUARDS")
             .retain(|(puid, _, _)| *puid != self.puid)
     }
 }
@@ -257,15 +254,9 @@ impl<T: ?Sized> HcMutex<T> {
         (*self)
             .inner
             .try_lock()
-            .map_err(|err| match err {
-                TryLockError::Poisoned(_poison_error) => {
-                    HcLockError::new(LockType::Lock, bts, HcLockErrorKind::HcLockPoisonError)
-                }
-                TryLockError::WouldBlock => {
-                    HcLockError::new(LockType::Lock, bts, HcLockErrorKind::HcLockTimeout)
-                }
-            })
             .map(|inner| HcMutexGuard::new(inner))
+            .ok_or_else(||HcLockError::new(LockType::Lock, bts, HcLockErrorKind::HcLockTimeout))
+             
     }
 }
 
@@ -316,15 +307,9 @@ impl<T: ?Sized> HcRwLock<T> {
         (*self)
             .inner
             .try_read()
-            .map_err(|err| match err {
-                TryLockError::Poisoned(_poison_error) => {
-                    (HcLockError::new(LockType::Read, bts, HcLockErrorKind::HcLockPoisonError))
-                }
-                TryLockError::WouldBlock => {
-                    (HcLockError::new(LockType::Read, bts, HcLockErrorKind::HcLockTimeout))
-                }
-            })
             .map(|inner| HcRwLockReadGuard::new(inner))
+            .ok_or_else(||(HcLockError::new(LockType::Read, bts, HcLockErrorKind::HcLockTimeout)))
+            
     }
 }
 
@@ -357,15 +342,11 @@ impl<T: ?Sized> HcRwLock<T> {
         (*self)
             .inner
             .try_write()
-            .map_err(|err| match err {
-                TryLockError::Poisoned(_poison_error) => {
-                    (HcLockError::new(LockType::Write, bts, HcLockErrorKind::HcLockPoisonError))
-                }
-                TryLockError::WouldBlock => {
-                    (HcLockError::new(LockType::Write, bts, HcLockErrorKind::HcLockTimeout))
-                }
-            })
             .map(|inner| HcRwLockWriteGuard::new(inner))
+            .ok_or_else(||
+            {
+                    (HcLockError::new(LockType::Write, bts, HcLockErrorKind::HcLockTimeout))
+            })
     }
 }
 
@@ -384,7 +365,7 @@ fn try_lock_ok<T, P>(result: Result<T, TryLockError<P>>) -> Option<T> {
 }
 
 fn update_backtraces(mutex: &Mutex<Vec<Backtrace>>) -> Option<Vec<Backtrace>> {
-    if let Some(mut bts) = try_lock_ok(mutex.try_lock()) {
+    if let Some(mut bts) = try_lock_ok::<_,()>(mutex.try_lock().ok_or(TryLockError::WouldBlock)) {
         bts.push(Backtrace::new_unresolved());
         Some(bts.clone())
     } else {

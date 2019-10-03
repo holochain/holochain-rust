@@ -7,6 +7,7 @@
 #![feature(never_type)]
 #![warn(unused_extern_crates)]
 
+extern crate backtrace;
 extern crate base64;
 extern crate chrono;
 extern crate futures;

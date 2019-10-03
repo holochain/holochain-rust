@@ -84,7 +84,7 @@ impl From<Arc<Context>> for StateDump {
             .collect::<Vec<PendingValidationDump>>();
 
         let held_entries = dht.get_all_held_entry_addresses().clone();
-
+        
         StateDump {
             running_calls, query_flows, validation_package_flows, direct_message_flows,
             pending_validations, held_entries, source_chain

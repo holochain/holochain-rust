@@ -985,6 +985,7 @@ name = "holochain_core_types"
 version = "0.0.30-alpha6"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1190,6 +1191,17 @@ dependencies = [
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_test 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "holochain_tracing"
+version = "0.0.1"
+source = "git+https://github.com/holochain/holochain-tracing#3dbb2192671cb62afa76e9681d3dadb7b98c8073"
+dependencies = [
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustracing 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustracing_jaeger 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

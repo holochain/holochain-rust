@@ -2107,7 +2107,7 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let mut instance = caller_instance.write().unwrap();
+        let instance = caller_instance.write().unwrap();
 
         let cap_call = {
             let context = instance.context().unwrap();
@@ -2139,7 +2139,7 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let mut instance = caller_instance.write().unwrap();
+        let instance = caller_instance.write().unwrap();
 
         let cap_call = {
             let context = instance.context().unwrap();

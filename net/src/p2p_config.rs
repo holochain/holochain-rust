@@ -330,12 +330,10 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let server_name = "http://localhost:8000";
         let p2p_config =P2pConfig::new_with_unique_memory_backend();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::new_with_memory_backend(server_name));
     }
 
     #[test]

@@ -300,8 +300,7 @@ mod tests {
     #[test]
     fn test_dna_configuration() {
         let dna = Dna::new();
-        let temp_dir = tempdir()
-            .expect("Could not get tempdir");
+        let temp_dir = tempdir().expect("Could not get tempdir");
         let temp_dir_path = temp_dir.path();
         create_dir(temp_dir_path).expect("Could not create temporary directory");
         let out_path = temp_dir_path.join("test_dna.json");

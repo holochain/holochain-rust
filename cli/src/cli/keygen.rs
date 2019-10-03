@@ -50,7 +50,7 @@ when unlocking the keybundle to use within a Holochain conductor."
         p.push(&pub_key);
         p
     };
-    
+
     keystore.save(path.clone())?;
     let path_str = path.to_str().unwrap();
 

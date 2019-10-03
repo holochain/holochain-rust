@@ -630,8 +630,7 @@ pub mod tests {
     }
 
     pub fn persistence_dir(test_name: &str) -> String {
-        let mut persist_dir = current_dir()
-            .expect("Could not get current dir");
+        let mut persist_dir = current_dir().expect("Could not get current dir");
         persist_dir.push("tmp-test");
         persist_dir.push(test_name);
         format!("persistence_dir = \'{}\'", persist_dir.to_str().unwrap()).to_string()
@@ -886,8 +885,7 @@ id = 'new-dna'"#,
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
-        let mut output_dna_file = current_dir()
-            .expect("Could not get current dir");
+        let mut output_dna_file = current_dir().expect("Could not get current dir");
 
         output_dna_file.push("tmp-test");
         output_dna_file.push(test_name);
@@ -992,8 +990,7 @@ id = 'new-dna'"#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(conductor.config().dnas.len(), 2,);
 
-        let mut output_dna_file = current_dir()
-            .expect("Could not get current dir");
+        let mut output_dna_file = current_dir().expect("Could not get current dir");
 
         output_dna_file.push("tmp-test");
         output_dna_file.push(test_name);
@@ -1059,8 +1056,7 @@ id = 'new-dna'"#,
         let new_hash = new_dna.address();
         assert_ne!(original_hash, new_hash);
 
-        let mut output_dna_file = current_dir()
-            .expect("Could not get current dir");
+        let mut output_dna_file = current_dir().expect("Could not get current dir");
 
         output_dna_file.push("tmp-test");
         output_dna_file.push(test_name);
@@ -1096,8 +1092,7 @@ id = 'new-dna'"#,
         let test_name = "test_add_instance";
         let mut conductor = create_test_conductor(test_name, 3001);
 
-        let mut storage_path = current_dir()
-            .expect("Could not get current dir");
+        let mut storage_path = current_dir().expect("Could not get current dir");
 
         storage_path.push("tmp-test");
         storage_path.push(test_name);
@@ -1373,8 +1368,7 @@ type = 'http'"#,
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
 
-        let mut storage_path = current_dir()
-            .expect("Could not get current dir");
+        let mut storage_path = current_dir().expect("Could not get current dir");
 
         storage_path.push("tmp-test");
         storage_path.push(test_name);

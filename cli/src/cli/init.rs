@@ -172,8 +172,6 @@ pub mod tests {
         setup_test_folder(&dir_path.to_path_buf(), &TEST_DIR_NAME).expect("Test folder not set up");
         let test_dir = dir_path.join(&TEST_DIR_NAME);
         assert!(test_dir.join("index.js").exists());
-        assert!(test_dir
-            .join("package.json")
-            .exists());
+        assert!(test_dir.join("package.json").exists());
     }
 }

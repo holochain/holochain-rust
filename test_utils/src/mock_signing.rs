@@ -1,6 +1,6 @@
 use holochain_core_types::{
     agent::AgentId,
-    sync::{HcMutex as Mutex, HcRwLock as RwLock},
+    sync::HcMutex as Mutex,
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};

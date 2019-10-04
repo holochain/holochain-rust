@@ -3,13 +3,13 @@ use holochain_conductor_api::{
     key_loaders::mock_passphrase_manager,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::error::HcResult;
+use holochain_core_types::{sync::HcMutex, error::HcResult};
 use holochain_dpki::seed::{SeedType, TypedSeed};
 use std::{
     fs::create_dir_all,
     io::{self, Write},
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 use util::{get_secure_string_double_check, get_seed, user_prompt};
 
@@ -143,7 +143,7 @@ fn keygen_dpki(
     };
     let mut keystore = Keystore::new(mock_passphrase_manager(keystore_passphrase), None)?;
     let device_seed = root_seed.generate_device_seed(derivation_index)?;
-    keystore.add("device_seed", Arc::new(Mutex::new(device_seed.into())))?;
+    keystore.add("device_seed", Arc::new(HcMutex::new(device_seed.into())))?;
     let (pub_key, _) = keystore.add_keybundle_from_seed("device_seed", PRIMARY_KEYBUNDLE_ID)?;
     Ok((keystore, pub_key))
 }

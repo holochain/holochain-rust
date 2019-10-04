@@ -1,24 +1,26 @@
 use crate::{
     action::ActionWrapper,
-    network::{entry_aspect::EntryAspect, reducers::send, state::NetworkState},
+    network::{/*entry_aspect::EntryAspect, reducers::send,*/ state::NetworkState},
     state::State,
 };
 
-use lib3h_protocol::{
+/*use lib3h_protocol::{
     data_types::{EntryData, ProvidedEntryData},
     protocol_client::Lib3hClientProtocol,
 };
 
 use holochain_persistence_api::cas::content::AddressableContent;
-
+*/
 pub fn reduce_hold(
-    network_state: &mut NetworkState,
+    _network_state: &mut NetworkState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry_with_header = unwrap_to!(action => crate::action::Action::Hold);
+    let _entry_with_header = unwrap_to!(action => crate::action::Action::Hold);
 
+    panic!("HoldEntry deleted");
+/*
     // TODO: use this result as a network action
     let _result = send(
         network_state,
@@ -35,7 +37,7 @@ pub fn reduce_hold(
             },
         }),
     );
-
+*/
     // network_state.actions.insert(
     //     action_wrapper.clone(),
     //     ActionResponse::Hold(match result {

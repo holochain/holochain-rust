@@ -18,13 +18,10 @@ use lib3h_protocol::{
 
 use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::data_types::ConnectedData;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
-    str::FromStr,
     sync::{mpsc},
 };
-use url::Url;
 
 type RequestId = String;
 
@@ -228,7 +225,7 @@ impl InMemoryServer {
                     Lib3hServerProtocol::SuccessResult(msg.clone()),
                 )?;
             }
-            Lib3hClientProtocol::FailureResult(msg) => {
+/*           Lib3hClientProtocol::FailureResult(msg) => {
                 let dna_address = msg.space_address.clone();
                 let to_agent_id = msg.to_agent_id.clone();
 
@@ -255,7 +252,7 @@ impl InMemoryServer {
                     &to_agent_id,
                     Lib3hServerProtocol::FailureResult(msg.clone()),
                 )?;
-            }
+            }*/
             Lib3hClientProtocol::JoinSpace(msg) => {
                 let dna_address = msg.space_address.clone();
                 let agent_id = msg.agent_id.clone();
@@ -278,14 +275,16 @@ impl InMemoryServer {
                 }
                 self.trackdna_book.insert(chain_id);
 
+                // TODO: this is probably not even needed any more
+                /*
                 self.priv_send_one(
                     &dna_address,
                     &agent_id,
                     Lib3hServerProtocol::Connected(ConnectedData {
                         request_id: msg.request_id,
-                        uri: Url::from_str("memory:://0.0.0.0").unwrap(),
+                        peer_location: Url::from_str("memory:://0.0.0.0").unwrap(),
                     }),
-                )?;
+                )?;*/
                 self.priv_request_all_lists(&dna_address, &agent_id);
             }
 

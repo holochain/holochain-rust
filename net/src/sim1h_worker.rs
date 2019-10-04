@@ -386,7 +386,6 @@ mod tests {
     }
     
     #[test]
-    #[cfg(feature="broken-tests")]
     fn call_to_boostrap_fails() {
         let (mut worker, r) = test_worker();
 

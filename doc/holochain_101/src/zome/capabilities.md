@@ -10,7 +10,7 @@ This enables us to use a single security pattern for:
 - bridging calls between different DNAs,
 - and providing selective users of a DNA the ability to query private entries on the local chain via send/receive.
 
-Each capability grant gets recorded as a private entry on the grantor’s chain.  The hash (i.e. address) of that entry then serves as the capability token usable by the grantee when making zome function call, because the grantor simply verifies the existence of that grant in it's chain.  Thus, all zome functions calls include a capability request object which contains: public key of the grantee and signature of the parameters being used to call the function, along with the capability token being used as the access credential.
+Each capability grant gets recorded as a private entry on the grantor’s chain.  The hash (i.e. address) of that entry then serves as the capability token usable by the grantee when making a zome function call, because the grantor simply verifies the existence of that grant in it's chain.  Thus, all zome functions calls include a capability request object which contains: public key of the grantee and signature of the parameters being used to call the function, along with the capability token being used as the access credential.
 
 ## Using Capabilities
 

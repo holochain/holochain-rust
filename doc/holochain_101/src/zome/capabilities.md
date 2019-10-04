@@ -10,7 +10,7 @@ This enables us to use a single security pattern for:
 - bridging calls between different DNAs,
 - and providing selective users of a DNA the ability to query private entries on the local chain via send/receive.
 
-Each capability grant gets recorded as a private entry on the grantor’s chain.  The hash (i.e. address) of that entry then serves as the capability token usable by the grantee when making a zome function call, because the grantor simply verifies the existence of that grant in it's chain.  Thus, all zome functions calls include a capability request object which contains: public key of the grantee and signature of the parameters being used to call the function, along with the capability token being used as the access credential.
+Each capability grant gets recorded as a private entry on the grantor’s chain.  The hash (i.e. address) of that entry then serves as the capability token usable by the grantee when making a zome function call, because the grantor simply verifies the existence of that grant in it's chain.  Thus, all zome functions calls include a capability request object which contains: the public key of the grantee, and the signature of the parameters being used to call the function, along with the capability token being used as the access credential.
 
 ## Using Capabilities
 
@@ -33,7 +33,7 @@ define_zome! {
 
 ### Grant Capabilities
 
-You can use the `commit_capability_grant` HDK function to create a custom capability grant.  For example, imaging a blogging use-case where you want to grant friends the ability to call the `create_post` function in a `blog` zome.  Assuming the function `is_my_friend(addr)` correctly examines the provenance in CAPABILITY_REQ global which always holds the capability request of the current zome call, then the following code is an example of how you might call `hdk::commit_capability_grant`:
+You can use the `commit_capability_grant` HDK function to create a custom capability grant.  For example, imagine a blogging use-case where you want to grant friends the ability to call the `create_post` function in a `blog` zome.  Assuming the function `is_my_friend(addr)` correctly examines the provenance in the `CAPABILITY_REQ` global, which always holds the capability request of the current zome call, then the following code is an example of how you might call `hdk::commit_capability_grant`:
 
 ``` rust
 pub fn handle_request_post_grant() -> ZomeApiResult<Option<Address>> {

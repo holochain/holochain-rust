@@ -272,7 +272,7 @@ pub fn create_test_context_with_logger_and_signal(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
-            if let Some(network_name) = network_name 
+            if let Some(network_name) = network_name
             {
                 let config = match test_config{
                     TestNodeConfig::Sim1h(dynamo_db_path) => P2pConfig::new_with_sim1h_backend(&dynamo_db_path),
@@ -482,7 +482,7 @@ pub fn start_holochain_instance<T: Into<String>>(
             {
                 TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
             }
-            else 
+            else
             {
                 TestNodeConfig::LegacyInMemory
             }

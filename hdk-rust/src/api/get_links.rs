@@ -150,6 +150,7 @@ pub fn get_links_and_load(
     link_type: LinkMatch<&str>,
     tag: LinkMatch<&str>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
+    println!("get_links_and_load");
     let get_links_result = get_links_result(
         base,
         link_type,

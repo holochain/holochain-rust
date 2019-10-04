@@ -3,8 +3,11 @@ use crate::{
     chain_header::ChainHeader,
     link::{Link, LinkActionKind},
 };
+use agent::test_agent_id;
+use chain_header::test_chain_header;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
+use link::example_link;
 
 //-------------------------------------------------------------------------------------------------
 // LinkData
@@ -82,33 +85,30 @@ impl LinkData {
     }
 }
 
+pub fn example_link_add() -> LinkData {
+    let link = example_link();
+    LinkData::new_add(
+        link.base(),
+        link.target(),
+        link.tag(),
+        "foo-link-type",
+        test_chain_header(),
+        test_agent_id(),
+    )
+}
+
 #[cfg(test)]
 pub mod tests {
 
     use crate::{
-        agent::test_agent_id,
-        chain_header::test_chain_header,
         entry::{test_entry_a, test_entry_b, Entry},
         link::{
-            link_data::LinkData,
-            tests::{example_link, example_link_action_kind, example_link_type},
+            example_link, example_link_action_kind, example_link_type, link_data::example_link_add,
         },
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::convert::TryFrom;
-
-    pub fn example_link_add() -> LinkData {
-        let link = example_link();
-        LinkData::new_add(
-            link.base(),
-            link.target(),
-            link.tag(),
-            "foo-link-type",
-            test_chain_header(),
-            test_agent_id(),
-        )
-    }
 
     pub fn test_link_entry() -> Entry {
         Entry::LinkAdd(example_link_add())

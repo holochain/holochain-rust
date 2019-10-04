@@ -89,7 +89,7 @@ impl Future for ValidationCallbackFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(result) => Poll::Ready(result.clone()),
                 None => Poll::Pending,

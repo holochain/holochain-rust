@@ -7,7 +7,7 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
 
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
@@ -15,7 +15,7 @@ use json_patch;
 use std::{
     fs::{self, create_dir_all},
     path::PathBuf,
-    sync::{Arc, RwLock},
+    sync::Arc,
     thread::sleep,
     time::Duration,
 };
@@ -116,7 +116,7 @@ impl ConductorAdmin for Conductor {
             json_patch::merge(&mut dna.properties, &props);
         }
 
-        if let Some(uuid) = uuid {
+        if let Some(uuid) = uuid.clone() {
             dna.uuid = uuid;
         }
 
@@ -132,6 +132,7 @@ impl ConductorAdmin for Conductor {
             id: id.clone(),
             file: config_path_str.into(),
             hash: dna.address().to_string(),
+            uuid,
         };
 
         let mut new_config = self.config.clone();
@@ -211,10 +212,10 @@ impl ConductorAdmin for Conductor {
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
-        let instance = self.instantiate_from_config(id, Some(&mut new_config))?;
+        self.config = new_config;
+        let instance = self.instantiate_from_config(id)?;
         self.instances
             .insert(id.clone(), Arc::new(RwLock::new(instance)));
-        self.config = new_config;
         self.save_config()?;
         let _ = self.start_signal_multiplexer();
         Ok(())
@@ -539,7 +540,7 @@ impl ConductorAdmin for Conductor {
 
         // Rebuild and reset caller's conductor api so it sees the bridge handle
         let id = &new_bridge.caller_id;
-        let new_conductor_api = self.build_conductor_api(id.clone(), &new_config)?;
+        let new_conductor_api = self.build_conductor_api(id.clone())?;
         let mut instance = self.instances.get(id)?.write()?;
         instance.set_conductor_api(new_conductor_api)?;
 
@@ -822,11 +823,13 @@ type = 'cmd'"#
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: String::from("new-dna.dna.json"),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );
@@ -902,11 +905,13 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );
@@ -1007,11 +1012,13 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Default::default(),
                 },
             ]
         );
@@ -1053,7 +1060,7 @@ id = 'new-dna'"#,
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
                 .unwrap();
         let original_hash = new_dna.address();
-        new_dna.uuid = uuid;
+        new_dna.uuid = uuid.clone();
         let new_hash = new_dna.address();
         assert_ne!(original_hash, new_hash);
 
@@ -1073,16 +1080,19 @@ id = 'new-dna'"#,
                     id: String::from("test-dna"),
                     file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
+                    uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),
                     file: new_dna_path.to_string_lossy().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Some(uuid.clone()),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
                     file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
+                    uuid: Some(uuid.clone()),
                 },
             ]
         );

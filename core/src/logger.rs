@@ -2,7 +2,8 @@
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the conductor.
 use chrono::Local;
-use std::sync::{mpsc, Arc, Mutex};
+use holochain_core_types::sync::{HcMutex as Mutex};
+use std::sync::{mpsc, Arc};
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
@@ -26,8 +27,7 @@ pub struct TestLogger {
 
 impl Logger for TestLogger {
     fn log(&mut self, msg: String) {
-        // Debugging code (do not remove)
-        // println!("{}", msg);
+        println!("[test_logger] {:?}", msg);
         self.log.push(msg);
     }
     fn dump(&self) -> String {

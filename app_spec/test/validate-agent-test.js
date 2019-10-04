@@ -1,9 +1,11 @@
+const { one, two } = require('./config')
 
 module.exports = scenario => {
 
-  scenario('An agent that does not pass validate_agent will not have a visible entry in the DHT', async (s, t, {valid_agent, reject_agent}) => {
-    let get_self_result = await valid_agent.app.call("simple", "get_entry", {address: valid_agent.app.agentId})
-    let get_other_result = await valid_agent.app.call("simple", "get_entry", {address: reject_agent.app.agentId})
+  scenario('An agent that does not pass validate_agent will not have a visible entry in the DHT', async (s, t) => {
+    const  {valid_agent, reject_agent} = await s.players( {valid_agent: one, reject_agent: one}, true)
+    let get_self_result = await valid_agent.call('app', "simple", "get_entry", {address: valid_agent.info('app').agentAddress})
+    let get_other_result = await valid_agent.call('app', "simple", "get_entry", {address: reject_agent.info('app').agentAddress})
     console.log("get self response", get_self_result)
     console.log("get invalid response", get_self_result)
     t.ok(get_self_result.Ok, "Should be able to retrieve own agent entry")

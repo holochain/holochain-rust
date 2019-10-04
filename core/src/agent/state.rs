@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::{ChainStore, ChainStoreIterator},
+    network::entry_with_header::EntryWithHeader,
     state::State,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
@@ -212,6 +213,21 @@ pub fn create_new_chain_header(
     ))
 }
 
+pub fn create_entry_with_header_for_header(
+    root_state: &StateWrapper,
+    chain_header: &ChainHeader,
+) -> Result<EntryWithHeader, HolochainError> {
+    let entry = Entry::ChainHeader(chain_header.clone());
+    let header = create_new_chain_header(
+        &entry,
+        &root_state.agent(),
+        &root_state.clone(),
+        &None,
+        &Vec::new(),
+    )?;
+    Ok(EntryWithHeader { entry, header })
+}
+
 /// Do a Commit Action against an agent state.
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
@@ -421,7 +437,7 @@ pub mod tests {
         let header = create_new_chain_header(
             &test_entry(),
             &agent_state,
-            &StateWrapper::from(state.clone()),
+            &StateWrapper::from(state),
             &None,
             &vec![],
         )

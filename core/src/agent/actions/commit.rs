@@ -50,20 +50,17 @@ impl Future for CommitFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        match self
-            .context
-            .state()
-            .unwrap()
-            .agent()
-            .actions()
-            .get(&self.action)
-        {
-            Some(ActionResponse::Commit(result)) => match result {
-                Ok(address) => Poll::Ready(Ok(address.clone())),
-                Err(error) => Poll::Ready(Err(error.clone())),
-            },
-            Some(_) => unreachable!(),
-            None => Poll::Pending,
+        if let Some(state) = self.context.try_state() {
+            match state.agent().actions().get(&self.action) {
+                Some(ActionResponse::Commit(result)) => match result {
+                    Ok(address) => Poll::Ready(Ok(address.clone())),
+                    Err(error) => Poll::Ready(Err(error.clone())),
+                },
+                Some(_) => unreachable!(),
+                None => Poll::Pending,
+            }
+        } else {
+            Poll::Pending
         }
     }
 }

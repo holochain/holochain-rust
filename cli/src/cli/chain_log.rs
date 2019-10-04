@@ -4,7 +4,7 @@ use holochain_core::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, sync::HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_file::cas::file::FilesystemStorage;
 use std::{convert::TryFrom, fs, path::PathBuf};
@@ -17,7 +17,7 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
         format_err!("Please specify the path to CAS storage with the --path option.")
     })?;
     let cas_path = storage_path.join(instance_id).join("cas");
-    let chain_store = ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
+    let chain_store = ChainStore::new(std::sync::Arc::new(RwLock::new(
         FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),
     )));
     let cas_lock = chain_store.content_storage();

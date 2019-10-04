@@ -7,12 +7,12 @@ use crate::connection::{
 };
 
 use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
-
+use holochain_core_types::sync::{HcMutex as Mutex};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use std::{
     collections::{hash_map::Entry, HashMap},
-    sync::{mpsc, Mutex},
+    sync::{mpsc},
 };
 
 /// a p2p worker for mocking in-memory scenario tests
@@ -90,6 +90,11 @@ impl NetWorker for InMemoryWorker {
             }
         }
         Ok(did_something)
+    }
+    
+    /// Set the advertise as worker's endpoint
+    fn p2p_endpoint(&self) -> Option<url::Url> {
+        None
     }
 
     /// stop the net worker

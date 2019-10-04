@@ -8,7 +8,6 @@ use holochain_json_api::json::JsonString;
 use lib3h_protocol::{
     data_types::DirectMessageData as Lib3hDirectMessageData, protocol_client::Lib3hClientProtocol,
 };
-use std::convert::TryInto;
 
 fn inner(
     network_state: &mut NetworkState,
@@ -23,16 +22,12 @@ fn inner(
         space_address: network_state
             .dna_address
             .clone()
-            .unwrap()
-            .try_into()
-            .expect("space address"),
+            .unwrap(),
         to_agent_id: direct_message_data
             .address
-            .clone()
-            .try_into()
-            .expect("agent id address"),
+            .clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content,
+        content : content.into(),
     };
 
     let protocol_object = if direct_message_data.is_response {

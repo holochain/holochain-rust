@@ -1,6 +1,7 @@
 use holochain_core_types::{
     agent::AgentId,
-    };
+    sync::HcMutex as Mutex,
+};
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
@@ -12,7 +13,7 @@ use lib3h_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc},
 };
 
 lazy_static! {

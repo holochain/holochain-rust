@@ -591,7 +591,7 @@ impl Conductor {
                 BackendConfig::Memory(mut config) => {
                     config.bootstrap_nodes =
                         if config.bootstrap_nodes.is_empty() && !urls.is_empty()
-                        { vec![urls[0].clone().into()] }
+                        { vec![urls[0].clone()] }
                         else
                         { config.bootstrap_nodes.clone() };
                     let mut p2p_config = p2p_config.clone();

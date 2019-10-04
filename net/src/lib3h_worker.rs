@@ -18,7 +18,7 @@ use holochain_tracing::HSpan;
 /// Handles `Protocol` and translates `JsonProtocol` to `Lib3hProtocol`.
 /// TODO: currently uses MirrorDht, will need to expand workers to use different
 /// generics.
-///
+/// 
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically
 #[allow(non_snake_case)]
 pub struct Lib3hWorker {
@@ -29,7 +29,7 @@ pub struct Lib3hWorker {
 
 impl Lib3hWorker {
     pub fn advertise(self) -> url::Url {
-        self.net_engine.advertise().into()
+        self.net_engine.advertise()
     }
 
 }
@@ -96,7 +96,7 @@ impl NetWorker for Lib3hWorker {
 
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {
-        Some(self.net_engine.advertise().into())
+        Some(self.net_engine.advertise())
     }
 
     /// Set the advertise as worker's endpoint

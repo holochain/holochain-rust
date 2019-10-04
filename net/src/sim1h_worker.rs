@@ -83,9 +83,9 @@ impl Sim1hWorker {
             }
             // Failure response to a request (any Command with an `request_id` field.)
             // Can also be a response to a mal-formed request.
-//            Lib3hClientProtocol::FailureResult(generic_result_data) => {
-//                Ok(Lib3hServerProtocol::FailureResult(generic_result_data))
-//            }
+            Lib3hClientProtocol::FailureResult(generic_result_data) => {
+                Ok(Lib3hServerProtocol::FailureResult(generic_result_data))
+            }
             // Connect to the specified multiaddr
             Lib3hClientProtocol::Connect(connect_data) => {
                 //let log_context = "Lib3hToClient::Connected";
@@ -184,7 +184,7 @@ impl Sim1hWorker {
                 }))
             }
             // Tell network module Core is holding this entry
-/*            Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
+            Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 Sim1hState::hold_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
@@ -193,7 +193,7 @@ impl Sim1hWorker {
                     to_agent_id: provided_entry_data.provider_agent_id,
                     result_info: Opaque::new(),
                 }))
-            }*/
+            }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
                 let log_context = "ClientToLib3h::QueryEntry";
@@ -384,7 +384,7 @@ mod tests {
             r,
         )
     }
-
+    
     #[test]
     #[cfg(feature="broken-tests")]
     fn call_to_boostrap_fails() {

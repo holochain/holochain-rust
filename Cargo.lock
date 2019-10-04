@@ -58,7 +58,7 @@ version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "escargot 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "predicates 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "predicates-core 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "predicates-tree 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -440,8 +440,8 @@ dependencies = [
 
 [[package]]
 name = "detach"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
+version = "0.0.10"
+source = "git+https://github.com/holochain/lib3h?branch=simchat-integration#0c1e8f0e1a5e33f936226fecf9aaf3b297c0aed0"
 
 [[package]]
 name = "difference"
@@ -879,7 +879,7 @@ dependencies = [
  "holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.31-alpha1",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "rpassword 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustyline 5.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -971,7 +971,7 @@ dependencies = [
  "holochain_common 0.0.31-alpha1",
  "holochain_conductor_api 0.0.31-alpha1",
  "holochain_core_types 0.0.31-alpha1",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1013,8 +1013,8 @@ dependencies = [
  "jsonrpc-http-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "jsonrpc-ws-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.31-alpha1",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1079,8 +1079,8 @@ dependencies = [
  "jsonrpc-core 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.31-alpha1",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1170,8 +1170,8 @@ dependencies = [
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.31-alpha1",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1210,7 +1210,7 @@ dependencies = [
  "holochain_core_types 0.0.31-alpha1",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1267,9 +1267,9 @@ dependencies = [
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.31-alpha1",
@@ -1283,7 +1283,7 @@ dependencies = [
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sim1h 0.0.1 (git+https://github.com/holochain/sim1h?branch=update-lib3h-protocol)",
+ "sim1h 0.0.1 (git+https://github.com/holochain/sim1h)",
  "snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tungstenite 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1668,25 +1668,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lib3h"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
+version = "0.0.10"
+source = "git+https://github.com/holochain/lib3h?branch=simchat-integration#0c1e8f0e1a5e33f936226fecf9aaf3b297c0aed0"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_mdns 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "lib3h_zombie_actor 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_discovery 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
+ "lib3h_zombie_actor 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "predicates 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1706,29 +1706,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib3h_crypto_api"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
+name = "lib3h_discovery"
+version = "0.0.10"
+source = "git+https://github.com/holochain/lib3h?branch=simchat-integration#0c1e8f0e1a5e33f936226fecf9aaf3b297c0aed0"
 dependencies = [
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_mdns"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
-dependencies = [
- "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1746,28 +1728,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib3h_protocol"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
-dependencies = [
- "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "url_serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "lib3h_sodium"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
+version = "0.0.10"
+source = "git+https://github.com/holochain/lib3h?branch=simchat-integration#0c1e8f0e1a5e33f936226fecf9aaf3b297c0aed0"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium-sys 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1775,18 +1741,16 @@ dependencies = [
 
 [[package]]
 name = "lib3h_zombie_actor"
-version = "0.0.11"
-source = "git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11#3600b224277c69e1e302155468d78083c08adf3a"
+version = "0.0.10"
+source = "git+https://github.com/holochain/lib3h?branch=simchat-integration#0c1e8f0e1a5e33f936226fecf9aaf3b297c0aed0"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "predicates 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2461,7 +2425,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "predicates"
-version = "1.0.1"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "difference 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3267,10 +3231,10 @@ dependencies = [
 [[package]]
 name = "sim1h"
 version = "0.0.1"
-source = "git+https://github.com/holochain/sim1h?branch=update-lib3h-protocol#ed2489441f3d5b2aa16f0cef3c3fde2e89ac259b"
+source = "git+https://github.com/holochain/sim1h#a5775c1aca548794d291e0066a757a731b2d197c"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "dynomite 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3279,7 +3243,7 @@ dependencies = [
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.1 (git+https://github.com/holochain/holochain-tracing)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_core 0.40.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3458,7 +3422,7 @@ dependencies = [
  "holochain_wasm_utils 0.0.31-alpha1",
  "jsonrpc-ws-server 10.0.1 (git+https://github.com/holochain/jsonrpc?branch=broadcaster-getter)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3900,15 +3864,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "url_serde"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "utf-8"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4170,11 +4125,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zeroize"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "zeroize_derive"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4251,7 +4201,7 @@ dependencies = [
 "checksum crypto-mac 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "0999b4ff4d3446d4ddb19a63e9e00c1876e75cd7000d20e57a693b4b3f08d958"
 "checksum crypto-mac 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4434400df11d95d556bac068ddfedd482915eb18fe8bea89bc80b6e4b1c179e5"
 "checksum ctor 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8ce37ad4184ab2ce004c33bf6379185d3b1c95801cab51026bd271bf68eedc"
-"checksum detach 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
+"checksum detach 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
 "checksum difference 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 "checksum digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)" = "03b072242a8cbaf9c145665af9d250c59af3b958f83ed6824e13533cf76d5b90"
 "checksum digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f3d0c8c8752312f9713efd397ff63acb9f85585afbf179282e720e7704954dd5"
@@ -4341,14 +4291,12 @@ dependencies = [
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"
 "checksum lazycell 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
-"checksum lib3h 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
+"checksum lib3h 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
 "checksum lib3h_crypto_api 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
-"checksum lib3h_crypto_api 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
-"checksum lib3h_mdns 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
+"checksum lib3h_discovery 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
 "checksum lib3h_protocol 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
-"checksum lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
-"checksum lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
-"checksum lib3h_zombie_actor 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)" = "<none>"
+"checksum lib3h_sodium 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
+"checksum lib3h_zombie_actor 0.0.10 (git+https://github.com/holochain/lib3h?branch=simchat-integration)" = "<none>"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
 "checksum libflate 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)" = "d9135df43b1f5d0e333385cb6e7897ecd1a43d7d11b91ac003f4d2c2d2401fdd"
 "checksum linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"
@@ -4424,7 +4372,7 @@ dependencies = [
 "checksum plugin 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "1a6a0dc3910bc8db877ffed8e457763b317cf880df4ae19109b9f77d277cf6e0"
 "checksum podio 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "780fb4b6698bbf9cf2444ea5d22411cef2953f0824b98f33cf454ec5615645bd"
 "checksum ppv-lite86 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e3cbf9f658cdb5000fcf6f362b8ea2ba154b9f146a61c7a20d647034c6b6561b"
-"checksum predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "53e09015b0d3f5a0ec2d4428f7559bb7b3fff341b4e159fedd1d57fac8b939ff"
+"checksum predicates 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fa984b7cd021a0bf5315bcce4c4ae61d2a535db2a8d288fc7578638690a7b7c3"
 "checksum predicates-core 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "06075c3a3e92559ff8929e7a280684489ea27fe44805174c3ebd9328dcb37178"
 "checksum predicates-tree 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8e63c4859013b38a76eca2414c64911fba30def9e3202ac461a2d22831220124"
 "checksum pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3f81e1644e1b54f5a68959a29aa86cde704219254669da328ecfdf6a1f09d427"
@@ -4508,7 +4456,7 @@ dependencies = [
 "checksum shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7d5f047b90b2ca2d1526ff73d67cba61f86f4cf9a8afddc99dd96702ded8e684"
 "checksum signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "4f61c4d59f3aaa9f61bba6450a9b80ba48362fd7d651689e7a10c453b1f6dc68"
 "checksum signal-hook-registry 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1797d48f38f91643908bb14e35e79928f9f4b3cefb2420a564dde0991b4358dc"
-"checksum sim1h 0.0.1 (git+https://github.com/holochain/sim1h?branch=update-lib3h-protocol)" = "<none>"
+"checksum sim1h 0.0.1 (git+https://github.com/holochain/sim1h)" = "<none>"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum smallvec 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)" = "ab606a9c5e214920bb66c458cd7be8ef094f813f20fe77a54cc7dbfff220d4b7"
 "checksum snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "27207bb65232eda1f588cf46db2fee75c0808d557f6b3cf19a75f5d6d7c94df1"
@@ -4572,7 +4520,6 @@ dependencies = [
 "checksum unwrap_to 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cad414b2eed757c1b6f810f8abc814e298a9c89176b21fae092c7a87756fb839"
 "checksum url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "dd4e7c0d531266369519a4aa4f399d748bd37043b00bde1e4ff1f60a120b355a"
 "checksum url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "75b414f6c464c879d7f9babf951f23bc3743fb7313c081b2e6ca719067ea9d61"
-"checksum url_serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "74e7d099f1ee52f823d4bdd60c93c3602043c728f5db3b97bdb548467f7bddea"
 "checksum utf-8 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)" = "05e42f7c18b8f902290b009cde6d651262f956c98bc51bca4cd1d511c9cd85c7"
 "checksum utf8-ranges 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b4ae116fef2b7fea257ed6440d3cfcff7f190865f170cdad00bb6465bf18ecba"
 "checksum utf8parse 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8772a4ccbb4e89959023bc5b7cb8623a795caa7092d99f3aa9501b9484d4557d"
@@ -4605,7 +4552,6 @@ dependencies = [
 "checksum xattr 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "244c3741f4240ef46274860397c7c74e50eb23624996930e484c16679633a54c"
 "checksum xml-rs 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c1cb601d29fe2c2ac60a2b2e5e293994d87a1f6fa9687a31a15270f909be9c2"
 "checksum yaml-rust 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "65923dd1784f44da1d2c3dbbc5e822045628c590ba72123e1c73d3c230c4434d"
-"checksum zeroize 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4090487fa66630f7b166fba2bbb525e247a5449f41c468cc1d98f8ae6ac03120"
 "checksum zeroize 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4177936c03b5a349c1b8e4509c46add268e66bc66fe92663729fa0570fe4f213"
 "checksum zeroize_derive 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)" = "080616bd0e31f36095288bb0acdf1f78ef02c2fa15527d7e993f2a6c7591643e"
 "checksum zip 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "77ce0ceee93c995954a31f77903925a6a8bb094709445238e344f2107910e29e"

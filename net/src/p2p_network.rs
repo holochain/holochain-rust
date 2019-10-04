@@ -7,7 +7,7 @@ use crate::{
         net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
         net_connection_thread::NetConnectionThread,
         NetResult,
-
+        
     },
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
@@ -198,7 +198,7 @@ impl NetSend for P2pNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lib3h_protocol::{data_types::ConnectData, uri::Lib3hUri};
+    use lib3h_protocol::data_types::ConnectData;
 
     #[test]
     fn it_should_create_memory_network() {
@@ -207,7 +207,7 @@ mod tests {
         let mut res = P2pNetwork::new(handler.clone(), p2p).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
-            peer_location: Lib3hUri::with_undefined(),
+            peer_uri: url::Url::parse("mem://test".into()).expect("well formed memory network url"),
             network_id: "test_net_id".into(),
         };
 

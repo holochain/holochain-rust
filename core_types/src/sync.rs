@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use backtrace::Backtrace;
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
@@ -58,8 +59,8 @@ pub type HcLockResult<T> = Result<T, HcLockError>;
 
 lazy_static! {
     static ref GUARDS: Mutex<Vec<(ProcessUniqueId, Instant, Backtrace)>> = Mutex::new(Vec::new());
-    static ref PENDING_LOCKS: Mutex<Vec<(ProcessUniqueId, LockType, Instant, Backtrace)>> =
-        Mutex::new(Vec::new());
+    static ref PENDING_LOCKS: Mutex<HashMap<ProcessUniqueId, (LockType, Instant, Backtrace)>> =
+        Mutex::new(HashMap::new());
 }
 
 pub fn spawn_hc_guard_watcher() {
@@ -92,13 +93,12 @@ pub fn spawn_hc_guard_watcher() {
 }
 
 fn print_pending_locks() {
-    for (i, (puid, kind, instant, backtrace)) in PENDING_LOCKS.lock().iter().enumerate() {
+    for (puid, (lock_type, instant, backtrace)) in PENDING_LOCKS.lock().iter() {
         debug!(
-            "PENDING LOCK #{}, locktype={:?}, pending for {:?}, puid={:?}, backtrace:\n{:?}",
-            i,
-            kind,
-            Instant::now().duration_since(*instant),
+            "PENDING LOCK {:?} locktype={:?}, pending for {:?}, backtrace:\n{:?}",
             puid,
+            lock_type,
+            Instant::now().duration_since(*instant),
             backtrace
         );
     }
@@ -211,59 +211,56 @@ impl<T> HcRwLock<T> {
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $_try_lock_until_fn:ident ) => {
+    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $try_lock_until_inner_fn:ident ) => {
         impl<T: ?Sized> $HcMutex<T> {
-            pub fn $lock_fn(&self) -> HcLockResult<$guard<T>> {
+            pub fn $lock_fn(&self) -> HcLockResult<$Guard<T>> {
                 // let bts = update_backtraces(&self.backtraces);
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
                 self.$try_lock_until_fn(deadline)
             }
 
-            fn $try_lock_until_fn(&self, deadline: Instant) -> HcLockResult<$guard<T>> {
-                self.$_try_lock_until_fn(deadline, None)
+            fn $try_lock_until_fn(&self, deadline: Instant) -> HcLockResult<$Guard<T>> {
+                self.$try_lock_until_inner_fn(deadline, None)
             }
 
-            fn $_try_lock_until_fn(
+            fn $try_lock_until_inner_fn(
                 &self,
                 deadline: Instant,
                 puid: Option<ProcessUniqueId>,
-            ) -> HcLockResult<$guard<T>> {
+            ) -> HcLockResult<$Guard<T>> {
                 match self.$try_lock_fn() {
                     Ok(v) => {
-                        // if let Some(puid) = puid {
-                        //     PENDING_LOCKS.lock().retain(|(p, _, _, _)| *p != puid);
-                        // } else {
-                        //     debug!("warn/_try_lock_until: no pending lock to remove");
-                        // }
+                        if let Some(puid) = puid {
+                            PENDING_LOCKS.lock().remove(&puid);
+                        }
                         Ok(v)
                     }
                     Err(err) => match err.kind {
                         HcLockErrorKind::HcLockPoisonError => Err(err),
                         HcLockErrorKind::HcLockTimeout => {
-                            let puid = if puid.is_none() {
+                            let puid = puid.unwrap_or_else(|| {
                                 let p = ProcessUniqueId::new();
-                                // PENDING_LOCKS.lock().push((p, LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
-                                Some(p)
-                            } else {
-                                puid
-                            };
+                                PENDING_LOCKS.lock().insert(p, (LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
+                                p
+                            });
                             if let None = deadline.checked_duration_since(Instant::now()) {
+                                // PENDING_LOCKS.lock().remove(&puid);
                                 Err(err)
                             } else {
                                 std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
-                                self.$_try_lock_until_fn(deadline, puid)
+                                self.$try_lock_until_inner_fn(deadline, Some(puid))
                             }
                         }
                     },
                 }
             }
 
-            pub fn $try_lock_fn(&self) -> HcLockResult<$guard<T>> {
+            pub fn $try_lock_fn(&self) -> HcLockResult<$Guard<T>> {
                 let bts = update_backtraces(&self.backtraces);
                 (*self)
                     .inner
                     .$try_lock_fn()
-                    .map(|inner| $guard::new(inner))
+                    .map(|inner| $Guard::new(inner))
                     .ok_or_else(|| {
                         HcLockError::new(LockType::$lock_type, bts, HcLockErrorKind::HcLockTimeout)
                     })
@@ -280,7 +277,7 @@ mutex_impl!(
     lock,
     try_lock,
     try_lock_until,
-    _try_lock_until
+    try_lock_until_inner
 );
 mutex_impl!(
     HcRwLock,
@@ -290,7 +287,7 @@ mutex_impl!(
     read,
     try_read,
     try_read_until,
-    _try_read_until
+    try_read_until_inner
 );
 mutex_impl!(
     HcRwLock,
@@ -300,7 +297,7 @@ mutex_impl!(
     write,
     try_write,
     try_write_until,
-    _try_write_until
+    try_write_until_inner
 );
 
 ///////////////////////////////////////////////////////////////

@@ -91,9 +91,9 @@ impl GuardTracker {
             }
             let lock_type_str = format!("{:?}", self.lock_type);
             let report = if self.immortal {
-                format!("{:<6} {:<11} {:>12} [!!!]", lock_type_str, self.puid, elapsed_ms)
+                format!("{:<6} {:<13} {:>12} [!!!]", lock_type_str, self.puid, elapsed_ms)
             } else {
-                format!("{:<6} {:<11} {:>12}", lock_type_str, self.puid, elapsed_ms)
+                format!("{:<6} {:<13} {:>12}", lock_type_str, self.puid, elapsed_ms)
             };
             Some((elapsed_ms, report))
         } else {
@@ -102,7 +102,7 @@ impl GuardTracker {
     }
 
     pub fn report_header() -> String {
-        format!("{:6} {:^11} {:>12}", "KIND", "PUID", "ELAPSED (ms)")
+        format!("{:6} {:^13} {:>12}", "KIND", "PUID", "ELAPSED (ms)")
     }
 
     fn immortalize(&mut self) {
@@ -126,7 +126,7 @@ impl GuardTracker {
 }
 
 lazy_static! {
-    static ref GUARDS: Mutex<Vec<GuardTracker>> = Mutex::new(Vec::new());
+    static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
     static ref PENDING_LOCKS: Mutex<HashMap<ProcessUniqueId, (LockType, Instant, Backtrace)>> =
         Mutex::new(HashMap::new());
 }
@@ -141,7 +141,7 @@ pub fn spawn_hc_guard_watcher() {
             let mut reports: Vec<(i64, String)> = {
                 GUARDS
                     .lock()
-                    .iter_mut()
+                    .values_mut()
                     .filter_map(|gt| gt.report_and_update())
                     .collect()
             };
@@ -191,14 +191,14 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                GUARDS.lock().push(GuardTracker::new(puid, LockType::$lock_type));
+                GUARDS.lock().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
                 Self { puid, inner }
             }
         }
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                GUARDS.lock().retain(|gt| gt.puid != self.puid)
+                GUARDS.lock().remove(&self.puid);
             }
         }
     };

@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use backtrace::Backtrace;
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
 use std::{
+    collections::HashMap,
     ops::{Deref, DerefMut},
     sync::TryLockError,
     thread,
@@ -10,6 +10,8 @@ use std::{
 };
 
 const LOCK_TIMEOUT_SECS: u64 = 90;
+const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
+const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
 const LOCK_POLL_INTERVAL_MS: u64 = 10;
 
 #[derive(Debug)]
@@ -57,42 +59,97 @@ impl HcLockError {
 
 pub type HcLockResult<T> = Result<T, HcLockError>;
 
+struct GuardTracker {
+    puid: ProcessUniqueId,
+    created: Instant,
+    backtrace: Backtrace,
+    immortal: bool,
+}
+
+impl GuardTracker {
+    pub fn new(puid: ProcessUniqueId) -> Self {
+        Self {
+            puid,
+            created: Instant::now(),
+            backtrace: Backtrace::new_unresolved(),
+            immortal: false,
+        }
+    }
+
+    pub fn report_and_update(&mut self) -> Option<(i64, String)> {
+        let elapsed = Instant::now().duration_since(self.created);
+        let elapsed_ms = elapsed.as_millis() as i64;
+        if elapsed_ms > ACTIVE_GUARD_MIN_ELAPSED_MS {
+            if !self.immortal && elapsed.as_secs() > LOCK_TIMEOUT_SECS {
+                self.immortalize();
+            }
+            let report = if self.immortal {
+                format!("[IMMORTAL] {:<11} {:>12}", self.puid, elapsed_ms)
+            } else {
+                format!("{:<11} {:>12}", self.puid, elapsed_ms)
+            };
+            Some((elapsed_ms, report))
+        } else {
+            None
+        }
+    }
+
+    fn immortalize(&mut self) {
+        if self.immortal {
+            return;
+        }
+        self.immortal = true;
+        self.backtrace.resolve();
+        debug!(
+            "IMMORTAL LOCK GUARD!!! puid={:?}, backtrace:\n{:?}",
+            self.puid, self.backtrace
+        );
+    }
+}
+
 lazy_static! {
-    static ref GUARDS: Mutex<Vec<(ProcessUniqueId, Instant, Backtrace)>> = Mutex::new(Vec::new());
+    static ref GUARDS: Mutex<Vec<GuardTracker>> = Mutex::new(Vec::new());
     static ref PENDING_LOCKS: Mutex<HashMap<ProcessUniqueId, (LockType, Instant, Backtrace)>> =
         Mutex::new(HashMap::new());
 }
 
 pub fn spawn_hc_guard_watcher() {
-    let _ = thread::spawn(move || loop {
-        {
-            let mut guards = GUARDS.lock();
-            *guards = guards
-                .iter()
-                .filter(|(puid, instant, backtrace)| {
-                    let timeout =
-                        Instant::now().duration_since(*instant).as_secs() > LOCK_TIMEOUT_SECS;
-                    if timeout {
-                        let mut b = backtrace.clone();
-                        b.resolve();
-                        debug!("IMMORTAL LOCK GUARD!!! puid={:?} backtrace:\n{:?}", puid, b);
-                        print_pending_locks();
-                    }
-                    !timeout
-                })
-                .cloned()
-                .collect();
-            debug!("spawn_hc_guard_watcher: num={:?}", guards.len());
-            for (puid, instant, _) in guards.iter() {
-                debug!("{:?} {:?}", puid, instant);
+    let _ = thread::Builder::new()
+        .name(format!(
+            "hc_guard_watcher/{}",
+            ProcessUniqueId::new().to_string()
+        ))
+        .spawn(move || loop {
+            let mut reports: Vec<(i64, String)> = {
+                GUARDS
+                    .lock()
+                    .iter_mut()
+                    .filter_map(|gt| gt.report_and_update())
+                    .collect()
+            };
+            if reports.len() > 0 {
+                reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
+                let num_active = reports.len();
+                let lines: Vec<String> = reports.into_iter().map(|(_, report)| report).collect();
+                let output = lines.join("\n");
+                let header = format!("{:^11} {:>12}", "PUID", "elapsed (ms)");
+                debug!(
+                    "tracking {} active guard(s) alive for > {}ms:\n{}\n{}",
+                    num_active, ACTIVE_GUARD_MIN_ELAPSED_MS, header, output
+                );
+            } else {
+                debug!(
+                    "no active guards alive for > {}ms",
+                    ACTIVE_GUARD_MIN_ELAPSED_MS
+                );
             }
-        }
-        thread::sleep(Duration::from_millis(3000));
-    });
+
+            thread::sleep(Duration::from_millis(GUARD_WATCHER_POLL_INTERVAL_MS));
+        });
     debug!("spawn_hc_guard_watcher: SPAWNED");
 }
 
-fn print_pending_locks() {
+fn _print_pending_locks() {
     for (puid, (lock_type, instant, backtrace)) in PENDING_LOCKS.lock().iter() {
         debug!(
             "PENDING LOCK {:?} locktype={:?}, pending for {:?}, backtrace:\n{:?}",
@@ -117,16 +174,14 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                GUARDS
-                    .lock()
-                    .push((puid, Instant::now(), Backtrace::new_unresolved()));
+                GUARDS.lock().push(GuardTracker::new(puid));
                 Self { puid, inner }
             }
         }
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                GUARDS.lock().retain(|(puid, _, _)| *puid != self.puid)
+                GUARDS.lock().retain(|gt| gt.puid != self.puid)
             }
         }
     };
@@ -240,7 +295,10 @@ macro_rules! mutex_impl {
                         HcLockErrorKind::HcLockTimeout => {
                             let puid = puid.unwrap_or_else(|| {
                                 let p = ProcessUniqueId::new();
-                                PENDING_LOCKS.lock().insert(p, (LockType::Lock, Instant::now(), Backtrace::new_unresolved()));
+                                PENDING_LOCKS.lock().insert(
+                                    p,
+                                    (LockType::Lock, Instant::now(), Backtrace::new_unresolved()),
+                                );
                                 p
                             });
                             if let None = deadline.checked_duration_since(Instant::now()) {

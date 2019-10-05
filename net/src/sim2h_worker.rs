@@ -1,4 +1,4 @@
-//! provides worker that makes use of sim1h
+//! provides worker that makes use of sim2h
 
 use crate::connection::{
     net_connection::{NetHandler, NetWorker},
@@ -6,14 +6,13 @@ use crate::connection::{
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::{
-    data_types::{GenericResultData, Opaque},
+//    data_types::{GenericResultData, Opaque},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-    Address,
+ //   Address,
 };
-use log::{debug, warn};
-use sim1h::{
-    dht::bbdht::dynamodb::client::{client_from_endpoint, Client},
+use log::*;
+/*use sim2h::{
     workflow::{
         from_client::{
             fetch_entry::fetch_entry, leave_space::leave_space, publish_entry::publish_entry,
@@ -26,57 +25,55 @@ use sim1h::{
         },
         to_client_response::handle_fetch_entry_result::handle_fetch_entry_result,
     },
-};
-use std::io::{self, Write};
+};*/
+//use std::io::{self, Write};
 use url::Url;
 
-static DYNAMO_REGION: &str = "holochain-testing";
-
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
-pub struct Sim1hConfig {
-    pub dynamo_url: String,
+pub struct Sim2hConfig {
+    pub sim2h_url: String,
 }
 
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically
-#[allow(non_snake_case)]
-pub struct Sim1hWorker {
+#[allow(non_snake_case, dead_code)]
+pub struct Sim2hWorker {
     handler: NetHandler,
-    dynamo_db_client: Client,
+//    dynamo_db_client: Client,
     inbox: Vec<Lib3hClientProtocol>,
     num_ticks: u32,
-    state: Option<Sim1hState>,
+//    state: Option<Sim1hState>,
 }
 
-impl Sim1hWorker {
+impl Sim2hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
     }
 
-    /// Create a new websocket worker connected to the lib3h NetworkEngine
-    pub fn new(handler: NetHandler, config: Sim1hConfig) -> NetResult<Self> {
-        let dynamo_db_client = client_from_endpoint(
-            config.dynamo_url,
-            DYNAMO_REGION.to_string());
+    /// Create a new worker connected to the sim2h instance
+    pub fn new(handler: NetHandler, _config: Sim2hConfig) -> NetResult<Self> {
         Ok(Self {
             handler,
-            dynamo_db_client,
             inbox: Vec::new(),
             num_ticks: 0,
-            state: None,
+//            state: None,
         })
     }
 
+/*
     fn fail_uninitialized(mut data: GenericResultData) -> NetResult<Lib3hServerProtocol> {
         data.result_info = Opaque::from("Attempt to use Sim1hState before initialized (before space was joined)");
         Ok(Lib3hServerProtocol::FailureResult(data))
     }
+     */
 
+    #[allow(dead_code)]
     fn handle_client_message(
         &mut self,
         data: Lib3hClientProtocol,
     ) -> NetResult<Lib3hServerProtocol> {
         debug!("handle_client_message: {:?}", data);
-        match data {
+        panic!("sim2h not implemented")
+/*        match data {
             // Success response to a request (any Command with an `request_id` field.)
             Lib3hClientProtocol::SuccessResult(generic_result_data) => {
                 Ok(Lib3hServerProtocol::FailureResult(generic_result_data))
@@ -276,12 +273,12 @@ impl Sim1hWorker {
                     result_info: Opaque::new(),
                 }))
             }
-        }
+        }*/
     }
 }
 
 // TODO: DRY this up as it is basically the same as the lib3h engine
-impl NetWorker for Sim1hWorker {
+impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
@@ -292,7 +289,8 @@ impl NetWorker for Sim1hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        self.num_ticks += 1;
+        Ok(false)
+/*        self.num_ticks += 1;
         if self.num_ticks % 100 == 0 {
             io::stdout().flush()?;
         }
@@ -341,8 +339,8 @@ impl NetWorker for Sim1hWorker {
             did_something = true;
         }
         Ok(did_something)
+*/
     }
-
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {
         None
@@ -354,7 +352,7 @@ impl NetWorker for Sim1hWorker {
     }
 }
 
-#[cfg(feature = "sim1h")]
+//#[cfg(feature = "sim2h")]
 #[cfg(test)]
 mod tests {
 
@@ -366,7 +364,7 @@ mod tests {
 
     #[allow(dead_code)]
     fn test_worker() -> (
-        Sim1hWorker,
+        Sim2hWorker,
         crossbeam_channel::Receiver<NetResult<Lib3hServerProtocol>>,
     ) {
         let (s, r) = crossbeam_channel::unbounded();
@@ -374,49 +372,14 @@ mod tests {
             s.send(message).map_err(|e| e.into())
         }));
         (
-            Sim1hWorker::new(
+            Sim2hWorker::new(
                 handler,
-                Sim1hConfig {
-                    dynamo_url: "http://localhost:8000".into(),
+                Sim2hConfig {
+                    sim2h_url: "http://localhost:8000".into(),
                 },
             )
             .unwrap(),
             r,
         )
-    }
-
-    #[test]
-    #[cfg(feature="broken-tests")]
-    fn call_to_boostrap_fails() {
-        let (mut worker, r) = test_worker();
-
-        /*
-        let connect_data = ConnectData {
-            request_id: String::from("request-id-0"),
-            peer_uri: Url::parse("http://bs").unwrap(),
-            network_id: String::from("network-id"),
-        };
-        let message = Lib3hClientProtocol::Connect(connect_data);
-        */
-
-        let space_data = SpaceData {
-            request_id: String::from("request-id-0"),
-            space_address: Address::from("test-space-address"),
-            agent_id: Address::from("test-agent-id"),
-        };
-        let message = Lib3hClientProtocol::JoinSpace(space_data);
-
-        // send the bootstrap message
-        worker.receive(message).expect("could not send message");
-
-        // tick a few times..
-        for _ in 0..5 {
-            worker.tick().ok();
-        }
-
-        // see if anything came down the channel
-        let response = r.recv().expect("could not get response");
-
-        println!("{:?}", response);
     }
 }

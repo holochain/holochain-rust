@@ -1,4 +1,5 @@
 use crate::sim1h_worker::Sim1hConfig;
+use crate::sim2h_worker::Sim2hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use snowflake;
@@ -14,6 +15,7 @@ pub enum P2pBackendKind {
     N3H,
     LIB3H,
     SIM1H,
+    SIM2H,
     LegacyInMemory
 }
 
@@ -25,6 +27,7 @@ impl FromStr for P2pBackendKind {
             "N3H" => Ok(P2pBackendKind::N3H),
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
             "SIM1H" => Ok(P2pBackendKind::SIM1H),
+            "SIM2H" => Ok(P2pBackendKind::SIM2H),
             "LegacyInMemory" =>Ok(P2pBackendKind::LegacyInMemory),
             _ => Err(()),
         }
@@ -38,6 +41,7 @@ impl From<P2pBackendKind> for String {
             P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
             P2pBackendKind::SIM1H => "SIM1H",
+            P2pBackendKind::SIM2H => "SIM2H",
             P2pBackendKind::LegacyInMemory =>"LegacyInMemory"
         })
     }
@@ -64,6 +68,7 @@ pub enum BackendConfig {
     Lib3h(EngineConfig),
     Memory(EngineConfig),
     Sim1h(Sim1hConfig),
+    Sim2h(Sim2hConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -176,6 +181,17 @@ impl P2pConfig {
         )
     }
 
+    pub fn new_with_sim2h_backend(sim2h_url: &str) -> Self {
+        P2pConfig::new(
+            P2pBackendKind::SIM2H,
+            BackendConfig::Sim2h(Sim2hConfig {
+                sim2h_url: sim2h_url.into(),
+            }),
+            None,
+        )
+    }
+
+
     pub fn new_with_memory_lib3h_backend(
         server_name: &str,
         bootstrap_nodes: Vec<url::Url>,
@@ -282,6 +298,7 @@ impl P2pConfig {
             BackendConfig::Memory(config) => Some(config),
             BackendConfig::Json(_) => None,
             BackendConfig::Sim1h(_) => None,
+            BackendConfig::Sim2h(_) => None,
         }
     }
 }

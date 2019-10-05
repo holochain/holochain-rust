@@ -7,7 +7,7 @@ use crate::{
         net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
         net_connection_thread::NetConnectionThread,
         NetResult,
-        
+
     },
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
@@ -21,6 +21,7 @@ use crossbeam_channel;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
 use crate::sim1h_worker::Sim1hWorker;
+use crate::sim2h_worker::Sim2hWorker;
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
@@ -92,10 +93,19 @@ impl P2pNetwork {
             P2pBackendKind::SIM1H => Box::new(move |h| {
                 let backend_config = match &p2p_config.clone().backend_config {
                     BackendConfig::Sim1h(config) => config.clone(),
-                    _ => return Err(format_err!("mismatch backend type, expecting memory")),
+                    _ => return Err(format_err!("mismatch backend type, expecting sim1h")),
                 };
                 Ok(Box::new(Sim1hWorker::new(h, backend_config)?)
                     as Box<dyn NetWorker>)
+            }),
+            // Create an Sim2hWorker
+            P2pBackendKind::SIM2H => Box::new(move |h| {
+                let backend_config = match &p2p_config.clone().backend_config {
+                    BackendConfig::Sim2h(config) => config.clone(),
+                    _ => return Err(format_err!("mismatch backend type, expecting sim2h")),
+                };
+                Ok(Box::new(Sim2hWorker::new(h, backend_config)?)
+                   as Box<dyn NetWorker>)
             }),
         };
 
@@ -145,6 +155,7 @@ impl P2pNetwork {
             P2pBackendKind::LIB3H |
             P2pBackendKind::GhostEngineMemory |
             P2pBackendKind::SIM1H |
+            P2pBackendKind::SIM2H |
             P2pBackendKind::LegacyInMemory => false,
             P2pBackendKind::N3H => true
         }

@@ -29,6 +29,7 @@ use sim1h::{
 };
 use std::io::{self, Write};
 use url::Url;
+use lib3h_protocol::types::SpaceHash;
 
 static DYNAMO_REGION: &str = "holochain-testing";
 
@@ -92,7 +93,7 @@ impl Sim1hWorker {
                 //connected(&log_context, &self.dynamo_db_client, &connect_data);
                 Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
                     request_id: connect_data.request_id,
-                    space_address: Address::new(),
+                    space_address: SpaceHash::new(),
                     to_agent_id: Address::new(),
                     result_info: Opaque::new(),
                 }))
@@ -271,7 +272,7 @@ impl Sim1hWorker {
             Lib3hClientProtocol::Shutdown => {
                 Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
                     request_id: "".into(),
-                    space_address: Address::new(),
+                    space_address: SpaceHash::new(),
                     to_agent_id: Address::new(),
                     result_info: Opaque::new(),
                 }))

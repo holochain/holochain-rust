@@ -218,14 +218,14 @@ fn run() -> HolochainResult<()> {
                 util::std_package_path(&project_path).map_err(HolochainError::Default)?
             };
 
-            if let Ok(properties) = serde_json::Value::from_str(
-                properties_string
-                    .unwrap_or_else(|| {
-                        println!("No properties provided, using empty object");
-                        String::from("{}") // default properties is empty
-                    })
-                    .as_ref(),
-            ) {
+            let properties = properties_string
+            .map(|s| {
+                serde_json::Value::from_str(&s)
+            }).unwrap_or_else(|| {
+                Ok(json!({}))
+            });
+
+            if let Ok(properties) = properties {
                 cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?
             } else {
                 return Err(HolochainError::Default(format_err!(

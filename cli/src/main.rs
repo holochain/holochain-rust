@@ -225,12 +225,11 @@ fn run() -> HolochainResult<()> {
                 Ok(json!({}))
             });
 
-            if let Ok(properties) = properties {
-                cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?
-            } else {
-                return Err(HolochainError::Default(format_err!(
-                    "String passed as properties is not valid JSON"
-                )));
+            match properties {
+                Ok(properties) => cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?,
+                Err(e) => return Err(HolochainError::Default(format_err!(
+                    "Filed to parse properties argument as JSON: {:?}", e
+                )))
             }
         }
 

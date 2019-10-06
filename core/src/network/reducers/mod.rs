@@ -129,7 +129,7 @@ pub fn send_message(
     let space_address = network_state.dna_address.clone().unwrap();
     let data = DirectMessageData {
         request_id: id.clone(),
-        space_address,
+        space_address: space_address.into(),
         to_agent_id: to_agent_id.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content: content.into(),

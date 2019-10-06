@@ -309,15 +309,13 @@ impl Future for CallResultFuture {
         // Leaving this in to be safe against running this future in another executor.
         cx.waker().clone().wake();
 
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             match state.nucleus().zome_call_result(&self.zome_call) {
                 Some(result) => Poll::Ready(result),
                 None => Poll::Pending,
             }
         } else {
-            Poll::Ready(Err(HolochainError::ErrorGeneric(
-                "State not initialized".to_string(),
-            )))
+            Poll::Pending
         }
     }
 }

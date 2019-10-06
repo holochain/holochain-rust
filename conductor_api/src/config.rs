@@ -23,8 +23,9 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::EngineConfig;
 
+use holochain_net::sim1h_worker::Sim1hConfig;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -478,6 +479,15 @@ impl Configuration {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
+    /// Returns the DNA configuration with the given ID if present
+    pub fn update_dna_hash_by_id(&mut self, id: &str, hash: String) -> bool {
+        self.dnas
+            .iter_mut()
+            .find(|dc| &dc.id == id)
+            .map(|dna| dna.hash = hash)
+            .is_some()
+    }
+
     /// Returns the instance configuration with the given ID if present
     pub fn instance_by_id(&self, id: &str) -> Option<InstanceConfiguration> {
         self.instances.iter().find(|ic| &ic.id == id).cloned()
@@ -658,6 +668,8 @@ pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
+    #[serde(default)]
+    pub uuid: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -814,9 +826,12 @@ fn default_address() -> String {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkConfig {
     N3h(N3hConfig),
-    Lib3h(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
+    Sim1h(Sim1hConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

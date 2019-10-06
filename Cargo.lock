@@ -1283,6 +1283,7 @@ dependencies = [
  "lib3h 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
  "lib3h_protocol 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
  "lib3h_sodium 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
+ "lib3h_zombie_actor 0.0.11 (git+https://github.com/holochain/lib3h?branch=201910/version-0.0.11)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "logging 0.0.31-alpha1",

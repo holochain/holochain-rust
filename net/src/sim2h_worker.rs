@@ -5,12 +5,7 @@ use crate::connection::{
     NetResult,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h_protocol::{
-//    data_types::{GenericResultData, Opaque},
-    protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
- //   Address,
-};
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address};
 use log::*;
 /*use sim2h::{
     workflow::{
@@ -28,6 +23,13 @@ use log::*;
 };*/
 //use std::io::{self, Write};
 use url::Url;
+use lib3h::transport::websocket::actor::{GhostTransportWebsocket};
+use lib3h::transport::websocket::tls::TlsConfig;
+use lib3h::transport::protocol::{TransportActorParentWrapper, RequestToChild, RequestToChildResponse};
+use holochain_tracing::Span;
+use lib3h_zombie_actor::{GhostParentWrapper, GhostCallbackData};
+use lib3h_zombie_actor::GhostCanTrack;
+use failure::err_msg;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -38,9 +40,10 @@ pub struct Sim2hConfig {
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
     handler: NetHandler,
-//    dynamo_db_client: Client,
+    transport: TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket>,
     inbox: Vec<Lib3hClientProtocol>,
     num_ticks: u32,
+    config: Sim2hConfig,
 //    state: Option<Sim1hState>,
 }
 
@@ -50,12 +53,54 @@ impl Sim2hWorker {
     }
 
     /// Create a new worker connected to the sim2h instance
-    pub fn new(handler: NetHandler, _config: Sim2hConfig) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, config: Sim2hConfig) -> NetResult<Self> {
+        let transport_raw = GhostTransportWebsocket::new(
+            Address::from("sim2h-worker-transport"),
+            TlsConfig::Unencrypted,
+            Address::from("sim2h-network"),
+        );
+
+        let mut transport: TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket> =
+            GhostParentWrapper::new(
+                transport_raw,
+                "t1_requests", // prefix for request ids in the tracker
+            );
+
+
+        // bind to some port:
+        // channel for making an async call sync
+        let (tx, rx) = crossbeam_channel::unbounded();
+        transport.request(
+            Span::todo("Find out how to use spans the right way"),
+            RequestToChild::Bind {
+                spec: Url::parse("wss://localhost:38220").expect("can parse url").into(),
+            },
+            // callback just notifies channel so
+            Box::new(move |_owner, response| {
+                let result = match response {
+                    GhostCallbackData::Timeout(bt) => Err(format!("Bind timed out. Backtrace: {:?}", bt)),
+                    GhostCallbackData::Response(r) => match r {
+                        Ok(response) => match response {
+                            RequestToChildResponse::Bind(bind_result_data) => Ok(bind_result_data.bound_url),
+                            _ => Err(String::from("Got unexpected response from transport actor during bind")),
+                        }
+                        Err(transport_error) => Err(format!("Error during bind: {:?}", transport_error)),
+                    }
+                };
+                let _ = tx.send(result);
+                Ok(())
+            }),
+        )?;
+
+        let result = rx.recv()?;
+        let _bound_url = result.map_err(|bind_error| err_msg(bind_error))?;
+
         Ok(Self {
             handler,
+            transport,
             inbox: Vec::new(),
             num_ticks: 0,
-//            state: None,
+            config,
         })
     }
 

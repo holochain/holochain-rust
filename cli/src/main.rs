@@ -28,7 +28,7 @@ mod error;
 mod util;
 
 use crate::error::{HolochainError, HolochainResult};
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -47,6 +47,8 @@ enum Cli {
         strip_meta: bool,
         #[structopt(long = "output", short = "o", parse(from_os_str))]
         output: Option<PathBuf>,
+        #[structopt(long = "properties", short = "p")]
+        properties: Option<String>,
     },
     #[structopt(
         name = "unpack",
@@ -205,13 +207,30 @@ fn run() -> HolochainResult<()> {
         std::env::current_dir().map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
     match args {
         // If using default path, we'll create if necessary; otherwise, target dir must exist
-        Cli::Package { strip_meta, output } => {
+        Cli::Package {
+            strip_meta,
+            output,
+            properties: properties_string,
+        } => {
             let output = if output.is_some() {
                 output.unwrap()
             } else {
                 util::std_package_path(&project_path).map_err(HolochainError::Default)?
             };
-            cli::package(strip_meta, output).map_err(HolochainError::Default)?
+
+            let properties = properties_string
+            .map(|s| {
+                serde_json::Value::from_str(&s)
+            }).unwrap_or_else(|| {
+                Ok(json!({}))
+            });
+
+            match properties {
+                Ok(properties) => cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?,
+                Err(e) => return Err(HolochainError::Default(format_err!(
+                    "Failed to parse properties argument as JSON: {:?}", e
+                )))
+            }
         }
 
         Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,

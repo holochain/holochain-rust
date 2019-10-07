@@ -65,7 +65,7 @@ impl Packager {
         Packager { strip_meta }
     }
 
-    pub fn package(strip_meta: bool, output: PathBuf) -> DefaultResult<()> {
+    pub fn package(strip_meta: bool, output: PathBuf, properties: Value) -> DefaultResult<()> {
         // First, check whether they have `cargo` installed, since it will be needed for packaging
         // TODO: in the future, don't check for this here, since other build tools and languages
         // could be used
@@ -82,18 +82,25 @@ impl Packager {
             return Ok(());
         }
 
-        Packager::new(strip_meta).run(&output)
+        Packager::new(strip_meta).run(&output, properties)
     }
 
-    fn run(&self, output: &PathBuf) -> DefaultResult<()> {
+    fn run(&self, output: &PathBuf, properties: Value) -> DefaultResult<()> {
         let current_dir = std::env::current_dir()?;
-        let dir_obj_bundle = Value::from(self.bundle_recurse(&current_dir).map_err(|e| {
-            format_err!(
-                "Couldn't traverse DNA in directory {:?}: {}",
-                &current_dir,
-                e
-            )
-        })?);
+        let dir_obj_bundle = Value::from(
+            self.bundle_recurse(&current_dir)
+                .map(|mut val| {
+                    val.insert("properties".to_string(), properties);
+                    val
+                })
+                .map_err(|e| {
+                    format_err!(
+                        "Couldn't traverse DNA in directory {:?}: {}",
+                        &current_dir,
+                        e
+                    )
+                })?,
+        );
 
         let dna_str =
             serde_json::to_string_pretty(&dir_obj_bundle).expect("failed to make pretty DNA");
@@ -300,8 +307,12 @@ impl Packager {
     }
 }
 
-pub fn package(strip_meta: bool, output: PathBuf) -> DefaultResult<()> {
-    Packager::package(strip_meta, output)
+pub fn package(
+    strip_meta: bool,
+    output: PathBuf,
+    properties: serde_json::Value,
+) -> DefaultResult<()> {
+    Packager::package(strip_meta, output, properties)
 }
 
 pub fn unpack(path: &PathBuf, to: &PathBuf) -> DefaultResult<()> {

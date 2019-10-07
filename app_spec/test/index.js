@@ -5,7 +5,7 @@ const { callSyncMiddleware } = require('./config')
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
 // (But never over)
-const MIN_EXPECTED_SCENARIOS = 30
+const MIN_EXPECTED_SCENARIOS = 1
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -26,7 +26,7 @@ let middleware = combine(
   // by default, combine conductors into a single conductor for in-memory networking
   // NB: this middleware makes a really huge difference! and it's not very well tested,
   // as of Oct 1 2019. So, keep an eye out.
-  singleConductor,
+  // singleConductor,
   callSyncMiddleware,
   tapeExecutor(require('tape')),
 );
@@ -110,6 +110,7 @@ require('./files/entry')(orchestrator.registerScenario)
 require('./files/links')(orchestrator.registerScenario)
 require('./files/memo')(orchestrator.registerScenario)
 require('./files/crypto')(orchestrator.registerScenario)
+require('./files/offline-validation')(orchestrator.registerScenario)
 require('./multi-dna')(orchestrator.registerScenario)
 // require('./validate-agent-test')(orchestrator.registerScenario)
 

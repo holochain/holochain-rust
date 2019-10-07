@@ -3,16 +3,14 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
+    sync::HcRwLock as RwLock,
 };
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
 };
 
-use std::{
-    str::FromStr,
-    sync::{Arc, RwLock},
-};
+use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct ChainStore {
@@ -307,6 +305,7 @@ pub mod tests {
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
+        sync::HcRwLock as RwLock,
         time::test_iso_8601,
     };
     use holochain_json_api::json::{JsonString, RawString};
@@ -315,7 +314,7 @@ pub mod tests {
     use tempfile;
 
     pub fn test_chain_store() -> ChainStore {
-        ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
+        ChainStore::new(std::sync::Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path())
                 .expect("could not create chain store"),
         )))

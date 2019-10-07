@@ -1,5 +1,6 @@
+use crate::sim1h_worker::Sim1hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use snowflake;
 use std::{
     fs::File,
@@ -14,18 +15,22 @@ use std::{
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
-    MEMORY,
+    GhostEngineMemory,
     N3H,
     LIB3H,
+    SIM1H,
+    LegacyInMemory
 }
 
 impl FromStr for P2pBackendKind {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "MEMORY" => Ok(P2pBackendKind::MEMORY),
+            "GhostEngineMemory" => Ok(P2pBackendKind::GhostEngineMemory),
             "N3H" => Ok(P2pBackendKind::N3H),
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
+            "SIM1H" => Ok(P2pBackendKind::SIM1H),
+            "LegacyInMemory" =>Ok(P2pBackendKind::LegacyInMemory),
             _ => Err(()),
         }
     }
@@ -34,9 +39,11 @@ impl FromStr for P2pBackendKind {
 impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
-            P2pBackendKind::MEMORY => "MEMORY",
+            P2pBackendKind::GhostEngineMemory => "GhostEngineMemory",
             P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
+            P2pBackendKind::SIM1H => "SIM1H",
+            P2pBackendKind::LegacyInMemory =>"LegacyInMemory"
         })
     }
 }
@@ -56,11 +63,12 @@ impl From<&'static str> for P2pBackendKind {
 //--------------------------------------------------------------------------------------------------
 // P2pConfig
 //--------------------------------------------------------------------------------------------------
-
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub enum BackendConfig {
     Json(serde_json::Value),
-    Lib3h(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
+    Sim1h(Sim1hConfig),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -157,8 +165,49 @@ impl P2pConfig {
 
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
-            P2pBackendKind::MEMORY,
+            P2pBackendKind::LegacyInMemory,
             BackendConfig::Json(Self::memory_backend_json(server_name)),
+            None,
+        )
+    }
+
+    pub fn new_with_sim1h_backend(dynamo_path: &str) -> Self {
+        P2pConfig::new(
+            P2pBackendKind::SIM1H,
+            BackendConfig::Sim1h(Sim1hConfig {
+                dynamo_url: dynamo_path.into(),
+            }),
+            None,
+        )
+    }
+
+    pub fn new_with_memory_lib3h_backend(
+        server_name: &str,
+        bootstrap_nodes: Vec<url::Url>,
+    ) -> Self {
+        let host_name = server_name
+            .replace(":", "_")
+            .replace(" ", "_")
+            .replace(",", "_");
+
+        P2pConfig::new(
+            P2pBackendKind::GhostEngineMemory,
+            BackendConfig::Memory(EngineConfig {
+                network_id: GatewayId {
+                    nickname: server_name.into(),
+                    id: server_name.into(),
+                },
+                //need to fix the transport configs
+                transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
+                bootstrap_nodes,
+                work_dir: "".into(),
+                log_level: 'd',
+                bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())
+                    .expect(format!("invalid memory server url: {}", server_name).as_str()),
+                dht_custom_config: vec![],
+                dht_timeout_threshold: 2000,
+                dht_gossip_interval: 20,
+            }),
             None,
         )
     }
@@ -168,6 +217,16 @@ impl P2pConfig {
             "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
+    }
+
+    pub fn new_with_unique_memory_backend_bootstrap_nodes(bootstrap_nodes: Vec<url::Url>) -> Self {
+        Self::new_with_memory_lib3h_backend(
+            &format!(
+                "memory-auto-{}",
+                snowflake::ProcessUniqueId::new().to_string()
+            ),
+            bootstrap_nodes,
+        )
     }
 
     pub fn unique_memory_backend_json() -> serde_json::Value {
@@ -220,6 +279,18 @@ impl P2pConfig {
     }
 }
 
+/// Utility functions to extract config elements
+impl P2pConfig {
+    pub fn real_engine_config(self) -> Option<EngineConfig> {
+        match self.backend_config {
+            BackendConfig::Lib3h(config) => Some(config),
+            BackendConfig::Memory(config) => Some(config),
+            BackendConfig::Json(_) => None,
+            BackendConfig::Sim1h(_) => None,
+        }
+    }
+}
+
 /// statics
 impl P2pConfig {
     pub const DEFAULT_LIB3H_CONFIG: &'static str = r#"
@@ -264,13 +335,11 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let server_name = "memory_test";
-        let p2p_config =
-            P2pConfig::from_str(&P2pConfig::new_with_memory_backend(server_name).as_str()).unwrap();
+        let server_name = "memory";
+        let p2p_config =P2pConfig::new_with_memory_backend(server_name);
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::new_with_memory_backend(server_name));
     }
 
     #[test]

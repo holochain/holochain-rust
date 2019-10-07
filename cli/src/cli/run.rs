@@ -126,6 +126,7 @@ fn dna_configuration(dna_path: PathBuf) -> DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: dna_path,
         hash: dna.address().to_string(),
+        uuid: None,
     }
 }
 
@@ -309,6 +310,7 @@ mod tests {
                 id: "hc-run-dna".to_string(),
                 file: temp_path,
                 hash: dna.address().to_string(),
+                uuid: Default::default(),
             }
         )
     }

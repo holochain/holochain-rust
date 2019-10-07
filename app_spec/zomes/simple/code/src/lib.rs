@@ -52,6 +52,10 @@ fn simple_entry(content: String) -> Entry {
     Entry::App("simple".into(), Simple::new(content).into())
 }
 
+pub fn handle_create_anchor() -> ZomeApiResult<Address> {
+    let address = hdk::commit_entry(&simple_entry("ANCHOR".to_string()))?;
+    Ok(address)
+}
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
@@ -180,6 +184,11 @@ define_zome! {
     }}
 
     functions: [
+        create_anchor: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_create_anchor
+        }
         get_entry: {
             inputs: |address: Address|,
             outputs: |result: ZomeApiResult<Option<Entry>>|,
@@ -238,6 +247,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
+        hc_public [create_anchor, get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
     }
 }

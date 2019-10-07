@@ -19,13 +19,14 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
     ugly::lax_send_sync,
 };
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{
-    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{Arc},
     thread,
     time::Duration,
 };
@@ -43,7 +44,7 @@ pub struct Instance {
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<Mutex<dyn Persister>>>,
+    persister: Option<Arc<RwLock<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
 }
@@ -332,7 +333,7 @@ impl Instance {
             .ok_or_else(||HolochainError::new(
                 "Instance::save() called without persister set.",
             ))?
-            .try_lock()
+            .try_write()
             .map_err(|_| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
     }
@@ -405,6 +406,7 @@ pub mod tests {
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
+        sync::{HcMutex as Mutex, HcRwLock as RwLock}
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -414,7 +416,7 @@ pub mod tests {
     use crate::persister::SimplePersister;
 
     use std::{
-        sync::{Arc, Mutex},
+        sync::{Arc},
         thread::sleep,
         time::Duration,
     };
@@ -430,6 +432,18 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+        test_context_and_logger_with_in_memory_network(
+            agent_name,
+            network_name
+        )
+    }
+
+    /// create a test context and TestLogger pair so we can use the logger in assertions
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_context_and_logger_with_in_memory_network(
+        agent_name: &str,
+        network_name: Option<&str>
+    ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
         let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
         let meta_storage = Arc::new(RwLock::new(EavMemoryStorage::new()));
@@ -438,7 +452,7 @@ pub mod tests {
             Arc::new(Context::new(
                 "Test-context-and-logger-instance",
                 agent,
-                Arc::new(Mutex::new(SimplePersister::new(content_storage.clone()))),
+                Arc::new(RwLock::new(SimplePersister::new(content_storage.clone()))),
                 content_storage.clone(),
                 content_storage.clone(),
                 meta_storage,
@@ -458,6 +472,14 @@ pub mod tests {
         context
     }
 
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_context_with_memory_network(
+        agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
+        let (context, _) = test_context_and_logger_with_in_memory_network(
+            agent_name, network_name);
+        context
+    }
+
     /// create a test context
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
@@ -474,7 +496,7 @@ pub mod tests {
             Context::new_with_channels(
                 "Test-context-with-channels-instance",
                 agent,
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
                 Some(action_channel.clone()),
                 None,
                 Some(observer_channel.clone()),
@@ -482,6 +504,7 @@ pub mod tests {
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
                 )),
+                // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name),
                 false,
             )
@@ -497,12 +520,13 @@ pub mod tests {
         let mut context = Context::new(
             "test-context-with-state-instance",
             registered_test_agent("Florence"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
             )),
+            // TODO BLOCKER should bootstrap nodes be set here?
             test_memory_network_config(network_name),
             None,
             None,
@@ -520,12 +544,13 @@ pub mod tests {
         let mut context = Context::new(
             "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
-            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
             cas.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
             )),
+            // TODO BLOCKER should bootstrap nodes be set here?
             test_memory_network_config(network_name),
             None,
             None,
@@ -558,15 +583,25 @@ pub mod tests {
         test_instance_and_context_by_name(dna, "jane", network_name)
     }
 
-    /// create a test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
         network_name: Option<&str>,
+        ) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_with_memory_network_nodes(dna,name,network_name)
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context_with_memory_network_nodes(
+        dna: Dna,
+        name: &str,
+        network_name: Option<&str>
     ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context(name, network_name);
+        let context = test_context_with_memory_network(
+            name, network_name);
         let mut instance = Instance::new(context.clone());
         let context = instance.initialize(Some(dna.clone()), context.clone())?;
 

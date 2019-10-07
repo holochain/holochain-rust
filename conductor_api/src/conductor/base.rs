@@ -17,6 +17,7 @@ use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
     error::{HcResult, HolochainError},
+    sync::{HcMutex as Mutex, HcRwLock as RwLock},
 };
 use key_loaders::test_keystore;
 
@@ -34,7 +35,7 @@ use std::{
     io::prelude::*,
     option::NoneError,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::Arc,
     thread,
     time::Duration,
 };
@@ -391,6 +392,7 @@ impl Conductor {
     }
 
     pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
+        notify(format!("Start interface by id: {}", id));
         self.config
             .interface_by_id(id)
             .ok_or_else(|| format!("Interface does not exist: {}", id))
@@ -400,6 +402,7 @@ impl Conductor {
     pub fn start_all_static_servers(&mut self) -> Result<(), String> {
         notify("Starting all servers".into());
         self.static_servers.iter_mut().for_each(|(id, server)| {
+            notify(format!("Starting server \"{}|\"", id));
             server
                 .start()
                 .unwrap_or_else(|_| panic!("Couldn't start server {}", id));
@@ -458,6 +461,7 @@ impl Conductor {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        notify("Start all instances".to_string());
         self.config
             .instances
             .iter()
@@ -480,7 +484,7 @@ impl Conductor {
     pub fn start_dpki_instance(&mut self) -> Result<(), HolochainInstanceError> {
         let dpki_instance_id = &self.dpki_instance_id().unwrap();
         let mut instance = self
-            .instantiate_from_config(dpki_instance_id, None)
+            .instantiate_from_config(dpki_instance_id)
             .map_err(|err| {
                 HolochainInstanceError::InternalFailure(HolochainError::ErrorGeneric(err))
             })?;
@@ -560,6 +564,8 @@ impl Conductor {
                 );
                 Ok(spawn_result)
             }
+            NetworkConfig::Memory(_) => unimplemented!(),
+            NetworkConfig::Sim1h(_) => unimplemented!(),
             NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
                 "Lib3h Network not implemented".to_string(),
             )),
@@ -567,11 +573,39 @@ impl Conductor {
     }
 
     fn get_p2p_config(&self) -> P2pConfig {
-        self.p2p_config.clone().unwrap_or_else(|| {
+        self.p2p_config.clone().map(|p2p_config| {
+
+          // TODO replace this hack with a discovery service trait
+          let urls : Vec<url::Url> = self.instances.values().map(|instance| {
+                    instance
+                        .read()
+                        .unwrap()
+                        .context()
+                        .unwrap()
+                        .network()
+                        .lock()
+                        .as_ref()
+                        .unwrap()
+                        .p2p_endpoint()
+                }).collect();
+            match p2p_config.to_owned().backend_config {
+                BackendConfig::Memory(mut config) => {
+                    config.bootstrap_nodes =
+                        if config.bootstrap_nodes.is_empty() && !urls.is_empty()
+                        { vec![urls[0].clone()] }
+                        else
+                        { config.bootstrap_nodes.clone() };
+                    let mut p2p_config = p2p_config.clone();
+                    p2p_config.backend_config = BackendConfig::Memory(config);
+                    p2p_config
+                },
+                _ => p2p_config.clone()
+            }
+        }).unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
-            P2pConfig::new_with_memory_backend("conductor-default-mock")
+            P2pConfig::new_with_unique_memory_backend()
         })
     }
 
@@ -609,9 +643,19 @@ impl Conductor {
                 self.n3h_keepalive_network = Some(network);
                 config
             }
+            NetworkConfig::Memory(config) => P2pConfig {
+                backend_kind: P2pBackendKind::GhostEngineMemory,
+                backend_config: BackendConfig::Memory(config),
+                maybe_end_user_config: None,
+            },
             NetworkConfig::Lib3h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::LIB3H,
                 backend_config: BackendConfig::Lib3h(config),
+                maybe_end_user_config: None,
+            },
+            NetworkConfig::Sim1h(config) => P2pConfig {
+                backend_kind: P2pBackendKind::SIM1H,
+                backend_config: BackendConfig::Sim1h(config),
                 maybe_end_user_config: None,
             },
         }
@@ -622,40 +666,39 @@ impl Conductor {
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
     pub fn boot_from_config(&mut self) -> Result<(), String> {
+        notify("conductor: boot_from_config".into());
         let _ = self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
 
-        let mut config = self.config.clone();
         self.shutdown().map_err(|e| e.to_string())?;
 
         self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 
-        for id in config.instance_ids_sorted_by_bridge_dependencies()? {
+        for id in self.config.instance_ids_sorted_by_bridge_dependencies()? {
             // We only try to instantiate the instance if it is not running already,
             // which will be the case at least for the DPKI instance which got started
             // specifically in `self.dpki_bootstrap()` above.
             if !self.instances.contains_key(&id) {
-                let instance = self
-                    .instantiate_from_config(&id, Some(&mut config))
-                    .map_err(|error| {
-                        format!(
-                            "Error while trying to create instance \"{}\": {}",
-                            id, error
-                        )
-                    })?;
+                let instance = self.instantiate_from_config(&id).map_err(|error| {
+                    format!(
+                        "Error while trying to create instance \"{}\": {}",
+                        id, error
+                    )
+                })?;
 
                 self.instances
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }
         }
 
-        for ui_interface_config in config.ui_interfaces.clone() {
+        for ui_interface_config in self.config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));
-            let bundle_config = config
+            let bundle_config = self
+                .config
                 .ui_bundle_by_id(&ui_interface_config.bundle)
                 .ok_or_else(|| {
                     format!(
@@ -666,7 +709,7 @@ impl Conductor {
             let connected_dna_interface = ui_interface_config
                 .clone()
                 .dna_interface
-                .map(|interface_id| config.interface_by_id(&interface_id).unwrap());
+                .map(|interface_id| self.config.interface_by_id(&interface_id).unwrap());
 
             self.static_servers.insert(
                 ui_interface_config.id.clone(),
@@ -683,16 +726,10 @@ impl Conductor {
 
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
-    pub fn instantiate_from_config(
-        &mut self,
-        id: &String,
-        maybe_config: Option<&mut Configuration>,
-    ) -> Result<Holochain, String> {
-        let mut self_config = self.config.clone();
-        let config = maybe_config.unwrap_or(&mut self_config);
-        let _ = config.check_consistency(&mut self.dna_loader)?;
+    pub fn instantiate_from_config(&mut self, id: &String) -> Result<Holochain, String> {
+        self.config.check_consistency(&mut self.dna_loader)?;
 
-        config
+        self.config
             .instance_by_id(&id)
             .ok_or_else(|| String::from("Instance not found in config"))
             .and_then(|instance_config| {
@@ -701,15 +738,14 @@ impl Conductor {
 
                 // Agent:
                 let agent_id = &instance_config.agent;
-                let agent_config = config.agent_by_id(agent_id).unwrap();
+                let agent_config = self.config.agent_by_id(agent_id).unwrap();
                 let agent_address = self.agent_config_to_id(&agent_config)?;
                 if agent_config.test_agent.unwrap_or_default() {
                     // Modify the config so that the public_address is correct.
                     // (The public_address is simply ignored for test_agents, as
                     // it is generated from the agent's name instead of read from
                     // a physical keyfile)
-                    config.update_agent_address_by_id(agent_id, &agent_address);
-                    self.config = config.clone();
+                    self.config.update_agent_address_by_id(agent_id, &agent_address);
                     self.save_config()?;
                 }
 
@@ -748,7 +784,7 @@ impl Conductor {
 
                 let instance_name = instance_config.id.clone();
                 // Conductor API
-                let api = self.build_conductor_api(instance_config.id, config)?;
+                let api = self.build_conductor_api(instance_config.id)?;
                 context_builder = context_builder.with_conductor_api(api);
 
                 if self.config.logger.state_dump {
@@ -759,63 +795,77 @@ impl Conductor {
                 let context = context_builder.with_instance_name(&instance_name).spawn();
 
                 // Get DNA
-                let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
+
+                // self.config.dnas.iter_mut().fing(|dna_config| dna_config.id == instance_config.dna)
+                // .map(|dna_config| {
+
+                // })
+                let dna_config = self.config.dna_by_id(&instance_config.dna).unwrap();
                 let dna_file = PathBuf::from(&dna_config.file);
-                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
+                let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
                     HolochainError::ConfigError(format!(
                         "Could not load DNA file {:?}",
                         dna_config.file
                     ))
                 })?;
 
-                // This is where we are checking the consistency between DNAs: for now we compare
-                // the hash provided in the TOML Conductor config file with the computed hash of
-                // the loaded dna.
-                {
-                    let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
-                    let dna_hash_computed = &dna.address();
 
-                    match Arc::get_mut(&mut self.dna_loader)
-                        .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
-                        // If the file is correctly loaded, meaning it exists in the file system,
-                        // we can operate on its computed DNA hash
-                        Ok(dna) => {
-                            let dna_hash_computed_from_file = dna.address();
-                            Conductor::check_dna_consistency_from_all_sources(
-                                &context,
-                                &dna_hash_from_conductor_config,
-                                &dna_hash_computed,
-                                &dna_hash_computed_from_file, &dna_file)?;
-                        },
-                        Err(_) => {
-                            let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
-                            log_error!(context, "{}", msg);
+                match dna_config.uuid {
+                    Some(uuid) => {
+                        dna.uuid = uuid;
+                        self.config.update_dna_hash_by_id(&dna_config.id, dna.address().to_string());
+                        self.save_config()?;
+                    },
+                    None => {
+                        // This is where we are checking the consistency between DNAs: for now we compare
+                        // the hash provided in the TOML Conductor config file with the computed hash of
+                        // the loaded dna.
+                        // NB: we only do this is if the uuid is not set
+                        let dna_hash_from_conductor_config = HashString::from(dna_config.hash);
+                        let dna_hash_computed = &dna.address();
 
-                            // If something is wrong with the DNA file, we only
-                            // check the 2 primary sources of DNA's hashes
-                            match Conductor::check_dna_consistency(
-                                &dna_hash_from_conductor_config,
-                                &dna_hash_computed) {
-                                Ok(_) => (),
-                                Err(e) => {
-                                    let msg = format!("\
-                                    Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
-                                    '{}' != '{}'",
+                        match Arc::get_mut(&mut self.dna_loader)
+                            .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
+                            // If the file is correctly loaded, meaning it exists in the file system,
+                            // we can operate on its computed DNA hash
+                            Ok(dna) => {
+                                let dna_hash_computed_from_file = dna.address();
+                                Conductor::check_dna_consistency_from_all_sources(
+                                    &context,
                                     &dna_hash_from_conductor_config,
-                                    &dna_hash_computed);
-                                    log_error!(context, "{}", msg);
+                                    &dna_hash_computed,
+                                    &dna_hash_computed_from_file, &dna_file)?;
+                            },
+                            Err(_) => {
+                                let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
+                                log_error!(context, "{}", msg);
 
-                                    return Err(e.to_string());
+                                // If something is wrong with the DNA file, we only
+                                // check the 2 primary sources of DNA's hashes
+                                match Conductor::check_dna_consistency(
+                                    &dna_hash_from_conductor_config,
+                                    &dna_hash_computed) {
+                                    Ok(_) => (),
+                                    Err(e) => {
+                                        let msg = format!("\
+                                        Conductor: DNA hashes mismatch: 'Conductor config' != 'Conductor instance': \
+                                        '{}' != '{}'",
+                                        &dna_hash_from_conductor_config,
+                                        &dna_hash_computed);
+                                        log_error!(context, "{}", msg);
+
+                                        return Err(e.to_string());
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
 
                 let context = Arc::new(context);
-                Holochain::load(context.clone())
+                               Holochain::load(context.clone())
                     .and_then(|hc| {
-                        notify(format!(
+                       notify(format!(
                             "Successfully loaded instance {} from storage",
                             id.clone()
                         ));
@@ -825,7 +875,7 @@ impl Conductor {
                         // NoneError just means it didn't find a pre-existing state
                         // that's not a problem and so isn't logged as such
                         if loading_error == HolochainError::from(NoneError) {
-                            notify("No chain found in the store".to_string());
+                           notify("No chain found in the store".to_string());
                         } else {
                             notify(format!(
                                 "Failed to load instance {} from storage: {:?}",
@@ -834,7 +884,8 @@ impl Conductor {
                             ));
                         }
                         notify("Initializing new chain...".to_string());
-                        Holochain::new(dna, context).map_err(|hc_err| hc_err.to_string())
+                        Holochain::new(dna, context)
+                        .map_err(|hc_err| hc_err.to_string())
                     })
             })
     }
@@ -842,11 +893,14 @@ impl Conductor {
     pub fn build_conductor_api(
         &mut self,
         instance_id: String,
-        config: &Configuration,
     ) -> Result<IoHandler, HolochainError> {
-        let instance_config = config.instance_by_id(&instance_id)?;
+        notify(format!(
+            "conductor: build_conductor_api instance_id={}, config={:?}",
+            instance_id, self.config
+        ));
+        let instance_config = self.config.instance_by_id(&instance_id)?;
         let agent_id = instance_config.agent.clone();
-        let agent_config = config.agent_by_id(&agent_id)?;
+        let agent_config = self.config.agent_by_id(&agent_id)?;
         let mut api_builder = ConductorApiBuilder::new();
         // Signing callback:
         if let Some(true) = agent_config.holo_remote_key {
@@ -891,9 +945,10 @@ impl Conductor {
 
         // Bridges:
         let id = instance_config.id.clone();
-        for bridge in config.bridge_dependencies(id.clone()) {
+        for bridge in self.config.bridge_dependencies(id.clone()) {
             assert_eq!(bridge.caller_id, id.clone());
-            let callee_config = config
+            let callee_config = self
+                .config
                 .instance_by_id(&bridge.callee_id)
                 .expect("config.check_consistency()? jumps out if config is broken");
             let callee_instance = self.instances.get(&bridge.callee_id).expect(
@@ -2049,7 +2104,7 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let mut instance = caller_instance.write().unwrap();
+        let instance = caller_instance.write().unwrap();
 
         let cap_call = {
             let context = instance.context().unwrap();
@@ -2081,7 +2136,7 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = conductor.instances["bridge-caller"].clone();
-        let mut instance = caller_instance.write().unwrap();
+        let instance = caller_instance.write().unwrap();
 
         let cap_call = {
             let context = instance.context().unwrap();

@@ -377,7 +377,6 @@ fn can_commit_entry() {
 fn can_return_empty_string_as_validation_fail() {
     let (mut hc, _, _) =
         start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
-    start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(

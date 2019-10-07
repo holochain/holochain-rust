@@ -143,7 +143,7 @@ impl From<&StateWrapper> for AgentStateSnapshot {
     }
 }
 
-pub static AGENT_SNAPSHOT_ADDRESS: &'static str = "AgentState";
+pub static AGENT_SNAPSHOT_ADDRESS: &str = "AgentState";
 impl AddressableContent for AgentStateSnapshot {
     fn content(&self) -> Content {
         self.to_owned().into()

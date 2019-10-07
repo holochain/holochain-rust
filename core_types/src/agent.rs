@@ -84,10 +84,10 @@ impl AddressableContent for AgentId {
     }
 }
 
-pub static GOOD_ID: &'static str =
+pub static GOOD_ID: &str =
     "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-pub static BAD_ID: &'static str = "HcScIkRaAaaaaaaaaaAaaaBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
-pub static TOO_BAD_ID: &'static str =
+pub static BAD_ID: &str = "HcScIkRaAaaaaaaaaaAaaaBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+pub static TOO_BAD_ID: &str =
     "HcScIkRaAaaaaaaaaaBBBBBBBBaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
 pub fn test_agent_id() -> AgentId {

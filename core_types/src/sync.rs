@@ -247,7 +247,7 @@ macro_rules! mutex_impl {
                             } else {
                                 puid
                             };
-                            if let None = deadline.checked_duration_since(Instant::now()) {
+                            if deadline.checked_duration_since(Instant::now()).is_none() {
                                 Err(err)
                             } else {
                                 std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
@@ -263,7 +263,7 @@ macro_rules! mutex_impl {
                 (*self)
                     .inner
                     .$try_lock_fn()
-                    .map(|inner| $guard::new(inner))
+                    .map($guard::new)
                     .ok_or_else(|| {
                         HcLockError::new(LockType::$lock_type, bts, HcLockErrorKind::HcLockTimeout)
                     })

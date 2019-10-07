@@ -16,12 +16,13 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 
+use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::ConnectedData;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     str::FromStr,
-    sync::{mpsc, Mutex, RwLock},
+    sync::{mpsc},
 };
 use url::Url;
 
@@ -631,7 +632,7 @@ impl InMemoryServer {
             request_id: msg.request_id.clone(),
             requester_agent_id: msg.requester_agent_id.clone(),
             responder_agent_id: msg.requester_agent_id.clone(),
-            query_result: vec![],
+            query_result: vec![].into(),
         });
         self.priv_send_one(
             &dna_address,

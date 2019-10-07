@@ -104,7 +104,7 @@ impl Into<EntryAspectData> for EntryAspect {
         EntryAspectData {
             type_hint,
             aspect_address,
-            aspect: aspect_json.to_bytes(),
+            aspect: aspect_json.to_bytes().into(),
             publish_ts: ts.timestamp() as u64,
         }
     }
@@ -175,7 +175,7 @@ pub mod tests {
         let ts: DateTime<FixedOffset> = chain_header.timestamp().into();
         assert_eq!(aspect_data.type_hint, aspect.type_hint());
         assert_eq!(aspect_data.aspect_address, aspect.address());
-        assert_eq!(aspect_data.aspect, aspect_json.to_bytes());
+        assert_eq!(*aspect_data.aspect, aspect_json.to_bytes());
         assert_eq!(aspect_data.publish_ts, ts.timestamp() as u64);
     }
 }

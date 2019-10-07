@@ -63,16 +63,52 @@ jobs:
           exit 1
         fi
 
- app-spec-tests:
+ app-spec-tests-sim1h:
   docker:
    - image: holochain/holochain-rust:latest
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
    - run:
        name: app spec tests
-       command: nix-shell --run hc-app-spec-test
+       command: nix-shell --run hc-app-spec-test-sim1h
+
+# app-spec-tests-n3h:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test n3h"
+#
+# app-spec-tests-memory:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test memory"
+#
+# app-spec-tests-websocket:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test websocket"
 
  app-spec-proc-tests:
   docker:
@@ -91,7 +127,10 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       name: DynamoDB
+       command: nix-shell --run "dynamodb-memory -port 8002"
+       background: true
    - run:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test
@@ -186,7 +225,9 @@ workflows:
   jobs:
    - build
    - fmt
-   - app-spec-tests
+   - app-spec-tests-sim1h
+   # - app-spec-tests-memory
+   # - app-spec-tests-websocket
    # @todo reimplement proc tests properly
    # i.e. don't copy and paste app spec and expec it to work with stale state
    # - app-spec-proc-tests

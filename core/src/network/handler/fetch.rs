@@ -13,6 +13,9 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let address = get_dht_data.entry_address.clone();
     let mut aspects = vec![];
 
+    // XXX: NB: we seem to be ignoring aspect_address_list and just attempting to get all aspects.
+    // Is that right?
+
     match get_content_aspect(&address, context.clone()) {
         Ok(content_aspect) => {
             aspects.push(content_aspect);

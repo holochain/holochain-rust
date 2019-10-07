@@ -152,6 +152,7 @@ mod tests {
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{data_types::GenericResultData, protocol_server::Lib3hServerProtocol};
+    use lib3h_protocol::types::SpaceHash;
 
     struct DefWorker;
 
@@ -165,7 +166,7 @@ mod tests {
     fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocol {
         Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
-            space_address: HashString::from("test_space"),
+            space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: HashString::from("test-agent"),
             result_info : result_info.clone().into(),
         })
@@ -174,7 +175,7 @@ mod tests {
     fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocol {
         Lib3hClientProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
-            space_address: HashString::from("test_space"),
+            space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: HashString::from("test-agent"),
             result_info : result_info.into(),
         })

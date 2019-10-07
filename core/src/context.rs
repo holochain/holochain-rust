@@ -201,7 +201,7 @@ impl Context {
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state
             .as_ref()
-            .map(|s| s.try_read().ok())
+            .map(|s| s.try_read())
             .unwrap_or(None)
     }
 

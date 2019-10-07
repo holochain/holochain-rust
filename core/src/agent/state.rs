@@ -215,9 +215,9 @@ pub fn create_new_chain_header(
 
 pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
-    chain_header: &ChainHeader,
+    chain_header: ChainHeader,
 ) -> Result<EntryWithHeader, HolochainError> {
-    let entry = Entry::ChainHeader(chain_header.clone());
+    let entry = Entry::ChainHeader(chain_header);
     let header = create_new_chain_header(
         &entry,
         &root_state.agent(),

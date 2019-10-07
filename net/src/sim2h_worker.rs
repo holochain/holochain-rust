@@ -11,13 +11,18 @@ use sim2h::WireMessage;
 use url::Url;
 use lib3h::transport::websocket::actor::{GhostTransportWebsocket};
 use lib3h::transport::websocket::tls::TlsConfig;
-use lib3h::transport::protocol::{TransportActorParentWrapper, RequestToChild, RequestToChildResponse};
+use lib3h::transport::protocol::{
+    RequestToChild, RequestToChildResponse, RequestToParent, TransportActorParentWrapper
+};
 use holochain_tracing::Span;
-use lib3h_zombie_actor::{GhostParentWrapper, GhostCallbackData};
+use lib3h_zombie_actor::{GhostParentWrapper, GhostCallbackData, WorkWasDone};
 use lib3h_zombie_actor::GhostCanTrack;
 use failure::err_msg;
 use lib3h_protocol::protocol::*;
 use lib3h_protocol::data_types::{GenericResultData, Opaque};
+use lib3h_protocol::uri::Lib3hUri;
+use std::convert::TryFrom;
+use detach::Detach;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -28,11 +33,11 @@ pub struct Sim2hConfig {
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
     handler: NetHandler,
-    transport: TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket>,
+    transport: Detach<TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket>>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
     num_ticks: u32,
-    config: Sim2hConfig,
+    server_url: Lib3hUri,
 }
 
 impl Sim2hWorker {
@@ -85,11 +90,13 @@ impl Sim2hWorker {
 
         Ok(Self {
             handler,
-            transport,
+            transport: Detach::new(transport),
             inbox: Vec::new(),
             to_core: Vec::new(),
             num_ticks: 0,
-            config,
+            server_url: Url::parse(&config.sim2h_url)
+                .expect("Sim2h URL can't be parsed")
+                .into(),
         })
     }
 
@@ -97,9 +104,7 @@ impl Sim2hWorker {
         self.transport.request(
             Span::todo("Find out how to use spans the right way"),
             RequestToChild::SendMessage {
-                uri: Url::parse(&self.config.sim2h_url)
-                    .expect("Sim2h URL can't be parsed")
-                    .into(),
+                uri: self.server_url.clone(),
                 payload: message.into(),
             },
             // callback just notifies channel so
@@ -230,6 +235,25 @@ impl Sim2hWorker {
             }
         }
     }
+
+    fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {
+        match message {
+            WireMessage::Lib3hToClient(m) =>
+                self.to_core.push(Lib3hServerProtocol::from(m)),
+            WireMessage::ClientToLib3hResponse(m) =>
+                self.to_core.push(Lib3hServerProtocol::from(m)),
+            WireMessage::Lib3hToClientResponse(m) =>
+                error!("Got a Lib3hToClientResponse from the Sim2h server, weird! Ignoring: {:?}", m),
+            WireMessage::ClientToLib3h(m) =>
+                error!("Got a ClientToLib3h from the Sim2h server, weird! Ignoring: {:?}", m),
+            WireMessage::Err(e) => error!("Got error from Sim2h server: {:?}", e),
+            WireMessage::SignatureChallenge(_s) =>
+                debug!("Got Signature Challenge - not implemented yet"),
+            WireMessage::SignatureChallengeResponse(s) =>
+                error!("Got a SignatureChallengeResponse from the Sim2h server, weird! Ignoring: {:?}", s),
+        };
+        Ok(())
+    }
 }
 
 impl NetWorker for Sim2hWorker {
@@ -247,18 +271,48 @@ impl NetWorker for Sim2hWorker {
         //if self.num_ticks % 100 == 0 {
         //    io::stdout().flush()?;
         //}
-        let mut did_something = false;
-
+        detach_run!(&mut self.transport, |t| t.process(self))?;
+        let mut did_something = WorkWasDone::from(false);
 
         let messages = self.inbox.drain(..).collect::<Vec<_>>();
         for data in messages {
             debug!("CORE >> Sim2h: {:?}", data);
             if let Err(error) = self.handle_client_message(data.clone()) {
-                warn!("Error handling client message in Sim2hWorker: {:?}", error);
+                error!("Error handling client message in Sim2hWorker: {:?}", error);
             }
-            did_something = true;
+            did_something = WorkWasDone::from(true);
         }
-        Ok(did_something)
+
+        for mut transport_message in self.transport.drain_messages() {
+            match transport_message.take_message().expect("GhostMessage must have a message") {
+                RequestToParent::ReceivedData {uri, payload} => {
+                    if uri != self.server_url {
+                        warn!("Received data from unknown remote {:?} - ignoring", uri);
+                    } else {
+                        match WireMessage::try_from(payload.clone()) {
+                            Ok(wire_message) =>
+                                if let Err(error) = self.handle_server_message(wire_message) {
+                                    error!("Error handling server message in Sim2hWorker: {:?}", error);
+                                },
+                            Err(error) =>
+                                error!(
+                                    "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
+                                    error,
+                                    payload
+                                )
+                        }
+
+
+                    }
+                }
+                RequestToParent::IncomingConnection {uri} =>
+                    warn!("Got incomming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
+                RequestToParent::ErrorOccured {uri, error} =>
+                    error!("Transport error occured on connection to {:?}: {:?}", uri, error),
+            }
+            did_something = WorkWasDone::from(true);
+        }
+        Ok(did_something.into())
 
     }
     /// Set the advertise as worker's endpoint

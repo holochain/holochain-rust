@@ -26,7 +26,16 @@ let
   hc-conductor-install
   (cd app_spec && APP_SPEC_NETWORK_TYPE="sim1h" ./build_and_test.sh);
   '';
+
+  name-sim2h = "hc-app-spec-test-sim2h";
+
+  script-sim2h = pkgs.writeShellScriptBin name-sim2h ''
+  set -euo pipefail
+  hc-cli-install
+  hc-conductor-install
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim2h" ./build_and_test.sh);
+  '';
 in
 {
- buildInputs = [ script-n3h script-memory script-sim1h ];
+ buildInputs = [ script-n3h script-memory script-sim1h script-sim2h];
 }

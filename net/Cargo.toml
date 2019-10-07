@@ -11,6 +11,8 @@ tempfile = "=3.0.7"
 failure = "=0.1.5"
 #sim1h = { path = "../../sim1h/crates/sim1h" }
 sim1h = { git = "https://github.com/holochain/sim1h", branch = "2019-10-06-upate-lib3h-dep" }
+#sim2h = { path = "../../sim2h/crates/sim2h" }
+sim2h = { git = "https://github.com/holochain/sim2h", branch = "master" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "201910/version-0.0.11" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "201910/version-0.0.11" }
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "201910/version-0.0.11" }

@@ -29,7 +29,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
 
     let json = Lib3hClientProtocol::JoinSpace(SpaceData {
         request_id: snowflake::ProcessUniqueId::new().to_string(),
-        space_address: network_settings.dna_address.clone(),
+        space_address: network_settings.dna_address.clone().into(),
         agent_id: network_settings.agent_id.clone().into(),
     });
 

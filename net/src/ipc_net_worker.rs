@@ -247,7 +247,7 @@ impl IpcNetWorker {
             };
             self.receive(Lib3hClientProtocol::Connect(ConnectData {
                 request_id: snowflake::ProcessUniqueId::new().to_string(),
-                peer_uri: uri,
+                peer_location: uri.into(),
                 network_id: "".to_string(),
             }))?
         }

@@ -22,7 +22,8 @@ fn inner(
         space_address: network_state
             .dna_address
             .clone()
-            .unwrap(),
+            .unwrap()
+            .into(),
         to_agent_id: direct_message_data
             .address
             .clone(),

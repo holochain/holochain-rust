@@ -219,22 +219,13 @@ impl Instance {
         {
             let new_state: StateWrapper;
 
-            {
-                // Only get a read lock first so code in reducers can read state as well
-                let state = self
-                    .state
-                    .read()
-                    .expect("owners of the state RwLock shouldn't panic");
-
-                // Create new state by reducing the action on old state
-                new_state = state.reduce(action_wrapper.clone());
-            }
-
             // Get write lock
             let mut state = self
                 .state
                 .write()
                 .expect("owners of the state RwLock shouldn't panic");
+
+            new_state = state.reduce(action_wrapper.clone());
 
             // Change the state
             *state = new_state;
@@ -329,7 +320,7 @@ impl Instance {
                 "Instance::save() called without persister set.",
             ))?
             .try_write()
-            .map_err(|_| HolochainError::new("Could not get lock on persister"))?
+            .ok_or_else(|| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
     }
 

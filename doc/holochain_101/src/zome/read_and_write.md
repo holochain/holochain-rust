@@ -19,7 +19,7 @@ With Holochain, there are two aspects that combine to form each "element" in thi
 
 The fundamental chain-like aspect of Holochain is driven by "headers". They are a minimal data structure containing only a handful of values, but are sufficient to supply Holochain with verifiable data integrity.
 
-Fundamental to creating the "chain", each header contains a reference to the "last" header. There are a couple aspects to this:
+Fundamental to creating the "chain", each header contains a reference to the "last" header. There are a couple of aspects to this:
 1. The cryptographic hash (its data "fingerprint") for a header is determined
 2. The hash of the previously written header is used as a fixed-length input for the next header, thus influencing the hash of that new header (since any change to contents change a hash)
 3. The only time this does not apply is for the very first header, for which there is no previous header hash, and a value of `0` is used

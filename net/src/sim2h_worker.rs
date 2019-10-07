@@ -62,11 +62,12 @@ impl Sim2hWorker {
 
         // bind to some port:
         // channel for making an async call sync
+        debug!("Trying to bind to nework...");
         let (tx, rx) = crossbeam_channel::unbounded();
         transport.request(
             Span::todo("Find out how to use spans the right way"),
             RequestToChild::Bind {
-                spec: Url::parse("wss://localhost:38220").expect("can parse url").into(),
+                spec: Url::parse("wss://localhost:0").expect("can parse url").into(),
             },
             // callback just notifies channel so
             Box::new(move |_owner, response| {
@@ -85,10 +86,7 @@ impl Sim2hWorker {
             }),
         )?;
 
-        let result = rx.recv()?;
-        let _bound_url = result.map_err(|bind_error| err_msg(bind_error))?;
-
-        Ok(Self {
+        let mut instance = Self {
             handler,
             transport: Detach::new(transport),
             inbox: Vec::new(),
@@ -97,7 +95,17 @@ impl Sim2hWorker {
             server_url: Url::parse(&config.sim2h_url)
                 .expect("Sim2h URL can't be parsed")
                 .into(),
-        })
+        };
+
+        detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
+        detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
+        detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
+
+        let result = rx.recv()?;
+        let bound_url = result.map_err(|bind_error| err_msg(bind_error))?;
+        debug!("Successfully bound to {:?}", bound_url);
+
+        Ok(instance)
     }
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {

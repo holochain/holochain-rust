@@ -280,11 +280,20 @@ impl NetWorker for Sim2hWorker {
         detach_run!(&mut self.transport, |t| t.process(self))?;
         let mut did_something = WorkWasDone::from(false);
 
-        let messages = self.inbox.drain(..).collect::<Vec<_>>();
-        for data in messages {
+        let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
+        for data in client_messages {
             debug!("CORE >> Sim2h: {:?}", data);
-            if let Err(error) = self.handle_client_message(data.clone()) {
+            if let Err(error) = self.handle_client_message(data) {
                 error!("Error handling client message in Sim2hWorker: {:?}", error);
+            }
+            did_something = WorkWasDone::from(true);
+        }
+
+        let server_messages = self.to_core.drain(..).collect::<Vec<_>>();
+        for data in server_messages {
+            debug!("Sim2h >> CORE: {:?}", data);
+            if let Err(error) = self.handler.handle(Ok(data)) {
+                error!("Error handling server message in core's handler: {:?}", error);
             }
             did_something = WorkWasDone::from(true);
         }

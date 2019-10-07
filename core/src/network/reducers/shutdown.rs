@@ -24,7 +24,8 @@ pub fn reduce_shutdown(
             .dna_address
             .as_ref()
             .expect("Tried to shutdown uninitialized network")
-            .clone(),
+            .clone()
+            .into(),
         agent_id: state
             .agent_id
             .as_ref()

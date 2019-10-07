@@ -4,7 +4,6 @@ use snowflake::ProcessUniqueId;
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
-    sync::TryLockError,
     thread,
     time::{Duration, Instant},
 };

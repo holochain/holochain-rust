@@ -480,7 +480,7 @@ pub fn start_holochain_instance<T: Into<String>>(
                     
                     //https://bootstrap1,http://boostrap2 in the env config to set up before tests
                      bootstrap_config.split(",").map(|s|{
-                         url::Url::parse(s).expect(&format!("Could not parse thus could not set up test for run {:?}",&s))
+                         url::Url::parse(s).unwrap_or_else(|e| panic!("failed to set up for test run: failed to parse as url: (input: {:?}, error: {:?})",&s, e))
                      }).collect()
                 }).unwrap_or_default();
 

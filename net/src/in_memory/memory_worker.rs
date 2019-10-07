@@ -41,7 +41,7 @@ impl NetWorker for InMemoryWorker {
             .unwrap();
         match &data {
             Lib3hClientProtocol::JoinSpace(track_msg) => {
-                let dna_address: HashString = track_msg.space_address.clone();
+                let dna_address: HashString = track_msg.space_address.clone().into();
                 match self.receiver_per_dna.entry(dna_address.clone()) {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
@@ -59,7 +59,7 @@ impl NetWorker for InMemoryWorker {
         // After serve
         match &data {
             Lib3hClientProtocol::LeaveSpace(untrack_msg) => {
-                let dna_address: HashString = untrack_msg.space_address.clone();
+                let dna_address: HashString = untrack_msg.space_address.clone().into();
                 match self.receiver_per_dna.entry(dna_address.clone()) {
                     Entry::Vacant(_) => (),
                     Entry::Occupied(e) => {
@@ -201,7 +201,7 @@ mod tests {
         memory_worker_1
             .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
                 request_id: "test_req1".to_string(),
-                space_address: example_dna_address(),
+                space_address: example_dna_address().into(),
                 agent_id: HashString::from(AGENT_ID_1),
             }))
             .unwrap();
@@ -214,7 +214,7 @@ mod tests {
         memory_worker_1
             .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
                 request_id: "test_req2".to_string(),
-                space_address: example_dna_address(),
+                space_address: example_dna_address().into(),
                 agent_id: HashString::from(AGENT_ID_1),
             }))
             .unwrap();

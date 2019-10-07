@@ -215,14 +215,16 @@ module.exports = scenario => {
 
         const params = { content: 'whatever', in_reply_to: null }
 
-        const address = await alice.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
-        const address1 = await alice.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
-        const address2 = await bob.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
-        const address3 = await carol.callSync('app', 'blog', 'create_post', params).then(x => x.Ok)
+        const address = await alice.call('app', 'blog', 'create_post', params).then(x => x.Ok)
+        const address1 = await alice.call('app', 'blog', 'create_post', params).then(x => x.Ok)
+        const address2 = await bob.call('app', 'blog', 'create_post', params).then(x => x.Ok)
+        const address3 = await carol.call('app', 'blog', 'create_post', params).then(x => x.Ok)
 
         t.equal(address, address1)
         t.equal(address, address2)
         t.equal(address, address3)
+
+        await s.consistency()
 
         const sources1 = await alice.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())
         const sources2 = await bob.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())

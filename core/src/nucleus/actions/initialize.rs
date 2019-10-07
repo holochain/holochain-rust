@@ -211,7 +211,7 @@ impl Future for InitializationFuture {
                 "Timeout while initializing".to_string(),
             )));
         }
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,

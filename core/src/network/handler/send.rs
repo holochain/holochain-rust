@@ -15,9 +15,9 @@ use lib3h_protocol::data_types::DirectMessageData;
 use snowflake::ProcessUniqueId;
 use std::convert::TryFrom;
 
-fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
+fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
-        &String::from_utf8(content)
+        std::str::from_utf8(content)
             .map_err(|error| JsonError::SerializationError(error.to_string()))?,
     ))
 }
@@ -25,7 +25,7 @@ fn parse_direct_message(content: Vec<u8>) -> Result<DirectMessage, JsonError> {
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
 pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context>) {
-    let message = match parse_direct_message(message_data.content.clone()) {
+    let message = match parse_direct_message(&*message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
             log_error!(context,
@@ -88,7 +88,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
 /// We got a Lib3hClientProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
 pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<Context>) {
-    let response = match parse_direct_message(message_data.content.clone()) {
+    let response = match parse_direct_message(&message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
             log_error!(context,
@@ -100,10 +100,8 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
     };
 
     let initial_message = context
-        .state()
-        .unwrap()
-        .network()
-        .as_ref()
+        .network_state()
+        .expect("network state not initialized")
         .direct_message_connections
         .get(&message_data.request_id)
         .cloned();

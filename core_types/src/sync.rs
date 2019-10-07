@@ -12,7 +12,6 @@ use std::{
 const LOCK_TIMEOUT_SECS: u64 = 90;
 const IMMORTAL_TIMEOUT_SECS: u64 = 80;
 
-
 const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
 const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
 const LOCK_POLL_INTERVAL_MS: u64 = 10;
@@ -39,23 +38,10 @@ pub struct HcLockError {
 }
 
 impl HcLockError {
-    pub fn new(
-        lock_type: LockType,
-        // _backtraces: Option<Vec<Backtrace>>,
-        kind: HcLockErrorKind,
-    ) -> Self {
+    pub fn new(lock_type: LockType, kind: HcLockErrorKind) -> Self {
         Self {
             lock_type,
             backtraces: None,
-            // backtraces: backtraces.map(|b| {
-            //     b.clone()
-            //         .into_iter()
-            //         .map(|mut b| {
-            //             b.resolve();
-            //             b
-            //         })
-            //         .collect::<Vec<Backtrace>>()
-            // }),
             kind,
         }
     }
@@ -91,7 +77,10 @@ impl GuardTracker {
             }
             let lock_type_str = format!("{:?}", self.lock_type);
             let report = if self.immortal {
-                format!("{:<6} {:<13} {:>12} [!!!]", lock_type_str, self.puid, elapsed_ms)
+                format!(
+                    "{:<6} {:<13} {:>12} [!!!]",
+                    lock_type_str, self.puid, elapsed_ms
+                )
             } else {
                 format!("{:<6} {:<13} {:>12}", lock_type_str, self.puid, elapsed_ms)
             };
@@ -111,7 +100,8 @@ impl GuardTracker {
         }
         self.immortal = true;
         self.backtrace.resolve();
-        error!(r"
+        error!(
+            r"
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!! IMMORTAL LOCK GUARD FOUND !!!
@@ -152,7 +142,10 @@ pub fn spawn_hc_guard_watcher() {
                 let output = lines.join("\n");
                 debug!(
                     "tracking {} active guard(s) alive for > {}ms:\n{}\n{}",
-                    num_active, ACTIVE_GUARD_MIN_ELAPSED_MS, GuardTracker::report_header(), output
+                    num_active,
+                    ACTIVE_GUARD_MIN_ELAPSED_MS,
+                    GuardTracker::report_header(),
+                    output
                 );
             } else {
                 debug!(
@@ -191,7 +184,9 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                GUARDS.lock().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
+                GUARDS
+                    .lock()
+                    .insert(puid, GuardTracker::new(puid, LockType::$lock_type));
                 Self { puid, inner }
             }
         }
@@ -254,14 +249,12 @@ impl<'a, T: ?Sized> DerefMut for HcRwLockWriteGuard<'a, T> {
 
 #[derive(Debug)]
 pub struct HcMutex<T: ?Sized> {
-    backtraces: Mutex<Vec<Backtrace>>,
     inner: Mutex<T>,
 }
 
 impl<T> HcMutex<T> {
     pub fn new(v: T) -> Self {
         Self {
-            backtraces: Mutex::new(Vec::new()),
             inner: Mutex::new(v),
         }
     }
@@ -269,14 +262,12 @@ impl<T> HcMutex<T> {
 
 #[derive(Debug)]
 pub struct HcRwLock<T: ?Sized> {
-    backtraces: Mutex<Vec<Backtrace>>,
     inner: RwLock<T>,
 }
 
 impl<T> HcRwLock<T> {
     pub fn new(v: T) -> Self {
         Self {
-            backtraces: Mutex::new(Vec::new()),
             inner: RwLock::new(v),
         }
     }
@@ -286,7 +277,6 @@ macro_rules! mutex_impl {
     ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $try_lock_until_inner_fn:ident ) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> HcLockResult<$Guard<T>> {
-                // let bts = update_backtraces(&self.backtraces);
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
                 self.$try_lock_until_fn(deadline)
             }
@@ -301,14 +291,18 @@ macro_rules! mutex_impl {
                             if let Some(puid) = pending_puid {
                                 PENDING_LOCKS.lock().remove(&puid);
                             }
-                            return Ok(v)
+                            return Ok(v);
                         }
                         None => {
                             pending_puid.get_or_insert_with(|| {
                                 let p = ProcessUniqueId::new();
                                 PENDING_LOCKS.lock().insert(
                                     p,
-                                    (LockType::$lock_type, Instant::now(), Backtrace::new_unresolved()),
+                                    (
+                                        LockType::$lock_type,
+                                        Instant::now(),
+                                        Backtrace::new_unresolved(),
+                                    ),
                                 );
                                 p
                             });
@@ -316,14 +310,22 @@ macro_rules! mutex_impl {
                             // TIMEOUT
                             if let None = deadline.checked_duration_since(Instant::now()) {
                                 // PENDING_LOCKS.lock().remove(&puid);
-                                return Err(HcLockError::new(LockType::$lock_type, HcLockErrorKind::HcLockTimeout))
+                                return Err(HcLockError::new(
+                                    LockType::$lock_type,
+                                    HcLockErrorKind::HcLockTimeout,
+                                ));
                             }
                         }
                     }
                     std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
                 }
-                error!("$try_lock_until_inner_fn exceeded max_iters, this should not have happened!");
-                return Err(HcLockError::new(LockType::$lock_type, HcLockErrorKind::HcLockTimeout))
+                error!(
+                    "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"
+                );
+                return Err(HcLockError::new(
+                    LockType::$lock_type,
+                    HcLockErrorKind::HcLockTimeout,
+                ));
             }
 
             pub fn $try_lock_fn(&self) -> Option<$Guard<T>> {
@@ -363,26 +365,3 @@ mutex_impl!(
     try_write_until,
     try_write_until_inner
 );
-
-///////////////////////////////////////////////////////////////
-/// HELPERS
-
-fn _try_lock_ok<T, P>(result: Result<T, TryLockError<P>>) -> Option<T> {
-    match result {
-        Ok(v) => Some(v),
-        Err(TryLockError::WouldBlock) => None,
-        Err(TryLockError::Poisoned(err)) => {
-            debug!("try_lock_ok found poisoned lock! {:?}", err);
-            None
-        }
-    }
-}
-
-fn _update_backtraces(mutex: &Mutex<Vec<Backtrace>>) -> Option<Vec<Backtrace>> {
-    if let Some(mut bts) = _try_lock_ok::<_, ()>(mutex.try_lock().ok_or(TryLockError::WouldBlock)) {
-        bts.push(Backtrace::new_unresolved());
-        Some(bts.clone())
-    } else {
-        None
-    }
-}

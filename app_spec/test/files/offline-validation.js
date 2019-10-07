@@ -1,5 +1,7 @@
 const { one } = require('../config')
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms)) 
+
 module.exports = scenario => {
 
       scenario('Can perform validation of an entry while the author is offline', async (s, t) => {
@@ -34,6 +36,7 @@ module.exports = scenario => {
 
         t.comment('Waiting for Carol to get all data via gossip')
         await s.consistency()
+        await delay(20000)
         t.comment('consistency has been reached')
 
         // Bob now go offline to ensure the following get_post uses carols local store only

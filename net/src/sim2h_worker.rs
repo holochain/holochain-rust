@@ -289,7 +289,7 @@ impl NetWorker for Sim2hWorker {
                     if uri != self.server_url {
                         warn!("Received data from unknown remote {:?} - ignoring", uri);
                     } else {
-                        match WireMessage::try_from(payload.clone()) {
+                        match WireMessage::try_from(&payload) {
                             Ok(wire_message) =>
                                 if let Err(error) = self.handle_server_message(wire_message) {
                                     error!("Error handling server message in Sim2hWorker: {:?}", error);

@@ -7,6 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -19,7 +20,11 @@ pub async fn custom_send(
     timeout: Timeout,
     context: Arc<Context>,
 ) -> Result<String, HolochainError> {
-    let id = ProcessUniqueId::new().to_string();
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .collect();
+    let id = format!("{}-{}", ProcessUniqueId::new().to_string(), rand_string);
     let direct_message = DirectMessage::Custom(custom_direct_message);
     let direct_message_data = DirectMessageData {
         address: to_agent,
@@ -60,18 +65,23 @@ impl Future for SendResponseFuture {
         if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
             return Poll::Ready(Err(err));
         }
-        let state = self.context.state().unwrap().network();
-        if let Err(error) = state.initialized() {
-            return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));
+        if let Some(state) = self.context.try_state() {
+            let state = state.network();
+            if let Err(error) = state.initialized() {
+                return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));
+            }
+            //
+            // TODO: connect the waker to state updates for performance reasons
+            // See: https://github.com/holochain/holochain-rust/issues/314
+            //
+            cx.waker().clone().wake();
+            match state.custom_direct_message_replys.get(&self.id) {
+                Some(result) => Poll::Ready(result.clone()),
+                _ => Poll::Pending,
+            }
+        } else {
+            Poll::Pending
         }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
-        match state.custom_direct_message_replys.get(&self.id) {
-            Some(result) => Poll::Ready(result.clone()),
-            _ => Poll::Pending,
-        }
+
     }
 }

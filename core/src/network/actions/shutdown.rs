@@ -5,12 +5,12 @@ use crate::{
 use crossbeam_channel::Sender;
 use futures::{future::Future, task::Poll};
 
-use holochain_core_types::error::{HcResult, HolochainError};
+use holochain_core_types::{error::{HcResult, HolochainError}, sync::{HcRwLock as RwLock},};
 
 use crate::state::StateWrapper;
 use std::{
     pin::Pin,
-    sync::{Arc, RwLock},
+    sync::{Arc},
 };
 
 /// Shutdown the network

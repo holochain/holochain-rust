@@ -23,10 +23,12 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
+    log_debug!(context, "waiting for network");
     InitNetworkFuture {
         context: context.clone(),
     }
     .await?;
+
 
     Ok(())
 }
@@ -70,7 +72,7 @@ impl Future for InitNetworkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             if state.network().network.lock().unwrap().is_some()
                 && state.network().dna_address.is_some()
                 && state.network().agent_id.is_some()

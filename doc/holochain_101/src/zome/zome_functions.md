@@ -159,7 +159,7 @@ define_zome! {
 }
 ```
 
-In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
+In this example, `hc_public` is the reserved trait name which creates a `Public` Capbaility-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
 
 ### Adding a Zome Function
 

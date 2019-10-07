@@ -25,7 +25,7 @@ use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core_types::{error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{
     fs::File,

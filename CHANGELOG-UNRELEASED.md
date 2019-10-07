@@ -12,7 +12,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-* Updates to work with latest version of lib3h  [#1737](https://github.com/holochain/holochain-rust/pull/1737)
+* Updates to work with version 0.0.13 of lib3h  [#1737](https://github.com/holochain/holochain-rust/pull/1737)
 
 ### Deprecated
 

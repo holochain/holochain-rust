@@ -52,7 +52,7 @@ pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {
     pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
-         P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"))
+        P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"))
     }
 }
 

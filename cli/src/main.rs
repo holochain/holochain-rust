@@ -228,7 +228,7 @@ fn run() -> HolochainResult<()> {
             match properties {
                 Ok(properties) => cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?,
                 Err(e) => return Err(HolochainError::Default(format_err!(
-                    "Filed to parse properties argument as JSON: {:?}", e
+                    "Failed to parse properties argument as JSON: {:?}", e
                 )))
             }
         }

@@ -137,7 +137,6 @@ impl Sim2hWorker {
         &mut self,
         data: Lib3hClientProtocol,
     ) -> NetResult<()> {
-        debug!("handle_client_message: {:?}", data);
         match data {
             // Success response to a request (any Command with an `request_id` field.)
             Lib3hClientProtocol::SuccessResult(generic_result_data) => {
@@ -268,7 +267,6 @@ impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        debug!("CORE>>>NET {:?}", data);
         self.inbox.push(data);
         Ok(())
     }

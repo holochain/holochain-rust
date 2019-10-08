@@ -8,11 +8,21 @@ use std::{
     time::{Duration, Instant},
 };
 
-const LOCK_TIMEOUT_SECS: u64 = 90;
-const IMMORTAL_TIMEOUT_SECS: u64 = 80;
+// if a lock guard lives this long, it is assumed it will never die
+const IMMORTAL_TIMEOUT_SECS: u64 = 60;
 
+// this should be at least twice the IMMORTAL_TIMEOUT, so that locks don't timeout
+// before all long-running guards are detected, in the case of a deadlock
+const LOCK_TIMEOUT_SECS: u64 = 150;
+
+// This is how often we check the elapsed time of guards
 const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
+
+// We filter out any guards alive less than this long
 const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
+
+// How often to retry getting a lock after receiving a WouldBlock error
+// during try_lock
 const LOCK_POLL_INTERVAL_MS: u64 = 10;
 
 #[derive(Debug)]

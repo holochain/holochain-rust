@@ -1,0 +1,4 @@
+{ pkgs }:
+{
+ buildInputs = [ pkgs.awscli ];
+}

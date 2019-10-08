@@ -17,7 +17,7 @@ use std::{convert::TryInto, sync::Arc, thread};
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     let aspect_json =
-        JsonString::from_json(&String::from_utf8(dht_data.entry_aspect.aspect).unwrap());
+        JsonString::from_json(std::str::from_utf8(&*dht_data.entry_aspect.aspect).unwrap());
     if let Ok(aspect) = aspect_json.clone().try_into() {
         match aspect {
             EntryAspect::Content(entry, header) => {

@@ -25,10 +25,10 @@ fn reduce_respond_query_inner(network_state: &mut NetworkState,network_query_res
         Lib3hClientProtocol::HandleQueryEntryResult(QueryEntryResultData {
             request_id: query_data.request_id.clone(),
             requester_agent_id: query_data.requester_agent_id.clone(),
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             responder_agent_id: network_state.agent_id.clone().unwrap().into(),
-            entry_address: query_data.entry_address.clone().into(),
-            query_result: query_result_json.to_string().into_bytes(),
+            entry_address: query_data.entry_address.clone(),
+            query_result: query_result_json.to_string().into_bytes().into(),
         }),
     )
 }

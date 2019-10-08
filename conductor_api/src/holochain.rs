@@ -22,6 +22,7 @@
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     signature::Signature,
+//!     sync::HcMutex
 //! };
 //! use holochain_persistence_api::{
 //!     cas::content::Address,
@@ -31,7 +32,7 @@
 //! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
 //!
-//! use std::sync::{Arc, Mutex};
+//! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!
 //! // Instantiate a new holochain instance
@@ -56,7 +57,7 @@
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()
-//!     .with_agent_signature_callback(Arc::new(Mutex::new(keybundle)))
+//!     .with_agent_signature_callback(Arc::new(HcMutex::new(keybundle)))
 //!     .spawn();
 //!
 //! // The conductor API, together with the storage and the agent ID
@@ -170,11 +171,9 @@ impl Holochain {
 
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
-        let loaded_state = persister
-            .load(context.clone())?
-            .ok_or(HolochainError::ErrorGeneric(
-                "State could not be loaded due to NoneError".to_string(),
-            ))?;
+        let loaded_state = persister.load(context.clone())?.ok_or_else(|| {
+            HolochainError::ErrorGeneric("State could not be loaded due to NoneError".to_string())
+        })?;
         let mut instance = Instance::from_state(loaded_state.clone(), context.clone());
         let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
@@ -233,7 +232,7 @@ impl Holochain {
 
     /// call a function in a zome
     pub fn call(
-        &mut self,
+        &self,
         zome: &str,
         cap: CapabilityRequest,
         fn_name: &str,
@@ -302,14 +301,11 @@ mod tests {
         nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::dna::capabilities::CapabilityRequest;
+    use holochain_core_types::{dna::capabilities::CapabilityRequest, sync::HcMutex as Mutex};
     use holochain_json_api::json::RawString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
-    use std::{
-        path::PathBuf,
-        sync::{Arc, Mutex},
-    };
+    use std::{path::PathBuf, sync::Arc};
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
         create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,

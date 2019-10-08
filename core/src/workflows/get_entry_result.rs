@@ -39,12 +39,12 @@ pub async fn get_entry_with_meta_workflow<'a>(
         }
     } else {
         // 3. If we've found the entry locally we also need to get the header from the local state:
-        let entry = maybe_entry_with_meta.ok_or(HolochainError::ErrorGeneric(
+        let entry = maybe_entry_with_meta.ok_or_else(|| HolochainError::ErrorGeneric(
             "Could not get entry".to_string(),
         ))?;
         match context
             .state()
-            .ok_or(HolochainError::ErrorGeneric(
+            .ok_or_else(|| HolochainError::ErrorGeneric(
                 "Could not get state".to_string(),
             ))?
             .get_headers(address.clone())

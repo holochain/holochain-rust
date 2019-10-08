@@ -4,7 +4,7 @@ use holochain_core::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, sync::HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_file::cas::file::FilesystemStorage;
 use std::{convert::TryFrom, fs, path::PathBuf};
@@ -13,13 +13,12 @@ use std::{convert::TryFrom, fs, path::PathBuf};
 const DEFAULT_CHAIN_PATH: &str = "TODO";
 
 pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultResult<()> {
-    // let storage_path = storage_path.unwrap_or_else(|| PathBuf::from(DEFAULT_CHAIN_PATH));
-    let storage_path = storage_path.ok_or(format_err!(
-        "Please specify the path to CAS storage with the --path option."
-    ))?;
+    let storage_path = storage_path.ok_or_else(|| {
+        format_err!("Please specify the path to CAS storage with the --path option.")
+    })?;
     let cas_path = storage_path.join(instance_id).join("cas");
-    let chain_store = ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
-        FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store".into()),
+    let chain_store = ChainStore::new(std::sync::Arc::new(RwLock::new(
+        FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),
     )));
     let cas_lock = chain_store.content_storage();
     let cas = cas_lock.read().unwrap();
@@ -32,7 +31,7 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
                 .map_err(|_| "AgentState is malformed")
         })
         .map(|snapshot| {
-            let top_header = snapshot.top_chain_header().to_owned().clone();
+            let top_header = snapshot.top_chain_header().to_owned();
             AgentState::new_with_top_chain_header(chain_store, top_header.cloned(), Address::new())
         })
         .map_err(|err| {

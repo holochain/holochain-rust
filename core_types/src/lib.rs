@@ -5,8 +5,10 @@
 //! crates, but that don't include Holochain itself.
 #![feature(try_trait)]
 #![feature(never_type)]
+#![feature(checked_duration_since)]
 #![warn(unused_extern_crates)]
 
+extern crate backtrace;
 extern crate base64;
 extern crate chrono;
 extern crate futures;
@@ -19,6 +21,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate snowflake;
+// #[macro_use] extern crate shrinkwraprs;
 #[macro_use]
 extern crate holochain_json_derive;
 extern crate holochain_json_api;
@@ -28,7 +31,11 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+// #[macro_use]
+// extern crate shrinkwraprs;
 extern crate hcid;
+extern crate lib3h_protocol;
+extern crate parking_lot;
 extern crate wasmi;
 pub mod chain_header;
 pub mod crud_status;
@@ -43,10 +50,16 @@ pub mod chain_migrate;
 pub mod dna;
 pub mod hdk_version;
 pub mod link;
+pub mod network;
 pub mod signature;
+pub mod sync;
 pub mod time;
 pub mod ugly;
 pub mod validation;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate logging;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

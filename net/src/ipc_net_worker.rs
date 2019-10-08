@@ -224,8 +224,11 @@ impl NetWorker for IpcNetWorker {
         Some(self.ipc_uri.clone())
     }
 
-    fn p2p_endpoint(&self) -> Option<String> {
-        Some(self.p2p_uri.clone())
+    fn p2p_endpoint(&self) -> Option<url::Url> {
+        match url::Url::parse(&self.p2p_uri) {
+            Err(_) => None,
+            Ok(u) => Some(u)
+        }
     }
 }
 
@@ -244,7 +247,7 @@ impl IpcNetWorker {
             };
             self.receive(Lib3hClientProtocol::Connect(ConnectData {
                 request_id: snowflake::ProcessUniqueId::new().to_string(),
-                peer_uri: uri,
+                peer_location: uri.into(),
                 network_id: "".to_string(),
             }))?
         }

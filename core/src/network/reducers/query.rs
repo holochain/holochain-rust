@@ -9,7 +9,6 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::hash::HashString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 
 
@@ -21,16 +20,16 @@ fn reduce_query_inner(network_state: &mut NetworkState,key:  QueryKey,network_qu
     let key_address = match key
     {
         QueryKey::Entry(key) => (key.id.clone(),key.address.clone()),
-        QueryKey::Links(key) => (key.id.clone(),HashString::from(key.base_address.clone()))
+        QueryKey::Links(key) => (key.id.clone(),key.base_address.clone())
     };
     send(
         network_state,
         Lib3hClientProtocol::QueryEntry(QueryEntryData {
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key_address.0,
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             entry_address:key_address.1,
-            query: query_json.to_string().into_bytes(),
+            query: query_json.to_string().into_bytes().into(),
         }),
     )
 
@@ -49,7 +48,7 @@ pub fn reduce_query(
         }
         QueryKey::Links(key) => {
             let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
-            NetworkQuery::GetLinks(key.link_type.clone(),key.tag.clone(),crud_status.clone(),query.clone())
+            NetworkQuery::GetLinks(key.link_type.clone(),key.tag.clone(),*crud_status,query.clone())
         }
     };
 
@@ -232,8 +231,8 @@ mod tests {
         let dht_data = QueryEntryResultData {
             msg_id: new_key.id.clone(),
             address: new_key.address.to_string(),
-            content: serde_json::from_str(
-                &serde_json::to_string(&Some(entry_with_meta.clone())).unwrap(),
+            content:
+                &serde_json::to_value(&Some(entry_with_meta.clone()).unwrap(),
             )
             .unwrap(),
             ..Default::default()

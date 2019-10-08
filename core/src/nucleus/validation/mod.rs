@@ -77,6 +77,7 @@ pub async fn validate_entry(
     validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
+    log_debug!(context, "workflow/validate_entry: {:?}", entry);
     //check_entry_type(entry.entry_type(), context)?;
     header_address::validate_header_address(&entry, &validation_data.package.chain_header)?;
     provenances::validate_provenances(&validation_data)?;
@@ -123,6 +124,9 @@ pub async fn validate_entry(
             context,
         )),
 
+        // chain headers always pass for now. In future this should check that the entry is valid
+        EntryType::ChainHeader => Ok(()), 
+
         _ => Err(ValidationError::NotImplemented),
     }
 }
@@ -145,14 +149,18 @@ pub fn entry_to_validation_data(
                             validation_data: validation_data.clone(),
                         })
                     })
-                    .unwrap_or(Err(HolochainError::ErrorGeneric(
-                        "Could not find Entry".to_string(),
-                    )))
+                    .unwrap_or_else(|_| {
+                        Err(HolochainError::ErrorGeneric(
+                            "Could not find Entry".to_string(),
+                        ))
+                    })
             })
-            .unwrap_or(Ok(EntryValidationData::Create {
-                entry: entry.clone(),
-                validation_data: validation_data.clone(),
-            })),
+            .unwrap_or_else(|| {
+                Ok(EntryValidationData::Create {
+                    entry: entry.clone(),
+                    validation_data: validation_data.clone(),
+                })
+            }),
         Entry::Deletion(deletion_entry) => {
             let deletion_address = deletion_entry.clone().deleted_entry_address();
             get_entry_with_header(context.clone(), &deletion_address)
@@ -163,9 +171,11 @@ pub fn entry_to_validation_data(
                         validation_data: validation_data.clone(),
                     })
                 })
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "Could not find Entry".to_string(),
-                )))
+                .unwrap_or_else(|_| {
+                    Err(HolochainError::ErrorGeneric(
+                        "Could not find Entry".to_string(),
+                    ))
+                })
         }
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {
             entry: entry.clone(),
@@ -186,14 +196,10 @@ fn get_entry_with_header(
         address,
         &Timeout::default(),
     ))?;
-    let entry_with_meta = pair.ok_or(HolochainError::ErrorGeneric(
-        "Could not get chain".to_string(),
-    ))?;
+    let entry_with_meta = pair.ok_or("Could not get chain")?;
     let latest_header = entry_with_meta
         .headers
         .last()
-        .ok_or(HolochainError::ErrorGeneric(
-            "Could not get last entry from chain".to_string(),
-        ))?;
+        .ok_or("Could not get last entry from chain")?;
     Ok((entry_with_meta.entry_with_meta, latest_header.clone()))
 }

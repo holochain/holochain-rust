@@ -69,7 +69,7 @@ fn publish_update_delete_meta(
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: orig_entry_address,
@@ -109,7 +109,7 @@ fn publish_link_meta(
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: base,
@@ -127,6 +127,7 @@ fn reduce_publish_inner(
     network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
+
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
@@ -156,7 +157,7 @@ fn reduce_publish_inner(
             }
         }),
         _ => Err(HolochainError::NotImplemented(
-            "reduce_publish_inner".into(),
+            format!("reduce_publish_inner not implemented for {}", entry_with_header.entry.entry_type()),
         )),
     }
 }

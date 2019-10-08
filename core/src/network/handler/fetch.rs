@@ -4,15 +4,17 @@ use crate::{
     instance::dispatch_action,
     network::handler::{get_content_aspect, get_meta_aspects},
 };
-use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::FetchEntryData;
 use std::sync::Arc;
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
-    let address = Address::from(get_dht_data.entry_address.clone());
+    let address = get_dht_data.entry_address.clone();
     let mut aspects = vec![];
+
+    // XXX: NB: we seem to be ignoring aspect_address_list and just attempting to get all aspects.
+    // Is that right?
 
     match get_content_aspect(&address, context.clone()) {
         Ok(content_aspect) => {

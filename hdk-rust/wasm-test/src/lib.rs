@@ -9,6 +9,7 @@ extern crate boolinator;
 #[macro_use]
 extern crate holochain_json_derive;
 
+
 use boolinator::Boolinator;
 use hdk::{
     AGENT_ADDRESS,
@@ -24,7 +25,7 @@ use hdk::{
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryOptions, GetEntryResult},
-        get_links::GetLinksResult,
+        get_links::{GetLinksResult,GetLinksOptions,LinksStatusRequestKind},
         query::{QueryArgsNames, QueryArgsOptions, QueryResult},
     },
     holochain_core_types::{
@@ -48,11 +49,10 @@ use holochain_wasm_utils::{
 };
 use std::{convert::TryFrom, time::Duration};
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-struct TestEntryType {
+#[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
+pub struct TestEntryType {
     stuff: String,
 }
-
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct CommitOutputStruct {
@@ -245,6 +245,88 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")?;
     hdk::link_entries(&entry_1.address(), &entry_3.address(), "test", "test-tag")?;
     Ok(entry_1.address())
+}
+
+pub fn handle_create_tagged_entry(content: String, tag: String) -> Address {
+
+    
+    let test_entry_to_create_1 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let test_entry_to_create_2 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+    hdk::commit_entry(&test_entry_to_create_1).expect("Could not commit test entry");
+    hdk::commit_entry(&test_entry_to_create_2).expect("Could not commit test entry");
+
+    hdk::link_entries(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref()).expect("link failed");
+    test_entry_to_create_2.address()
+}
+
+pub fn handle_create_tagged_entry_bad_link(content: String, tag: String) -> ZomeApiResult<()> {
+
+    
+    let test_entry_to_create_1 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let test_entry_to_create_2 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+
+    hdk::link_entries(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
+    Ok(())
+}
+
+pub fn handle_create_priv_entry(content: String) -> ZomeApiResult<Address> {
+
+    let priv_test_entry = Entry::App(
+        "private test entry".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+
+    hdk::commit_entry(&priv_test_entry)
+}
+
+
+pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult<()> {
+
+    
+    let test_entry_to_create_1 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let test_entry_to_create_2 = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:content
+        }
+        .into(),
+    );
+ 
+    hdk::remove_link(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
+    Ok(())
 }
 
 fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult> {
@@ -472,6 +554,25 @@ fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
     ))
 }
 
+fn handle_link_tag_validation(stuff1: String, stuff2: String,tag:String) -> ZomeApiResult<()> {
+    let app_entry_type = AppEntryType::from("link_validator");
+    let entry_value1 = JsonString::from(TestEntryType { stuff: stuff1 });
+    let entry_value2 = JsonString::from(TestEntryType { stuff: stuff2 });
+    let entry1 = Entry::App(app_entry_type.clone(), entry_value1.clone());
+    let entry2 = Entry::App(app_entry_type.clone(), entry_value2.clone());
+
+    let _ = hdk::commit_entry(&entry1)?;
+    let _ = hdk::commit_entry(&entry2)?;
+
+    hdk::link_entries(
+        &entry1.address(),
+        &entry2.address(),
+        "longer",
+        &tag,
+    )?;
+    Ok(())
+}
+
 fn hdk_test_app_entry_type() -> AppEntryType {
     AppEntryType::from("testEntryType")
 }
@@ -521,7 +622,74 @@ fn handle_sleep() -> ZomeApiResult<()> {
     hdk::sleep(Duration::from_millis(10))
 }
 
+pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> {
 
+   
+
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let address = hdk::entry_address(&test_entry_to_create)?;
+
+    let link_query_options = GetLinksOptions {
+             status_request : maybe_status.unwrap_or(LinksStatusRequestKind::Live),
+            ..Default::default()
+        };
+
+    if let Some(tag_matched) = tag
+    {
+        
+        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched),link_query_options)
+    } 
+    else
+    {
+        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Any,link_query_options)
+    }
+
+}
+
+pub fn handle_my_entries_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    
+    hdk::get_links_with_options(
+        &test_entry_to_create.address(),
+        LinkMatch::Exactly("intergration test"),
+        LinkMatch::Any,
+        GetLinksOptions {
+            timeout: 0.into(),
+            ..Default::default()
+        },
+    )
+}
+
+pub fn handle_my_entries_with_load(tag: Option<String>) -> ZomeApiResult<Vec<TestEntryType>> {
+    let test_entry_to_create = Entry::App(
+        "testEntryType".into(),
+        TestEntryType {
+            stuff:"stub".into()
+        }
+        .into(),
+    );
+    let address = hdk::entry_address(&test_entry_to_create)?;
+
+    let tag = match tag {Some(ref s) => LinkMatch::Exactly(s.as_ref()), None => LinkMatch::Any};
+    hdk::utils::get_links_and_load_type(&address, LinkMatch::Exactly("intergration test"), tag)
+}
+
+pub fn handle_get_entry(address:Address) -> ZomeApiResult<Option<Entry>>
+{
+    hdk::get_entry(&address)
+}
 
 define_zome! {
     entries: [
@@ -558,7 +726,27 @@ define_zome! {
                     validation: |validation_data: hdk::LinkValidationData | {
                         Ok(())
                     }
-                )
+                ),
+                from!(
+                "%agent_id",
+                link_type: "intergration test",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: | validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+               ),
+               to!(
+                "%agent_id",
+                link_type: "intergration test",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: | validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+               )
             ]
         ),
 
@@ -581,6 +769,19 @@ define_zome! {
                     },
                 _ => Ok(())
                 }
+            }
+        ),
+
+        entry!(
+            name: "private test entry",
+            description: "priv",
+            sharing: Sharing::Private,
+            validation_package: || {
+                hdk::ValidationPackageDefinition::ChainFull
+            },
+
+            validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
+               Ok(())
             }
         ),
 
@@ -623,25 +824,34 @@ define_zome! {
                             LinkValidationData::LinkAdd{link,validation_data:_} => link.clone(),
                             LinkValidationData::LinkRemove{link,validation_data:_} => link.clone()
                         };
-                        let base = link.link().base();
-                        let target = link.link().target();
-                        let base = match hdk::get_entry(&base)? {
-                            Some(entry) => match entry {
-                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                _ => Err("System entry found")?
-                            },
-                            None => Err("Base not found")?,
-                        };
 
-                        let target = match hdk::get_entry(&target)? {
-                            Some(entry) => match entry {
-                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                _ => Err("System entry found")?,
-                            }
-                            None => Err("Target not found")?,
-                        };
-                        (target.stuff.len() > base.stuff.len())
-                            .ok_or("Target stuff is not longer".to_string())
+                        if link.link().tag()=="muffins"
+                        {
+                            Err("invalid tag".into())
+                        }
+                        else
+                        {
+                            let base = link.link().base();
+                            let target = link.link().target();
+                            let base = match hdk::get_entry(&base)? {
+                                Some(entry) => match entry {
+                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                    _ => Err("System entry found")?
+                                },
+                                None => Err("Base not found")?,
+                            };
+
+                            let target = match hdk::get_entry(&target)? {
+                                Some(entry) => match entry {
+                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                    _ => Err("System entry found")?,
+                                }
+                                None => Err("Target not found")?,
+                            };
+                            (target.stuff.len() > base.stuff.len())
+                                .ok_or("Target stuff is not longer".to_string())
+                        }
+                        
                     }
 
                 )
@@ -665,13 +875,14 @@ define_zome! {
         if !(entry == get_result) {
             return Err("Could not retrieve the same entry in init".into());
         }
-        
+
         // should be able to access globals
-        let agent_addr: Address = AGENT_ADDRESS.to_string().into();
+        let _agent_addr: Address = AGENT_ADDRESS.to_string().into();
         let _dna_hash: Address = DNA_ADDRESS.to_string().into();
 
+        // TODO should we allow messages sent to self?
         // should be able to call hdk::send, will timeout immedietly but that is ok
-        let _send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
+//        let _send_result = hdk::send(agent_addr, "".to_string(), 10000.into())?;
 
         // should be able to call other zome funcs
         let _call_result = hdk::call(
@@ -772,6 +983,12 @@ define_zome! {
             handler: handle_link_validation
         }
 
+        link_tag_validation: {
+            inputs: |stuff1: String, stuff2: String,tag:String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_link_tag_validation
+        }
+
         check_call: {
             inputs: | |,
             outputs: |result: ZomeApiResult<JsonString>|,
@@ -794,6 +1011,24 @@ define_zome! {
             inputs: | |,
             outputs: |result: ZomeApiResult<Vec<Address>>|,
             handler: handle_check_query
+        }
+
+        create_and_link_tagged_entry : {
+            inputs : |content:String,tag:String|,
+            outputs : |result : Address|,
+            handler : handle_create_tagged_entry
+        }
+
+        create_and_link_tagged_entry_bad_link : {
+            inputs : |content:String,tag:String|,
+            outputs : |result : ZomeApiResult<()>|,
+            handler : handle_create_tagged_entry_bad_link
+        }
+
+        get_my_entries_by_tag : {
+            inputs : |tag:Option<String>,status : Option<LinksStatusRequestKind>|,
+            outputs : |result : ZomeApiResult<GetLinksResult>|,
+            handler : handle_my_entries_by_tag
         }
 
         // check_sys_entry_address: {
@@ -846,6 +1081,40 @@ define_zome! {
             handler : handle_emit_signal
 
         }
+
+        my_entries_with_load: {
+            inputs: |tag: Option<String>|,
+            outputs: |result: ZomeApiResult<Vec<TestEntryType>>|,
+            handler: handle_my_entries_with_load
+        }
+
+        delete_link_tagged_entry :
+        {
+            inputs : |content:String,tag:String|,
+            outputs : |result : ZomeApiResult<()>|,
+            handler : handle_delete_tagged_entry
+        }
+
+        my_entries_immediate_timeout: {
+            inputs: | |,
+            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
+            handler: handle_my_entries_immediate_timeout
+        }
+
+        get_entry: {
+            inputs: |address:Address|,
+            outputs: |post_hashes: ZomeApiResult<Option<Entry>>|,
+            handler: handle_get_entry
+        }
+
+        create_priv_entry:
+        {
+            inputs: |content:String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_create_priv_entry
+        }
+
+    
     ]
 
     traits: {}

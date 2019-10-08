@@ -304,7 +304,7 @@ impl MnemonicableSeed for EncryptedSeed {
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
         // split out the two phrases, decode then combine the bytes
         let entropy: Vec<u8> = phrase
-            .split(" ")
+            .split(' ')
             .collect::<Vec<&str>>()
             .chunks(MnemonicType::Words24.word_count())
             .map(|chunk| {

@@ -22,7 +22,7 @@ pub fn run(
     conductor_config: Configuration,
 ) -> DefaultResult<()> {
     if package {
-        cli::package(true, dna_path)?;
+        cli::package(true, dna_path, json!({}))?;
     }
 
     mount_conductor_from_config(conductor_config);
@@ -120,10 +120,12 @@ fn agent_configuration() -> AgentConfiguration {
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
-    let dna = Conductor::load_dna(dna_path).expect(&format!(
-        "Could not load DNA file {}",
-        dna_path.to_str().expect("No DNA file path given")
-    ));
+    let dna = Conductor::load_dna(dna_path).unwrap_or_else(|_| {
+        panic!(
+            "Could not load DNA file {}",
+            dna_path.to_str().expect("No DNA file path given")
+        )
+    });
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: dna_path
@@ -131,6 +133,7 @@ fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
             .expect("Expected DNA path to be valid unicode")
             .to_string(),
         hash: dna.address().to_string(),
+        uuid: None,
     }
 }
 
@@ -313,6 +316,7 @@ mod tests {
                 id: "hc-run-dna".to_string(),
                 file: temp_path.to_str().unwrap().to_string(),
                 hash: dna.address().to_string(),
+                uuid: Default::default(),
             }
         )
     }

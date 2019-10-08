@@ -29,6 +29,9 @@ impl Default for LogRules {
             .expect("Invalid logging rule.");
         // And logging back all our logs
         rules
+            .add_rule("^lib3h", false, None)
+            .expect("Invalid logging rule.");
+        rules
             .add_rule("^holochain", false, None)
             .expect("Invalid logging rule.");
         // Add Lib3h logs
@@ -98,10 +101,9 @@ impl DebugLogger {
 
         thread::Builder::new()
             .name("debug_logger".to_string())
-            .spawn(move || loop {
-                match rx.recv() {
-                    Ok((id, msg)) => run(&rules, id, msg),
-                    Err(_) => break,
+            .spawn(move || {
+                while let Ok((id, msg)) = rx.recv() {
+                    run(&rules, id, msg)
                 }
             })
             .expect("Could not spawn thread for DebugLogger");
@@ -126,7 +128,7 @@ static ID_COLORS: &'static [&str] = &["green", "yellow", "blue", "magenta", "cya
 fn pick_color(text: &str) -> &str {
     let mut total: u16 = 0;
     for b in text.to_string().into_bytes() {
-        total += b as u16;
+        total += u16::from(b);
     }
     ID_COLORS[(total as usize) % ID_COLORS.len()]
 }

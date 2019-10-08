@@ -23,8 +23,9 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::EngineConfig;
 
+use holochain_net::sim1h_worker::Sim1hConfig;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -247,10 +248,12 @@ impl Configuration {
                             .bridges
                             .iter()
                             .find(|b| b.handle == handle)
-                            .ok_or(format!(
-                                "Required bridge '{}' for instance '{}' missing",
-                                handle, instance.id
-                            ))?;
+                            .ok_or_else(|| {
+                                format!(
+                                    "Required bridge '{}' for instance '{}' missing",
+                                    handle, instance.id
+                                )
+                            })?;
                     }
                 }
             }
@@ -328,10 +331,12 @@ impl Configuration {
         //
         let caller_config = self
             .instance_by_id(&bridge_config.caller_id)
-            .ok_or(format!(
-                "Instance configuration \"{}\" not found, mentioned in bridge",
-                bridge_config.caller_id
-            ))?;
+            .ok_or_else(|| {
+                format!(
+                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                    bridge_config.caller_id
+                )
+            })?;
 
         let caller_dna_config = self.dna_by_id(&caller_config.dna).ok_or_else(|| {
             format!(
@@ -355,10 +360,12 @@ impl Configuration {
         //
         let callee_config = self
             .instance_by_id(&bridge_config.callee_id)
-            .ok_or(format!(
-                "Instance configuration \"{}\" not found, mentioned in bridge",
-                bridge_config.callee_id
-            ))?;
+            .ok_or_else(|| {
+                format!(
+                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                    bridge_config.callee_id
+                )
+            })?;
 
         let callee_dna_config = self.dna_by_id(&callee_config.dna).ok_or_else(|| {
             format!(
@@ -389,10 +396,12 @@ impl Configuration {
             }
         }
 
-        let bridge = maybe_bridge.ok_or(format!(
-            "No bridge definition with handle '{}' found in {}'s DNA",
-            bridge_config.handle, bridge_config.caller_id,
-        ))?;
+        let bridge = maybe_bridge.ok_or_else(|| {
+            format!(
+                "No bridge definition with handle '{}' found in {}'s DNA",
+                bridge_config.handle, bridge_config.caller_id,
+            )
+        })?;
 
         match bridge.reference {
             BridgeReference::Address { ref dna_address } => {
@@ -468,6 +477,15 @@ impl Configuration {
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
+    }
+
+    /// Returns the DNA configuration with the given ID if present
+    pub fn update_dna_hash_by_id(&mut self, id: &str, hash: String) -> bool {
+        self.dnas
+            .iter_mut()
+            .find(|dc| &dc.id == id)
+            .map(|dna| dna.hash = hash)
+            .is_some()
     }
 
     /// Returns the instance configuration with the given ID if present
@@ -650,6 +668,8 @@ pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
+    #[serde(default)]
+    pub uuid: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -806,9 +826,12 @@ fn default_address() -> String {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkConfig {
     N3h(N3hConfig),
-    Lib3h(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
+    Sim1h(Sim1hConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

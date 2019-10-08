@@ -138,9 +138,9 @@ pub fn validate_call(
 ) -> Result<(String, DnaWasm), HolochainError> {
     // make sure the dna, zome and function exists and return pretty errors if they don't
     let (dna_name, code) = {
-        let state = context.state().ok_or(HolochainError::ErrorGeneric(
-            "Context not initialized".to_string(),
-        ))?;
+        let state = context.state().ok_or_else(||
+            HolochainError::ErrorGeneric("Context not initialized".to_string())
+        )?;
 
         let nucleus_state = state.nucleus();
         let dna = nucleus_state
@@ -309,15 +309,13 @@ impl Future for CallResultFuture {
         // Leaving this in to be safe against running this future in another executor.
         cx.waker().clone().wake();
 
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             match state.nucleus().zome_call_result(&self.zome_call) {
                 Some(result) => Poll::Ready(result),
                 None => Poll::Pending,
             }
         } else {
-            Poll::Ready(Err(HolochainError::ErrorGeneric(
-                "State not initialized".to_string(),
-            )))
+            Poll::Pending
         }
     }
 }

@@ -77,6 +77,19 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h
 
+ app-spec-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run hc-sim2h-server
+         background: true
+     - run:
+         name: app spec tests
+         command: nix-shell --run hc-app-spec-test-sim2h
 # app-spec-tests-n3h:
 #  docker:
 #   - image: holochain/holochain-rust:latest
@@ -225,7 +238,7 @@ workflows:
   jobs:
    - build
    - fmt
-   - app-spec-tests-sim1h
+   - app-spec-tests-sim2h
    # - app-spec-tests-memory
    # - app-spec-tests-websocket
    # @todo reimplement proc tests properly

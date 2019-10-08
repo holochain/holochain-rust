@@ -213,6 +213,9 @@ pub fn create_new_chain_header(
     ))
 }
 
+/// Create an entry-with-header for a header.
+/// Since published headers are treated as entries, the header must also
+/// have its own header!
 pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
@@ -221,7 +224,7 @@ pub fn create_entry_with_header_for_header(
     let header = create_new_chain_header(
         &entry,
         &root_state.agent(),
-        &root_state.clone(),
+        &root_state,
         &None,
         &Vec::new(),
     )?;

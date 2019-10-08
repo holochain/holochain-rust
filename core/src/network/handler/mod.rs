@@ -271,6 +271,12 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     }))
 }
 
+/// Get content aspect at this address, regardless of whether the address points to
+/// an Entry or a Header
+/// 
+/// NB: this can be optimized by starting with a CAS lookup for the entry directly,
+/// to avoid traversing the chain unnecessarily in the case of a miss
+/// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
 fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,
@@ -283,12 +289,14 @@ fn get_content_aspect(
     let maybe_chain_header = state
         .agent()
         .iter_chain()
+        // First we look to see if the address corresponds to a header itself, if so return the header
         .find(|ref chain_header| chain_header.address() == *entry_address)
         .map(|h| (h, true))
         .or_else(|| {
             state
                 .agent()
                 .iter_chain()
+                // Otherwise, try to find the header for the entry at this address
                 .find(|ref chain_header| chain_header.entry_address() == entry_address)
                 .map(|h| (h, false))
         });
@@ -313,8 +321,7 @@ fn get_content_aspect(
             {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
-                let headers = context
-                    .state()
+                let headers = state
                     .expect("Could not get state for handle_fetch_entry")
                     .get_headers(entry_address.clone())
                     .map_err(|error| {
@@ -322,7 +329,7 @@ fn get_content_aspect(
                             "net/fetch/get_content_aspect: Error trying to get headers {:?}",
                             error
                         );
-                        log_error!(context, "{}", err_message.clone());
+                        log_error!(context, "{}", err_message);
                         HolochainError::ErrorGeneric(err_message)
                     })?;
                 if headers.len() > 0 {

@@ -181,8 +181,8 @@ impl Sim2hWorker {
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
                 //let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
-                self.send_wire_message(WireMessage::ClientToLib3hResponse(
-                    ClientToLib3hResponse::SendDirectMessageResult(dm_data)
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data)
                 ))
             }
             // -- Entry -- //
@@ -193,8 +193,8 @@ impl Sim2hWorker {
             // Successful data response for a `HandleFetchEntryData` request
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 //let log_context = "ClientToLib3h::HandleFetchEntryResult";
-                self.send_wire_message(WireMessage::ClientToLib3hResponse(
-                    ClientToLib3hResponse::FetchEntryResult(fetch_entry_result_data)
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data)
                 ))
             }
             // Publish data to the dht.

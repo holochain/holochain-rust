@@ -163,11 +163,11 @@ impl Sim2hWorker {
                 ))
             }
             // Order the p2p module to leave the network of the specified space.
-            Lib3hClientProtocol::LeaveSpace(_space_data) => {
-                error!("Leave space not implemented for sim2h yet");
-                //let log_context = "ClientToLib3h::LeaveSpace";
-                //let _ = leave_space(&log_context, &self.dynamo_db_client, &space_data)?;
-                Ok(())
+            Lib3hClientProtocol::LeaveSpace(space_data) => {
+                //error!("Leave space not implemented for sim2h yet");
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    ClientToLib3h::LeaveSpace(space_data)
+                ))
             }
 
             // -- Direct Messaging -- //

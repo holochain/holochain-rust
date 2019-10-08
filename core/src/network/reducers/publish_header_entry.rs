@@ -31,7 +31,7 @@ fn publish_header(
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: entry.address().clone(),

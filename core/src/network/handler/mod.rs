@@ -322,7 +322,6 @@ fn get_content_aspect(
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state
-                    .expect("Could not get state for handle_fetch_entry")
                     .get_headers(entry_address.clone())
                     .map_err(|error| {
                         let err_message = format!(

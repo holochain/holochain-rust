@@ -48,8 +48,10 @@ impl Sim2hWorker {
     /// Create a new worker connected to the sim2h instance
     pub fn new(handler: NetHandler, config: Sim2hConfig) -> NetResult<Self> {
         let transport_raw = GhostTransportWebsocket::new(
+            // not used currently inside GhostTransportWebsocket:
             Address::from("sim2h-worker-transport"),
             TlsConfig::Unencrypted,
+            // not used currently inside GhostTransportWebsocket:\
             Address::from("sim2h-network"),
         );
 

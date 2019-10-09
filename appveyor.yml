@@ -10,7 +10,7 @@ environment:
 #  # global:
 #  #   hc_target_prefix: C:\build
 #
-  matrix:
+#  matrix:
 #  - test_p: holochain_dna_c_binding
 #    test_path: dna_c_binding
 #    wasm_path:

@@ -19,7 +19,7 @@ use lib3h_zombie_actor::{GhostParentWrapper, GhostCallbackData, WorkWasDone};
 use lib3h_zombie_actor::GhostCanTrack;
 use failure::err_msg;
 use lib3h_protocol::protocol::*;
-use lib3h_protocol::data_types::{GenericResultData, Opaque, SpaceData};
+use lib3h_protocol::data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData};
 use lib3h_protocol::uri::Lib3hUri;
 use std::convert::TryFrom;
 use detach::Detach;
@@ -205,6 +205,23 @@ impl Sim2hWorker {
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
                 //let log_context = "ClientToLib3h::PublishEntry";
+
+                // As with QueryEntry, we assume a mirror DHT being implemented by Sim2h.
+                // This means that we can play back PublishEntry messages already locally
+                // as HandleStoreEntryAspects.
+                // This makes instances with Sim2hWorker work even if offline,
+                // i.e. not connected to the sim2h node.
+                for aspect in &provided_entry_data.entry.aspect_list {
+                    self.to_core.push(Lib3hServerProtocol::HandleStoreEntryAspect(
+                        StoreEntryAspectData {
+                            request_id: "".into(),
+                            space_address: provided_entry_data.space_address.clone(),
+                            provider_agent_id: provided_entry_data.provider_agent_id.clone(),
+                            entry_address: provided_entry_data.entry.entry_address.clone(),
+                            entry_aspect: aspect.clone(),
+                        })
+                    );
+                }
                 self.send_wire_message(WireMessage::ClientToLib3h(
                     ClientToLib3h::PublishEntry(provided_entry_data)
                 ))

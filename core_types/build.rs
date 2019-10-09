@@ -29,7 +29,6 @@ fn main() {
             }
         }
     };
-    println!("cargo:rustc-env=GIT_HASH={}", &git_hash);
 
     let git_describe: String = match env::var_os("HDK_VERSION") {
         Some(osstr) => osstr.into_string().expect("Unable to interpret HDK_VERSION environment variable"),
@@ -42,7 +41,7 @@ fn main() {
                 String::from_utf8(output.stdout).expect("Could not get HDK_VERSION string from git describe")
             } else {
                 match env::var_os("CARGO_PKG_VERSION") {
-                    Some(osstr) =>  osstr.into_string().expect("Unable to interpret CARGO_PKG_VERSION environment variable"),
+                    Some(osstr) => osstr.into_string().expect("Unable to interpret CARGO_PKG_VERSION environment variable"),
                     None => panic!(
                         "git describe failed; set HDK_VERSION, or run build in holochain-rust Git repo core_types dir, not {:?}: {}",
                         env::current_dir(),
@@ -51,6 +50,9 @@ fn main() {
             }
         }
     };
+    assert!( git_hash.len() > 0 && git_describe.len() > 0,
+             "Invalid GIT_HASH: {:?} or HDK_VERSION: {:?}", &git_hash, &git_describe );
+    println!("cargo:rustc-env=GIT_HASH={}", &git_hash);
     println!("cargo:rustc-env=HDK_VERSION={}", &git_describe);
 
     eprintln!(

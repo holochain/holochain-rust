@@ -15,9 +15,6 @@ let
         perl
       ]);
 
-      GIT_HASH = "0000000000000000000000000000000000000000";
-      HDK_VERSION = "v0.0.32-alpha2-4-0000000000";
-
       buildInputs = optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
         CoreServices
         Security
@@ -44,10 +41,6 @@ in
     name = "holochain-cli";
     src = gitignoreSource ./.;
     cargoDir = "cli";
-    preBuild = ''
-       export GIT_HASH=$( cd $sourceRoot && git rev-parse HEAD );
-       export HDK_VERSION=$( cd $sourceRoot && git describe );
-    '';
   };
 
   holochain-conductor = buildHolochain {

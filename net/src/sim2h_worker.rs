@@ -7,7 +7,7 @@ use crate::connection::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address};
 use log::*;
-use sim2h::WireMessage;
+use sim2h::{WireMessage, WireError};
 use url::Url;
 use lib3h::transport::websocket::actor::{GhostTransportWebsocket};
 use lib3h::transport::websocket::tls::TlsConfig;
@@ -19,7 +19,7 @@ use lib3h_zombie_actor::{GhostParentWrapper, GhostCallbackData, WorkWasDone};
 use lib3h_zombie_actor::GhostCanTrack;
 use failure::err_msg;
 use lib3h_protocol::protocol::*;
-use lib3h_protocol::data_types::{GenericResultData, Opaque};
+use lib3h_protocol::data_types::{GenericResultData, Opaque, SpaceData};
 use lib3h_protocol::uri::Lib3hUri;
 use std::convert::TryFrom;
 use detach::Detach;
@@ -38,6 +38,7 @@ pub struct Sim2hWorker {
     to_core: Vec<Lib3hServerProtocol>,
     num_ticks: u32,
     server_url: Lib3hUri,
+    space_data: Option<SpaceData>,
 }
 
 impl Sim2hWorker {
@@ -97,6 +98,7 @@ impl Sim2hWorker {
             server_url: Url::parse(&config.sim2h_url)
                 .expect("Sim2h URL can't be parsed")
                 .into(),
+            space_data: None,
         };
 
         detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
@@ -160,6 +162,7 @@ impl Sim2hWorker {
             // Order the p2p module to be part of the network of the specified space.
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let log_context = "ClientToLib3h::JoinSpace";
+                self.space_data = Some(space_data.clone());
                 self.send_wire_message(WireMessage::ClientToLib3h(
                     ClientToLib3h::JoinSpace(space_data)
                 ))
@@ -255,7 +258,16 @@ impl Sim2hWorker {
                 error!("Got a Lib3hToClientResponse from the Sim2h server, weird! Ignoring: {:?}", m),
             WireMessage::ClientToLib3h(m) =>
                 error!("Got a ClientToLib3h from the Sim2h server, weird! Ignoring: {:?}", m),
-            WireMessage::Err(e) => error!("Got error from Sim2h server: {:?}", e),
+            WireMessage::Err(sim2h_error) => match sim2h_error {
+                WireError::MessageWhileInLimbo => if let Some(space_data) = self.space_data.clone() {
+                    self.send_wire_message(WireMessage::ClientToLib3h(
+                        ClientToLib3h::JoinSpace(space_data)
+                    ))?;
+                } else {
+                    error!("Uh oh, we got a MessageWhileInLimbo errro and we don't have space data. Did core send a message before sending a join? This should not happen.");
+                }
+                WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
+            }
             WireMessage::SignatureChallenge(_s) =>
                 debug!("Got Signature Challenge - not implemented yet"),
             WireMessage::SignatureChallengeResponse(s) =>

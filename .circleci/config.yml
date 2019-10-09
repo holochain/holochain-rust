@@ -248,6 +248,7 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
+   - stress-tests-sim1h
 
  cold.ubuntu:
   jobs:

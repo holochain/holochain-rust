@@ -336,7 +336,6 @@ macro_rules! mutex_impl {
                     HcLockErrorKind::HcLockTimeout,
                 ));
             }
-
             pub fn $try_lock_fn(&self) -> Option<$Guard<T>> {
                 (*self).inner.$try_lock_fn().map(|g| $Guard::new(g))
             }

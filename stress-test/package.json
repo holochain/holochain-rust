@@ -1,0 +1,22 @@
+{
+  "name": "stress-test",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "ts-node src/index.ts",
+    "build": "tsc -d"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^12.7.12",
+    "ts-node": "^8.4.1",
+    "typescript": "^3.6.3"
+  },
+  "dependencies": {
+    "@holochain/try-o-rama": "holochain/try-o-rama#v0.1.2",
+    "ramda": "^0.26.1",
+    "tape": "^4.11.0"
+  }
+}

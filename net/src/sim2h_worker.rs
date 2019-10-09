@@ -62,7 +62,7 @@ impl Sim2hWorker {
 
         // bind to some port:
         // channel for making an async call sync
-        debug!("Trying to bind to nework...");
+        debug!("Trying to bind to network...");
         let (tx, rx) = crossbeam_channel::unbounded();
         transport.request(
             Span::todo("Find out how to use spans the right way"),
@@ -321,9 +321,9 @@ impl NetWorker for Sim2hWorker {
                     }
                 }
                 RequestToParent::IncomingConnection {uri} =>
-                    warn!("Got incomming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
+                    warn!("Got incoming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
                 RequestToParent::ErrorOccured {uri, error} =>
-                    error!("Transport error occured on connection to {:?}: {:?}", uri, error),
+                    error!("Transport error occurred on connection to {:?}: {:?}", uri, error),
             }
             did_something = WorkWasDone::from(true);
         }

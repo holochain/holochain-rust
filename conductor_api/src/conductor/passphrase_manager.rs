@@ -1,12 +1,13 @@
 use crossbeam_channel::{unbounded, Sender};
-use holochain_core_types::error::HolochainError;
+
+use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
 use holochain_dpki::{utils::secbuf_new_insecure_from_string, SecBuf};
 
 #[cfg(unix)]
 use log::Level;
 use std::{
     io::{self, Write},
-    sync::{Arc, Mutex},
+    sync::Arc,
     thread,
     time::{Duration, Instant},
 };

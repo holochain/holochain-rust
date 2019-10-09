@@ -23,7 +23,7 @@ use hdk::{
         get_links::{GetLinksOptions, GetLinksResult},
         QueryArgsOptions, QueryResult,
     },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN
 };
 
 use memo::Memo;
@@ -428,9 +428,13 @@ pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
 }
 
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+    // use a link-type that doesn't exist so that it will timeout.
+    // Note that a 0 timeout doesn't no guarantee that you won't get things
+    // back in the in-memory-transport case because the redux loop action that runs
+    // the get-link may actually return before the one that checks the timeout.
     hdk::get_links_with_options(
         &AGENT_ADDRESS,
-        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Exactly("non-existent-link"),
         LinkMatch::Any,
         GetLinksOptions {
             timeout: 0.into(),

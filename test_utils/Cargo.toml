@@ -1,22 +1,29 @@
 [package]
 name = "test_utils"
-version = "0.0.28-alpha1"
+version = "0.0.32-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
+hdk = { path = "../hdk-rust" }
 holochain_net = { path = "../net" }
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
-holochain_persistence_api = "=0.0.7"
+holochain_wasm_utils = {path = "../wasm_utils"}
+holochain_persistence_api = "=0.0.8"
 holochain_json_api = "=0.0.17"
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
+holochain_json_derive = "=0.0.17"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
+serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
 crossbeam-channel = "=0.3.8"
 lazy_static = "=1.2.0"
 jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 base64 = "=0.10.1"
+url = { version = "=2.1.0", features = ["serde"] }
+uuid = { version = "0.7", features = ["serde", "v4"] }

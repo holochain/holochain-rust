@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     conductor_api::ConductorApi,
     instance::Observer,
+    network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
@@ -21,8 +22,13 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
+    sync::{
+        HcMutex as Mutex, HcMutexGuard as MutexGuard, HcRwLock as RwLock,
+        HcRwLockReadGuard as RwLockReadGuard,
+    },
 };
-use holochain_net::p2p_config::P2pConfig;
+
+use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -32,12 +38,34 @@ use holochain_persistence_api::{
 };
 use jsonrpc_core::{self, IoHandler};
 use std::{
-    sync::{Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{
+        atomic::{AtomicBool, Ordering::Relaxed},
+        Arc,
+    },
     thread::sleep,
     time::Duration,
 };
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
+
+pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
+
+impl P2pNetworkWrapper {
+    pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
+        return P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"));
+    }
+}
+
+pub struct P2pNetworkMutexGuardWrapper<'a>(MutexGuard<'a, Option<P2pNetwork>>);
+
+impl<'a> P2pNetworkMutexGuardWrapper<'a> {
+    pub fn as_ref(&self) -> Result<&P2pNetwork, HolochainError> {
+        match self.0.as_ref() {
+            Some(s) => Ok(s),
+            None => Err(HolochainError::ErrorGeneric("no network".into())),
+        }
+    }
+}
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like persister
@@ -47,7 +75,7 @@ use test_utils::mock_signing::mock_conductor_api;
 pub struct Context {
     pub(crate) instance_name: String,
     pub agent_id: AgentId,
-    pub persister: Arc<Mutex<dyn Persister>>,
+    pub persister: Arc<RwLock<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<Sender<ActionWrapper>>,
     pub observer_channel: Option<Sender<Observer>>,
@@ -57,7 +85,7 @@ pub struct Context {
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<Sender<Signal>>,
-    pub(crate) instance_is_alive: Arc<Mutex<bool>>,
+    pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
 }
 
@@ -88,10 +116,11 @@ impl Context {
         conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         instance_name: &str,
         agent_id: AgentId,
-        persister: Arc<Mutex<dyn Persister>>,
+        persister: Arc<RwLock<dyn Persister>>,
         chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
@@ -116,15 +145,16 @@ impl Context {
                 conductor_api,
                 agent_id,
             )),
-            instance_is_alive: Arc::new(Mutex::new(true)),
+            instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_channels(
         instance_name: &str,
         agent_id: AgentId,
-        persister: Arc<Mutex<dyn Persister>>,
+        persister: Arc<RwLock<dyn Persister>>,
         action_channel: Option<Sender<ActionWrapper>>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
@@ -146,7 +176,7 @@ impl Context {
             eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
-            instance_is_alive: Arc::new(Mutex::new(true)),
+            instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
         })
     }
@@ -162,6 +192,28 @@ impl Context {
 
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
+    }
+
+    /// Try to acquire read-lock on the state.
+    /// Returns immediately either with the lock or with None if the lock
+    /// is occupied already.
+    /// Also returns None if the context was not initialized with a state.
+    pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
+        self.state
+            .as_ref()
+            .map(|s| s.try_read())
+            .unwrap_or(None)
+    }
+
+    pub fn network(&self) -> P2pNetworkWrapper {
+        P2pNetworkWrapper(match self.network_state() {
+            Some(s) => s.network.clone(),
+            None => Arc::new(Mutex::new(None)),
+        })
+    }
+
+    pub fn network_state(&self) -> Option<Arc<NetworkState>> {
+        self.state().map(move |state| state.network())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
@@ -241,7 +293,7 @@ impl Context {
     }
 
     pub fn instance_still_alive(&self) -> bool {
-        *self.instance_is_alive.lock().unwrap()
+        self.instance_is_alive.load(Relaxed)
     }
 
     /// This creates an observer for the instance's redux loop and installs it.
@@ -285,7 +337,7 @@ impl Context {
         let top = state
             .agent()
             .top_chain_header()
-            .ok_or::<HolochainError>("No top chain header".into())?;
+            .ok_or_else(|| HolochainError::from("No top chain header"))?;
 
         // Get address of first Token Grant entry (return early if none)
         let grants = state
@@ -299,7 +351,7 @@ impl Context {
         for grant in grants {
             let addr = grant.entry_address().to_owned();
             let entry = get_entry_from_cas(&cas, &addr)?
-                .ok_or::<HolochainError>("Can't get CapTokenGrant entry from CAS".into())?;
+                .ok_or_else(|| HolochainError::from("Can't get CapTokenGrant entry from CAS"))?;
             // if entry is the public grant return it
             if let Entry::CapTokenGrant(grant) = entry {
                 if grant.cap_type() == CapabilityType::Public
@@ -319,7 +371,7 @@ impl Context {
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
-        .ok_or("Network::start() could not get application state".to_string())?;
+        .ok_or_else(|| "Network::start() could not get application state".to_string())?;
     let agent_state = state.agent();
     let agent = agent_state.get_agent()?;
     let agent_id = agent.pub_sign_key;
@@ -327,7 +379,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     let dna = state
         .nucleus()
         .dna()
-        .ok_or("Network::start() called without DNA".to_string())?;
+        .ok_or_else(|| "Network::start() called without DNA".to_string())?;
     Ok((dna.address(), agent_id))
 }
 
@@ -341,7 +393,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
-        .unwrap_or(P2pConfig::new_with_unique_memory_backend())
+        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend())
 }
 
 #[cfg(test)]
@@ -349,9 +401,9 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::persister::SimplePersister;
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId, sync::HcRwLock as RwLock};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::Arc;
     use tempfile;
 
     #[test]
@@ -364,7 +416,7 @@ pub mod tests {
         let ctx = Context::new(
             "LOG-TEST-ID",
             AgentId::generate_fake("Bilbo"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
@@ -407,7 +459,7 @@ pub mod tests {
         let mut context = Context::new(
             "test_deadlock_instance",
             AgentId::generate_fake("Terence"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(

@@ -1,3 +1,4 @@
+use logging::prelude::*;
 use crate::{
     context::Context,
     nucleus::{
@@ -59,7 +60,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
-    let result = if input.instance_handle == String::from(THIS_INSTANCE) {
+    let result = if input.instance_handle ==THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
@@ -90,8 +91,11 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
         )
     })?;
     // ZomeFnCallArgs to ZomeFnCall
-    let zome_call = ZomeFnCall::from_args(context.clone(), input);
-    context.block_on(call_zome_function(zome_call, context.clone()))
+    let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
+    log_debug!(context, "blocking on zome call: {:?}", input.clone());
+    let result = context.block_on(call_zome_function(zome_call, context.clone()));
+    log_debug!(context, "blocked on zome call: {:?} with result {:?}", input, result);
+    result
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -118,7 +122,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 
     let response = handler
         .handle_request_sync(&request)
-        .ok_or("Bridge call failed".to_string())?;
+        .ok_or("Bridge call failed")?;
 
     let response = JsonRpc::parse(&response)?;
 

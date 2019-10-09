@@ -2,6 +2,211 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.32-alpha2] - 2019-10-08
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.32-alpha1] - 2019-10-08
+
+### Added
+
+*  Adds the `--properties`/`-p` flag to `hc package` which takes a stringifed JSON object to be inserted in the .dna.json under the properties field. This will alter the DNA hash and can therefore be used for fork DNAs from their source code. [#1720](https://github.com/holochain/holochain-rust/pull/1720)
+* Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
+* Adds some deadlock diagnostic tools to detect when any mutex has been locked for a long time, and prints the backtrace of the moment it was locked [#1743](https://github.com/holochain/holochain-rust/pull/1743)
+
+### Changed
+
+* Updates to work with version 0.0.13 of lib3h  [#1737](https://github.com/holochain/holochain-rust/pull/1737)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.31-alpha1] - 2019-10-03
+
+### Added
+
+* Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
+
+* Adds new networking back-end `sim1h` which can be configured in conductor config with:
+    ```toml
+    [network]
+    type = "sim1h"
+    dynamo_url = "http://localhost:8000"
+    ```
+    [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+* Adds nix-shell commands for running app-spec tests with different network implementations
+  - `hc-app-spec-test-sim1h`
+  - `hc-app-spec-test-n3h`
+  - `hc-app-spec-test-memory`
+  
+  [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+  
+* Adds nix-shell commands for running a local DynamoDB instance:
+  - `dynamodb` and
+  - `dynamodb-memory`
+  
+  [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+* Adds zome+function name to ConsistencyEvent::Hold representation for pending zome function call returns for better hachiko timeouts. [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+* Adds `UUID` to DNA configs which will change the DNA when initializing an instance with it and sets the given UUID. This disables the hash check of the DNA if set. [#1724](https://github.com/holochain/holochain-rust/pull/1724) [#1725](https://github.com/holochain/holochain-rust/pull/1725) 
+
+### Changed
+* Converts app-spec tests to the new multi-conductor [try-o-rama](https://github.com/holochain/try-o-rama) [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+* Fixes several conditions that lead to occasional deadlocks [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+
+### Security
+
+## [0.0.30-alpha6] - 2019-09-17
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha5] - 2019-09-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha4] - 2019-09-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha23] - 2019-09-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha2] - 2019-09-15
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.30-alpha1] - 2019-09-15
+
+### Added
+
+* Adds EncryptedSeed and seed.encrypt() allow for easy passphrase encrypting/decrypting of any of the existing seed types. Adds the MnemonicableSeed trait allows seeds to be converted to/from BIP39 mnemonics. [#1687](https://github.com/holochain/holochain-rust/pull/1687) 
+* added nix for `hc-conductor-install` and `hc-conductor-uninstall` based on `cargo` [#1689](https://github.com/holochain/holochain-rust/pull/1689)
+* When loading a hand-written or generated conductor config containing a TestAgent (`test_agent = true`), rewrite the config file so that the test agent's `public_address` is correct, rather than the arbitrary value that was specified before the `public_address` was actually known. [#1692](https://github.com/holochain/holochain-rust/pull/1692)
+
+### Changed
+
+* ConsistencySignal "events" are now serialized to strings before being emitted. [#1691](https://github.com/holochain/holochain-rust/pull/1691)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.29-alpha2] - 2019-08-26
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.29-alpha1] - 2019-08-26
+
+### Added
+
+* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658) 
+* Conductor API debug functions added: 
+    * `debug/running_instances`: returns array of running instance IDs
+    * `debug/state_dump`: returns a state dump for a given instance
+    * `debug/fetch_cas`: returns the content for a given entry address and instance ID
+  
+  Also added the source to the state dump.
+  [#1661](https://github.com/holochain/holochain-rust/pull/1661)
+
+* Add `alias` to instance references in interfaces to decouple hard-coded instance references in hApp UIs from conductor configs. [#1676](https://github.com/holochain/holochain-rust/pull/1676)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.28-alpha1] - 2019-08-18
 
 ### Added

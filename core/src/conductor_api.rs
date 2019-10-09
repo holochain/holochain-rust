@@ -1,11 +1,8 @@
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
 use jsonrpc_core::IoHandler;
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{
-    fmt,
-    sync::{Arc, RwLock},
-};
+use std::{fmt, sync::Arc};
 
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 
@@ -25,10 +22,9 @@ pub fn send_json_rpc(
         ProcessUniqueId::new(),
     );
 
-    let response = handler.handle_request_sync(&request).ok_or(format!(
-        "Conductor request agent/{} failed",
-        request_reponse.0
-    ))?;
+    let response = handler
+        .handle_request_sync(&request)
+        .ok_or_else(|| format!("Conductor request agent/{} failed", request_reponse.0))?;
 
     let response = JsonRpc::parse(&response)?;
 

@@ -50,18 +50,23 @@ impl Future for GetValidationPackageFuture {
         {
             return Poll::Ready(Err(err));
         }
-        let state = self.context.state().unwrap().network();
-        if let Err(error) = state.initialized() {
-            return Poll::Ready(Err(error));
+        if let Some(state) = self.context.try_state() {
+            let state = state.network();
+            if let Err(error) = state.initialized() {
+                return Poll::Ready(Err(error));
+            }
+            //
+            // TODO: connect the waker to state updates for performance reasons
+            // See: https://github.com/holochain/holochain-rust/issues/314
+            //
+            cx.waker().clone().wake();
+            match state.get_validation_package_results.get(&self.address) {
+                Some(Some(result)) => Poll::Ready(result.clone()),
+                _ => Poll::Pending,
+            }
+        } else {
+            Poll::Pending
         }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
-        match state.get_validation_package_results.get(&self.address) {
-            Some(Some(result)) => Poll::Ready(result.clone()),
-            _ => Poll::Pending,
-        }
+
     }
 }

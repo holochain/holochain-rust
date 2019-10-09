@@ -217,7 +217,7 @@ impl EncryptingKeyPair {
         let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
         let nonce_slice_from_cipher = cipher_slice
             .iter()
-            .skip(cipher_length.clone())
+            .skip(cipher_length)
             .cloned()
             .collect::<Vec<u8>>();
         utils::secbuf_from_array(&mut nonce,&nonce_slice_from_cipher)?;

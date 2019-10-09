@@ -1,45 +1,27 @@
 use crate::{
     action::Action, context::Context, entry::CanPublish,
-    network::entry_with_header::EntryWithHeader,
+    network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
 };
-use holochain_core_types::{entry::Entry, link::link_data::LinkData};
+use holochain_core_types::{agent::AgentId, entry::Entry, link::link_data::LinkData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
 
-#[derive(Clone)]
-pub struct ConsistencyModel {
-    commit_cache: HashMap<Address, ConsistencySignal>,
-    context: Arc<Context>,
-}
-
-impl ConsistencyModel {
-    pub fn new(context: Arc<Context>) -> Self {
-        Self {
-            commit_cache: HashMap::new(),
-            context,
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize)]
-pub struct ConsistencySignal {
-    event: ConsistencyEvent,
-    pending: Vec<PendingConsistency>,
+pub struct ConsistencySignal<E: Serialize> {
+    event: E,
+    pending: Vec<PendingConsistency<E>>,
 }
 
-impl ConsistencySignal {
-    pub fn new_terminal(event: ConsistencyEvent) -> Self {
+impl<E: Serialize> ConsistencySignal<E> {
+    pub fn new_terminal(event: E) -> Self {
         Self {
             event,
             pending: Vec::new(),
         }
     }
 
-    pub fn new_pending(
-        event: ConsistencyEvent,
-        group: ConsistencyGroup,
-        pending_events: Vec<ConsistencyEvent>,
-    ) -> Self {
+    pub fn new_pending(event: E, group: ConsistencyGroup, pending_events: Vec<E>) -> Self {
         let pending = pending_events
             .into_iter()
             .map(|event| PendingConsistency {
@@ -51,26 +33,47 @@ impl ConsistencySignal {
     }
 }
 
+impl From<ConsistencySignalE> for ConsistencySignal<String> {
+    fn from(signal: ConsistencySignalE) -> ConsistencySignal<String> {
+        let ConsistencySignalE { event, pending } = signal;
+        ConsistencySignal {
+            event: serde_json::to_string(&event)
+                .expect("ConsistencySignal serialization cannot fail"),
+            pending: pending
+                .into_iter()
+                .map(|p| PendingConsistency {
+                    event: serde_json::to_string(&p.event)
+                        .expect("ConsistencySignal serialization cannot fail"),
+                    group: p.group,
+                })
+                .collect(),
+        }
+    }
+}
+
+type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
+
 #[derive(Clone, Debug, Serialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum ConsistencyEvent {
     // CAUSES
-    Publish(Address),                                   // -> Hold
-    AddPendingValidation(Address),                      // -> RemovePendingValidation
-    SignalZomeFunctionCall(snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
+    Publish(Address),                                           // -> Hold
+    AddPendingValidation(Address),                              // -> RemovePendingValidation
+    SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
-    Hold(Address),                                        // <- Publish
-    UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
-    RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
-    AddLink(LinkData),                                    // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry),                                    // <- Publish, entry_type=LinkRemove
-    RemovePendingValidation(Address),                     // <- AddPendingValidation
-    ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
+    Hold(Address),                                                // <- Publish
+    UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
+    RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
+    AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
+    RemoveLink(Entry),                // <- Publish, entry_type=LinkRemove
+    RemovePendingValidation(Address), // <- AddPendingValidation
+    ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
 #[derive(Clone, Debug, Serialize)]
-struct PendingConsistency {
-    event: ConsistencyEvent,
+struct PendingConsistency<E: Serialize> {
+    event: E,
     group: ConsistencyGroup,
 }
 
@@ -80,11 +83,37 @@ pub enum ConsistencyGroup {
     Validators,
 }
 
+#[derive(Clone)]
+pub struct ConsistencyModel {
+    // upon Commit, caches the corresponding ConsistencySignal which will only be emitted
+    // later, when the corresponding Publish has been processed
+    commit_cache: HashMap<Address, ConsistencySignalE>,
+
+    // Stores the AgentId, once it has been committed
+    agent_id: Option<AgentId>,
+
+    // Context needed to examine state and do logging
+    context: Arc<Context>,
+}
+
 impl ConsistencyModel {
-    pub fn process_action(&mut self, action: &Action) -> Option<ConsistencySignal> {
+    pub fn new(context: Arc<Context>) -> Self {
+        Self {
+            commit_cache: HashMap::new(),
+            agent_id: None,
+            context,
+        }
+    }
+
+    pub fn process_action(&mut self, action: &Action) -> Option<ConsistencySignalE> {
         use ConsistencyEvent::*;
         use ConsistencyGroup::*;
         match action {
+            Action::Commit((Entry::AgentId(agent_id), _, _)) => {
+                self.agent_id = Some(agent_id.clone());
+                None
+            }
+
             Action::Commit((entry, crud_link, _)) => {
                 // XXX: Since can_publish relies on a properly initialized Context, there are a few ways
                 // can_publish can fail. If we hit the possiblity of failure, just add the commit to the cache
@@ -109,7 +138,9 @@ impl ConsistencyModel {
                         _ => None,
                     });
                     let mut pending = vec![hold];
-                    meta.map(|m| pending.push(m));
+                    if let Some(m) = meta {
+                        pending.push(m)
+                    }
                     let signal = ConsistencySignal::new_pending(
                         Publish(address.clone()),
                         Validators,
@@ -123,9 +154,9 @@ impl ConsistencyModel {
                 // Emit the signal that was created when observing the corresponding Commit
                 let maybe_signal = self.commit_cache.remove(address);
                 maybe_signal.or_else(|| {
-                    // TODO: hook up logger
-                    println!(
-                        "warn/consistency: Publishing address that was not previously committed"
+                    log_warn!(
+                        self.context,
+                        "consistency: Publishing address that was not previously committed"
                     );
                     None
                 })
@@ -159,14 +190,21 @@ impl ConsistencyModel {
             )),
 
             Action::SignalZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
-                SignalZomeFunctionCall(call.id()),
+                SignalZomeFunctionCall(display_zome_fn_call(call), call.id()),
                 Source,
-                vec![ReturnZomeFunctionResult(call.id())],
+                vec![ReturnZomeFunctionResult(
+                    display_zome_fn_call(call),
+                    call.id(),
+                )],
             )),
             Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
-                ReturnZomeFunctionResult(result.call().id()),
+                ReturnZomeFunctionResult(display_zome_fn_call(&result.call()), result.call().id()),
             )),
             _ => None,
         }
     }
+}
+
+fn display_zome_fn_call(call: &ZomeFnCall) -> String {
+    format!("{}/{}", call.zome_name, call.fn_name)
 }

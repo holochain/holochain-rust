@@ -1,6 +1,6 @@
 [package]
 name = "hc"
-version = "0.0.28-alpha1"
+version = "0.0.32-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -10,8 +10,8 @@ holochain_common = { path = "../common" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_dpki = { path = "../dpki" }
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.7"
-holochain_persistence_file = "=0.0.7"
+holochain_persistence_api = "=0.0.8"
+holochain_persistence_file = "=0.0.8"
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"

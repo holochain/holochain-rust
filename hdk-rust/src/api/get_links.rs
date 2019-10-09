@@ -14,9 +14,9 @@ use holochain_wasm_utils::api_serialization::{
 /// This function returns a list of addresses of other entries which matched as being linked by the given `type`. If the `tag` is not None
 /// it will return only links that match the tag exactly. If the tag parameter is None it will return all links of the given type
 /// regardless of their tag.
-/// Links are created using the Zome API function [link_entries](fn.link_entries.html).
+/// Links are created using the Zome API function [link_entries](::link_entries()).
 /// If you also need the content of the entry consider using one of the helper functions:
-/// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)
+/// [get_links_result](get_links_result()) or [get_links_and_load](get_links_and_load())
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -150,6 +150,7 @@ pub fn get_links_and_load(
     link_type: LinkMatch<&str>,
     tag: LinkMatch<&str>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
+    println!("get_links_and_load");
     let get_links_result = get_links_result(
         base,
         link_type,

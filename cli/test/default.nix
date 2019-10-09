@@ -5,7 +5,8 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  (cd cli && cargo test);
+  ( cd cli && cargo test )
+  bats cli/test/hc.bats
   '';
 in
 {

@@ -75,11 +75,9 @@ pub fn check_for_cargo(use_case: &str, extra_help: Option<Vec<&str>>) -> Default
                 ErrorKind::NotFound => {
                     println!("This command requires the `cargo` command, which is part of the Rust toolchain.");
                     println!("{}", use_case);
-                    println!("As a first step, get Rust installed by using rustup https://rustup.rs/.");
-                    println!("Holochain requires you use the nightly-2019-07-14 toolchain.");
-                    println!("With Rust already installed switch to it by running the following commands:");
-                    println!("$ rustup toolchain install nightly-2019-07-14");
-                    println!("$ rustup default nightly-2019-07-14");
+                    println!("It is important that you use the correct version of `cargo`.");
+                    println!("We recommend you work inside a nix-shell or use nix-env to install `hc`.");
+                    println!("For more information see https://docs.holochain.love");
                     match extra_help {
                         Some(messages) => {
                             for message in messages {

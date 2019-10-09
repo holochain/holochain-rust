@@ -24,7 +24,8 @@ pub fn reduce_shutdown(
             .dna_address
             .as_ref()
             .expect("Tried to shutdown uninitialized network")
-            .clone(),
+            .clone()
+            .into(),
         agent_id: state
             .agent_id
             .as_ref()
@@ -39,7 +40,7 @@ pub fn reduce_shutdown(
         let network = network_lock
             .as_mut()
             .expect("Tried to shutdown uninitialized network");
-        let _ = network.send(json.into());
+        let _ = network.send(json);
         sleep(Duration::from_secs(2));
     }
 

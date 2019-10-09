@@ -5,7 +5,10 @@ use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
 use holochain_core_types::{
-    agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
+    agent::AgentId,
+    dna::capabilities::CapabilityRequest,
+    signature::Provenance,
+    sync::{HcMutex as Mutex, HcRwLock as RwLock},
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -13,15 +16,9 @@ use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
-    thread,
-};
+use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
 
-use conductor::{ConductorAdmin, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -121,89 +118,92 @@ impl ConductorApiBuilder {
         *self.io
     }
 
+    /// Internal function for 'call' api method. Having it in its own function makes it easier to see
+    /// in backtraces
+    fn method_call(
+        params: jsonrpc_core::Params,
+        instances: InstanceMap,
+        instance_ids_map: PublicInstanceMap,
+    ) -> Result<JsonString, jsonrpc_core::Error> {
+        // We need to place this one here in order to avoid compiler lifetime issue
+        let default_call_args = json!({});
+        let params_map = Self::unwrap_params_map(params)?;
+        let instance_id = Self::get_as_string("instance_id", &params_map)?;
+        let zome_name = Self::get_as_string("zome", &params_map)?;
+        let func_name = Self::get_as_string("function", &params_map)?;
+        let mut call_args = params_map.get("args");
+
+        // For a consistent error behavior, we check if the passed value is 'null',
+        // which triggers an error, and fallback as if an empty object was passed instead '{}'
+        if json!(null) == *call_args.unwrap_or(&default_call_args) {
+            call_args = Some(&default_call_args);
+        }
+        let args_string = serde_json::to_string(&call_args)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+        let public_id_str = PublicInstanceIdentifier::from(instance_id);
+
+        let id = instance_ids_map.get(&public_id_str).ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!(
+                "instance identifier invalid: {:?}",
+                public_id_str
+            ))
+        })?;
+        let instance = instances
+            .get(id)
+            .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
+        let hc_lock = instance.clone();
+        let hc_lock_inner = hc_lock.clone();
+        let hc = hc_lock_inner.read().unwrap();
+
+        let cap_request = {
+            let context = hc.context()
+                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
+            // Get the token from the parameters.  If not there assume public token.
+            let maybe_token = Self::get_as_string("token", &params_map);
+            let token = match maybe_token {
+                Err(_err) => context.get_public_token().map_err(|err| {
+                    jsonrpc_core::Error::invalid_params(format!(
+                        "Public token not found: {}",
+                        err.to_string()
+                    ))
+                })?,
+                Ok(token) => Address::from(token),
+            };
+
+            let maybe_provenance = params_map.get("provenance");
+            match maybe_provenance {
+                None => make_cap_request_for_call(
+                    context.clone(),
+                    token,
+                    &func_name,
+                    JsonString::from_json(&args_string.clone()),
+                ),
+                Some(json_provenance) => {
+                    let provenance: Provenance = serde_json::from_value(json_provenance.to_owned())
+                        .map_err(|e| {
+                            jsonrpc_core::Error::invalid_params(format!(
+                                "invalid provenance: {}",
+                                e
+                            ))
+                        })?;
+                    CapabilityRequest::new(token, provenance.source(), provenance.signature())
+                }
+            }
+        };
+
+        hc.call(&zome_name, cap_request, &func_name, &args_string)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+    }
+
     /// Adds a "call" method for making zome function calls
     fn setup_call_api(&mut self) {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
 
-        // We need to place this one here in order to avoid compiler lifetime issue
-        let default_call_args = json!({});
-
         self.io.add_method("call", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let public_id_str = Self::get_as_string("instance_id", &params_map)?;
-            let id = instance_ids_map
-                .get(&PublicInstanceIdentifier::from(public_id_str))
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "instance identifier invalid",
-                ))?;
-            let instance = instances
-                .get(id)
-                .ok_or(jsonrpc_core::Error::invalid_params("unknown instance"))?;
-            let hc_lock = instance.clone();
-            let hc_lock_inner = hc_lock.clone();
-            let mut hc = hc_lock_inner.write().unwrap();
-
-
-            // Getting the arguments of the call contained in the json-rpc 'params'
-            let mut call_args = params_map.get("args").or_else(|| {
-                // TODO: Remove this fall back to the previous impl of inner 'params'
-                // as soon as its deprecation life cycle is over <17-04-19, dymayday> //
-                let _ = hc.context().map(|context|
-                    log_warn!(context, "interface: DEPRECATION WARNING: Using 'params' for a Zome function call is now deprecated.\
-                    Please switch to 'args' instead, as 'params' will soon be phased out."));
-                params_map.get("params")
-            });
-
-            // For a consistent error behavior, we check if the passed value is 'null',
-            // which triggers an error, and fallback as if an empty object was passed instead '{}'
-            if json!(null) == *call_args.unwrap_or(&default_call_args) {
-                call_args = Some(&default_call_args);
-            }
-            let args_string = serde_json::to_string(&call_args)
-                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-            let zome_name = Self::get_as_string("zome", &params_map)?;
-            let func_name = Self::get_as_string("function", &params_map)?;
-
-            let cap_request = {
-                let context = hc.context()
-                    .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
-                // Get the token from the parameters.  If not there assume public token.
-                let maybe_token = Self::get_as_string("token", &params_map);
-                let token = match maybe_token {
-                    Err(_err) => context.get_public_token().map_err(|err| {
-                        jsonrpc_core::Error::invalid_params(format!(
-                            "Public token not found: {}",
-                            err.to_string()
-                        ))
-                    })?,
-                    Ok(token) => Address::from(token),
-                };
-
-                let maybe_provenance = params_map.get("provenance");
-                match maybe_provenance {
-                    None => make_cap_request_for_call(
-                        context.clone(),
-                        token,
-                        &func_name,
-                        JsonString::from_json(&args_string.clone()),
-                    ),
-                    Some(json_provenance) => {
-                        let provenance: Provenance =
-                            serde_json::from_value(json_provenance.to_owned()).map_err(|e| {
-                                jsonrpc_core::Error::invalid_params(format!(
-                                    "invalid provenance: {}",
-                                    e
-                                ))
-                            })?;
-                        CapabilityRequest::new(token, provenance.source(), provenance.signature())
-                    }
-                }
-            };
-
-            let response = hc
-                .call(&zome_name, cap_request, &func_name, &args_string)
-                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            let instances = instances.clone();
+            let instance_ids_map = instance_ids_map.clone();
+            let response = Self::method_call(params, instances, instance_ids_map)?;
             Ok(Value::String(response.to_string()))
         });
     }
@@ -288,15 +288,16 @@ impl ConductorApiBuilder {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
             .as_str()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` is not a valid json string",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` is not a valid json string",
+                    &key
+                ))
+            })?
             .to_string())
     }
 
@@ -307,15 +308,13 @@ impl ConductorApiBuilder {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
             .as_bool()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` has to be a boolean",
-                &key
-            )))?)
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` has to be a boolean", &key))
+            })?)
     }
 
     fn get_as_int<T: Into<String>>(
@@ -325,15 +324,13 @@ impl ConductorApiBuilder {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                &key
-            )))?
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
             .as_i64()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` has to be an integer",
-                &key
-            )))?)
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` has to be an integer", &key))
+            })?)
     }
 
     /// This adds functions to remotely change any aspect of the conductor config.
@@ -414,6 +411,7 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `interface_id`: Which interface to add the instance to?
     ///     * `instance_id`: Which instance to add?
+    ///     * `alias`: (Optional) Local name of the instance within this interface
     ///
     ///  * `admin/interface/remove_instance`
     ///     Remove an instance from a given interface.
@@ -471,10 +469,12 @@ impl ConductorApiBuilder {
                     Some(value) => Some(
                         value
                             .as_str()
-                            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                                "`{}` is not a valid json string",
-                                &value
-                            )))?
+                            .ok_or_else(|| {
+                                jsonrpc_core::Error::invalid_params(format!(
+                                    "`{}` is not a valid json string",
+                                    &value
+                                ))
+                            })?
                             .into(),
                     ),
                     None => None,
@@ -632,7 +632,12 @@ impl ConductorApiBuilder {
                 let params_map = Self::unwrap_params_map(params)?;
                 let interface_id = Self::get_as_string("interface_id", &params_map)?;
                 let instance_id = Self::get_as_string("instance_id", &params_map)?;
-                conductor_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id))?;
+                let alias = Self::get_as_string("alias", &params_map).ok();
+                conductor_call!(|c| c.add_instance_to_interface(
+                    &interface_id,
+                    &instance_id,
+                    &alias
+                ))?;
                 Ok(json!({"success": true}))
             });
 
@@ -712,6 +717,59 @@ impl ConductorApiBuilder {
             let bridges =
                 conductor_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
             Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self
+    }
+
+    /// Adds functions useful for debugging.
+    ///
+    /// - `debug/running_instances`
+    ///     Get all currently running instances.
+    ///     Returns an array of instance ID strings.
+    ///
+    /// - `debug/state_dump`
+    ///   Returns a JSON object with all relevant fields of an instance's state.
+    ///   Params:
+    ///   - `instance_id` ID of the instance of which the state is requested
+    ///
+    /// - `debug/fetch_cas`
+    ///   Returns content of a given instance's CAS.
+    ///   Params:
+    ///   - `instance_id` ID of the instance of which's CAS content is requested
+    ///   - `address` Address (hash) of the content that is requests
+    ///   Returns an object of the form: {type:"<entry type>", content: "<content>"}
+    ///
+    pub fn with_debug_functions(mut self) -> Self {
+        self.io
+            .add_method("debug/running_instances", move |_params| {
+                let running_instances_ids = conductor_call!(|c| c.running_instances())?;
+                Ok(serde_json::to_value(running_instances_ids)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?)
+            });
+
+        self.io.add_method("debug/state_dump", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+
+            let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+
+            Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("debug/fetch_cas", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+            let address = Self::get_as_string("address", &params_map)?;
+
+            let (entry_type, content) = conductor_call!(
+                |c| c.get_type_and_content_from_cas(&Address::from(address), &instance_id)
+            )?;
+
+            Ok(json!({
+                "type": entry_type,
+                "content": content,
+            }))
         });
 
         self
@@ -1271,7 +1329,7 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"instance identifier invalid"},"id":"0"}"#
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"`zome` param not provided"},"id":"0"}"#
         );
 
         let response_str = handler

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_api_c_binding"
-version = "0.0.28-alpha1"
+version = "0.0.32-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -12,4 +12,4 @@ crate-type = ["staticlib"]
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
-holochain_persistence_api = "=0.0.7"
+holochain_persistence_api = "=0.0.8"

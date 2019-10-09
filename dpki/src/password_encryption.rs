@@ -10,7 +10,7 @@ pub type PwHashAlgo = i8;
 pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
 /// Struct holding the result of a passphrase encryption
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) struct EncryptedData {
     pub salt: Vec<u8>,
     pub nonce: Vec<u8>,
@@ -35,14 +35,17 @@ pub(crate) fn pw_hash(
 /// Simple API for encrypting a buffer with a pwhash-ed passphrase
 /// @param {Buffer} data - the data to encrypt
 /// @param {SecBuf} passphrase - the passphrase to use for encrypting
-/// @param {Option<PwHashConfig>} config - Optional encrypting settings
 /// @return {EncryptedData} - the resulting encrypted data
 pub(crate) fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> HcResult<EncryptedData> {
-    let mut secret = CRYPTO.buf_new_secure(CRYPTO.kx_session_key_bytes());
     let mut salt = CRYPTO.buf_new_insecure(CRYPTO.pwhash_salt_bytes());
     CRYPTO.randombytes_buf(&mut salt)?;
     let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
     CRYPTO.randombytes_buf(&mut nonce)?;
+    pw_enc_base(data, passphrase, &mut salt, &mut nonce)
+}
+
+pub(crate) fn pw_enc_base(data: &mut SecBuf, passphrase: &mut SecBuf, mut salt: &mut SecBuf, mut nonce: &mut SecBuf) -> HcResult<EncryptedData> {
+    let mut secret = CRYPTO.buf_new_secure(CRYPTO.kx_session_key_bytes());
     let mut cipher = CRYPTO.buf_new_insecure(data.len() + CRYPTO.aead_auth_bytes());
     pw_hash(&mut secret, passphrase, &mut salt)?;
     CRYPTO.aead_encrypt(&mut cipher, data, None, &mut nonce, &mut secret)?;
@@ -62,6 +65,28 @@ pub(crate) fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> HcResult<Enc
         nonce,
         cipher,
     })
+}
+
+/// Simple API for encrypting a buffer with a pwhash-ed passphrase but uses a zero nonce
+/// This does not weaken security provided the same passphrase/salt is not used to encrypt multiple
+/// pieces of data. Since a random salt is produced by this function it should not be an issue.
+///  Helpful for reducing the size of the output EncryptedData (by NONCEBYTES)
+/// @param {Buffer} data - the data to encrypt
+/// @param {SecBuf} passphrase - the passphrase to use for encrypting
+/// @param {Option<PwHashConfig>} config - Optional encrypting settings
+/// @return {EncryptedData} - the resulting encrypted data
+pub(crate) fn pw_enc_zero_nonce(
+    data: &mut SecBuf,
+    passphrase: &mut SecBuf,
+) -> HcResult<EncryptedData> {
+    let mut salt = CRYPTO.buf_new_insecure(CRYPTO.pwhash_salt_bytes());
+    CRYPTO.randombytes_buf(&mut salt)?;
+    let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
+    let len = CRYPTO.aead_nonce_bytes();
+    let slice = vec![0; len];
+    nonce.write(0, &slice )?;
+    let data = pw_enc_base(data, passphrase, &mut salt, &mut nonce)?;
+    Ok(data)
 }
 
 /// Simple API for decrypting a buffer with a pwhash-ed passphrase

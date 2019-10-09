@@ -23,8 +23,9 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h::engine::RealEngineConfig;
+use lib3h::engine::EngineConfig;
 
+use holochain_net::sim1h_worker::Sim1hConfig;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -247,10 +248,12 @@ impl Configuration {
                             .bridges
                             .iter()
                             .find(|b| b.handle == handle)
-                            .ok_or(format!(
-                                "Required bridge '{}' for instance '{}' missing",
-                                handle, instance.id
-                            ))?;
+                            .ok_or_else(|| {
+                                format!(
+                                    "Required bridge '{}' for instance '{}' missing",
+                                    handle, instance.id
+                                )
+                            })?;
                     }
                 }
             }
@@ -328,10 +331,12 @@ impl Configuration {
         //
         let caller_config = self
             .instance_by_id(&bridge_config.caller_id)
-            .ok_or(format!(
-                "Instance configuration \"{}\" not found, mentioned in bridge",
-                bridge_config.caller_id
-            ))?;
+            .ok_or_else(|| {
+                format!(
+                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                    bridge_config.caller_id
+                )
+            })?;
 
         let caller_dna_config = self.dna_by_id(&caller_config.dna).ok_or_else(|| {
             format!(
@@ -355,10 +360,12 @@ impl Configuration {
         //
         let callee_config = self
             .instance_by_id(&bridge_config.callee_id)
-            .ok_or(format!(
-                "Instance configuration \"{}\" not found, mentioned in bridge",
-                bridge_config.callee_id
-            ))?;
+            .ok_or_else(|| {
+                format!(
+                    "Instance configuration \"{}\" not found, mentioned in bridge",
+                    bridge_config.callee_id
+                )
+            })?;
 
         let callee_dna_config = self.dna_by_id(&callee_config.dna).ok_or_else(|| {
             format!(
@@ -389,10 +396,12 @@ impl Configuration {
             }
         }
 
-        let bridge = maybe_bridge.ok_or(format!(
-            "No bridge definition with handle '{}' found in {}'s DNA",
-            bridge_config.handle, bridge_config.caller_id,
-        ))?;
+        let bridge = maybe_bridge.ok_or_else(|| {
+            format!(
+                "No bridge definition with handle '{}' found in {}'s DNA",
+                bridge_config.handle, bridge_config.caller_id,
+            )
+        })?;
 
         match bridge.reference {
             BridgeReference::Address { ref dna_address } => {
@@ -456,9 +465,27 @@ impl Configuration {
         self.agents.iter().find(|ac| &ac.id == id).cloned()
     }
 
+    /// Returns the agent configuration with the given ID if present
+    pub fn update_agent_address_by_id(&mut self, id: &str, agent_id: &AgentId) {
+        self.agents.iter_mut().for_each(|ac| {
+            if &ac.id == id {
+                ac.public_address = agent_id.pub_sign_key.clone()
+            }
+        })
+    }
+
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
+    }
+
+    /// Returns the DNA configuration with the given ID if present
+    pub fn update_dna_hash_by_id(&mut self, id: &str, hash: String) -> bool {
+        self.dnas
+            .iter_mut()
+            .find(|dc| &dc.id == id)
+            .map(|dna| dna.hash = hash)
+            .is_some()
     }
 
     /// Returns the instance configuration with the given ID if present
@@ -641,6 +668,8 @@ pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
+    #[serde(default)]
+    pub uuid: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -709,9 +738,22 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
+/// An instance reference makes an instance available in the scope
+/// of an interface.
+/// Since UIs usually hard-code the name with which they reference an instance,
+/// we need to decouple that name used by the UI from the internal ID of
+/// the instance. That is what the optional `alias` field provides.
+/// Given that there is 1-to-1 relationship between UIs and interfaces,
+/// by setting an alias for available instances in the UI's interface
+/// each UI can have its own unique handle for shared instances.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct InstanceReferenceConfiguration {
+    /// ID of the instance that is made available in the interface
     pub id: String,
+
+    /// A local name under which the instance gets mounted in the
+    /// interface's scope
+    pub alias: Option<String>,
 }
 
 /// A bridge enables an instance to call zome functions of another instance.
@@ -784,9 +826,12 @@ fn default_address() -> String {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkConfig {
     N3h(N3hConfig),
-    Lib3h(RealEngineConfig),
+    Lib3h(EngineConfig),
+    Memory(EngineConfig),
+    Sim1h(Sim1hConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

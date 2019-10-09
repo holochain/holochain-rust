@@ -24,11 +24,12 @@ fn reduce_respond_fetch_data_inner(
         network_state,
         Lib3hClientProtocol::HandleFetchEntryResult(FetchEntryResultData {
             request_id: fetch_data.request_id.clone(),
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: fetch_data.entry_address.clone(),
                 aspect_list: aspects.iter().map(|a| a.to_owned().into()).collect(),
+
             },
         }),
     )

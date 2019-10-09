@@ -6,7 +6,7 @@ version: 1.0.{build}
 build: false
 max_jobs: 20
 
-environment:
+#environment:
 #  # global:
 #  #   hc_target_prefix: C:\build
 #

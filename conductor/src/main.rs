@@ -99,8 +99,10 @@ fn main() {
 
                     // So we're here because we received a shutdown signal.
                     // Let's shut down.
-                    let mut conductor_guard = CONDUCTOR.lock().unwrap();
-                    let conductor = std::mem::replace(&mut *conductor_guard, None);
+                    let conductor = {
+                        let mut conductor_guard = CONDUCTOR.lock().unwrap();
+                        std::mem::replace(&mut *conductor_guard, None)
+                    };
                     let refs = Arc::strong_count(&CONDUCTOR);
                     if refs == 1 {
                         println!("Gracefully shutting down conductor...");
@@ -118,6 +120,7 @@ fn main() {
                 }
                 _ => (),
             }
+            println!("Conductor has shut down");
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };

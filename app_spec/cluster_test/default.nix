@@ -11,7 +11,7 @@ let
    ( EMULATION_HOLOCHAIN_BIN_PATH=./.cargo/bin/holochain node ./app_spec/cluster_test/index.js 2)
   '';
 
-  name-stress = "hc-stress-test";
+  name-stress = "hc-stress-test-sim1h";
 
   script-stress = pkgs.writeShellScriptBin name-stress
   ''

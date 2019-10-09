@@ -6,6 +6,9 @@ const dnaPath = path.join(__dirname, "../dist/app_spec.dna.json")
 const dna = Config.dna(dnaPath, 'app-spec')
 const dna2 = Config.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
+
+
+
 module.exports = {
   one: {
     instances: {
@@ -21,26 +24,17 @@ module.exports = {
       Config.bridge('test-bridge', 'app1', 'app2')
     ]
   }),
-
-
-  callSyncMiddleware: (run, f) => run(s => {
-    const s_ = Object.assign({}, s, {
-      players: async (...a) => {
-        const players = await s.players(...a)
-        const players_ = _.mapValues(
-          players,
-          api => Object.assign(api, {
-            callSync: async (...b) => {
-              const result = await api.call(...b)
-              await s.consistency()
-              return result
-            }
-          })
-        )
-        return players_
-      }
-    })
-    return f(s_)
-  })
-
 }
+
+
+// Replace the real hachiko waiter with a simple delay.
+// i.e. makes `await s.consistency()` delay a certain number of milliseconds
+// rather than actually waiting for consistency
+const dumbWaiterMiddleware = interval => (run, f) => run(s =>
+  f(Object.assign({}, s, {
+    consistency: () => new Promise(resolve => {
+      console.log(`dumbWaiter is waiting ${interval}ms...`)
+      setTimeout(resolve, interval)
+    })
+  }))
+)

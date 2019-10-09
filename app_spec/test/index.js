@@ -1,6 +1,4 @@
-const { Orchestrator, tapeExecutor, singleConductor, combine  } = require('@holochain/try-o-rama')
-
-const { callSyncMiddleware } = require('./config')
+const { Orchestrator, tapeExecutor, singleConductor, combine, callSync  } = require('@holochain/try-o-rama')
 
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
@@ -8,18 +6,8 @@ const { callSyncMiddleware } = require('./config')
 const MIN_EXPECTED_SCENARIOS = 30
 
 process.on('unhandledRejection', error => {
-  // Will print "unhandledRejection err is not defined"
   console.error('got unhandledRejection:', error);
 });
-
-const dumbWaiter = interval => (run, f) => run(s =>
-  f(Object.assign({}, s, {
-    consistency: () => new Promise(resolve => {
-      console.log(`dumbWaiter is waiting ${interval}ms...`)
-      setTimeout(resolve, interval)
-    })
-  }))
-)
 
 let transport_config = 'memory';
 let middleware = combine(
@@ -27,7 +15,7 @@ let middleware = combine(
   // NB: this middleware makes a really huge difference! and it's not very well tested,
   // as of Oct 1 2019. So, keep an eye out.
   singleConductor,
-  callSyncMiddleware,
+  callSync,
   tapeExecutor(require('tape')),
 );
 
@@ -37,7 +25,7 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "websocket")
 
   // omit singleConductor
   middleware = combine(
-    callSyncMiddleware,
+    callSync,
     tapeExecutor(require('tape')),
   );
 }
@@ -51,8 +39,7 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
 
   // omit singleConductor
   middleware = combine(
-    // dumbWaiter(1000),
-    callSyncMiddleware,
+    callSync,
     tapeExecutor(require('tape')),
   );
 }

@@ -1,7 +1,7 @@
 # Emitting Signals
 
 Holochain provides a mechanism for clients to subscribe to various signals 
-that are emitted by different parts the system, 
+that are emitted by different parts of the system, 
 some of them low level, and other explicitly by zome developers.  
 
 Low level signals are used by our [testing frame work](https://github.com/holochain/diorama).
@@ -47,7 +47,7 @@ onSignal((msg) => {
 ```
 
 ### Outlook
-The current implementation of signals is at MVP stage - there is everything
+The current implementation of signals is at MVP stage—there is everything
 needed to not force UIs to poll for new data, given that the DNA uses
 callbacks (mainly node-2-node messages and `receive`) to emit signals
 as needed.
@@ -57,9 +57,9 @@ Future additions will be:
   [ADR 13](https://github.com/holochain/holochain-rust/blob/develop/doc/architecture/decisions/0013-signals-listeners-model-and-api.md)
   describes signals as statically defined properties of a DNA which 
   would enable conductor level binding/connecting of signals with
-  slotes (i.e. zome functions) similar to bridges but with looser 
+  slotes (i.e. zome functions), similar to bridges but with looser 
   coupling.
-* DHT level signals/hooks
+* DHT level signals/hooks:
   Local changes like authoring a new entry could already emit a signal
   and thus trigger a reload/re-render of the UI.
   But what if a remote agent authored a chat message in a channel

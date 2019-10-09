@@ -106,9 +106,16 @@ pub async fn author_entry<'a>(
     Ok(CommitEntryResult::new(addr))
 }
 // TODO: Bring the old in-memory network up to speed and turn on this test again!
-#[cfg(feature = "broken-tests")]
+
 #[cfg(test)]
 pub mod tests {
+
+use holochain_core_types::{entry::{Entry,test_entry_with_value},chain_header::ChainHeader};
+use crate::{workflows::author_entry::author_entry,
+            nucleus::actions::{tests::{instance_by_name,test_dna},get_entry::get_entry_from_dht},
+            holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent};
+use std::{time,thread};
+
 
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
@@ -124,7 +131,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature="broken-tests")]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
 
@@ -168,7 +174,6 @@ pub mod tests {
     #[test]
     /// test that the header of an entry can be retrieved directly by its hash by another agent connected
     /// via the in-memory network
-    #[cfg(feature="broken-tests")]
     fn test_commit_with_dht_publish_header_is_published() {
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish_header_is_published".to_string();
@@ -219,7 +224,6 @@ pub mod tests {
 
     #[test]
     /// test that all headers are published so an agents local chain can be reconstructed by another agent
-    #[cfg(feature="broken-tests")]
     fn test_reconstruct_chain_via_published_headers() {
         let mut dna = test_dna();
         dna.uuid = "test_reconstruct_chain_via_published_headers".to_string();

@@ -10,7 +10,7 @@ tempfile = "=3.0.7"
 [dependencies]
 failure = "=0.1.5"
 #sim1h = { path = "../../sim1h/crates/sim1h" }
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
+sim1h = { git = "https://github.com/holochain/sim1h", branch = "develop" }
 #sim2h = { path = "../../sim2h/crates/sim2h" }
 sim2h = { git = "https://github.com/holochain/sim2h", branch = "develop" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }

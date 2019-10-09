@@ -7,12 +7,16 @@ let
   buildHolochain = args:
     let
       inherit (rust.packages.nightly) rustPlatform;
+
     in
     (buildRustPackage rustPlatform args).overrideAttrs (super: {
       nativeBuildInputs = super.nativeBuildInputs ++ (with buildPackages; [
         nodejs-12_x
         perl
       ]);
+
+      GIT_HASH = "0000000000000000000000000000000000000000";
+      HDK_VERSION = "v0.0.32-alpha2-4-0000000000";
 
       buildInputs = optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
         CoreServices
@@ -40,6 +44,10 @@ in
     name = "holochain-cli";
     src = gitignoreSource ./.;
     cargoDir = "cli";
+    preBuild = ''
+       export GIT_HASH=$( cd $sourceRoot && git rev-parse HEAD );
+       export HDK_VERSION=$( cd $sourceRoot && git describe );
+    '';
   };
 
   holochain-conductor = buildHolochain {

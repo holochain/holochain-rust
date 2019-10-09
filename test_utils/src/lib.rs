@@ -476,7 +476,15 @@ pub fn start_holochain_instance<T: Into<String>>(
     let test_config = env::var("INTEGRATION_TEST_CONFIG").map(|test_config|{
             if test_config =="lib3h"
             {
-                TestNodeConfig::MemoryGhostEngine(vec![])
+                let bootstrap_nodes = env::var("BOOTSTRAP_NODES").map(|bootstrap_config|{
+                    
+                    //https://bootstrap1,http://boostrap2 in the env config to set up before tests
+                     bootstrap_config.split(",").map(|s|{
+                         url::Url::parse(s).unwrap_or_else(|e| panic!("failed to set up for test run: failed to parse as url: (input: {:?}, error: {:?})",&s, e))
+                     }).collect()
+                }).unwrap_or_default();
+
+                TestNodeConfig::MemoryGhostEngine(bootstrap_nodes)
             }
             else if test_config=="sim1h"
             {

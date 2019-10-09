@@ -1,8 +1,8 @@
 { pkgs }:
 let
-  name = "hc-app-spec-cluster-test";
+  name-cluster = "hc-app-spec-cluster-test";
 
-  script = pkgs.writeShellScriptBin name
+  script-cluster = pkgs.writeShellScriptBin name-cluster
   ''
   hc-cli-install
   hc-conductor-install
@@ -10,7 +10,16 @@ let
    ( cd app_spec && mkdir -p dist && hc package --output dist/app_spec.dna.json --strip-meta )
    ( EMULATION_HOLOCHAIN_BIN_PATH=./.cargo/bin/holochain node ./app_spec/cluster_test/index.js 2)
   '';
+
+  name-stress = "hc-stress-test";
+
+  script-stress = pkgs.writeShellScriptBin name-stress
+  ''
+  hc-cli-install
+  hc-conductor-install
+   ( cd stress-test && npm install && AWS_ACCESS_KEY_ID=bla AWS_SECRET_ACCESS_KEY=blup npm test )
+  '';
 in
 {
- buildInputs = [ script ];
+ buildInputs = [ script-cluster script-stress ];
 }

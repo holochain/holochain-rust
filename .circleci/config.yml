@@ -135,6 +135,20 @@ jobs:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test
 
+ stress-tests-sim1h:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+       name: stress tests
+       command: nix-shell --run hc-stress-test-sim1h
+
  cli-tests:
   docker:
    - image: holochain/holochain-rust:latest

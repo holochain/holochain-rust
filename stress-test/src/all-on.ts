@@ -20,7 +20,7 @@ const trace = R.tap(x => console.log('{T}', x))
 
 module.exports = scenario => {
 
-  const N = 1
+  const N = 2
   const M = 5
   const batch = batchSimple(N, M)
 

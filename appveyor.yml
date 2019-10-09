@@ -7,52 +7,52 @@ build: false
 max_jobs: 20
 
 environment:
-  # global:
-  #   hc_target_prefix: C:\build
-
+#  # global:
+#  #   hc_target_prefix: C:\build
+#
   matrix:
-  - test_p: holochain_dna_c_binding
-    test_path: dna_c_binding
-    wasm_path:
-    wasm_path_2:
-
-  - test_p: holochain_core_types
-    test_path: core_types
-    wasm_path:
-    wasm_path_2:
-
-  - test_p: holochain_wasm_utils
-    test_path: wasm_utils
-    wasm_path: wasm-test\integration-test
-    wasm_path_2:
-
-  - test_p: hdk
-    test_path: hdk-rust
-    wasm_path: wasm-test
-    wasm_path_2:
-
-  - test_p: holochain_conductor_api
-    test_path: conductor_api
-    wasm_path: wasm-test
-    wasm_path_2: test-bridge-caller
-
-  # - test_p: holochain_cas_implementations
-  #   test_path: cas_implementations\
-
-  - test_p: holochain_core
-    test_path: core
-    wasm_path: src\nucleus\actions\wasm-test
-    wasm_path_2:
-
-  - test_p: hc
-    test_path: cli
-    wasm_path:
-    wasm_path_2:
-
-  - test_p: holochain_net
-    test_path: net
-    wasm_path:
-    wasm_path_2:
-
-test_script:
- - scripts\windows\do-ci-test.bat
+#  - test_p: holochain_dna_c_binding
+#    test_path: dna_c_binding
+#    wasm_path:
+#    wasm_path_2:
+#
+#  - test_p: holochain_core_types
+#    test_path: core_types
+#    wasm_path:
+#    wasm_path_2:
+#
+#  - test_p: holochain_wasm_utils
+#    test_path: wasm_utils
+#    wasm_path: wasm-test\integration-test
+#    wasm_path_2:
+#
+#  - test_p: hdk
+#    test_path: hdk-rust
+#    wasm_path: wasm-test
+#    wasm_path_2:
+#
+#  - test_p: holochain_conductor_api
+#    test_path: conductor_api
+#    wasm_path: wasm-test
+#    wasm_path_2: test-bridge-caller
+#
+#  # - test_p: holochain_cas_implementations
+#  #   test_path: cas_implementations\
+#
+#  - test_p: holochain_core
+#    test_path: core
+#    wasm_path: src\nucleus\actions\wasm-test
+#    wasm_path_2:
+#
+#  - test_p: hc
+#    test_path: cli
+#    wasm_path:
+#    wasm_path_2:
+#
+#  - test_p: holochain_net
+#    test_path: net
+#    wasm_path:
+#    wasm_path_2:
+#
+#test_script:
+# - scripts\windows\do-ci-test.bat

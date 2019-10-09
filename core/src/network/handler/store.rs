@@ -29,11 +29,9 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                         ProcessUniqueId::new().to_string()
                     ))
                     .spawn(move || {
-                        match context
-                            .block_on(hold_entry_workflow(&entry_with_header, context.clone()))
+                        if let Err(err) = context.block_on(hold_entry_workflow(&entry_with_header, context.clone()))
                         {
-                            Err(error) => log_error!(context, "net/dht: {}", error),
-                            _ => (),
+                            log_error!(context, "net/dht: {}", err);
                         }
                     })
                     .expect("Could not spawn thread for storing EntryAspect::Content");
@@ -55,11 +53,9 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                         ProcessUniqueId::new().to_string()
                     ))
                     .spawn(move || {
-                        match context
-                            .block_on(hold_link_workflow(&entry_with_header, context.clone()))
+                        if let Err(error) = context.block_on(hold_link_workflow(&entry_with_header, context.clone()))
                         {
-                            Err(error) => log_error!(context, "net/dht: {}", error),
-                            _ => (),
+                            log_error!(context, "net/dht: {}", error);
                         }
                     })
                     .expect("Could not spawn thread for storing EntryAspect::LinkAdd");

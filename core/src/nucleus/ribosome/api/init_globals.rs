@@ -52,7 +52,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             {
                 found_entries.push(chain_header.entry_address().to_owned());
             }
-            if found_entries.len() > 0 {
+            if !found_entries.is_empty() {
                 globals.agent_latest_hash = found_entries[0].clone();
                 globals.agent_initial_hash = found_entries.pop().unwrap();
                 globals.agent_address = globals.agent_latest_hash.clone();

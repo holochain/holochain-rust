@@ -331,7 +331,7 @@ fn get_content_aspect(
                         log_error!(context, "{}", err_message);
                         HolochainError::ErrorGeneric(err_message)
                     })?;
-                if headers.len() > 0 {
+                if !headers.is_empty() {
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
@@ -418,7 +418,7 @@ fn get_meta_aspects(
         })
         .partition(Result::is_ok);
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         Err(errors[0].to_owned().err().unwrap())
     } else {
         Ok(aspects.into_iter().map(Result::unwrap).collect())

@@ -10,7 +10,7 @@ use log::*;
 use sim2h::{WireMessage, WireError};
 use url::Url;
 use lib3h::transport::websocket::actor::{GhostTransportWebsocket};
-use lib3h::transport::websocket::tls::TlsConfig;
+use lib3h::transport::websocket::tls::{TlsConfig, TlsCertificate};
 use lib3h::transport::protocol::{
     RequestToChild, RequestToChildResponse, RequestToParent, TransportActorParentWrapper
 };
@@ -51,7 +51,7 @@ impl Sim2hWorker {
         let transport_raw = GhostTransportWebsocket::new(
             // not used currently inside GhostTransportWebsocket:
             Address::from("sim2h-worker-transport"),
-            TlsConfig::Unencrypted,
+            TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
             // not used currently inside GhostTransportWebsocket:\
             Address::from("sim2h-network"),
         );

@@ -41,7 +41,7 @@ pub fn reduce_shutdown(
             .as_mut()
             .expect("Tried to shutdown uninitialized network");
         let _ = network.send(json);
-        sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(2));  // TODO: comment for why we do magical sleep?
     }
 
     if let Err(err) = network_lock.take().unwrap().stop() {

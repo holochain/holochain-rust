@@ -222,6 +222,7 @@ impl Holochain {
         self.check_active()?;
 
         let context = self.context.as_ref().unwrap();
+        self.instance.as_ref().unwrap().stop_processing_most_actions();
         if let Err(err) = context.block_on(self.instance.as_ref().unwrap().shutdown_network()) {
             log_error!(context, "Error shutting down network: {:?}", err);
         }

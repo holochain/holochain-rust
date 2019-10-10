@@ -68,7 +68,7 @@ impl NetConnectionThread {
                 // Check if we received something from parent (NetConnectionThread::send())
                 let mut did_something = false;
                 recv_channel
-                    .try_recv()
+                    .try_recv()  // TODO: can we use recv_timeout instead to reduce the poll interval?
                     .and_then(|data| {
                         // Received data from parent
                         // Have the worker handle it
@@ -105,6 +105,7 @@ impl NetConnectionThread {
                 // Sleep
                 thread::sleep(time::Duration::from_micros(sleep_duration_us));
             }
+            debug!("Stopped NetWorker");
             // Stop the worker
             worker.stop().unwrap_or_else(|e| {
                 error!("Error occured in p2p network module on stop: {:?}", e)
@@ -134,6 +135,7 @@ impl NetConnectionThread {
     /// stop the worker thread (join)
     pub fn stop(self) -> NetResult<()> {
         // tell child thread to stop running
+        debug!("Telling NetWorker to stop");
         self.can_keep_running.store(false, Ordering::Relaxed);
         if self.thread.join().is_err() {
             bail!("NetConnectionThread failed to join on stop() call");

@@ -31,7 +31,7 @@ use std::{
     time::Duration,
 };
 use std::sync::atomic::Ordering::Relaxed;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{Ordering, AtomicBool};
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -47,6 +47,7 @@ pub struct Instance {
     persister: Option<Arc<RwLock<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
+    process_all_actions: Arc<AtomicBool>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -176,6 +177,9 @@ impl Instance {
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
+        self.process_all_actions = Arc::new(AtomicBool::new(true));
+        let process_all_actions = self.process_all_actions.clone();
+
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
@@ -190,7 +194,15 @@ impl Instance {
                 while kill_receiver.try_recv().is_err() {
                     if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
                         // Ping can happen often, and should be as lightweight as possible
-                        if *action_wrapper.action() != Action::Ping {
+                        let should_process = if process_all_actions.load(Ordering::Relaxed) {
+                            *action_wrapper.action() != Action::Ping
+                        } else {
+                            match action_wrapper.action() {
+                                Action::ShutdownNetwork => true,
+                                _ => false
+                            }
+                        };
+                        if should_process {
                             state_observers = sync_self.process_action(
                                 &action_wrapper,
                                 state_observers,
@@ -203,6 +215,11 @@ impl Instance {
                 }
                 instance_is_alive.store(false, Relaxed);
             });
+    }
+
+    pub fn stop_processing_most_actions(&self) {
+        debug!("Telling instance to stop processing all but ShutdownNetwork");
+        self.process_all_actions.store(false, Ordering::Relaxed);
     }
 
     pub fn stop_action_loop(&self) {
@@ -297,6 +314,7 @@ impl Instance {
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
             kill_switch: None,
+            process_all_actions: Arc::new(AtomicBool::new(true))
         }
     }
 
@@ -309,6 +327,7 @@ impl Instance {
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
             kill_switch: None,
+            process_all_actions: Arc::new(AtomicBool::new(true))
         }
     }
 

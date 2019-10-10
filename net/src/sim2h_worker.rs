@@ -267,6 +267,8 @@ impl Sim2hWorker {
 
     fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {
         match message {
+            WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
+            WireMessage::Pong => {},
             WireMessage::Lib3hToClient(m) =>
                 self.to_core.push(Lib3hServerProtocol::from(m)),
             WireMessage::ClientToLib3hResponse(m) =>
@@ -306,6 +308,9 @@ impl NetWorker for Sim2hWorker {
         //}
         if let Err(transport_error) = detach_run!(&mut self.transport, |t| t.process(self)) {
             error!("Transport error: {:?}", transport_error);
+            // This most likely means we have connection issues.
+            // Send ping to reestablish a potentially lost connection.
+            let _ = self.send_wire_message(WireMessage::Ping);
         }
         let mut did_something = WorkWasDone::from(false);
 

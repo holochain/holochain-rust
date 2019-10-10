@@ -161,7 +161,7 @@ impl ContextBuilder {
             eav_storage,
             // TODO BLOCKER pass a peer list here?
             self.p2p_config
-                .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend()),
+                .unwrap_or_else(P2pConfig::new_with_unique_memory_backend),
             self.conductor_api,
             self.signal_tx,
             self.state_dump_logging,

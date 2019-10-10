@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_api"
-version = "0.0.31-alpha1"
+version = "0.0.32-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -14,8 +14,8 @@ holochain_persistence_file = "=0.0.8"
 holochain_persistence_pickle = "=0.0.8"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "simchat-integration" }
+lib3h = { version = "=0.0.13" }
+lib3h_sodium = { version = "=0.0.13" }
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

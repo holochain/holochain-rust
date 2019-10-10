@@ -43,6 +43,7 @@ struct PartialZome {
 }
 
 #[allow(improper_ctypes)]
+#[derive(Default)]
 pub struct ZomeDefinition {
     pub entry_types: Vec<ValidatingEntryType>,
     pub agent_entry_validator: Option<AgentValidator>,
@@ -50,10 +51,7 @@ pub struct ZomeDefinition {
 
 impl ZomeDefinition {
     pub fn new() -> ZomeDefinition {
-        ZomeDefinition {
-            entry_types: Vec::new(),
-            agent_entry_validator: None,
-        }
+        ZomeDefinition::default()
     }
 
     #[allow(dead_code)]

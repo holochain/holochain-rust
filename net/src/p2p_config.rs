@@ -1,6 +1,7 @@
 use crate::sim1h_worker::Sim1hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
+use lib3h_protocol::uri::Lib3hUri;
 use snowflake;
 use std::{
     fs::File,
@@ -8,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-
+use url::Url;
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
 //--------------------------------------------------------------------------------------------------
@@ -183,9 +184,9 @@ impl P2pConfig {
 
     pub fn new_with_memory_lib3h_backend(
         server_name: &str,
-        bootstrap_nodes: Vec<url::Url>,
+        bootstrap_nodes: Vec<Url>,
     ) -> Self {
-        let host_name = server_name
+        let _host_name = server_name
             .replace(":", "_")
             .replace(" ", "_")
             .replace(",", "_");
@@ -199,11 +200,10 @@ impl P2pConfig {
                 },
                 //need to fix the transport configs
                 transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
-                bootstrap_nodes,
+                bootstrap_nodes: bootstrap_nodes.iter().map(|url|url.clone().into()).collect(),
                 work_dir: "".into(),
                 log_level: 'd',
-                bind_url: url::Url::parse(format!("mem://{}", host_name).as_str())
-                    .expect(format!("invalid memory server url: {}", server_name).as_str()),
+                bind_url: Lib3hUri::with_undefined(),
                 dht_custom_config: vec![],
                 dht_timeout_threshold: 2000,
                 dht_gossip_interval: 20,

@@ -67,7 +67,7 @@ impl From<&StateWrapper> for DhtStoreSnapshot {
     }
 }
 
-pub static DHT_STORE_SNAPSHOT_ADDRESS: &'static str = "DhtStore";
+pub static DHT_STORE_SNAPSHOT_ADDRESS: &str = "DhtStore";
 impl AddressableContent for DhtStoreSnapshot {
     fn content(&self) -> Content {
         self.to_owned().into()

@@ -52,7 +52,7 @@ pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {
     pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
-        return P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"));
+        P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"))
     }
 }
 
@@ -201,7 +201,7 @@ impl Context {
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state
             .as_ref()
-            .map(|s| s.try_read().ok())
+            .map(|s| s.try_read())
             .unwrap_or(None)
     }
 
@@ -393,7 +393,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
-        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend())
+        .unwrap_or_else(P2pConfig::new_with_unique_memory_backend)
 }
 
 #[cfg(test)]

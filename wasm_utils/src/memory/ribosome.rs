@@ -121,8 +121,8 @@ pub fn load_ribosome_encoded_string(
     match RibosomeEncodedValue::from(encoded_value) {
         RibosomeEncodedValue::Success => Err(HolochainError::Ribosome(
             RibosomeErrorCode::ZeroSizedAllocation,
-        ))?,
-        RibosomeEncodedValue::Failure(err_code) => Err(HolochainError::Ribosome(err_code))?,
+        )),
+        RibosomeEncodedValue::Failure(err_code) => Err(HolochainError::Ribosome(err_code)),
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
             Ok(WasmAllocation::try_from(ribosome_allocation)?.read_to_string())
         }

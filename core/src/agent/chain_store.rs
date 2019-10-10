@@ -84,7 +84,7 @@ impl ChainStore {
             "./*[]{}".chars().any(|y| y == c)
         }
         fn is_glob_str(s: &str) -> bool {
-            s.chars().any(|c| is_glob(c))
+            s.chars().any(is_glob)
         }
 
         // Unpack options; start == 0 --> start at beginning, limit == 0 --> take all remaining
@@ -162,7 +162,7 @@ impl ChainStore {
                     ChainStoreQueryResult::Headers(
                         self.iter(start_chain_header)
                             .filter(|header| {
-                                globset.matches(header.entry_type().to_string()).len() > 0
+                                !globset.matches(header.entry_type().to_string()).is_empty()
                             })
                             .skip(start)
                             .take(limit)
@@ -173,7 +173,7 @@ impl ChainStore {
                     ChainStoreQueryResult::Addresses(
                         self.iter(start_chain_header)
                             .filter(|header| {
-                                globset.matches(header.entry_type().to_string()).len() > 0
+                                !globset.matches(header.entry_type().to_string()).is_empty()
                             })
                             .skip(start)
                             .take(limit)

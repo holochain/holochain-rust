@@ -22,6 +22,7 @@
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
 //!     signature::Signature,
+//!     sync::HcMutex
 //! };
 //! use holochain_persistence_api::{
 //!     cas::content::Address,
@@ -31,7 +32,7 @@
 //! use lib3h_sodium::secbuf::SecBuf;
 //! use test_utils;
 //!
-//! use std::sync::{Arc, Mutex};
+//! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!
 //! // Instantiate a new holochain instance
@@ -56,7 +57,7 @@
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()
-//!     .with_agent_signature_callback(Arc::new(Mutex::new(keybundle)))
+//!     .with_agent_signature_callback(Arc::new(HcMutex::new(keybundle)))
 //!     .spawn();
 //!
 //! // The conductor API, together with the storage and the agent ID

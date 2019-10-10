@@ -304,7 +304,9 @@ impl NetWorker for Sim2hWorker {
         //if self.num_ticks % 100 == 0 {
         //    io::stdout().flush()?;
         //}
-        detach_run!(&mut self.transport, |t| t.process(self))?;
+        if let Err(transport_error) = detach_run!(&mut self.transport, |t| t.process(self)) {
+            error!("Transport error: {:?}", transport_error);
+        }
         let mut did_something = WorkWasDone::from(false);
 
         let client_messages = self.inbox.drain(..).collect::<Vec<_>>();

@@ -41,7 +41,7 @@ let
   script-sim2h-server = pkgs.writeShellScriptBin name-sim2h-server ''
   set -euo pipefail
   cargo install sim2h_server -f --git https://github.com/holochain/sim2h
-  RUST_LOG=debug sim2h_server
+  RUST_LOG=debug sim2h_server "$@"
   '';
 in
 {

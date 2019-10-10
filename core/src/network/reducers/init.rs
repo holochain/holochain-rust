@@ -29,7 +29,7 @@ pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper
 
     let json = Lib3hClientProtocol::JoinSpace(SpaceData {
         request_id: snowflake::ProcessUniqueId::new().to_string(),
-        space_address: network_settings.dna_address.clone(),
+        space_address: network_settings.dna_address.clone().into(),
         agent_id: network_settings.agent_id.clone().into(),
     });
 
@@ -54,11 +54,11 @@ pub mod test {
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId, sync::{HcRwLock as RwLock}};
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::{Arc};
     use tempfile;
 
     fn test_context() -> Arc<Context> {
@@ -68,7 +68,7 @@ pub mod test {
         let mut context = Context::new(
             "Test-context-instance",
             AgentId::generate_fake("Terence"),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(

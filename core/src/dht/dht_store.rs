@@ -5,6 +5,7 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::HolochainError,
+    sync::HcRwLock as RwLock,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{
@@ -22,7 +23,7 @@ use holochain_persistence_api::cas::content::Content;
 use std::{
     collections::{BTreeSet, HashMap},
     convert::TryFrom,
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 
 /// The state-slice for the DHT.
@@ -66,7 +67,7 @@ impl From<&StateWrapper> for DhtStoreSnapshot {
     }
 }
 
-pub static DHT_STORE_SNAPSHOT_ADDRESS: &'static str = "DhtStore";
+pub static DHT_STORE_SNAPSHOT_ADDRESS: &str = "DhtStore";
 impl AddressableContent for DhtStoreSnapshot {
     fn content(&self) -> Content {
         self.to_owned().into()

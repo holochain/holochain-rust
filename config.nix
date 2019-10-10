@@ -1,7 +1,7 @@
 let
- release-commit = "14c5aa15daa70d8564c0c16dc538fce36086764e";
- current = "0.0.30-alpha6";
- previous = "0.0.30-alpha5";
+ release-commit = "a0b6a71809a6e1d853330941e516aa20facaa064";
+ current = "0.0.32-alpha1";
+ previous = "0.0.31-alpha1";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";

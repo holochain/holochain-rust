@@ -1,6 +1,6 @@
 use crate::{
     action::Action, context::Context, entry::CanPublish,
-    network::entry_with_header::EntryWithHeader,
+    network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
 };
 use holochain_core_types::{agent::AgentId, entry::Entry, link::link_data::LinkData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -57,18 +57,18 @@ type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
 #[allow(clippy::large_enum_variant)]
 pub enum ConsistencyEvent {
     // CAUSES
-    Publish(Address),                                   // -> Hold
-    AddPendingValidation(Address),                      // -> RemovePendingValidation
-    SignalZomeFunctionCall(snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
+    Publish(Address),                                           // -> Hold
+    AddPendingValidation(Address),                              // -> RemovePendingValidation
+    SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
-    Hold(Address),                                        // <- Publish
-    UpdateEntry(Address, Address),                        // <- Publish, entry_type=Update
-    RemoveEntry(Address, Address),                        // <- Publish, entry_type=Deletion
-    AddLink(LinkData),                                    // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry),                                    // <- Publish, entry_type=LinkRemove
-    RemovePendingValidation(Address),                     // <- AddPendingValidation
-    ReturnZomeFunctionResult(snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
+    Hold(Address),                                                // <- Publish
+    UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
+    RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
+    AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
+    RemoveLink(Entry),                // <- Publish, entry_type=LinkRemove
+    RemovePendingValidation(Address), // <- AddPendingValidation
+    ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -161,7 +161,7 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::Hold(EntryWithHeader { entry, header: _ }) => {
+            Action::Hold(EntryWithHeader { entry, .. }) => {
                 Some(ConsistencySignal::new_terminal(Hold(entry.address())))
             }
             Action::UpdateEntry((old, new)) => Some(ConsistencySignal::new_terminal(
@@ -190,14 +190,21 @@ impl ConsistencyModel {
             )),
 
             Action::SignalZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
-                SignalZomeFunctionCall(call.id()),
+                SignalZomeFunctionCall(display_zome_fn_call(call), call.id()),
                 Source,
-                vec![ReturnZomeFunctionResult(call.id())],
+                vec![ReturnZomeFunctionResult(
+                    display_zome_fn_call(call),
+                    call.id(),
+                )],
             )),
             Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
-                ReturnZomeFunctionResult(result.call().id()),
+                ReturnZomeFunctionResult(display_zome_fn_call(&result.call()), result.call().id()),
             )),
             _ => None,
         }
     }
+}
+
+fn display_zome_fn_call(call: &ZomeFnCall) -> String {
+    format!("{}/{}", call.zome_name, call.fn_name)
 }

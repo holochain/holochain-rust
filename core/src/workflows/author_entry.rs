@@ -106,27 +106,42 @@ pub async fn author_entry<'a>(
     
     Ok(CommitEntryResult::new(addr))
 }
+// TODO: Bring the old in-memory network up to speed and turn on this test again!
 
 #[cfg(test)]
 pub mod tests {
-    use super::author_entry;
-    use crate::nucleus::actions::get_entry::get_entry_from_dht;
-    use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{
-        entry::{test_entry_with_value, Entry},
-        chain_header::ChainHeader,
-    };
-    use holochain_persistence_api::cas::content::AddressableContent;
-    use std::{thread, time};
+
+use holochain_core_types::{entry::{Entry,test_entry_with_value},chain_header::ChainHeader};
+use crate::{workflows::author_entry::author_entry,
+            nucleus::actions::{tests::{instance_by_name,test_dna},get_entry::get_entry_from_dht},
+            holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent};
+use std::{time,thread};
+
+
+    // TODO do this for all crate tests somehow
+    #[allow(dead_code)]
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
 
     #[test]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
+
+        enable_logging_for_test();
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
         let netname = Some("test_commit_with_dht_publish, the network");
-        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
-        let (_instance2, context2) = instance_by_name("jack", dna, netname);
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname.clone());
+        let (_instance2, context2) = instance_by_name(
+            "jack", dna, netname);
 
         let entry_address = context1
             .block_on(author_entry(
@@ -137,11 +152,11 @@ pub mod tests {
             ))
             .unwrap()
             .address();
-        thread::sleep(time::Duration::from_millis(500));
+        thread::sleep(time::Duration::from_millis(1000));
 
         let mut entry: Option<Entry> = None;
         let mut tries = 0;
-        while entry.is_none() && tries < 120 {
+        while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
                 entry = get_entry_from_dht(&context2, &entry_address).expect("Could not retrieve entry from DHT");

@@ -5,6 +5,7 @@ extern crate holochain_json_api;
 extern crate holochain_persistence_api;
 extern crate tempfile;
 extern crate test_utils;
+extern crate url;
 #[macro_use]
 extern crate serde_json;
 extern crate hdk;
@@ -14,9 +15,8 @@ use hdk::error::ZomeApiResult;
 
 use holochain_core::signal::{Signal, UserSignal};
 use holochain_core_types::{
-    crud_status::CrudStatus,
     entry::{entry_type::test_app_entry_type, Entry},
-    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
+    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
 use holochain_json_api::json::JsonString;
@@ -25,8 +25,6 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksResult};
-use std::{thread, time::Duration};
 use test_utils::{
     example_valid_entry_address, example_valid_entry_params, make_test_call,
     start_holochain_instance, TestEntry,
@@ -217,7 +215,7 @@ fn can_use_globals() {
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa"
+            "HcScig9W6jFsqqfdohnIQrED7bJ99aezxvQRx5XMVjvge5p8x7sT4HcP4Bhceuz"
         ))),
         "result = {:?}",
         result
@@ -311,146 +309,6 @@ fn has_populated_validation_data() {
 }
 
 #[test]
-fn can_link_entries() {
-    let (mut hc, _, _) = start_holochain_instance("can_link_entries", "alice");
-
-    let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
-    assert!(result.is_ok(), "\t result = {:?}", result);
-}
-
-#[test]
-fn can_remove_link() {
-    let (mut hc, _, _) = start_holochain_instance("can_remove_link", "alice");
-
-    let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
-    assert!(result.is_ok(), "\t result = {:?}", result);
-}
-
-#[test]
-#[cfg(test)]
-fn can_roundtrip_links() {
-    let (mut hc, _, _) = start_holochain_instance("can_roundtrip_links", "alice");
-    // Create links
-    let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
-    let maybe_address: Result<Address, String> =
-        serde_json::from_str(&String::from(result.unwrap())).unwrap();
-    let entry_address = maybe_address.unwrap();
-
-    // expected results
-    let entry_2 = Entry::App(
-        "testEntryType".into(),
-        TestEntry {
-            stuff: "entry2".into(),
-        }
-        .into(),
-    );
-    let entry_3 = Entry::App(
-        "testEntryType".into(),
-        TestEntry {
-            stuff: "entry3".into(),
-        }
-        .into(),
-    );
-    let entry_address_2 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
-    let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
-
-    let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-        LinksResult {
-            address: entry_address_2.clone(),
-            headers: Vec::new(),
-            tag: "test-tag".into(),
-            status: CrudStatus::Live,
-        },
-        LinksResult {
-            address: entry_address_3.clone(),
-            headers: Vec::new(),
-            tag: "test-tag".into(),
-            status: CrudStatus::Live,
-        },
-    ]));
-    let expected_links = JsonString::from(expected_links);
-
-    let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-        Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
-
-    let expected_links_reversed: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![
-            LinksResult {
-                address: entry_address_3.clone(),
-                headers: Vec::new(),
-                tag: "test-tag".into(),
-                status: CrudStatus::Live,
-            },
-            LinksResult {
-                address: entry_address_2.clone(),
-                headers: Vec::new(),
-                tag: "test-tag".into(),
-                status: CrudStatus::Live,
-            },
-        ]));
-    let expected_links_reversed = JsonString::from(expected_links_reversed);
-
-    let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-        Ok(vec![Ok(entry_3.clone()), Ok(entry_2.clone())]);
-
-    // Polling loop because the links have to get pushed over the in-memory network and then validated
-    // which includes requesting a validation package and receiving it over the in-memory network.
-    // All of that happens asynchronously and takes longer depending on computing resources
-    // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
-    let mut both_links_present = false;
-    let mut tries = 0;
-    let mut result_of_get = JsonString::from_json("{}");
-    while !both_links_present && tries < 10 {
-        tries = tries + 1;
-        // Now get_links on the base and expect both to be there
-        let maybe_result_of_get = make_test_call(
-            &mut hc,
-            "links_roundtrip_get",
-            &format!(r#"{{"address": "{}"}}"#, entry_address),
-        );
-        let maybe_result_of_load = make_test_call(
-            &mut hc,
-            "links_roundtrip_get_and_load",
-            &format!(r#"{{"address": "{}"}}"#, entry_address),
-        );
-
-        assert!(
-            maybe_result_of_get.is_ok(),
-            "maybe_result_of_get = {:?}",
-            maybe_result_of_get
-        );
-        assert!(
-            maybe_result_of_load.is_ok(),
-            "maybe_result_of_load = {:?}",
-            maybe_result_of_load
-        );
-
-        result_of_get = maybe_result_of_get.unwrap();
-        let result_of_load = maybe_result_of_load.unwrap();
-
-        println!(
-            "can_roundtrip_links: result_of_load - try {}:\n {:?}\n expecting:\n {:?}",
-            tries, result_of_load, &expected_entries,
-        );
-
-        let ordering1: bool = result_of_get == expected_links;
-        let entries_ordering1: bool = result_of_load == JsonString::from(expected_entries.clone());
-
-        let ordering2: bool = result_of_get == expected_links_reversed;
-        let entries_ordering2: bool =
-            result_of_load == JsonString::from(expected_entries_reversed.clone());
-
-        both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
-        if !both_links_present {
-            // Wait for links to be validated and propagated
-            thread::sleep(Duration::from_millis(500));
-        }
-    }
-
-    assert!(both_links_present, "result = {:?}", result_of_get);
-}
-
-#[test]
 fn can_check_query() {
     let (mut hc, _, _) = start_holochain_instance("can_check_query", "alice");
 
@@ -531,8 +389,18 @@ fn can_check_call_with_args() {
 }
 
 #[test]
+#[cfg(feature = "broken-tests")]
+//lib3h in memory specific test
 fn can_send_and_receive() {
     let (mut hc, _, _) = start_holochain_instance("can_send_and_receive", "alice");
+    let _endpoint = hc
+        .context()
+        .expect("context")
+        .network()
+        .lock()
+        .as_ref()
+        .unwrap()
+        .p2p_endpoint();
     let result = make_test_call(&mut hc, "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
@@ -581,7 +449,7 @@ fn show_env() {
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
-    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"alice\",\"pub_sign_key\":\"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa\"}}","agent_address":"HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","cap_request":{{"cap_token":"QmSbEonVd9pmUxQqAS87a6CkdMPUsrjYLshW9eYz3wJkZ1","provenance":["HcSCJUBV8mqhsh8y97TIMFi68Y39qv6dzw4W9pP9Emjth7xwsj6P83R6RkBXqsa","djyhwAYUa8GfAXcyKgX/uUWy29Z1e7b5PTx/iRxdeS75wR97+ZTlIlvldEiFQHbdaVHD9V3Q8lnfqPt2HsgfBw=="]}},"properties":"{{}}"}}}}"#,dna_address);
+    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmSbEonVd9pmUxQqAS87a6CkdMPUsrjYLshW9eYz3wJkZ1","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,dna_address);
     let json_result = Ok(JsonString::from_json(&format));
 
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);

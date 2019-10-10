@@ -46,7 +46,7 @@ impl ZomeFnCall {
             // @see https://github.com/holochain/holochain-rust/issues/198
             id: snowflake::ProcessUniqueId::new(),
             zome_name: zome.to_string(),
-            cap: cap,
+            cap,
             fn_name: function.to_string(),
             parameters: parameters.into(),
         }

@@ -1,61 +1,45 @@
 use crate::{
     action::ActionWrapper,
+    agent::state::create_entry_with_header_for_header,
     network::{
         actions::ActionResponse,
         entry_aspect::EntryAspect,
-        entry_with_header::{fetch_entry_with_header},
+        entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
         state::NetworkState,
     },
     state::State,
-    agent::state::create_new_chain_header,
 };
-use holochain_core_types::{
-    entry::{Entry},
-    error::HolochainError,
-    chain_header::ChainHeader,
-};
+use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 use lib3h_protocol::{
     data_types::{EntryData, ProvidedEntryData},
     protocol_client::Lib3hClientProtocol,
 };
 
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use crate::state::StateWrapper;
-
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a request to publish a header entry alone
 /// This is similar to publishing a regular entry but it has its own special dummy header.
 fn publish_header(
     network_state: &mut NetworkState,
     root_state: &State,
-    chain_header: &ChainHeader,
+    chain_header: ChainHeader,
 ) -> Result<(), HolochainError> {
-    let header_entry = Entry::ChainHeader(chain_header.clone());
-    let header_entry_header = create_new_chain_header(
-        &header_entry,
-        &root_state.agent(),
-        &StateWrapper::from(root_state.clone()),
-        &None,
-        &Vec::new(),
-    )?;
+    let EntryWithHeader { entry, header } =
+        create_entry_with_header_for_header(&StateWrapper::from(root_state.clone()), chain_header)?;
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: network_state.dna_address.clone().unwrap(),
+            space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
-                entry_address: header_entry.address().clone(),
-                aspect_list: vec![EntryAspect::Content(
-                    header_entry.clone(),
-                    header_entry_header,
-                )
-                .into()],
+                entry_address: entry.address().clone(),
+                aspect_list: vec![EntryAspect::Content(entry.clone(), header).into()],
             },
         }),
     )
 }
-
 
 fn reduce_publish_header_entry_inner(
     network_state: &mut NetworkState,
@@ -64,7 +48,7 @@ fn reduce_publish_header_entry_inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
-    publish_header(network_state, root_state, &entry_with_header.header)
+    publish_header(network_state, root_state, entry_with_header.header)
 }
 
 pub fn reduce_publish_header_entry(

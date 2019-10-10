@@ -87,7 +87,8 @@ pub async fn hold_entry_workflow(
         }
     })?;
 
-    log_debug!(context,
+    log_debug!(
+        context,
         "workflow/hold_entry: is valid! {}",
         entry_with_header.entry.address()
     );
@@ -95,7 +96,8 @@ pub async fn hold_entry_workflow(
     // 3. If valid store the entry in the local DHT shard
     await!(hold_entry(entry_with_header, context.clone()))?;
 
-    log_debug!(context,
+    log_debug!(
+        context,
         "workflow/hold_entry: HOLDING: {}",
         entry_with_header.entry.address()
     );

@@ -22,7 +22,7 @@ use std::{pin::Pin, sync::Arc, time::*};
 /// this consists of any public tokens that were granted for use by the container to
 /// map any public calls by zome, and an optional payload for the app developer to use as
 /// desired
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize,Default)]
 pub struct Initialization {
     public_token: Option<Address>,
     payload: Option<String>,
@@ -30,10 +30,7 @@ pub struct Initialization {
 
 impl Initialization {
     pub fn new() -> Initialization {
-        Initialization {
-            public_token: None,
-            payload: None,
-        }
+        Initialization::default()
     }
     pub fn public_token(&self) -> Option<Address> {
         self.public_token.clone()
@@ -122,7 +119,7 @@ pub async fn initialize_chain(
             cap_functions.insert(zome_name, cap.functions.clone());
         }
     }
-    let public_token = if cap_functions.len() > 0 {
+    let public_token = if !cap_functions.is_empty() {
         let maybe_public_cap_grant_entry = CapTokenGrant::create(
             ReservedCapabilityId::Public.as_str(),
             CapabilityType::Public,
@@ -211,7 +208,7 @@ impl Future for InitializationFuture {
                 "Timeout while initializing".to_string(),
             )));
         }
-        if let Some(state) = self.context.state() {
+        if let Some(state) = self.context.try_state() {
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,

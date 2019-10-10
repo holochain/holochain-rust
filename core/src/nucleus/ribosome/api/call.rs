@@ -1,3 +1,4 @@
+use logging::prelude::*;
 use crate::{
     context::Context,
     nucleus::{
@@ -90,8 +91,11 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
         )
     })?;
     // ZomeFnCallArgs to ZomeFnCall
-    let zome_call = ZomeFnCall::from_args(context.clone(), input);
-    context.block_on(call_zome_function(zome_call, context.clone()))
+    let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
+    log_debug!(context, "blocking on zome call: {:?}", input.clone());
+    let result = context.block_on(call_zome_function(zome_call, context.clone()));
+    log_debug!(context, "blocked on zome call: {:?} with result {:?}", input, result);
+    result
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -238,8 +242,8 @@ pub mod tests {
         let (instance, context) =
             test_instance_and_context(dna, netname).expect("Could not initialize test instance");
         TestSetup {
-            context: context,
-            instance: instance,
+            context,
+            instance,
         }
     }
 

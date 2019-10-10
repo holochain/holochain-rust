@@ -141,8 +141,8 @@ jobs:
   steps:
    - checkout
    - run:
-       name: DynamoDB
-       command: nix-shell --run "dynamodb-memory -port 8002"
+       name: sim2h server
+       command: nix-shell --run "hc-sim2h-server -p 9001"
        background: true
    - run:
        name: app spec cluster tests

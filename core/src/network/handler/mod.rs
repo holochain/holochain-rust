@@ -271,6 +271,12 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     }))
 }
 
+/// Get content aspect at this address, regardless of whether the address points to
+/// an Entry or a Header
+/// 
+/// NB: this can be optimized by starting with a CAS lookup for the entry directly,
+/// to avoid traversing the chain unnecessarily in the case of a miss
+/// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
 fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,
@@ -283,19 +289,21 @@ fn get_content_aspect(
     let maybe_chain_header = state
         .agent()
         .iter_chain()
+        // First we look to see if the address corresponds to a header itself, if so return the header
         .find(|ref chain_header| chain_header.address() == *entry_address)
         .map(|h| (h, true))
         .or_else(|| {
             state
                 .agent()
                 .iter_chain()
+                // Otherwise, try to find the header for the entry at this address
                 .find(|ref chain_header| chain_header.entry_address() == entry_address)
                 .map(|h| (h, false))
         });
 
     // If we have found a header for the requested entry in the chain...
     let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, &header)?),
+        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
             Some(EntryWithHeader {
@@ -313,19 +321,17 @@ fn get_content_aspect(
             {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
-                let headers = context
-                    .state()
-                    .expect("Could not get state for handle_fetch_entry")
+                let headers = state
                     .get_headers(entry_address.clone())
                     .map_err(|error| {
                         let err_message = format!(
                             "net/fetch/get_content_aspect: Error trying to get headers {:?}",
                             error
                         );
-                        log_error!(context, "{}", err_message.clone());
+                        log_error!(context, "{}", err_message);
                         HolochainError::ErrorGeneric(err_message)
                     })?;
-                if headers.len() > 0 {
+                if !headers.is_empty() {
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
@@ -412,7 +418,7 @@ fn get_meta_aspects(
         })
         .partition(Result::is_ok);
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         Err(errors[0].to_owned().err().unwrap())
     } else {
         Ok(aspects.into_iter().map(Result::unwrap).collect())

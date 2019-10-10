@@ -161,7 +161,7 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::Hold(EntryWithHeader { entry, header: _ }) => {
+            Action::Hold(EntryWithHeader { entry, .. }) => {
                 Some(ConsistencySignal::new_terminal(Hold(entry.address())))
             }
             Action::UpdateEntry((old, new)) => Some(ConsistencySignal::new_terminal(

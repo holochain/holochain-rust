@@ -245,17 +245,19 @@ fn run() -> HolochainResult<()> {
             };
 
             let properties = properties_string
-            .map(|s| {
-                serde_json::Value::from_str(&s)
-            }).unwrap_or_else(|| {
-                Ok(json!({}))
-            });
+                .map(|s| serde_json::Value::from_str(&s))
+                .unwrap_or_else(|| Ok(json!({})));
 
             match properties {
-                Ok(properties) => cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?,
-                Err(e) => return Err(HolochainError::Default(format_err!(
-                    "Failed to parse properties argument as JSON: {:?}", e
-                )))
+                Ok(properties) => {
+                    cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?
+                }
+                Err(e) => {
+                    return Err(HolochainError::Default(format_err!(
+                        "Failed to parse properties argument as JSON: {:?}",
+                        e
+                    )))
+                }
             }
         }
 

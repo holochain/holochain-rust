@@ -785,7 +785,7 @@ impl Conductor {
                                 .with_lmdb_storage(path)
                                 .map_err(|hc_err| {
                                     format!("Error creating context: {}", hc_err.to_string())
-                                })?                        
+                                })?
                     }
                 }
 

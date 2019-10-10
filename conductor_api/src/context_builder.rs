@@ -7,9 +7,9 @@ use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
 use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
-use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
 
 use jsonrpc_core::IoHandler;
 use std::{

@@ -617,6 +617,7 @@ impl Configuration {
             .iter()
             .filter_map(|stg_config| match stg_config.storage {
                 StorageConfiguration::File { ref path }
+                | StorageConfiguration::Lmdb { ref path }
                 | StorageConfiguration::Pickle { ref path } => Some(path.as_str()),
                 _ => None,
             })
@@ -705,6 +706,7 @@ pub enum StorageConfiguration {
     Memory,
     File { path: String },
     Pickle { path: String },
+    Lmdb { path: String },
 }
 
 /// Here, interfaces are user facing and make available zome functions to

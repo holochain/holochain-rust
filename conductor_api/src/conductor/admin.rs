@@ -201,7 +201,7 @@ impl ConductorAdmin for Conductor {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::Pickle {
+            storage: StorageConfiguration::Lmdb {
                 path: storage_path
                     .to_str()
                     .ok_or_else(|| {
@@ -1170,7 +1170,7 @@ id = 'new-instance'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
+                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
                 storage_path_string
             ),
         );
@@ -1462,7 +1462,7 @@ id = 'new-instance-2'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
+                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
                 storage_path_string
             ),
         );

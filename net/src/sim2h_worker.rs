@@ -285,15 +285,6 @@ impl Sim2hWorker {
                 }
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
             }
-            WireMessage::SignatureChallenge(entropy) => {
-                debug!("Got Signature Challenge - signing entropy and sending back");
-                let signed_entropy = format!("{}+fake_signature",entropy);
-                self.send_wire_message(WireMessage::SignatureChallengeResponse(
-                    signed_entropy
-                ))?;
-            }
-            WireMessage::SignatureChallengeResponse(s) =>
-                error!("Got a SignatureChallengeResponse from the Sim2h server, weird! Ignoring: {:?}", s),
         };
         Ok(())
     }

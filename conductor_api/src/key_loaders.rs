@@ -4,9 +4,10 @@ use crate::{
 };
 use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceMock};
 use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
-use holochain_dpki::{secbuf_new_insecure_from_string, SEED_SIZE};
+use holochain_dpki::{CRYPTO,SEED_SIZE,
+                     utils::secbuf_new_insecure_from_string};
 use keystore::test_hash_config;
-use lib3h_sodium::{hash::sha256, secbuf::SecBuf};
+use lib3h_sodium::{hash::sha256};
 use std::{path::PathBuf, sync::Arc};
 
 /// Key loader callback to use with conductor_api.
@@ -14,7 +15,7 @@ use std::{path::PathBuf, sync::Arc};
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_keystore_loader() -> KeyLoader {
     let loader = Box::new(
-        |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+        |path: &PathBuf, _pm: Arc<PassphraseManager>| {
             Ok(test_keystore(&path.to_str().unwrap().to_string()))
         },
     )
@@ -22,7 +23,6 @@ pub fn test_keystore_loader() -> KeyLoader {
             dyn FnMut(
                     &PathBuf,
                     Arc<PassphraseManager>,
-                    Option<PwHashConfig>,
                 ) -> Result<Keystore, HolochainError>
                 + Send
                 + Sync,

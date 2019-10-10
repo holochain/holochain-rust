@@ -148,7 +148,6 @@ pub type KeyLoader = Arc<
         dyn FnMut(
                 &PathBuf,
                 Arc<PassphraseManager>,
-                Option<PwHashConfig>,
             ) -> Result<Keystore, HolochainError>
             + Send
             + Sync,
@@ -1179,7 +1178,6 @@ impl Conductor {
     fn load_key(
         file: &PathBuf,
         passphrase_manager: Arc<PassphraseManager>,
-        hash_config: Option<PwHashConfig>,
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
@@ -1440,7 +1438,7 @@ pub mod tests {
 
     pub fn test_key_loader() -> KeyLoader {
         let loader = Box::new(
-            |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+            |path: &PathBuf, _pm: Arc<PassphraseManager>| {
                 match path.to_str().unwrap().as_ref() {
                     "holo_tester1.key" => Ok(test_keystore(1)),
                     "holo_tester2.key" => Ok(test_keystore(2)),
@@ -1456,7 +1454,6 @@ pub mod tests {
                 dyn FnMut(
                         &PathBuf,
                         Arc<PassphraseManager>,
-                        Option<PwHashConfig>,
                     ) -> Result<Keystore, HolochainError>
                     + Send
                     + Sync,

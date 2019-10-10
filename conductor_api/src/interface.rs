@@ -12,7 +12,6 @@ use holochain_core_types::{
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -930,7 +929,7 @@ impl ConductorApiBuilder {
 
             let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let signature = base64::encode(&**message_signature);
+            let signature = base64::encode(&*message_signature);
 
             Ok(json!({ "signature": signature }))
         });
@@ -954,7 +953,7 @@ impl ConductorApiBuilder {
 
             let encrypted_message = encrypted_message.read_lock();
             // Return as base64 encoded string
-            let encrypted_message = base64::encode(&**encrypted_message);
+            let encrypted_message = base64::encode(&*encrypted_message);
 
             Ok(json!({ "message": encrypted_message }))
         });

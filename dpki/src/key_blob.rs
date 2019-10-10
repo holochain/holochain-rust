@@ -487,7 +487,7 @@ mod tests {
             .as_blob(&mut passphrase, "hint".to_string())
             .unwrap();
 
-        let mut root_seed = Seed::from_blob(&blob, &mut passphrase).unwrap();
+        let root_seed = Seed::from_blob(&blob, &mut passphrase).unwrap();
         assert_eq!(SeedType::Root, root_seed.kind);
         assert_eq!(0, root_seed.buf.compare(&mut initial_seed.buf));
     }

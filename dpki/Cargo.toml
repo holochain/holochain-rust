@@ -9,8 +9,8 @@ lazy_static = "=1.2.0"
 base64 = "=0.10.1"
 holochain_core_types = { path = "../core_types" }
 holochain_persistence_api = "=0.0.8"
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
-lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

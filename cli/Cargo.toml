@@ -12,7 +12,7 @@ holochain_dpki = { path = "../dpki" }
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.8"
 holochain_persistence_file = "=0.0.8"
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"
 failure = "=0.1.5"

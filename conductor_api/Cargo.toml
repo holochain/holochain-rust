@@ -14,8 +14,8 @@ holochain_persistence_file = "=0.0.8"
 holochain_persistence_pickle = "=0.0.8"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

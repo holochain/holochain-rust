@@ -22,7 +22,7 @@ impl Verify for Provenance {
     }
 }
 
-pub(crate) fn secbuf_from_array(buf: &mut SecBuf, data: &[u8]) -> HcResult<()> {
+pub fn secbuf_from_array(buf: &mut SecBuf, data: &[u8]) -> HcResult<()> {
     if data.len() != buf.len() {
         return Err(HolochainError::ErrorGeneric(
             "Input does not have same size as SecBuf".to_string(),
@@ -240,7 +240,7 @@ pub mod tests {
         let decrypted_result =
             decrypt_with_passphrase_buf(&encrypted_data, &mut random_passphrase, data_size);
         assert!(decrypted_result.is_ok());
-        let mut decrypted_data = decrypted_result.unwrap();
+        let decrypted_data = decrypted_result.unwrap();
 
         assert_eq!(0, decrypted_data.compare(&mut random_data));
 
@@ -255,7 +255,7 @@ pub mod tests {
         let decrypted_result =
             decrypt_with_passphrase_buf(&encrypted_data, &mut bogus_passphrase, data_size);
         assert!(decrypted_result.is_ok());
-        let mut decrypted_data = decrypted_result.unwrap();
+        let decrypted_data = decrypted_result.unwrap();
         assert!(0 != decrypted_data.compare(&mut random_data));
     }
 }

@@ -5,6 +5,7 @@ use holochain_core_types::{
     sync::HcMutex as Mutex,
 };
 use holochain_dpki::{
+    CRYPTO,
     key_blob::{BlobType, Blobbable, KeyBlob},
     key_bundle::KeyBundle,
     keypair::{EncryptingKeyPair, KeyPair, SigningKeyPair},
@@ -106,12 +107,11 @@ pub struct Keystore {
 
 fn make_passphrase_check(
     passphrase: &mut SecBuf,
-    hash_config: Option<PwHashConfig>,
 ) -> HcResult<String> {
     let mut check_buf = CRYPTO.buf_new_secure(PCHECK_SIZE);
     CRYPTO.randombytes_buf(&mut check_buf);
     check_buf.write(0, &PCHECK_HEADER).unwrap();
-    encrypt_with_passphrase_buf(&mut check_buf, passphrase, hash_config)
+    encrypt_with_passphrase_buf(&mut check_buf, passphrase)
 }
 
 impl Keystore {
@@ -514,7 +514,7 @@ impl Keystore {
                 let mut signature_buf = key_pair.sign(&mut data_buf)?;
                 let buf = signature_buf.read_lock();
                 // Return as base64 encoded string
-                let signature_str = base64::encode(&**buf);
+                let signature_str = base64::encode(&*buf);
                 Ok(Signature::from(signature_str))
             }
             _ => {

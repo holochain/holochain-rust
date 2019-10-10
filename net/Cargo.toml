@@ -9,11 +9,11 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
-lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "add-compare-to-crypto-system-buf" }
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "crypto-system-fix" }
+sim1h = { git = "https://github.com/holochain/sim1h", branch = "crypto-system-fix" }
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }

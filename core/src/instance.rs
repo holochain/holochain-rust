@@ -359,6 +359,8 @@ impl Instance {
 
 impl Drop for Instance {
     fn drop(&mut self) {
+        // TODO: this is already performed in Holochain::stop explicitly,
+        // can we get rid of one or the other?
         let _ = self.shutdown_network();
         self.stop_action_loop();
         self.state.write().unwrap().drop_inner_state();

@@ -193,7 +193,7 @@ ___
 
 ### `Config.conductor(instancesArray, [conductorOptions])` => `object`
 
-There are two ways to construct a valid Conductor configuration from these `Config` helpers. Using the first way, you put all the config data into a single required object. Using the second "shorthand" style, you specify an array of `Config.instance` data, along with an optional object of extra options. The second way can be more convenient when you are just trying to set up a collection of instances with nothing extra options.
+There are two ways to construct a valid Conductor configuration from these `Config` helpers. Using the first way, you put all the config data into a single required object. Using the second "shorthand" style, you specify an array of `Config.instance` data, along with an optional object of extra options. The second way can be more convenient when you are just trying to set up a collection of instances with no extra options.
 
 Consumes an array of configured instances and produces an object which is a fully valid Conductor configuration. It can be passed into the Conductor constructor, which is covered in the next articles.
 

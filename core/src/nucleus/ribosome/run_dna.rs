@@ -194,5 +194,5 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     //     zome_call.fn_name, return_log_msg,
     // );
     let _ = return_log_msg;
-    return return_result;
+    return_result
 }

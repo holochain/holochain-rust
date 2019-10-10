@@ -75,7 +75,7 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
 fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().iter_chain();
     chain
-        .map(|chain_header| Entry::ChainHeader(chain_header))
+        .map(Entry::ChainHeader)
         .collect()
 }
 

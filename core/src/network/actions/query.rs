@@ -38,7 +38,7 @@ pub async fn query(
     let (key, payload) = match method {
         QueryMethod::Entry(address) => {
             let key = GetEntryKey {
-                address: address,
+                address,
                 id: snowflake::ProcessUniqueId::new().to_string(),
             };
             (QueryKey::Entry(key), QueryPayload::Entry)

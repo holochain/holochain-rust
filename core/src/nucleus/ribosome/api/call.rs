@@ -242,8 +242,8 @@ pub mod tests {
         let (instance, context) =
             test_instance_and_context(dna, netname).expect("Could not initialize test instance");
         TestSetup {
-            context: context,
-            instance: instance,
+            context,
+            instance,
         }
     }
 

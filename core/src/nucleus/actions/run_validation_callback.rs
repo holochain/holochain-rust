@@ -34,10 +34,7 @@ pub async fn run_validation_callback(
                 Some(call.clone().parameters.to_bytes()),
                 WasmCallData::new_callback_call(cloned_context.clone(), call),
             ) {
-                Ok(call_result) => match call_result.is_null() {
-                    true => Ok(()),
-                    false => Err(ValidationError::Fail(call_result.to_string())),
-                },
+                Ok(call_result) => if call_result.is_null() { Ok(()) } else {Err(ValidationError::Fail(call_result.to_string()))},
                 // TODO: have "not matching schema" be its own error
                 Err(HolochainError::RibosomeFailed(error_string)) => {
                     if error_string == "Argument deserialization failed" {

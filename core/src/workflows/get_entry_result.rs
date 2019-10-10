@@ -89,11 +89,11 @@ pub async fn get_entry_result_workflow<'a>(
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {
             // Erase history if request is for latest
-            if args.options.status_request == StatusRequestKind::Latest {
-                if entry_with_meta_and_headers.entry_with_meta.crud_status == CrudStatus::Deleted {
-                    entry_result.clear();
-                    break;
-                }
+            if args.options.status_request == StatusRequestKind::Latest && entry_with_meta_and_headers.entry_with_meta.crud_status == CrudStatus::Deleted
+            {
+                 entry_result.clear();
+                 break;
+           
             }
 
             // Add entry

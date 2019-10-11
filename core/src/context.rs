@@ -1,6 +1,5 @@
 use crate::{
     action::{Action, ActionWrapper},
-    conductor_api::ConductorApi,
     instance::Observer,
     network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -27,7 +26,7 @@ use holochain_core_types::{
         HcRwLockReadGuard as RwLockReadGuard,
     },
 };
-
+use holochain_conductor_api_api::ConductorApi;
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{

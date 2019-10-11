@@ -23,7 +23,7 @@ pub async fn shutdown(
     if state.read().unwrap().network().initialized().is_ok() {
         let action_wrapper = ActionWrapper::new(Action::ShutdownNetwork);
         dispatch_action(&action_channel, action_wrapper.clone());
-        await!(ShutdownFuture { state })
+        ShutdownFuture { state }.await
     } else {
         Err(HolochainError::ErrorGeneric(
             "Tried to shutdown network that was never initialized".to_string(),

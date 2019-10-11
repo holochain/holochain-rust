@@ -57,8 +57,8 @@ ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
 
 [network]
-type = "sim1h"
-dynamo_url = "http://localhost:8002"
+type = "sim2h"
+sim2h_url = "wss://localhost:9001"
     `
 
   return { config, adminPort, instancePort }

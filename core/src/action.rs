@@ -414,5 +414,4 @@ pub mod tests {
 
         assert_ne!(calculate_hash(&aw1), calculate_hash(&aw2));
     }
-
 }

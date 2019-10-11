@@ -14,10 +14,11 @@ use std::{pin::Pin, sync::Arc};
 pub async fn publish_header_entry(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::PublishHeaderEntry(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    await!(PublishHeaderEntryFuture {
+    PublishHeaderEntryFuture {
         context: context.clone(),
         action: action_wrapper,
-    })
+    }
+    .await
 }
 
 /// PublishFuture resolves to ActionResponse

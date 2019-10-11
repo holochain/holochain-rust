@@ -36,12 +36,13 @@ pub async fn validate_agent_entry(
 
     log_debug!(context, "Validating agent entry with args: {:?}", params);
 
-    let results = await!(future::join_all(dna.zomes.iter().map(|(zome_name, _)| {
+    let results = future::join_all(dna.zomes.iter().map(|(zome_name, _)| {
         let call = CallbackFnCall::new(&zome_name, "__hdk_validate_agent_entry", params.clone());
         // Need to return a boxed future for it to work with join_all
         // https://users.rust-lang.org/t/the-trait-unpin-is-not-implemented-for-genfuture-error-when-using-join-all/23612/2
         run_validation_callback(entry.address(), call, &context).boxed()
-    })));
+    }))
+    .await;
 
     let errors: Vec<ValidationError> = results
         .iter()

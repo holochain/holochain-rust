@@ -339,7 +339,9 @@ impl NetWorker for Sim2hWorker {
             error!("Transport error: {:?}", transport_error);
             // This most likely means we have connection issues.
             // Send ping to reestablish a potentially lost connection.
-            let _ = self.send_wire_message(WireMessage::Ping);
+            if let Err(e) = self.send_wire_message(WireMessage::Ping) {
+                debug!("send ping failure: {:?}", e);
+            }
         }
         let mut did_something = WorkWasDone::from(false);
 

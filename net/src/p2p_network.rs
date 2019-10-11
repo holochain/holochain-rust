@@ -227,7 +227,7 @@ mod tests {
     fn it_should_create_memory_network() {
         let p2p = P2pConfig::new_with_unique_memory_backend();
         let handler = NetHandler::new(Box::new(|_r| Ok(())));
-        let mut res = P2pNetwork::new(handler.clone(), p2p).unwrap();
+        let mut res = P2pNetwork::new(handler.clone(), p2p, None, None).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
             peer_location: Lib3hUri::with_undefined(),

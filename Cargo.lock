@@ -3414,7 +3414,7 @@ dependencies = [
 [[package]]
 name = "sim2h"
 version = "0.0.1"
-source = "git+https://github.com/holochain/sim2h#af5b230f6d180aa7ff16392fb0fb5f20ad6f3bc9"
+source = "git+https://github.com/holochain/sim2h#1e9dc5d73ab77dffb9faf2c1decdc418d61052a6"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",

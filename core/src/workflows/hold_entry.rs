@@ -25,7 +25,8 @@ pub async fn hold_entry_workflow(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = await!(validation_package(&entry_with_header, context.clone()))
+    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+        .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
             log_debug!(context, "workflow/hold_entry: {}", message);
@@ -59,12 +60,12 @@ pub async fn hold_entry_workflow(
     };
 
     // 3. Validate the entry
-    await!(validate_entry(
+    validate_entry(
         entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
-    ))
+    ).await
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
@@ -94,7 +95,7 @@ pub async fn hold_entry_workflow(
     );
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry_with_header, context.clone()))?;
+    hold_entry(entry_with_header, context.clone()).await?;
 
     log_debug!(
         context,

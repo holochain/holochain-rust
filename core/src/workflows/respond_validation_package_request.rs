@@ -21,12 +21,9 @@ pub async fn respond_validation_package_request(
 ) {
     let maybe_validation_package =
         match get_entry_from_agent_chain(&context, &requested_entry_address) {
-            Ok(Some(entry)) => await!(build_validation_package(
-                &entry,
-                context.clone(),
-                provenances
-            ))
-            .ok(),
+            Ok(Some(entry)) => build_validation_package(&entry, context.clone(), provenances)
+                .await
+                .ok(),
             _ => None,
         };
 

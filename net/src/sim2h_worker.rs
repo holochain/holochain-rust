@@ -89,7 +89,7 @@ impl Sim2hWorker {
         transport.request(
             Span::todo("Find out how to use spans the right way"),
             RequestToChild::Bind {
-                spec: Url::parse("wss://localhost:0").expect("can parse url").into(),
+                spec: Url::parse("wss://127.0.0.1:0").expect("can parse url").into(),
             },
             // callback just notifies channel so
             Box::new(move |_owner, response| {

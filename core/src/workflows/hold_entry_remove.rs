@@ -23,19 +23,20 @@ pub async fn hold_remove_workflow(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = await!(validation_package(entry_with_header, context.clone()))
+    let maybe_validation_package = validation_package(entry_with_header, context.clone())
+        .await
         .map_err(|err| {
-        let message = "Could not get validation package from source! -> Add to pending...";
-        log_debug!(context, "workflow/hold_remove: {}", message);
-        log_debug!(context, "workflow/hold_remove: Error was: {:?}", err);
-        add_pending_validation(
-            entry_with_header.to_owned(),
-            Vec::new(),
-            ValidatingWorkflow::RemoveEntry,
-            context.clone(),
-        );
-        HolochainError::ValidationPending
-    })?;
+            let message = "Could not get validation package from source! -> Add to pending...";
+            log_debug!(context, "workflow/hold_remove: {}", message);
+            log_debug!(context, "workflow/hold_remove: Error was: {:?}", err);
+            add_pending_validation(
+                entry_with_header.to_owned(),
+                Vec::new(),
+                ValidatingWorkflow::RemoveEntry,
+                context.clone(),
+            );
+            HolochainError::ValidationPending
+        })?;
     let validation_package = maybe_validation_package
         .ok_or_else(|| "Could not get validation package from source".to_string())?;
 
@@ -46,12 +47,12 @@ pub async fn hold_remove_workflow(
     };
 
     // 3. Validate the entry
-    await!(validate_entry(
+    validate_entry(
         entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
-    ))
+    ).await
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_remove: Entry removal could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
@@ -76,9 +77,10 @@ pub async fn hold_remove_workflow(
 
     let deleted_entry_address = deletion_entry.clone().deleted_entry_address();
     // 3. If valid store the entry in the local DHT shard
-    await!(remove_entry(
+    remove_entry(
         &context.clone(),
         deleted_entry_address,
         entry_with_header.entry.address().clone(),
-    ))
+    )
+    .await
 }

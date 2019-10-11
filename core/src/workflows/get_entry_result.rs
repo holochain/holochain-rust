@@ -26,11 +26,9 @@ pub async fn get_entry_with_meta_workflow<'a>(
     let method = QueryMethod::Entry(address.clone());
     // 2. No result, so try on the network
     if let None = maybe_entry_with_meta {
-        let response = await!(network::actions::query::query(
-            context.clone(),
-            method.clone(),
-            timeout.clone(),
-        ))?;
+        let response =
+            network::actions::query::query(context.clone(), method.clone(), timeout.clone())
+                .await?;
         match response {
             NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
             _ => Err(HolochainError::ErrorGeneric(
@@ -54,11 +52,12 @@ pub async fn get_entry_with_meta_workflow<'a>(
                 headers,
             })),
             Err(_) => {
-                let response = await!(network::actions::query::query(
+                let response = network::actions::query::query(
                     context.clone(),
                     method.clone(),
                     timeout.clone(),
-                ))?;
+                )
+                .await?;
                 match response {
                     NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
                     _ => Err(HolochainError::ErrorGeneric(
@@ -84,11 +83,8 @@ pub async fn get_entry_result_workflow<'a>(
         let address = maybe_address.unwrap();
         maybe_address = None;
         // Try to get entry
-        let maybe_entry_with_meta_and_headers = await!(get_entry_with_meta_workflow(
-            context,
-            &address,
-            &args.options.timeout
-        ))?;
+        let maybe_entry_with_meta_and_headers =
+            get_entry_with_meta_workflow(context, &address, &args.options.timeout).await?;
 
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {

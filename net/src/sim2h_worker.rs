@@ -403,35 +403,3 @@ impl NetWorker for Sim2hWorker {
         Some("".into())
     }
 }
-
-//#[cfg(feature = "sim2h")]
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    use lib3h_protocol::{
-         protocol_server::Lib3hServerProtocol,
-    };
-    //use url::Url;
-
-    #[allow(dead_code)]
-    fn test_worker() -> (
-        Sim2hWorker,
-        crossbeam_channel::Receiver<NetResult<Lib3hServerProtocol>>,
-    ) {
-        let (s, r) = crossbeam_channel::unbounded();
-        let handler = NetHandler::new(Box::new(move |message| {
-            s.send(message).map_err(|e| e.into())
-        }));
-        (
-            Sim2hWorker::new(
-                handler,
-                Sim2hConfig {
-                    sim2h_url: "http://localhost:8000".into(),
-                },
-            )
-            .unwrap(),
-            r,
-        )
-    }
-}

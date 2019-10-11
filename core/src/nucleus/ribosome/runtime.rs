@@ -73,16 +73,11 @@ impl WasmCallData {
 
 impl fmt::Display for WasmCallData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "fn_name: {} ({})",
-            self.fn_name(),
-            match self {
-                WasmCallData::ZomeCall(_data) => "ZomeCall",
-                WasmCallData::CallbackCall(_data) => "CallbackCall",
-                WasmCallData::DirectCall(_name, _) => "DirectCall",
-            }
-        )
+        match self {
+            WasmCallData::ZomeCall(data) => write!(f, "ZomeCall({:?})", data.call),
+            WasmCallData::CallbackCall(data) => write!(f, "CallbackCall({:?})", data.call),
+            WasmCallData::DirectCall(name, _) => write!(f, "DirectCall({})", name),
+        }
     }
 }
 

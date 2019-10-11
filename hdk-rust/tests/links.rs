@@ -24,6 +24,7 @@ use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksRe
 
 use test_utils::{
     generate_zome_internal_error, make_test_call, start_holochain_instance, wait_for_zome_result,
+    assert_zome_internal_errors_equivalent,
     TestEntry,
 };
 
@@ -220,7 +221,7 @@ pub fn test_invalid_target_link() {
         serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
     let zome_internal_error =
         generate_zome_internal_error(String::from(r#"{"ValidationFailed":"invalid tag"}"#));
-    assert_eq!(expected_result.unwrap_err(), zome_internal_error)
+    assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error)
 }
 
 #[test]
@@ -237,7 +238,7 @@ pub fn test_bad_links() {
     let zome_internal_error = generate_zome_internal_error(String::from(
         r#"{"ErrorGeneric":"Base for link not found"}"#,
     ));
-    assert_eq!(expected_result.unwrap_err(), zome_internal_error);
+    assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error);
 }
 
 #[test]
@@ -255,7 +256,7 @@ pub fn test_links_with_immediate_timeout() {
     let expected_result: ZomeApiResult<()> =
         serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
     let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));;
-    assert_eq!(expected_result.unwrap_err(), zome_internal_error);
+    assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error);
 }
 
 #[test]

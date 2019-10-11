@@ -1,4 +1,4 @@
-//! provides worker that makes use of lib3h
+//! provides worker that makes use of sim1h
 
 use crate::connection::{
     net_connection::{NetHandler, NetWorker},

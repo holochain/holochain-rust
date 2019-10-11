@@ -221,13 +221,8 @@ pub fn create_entry_with_header_for_header(
     chain_header: ChainHeader,
 ) -> Result<EntryWithHeader, HolochainError> {
     let entry = Entry::ChainHeader(chain_header);
-    let header = create_new_chain_header(
-        &entry,
-        &root_state.agent(),
-        &root_state,
-        &None,
-        &Vec::new(),
-    )?;
+    let header =
+        create_new_chain_header(&entry, &root_state.agent(), &root_state, &None, &Vec::new())?;
     Ok(EntryWithHeader { entry, header })
 }
 

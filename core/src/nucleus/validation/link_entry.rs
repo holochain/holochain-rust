@@ -116,5 +116,5 @@ pub async fn validate_link_entry(
         params,
     );
 
-    await!(run_validation_callback(address, call, context))
+    run_validation_callback(address, call, context).await
 }

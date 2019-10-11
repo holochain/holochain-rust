@@ -387,6 +387,8 @@ impl NetWorker for Sim2hWorker {
                     warn!("Got incoming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
                 RequestToParent::ErrorOccured {uri, error} =>
                     error!("Transport error occurred on connection to {:?}: {:?}", uri, error),
+                RequestToParent::Disconnect(_) => warn!("Got disconnected! Will try to reconnect."),
+                RequestToParent::Unbind(url) => error!("Got unbound form: {:?}", url),
             }
             did_something = WorkWasDone::from(true);
         }

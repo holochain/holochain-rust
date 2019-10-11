@@ -23,6 +23,9 @@ use lib3h_protocol::data_types::{GenericResultData, Opaque, SpaceData, StoreEntr
 use lib3h_protocol::uri::Lib3hUri;
 use std::convert::TryFrom;
 use detach::Detach;
+use sim2h::crypto::{Provenance, SignedWireMessage};
+use holochain_conductor_api_api::{CryptoMethod, ConductorApi};
+use holochain_json_api::json::RawString;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -39,6 +42,17 @@ pub struct Sim2hWorker {
     num_ticks: u32,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
+    agent_id: Address,
+    conductor_api: ConductorApi,
+}
+
+fn wire_message_into_escaped_string(message: &WireMessage) -> String {
+    let payload: String = message.clone().into();
+    let json_string: JsonString = RawString::from(payload).into();
+    let mut string: String = json_string.into();
+    string = String::from(string.trim_start_matches("\""));
+    string = String::from( string.trim_end_matches("\""));
+    string
 }
 
 impl Sim2hWorker {
@@ -47,7 +61,12 @@ impl Sim2hWorker {
     }
 
     /// Create a new worker connected to the sim2h instance
-    pub fn new(handler: NetHandler, config: Sim2hConfig) -> NetResult<Self> {
+    pub fn new(
+        handler: NetHandler,
+        config: Sim2hConfig,
+        agent_id: Address,
+        conductor_api: ConductorApi,
+    ) -> NetResult<Self> {
         let transport_raw = GhostTransportWebsocket::new(
             // not used currently inside GhostTransportWebsocket:
             Address::from("sim2h-worker-transport"),
@@ -99,6 +118,8 @@ impl Sim2hWorker {
                 .expect("Sim2h URL can't be parsed")
                 .into(),
             space_data: None,
+            agent_id,
+            conductor_api,
         };
 
         detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
@@ -113,11 +134,19 @@ impl Sim2hWorker {
     }
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
+        let signature = self.conductor_api
+            .execute(wire_message_into_escaped_string(&message), CryptoMethod::Sign)
+            .expect("Couldn't sign wire message in sim2h worker");
+
+        let signed_wire_message = SignedWireMessage::new(
+            message,
+            Provenance::new(self.agent_id.clone(), signature.into()),
+        );
         self.transport.request(
             Span::todo("Find out how to use spans the right way"),
             RequestToChild::SendMessage {
                 uri: self.server_url.clone(),
-                payload: message.into(),
+                payload: signed_wire_message.into(),
             },
             // callback just notifies channel so
             Box::new(move |_owner, response| {

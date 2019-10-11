@@ -4,14 +4,16 @@ use crate::{
     state::State,
 };
 use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
-use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
+use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
 
-pub fn reduce_init(state: &mut NetworkState, _root_state: &State, action_wrapper: &ActionWrapper) {
+pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let network = P2pNetwork::new(
         network_settings.handler.clone(),
         network_settings.p2p_config.clone(),
+        Some(Address::from(network_settings.agent_id.clone())),
+        Some(root_state.conductor_api.clone()),
     )
     .unwrap();
 

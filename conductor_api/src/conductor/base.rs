@@ -638,7 +638,7 @@ impl Conductor {
                 // create an empty network with this config just so the n3h process doesn't
                 // kill itself in the case that all instances are closed down (as happens in app-spec)
                 let network =
-                    P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), config.clone())
+                    P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), config.clone(), None, None)
                         .expect("unable to create conductor keepalive P2pNetwork");
                 self.n3h_keepalive_network = Some(network);
                 config

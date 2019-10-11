@@ -15,9 +15,10 @@ use crate::{
     p2p_config::*,
     tweetlog::*,
 };
-use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
+use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address};
 
 use crossbeam_channel;
+use holochain_conductor_api_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
 use crate::sim1h_worker::Sim1hWorker;
@@ -36,7 +37,12 @@ pub struct P2pNetwork {
 impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module `handler` is the closure for handling Protocol messages received from the network module.
-    pub fn new(mut handler: NetHandler, p2p_config: P2pConfig) -> NetResult<Self> {
+    pub fn new(
+        mut handler: NetHandler,
+        p2p_config: P2pConfig,
+        agent_id: Option<Address>,
+        conductor_api: Option<ConductorApi>,
+    ) -> NetResult<Self> {
         // Create Config struct
         let backend_config_str = match &p2p_config.backend_config {
             BackendConfig::Json(ref json) => JsonString::from_json(&json.to_string()),
@@ -104,7 +110,13 @@ impl P2pNetwork {
                     BackendConfig::Sim2h(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting sim2h")),
                 };
-                Ok(Box::new(Sim2hWorker::new(h, backend_config)?)
+                Ok(Box::new(Sim2hWorker::new(
+                    h,
+                    backend_config,
+                    agent_id.clone().expect("Can't construct Sim2hWorker without agent ID"),
+                    conductor_api.clone().expect("Can't construct Sim2hWorker without conductor API"),
+                )?)
+
                    as Box<dyn NetWorker>)
             }),
         };

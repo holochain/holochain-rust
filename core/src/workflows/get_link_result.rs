@@ -20,11 +20,7 @@ pub async fn get_link_result_workflow<'a>(
         headers: link_args.options.headers,
     };
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Links(config));
-    let response = await!(query(
-        context.clone(),
-        method,
-        link_args.options.timeout.clone()
-    ))?;
+    let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
 
     let links_result = match response {
         NetworkQueryResult::Links(query, _, _) => Ok(query),

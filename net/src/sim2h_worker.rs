@@ -39,7 +39,6 @@ pub struct Sim2hWorker {
     transport: Detach<TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket>>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
-    num_ticks: u32,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
     agent_id: Address,
@@ -113,7 +112,6 @@ impl Sim2hWorker {
             transport: Detach::new(transport),
             inbox: Vec::new(),
             to_core: Vec::new(),
-            num_ticks: 0,
             server_url: Url::parse(&config.sim2h_url)
                 .expect("Sim2h URL can't be parsed")
                 .into(),
@@ -331,10 +329,6 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        self.num_ticks += 1;
-        //if self.num_ticks % 100 == 0 {
-        //    io::stdout().flush()?;
-        //}
         if let Err(transport_error) = detach_run!(&mut self.transport, |t| t.process(self)) {
             error!("Transport error: {:?}", transport_error);
             // This most likely means we have connection issues.

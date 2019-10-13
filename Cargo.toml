@@ -1,21 +1,22 @@
 [workspace]
 
 members = [
+  "benchmarks",
   "cli",
   "common",
   "conductor",
   "conductor_api",
   "conductor_wasm",
-  "core_api_c_binding",
   "core",
+  "core_api_c_binding",
   "core_types",
   "dna_c_binding",
   "dpki",
   "hdk-proc-macros",
   "hdk-rust",
+  "logging",
   "net",
-  "benchmarks",
-  "logging"
+  "wasm_utils"
 ]
 exclude = [
   "test_utils",

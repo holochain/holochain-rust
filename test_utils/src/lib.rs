@@ -605,3 +605,18 @@ pub fn generate_zome_internal_error(error_kind: String) -> ZomeApiError {
     );
     ZomeApiError::Internal(error_string)
 }
+
+/// Check that internal errors are equivalent, not including line number,
+/// which is fragile
+pub fn assert_zome_internal_errors_equivalent(left: &ZomeApiError, right: &ZomeApiError) {
+    match (left, right) {
+        (ZomeApiError::Internal(left_str), ZomeApiError::Internal(right_str)) => {
+            assert_eq!(internal_error_substr(left_str), internal_error_substr(right_str))
+        },
+        _ => panic!("These are not both ZomeApiError::Internal")
+    }
+}
+
+fn internal_error_substr<'a>(error_string: &'a str) -> Option<&'a str> {
+    error_string.find(r#""line":"#).map(|idx| &error_string[0..idx])
+}

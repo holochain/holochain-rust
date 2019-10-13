@@ -96,5 +96,4 @@ pub mod tests {
             ),
         );
     }
-
 }

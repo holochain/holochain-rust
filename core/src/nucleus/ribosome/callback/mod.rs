@@ -346,5 +346,4 @@ pub mod tests {
             assert_eq!(output, Callback::from_index(input));
         }
     }
-
 }

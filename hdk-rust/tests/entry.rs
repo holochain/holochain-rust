@@ -386,7 +386,7 @@ fn can_return_empty_string_as_validation_fail() {
     let path_string = "core/src/nucleus/ribosome/runtime.rs";
 
     let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
-    let result_format = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\",\\\"line\\\":\\\"225\\\"}}\"}}",formatted_path_string);
-
-    assert_eq!(result.unwrap(), JsonString::from_json(&result_format));
+    let expected_substr = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\"",formatted_path_string);
+    let result_str = result.unwrap().to_string();
+    assert!(result_str.contains(&expected_substr));
 }

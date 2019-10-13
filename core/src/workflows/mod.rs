@@ -69,11 +69,12 @@ async fn try_make_local_validation_package(
 
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
-                await!(build_validation_package(
+                build_validation_package(
                     &entry_with_header.entry,
                     context.clone(),
                     entry_with_header.header.provenances(),
-                ))
+                )
+                .await
             } else {
                 Err(HolochainError::ErrorGeneric(String::from(
                     "Can't create validation package locally",
@@ -91,16 +92,12 @@ async fn validation_package(
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally:
-    if let Ok(package) = await!(try_make_local_validation_package(
-        &entry_with_header,
-        context.clone()
-    )) {
+    if let Ok(package) =
+        try_make_local_validation_package(&entry_with_header, context.clone()).await
+    {
         Ok(Some(package))
     } else {
         // If that is not possible, get the validation package from source
-        await!(get_validation_package(
-            entry_with_header.header.clone(),
-            &context
-        ))
+        get_validation_package(entry_with_header.header.clone(), &context).await
     }
 }

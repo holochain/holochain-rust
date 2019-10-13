@@ -4,7 +4,6 @@ use crate::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
-    conductor_api::ConductorApi,
     context::Context,
     dht::dht_store::DhtStore,
     network::state::NetworkState,
@@ -18,7 +17,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     sync::{HcRwLock as RwLock},
 };
-
+use holochain_conductor_api_api::ConductorApi;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},

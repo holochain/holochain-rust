@@ -8,6 +8,7 @@ members = [
   "conductor_wasm",
   "core_api_c_binding",
   "core",
+  "core_types",
   "dna_c_binding",
   "dpki",
   "hdk-proc-macros",

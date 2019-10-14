@@ -90,5 +90,4 @@ mod tests {
 
         store.reduce(action_wrapper);
     }
-
 }

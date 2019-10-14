@@ -101,15 +101,10 @@ impl Instance {
         context: Arc<Context>,
     ) -> HcResult<Arc<Context>> {
         let context = self.inner_setup(context);
-        context.block_on(
-            async {
-                await!(initialize_chain(dna.clone(), &context))?;
-                await!(initialize_network_with_spoofed_dna(
-                    spoofed_dna_address,
-                    &context
-                ))
-            },
-        )?;
+        context.block_on(async {
+            initialize_chain(dna.clone(), &context).await?;
+            initialize_network_with_spoofed_dna(spoofed_dna_address, &context).await
+        })?;
         Ok(context)
     }
 
@@ -331,10 +326,11 @@ impl Instance {
 
     #[allow(clippy::needless_lifetimes)]
     pub async fn shutdown_network(&self) -> HcResult<()> {
-        await!(network::actions::shutdown::shutdown(
+        network::actions::shutdown::shutdown(
             self.state.clone(),
             self.action_channel.as_ref().unwrap().clone(),
-        ))
+        )
+        .await
     }
 }
 

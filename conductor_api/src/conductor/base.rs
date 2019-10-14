@@ -566,6 +566,7 @@ impl Conductor {
             }
             NetworkConfig::Memory(_) => unimplemented!(),
             NetworkConfig::Sim1h(_) => unimplemented!(),
+            NetworkConfig::Sim2h(_) => unimplemented!(),
             NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
                 "Lib3h Network not implemented".to_string(),
             )),
@@ -637,9 +638,13 @@ impl Conductor {
                 );
                 // create an empty network with this config just so the n3h process doesn't
                 // kill itself in the case that all instances are closed down (as happens in app-spec)
-                let network =
-                    P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), config.clone())
-                        .expect("unable to create conductor keepalive P2pNetwork");
+                let network = P2pNetwork::new(
+                    NetHandler::new(Box::new(|_r| Ok(()))),
+                    config.clone(),
+                    None,
+                    None,
+                )
+                .expect("unable to create conductor keepalive P2pNetwork");
                 self.n3h_keepalive_network = Some(network);
                 config
             }
@@ -656,6 +661,11 @@ impl Conductor {
             NetworkConfig::Sim1h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::SIM1H,
                 backend_config: BackendConfig::Sim1h(config),
+                maybe_end_user_config: None,
+            },
+            NetworkConfig::Sim2h(config) => P2pConfig {
+                backend_kind: P2pBackendKind::SIM2H,
+                backend_config: BackendConfig::Sim2h(config),
                 maybe_end_user_config: None,
             },
         }

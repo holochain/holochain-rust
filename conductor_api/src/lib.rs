@@ -2,7 +2,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
 
-#![feature(try_trait, async_await, await_macro)]
+#![feature(try_trait, async_await)]
 #![warn(unused_extern_crates)]
 /// Holochain Conductor API
 ///

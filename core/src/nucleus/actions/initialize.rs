@@ -76,7 +76,7 @@ pub async fn initialize_chain(
 
     // Commit DNA to chain
     let dna_entry = Entry::Dna(Box::new(dna.clone()));
-    let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
+    let dna_commit = commit_entry(dna_entry, None, &context_clone).await;
     if dna_commit.is_err() {
         let error = dna_commit.err().unwrap();
         dispatch_error_result(&context_clone, error.clone());
@@ -88,7 +88,7 @@ pub async fn initialize_chain(
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
-    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone));
+    let agent_id_commit = commit_entry(agent_id_entry, None, &context_clone).await;
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
@@ -136,11 +136,8 @@ pub async fn initialize_chain(
         }
 
         let grant = maybe_public_cap_grant_entry.ok().unwrap();
-        let public_cap_grant_commit = await!(commit_entry(
-            Entry::CapTokenGrant(grant.clone()),
-            None,
-            &context_clone
-        ));
+        let public_cap_grant_commit =
+            commit_entry(Entry::CapTokenGrant(grant.clone()), None, &context_clone).await;
 
         // Let initialization fail if Public Grant could not be committed.
         match public_cap_grant_commit {
@@ -175,10 +172,11 @@ pub async fn initialize_chain(
         )))
         .expect("Action channel not usable in initialize_chain()");
 
-    await!(InitializationFuture {
+    InitializationFuture {
         context: context.clone(),
         created_at: Instant::now(),
-    })
+    }
+    .await
 }
 
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).

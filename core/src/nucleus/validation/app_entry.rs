@@ -43,5 +43,5 @@ pub async fn validate_app_entry(
     };
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
 
-    await!(run_validation_callback(entry.address(), call, &context))
+    run_validation_callback(entry.address(), call, &context).await
 }

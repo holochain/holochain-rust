@@ -25,7 +25,7 @@ use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
-use holochain_net::sim1h_worker::Sim1hConfig;
+use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -828,6 +828,7 @@ pub enum NetworkConfig {
     Lib3h(EngineConfig),
     Memory(EngineConfig),
     Sim1h(Sim1hConfig),
+    Sim2h(Sim2hConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

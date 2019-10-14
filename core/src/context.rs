@@ -1,6 +1,5 @@
 use crate::{
     action::{Action, ActionWrapper},
-    conductor_api::ConductorApi,
     instance::Observer,
     network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -12,6 +11,7 @@ use futures::{task::Poll, Future};
 
 use crate::state::StateWrapper;
 use futures::task::noop_waker_ref;
+use holochain_conductor_api_api::ConductorApi;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -27,7 +27,6 @@ use holochain_core_types::{
         HcRwLockReadGuard as RwLockReadGuard,
     },
 };
-
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
@@ -199,10 +198,7 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state
-            .as_ref()
-            .map(|s| s.try_read())
-            .unwrap_or(None)
+        self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
     }
 
     pub fn network(&self) -> P2pNetworkWrapper {

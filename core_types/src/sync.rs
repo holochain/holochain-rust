@@ -1,5 +1,5 @@
 use backtrace::Backtrace;
-use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{Mutex, MutexGuard, RwLock, /*RwLockReadGuard,*/ RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
 use std::{
     collections::HashMap,
@@ -210,7 +210,7 @@ macro_rules! guard_struct {
 }
 
 guard_struct!(HcMutexGuard, MutexGuard, Lock);
-guard_struct!(HcRwLockReadGuard, RwLockReadGuard, Read);
+guard_struct!(HcRwLockReadGuard, RwLockWriteGuard, Read);  // XXX TODO TODO TODO! Makes Read guards into Write guards!
 guard_struct!(HcRwLockWriteGuard, RwLockWriteGuard, Write);
 
 // TODO: impl as appropriate
@@ -284,7 +284,7 @@ impl<T> HcRwLock<T> {
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $try_lock_until_inner_fn:ident ) => {
+    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $try_lock_inner_fn:ident ) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> HcLockResult<$Guard<T>> {
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
@@ -330,7 +330,7 @@ macro_rules! mutex_impl {
                     std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
                 }
                 error!(
-                    "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"
+                    "$try_lock_until_fn exceeded max_iters, this should not have happened!"
                 );
                 return Err(HcLockError::new(
                     LockType::$lock_type,
@@ -338,7 +338,7 @@ macro_rules! mutex_impl {
                 ));
             }
             pub fn $try_lock_fn(&self) -> Option<$Guard<T>> {
-                (*self).inner.$try_lock_fn().map(|g| $Guard::new(g))
+                (*self).inner.$try_lock_inner_fn().map(|g| $Guard::new(g))
             }
         }
     };
@@ -352,7 +352,7 @@ mutex_impl!(
     lock,
     try_lock,
     try_lock_until,
-    try_lock_until_inner
+    try_lock
 );
 mutex_impl!(
     HcRwLock,
@@ -362,7 +362,7 @@ mutex_impl!(
     read,
     try_read,
     try_read_until,
-    try_read_until_inner
+    try_write  // XXX: TODO TODO TODO! makes all reads return write locks!!! 
 );
 mutex_impl!(
     HcRwLock,
@@ -372,5 +372,5 @@ mutex_impl!(
     write,
     try_write,
     try_write_until,
-    try_write_until_inner
+    try_write
 );

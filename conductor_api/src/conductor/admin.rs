@@ -1102,12 +1102,14 @@ id = 'new-dna'"#,
         let test_name = "test_add_instance";
         let mut conductor = create_test_conductor(test_name, 3001);
 
-        let mut storage_path = current_dir().expect("Could not get current dir");
-
-        storage_path.push("tmp-test");
-        storage_path.push(test_name);
-        storage_path.push("storage");
-        storage_path.push("new-instance");
+        let storage_path = {
+            let mut p = current_dir().expect("Could not get current dir");
+            p.push("tmp-test");
+            p.push(test_name);
+            p.push("storage");
+            p.push("new-instance");
+            p
+        };
 
         // Make sure storage is clean
         let _ = remove_dir_all(storage_path.clone());
@@ -1378,12 +1380,14 @@ type = 'http'"#,
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
 
-        let mut storage_path = current_dir().expect("Could not get current dir");
-
-        storage_path.push("tmp-test");
-        storage_path.push(test_name);
-        storage_path.push("storage");
-        storage_path.push("new-instance-2");
+        let storage_path = {
+            let mut p = current_dir().expect("Could not get current dir");
+            p.push("tmp-test");
+            p.push(test_name);
+            p.push("storage");
+            p.push("new-instance-2");
+            p
+        };
 
         // Make sure storage is clean
         let _ = remove_dir_all(storage_path.clone());

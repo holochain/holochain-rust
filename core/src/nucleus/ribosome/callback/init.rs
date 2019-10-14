@@ -75,5 +75,4 @@ pub mod tests {
             error
         );
     }
-
 }

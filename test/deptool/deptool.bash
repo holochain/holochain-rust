@@ -30,6 +30,7 @@ function _lib3h_path_deps() {
   local __l3h_proto="{ path = \"${__l3h_path}/crates/lib3h_protocol\" }"
   local __l3h_crypto="{ path = \"${__l3h_path}/crates/crypto_api\" }"
   local __l3h_sodium="{ path = \"${__l3h_path}/crates/sodium\" }"
+  local __l3h_zombie_actor="{ path = \"${__l3h_path}/crates/zombie_actor\" }"
   echo "using ${__l3h_lib3h} ${__l3h_proto} ${__l3h_crypto} ${__l3h_sodium}"
 
   local __deps=$(find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
@@ -38,6 +39,7 @@ function _lib3h_path_deps() {
   sed -i'' "s/\\(lib3h_protocol[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_proto//\//\\\/}/" ${__deps}
   sed -i'' "s/\\(lib3h_crypto_api[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_crypto//\//\\\/}/" ${__deps}
   sed -i'' "s/\\(lib3h_sodium[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_sodium//\//\\\/}/" ${__deps}
+  sed -i'' "s/\\(lib3h_zombie_actor[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_zombie_actor//\//\\\/}/" ${__deps}
 }
 
 function _cmd() {

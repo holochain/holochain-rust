@@ -35,6 +35,8 @@ extern crate maplit;
 // extern crate shrinkwraprs;
 extern crate hcid;
 extern crate lib3h_protocol;
+#[cfg(feature = "deadlock_detection")]
+extern crate parking_lot_core;
 extern crate parking_lot;
 extern crate wasmi;
 pub mod chain_header;

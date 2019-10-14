@@ -36,6 +36,7 @@ shrinkwraprs = "=0.2.1"
 crossbeam-channel = "=0.3.8"
 lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+parking_lot_core = { version = "=0.6.2", features = ["deadlock_detection"] }
 parking_lot ="=0.9.0"
 log = "=0.4.8"
 logging = { path = "../logging" }
@@ -44,3 +45,6 @@ logging = { path = "../logging" }
 test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core"}
 maplit = "=1.0.1"
+
+[features]
+deadlock_detection = []

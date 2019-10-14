@@ -25,7 +25,7 @@ use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core_types::{error::HolochainError, sync::spawn_hc_guard_watcher};
+use holochain_core_types::{error::HolochainError, sync::{spawn_hc_guard_watcher, spawn_parking_lot_deadlock_detection}};
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
@@ -64,6 +64,7 @@ fn main() {
     let config_path_str = config_path.to_str().unwrap();
 
     let _ = spawn_hc_guard_watcher();
+    let _ = spawn_parking_lot_deadlock_detection();
 
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {

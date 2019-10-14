@@ -41,6 +41,5 @@ module.exports = {
       }
     })
     return f(s_)
-  })
-
+  }),
 }

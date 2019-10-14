@@ -25,10 +25,11 @@ pub async fn commit_entry(
         vec![],
     )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    await!(CommitFuture {
+    CommitFuture {
         context: context.clone(),
         action: action_wrapper,
-    })
+    }
+    .await
 }
 
 /// CommitFuture resolves to ActionResponse

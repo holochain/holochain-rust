@@ -59,10 +59,11 @@ pub async fn run_validation_callback(
         })
         .expect("Could not spawn thread for validation callback");
 
-    await!(ValidationCallbackFuture {
+    ValidationCallbackFuture {
         context: context.clone(),
         key: (id, address),
-    })
+    }
+    .await
 }
 
 /// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).

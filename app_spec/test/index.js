@@ -44,6 +44,21 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
   );
 }
 
+if (process.env.APP_SPEC_NETWORK_TYPE === "sim2h")
+{
+    transport_config = {
+        type: 'sim2h',
+        sim2h_url: "wss://localhost:9000",
+    }
+
+    // omit singleConductor
+    middleware = combine(
+        // dumbWaiter(1000),
+        callSyncMiddleware,
+        tapeExecutor(require('tape')),
+    );
+}
+
 const orchestrator = new Orchestrator({
   middleware,
   waiter: {

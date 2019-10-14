@@ -10,12 +10,17 @@ tempfile = "=3.0.7"
 [dependencies]
 failure = "=0.1.5"
 #sim1h = { path = "../../sim1h/crates/sim1h" }
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
-lib3h_sodium = { version = "=0.0.13" }
-lib3h_protocol = { version = "=0.0.13" }
-lib3h = { version = "=0.0.13" }
+sim1h = { git = "https://github.com/holochain/sim1h", branch = "develop" }
+#sim2h = { path = "../../sim2h/crates/sim2h" }
+sim2h = { git = "https://github.com/holochain/sim2h", branch = "master" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+detach = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../common" }
+holochain_conductor_api_api = { path = "../conductor_api_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"

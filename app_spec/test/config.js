@@ -7,8 +7,6 @@ const dna = Config.dna(dnaPath, 'app-spec')
 const dna2 = Config.dna(dnaPath, 'app-spec', {uuid: 'altered-dna'})
 
 
-
-
 module.exports = {
   one: {
     instances: {

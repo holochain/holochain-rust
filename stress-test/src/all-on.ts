@@ -78,7 +78,7 @@ module.exports = scenario => {
 
   })
 
-  scenario.only('all at once', async (s, t) => {
+  scenario('all at once', async (s, t) => {
     const players = R.values(await s.players(batch, true))
     const commitResults = await R.pipe(
       // Flatten into a 1d array

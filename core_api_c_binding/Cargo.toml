@@ -12,4 +12,4 @@ crate-type = ["staticlib"]
 holochain_core = { path = "../core" }
 holochain_conductor_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
-holochain_persistence_api = "=0.0.8"
+holochain_persistence_api = "=0.0.9"

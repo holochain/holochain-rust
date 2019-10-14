@@ -13,7 +13,7 @@ holochain_wasm_utils = { path = "../wasm_utils" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
-holochain_persistence_api = "=0.0.8"
+holochain_persistence_api = "=0.0.9"
 pretty_assertions = "=0.6.1"
 env_logger = "=0.6.1"
 url = "=2.1.0"

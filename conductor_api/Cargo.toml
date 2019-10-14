@@ -8,11 +8,11 @@ holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.8"
-holochain_persistence_mem = "=0.0.8"
-holochain_persistence_file = "=0.0.8"
-holochain_persistence_pickle = "=0.0.8"
-holochain_persistence_lmdb = "=0.0.8"
+holochain_persistence_api = "=0.0.9"
+holochain_persistence_mem = "=0.0.9"
+holochain_persistence_file = "=0.0.9"
+holochain_persistence_pickle = "=0.0.9"
+holochain_persistence_lmdb = "=0.0.9"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 lib3h = { version = "=0.0.13" }

@@ -2,7 +2,7 @@ use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
 use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-use lib3h_protocol::data_types::EntryAspectData;
+use lib3h_protocol::data_types::{EntryAspectData};
 use std::{
     convert::{Into, TryFrom},
     fmt,

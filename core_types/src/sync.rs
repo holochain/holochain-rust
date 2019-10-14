@@ -284,7 +284,7 @@ impl<T> HcRwLock<T> {
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $try_lock_until_inner_fn:ident ) => {
+    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> HcLockResult<$Guard<T>> {
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
@@ -351,8 +351,7 @@ mutex_impl!(
     Lock,
     lock,
     try_lock,
-    try_lock_until,
-    try_lock_until_inner
+    try_lock_until
 );
 mutex_impl!(
     HcRwLock,
@@ -361,8 +360,7 @@ mutex_impl!(
     Read,
     read,
     try_read,
-    try_read_until,
-    try_read_until_inner
+    try_read_until
 );
 mutex_impl!(
     HcRwLock,
@@ -371,6 +369,5 @@ mutex_impl!(
     Write,
     write,
     try_write,
-    try_write_until,
-    try_write_until_inner
+    try_write_until
 );

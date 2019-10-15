@@ -24,7 +24,7 @@
 //! [`Info`](Level::Info) log verbosity level) is to use [`init_simple`].
 //!
 //! ```edition2018
-//! use logging::prelude::*;
+//! use holochain_logging::prelude::*;
 //!
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
@@ -48,7 +48,7 @@
 //! In order to log everything with at least the [`Debug`](Level::Debug) verbosity level:
 //!
 //! ```edition2018
-//! use logging::prelude::*;
+//! use holochain_logging::prelude::*;
 //!
 //! // We need a guard here in order to gracefully shutdown
 //! // the logging thread
@@ -72,7 +72,7 @@
 //! The logger can be built from a [TOML](https://github.com/toml-lang/toml) configuration file:
 //!
 //! ```edition2018
-//! use logging::prelude::*;
+//! use holochain_logging::prelude::*;
 //! let toml = r#"
 //!    [logger]
 //!    level = "debug"
@@ -108,7 +108,7 @@
 //! particular [`target`](../log/struct.Record.html#method.target)
 //!
 //! ```edition2018
-//! use logging::prelude::*;
+//! use holochain_logging::prelude::*;
 //!
 //! let toml = r#"
 //!     [logger]
@@ -359,7 +359,7 @@ pub struct FastLoggerBuilder {
 
 ///
 /// ```rust
-/// use logging::FastLoggerBuilder;
+/// use holochain_logging::FastLoggerBuilder;
 ///
 /// let logger = FastLoggerBuilder::new()
 ///     .set_level_from_str("Debug")
@@ -378,7 +378,7 @@ impl<'a> FastLoggerBuilder {
 
     /// Instantiate a logger builder from a config file in TOML format.
     /// ```rust
-    /// use logging::FastLoggerBuilder;
+    /// use holochain_logging::FastLoggerBuilder;
     ///
     /// let toml = r#"
     /// [logger]

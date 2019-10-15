@@ -17,7 +17,7 @@
 /// ```
 
 #[allow(unused_imports)]
-use logging::prelude::*;
+use holochain_logging::prelude::*;
 
 /// Helper macro for the [`Trace`](log::Level::Trace) log verbosity level.
 #[macro_export]
@@ -123,7 +123,7 @@ fn context_log_macro_test() {
     );
 
     // Somehow we need to build our own logging instance for this test to show logs
-    use logging::prelude::*;
+    use holochain_logging::prelude::*;
     let _guard = FastLoggerBuilder::new()
                 .set_level_from_str("Trace")
                 .build()

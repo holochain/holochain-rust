@@ -12,14 +12,13 @@ use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use std::{
     collections::{hash_map::Entry, HashMap},
-    sync::{mpsc},
 };
 
 /// a p2p worker for mocking in-memory scenario tests
 #[allow(non_snake_case)]
 pub struct InMemoryWorker {
     handler: NetHandler,
-    receiver_per_dna: HashMap<Address, mpsc::Receiver<Lib3hServerProtocol>>,
+    receiver_per_dna: HashMap<Address, crossbeam_channel::Receiver<Lib3hServerProtocol>>,
     server_name: String,
     can_send_P2pReady: bool,
 }
@@ -45,7 +44,7 @@ impl NetWorker for InMemoryWorker {
                 match self.receiver_per_dna.entry(dna_address.clone()) {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
-                        let (tx, rx) = mpsc::channel();
+                        let (tx, rx) = crossbeam_channel::unbounded();
                         println!("register_chain: {}::{}", dna_address, track_msg.agent_id);
                         server.register_chain(&dna_address, &track_msg.agent_id, tx)?;
                         e.insert(rx);

@@ -8,7 +8,7 @@ use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc, Arc,
+        Arc,
     },
     thread, time,
 };
@@ -22,7 +22,7 @@ const TICK_SLEEP_MAX_US: u64 = 10_000;
 /// It is itself a NetSend, and spawns a NetWorker.
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
-    send_channel: mpsc::Sender<Lib3hClientProtocol>,
+    send_channel: crossbeam_channel::Sender<Lib3hClientProtocol>,
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
     pub endpoint: String,
@@ -50,8 +50,8 @@ impl NetConnectionThread {
         let can_keep_running = Arc::new(AtomicBool::new(true));
         let can_keep_running_child = can_keep_running.clone();
         // Create channels between self and spawned thread
-        let (send_channel, recv_channel) = mpsc::channel();
-        let (send_endpoint, recv_endpoint) = mpsc::channel();
+        let (send_channel, recv_channel) = crossbeam_channel::unbounded();
+        let (send_endpoint, recv_endpoint) = crossbeam_channel::unbounded();
 
         // Spawn worker thread
         let thread = thread::Builder::new().name(format!("net_worker_thread/{}", ProcessUniqueId::new().to_string())).spawn(move || {

@@ -120,7 +120,6 @@ fn main() {
                 }
                 _ => (),
             }
-            println!("Conductor has shut down");
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };

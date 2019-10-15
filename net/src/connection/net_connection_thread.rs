@@ -1,4 +1,4 @@
-use logging::prelude::*;
+use holochain_logging::prelude::*;
 
 use super::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},

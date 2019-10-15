@@ -42,7 +42,7 @@ native-tls = "=0.2.2"
 crossbeam-channel = "=0.3.8"
 parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
-logging = { path = "../logging" }
+holochain_logging = { version="=0.0.1", path = "../logging" }
 log = "0.4.8"
 
 [features]

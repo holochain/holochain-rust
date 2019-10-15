@@ -3,6 +3,12 @@ name = "holochain_core_types"
 version = "0.0.32-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
+description = "core types needed for all holochain development"
+keywords = ["holochain", "holo", "p2p"]
+license = "GPL-v3"
+readme = "README.md"
+documentation = "https://github.com/holochain/holochain-rust"
+repository = "https://github.com/holochain/holochain-rust"
 
 [dependencies]
 arrayref = "=0.3.5"

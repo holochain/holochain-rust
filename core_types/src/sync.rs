@@ -1,8 +1,8 @@
-
 use backtrace::Backtrace;
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
 use std::{
+    borrow::{Borrow, BorrowMut},
     collections::HashMap,
     ops::{Deref, DerefMut},
     thread,
@@ -189,7 +189,7 @@ macro_rules! guard_struct {
     ($HcGuard:ident, $Guard:ident, $lock_type:ident) => {
         pub struct $HcGuard<'a, T: ?Sized> {
             puid: ProcessUniqueId,
-            inner: $Guard<'a, T>,
+            pub inner: $Guard<'a, T>,
         }
 
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
@@ -214,13 +214,29 @@ guard_struct!(HcMutexGuard, MutexGuard, Lock);
 guard_struct!(HcRwLockReadGuard, RwLockReadGuard, Read);
 guard_struct!(HcRwLockWriteGuard, RwLockWriteGuard, Write);
 
-// TODO: impl as appropriate
-// AsRef<InnerType>
-// Borrow<InnerType>
-// Deref<Target=InnerType>
-// AsMut<InnerType>
-// BorrowMut<InnerType>
-// DerefMut<Target=InnerType>
+impl<'a, T: ?Sized> Borrow<T> for HcMutexGuard<'a, T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+
+impl<'a, T: ?Sized> BorrowMut<T> for HcMutexGuard<'a, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+}
+
+// impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         &self.inner
+//     }
+// }
+
+// impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
+//     fn as_mut(&mut self) -> &mut T {
+//         &mut self.inner
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcMutexGuard<'a, T> {
     type Target = T;
@@ -235,12 +251,53 @@ impl<'a, T: ?Sized> DerefMut for HcMutexGuard<'a, T> {
     }
 }
 
+//
+
+impl<'a, T: ?Sized> Borrow<T> for HcRwLockReadGuard<'a, T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+
+
+// impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         &self.inner
+//     }
+// }
+
 impl<'a, T: ?Sized> Deref for HcRwLockReadGuard<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
         self.inner.deref()
     }
 }
+
+//
+
+impl<'a, T: ?Sized> Borrow<T> for HcRwLockWriteGuard<'a, T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+
+impl<'a, T: ?Sized> BorrowMut<T> for HcRwLockWriteGuard<'a, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+}
+
+// impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         &self.inner
+//     }
+// }
+
+// impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
+//     fn as_mut(&mut self) -> &mut T {
+//         &mut self.inner
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcRwLockWriteGuard<'a, T> {
     type Target = T;

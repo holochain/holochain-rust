@@ -30,8 +30,8 @@ holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../common" }
 holochain_conductor_api_api = { path = "../conductor_api_api" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+lib3h_protocol = "=0.0.16"
+lib3h_sodium = "=0.0.16"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.8"

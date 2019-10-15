@@ -9,7 +9,6 @@ use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     collections::HashMap,
-    sync::{Arc},
 };
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
@@ -30,7 +29,7 @@ pub struct NetworkState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub actions: Actions,
-    pub network: Option<Arc<P2pNetwork>>,
+    pub network: Option<P2pNetwork>,
     pub dna_address: Option<Address>,
     pub agent_id: Option<String>,
 

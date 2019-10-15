@@ -9,7 +9,6 @@ use holochain_net::connection::net_connection::NetSend;
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
 use log::{debug, error};
 use std::{thread::sleep, time::Duration};
-use std::sync::Arc;
 
 pub fn reduce_shutdown(
     state: &mut NetworkState,
@@ -36,24 +35,15 @@ pub fn reduce_shutdown(
     });
 
 
-    if let Some(network_arc) = state.network.take() {
-        let strong_count = Arc::strong_count(&network_arc);
-        if let Ok(mut network) = Arc::try_unwrap(network_arc) {
-            let _ = network.send(json);
-            sleep(Duration::from_secs(2));  // TODO: comment for why we do magical sleep?
+    if let Some(mut network) = state.network.take() {
+        let _ = network.send(json);
+        sleep(Duration::from_secs(2));  // TODO: comment for why we do magical sleep?
 
-            if let Err(err) = network.stop() {
-                error!("ERROR stopping network thread: {:?}", err);
-            } else {
-                debug!("Network thread successfully stopped");
-            }
+        if let Err(err) = network.stop() {
+            error!("ERROR stopping network thread: {:?}", err);
         } else {
-            error!(
-                "Could not unwrap network out of Arc. Strong count is: {}",
-                strong_count,
-            );
+            debug!("Network thread successfully stopped");
         }
-
     } else {
         error!("Tried to shutdown uninitialized network");
     }

@@ -6,7 +6,6 @@ use crate::{
 use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
 use log::error;
-use std::sync::Arc;
 
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
@@ -49,7 +48,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
         }
         state.network = None;
     } else {
-        state.network = Some(Arc::new(network));
+        state.network = Some(network);
     }
 }
 

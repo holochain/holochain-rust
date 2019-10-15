@@ -100,9 +100,7 @@ pub fn send(
         .network
         .as_mut()
         .map(|mut network| {
-            Arc::get_mut(&mut network)
-                .expect("Could not get mutable reference to network in send()")
-                .send(msg)
+            network.send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?

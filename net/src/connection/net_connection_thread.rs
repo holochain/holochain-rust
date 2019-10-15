@@ -1,7 +1,8 @@
+use failure::err_msg;
+use holochain_core_types::sync::HcMutex as Mutex;
 use logging::prelude::*;
-
 use super::{
-    net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
+    net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
 use snowflake::ProcessUniqueId;
@@ -23,8 +24,7 @@ const TICK_SLEEP_MAX_US: u64 = 10_000;
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
     send_channel: crossbeam_channel::Sender<Lib3hClientProtocol>,
-    thread: thread::JoinHandle<()>,
-    done: NetShutdown,
+    thread: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     pub endpoint: String,
     pub p2p_endpoint: url::Url,
 }
@@ -44,7 +44,6 @@ impl NetConnectionThread {
     pub fn new(
         handler: NetHandler,
         worker_factory: NetWorkerFactory,
-        done: NetShutdown,
     ) -> NetResult<Self> {
         // Create shared bool between self and spawned thread
         let can_keep_running = Arc::new(AtomicBool::new(true));
@@ -125,8 +124,7 @@ impl NetConnectionThread {
         Ok(NetConnectionThread {
             can_keep_running,
             send_channel,
-            thread,
-            done,
+            thread: Arc::new(Mutex::new(Some(thread))),
             endpoint,
             p2p_endpoint,
         })
@@ -137,13 +135,17 @@ impl NetConnectionThread {
         // tell child thread to stop running
         debug!("Telling NetWorker to stop");
         self.can_keep_running.store(false, Ordering::Relaxed);
-        if self.thread.join().is_err() {
-            bail!("NetConnectionThread failed to join on stop() call");
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn join_thread(&mut self) -> NetResult<()> {
+        if let Some(&mut join_handle) = self.thread.lock().unwrap() {
+            if (*join_handle).join().is_err() {
+                return Err(err_msg("NetConnectionThread failed to join on stop() call"))
+            }
         }
-        // Call shutdown closure if any
-        if let Some(mut done) = self.done {
-            done();
-        }
+        self.thread.lock() = None;
         Ok(())
     }
 }
@@ -188,7 +190,6 @@ mod tests {
         let mut con = NetConnectionThread::new(
             NetHandler::new(Box::new(move |_r| Ok(()))),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<dyn NetWorker>)),
-            None,
         )
         .unwrap();
 
@@ -232,7 +233,6 @@ mod tests {
                 Ok(())
             })),
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
-            None,
         )
         .unwrap();
 
@@ -272,7 +272,6 @@ mod tests {
                 Ok(())
             })),
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<dyn NetWorker>)),
-            None,
         )
         .unwrap();
 

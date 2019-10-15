@@ -170,34 +170,6 @@ pub fn spawn_hc_guard_watcher() {
     debug!("spawn_hc_guard_watcher: SPAWNED");
 }
 
-pub fn spawn_parking_lot_deadlock_detection() {
-    #[cfg(feature = "deadlock_detection")]
-    { // only for #[cfg]
-        use parking_lot_core::deadlock;
-
-        println!("PLDL: spawned");
-        thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::from_secs(2));
-                let deadlocks = deadlock::check_deadlock();
-                if deadlocks.is_empty() {
-                    println!("PLDL: nothing");
-                    continue;
-                }
-
-                println!("PLDL> {} deadlocks detected", deadlocks.len());
-                for (i, threads) in deadlocks.iter().enumerate() {
-                    println!("Deadlock #{}", i);
-                    for t in threads {
-                        println!("Thread Id {:#?}", t.thread_id());
-                        println!("{:#?}", t.backtrace());
-                    }
-                }
-            }
-        });
-    }
-}
-
 fn _print_pending_locks() {
     for (puid, (lock_type, instant, backtrace)) in PENDING_LOCKS.lock().iter() {
         debug!(

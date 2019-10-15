@@ -99,7 +99,7 @@ pub fn send(
     network_state
         .network
         .as_mut()
-        .map(|mut network| {
+        .map(|network| {
             network.send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })

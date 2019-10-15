@@ -1,10 +1,10 @@
-use failure::err_msg;
-use holochain_core_types::sync::HcMutex as Mutex;
-use logging::prelude::*;
 use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
+use failure::err_msg;
+use holochain_core_types::sync::HcMutex as Mutex;
+use logging::prelude::*;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -21,6 +21,7 @@ const TICK_SLEEP_MAX_US: u64 = 10_000;
 
 /// Struct for holding a network connection running on a separate thread.
 /// It is itself a NetSend, and spawns a NetWorker.
+#[derive(Clone)]
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
     send_channel: crossbeam_channel::Sender<Lib3hClientProtocol>,
@@ -41,10 +42,7 @@ impl NetConnectionThread {
     /// NetSendThread Constructor.
     /// Spawns a thread that will create and run a NetWorker with the given factory, handler and
     /// shutdown closure.
-    pub fn new(
-        handler: NetHandler,
-        worker_factory: NetWorkerFactory,
-    ) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
         // Create shared bool between self and spawned thread
         let can_keep_running = Arc::new(AtomicBool::new(true));
         let can_keep_running_child = can_keep_running.clone();
@@ -53,63 +51,69 @@ impl NetConnectionThread {
         let (send_endpoint, recv_endpoint) = crossbeam_channel::unbounded();
 
         // Spawn worker thread
-        let thread = thread::Builder::new().name(format!("net_worker_thread/{}", ProcessUniqueId::new().to_string())).spawn(move || {
-            // Create worker
-            let mut worker = worker_factory(handler).expect("able to create worker");
-            // Get endpoint and send it to owner (NetConnectionThread)
-            send_endpoint
-                .send((worker.endpoint(), worker.p2p_endpoint()))
-                .expect("Sending endpoint address should work.");
-            drop(send_endpoint);
-            // Loop as long owner wants to
-            let mut sleep_duration_us = TICK_SLEEP_MIN_US;
-            while can_keep_running_child.load(Ordering::Relaxed) {
-                // Check if we received something from parent (NetConnectionThread::send())
-                let mut did_something = false;
-                recv_channel
-                    .try_recv()  // TODO: can we use recv_timeout instead to reduce the poll interval?
-                    .and_then(|data| {
-                        // Received data from parent
-                        // Have the worker handle it
-                        did_something = true;
-                        worker.receive(data).unwrap_or_else(|e| {
-                            debug!("Error occured in p2p network module, on receive: {:?}", e)
-                        });
-                        Ok(())
-                    })
-                    .unwrap_or(());
-                // Tick the worker
-                // (it might call the handler if it received a message from the network)
-                worker
-                    .tick()
-                    .and_then(|b| {
-                        if b {
+        let thread = thread::Builder::new()
+            .name(format!(
+                "net_worker_thread/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                // Create worker
+                let mut worker = worker_factory(handler).expect("able to create worker");
+                // Get endpoint and send it to owner (NetConnectionThread)
+                send_endpoint
+                    .send((worker.endpoint(), worker.p2p_endpoint()))
+                    .expect("Sending endpoint address should work.");
+                drop(send_endpoint);
+                // Loop as long owner wants to
+                let mut sleep_duration_us = TICK_SLEEP_MIN_US;
+                while can_keep_running_child.load(Ordering::Relaxed) {
+                    // Check if we received something from parent (NetConnectionThread::send())
+                    let mut did_something = false;
+                    recv_channel
+                        .try_recv() // TODO: can we use recv_timeout instead to reduce the poll interval?
+                        .and_then(|data| {
+                            // Received data from parent
+                            // Have the worker handle it
                             did_something = true;
-                        }
-                        Ok(())
-                    })
-                    .unwrap_or_else(|e| {
-                        error!("Error occured in p2p network module, on tick: {:?}", e)
-                    });
+                            worker.receive(data).unwrap_or_else(|e| {
+                                debug!("Error occured in p2p network module, on receive: {:?}", e)
+                            });
+                            Ok(())
+                        })
+                        .unwrap_or(());
+                    // Tick the worker
+                    // (it might call the handler if it received a message from the network)
+                    worker
+                        .tick()
+                        .and_then(|b| {
+                            if b {
+                                did_something = true;
+                            }
+                            Ok(())
+                        })
+                        .unwrap_or_else(|e| {
+                            error!("Error occured in p2p network module, on tick: {:?}", e)
+                        });
 
-                // Increase sleep duration if nothing was received or sent
-                if did_something {
-                    sleep_duration_us = TICK_SLEEP_MIN_US;
-                } else {
-                    sleep_duration_us *= 2_u64;
-                    if sleep_duration_us > TICK_SLEEP_MAX_US {
-                        sleep_duration_us = TICK_SLEEP_MAX_US;
+                    // Increase sleep duration if nothing was received or sent
+                    if did_something {
+                        sleep_duration_us = TICK_SLEEP_MIN_US;
+                    } else {
+                        sleep_duration_us *= 2_u64;
+                        if sleep_duration_us > TICK_SLEEP_MAX_US {
+                            sleep_duration_us = TICK_SLEEP_MAX_US;
+                        }
                     }
+                    // Sleep
+                    thread::sleep(time::Duration::from_micros(sleep_duration_us));
                 }
-                // Sleep
-                thread::sleep(time::Duration::from_micros(sleep_duration_us));
-            }
-            debug!("Stopped NetWorker");
-            // Stop the worker
-            worker.stop().unwrap_or_else(|e| {
-                error!("Error occured in p2p network module on stop: {:?}", e)
-            });
-        }).expect("Could not spawn net connection thread");
+                debug!("Stopped NetWorker");
+                // Stop the worker
+                worker.stop().unwrap_or_else(|e| {
+                    error!("Error occured in p2p network module on stop: {:?}", e)
+                });
+            })
+            .expect("Could not spawn net connection thread");
 
         // Retrieve endpoint from spawned thread.
         let (endpoint, p2p_endpoint) = recv_endpoint.recv().map_err(|e| {
@@ -130,22 +134,29 @@ impl NetConnectionThread {
         })
     }
 
-    /// stop the worker thread (join)
+    /// Tell the worker thread to stop, but do not wait for it to join
     pub fn stop(self) -> NetResult<()> {
-        // tell child thread to stop running
         debug!("Telling NetWorker to stop");
         self.can_keep_running.store(false, Ordering::Relaxed);
         Ok(())
     }
 
+    /// Wait for the worker thread to join (which it may not have done yet when running `stop`)
     #[allow(dead_code)]
     pub fn join_thread(&mut self) -> NetResult<()> {
-        if let Some(&mut join_handle) = self.thread.lock().unwrap() {
-            if (*join_handle).join().is_err() {
-                return Err(err_msg("NetConnectionThread failed to join on stop() call"))
-            }
+        if let Some(handle) = self
+            .thread
+            .lock()
+            .map_err(|e| err_msg(format!("Could not get lock on thread handle: {:?}", e)))?
+            .take()
+        {
+            handle.join().map_err(|e| {
+                err_msg(format!(
+                    "NetConnectionThread failed to join on stop() call: {:?}",
+                    e
+                ))
+            })?;
         }
-        self.thread.lock() = None;
         Ok(())
     }
 }
@@ -155,8 +166,9 @@ mod tests {
     use super::{super::net_connection::NetWorker, *};
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::hash::HashString;
-    use lib3h_protocol::{data_types::GenericResultData, protocol_server::Lib3hServerProtocol};
-    use lib3h_protocol::types::SpaceHash;
+    use lib3h_protocol::{
+        data_types::GenericResultData, protocol_server::Lib3hServerProtocol, types::SpaceHash,
+    };
 
     struct DefWorker;
 
@@ -166,13 +178,12 @@ mod tests {
         }
     }
 
-
     fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocol {
         Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: HashString::from("test-agent"),
-            result_info : result_info.clone().into(),
+            result_info: result_info.clone().into(),
         })
     }
 
@@ -181,7 +192,7 @@ mod tests {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: HashString::from("test-agent"),
-            result_info : result_info.into(),
+            result_info: result_info.into(),
         })
     }
 

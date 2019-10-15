@@ -182,7 +182,7 @@ impl PassphraseService for PassphraseServiceUnixSocket {
             let mut stream_option = self.stream.lock().expect(
                 "Could not lock mutex holding unix domain socket connection for passphrase service",
             );
-            let listen_result = stream_option.as_mut()
+            let listen_result = stream_option.inner.as_mut()
                 .expect("This option must be some at this point since we would be in above while loop otherwise.");
             let stream = listen_result
                 .as_mut()

@@ -30,6 +30,7 @@ const P2P_READY_TIMEOUT_MS: u64 = 5000;
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
 /// `send()` is used for sending Protocol messages to the network
 /// `handler` closure provide on construction for handling Protocol messages received from the network.
+#[derive(Clone)]
 pub struct P2pNetwork {
     connection: NetConnectionThread,
 }
@@ -147,7 +148,7 @@ impl P2pNetwork {
         // Create NetConnectionThread with appropriate worker factory.  Indicate *what*
         // configuration failed to produce a connection.
         let connection =
-            NetConnectionThread::new(wrapped_handler, worker_factory, None).map_err(|e| {
+            NetConnectionThread::new(wrapped_handler, worker_factory).map_err(|e| {
                 format_err!(
                     "Failed to obtain a connection to a p2p network module w/ config: {}: {} ",
                     p2p_config_str,

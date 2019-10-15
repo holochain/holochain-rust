@@ -419,7 +419,7 @@ pub mod tests {
         );
 
         // Somehow we need to build our own logging instance for this test to show logs
-        use logging::prelude::*;
+        use holochain_logging::prelude::*;
         let guard = FastLoggerBuilder::new()
             .set_level_from_str("Trace")
             .build()

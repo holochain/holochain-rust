@@ -1,5 +1,5 @@
 use crate::agent::state::create_entry_with_header_for_header;
-use logging::prelude::*;
+use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
 pub mod query;
@@ -273,7 +273,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 
 /// Get content aspect at this address, regardless of whether the address points to
 /// an Entry or a Header
-/// 
+///
 /// NB: this can be optimized by starting with a CAS lookup for the entry directly,
 /// to avoid traversing the chain unnecessarily in the case of a miss
 /// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)

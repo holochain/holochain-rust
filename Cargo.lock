@@ -1014,6 +1014,7 @@ dependencies = [
  "holochain_dpki 0.0.32-alpha2",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_logging 0.0.1",
  "holochain_net 0.0.32-alpha2",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1029,7 +1030,6 @@ dependencies = [
  "lib3h 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "logging 0.0.32-alpha2",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1098,6 +1098,7 @@ dependencies = [
  "holochain_dpki 0.0.32-alpha2",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_logging 0.0.1",
  "holochain_net 0.0.32-alpha2",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1109,7 +1110,6 @@ dependencies = [
  "lib3h_protocol 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "logging 0.0.32-alpha2",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "pin-utils 0.1.0-alpha.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1200,12 +1200,12 @@ dependencies = [
  "holochain_core 0.0.32-alpha2",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_logging 0.0.1",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_protocol 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "logging 0.0.32-alpha2",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mashup 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1329,6 +1329,20 @@ dependencies = [
 [[package]]
 name = "holochain_logging"
 version = "0.0.1"
+dependencies = [
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "holochain_logging"
+version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1354,6 +1368,7 @@ dependencies = [
  "holochain_core_types 0.0.32-alpha2",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_logging 0.0.1",
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1363,7 +1378,6 @@ dependencies = [
  "lib3h_zombie_actor 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "logging 0.0.32-alpha2",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1964,20 +1978,6 @@ dependencies = [
 name = "logging"
 version = "0.0.32-alpha2"
 source = "git+https://github.com/holochain/holochain-rust?branch=sim2h#4293b86be2a7400cb7ec3420ff5775c23854bf25"
-dependencies = [
- "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "logging"
-version = "0.0.32-alpha2"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",

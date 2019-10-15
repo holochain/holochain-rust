@@ -98,11 +98,10 @@ pub fn send(
 ) -> Result<(), HolochainError> {
     network_state
         .network
-        .lock()
-        .unwrap()
         .as_mut()
-        .map(|network| {
-            network
+        .map(|mut network| {
+            Arc::get_mut(&mut network)
+                .expect("Could not get mutable reference to network in send()")
                 .send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })

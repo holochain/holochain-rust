@@ -582,10 +582,11 @@ impl Conductor {
                         .unwrap()
                         .context()
                         .unwrap()
-                        .network()
-                        .lock()
-                        .as_ref()
+                        .network_state()
                         .unwrap()
+                        .network
+                        .as_ref()
+                        .expect("Network not initialized")
                         .p2p_endpoint()
                 }).collect();
             match p2p_config.to_owned().backend_config {

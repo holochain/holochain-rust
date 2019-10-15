@@ -201,12 +201,12 @@ impl Context {
         self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
     }
 
-    pub fn network(&self) -> P2pNetworkWrapper {
-        P2pNetworkWrapper(match self.network_state() {
-            Some(s) => s.network.clone(),
-            None => Arc::new(Mutex::new(None)),
-        })
-    }
+    //pub fn network(&self) -> P2pNetworkWrapper {
+    //    P2pNetworkWrapper(match self.network_state() {
+    //        Some(s) => s.network.clone(),
+    //        None => Arc::new(Mutex::new(None)),
+    //    })
+    //}
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
         self.state().map(move |state| state.network())

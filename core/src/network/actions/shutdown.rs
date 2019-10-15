@@ -42,19 +42,16 @@ impl Future for ShutdownFuture {
         self.state
             .try_read()
             .map(|state| {
-                state.network().network.try_lock().map(|network| {
-                    if network.is_some() {
-                        //
-                        // TODO: connect the waker to state updates for performance reasons
-                        // See: https://github.com/holochain/holochain-rust/issues/314
-                        //
-                        cx.waker().clone().wake();
-                        Poll::Pending
-                    } else {
-                        Poll::Ready(Ok(()))
-                    }
-                })
-                .unwrap_or(Poll::Pending)
+                if state.network().network.is_some() {
+                    //
+                    // TODO: connect the waker to state updates for performance reasons
+                    // See: https://github.com/holochain/holochain-rust/issues/314
+                    //
+                    cx.waker().clone().wake();
+                    Poll::Pending
+                } else {
+                    Poll::Ready(Ok(()))
+                }
             })
             .unwrap_or(Poll::Pending)
     }

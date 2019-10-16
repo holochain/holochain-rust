@@ -5,7 +5,7 @@ let
   script = pkgs.writeShellScriptBin name
   ''
   hc-conductor-wasm-compile
-  ( cd ./holochain_wasm/npm_package && npm install && npm test );
+  ( cd crates/holochain_wasm/npm_package && npm install && npm test );
   '';
 in
 {

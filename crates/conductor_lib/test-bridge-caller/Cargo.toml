@@ -15,7 +15,7 @@ members = []
 [dependencies]
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-hdk = { path = "../../hdk-rust" }
+hdk = { path = "../../hdk" }
 serde_derive = "=1.0.89"
 holochain_json_derive = "=0.0.17"
 holochain_persistence_api = "=0.0.8"

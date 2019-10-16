@@ -15,12 +15,10 @@ let
   hc \
   holochain_common \
   holochain \
-  holochain_conductor_api \
+  holochain_conductor_lib \
   holochain_conductor_wasm \
-  holochain_core_api_c_binding \
-  holochain_dna_c_binding \
   hdk \
-  hdk-proc-macros \
+  hdk-v2 \
   holochain_net \
   holochain_dpki \
   benchmarks

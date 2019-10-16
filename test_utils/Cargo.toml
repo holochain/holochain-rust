@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-hdk = { path = "../crates/hdk-rust" }
+hdk = { path = "../crates/hdk" }
 holochain_net = { path = "../crates/net" }
 holochain_core = { path = "../crates/core" }
 holochain_conductor_api = { path = "../crates/conductor_lib" }

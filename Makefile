@@ -29,20 +29,10 @@ CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE
 CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 OPENSSL_STATIC = 1
 
-# list all the "C" binding tests that have been written
-C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
-
-# list all the "C" binding test executables that should be produced
-C_BINDING_TESTS = $(foreach dir,$(C_BINDING_DIRS),target/debug/c_binding_tests/$(shell basename $(dir))/test_executable)
-
-# list all the extraneous files that will be generated when running tests
-C_BINDING_CLEAN = $(foreach dir,$(C_BINDING_DIRS),$(dir)Makefile $(dir).qmake.stash)
 
 # build artifact / dependency checking is handled by our sub-tools
 # we can just try to build everything every time, it should be efficient
 .PHONY: lint \
-	c_binding_tests ${C_BINDING_DIRS} \
-	test ${C_BINDING_TESTS} \
 	test_holochain \
 	clean ${C_BINDING_CLEAN}
 
@@ -142,28 +132,35 @@ install_mdbook: tools_toolchain
 		$(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
 	fi
 
-# list all our found "C" binding tests
-c_binding_tests: ${C_BINDING_DIRS}
-
-# build all our found "C" binding tests
-${C_BINDING_DIRS}:
-	qmake -o $@Makefile $@qmake.pro
-	cd $@; $(MAKE)
 
 # execute all tests: holochain, command-line tools, app spec, nodejs conductor, and "C" bindings
-test: test_holochain test_cli test_app_spec c_binding_tests ${C_BINDING_TESTS}
+test: test_holochain test_cli test_app_spec c_binding_tests 
 
 test_holochain: build_holochain
-	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/cli && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/conductor_api && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/conductor_lib && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/core && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
+	cd crates/core_types && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/dpki && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/hdk && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
+	cd crates/hdk-v2 && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/holochain && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
+	cd crates/net && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
+	cd crates/wasm_utils && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 
 # Execute cargo tests matching %
 # Eg. make test-stacked will run "cargo test stacked"
-test-%: build_holochain
-	RUSTFLAGS="-D warnings" $(CARGO) test $* -- --nocapture
+test-%: build-$*
+	cd crates/$* && RUSTFLAGS="-D warnings" $(CARGO) test $* -- --nocapture
+
+#Execute test based on crate
+build-%: 
+	cd crates/$* && RUSTFLAGS="-D warnings" $(CARGO) build 
 
 test_cli: build_cli
 	@echo -e "\033[0;93m## Testing hc command... ##\033[0m"
-	cd cli && RUSTFLAGS="-D warnings" $(CARGO) test
+	cd crates/cli && RUSTFLAGS="-D warnings" $(CARGO) test
 
 test_app_spec: RUST_VERSION=$(CORE_RUST_VERSION)
 test_app_spec: version_rustup ensure_wasm_target install_cli build_rust_conductor
@@ -180,17 +177,15 @@ build_rust_conductor: version_rustup core_toolchain
 	@echo -e "\033[0;93m## Building rust conductor... ##\033[0m"
 	$(CARGO) build -p holochain --release && $(CARGO) install -f --path conductor
 
-c_build: core_toolchain
-	cd dna_c_binding && $(CARGO) build
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
 	@echo -e "\033[0;93m## Building wasm targets... ##\033[0m"
-	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd conductor_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd conductor_api/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd crates/core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd crates/conductor_lib/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd crates/conductor_lib/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd crates/hdk/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd crates/wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
 .PHONY: install_wasm_bindgen_cli
 install_wasm_bindgen_cli:
@@ -200,14 +195,24 @@ install_wasm_bindgen_cli:
 	fi
 
 .PHONY: build_holochain
-build_holochain: core_toolchain wasm_build
+build_holochain: wasm_build
 	@echo -e "\033[0;93m## Building holochain... ##\033[0m"
-	$(CARGO) build --all --exclude hc --exclude conductor_wasm
+	cd crates/cli && $(CARGO) build 
+	cd crates/conductor_api && $(CARGO) build 
+	cd crates/conductor_lib && $(CARGO) build 
+	cd crates/core && $(CARGO) 
+	cd crates/core_types && $(CARGO) build 
+	cd crates/dpki && $(CARGO) build 
+	cd crates/hdk && $(CARGO) build 
+	cd crates/hdk-v2 && $(CARGO) build 
+	cd crates/holochain && $(CARGO) build 
+	cd crates/net && $(CARGO) build 
+	cd crates/wasm_utils && $(CARGO) build 
 
 .PHONY: build_cli
 build_cli: core_toolchain ensure_wasm_target
 	@echo -e "\033[0;93m## Building hc command... ##\033[0m"
-	$(CARGO) build -p hc
+	cd crates/cli && $(CARGO) build -p hc
 
 .PHONY: build_nodejs
 build_nodejs:
@@ -217,7 +222,7 @@ build_nodejs:
 .PHONY: install_cli
 install_cli: build_cli
 	@echo -e "\033[0;93m## Installing hc command... ##\033[0m"
-	cd cli && $(CARGO) install -f --path .
+	cd crates/cli && $(CARGO) install -f --path .
 
 .PHONY: build_conductor_wasm
 build_conductor_wasm: ensure_wasm_target install_wasm_bindgen_cli
@@ -241,12 +246,9 @@ clippy: install_rust_tools
 fmt: install_rust_tools
 	$(CARGO_TOOLS) fmt
 
-# execute all the found "C" binding tests
-${C_BINDING_TESTS}:
-	$@
 
 # clean up the target directory and all extraneous "C" binding test files
-clean: ${C_BINDING_CLEAN}
+clean: 
 	@for target in $$( find . -type d -a -name 'target' ); do \
 	    echo -e "\033[0;93m## Removing $${target} ##\033[0m"; \
 	    $(RM) -rf $${target}; \
@@ -258,6 +260,3 @@ clean: ${C_BINDING_CLEAN}
 	    ( cd $${cargo%/*} && cargo clean ); \
 	done
 
-# clean up the extraneous "C" binding test files
-${C_BINDING_CLEAN}:
-	-@$(RM) $@

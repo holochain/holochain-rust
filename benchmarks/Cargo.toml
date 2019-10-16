@@ -8,7 +8,7 @@ holochain_persistence_api = "=0.0.8"
 holochain_persistence_file = "=0.0.8"
 holochain_persistence_mem = "=0.0.8"
 holochain_persistence_pickle = "=0.0.8"
-holochain_core_types = { path = "../core_types" }
+holochain_core_types = { path = "../crates/core_types" }
 bencher = "=0.1.5"
 tempfile = "=3.0.7"
 

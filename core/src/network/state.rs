@@ -3,13 +3,12 @@ use crate::{
     network::{actions::ActionResponse, direct_message::DirectMessage,query::NetworkQueryResult},
 };
 use boolinator::*;
-use holochain_core_types::{error::HolochainError, validation::ValidationPackage, sync::{HcMutex as Mutex}};
+use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::{
     collections::HashMap,
-    sync::{Arc},
 };
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
@@ -30,7 +29,7 @@ pub struct NetworkState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub actions: Actions,
-    pub network: Arc<Mutex<Option<P2pNetwork>>>,
+    pub network: Option<P2pNetwork>,
     pub dna_address: Option<Address>,
     pub agent_id: Option<String>,
 
@@ -60,7 +59,7 @@ impl NetworkState {
     pub fn new() -> Self {
         NetworkState {
             actions: HashMap::new(),
-            network: Arc::new(Mutex::new(None)),
+            network: None,
             dna_address: None,
             agent_id: None,
             get_query_results: HashMap::new(),
@@ -77,7 +76,7 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.lock().unwrap().is_some()
+        (self.network.is_some()
             && self.dna_address.is_some()
             && self.agent_id.is_some())
         .ok_or(HolochainError::ErrorGeneric(

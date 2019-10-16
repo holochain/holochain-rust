@@ -118,7 +118,6 @@ pub enum HolochainError {
     DnaHashMismatch(HashString, HashString),
     EntryNotFoundLocally,
     EntryIsPrivate,
-    // MutexWouldBlock,
     List(Vec<HolochainError>),
 }
 
@@ -169,7 +168,6 @@ impl fmt::Display for HolochainError {
                 f,
                 "The requested entry is private and should not be shared via gossip"
             ),
-            // MutexWouldBlock => write!(f, "A lock could not be obtained on a Mutex/RwLock"),
             List(list) => {
                 //most windows system know that \n is a newline so we should be good.
                 let error_list = list

@@ -2,6 +2,7 @@ use backtrace::Backtrace;
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
 use std::{
+    borrow::{Borrow, BorrowMut},
     collections::HashMap,
     ops::{Deref, DerefMut},
     thread,
@@ -11,9 +12,10 @@ use std::{
 // if a lock guard lives this long, it is assumed it will never die
 const IMMORTAL_TIMEOUT_SECS: u64 = 60;
 
-// this should be at least twice the IMMORTAL_TIMEOUT, so that locks don't timeout
-// before all long-running guards are detected, in the case of a deadlock
-const LOCK_TIMEOUT_SECS: u64 = 150;
+// this should be a bit longer than IMMORTAL_TIMEOUT, so that locks don't timeout
+// before all long-running guards are detected, in the case of a deadlock.
+// (But NOT longer than try-o-rama's conductor timeout)
+const LOCK_TIMEOUT_SECS: u64 = 100;
 
 // This is how often we check the elapsed time of guards
 const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
@@ -187,7 +189,7 @@ macro_rules! guard_struct {
     ($HcGuard:ident, $Guard:ident, $lock_type:ident) => {
         pub struct $HcGuard<'a, T: ?Sized> {
             puid: ProcessUniqueId,
-            inner: $Guard<'a, T>,
+            pub inner: $Guard<'a, T>,
         }
 
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
@@ -212,13 +214,29 @@ guard_struct!(HcMutexGuard, MutexGuard, Lock);
 guard_struct!(HcRwLockReadGuard, RwLockReadGuard, Read);
 guard_struct!(HcRwLockWriteGuard, RwLockWriteGuard, Write);
 
-// TODO: impl as appropriate
-// AsRef<InnerType>
-// Borrow<InnerType>
-// Deref<Target=InnerType>
-// AsMut<InnerType>
-// BorrowMut<InnerType>
-// DerefMut<Target=InnerType>
+impl<'a, T: ?Sized> Borrow<T> for HcMutexGuard<'a, T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+
+impl<'a, T: ?Sized> BorrowMut<T> for HcMutexGuard<'a, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+}
+
+// impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         &self.inner
+//     }
+// }
+
+// impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
+//     fn as_mut(&mut self) -> &mut T {
+//         &mut self.inner
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcMutexGuard<'a, T> {
     type Target = T;
@@ -233,12 +251,53 @@ impl<'a, T: ?Sized> DerefMut for HcMutexGuard<'a, T> {
     }
 }
 
+//
+
+impl<'a, T: ?Sized> Borrow<T> for HcRwLockReadGuard<'a, T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+
+
+// impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         &self.inner
+//     }
+// }
+
 impl<'a, T: ?Sized> Deref for HcRwLockReadGuard<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
         self.inner.deref()
     }
 }
+
+//
+
+impl<'a, T: ?Sized> Borrow<T> for HcRwLockWriteGuard<'a, T> {
+    fn borrow(&self) -> &T {
+        &self.inner
+    }
+}
+
+impl<'a, T: ?Sized> BorrowMut<T> for HcRwLockWriteGuard<'a, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+}
+
+// impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         &self.inner
+//     }
+// }
+
+// impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
+//     fn as_mut(&mut self) -> &mut T {
+//         &mut self.inner
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcRwLockWriteGuard<'a, T> {
     type Target = T;
@@ -283,7 +342,7 @@ impl<T> HcRwLock<T> {
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $try_lock_until_inner_fn:ident ) => {
+    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> HcLockResult<$Guard<T>> {
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
@@ -350,8 +409,7 @@ mutex_impl!(
     Lock,
     lock,
     try_lock,
-    try_lock_until,
-    try_lock_until_inner
+    try_lock_until
 );
 mutex_impl!(
     HcRwLock,
@@ -360,8 +418,7 @@ mutex_impl!(
     Read,
     read,
     try_read,
-    try_read_until,
-    try_read_until_inner
+    try_read_until
 );
 mutex_impl!(
     HcRwLock,
@@ -370,6 +427,5 @@ mutex_impl!(
     Write,
     write,
     try_write,
-    try_write_until,
-    try_write_until_inner
+    try_write_until
 );

@@ -26,7 +26,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
+use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -131,14 +131,7 @@ impl Drop for Conductor {
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
-        if let Some(network) = self.n3h_keepalive_network.take() {
-            if let Err(err) = network.stop() {
-                println!("ERROR stopping network thread: {:?}", err);
-            } else {
-                println!("Network thread successfully stopped");
-            }
-            self.n3h_keepalive_network = None;
-        };
+        if let Some(mut network) = self.n3h_keepalive_network.take() { network.stop() }
     }
 }
 
@@ -582,10 +575,11 @@ impl Conductor {
                         .unwrap()
                         .context()
                         .unwrap()
-                        .network()
-                        .lock()
-                        .as_ref()
+                        .network_state()
                         .unwrap()
+                        .network
+                        .as_ref()
+                        .expect("Network not initialized")
                         .p2p_endpoint()
                 }).collect();
             match p2p_config.to_owned().backend_config {

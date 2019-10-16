@@ -1,8 +1,15 @@
 [package]
-name = "logging"
-version = "0.0.32-alpha2"
-authors = ["dymayday <meidhy.demagny@holo.host>"]
+name = "holochain_logging"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
+description = "A logger for Holochain"
+keywords = ["holochain", "holo", "p2p", "logging"]
+categories = ["logging"]
+license = "Apache-2.0"
+readme = "README.md"
+documentation = "https://github.com/holochain/holochain-rust"
+repository = "https://github.com/holochain/holochain-rust"
 
 [dependencies]
 log = { version = "=0.4.8", features = ["std", "serde"] }

@@ -73,7 +73,7 @@ impl Future for InitNetworkFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            if state.network().network.lock().unwrap().is_some()
+            if state.network().network.is_some()
                 && state.network().dna_address.is_some()
                 && state.network().agent_id.is_some()
             {

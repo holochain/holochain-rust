@@ -34,7 +34,6 @@ extern crate maplit;
 // #[macro_use]
 // extern crate shrinkwraprs;
 extern crate hcid;
-extern crate lib3h_protocol;
 extern crate parking_lot;
 extern crate wasmi;
 pub mod chain_header;
@@ -59,7 +58,7 @@ pub mod validation;
 #[macro_use]
 extern crate log;
 #[macro_use]
-extern crate logging;
+extern crate holochain_logging;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

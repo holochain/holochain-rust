@@ -39,7 +39,7 @@ impl fmt::Debug for NetHandler {
 }
 
 /// closure for doing any clean up at shutdown of a NetWorker
-pub type NetShutdown = Option<Box<dyn FnMut() + Send>>;
+pub type NetShutdown = Option<Box<dyn FnMut() + Send + Sync>>;
 
 ///  Trait for sending a Protocol message to the network
 pub trait NetSend {

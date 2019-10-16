@@ -10,21 +10,27 @@ let
  # @see https://github.com/rust-lang/rustfmt/issues/3685
  script = pkgs.writeShellScriptBin name
  ''
- echo "checking rust formatting"
+ echo "checking rust formatting";
+ cd crates;
+ ls;
  for p in \
-  hc \
-  holochain_common \
-  holochain \
-  holochain_conductor_lib \
-  holochain_conductor_wasm \
-  hdk \
-  hdk-v2 \
-  holochain_net \
-  holochain_dpki \
-  benchmarks
+  cli \
+  ../core \
+  ../core_types \
+  ../holochain \
+  ../conductor_lib \
+  ../holochain_wasm \
+  ../hdk \
+  ../hdk-v2 \
+  ../net \
+  ../dpki \
+  ../../common \
+  ../benchmarks \
+  ../test_utils \
+  ../logging
  do
   echo "checking ''${p}"
-  cargo fmt -p $p -- --check
+  cd $p && cargo fmt -- --check
  done
  '';
 in

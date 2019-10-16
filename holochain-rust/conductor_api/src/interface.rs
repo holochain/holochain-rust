@@ -531,7 +531,6 @@ impl ConductorApiBuilder {
             Ok(json!({"success": true}))
         })
 
-
         self.io.add_method("admin/instance/start", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;

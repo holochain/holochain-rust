@@ -2,7 +2,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
 
-#![feature(try_trait, async_await, await_macro)]
+#![feature(try_trait, async_await)]
 #![warn(unused_extern_crates)]
 /// Holochain Conductor API
 ///
@@ -105,7 +105,7 @@ extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;
 #[macro_use]
 extern crate log;
-extern crate logging;
+extern crate holochain_logging;
 
 extern crate chrono;
 extern crate crossbeam_channel;

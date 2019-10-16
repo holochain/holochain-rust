@@ -10,12 +10,17 @@ tempfile = "=3.0.7"
 [dependencies]
 failure = "=0.1.5"
 #sim1h = { path = "../../sim1h/crates/sim1h" }
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "master" }
-lib3h_sodium = { version = "=0.0.13" }
-lib3h_protocol = { version = "=0.0.13" }
-lib3h = { version = "=0.0.13" }
+sim1h = { git = "https://github.com/holochain/sim1h", branch = "develop" }
+#sim2h = { path = "../../sim2h/crates/sim2h" }
+sim2h = { git = "https://github.com/holochain/sim2h", branch = "develop" }
+lib3h_sodium = "=0.0.16"
+lib3h_protocol = "=0.0.16"
+lib3h = "=0.0.16"
+lib3h_zombie_actor = "=0.0.16"
+detach = "=0.0.16"
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../common" }
+holochain_conductor_api_api = { path = "../conductor_api_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
@@ -37,7 +42,7 @@ native-tls = "=0.2.2"
 crossbeam-channel = "=0.3.8"
 parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
-logging = { path = "../logging" }
+holochain_logging = { version="=0.0.1", path = "../logging" }
 log = "0.4.8"
 
 [features]

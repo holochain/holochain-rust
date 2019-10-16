@@ -46,11 +46,7 @@ pub async fn author_entry<'a>(
     }
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = await!(build_validation_package(
-        &entry,
-        context.clone(),
-        provenances
-    ))?;
+    let validation_package = build_validation_package(&entry, context.clone(), provenances).await?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -61,12 +57,13 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: validating...",
         address
     );
-    await!(validate_entry(
+    validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
-        &context
-    ))?;
+        &context,
+    )
+    .await?;
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
@@ -74,11 +71,7 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: committing...",
         address
     );
-    let addr = await!(commit_entry(
-        entry.clone(),
-        maybe_link_update_delete,
-        &context
-    ))?;
+    let addr = commit_entry(entry.clone(), maybe_link_update_delete, &context).await?;
     log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
@@ -87,29 +80,42 @@ pub async fn author_entry<'a>(
             "workflow/authoring_entry/{}: publishing...",
             address
         );
-        await!(publish(entry.address(), &context))?;
-        log_debug!(context,
-            "workflow/authoring_entry/{}: published!",
-            address
-        );
+        publish(entry.address(), &context).await?;
+        log_debug!(context, "workflow/authoring_entry/{}: published!", address);
     } else {
-        log_debug!(context,
-          "workflow/authoring_entry/{}: entry is private, no publishing",
-          address
+        log_debug!(
+            context,
+            "workflow/authoring_entry/{}: entry is private, no publishing",
+            address
         );
     }
 
     // 5. Publish the header for all types (including private entries)
-    log_debug!(context, "debug/workflow/authoring_entry/{}: publishing header...", address);
-    await!(publish_header_entry(entry.address(), &context))?;
-    log_debug!(context, "debug/workflow/authoring_entry/{}: header published!", address);
-    
+    log_debug!(
+        context,
+        "debug/workflow/authoring_entry/{}: publishing header...",
+        address
+    );
+    publish_header_entry(entry.address(), &context).await?;
+    log_debug!(
+        context,
+        "debug/workflow/authoring_entry/{}: header published!",
+        address
+    );
+
     Ok(CommitEntryResult::new(addr))
 }
 // TODO: Bring the old in-memory network up to speed and turn on this test again!
-#[cfg(feature = "broken-tests")]
+
 #[cfg(test)]
 pub mod tests {
+
+use holochain_core_types::{entry::{Entry,test_entry_with_value},chain_header::ChainHeader};
+use crate::{workflows::author_entry::author_entry,
+            nucleus::actions::{tests::{instance_by_name,test_dna},get_entry::get_entry_from_dht},
+            holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent};
+use std::{time,thread};
+
 
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
@@ -125,7 +131,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature="broken-tests")]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
 
@@ -169,7 +174,6 @@ pub mod tests {
     #[test]
     /// test that the header of an entry can be retrieved directly by its hash by another agent connected
     /// via the in-memory network
-    #[cfg(feature="broken-tests")]
     fn test_commit_with_dht_publish_header_is_published() {
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish_header_is_published".to_string();
@@ -220,7 +224,6 @@ pub mod tests {
 
     #[test]
     /// test that all headers are published so an agents local chain can be reconstructed by another agent
-    #[cfg(feature="broken-tests")]
     fn test_reconstruct_chain_via_published_headers() {
         let mut dna = test_dna();
         dna.uuid = "test_reconstruct_chain_via_published_headers".to_string();

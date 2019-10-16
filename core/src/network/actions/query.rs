@@ -38,7 +38,7 @@ pub async fn query(
     let (key, payload) = match method {
         QueryMethod::Entry(address) => {
             let key = GetEntryKey {
-                address: address,
+                address,
                 id: snowflake::ProcessUniqueId::new().to_string(),
             };
             (QueryKey::Entry(key), QueryPayload::Entry)
@@ -78,10 +78,11 @@ pub async fn query(
         })
         .expect("Could not spawn thread for get timeout");
 
-    await!(QueryFuture {
+    QueryFuture {
         context: context.clone(),
         key: key.clone(),
-    })
+    }
+    .await
 }
 
 /// GetEntryFuture resolves to a HcResult<Entry>.

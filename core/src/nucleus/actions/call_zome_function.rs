@@ -125,10 +125,11 @@ pub async fn call_zome_function(
         zome_call
     );
 
-    await!(CallResultFuture {
+    CallResultFuture {
         context: context.clone(),
         zome_call,
-    })
+    }
+    .await
 }
 
 /// validates that a given zome function call specifies a correct zome function and capability grant

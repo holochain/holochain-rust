@@ -29,7 +29,7 @@ extern crate serde_json;
 extern crate serde_derive;
 
 #[macro_use]
-extern crate logging;
+extern crate holochain_logging;
 
 extern crate env_logger;
 
@@ -37,6 +37,8 @@ extern crate env_logger;
 extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
+#[macro_use]
+extern crate detach;
 
 #[macro_use]
 pub mod tweetlog;
@@ -46,6 +48,7 @@ pub mod ipc;
 pub mod ipc_net_worker;
 pub mod lib3h_worker;
 pub mod sim1h_worker;
+pub mod sim2h_worker;
 pub mod p2p_config;
 pub mod p2p_network;
 pub mod in_memory;

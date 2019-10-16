@@ -191,7 +191,7 @@ impl From<NucleusStateSnapshot> for NucleusState {
     }
 }
 
-pub static NUCLEUS_SNAPSHOT_ADDRESS: &'static str = "NucleusState";
+pub static NUCLEUS_SNAPSHOT_ADDRESS: &str = "NucleusState";
 impl AddressableContent for NucleusStateSnapshot {
     fn address(&self) -> Address {
         NUCLEUS_SNAPSHOT_ADDRESS.into()
@@ -215,5 +215,4 @@ pub mod tests {
     pub fn test_nucleus_state() -> NucleusState {
         NucleusState::new()
     }
-
 }

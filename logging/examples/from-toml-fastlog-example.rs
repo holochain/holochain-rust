@@ -1,4 +1,4 @@
-use logging::prelude::*;
+use holochain_logging::prelude::*;
 
 fn main() {
     let toml = r#"

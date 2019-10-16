@@ -15,11 +15,7 @@ pub async fn get_link_result_count_workflow<'a>(
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
-    let response = await!(query(
-        context.clone(),
-        method,
-        link_args.options.timeout.clone()
-    ))?;
+    let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
 
     let links_result = match response {
         NetworkQueryResult::Links(link_result, _, _) => Ok(link_result),

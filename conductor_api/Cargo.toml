@@ -14,8 +14,8 @@ holochain_persistence_file = "=0.0.8"
 holochain_persistence_pickle = "=0.0.8"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h = { version = "=0.0.13" }
-lib3h_sodium = { version = "=0.0.13" }
+lib3h = "=0.0.16"
+lib3h_sodium = "=0.0.16"
 holochain_common = { path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
@@ -41,7 +41,7 @@ base64 = "=0.10.1"
 reqwest = "=0.9.11"
 crossbeam-channel = "=0.3.8"
 log = "=0.4.8"
-logging = { path = "../logging" }
+holochain_logging = {version="=0.0.1", path = "../logging" }
 nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
 [dev-dependencies]

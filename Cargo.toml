@@ -5,6 +5,7 @@ members = [
   "common",
   "conductor",
   "conductor_api",
+  "conductor_api_api",
   "conductor_wasm",
   "core_api_c_binding",
   "core",

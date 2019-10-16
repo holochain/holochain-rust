@@ -12,7 +12,7 @@ use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
-    let (dna_address, agent_id) = await!(get_dna_and_agent(context))?;
+    let (dna_address, agent_id) = get_dna_and_agent(context).await?;
     let handler = create_handler(&context, dna_address.to_string());
     let network_settings = NetworkSettings {
         p2p_config: context.p2p_config.clone(),
@@ -24,9 +24,10 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     log_debug!(context, "waiting for network");
-    await!(InitNetworkFuture {
+    InitNetworkFuture {
         context: context.clone(),
-    })?;
+    }
+    .await?;
 
 
     Ok(())
@@ -37,7 +38,7 @@ pub async fn initialize_network_with_spoofed_dna(
     dna_address: Address,
     context: &Arc<Context>,
 ) -> HcResult<()> {
-    let (_, agent_id) = await!(get_dna_and_agent(context))?;
+    let (_, agent_id) = get_dna_and_agent(context).await?;
     let handler = create_handler(&context, dna_address.to_string());
     let network_settings = NetworkSettings {
         p2p_config: context.p2p_config.clone(),
@@ -48,9 +49,10 @@ pub async fn initialize_network_with_spoofed_dna(
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    await!(InitNetworkFuture {
+    InitNetworkFuture {
         context: context.clone(),
-    })
+    }
+    .await
 }
 
 pub struct InitNetworkFuture {
@@ -71,7 +73,7 @@ impl Future for InitNetworkFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            if state.network().network.lock().unwrap().is_some()
+            if state.network().network.is_some()
                 && state.network().dna_address.is_some()
                 && state.network().agent_id.is_some()
             {

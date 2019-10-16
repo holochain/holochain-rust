@@ -24,7 +24,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 fn publish_header(
     network_state: &mut NetworkState,
     root_state: &State,
-    chain_header: &ChainHeader,
+    chain_header: ChainHeader,
 ) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } =
         create_entry_with_header_for_header(&StateWrapper::from(root_state.clone()), chain_header)?;
@@ -48,7 +48,7 @@ fn reduce_publish_header_entry_inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let entry_with_header = fetch_entry_with_header(&address, root_state)?;
-    publish_header(network_state, root_state, &entry_with_header.header)
+    publish_header(network_state, root_state, entry_with_header.header)
 }
 
 pub fn reduce_publish_header_entry(
@@ -90,5 +90,4 @@ mod tests {
 
         store.reduce(action_wrapper);
     }
-
 }

@@ -131,7 +131,7 @@ impl Drop for Conductor {
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
-        self.n3h_keepalive_network.take().map(|mut network| network.stop());
+        if let Some(mut network) = self.n3h_keepalive_network.take() { network.stop() }
     }
 }
 

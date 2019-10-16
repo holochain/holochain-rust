@@ -17,7 +17,7 @@ jobs:
   steps:
    - checkout
    - run: nix-shell --run hc-test-fmt
-   - run: nix-shell --run hn-rust-clippy
+   - run: nix-shell --run hc-clippy-all
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps

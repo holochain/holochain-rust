@@ -162,6 +162,20 @@ jobs:
        name: stress tests
        command: nix-shell --run hc-stress-test-sim1h
 
+ stress-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run "hc-sim2h-server -p 9002"
+         background: true
+     - run:
+         name: stress tests
+         command: nix-shell --run hc-stress-test-sim2h
+
  cli-tests:
   docker:
    - image: holochain/holochain-rust:latest
@@ -263,6 +277,7 @@ workflows:
    - cli-tests
    - wasm-conductor-tests
    - stress-tests-sim1h
+   - stress-tests-sim2h
 
  cold.ubuntu:
   jobs:

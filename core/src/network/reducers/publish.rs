@@ -9,17 +9,32 @@ use crate::{
     },
     state::State,
 };
+use chrono::{offset::FixedOffset, DateTime};
 use holochain_core_types::{
     crud_status::CrudStatus,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
+use holochain_json_api::json::JsonString;
 use lib3h_protocol::{
-    data_types::{EntryData, ProvidedEntryData},
+    data_types::{EntryAspectData, EntryData, ProvidedEntryData},
     protocol_client::Lib3hClientProtocol,
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+
+pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
+    let type_hint = ea.type_hint();
+    let aspect_address = ea.address();
+    let ts: DateTime<FixedOffset> = ea.header().timestamp().into();
+    let aspect_json: JsonString = ea.into();
+    EntryAspectData {
+        type_hint,
+        aspect_address,
+        aspect: aspect_json.to_bytes().into(),
+        publish_ts: ts.timestamp() as u64,
+    }
+}
 
 /// Send to network a PublishDhtData message
 fn publish_entry(
@@ -33,11 +48,10 @@ fn publish_entry(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: entry_with_header.entry.address().clone(),
-                aspect_list: vec![EntryAspect::Content(
+                aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
                     entry_with_header.entry.clone(),
                     entry_with_header.header.clone(),
-                )
-                .into()],
+                ))],
             },
         }),
     )
@@ -73,7 +87,7 @@ fn publish_update_delete_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: orig_entry_address,
-                aspect_list: vec![aspect.into()],
+                aspect_list: vec![entry_data_to_entry_aspect_data(&aspect)],
             },
         }),
     )?;
@@ -113,7 +127,7 @@ fn publish_link_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: base,
-                aspect_list: vec![aspect.into()],
+                aspect_list: vec![entry_data_to_entry_aspect_data(&aspect)],
             },
         }),
     )
@@ -156,9 +170,10 @@ fn reduce_publish_inner(
                 None => Ok(()),
             }
         }),
-        _ => Err(HolochainError::NotImplemented(
-            format!("reduce_publish_inner not implemented for {}", entry_with_header.entry.entry_type()),
-        )),
+        _ => Err(HolochainError::NotImplemented(format!(
+            "reduce_publish_inner not implemented for {}",
+            entry_with_header.entry.entry_type()
+        ))),
     }
 }
 
@@ -183,12 +198,14 @@ pub fn reduce_publish(
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use crate::{
         action::{Action, ActionWrapper},
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::entry::test_entry;
+    use chrono::{offset::FixedOffset, DateTime};
+    use holochain_core_types::{chain_header::test_chain_header, entry::test_entry};
     use holochain_persistence_api::cas::content::AddressableContent;
 
     #[test]
@@ -200,5 +217,18 @@ mod tests {
         let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
 
         store.reduce(action_wrapper);
+    }
+
+    #[test]
+    fn can_convert_into_entry_aspect_data() {
+        let chain_header = test_chain_header();
+        let aspect = EntryAspect::Header(chain_header.clone());
+        let aspect_data: EntryAspectData = entry_data_to_entry_aspect_data(&aspect);
+        let aspect_json: JsonString = aspect.clone().into();
+        let ts: DateTime<FixedOffset> = chain_header.timestamp().into();
+        assert_eq!(aspect_data.type_hint, aspect.type_hint());
+        assert_eq!(aspect_data.aspect_address, aspect.address());
+        assert_eq!(*aspect_data.aspect, aspect_json.to_bytes());
+        assert_eq!(aspect_data.publish_ts, ts.timestamp() as u64);
     }
 }

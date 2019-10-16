@@ -1204,7 +1204,6 @@ dependencies = [
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_crypto_api 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "maplit 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mashup 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",

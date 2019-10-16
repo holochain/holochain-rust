@@ -18,10 +18,8 @@ const batchSimple = (numConductors, numInstances) => {
 
 const trace = R.tap(x => console.log('{T}', x))
 
-module.exports = scenario => {
+module.exports = (scenario, N, M) => {
 
-  const N = 10
-  const M = 1
   const batch = batchSimple(N, M)
 
   scenario('one at a time', async (s, t) => {

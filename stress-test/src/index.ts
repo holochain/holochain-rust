@@ -39,6 +39,12 @@ const orchestrator = new Orchestrator({
   }
 })
 
-require('./all-on')(orchestrator.registerScenario)
+// First two arguments are ts-node and the script name
+const N = parseInt(process.argv[2], 10) || 10
+const M = parseInt(process.argv[3], 10) || 1
+
+console.log(`Running stress tests with N=${N}, M=${M}`)
+
+require('./all-on')(orchestrator.registerScenario, N, M)
 
 orchestrator.run()

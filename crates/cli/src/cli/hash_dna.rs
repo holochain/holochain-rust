@@ -1,5 +1,5 @@
 use error::DefaultResult;
-use holochain_conductor_api::conductor::Conductor;
+use holochain_conductor_lib::conductor::Conductor;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::path::PathBuf;
 

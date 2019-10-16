@@ -11,7 +11,7 @@ use futures::{task::Poll, Future};
 
 use crate::state::StateWrapper;
 use futures::task::noop_waker_ref;
-use holochain_conductor_api_api::ConductorApi;
+use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},

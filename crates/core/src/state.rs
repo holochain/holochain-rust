@@ -9,7 +9,7 @@ use crate::{
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
 };
-use holochain_conductor_api_api::ConductorApi;
+use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
     chain_header::ChainHeader,
     dna::Dna,

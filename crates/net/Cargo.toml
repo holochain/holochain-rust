@@ -20,7 +20,7 @@ lib3h_zombie_actor = "=0.0.16"
 detach = "=0.0.16"
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../../common" }
-holochain_conductor_api_api = { path = "../conductor_api" }
+holochain_conductor_lib_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
@@ -42,7 +42,7 @@ native-tls = "=0.2.2"
 crossbeam-channel = "=0.3.8"
 parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
-holochain_logging = { version="=0.0.1", path = "../../logging" }
+holochain_logging = { version="=0.0.1", path = "../logging" }
 log = "0.4.8"
 
 [features]

@@ -1,4 +1,4 @@
-//! `holochain_conductor_api` is a library for instantiating and using holochain instances that
+//! `holochain_conductor_lib` is a library for instantiating and using holochain instances that
 //! each run a holochain DNA, DHT and source chain.
 //!
 //! The struct Holochain wraps everything needed to run such an instance.
@@ -6,7 +6,7 @@
 //! # Examples
 //!
 //! ``` rust
-//! extern crate holochain_conductor_api;
+//! extern crate holochain_conductor_lib;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
 //! extern crate holochain_net;
@@ -17,7 +17,7 @@
 //! extern crate lib3h_sodium;
 //! extern crate tempfile;
 //! extern crate test_utils;
-//! use holochain_conductor_api::{*, context_builder::ContextBuilder};
+//! use holochain_conductor_lib::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},

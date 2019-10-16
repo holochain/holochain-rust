@@ -20,7 +20,7 @@ url = "=2.1.0"
 
 [dev-dependencies]
 test_utils = { path = "../../test_utils" }
-holochain_conductor_api = { path = "../conductor_lib" }
+holochain_conductor_lib = { path = "../conductor_lib" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 tempfile = "=3.0.7"

@@ -147,8 +147,8 @@ pub fn default_persistence_dir() -> PathBuf {
 /// filter the logs from its dependencies.
 ///
 /// ```rust
-/// extern crate holochain_conductor_api;
-/// use holochain_conductor_api::{logger,config};
+/// extern crate holochain_conductor_lib;
+/// use holochain_conductor_lib::{logger,config};
 /// let mut rules = logger::LogRules::new();
 /// // Filtering out all the logs from our dependencies
 /// rules

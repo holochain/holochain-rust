@@ -20,7 +20,7 @@ use lib3h_protocol::{
 
 use crate::{sim1h_worker::Sim1hWorker, sim2h_worker::Sim2hWorker};
 use crossbeam_channel;
-use holochain_conductor_api_api::conductor_api::ConductorApi;
+use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
 

@@ -1,6 +1,6 @@
 #![warn(unused_extern_crates)]
 extern crate holochain_common;
-extern crate holochain_conductor_api;
+extern crate holochain_conductor_lib;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_json_api;

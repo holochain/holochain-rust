@@ -1,4 +1,4 @@
-extern crate holochain_conductor_api;
+extern crate holochain_conductor_lib;
 extern crate holochain_core;
 extern crate holochain_core_types;
 #[macro_use]
@@ -12,7 +12,7 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate test_utils;
 
-use holochain_conductor_api::error::{HolochainInstanceError, HolochainResult};
+use holochain_conductor_lib::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
     bits_n_pieces::U16_MAX,
     error::{CoreError, HolochainError},

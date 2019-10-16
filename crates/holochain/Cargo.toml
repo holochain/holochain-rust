@@ -5,7 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
-holochain_conductor_api = { path = "../conductor_lib" }
+holochain_conductor_lib = { path = "../conductor_lib" }
 lib3h_sodium = "=0.0.16"
 holochain_common = { path = "../../common" }
 structopt = "=0.2.15"

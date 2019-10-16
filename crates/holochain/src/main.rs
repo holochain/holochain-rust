@@ -14,14 +14,14 @@
 /// If called without arguments, this executable tries to load a configuration from
 /// ~/.holochain/conductor/conductor_config.toml.
 /// A custom config can be provided with the --config, -c flag.
-extern crate holochain_conductor_api;
+extern crate holochain_conductor_lib;
 extern crate holochain_core_types;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
 
-use holochain_conductor_api::{
+use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };

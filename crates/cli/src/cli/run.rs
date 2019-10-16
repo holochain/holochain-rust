@@ -2,7 +2,7 @@ use cli;
 use colored::*;
 use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
-use holochain_conductor_api::{
+use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::*,
     key_loaders::{test_keystore, test_keystore_loader},
@@ -245,7 +245,7 @@ mod tests {
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
     use self::tempfile::tempdir;
-    use holochain_conductor_api::config::*;
+    use holochain_conductor_lib::config::*;
     use holochain_core_types::dna::Dna;
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::fs::{create_dir, File};

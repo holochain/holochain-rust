@@ -1,6 +1,6 @@
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
-use holochain_conductor_api::{key_loaders::mock_passphrase_manager, keystore::Keystore};
+use holochain_conductor_lib::{key_loaders::mock_passphrase_manager, keystore::Keystore};
 use rpassword;
 use std::{
     fs::create_dir_all,
@@ -71,7 +71,7 @@ when unlocking the keybundle to use within a Holochain conductor."
 #[cfg(test)]
 pub mod test {
     use super::*;
-    use holochain_conductor_api::{
+    use holochain_conductor_lib::{
         key_loaders::mock_passphrase_manager,
         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     };

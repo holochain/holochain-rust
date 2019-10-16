@@ -26,12 +26,12 @@
 ///
 /// # Example
 /// ```rust
-/// extern crate holochain_conductor_api;
+/// extern crate holochain_conductor_lib;
 /// extern crate holochain_core_types;
 /// #[macro_use]
 /// extern crate structopt;
 ///
-/// use holochain_conductor_api::{
+/// use holochain_conductor_lib::{
 ///     config::{load_configuration, Configuration},
 ///     conductor::Conductor,
 /// };

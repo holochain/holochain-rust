@@ -3,6 +3,7 @@
 members = [
   "crates/cli",
   "common",
+  "crates/core_types",
   "crates/holochain",
   "crates/conductor_lib",
   "crates/conductor_api",
@@ -10,10 +11,11 @@ members = [
   "crates/core",
   "crates/dpki",
   "crates/hdk",
+  "crates/core_types",
   "crates/hdk-v2",
   "crates/net",
   "benchmarks",
-  "logging"
+  "crates/logging"
 ]
 exclude = [
   "test_utils",

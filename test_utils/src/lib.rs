@@ -11,7 +11,7 @@ extern crate holochain_json_derive;
 pub mod mock_signing;
 
 use crossbeam_channel::Receiver;
-use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
+use holochain_conductor_lib::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
     context::Context,

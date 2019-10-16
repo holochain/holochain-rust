@@ -6,7 +6,7 @@ use crate::connection::{
 };
 use detach::Detach;
 use failure::err_msg;
-use holochain_conductor_api_api::{ConductorApi, CryptoMethod};
+use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{
     error::JsonError,
     json::{JsonString, RawString},

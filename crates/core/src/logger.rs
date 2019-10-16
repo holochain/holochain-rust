@@ -3,7 +3,8 @@
 //! gets emitted globaly from the conductor.
 use chrono::Local;
 use holochain_core_types::sync::{HcMutex as Mutex};
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc};
+use crossbeam_channel;
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
@@ -35,8 +36,8 @@ impl Logger for TestLogger {
     }
 }
 
-pub type Receiver = mpsc::Receiver<(String, String)>;
-pub type Sender = mpsc::Sender<(String, String)>;
+pub type Receiver = crossbeam_channel::Receiver<(String, String)>;
+pub type Sender = crossbeam_channel::Sender<(String, String)>;
 
 #[derive(Clone)]
 pub struct ChannelLogger {
@@ -55,7 +56,7 @@ impl ChannelLogger {
         ChannelLogger { id, sender }
     }
     pub fn setup() -> (Sender, Receiver) {
-        mpsc::channel()
+        crossbeam_channel::unbounded()
     }
 }
 pub fn default_handler(msg: String) {

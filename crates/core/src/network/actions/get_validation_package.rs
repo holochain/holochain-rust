@@ -51,6 +51,7 @@ impl Future for GetValidationPackageFuture {
         {
             return Poll::Ready(Err(err));
         }
+
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {

@@ -185,7 +185,8 @@ impl Instance {
                 while kill_receiver.try_recv().is_err() {
                     if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
                         // Ping can happen often, and should be as lightweight as possible
-                        if *action_wrapper.action() != Action::Ping {
+                        let should_process = *action_wrapper.action() != Action::Ping;
+                        if should_process {
                             state_observers = sync_self.process_action(
                                 &action_wrapper,
                                 state_observers,
@@ -336,6 +337,8 @@ impl Instance {
 
 impl Drop for Instance {
     fn drop(&mut self) {
+        // TODO: this is already performed in Holochain::stop explicitly,
+        // can we get rid of one or the other?
         let _ = self.shutdown_network();
         self.stop_action_loop();
         self.state.write().unwrap().drop_inner_state();

@@ -34,7 +34,6 @@ extern crate maplit;
 // #[macro_use]
 // extern crate shrinkwraprs;
 extern crate hcid;
-extern crate lib3h_protocol;
 extern crate parking_lot;
 extern crate wasmi;
 pub mod chain_header;

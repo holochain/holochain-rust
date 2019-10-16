@@ -93,7 +93,7 @@ scenario('alice create & publish post -> bob recommend to self', async (s, t) =>
   t.equal(recommendedPosts.Ok.links.length, 1)
 })
 
-scenario.only('create & publish post -> recommend to other agent', async (s, t) => {
+scenario('create & publish post -> recommend to other agent', async (s, t) => {
       const { alice, bob } = await s.players({alice: one, bob: one}, true)
   const content = "Holo world...3"
   const params = { content: content, in_reply_to: null }

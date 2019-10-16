@@ -24,10 +24,11 @@ let
   ../hdk-v2 \
   ../net \
   ../dpki \
+  ../logging \
   ../../common \
   ../benchmarks \
   ../test_utils \
-  ../logging
+  
  do
   echo "checking ''${p}"
   cd $p && cargo fmt -- --check

@@ -29,7 +29,6 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     }
     .await?;
 
-
     Ok(())
 }
 

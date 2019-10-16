@@ -1,27 +1,30 @@
-use crate::context::Context;
-use std::sync::Arc;
-use crate::state_dump::{StateDump, address_to_content_and_type};
+use crate::{
+    context::Context,
+    state_dump::{address_to_content_and_type, StateDump},
+};
 use holochain_core_types::chain_header::ChainHeader;
-use holochain_persistence_api::cas::content::{AddressableContent, Address};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use std::sync::Arc;
 
 fn header_to_string(h: &ChainHeader) -> String {
     format!(
-r#"===========Header===========
+        r#"===========Header===========
 Type: {:?}
 Timestamp: {}
 Sources: {:?}
 Header address: {}
 Prev. address: {:?}
 ----------Content----------"#,
-    h.entry_type(),
-    h.timestamp(),
-    h.provenances()
-        .iter()
-        .map(|p| p.source().to_string())
-        .collect::<Vec<String>>()
-        .join(", "),
-    h.address(),
-    h.link().map(|l| l.to_string()))
+        h.entry_type(),
+        h.timestamp(),
+        h.provenances()
+            .iter()
+            .map(|p| p.source().to_string())
+            .collect::<Vec<String>>()
+            .join(", "),
+        h.address(),
+        h.link().map(|l| l.to_string())
+    )
 }
 
 fn address_to_content_string(address: &Address, context: Arc<Context>) -> String {
@@ -42,7 +45,8 @@ fn address_to_content_string(address: &Address, context: Arc<Context>) -> String
 pub fn state_dump(context: Arc<Context>) {
     let dump = StateDump::from(context.clone());
 
-    let pending_validation_strings = dump.pending_validations
+    let pending_validation_strings = dump
+        .pending_validations
         .iter()
         .map(|pending_validation| {
             let maybe_content =
@@ -68,18 +72,22 @@ pub fn state_dump(context: Arc<Context>) {
         })
         .collect::<Vec<String>>();
 
-    let holding_strings = dump.held_entries
+    let holding_strings = dump
+        .held_entries
         .iter()
         .map(|address| address_to_content_string(address, context.clone()))
         .collect::<Vec<String>>();
 
-    let source_chain_strings = dump.source_chain
+    let source_chain_strings = dump
+        .source_chain
         .iter()
-        .map(|h| format!(
-            "{}\n=> {}",
-            header_to_string(h),
-            address_to_content_string(h.entry_address(), context.clone())
-        ))
+        .map(|h| {
+            format!(
+                "{}\n=> {}",
+                header_to_string(h),
+                address_to_content_string(h.entry_address(), context.clone())
+            )
+        })
         .collect::<Vec<String>>();
 
     let debug_dump = format!(

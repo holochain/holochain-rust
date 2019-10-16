@@ -18,7 +18,8 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         Ok(verify_signature_input) => verify_signature_input,
         // Exit on error
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_verify_signature failed to deserialize SerializedEntry: {:?}",
                 args_str
             );
@@ -26,7 +27,8 @@ pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
 
-    log_debug!(context,
+    log_debug!(
+        context,
         "zome: using provenance:{:?} to verify data:{:?}",
         verification_args.provenance.clone(),
         verification_args.payload.clone()

@@ -1,6 +1,10 @@
 use std::fmt::Debug;
 
-pub fn lax_send<T: Clone + Debug>(tx: crossbeam_channel::Sender<T>, val: T, _failure_reason: &str) -> bool {
+pub fn lax_send<T: Clone + Debug>(
+    tx: crossbeam_channel::Sender<T>,
+    val: T,
+    _failure_reason: &str,
+) -> bool {
     match tx.send(val.clone()) {
         Ok(()) => true,
         Err(_) => {

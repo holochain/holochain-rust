@@ -32,7 +32,10 @@ impl Future for PublishHeaderEntryFuture {
     type Output = HcResult<Address>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if let Some(err) = self.context.action_channel_error("PublishHeaderEntryFuture") {
+        if let Some(err) = self
+            .context
+            .action_channel_error("PublishHeaderEntryFuture")
+        {
             return Poll::Ready(Err(err));
         }
         if let Some(state) = self.context.try_state() {
@@ -55,6 +58,5 @@ impl Future for PublishHeaderEntryFuture {
         } else {
             Poll::Pending
         }
-
     }
 }

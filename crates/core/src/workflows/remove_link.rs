@@ -32,7 +32,8 @@ pub async fn remove_link_workflow(
 
     log_debug!(context, "workflow/remove_link: {:?}", link);
     // 1. Get hold of validation package
-    log_debug!(context,
+    log_debug!(
+        context,
         "workflow/remove_link: getting validation package..."
     );
     let maybe_validation_package = validation_package(&entry_with_header, context.clone())

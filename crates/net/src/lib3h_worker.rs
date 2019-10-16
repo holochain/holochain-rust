@@ -6,12 +6,12 @@ use crate::connection::{
 };
 use lib3h::{
     dht::mirror_dht::MirrorDht,
-    engine::{GhostEngine, ghost_engine_wrapper::LegacyLib3h, EngineConfig},
-    error::Lib3hError
+    engine::{ghost_engine_wrapper::LegacyLib3h, EngineConfig, GhostEngine},
+    error::Lib3hError,
 };
 
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 use holochain_tracing::HSpan;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
@@ -23,15 +23,13 @@ use holochain_tracing::HSpan;
 #[allow(non_snake_case)]
 pub struct Lib3hWorker {
     handler: NetHandler,
-    net_engine : LegacyLib3h<GhostEngine<'static>,Lib3hError>
+    net_engine: LegacyLib3h<GhostEngine<'static>, Lib3hError>,
 }
-
 
 impl Lib3hWorker {
     pub fn advertise(self) -> url::Url {
         self.net_engine.advertise().into()
     }
-
 }
 
 /// Constructors
@@ -40,20 +38,25 @@ impl Lib3hWorker {
     pub fn with_wss_transport(handler: NetHandler, real_config: EngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
-            net_engine: LegacyLib3h::new("core",GhostEngine::new(
-                HSpan::fixme(),
-                Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
-                real_config,
-                // TODO generate this automatically in the lib3h api
-                "wss-agent",
-                MirrorDht::new_with_config,
-            )?),
+            net_engine: LegacyLib3h::new(
+                "core",
+                GhostEngine::new(
+                    HSpan::fixme(),
+                    Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
+                    real_config,
+                    // TODO generate this automatically in the lib3h api
+                    "wss-agent",
+                    MirrorDht::new_with_config,
+                )?,
+            ),
         })
     }
 
     /// Create a new memory worker connected to the lib3h NetworkEngine
-    pub fn with_memory_transport(handler: NetHandler, real_config: EngineConfig) -> NetResult<Self> {
-
+    pub fn with_memory_transport(
+        handler: NetHandler,
+        real_config: EngineConfig,
+    ) -> NetResult<Self> {
         let ghost_engine = GhostEngine::new(
             HSpan::fixme(),
             Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
@@ -61,15 +64,14 @@ impl Lib3hWorker {
             // TODO generate this automatically in the lib3h api
             format!("mem-agent-{}", snowflake::ProcessUniqueId::new()).as_str(),
             MirrorDht::new_with_config,
-            )?;
+        )?;
         let net_engine = LegacyLib3h::new("core", ghost_engine);
         let worker = Lib3hWorker {
             handler,
-            net_engine
+            net_engine,
         };
 
         Ok(worker)
-
     }
 }
 
@@ -103,9 +105,6 @@ impl NetWorker for Lib3hWorker {
     fn endpoint(&self) -> Option<String> {
         Some("".into())
     }
-
-
-
 }
 
 #[cfg(test)]

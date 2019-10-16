@@ -23,9 +23,8 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksResult};
 
 use test_utils::{
-    generate_zome_internal_error, make_test_call, start_holochain_instance, wait_for_zome_result,
-    assert_zome_internal_errors_equivalent,
-    TestEntry,
+    assert_zome_internal_errors_equivalent, generate_zome_internal_error, make_test_call,
+    start_holochain_instance, wait_for_zome_result, TestEntry,
 };
 
 use std::{thread, time::Duration};

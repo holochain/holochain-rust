@@ -20,10 +20,7 @@ pub async fn custom_send(
     timeout: Timeout,
     context: Arc<Context>,
 ) -> Result<String, HolochainError> {
-    let rand_string: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .collect();
+    let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(10).collect();
     let id = format!("{}-{}", ProcessUniqueId::new().to_string(), rand_string);
     let direct_message = DirectMessage::Custom(custom_direct_message);
     let direct_message_data = DirectMessageData {
@@ -82,6 +79,5 @@ impl Future for SendResponseFuture {
         } else {
             Poll::Pending
         }
-
     }
 }

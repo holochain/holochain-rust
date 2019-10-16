@@ -34,7 +34,6 @@ pub fn reduce_shutdown(
             .into(),
     });
 
-
     if let Some(mut network) = state.network.take() {
         let _ = network.send(json);
 
@@ -44,6 +43,4 @@ pub fn reduce_shutdown(
     } else {
         error!("Tried to shutdown uninitialized network");
     }
-
-
 }

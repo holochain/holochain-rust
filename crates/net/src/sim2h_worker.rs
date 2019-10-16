@@ -4,28 +4,39 @@ use crate::connection::{
     net_connection::{NetHandler, NetWorker},
     NetResult,
 };
-use holochain_json_api::{error::JsonError, json::JsonString};
-use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address};
-use log::*;
-use sim2h::{WireMessage, WireError};
-use url::Url;
-use lib3h::transport::websocket::actor::{GhostTransportWebsocket};
-use lib3h::transport::websocket::tls::{TlsConfig, TlsCertificate};
-use lib3h::transport::protocol::{
-    RequestToChild, RequestToChildResponse, RequestToParent, TransportActorParentWrapper
+use detach::Detach;
+use failure::err_msg;
+use holochain_conductor_api_api::{ConductorApi, CryptoMethod};
+use holochain_json_api::{
+    error::JsonError,
+    json::{JsonString, RawString},
 };
 use holochain_tracing::Span;
-use lib3h_zombie_actor::{GhostParentWrapper, GhostCallbackData, WorkWasDone};
-use lib3h_zombie_actor::GhostCanTrack;
-use failure::err_msg;
-use lib3h_protocol::protocol::*;
-use lib3h_protocol::data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData};
-use lib3h_protocol::uri::Lib3hUri;
+use lib3h::transport::{
+    protocol::{
+        RequestToChild, RequestToChildResponse, RequestToParent, TransportActorParentWrapper,
+    },
+    websocket::{
+        actor::GhostTransportWebsocket,
+        tls::{TlsCertificate, TlsConfig},
+    },
+};
+use lib3h_protocol::{
+    data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
+    protocol::*,
+    protocol_client::Lib3hClientProtocol,
+    protocol_server::Lib3hServerProtocol,
+    uri::Lib3hUri,
+    Address,
+};
+use lib3h_zombie_actor::{GhostCallbackData, GhostCanTrack, GhostParentWrapper, WorkWasDone};
+use log::*;
+use sim2h::{
+    crypto::{Provenance, SignedWireMessage},
+    WireError, WireMessage,
+};
 use std::convert::TryFrom;
-use detach::Detach;
-use sim2h::crypto::{Provenance, SignedWireMessage};
-use holochain_conductor_api_api::{CryptoMethod, ConductorApi};
-use holochain_json_api::json::RawString;
+use url::Url;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -50,7 +61,7 @@ fn wire_message_into_escaped_string(message: &WireMessage) -> String {
     let json_string: JsonString = RawString::from(payload).into();
     let mut string: String = json_string.into();
     string = String::from(string.trim_start_matches("\""));
-    string = String::from( string.trim_end_matches("\""));
+    string = String::from(string.trim_end_matches("\""));
     string
 }
 
@@ -80,7 +91,6 @@ impl Sim2hWorker {
                 "t1_requests", // prefix for request ids in the tracker
             );
 
-
         // bind to some port:
         // channel for making an async call sync
         debug!("Trying to bind to network...");
@@ -88,19 +98,29 @@ impl Sim2hWorker {
         transport.request(
             Span::todo("Find out how to use spans the right way"),
             RequestToChild::Bind {
-                spec: Url::parse("wss://127.0.0.1:0").expect("can parse url").into(),
+                spec: Url::parse("wss://127.0.0.1:0")
+                    .expect("can parse url")
+                    .into(),
             },
             // callback just notifies channel so
             Box::new(move |_owner, response| {
                 let result = match response {
-                    GhostCallbackData::Timeout(bt) => Err(format!("Bind timed out. Backtrace: {:?}", bt)),
+                    GhostCallbackData::Timeout(bt) => {
+                        Err(format!("Bind timed out. Backtrace: {:?}", bt))
+                    }
                     GhostCallbackData::Response(r) => match r {
                         Ok(response) => match response {
-                            RequestToChildResponse::Bind(bind_result_data) => Ok(bind_result_data.bound_url),
-                            _ => Err(String::from("Got unexpected response from transport actor during bind")),
+                            RequestToChildResponse::Bind(bind_result_data) => {
+                                Ok(bind_result_data.bound_url)
+                            }
+                            _ => Err(String::from(
+                                "Got unexpected response from transport actor during bind",
+                            )),
+                        },
+                        Err(transport_error) => {
+                            Err(format!("Error during bind: {:?}", transport_error))
                         }
-                        Err(transport_error) => Err(format!("Error during bind: {:?}", transport_error)),
-                    }
+                    },
                 };
                 let _ = tx.send(result);
                 Ok(())
@@ -132,8 +152,12 @@ impl Sim2hWorker {
     }
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
-        let signature = self.conductor_api
-            .execute(wire_message_into_escaped_string(&message), CryptoMethod::Sign)
+        let signature = self
+            .conductor_api
+            .execute(
+                wire_message_into_escaped_string(&message),
+                CryptoMethod::Sign,
+            )
             .expect("Couldn't sign wire message in sim2h worker");
 
         let signed_wire_message = SignedWireMessage::new(
@@ -149,13 +173,18 @@ impl Sim2hWorker {
             // callback just notifies channel so
             Box::new(move |_owner, response| {
                 match response {
-                    GhostCallbackData::Response(Ok(RequestToChildResponse::SendMessageSuccess))
-                        => trace!("Success sending wire message"),
-                    GhostCallbackData::Response(Err(e))
-                        => error!("Error sending wire message: {:?}",e),
-                    GhostCallbackData::Timeout(bt)
-                        => error!("Timeout sending wire message: {:?}", bt),
-                    _ => error!("Got bad response type from transport actor when sending wire message"),
+                    GhostCallbackData::Response(Ok(RequestToChildResponse::SendMessageSuccess)) => {
+                        trace!("Success sending wire message")
+                    }
+                    GhostCallbackData::Response(Err(e)) => {
+                        error!("Error sending wire message: {:?}", e)
+                    }
+                    GhostCallbackData::Timeout(bt) => {
+                        error!("Timeout sending wire message: {:?}", bt)
+                    }
+                    _ => error!(
+                        "Got bad response type from transport actor when sending wire message"
+                    ),
                 };
                 Ok(())
             }),
@@ -164,24 +193,23 @@ impl Sim2hWorker {
     }
 
     #[allow(dead_code)]
-    fn handle_client_message(
-        &mut self,
-        data: Lib3hClientProtocol,
-    ) -> NetResult<()> {
+    fn handle_client_message(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         match data {
             // Success response to a request (any Command with an `request_id` field.)
             Lib3hClientProtocol::SuccessResult(generic_result_data) => {
-                self.to_core.push(Lib3hServerProtocol::FailureResult(generic_result_data));
+                self.to_core
+                    .push(Lib3hServerProtocol::FailureResult(generic_result_data));
                 Ok(())
             }
             // Connect to the specified multiaddr
             Lib3hClientProtocol::Connect(connect_data) => {
-                self.to_core.push(Lib3hServerProtocol::FailureResult(GenericResultData {
-                    request_id: connect_data.request_id,
-                    space_address: Address::new().into(),
-                    to_agent_id: Address::new(),
-                    result_info: Opaque::new(),
-                }));
+                self.to_core
+                    .push(Lib3hServerProtocol::FailureResult(GenericResultData {
+                        request_id: connect_data.request_id,
+                        space_address: Address::new().into(),
+                        to_agent_id: Address::new(),
+                        result_info: Opaque::new(),
+                    }));
                 Ok(())
             }
 
@@ -190,16 +218,16 @@ impl Sim2hWorker {
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let log_context = "ClientToLib3h::JoinSpace";
                 self.space_data = Some(space_data.clone());
-                self.send_wire_message(WireMessage::ClientToLib3h(
-                    ClientToLib3h::JoinSpace(space_data)
-                ))
+                self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
+                    space_data,
+                )))
             }
             // Order the p2p module to leave the network of the specified space.
             Lib3hClientProtocol::LeaveSpace(space_data) => {
                 //error!("Leave space not implemented for sim2h yet");
-                self.send_wire_message(WireMessage::ClientToLib3h(
-                    ClientToLib3h::LeaveSpace(space_data)
-                ))
+                self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(
+                    space_data,
+                )))
             }
 
             // -- Direct Messaging -- //
@@ -207,14 +235,14 @@ impl Sim2hWorker {
             Lib3hClientProtocol::SendDirectMessage(dm_data) => {
                 //let log_context = "ClientToLib3h::SendDirectMessage";
                 self.send_wire_message(WireMessage::ClientToLib3h(
-                    ClientToLib3h::SendDirectMessage(dm_data)
+                    ClientToLib3h::SendDirectMessage(dm_data),
                 ))
             }
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
                 //let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data)
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data),
                 ))
             }
             // -- Entry -- //
@@ -226,7 +254,7 @@ impl Sim2hWorker {
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 //let log_context = "ClientToLib3h::HandleFetchEntryResult";
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data)
+                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
                 ))
             }
             // Publish data to the dht.
@@ -239,19 +267,20 @@ impl Sim2hWorker {
                 // This makes instances with Sim2hWorker work even if offline,
                 // i.e. not connected to the sim2h node.
                 for aspect in &provided_entry_data.entry.aspect_list {
-                    self.to_core.push(Lib3hServerProtocol::HandleStoreEntryAspect(
-                        StoreEntryAspectData {
-                            request_id: "".into(),
-                            space_address: provided_entry_data.space_address.clone(),
-                            provider_agent_id: provided_entry_data.provider_agent_id.clone(),
-                            entry_address: provided_entry_data.entry.entry_address.clone(),
-                            entry_aspect: aspect.clone(),
-                        })
-                    );
+                    self.to_core
+                        .push(Lib3hServerProtocol::HandleStoreEntryAspect(
+                            StoreEntryAspectData {
+                                request_id: "".into(),
+                                space_address: provided_entry_data.space_address.clone(),
+                                provider_agent_id: provided_entry_data.provider_agent_id.clone(),
+                                entry_address: provided_entry_data.entry.entry_address.clone(),
+                                entry_aspect: aspect.clone(),
+                            },
+                        ));
                 }
-                self.send_wire_message(WireMessage::ClientToLib3h(
-                    ClientToLib3h::PublishEntry(provided_entry_data)
-                ))
+                self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(
+                    provided_entry_data,
+                )))
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
@@ -259,14 +288,17 @@ impl Sim2hWorker {
                 // which means queries should always be handled locally.
                 // Thus, we don't even need to ask the central sim2h instance
                 // to handle a query - we just send it back to core directly.
-                self.to_core.push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
+                self.to_core
+                    .push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
                 Ok(())
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
                 // See above QueryEntry implementation.
                 // All queries are handled locally - we just reflect them back to core:
-                self.to_core.push(Lib3hServerProtocol::QueryEntryResult(query_entry_result_data));
+                self.to_core.push(Lib3hServerProtocol::QueryEntryResult(
+                    query_entry_result_data,
+                ));
                 Ok(())
             }
 
@@ -274,13 +306,13 @@ impl Sim2hWorker {
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data)
+                    Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
                 ))
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data)
+                    Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data),
                 ))
             }
 
@@ -295,25 +327,31 @@ impl Sim2hWorker {
     fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {
         match message {
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
-            WireMessage::Pong => {},
-            WireMessage::Lib3hToClient(m) =>
-                self.to_core.push(Lib3hServerProtocol::from(m)),
-            WireMessage::ClientToLib3hResponse(m) =>
-                self.to_core.push(Lib3hServerProtocol::from(m)),
-            WireMessage::Lib3hToClientResponse(m) =>
-                error!("Got a Lib3hToClientResponse from the Sim2h server, weird! Ignoring: {:?}", m),
-            WireMessage::ClientToLib3h(m) =>
-                error!("Got a ClientToLib3h from the Sim2h server, weird! Ignoring: {:?}", m),
+            WireMessage::Pong => {}
+            WireMessage::Lib3hToClient(m) => self.to_core.push(Lib3hServerProtocol::from(m)),
+            WireMessage::ClientToLib3hResponse(m) => {
+                self.to_core.push(Lib3hServerProtocol::from(m))
+            }
+            WireMessage::Lib3hToClientResponse(m) => error!(
+                "Got a Lib3hToClientResponse from the Sim2h server, weird! Ignoring: {:?}",
+                m
+            ),
+            WireMessage::ClientToLib3h(m) => error!(
+                "Got a ClientToLib3h from the Sim2h server, weird! Ignoring: {:?}",
+                m
+            ),
             WireMessage::Err(sim2h_error) => match sim2h_error {
-                WireError::MessageWhileInLimbo => if let Some(space_data) = self.space_data.clone() {
-                    self.send_wire_message(WireMessage::ClientToLib3h(
-                        ClientToLib3h::JoinSpace(space_data)
-                    ))?;
-                } else {
-                    error!("Uh oh, we got a MessageWhileInLimbo errro and we don't have space data. Did core send a message before sending a join? This should not happen.");
+                WireError::MessageWhileInLimbo => {
+                    if let Some(space_data) = self.space_data.clone() {
+                        self.send_wire_message(WireMessage::ClientToLib3h(
+                            ClientToLib3h::JoinSpace(space_data),
+                        ))?;
+                    } else {
+                        error!("Uh oh, we got a MessageWhileInLimbo errro and we don't have space data. Did core send a message before sending a join? This should not happen.");
+                    }
                 }
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
-            }
+            },
         };
         Ok(())
     }
@@ -352,7 +390,10 @@ impl NetWorker for Sim2hWorker {
         for data in server_messages {
             debug!("Sim2h >> CORE: {:?}", data);
             if let Err(error) = self.handler.handle(Ok(data)) {
-                error!("Error handling server message in core's handler: {:?}", error);
+                error!(
+                    "Error handling server message in core's handler: {:?}",
+                    error
+                );
             }
             did_something = WorkWasDone::from(true);
         }
@@ -389,7 +430,6 @@ impl NetWorker for Sim2hWorker {
             did_something = WorkWasDone::from(true);
         }
         Ok(did_something.into())
-
     }
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {

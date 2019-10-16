@@ -28,7 +28,8 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
     let message = match parse_direct_message(&*message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "net/handle_send_message: Could not deserialize DirectMessage: {:?}",
                 error,
             );
@@ -50,7 +51,8 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                         custom_direct_message,
                         context.clone(),
                     )) {
-                        log_error!(context,
+                        log_error!(
+                            context,
                             "net: Error handling custom direct message: {:?}",
                             error
                         );
@@ -79,9 +81,11 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 })
                 .expect("Could not spawn thread for handling of validation package request");
         }
-        DirectMessage::ValidationPackage(_) => log_error!(context, 
+        DirectMessage::ValidationPackage(_) => {
+            log_error!(context, 
             "net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",
-        ),
+        )
+        }
     };
 }
 
@@ -91,7 +95,8 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
     let response = match parse_direct_message(&message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "net/handle_send_message_result: Could not deserialize DirectMessage: {:?}",
                 error,
             );

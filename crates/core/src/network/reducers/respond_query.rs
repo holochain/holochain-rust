@@ -1,10 +1,7 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse,
-        query::NetworkQueryResult,
-        reducers::send,
-        state::NetworkState,
+        actions::ActionResponse, query::NetworkQueryResult, reducers::send, state::NetworkState,
     },
     state::State,
 };
@@ -15,11 +12,13 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
-
-fn reduce_respond_query_inner(network_state: &mut NetworkState,network_query_result:&NetworkQueryResult,query_data:&QueryEntryData) -> Result<(), HolochainError>
-{
+fn reduce_respond_query_inner(
+    network_state: &mut NetworkState,
+    network_query_result: &NetworkQueryResult,
+    query_data: &QueryEntryData,
+) -> Result<(), HolochainError> {
     network_state.initialized()?;
-      let query_result_json: JsonString =network_query_result.into();
+    let query_result_json: JsonString = network_query_result.into();
     send(
         network_state,
         Lib3hClientProtocol::HandleQueryEntryResult(QueryEntryResultData {
@@ -41,9 +40,9 @@ pub fn reduce_respond_query(
 ) {
     let action = action_wrapper.action();
     let (query_data, payload) = unwrap_to!(action=>crate::action::Action::RespondQuery);
-    let result = reduce_respond_query_inner(network_state,payload,query_data)
-                .map(|_| Ok(()))
-                .unwrap_or_else(|e| Err(HolochainError::ErrorGeneric(e.to_string())));
+    let result = reduce_respond_query_inner(network_state, payload, query_data)
+        .map(|_| Ok(()))
+        .unwrap_or_else(|e| Err(HolochainError::ErrorGeneric(e.to_string())));
 
     network_state
         .actions

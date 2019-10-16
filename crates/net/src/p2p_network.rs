@@ -7,7 +7,6 @@ use crate::{
         net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
         net_connection_thread::NetConnectionThread,
         NetResult,
-
     },
     in_memory::memory_worker::InMemoryWorker,
     ipc_net_worker::IpcNetWorker,
@@ -15,14 +14,15 @@ use crate::{
     p2p_config::*,
     tweetlog::*,
 };
-use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address};
+use lib3h_protocol::{
+    protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
+};
 
+use crate::{sim1h_worker::Sim1hWorker, sim2h_worker::Sim2hWorker};
 use crossbeam_channel;
 use holochain_conductor_api_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
-use crate::sim1h_worker::Sim1hWorker;
-use crate::sim2h_worker::Sim2hWorker;
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
@@ -78,8 +78,10 @@ impl P2pNetwork {
                 };
 
                 Box::new(move |h| {
-                    Ok(Box::new(Lib3hWorker::with_wss_transport(h, backend_config.clone())?)
-                        as Box<dyn NetWorker>)
+                    Ok(
+                        Box::new(Lib3hWorker::with_wss_transport(h, backend_config.clone())?)
+                            as Box<dyn NetWorker>,
+                    )
                 })
             }
             // Create an InMemoryWorker Ghost Engine Worker
@@ -88,8 +90,10 @@ impl P2pNetwork {
                     BackendConfig::Memory(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting memory")),
                 };
-                Ok(Box::new(Lib3hWorker::with_memory_transport(h, backend_config.clone())?)
-                   as Box<dyn NetWorker>)
+                Ok(Box::new(Lib3hWorker::with_memory_transport(
+                    h,
+                    backend_config.clone(),
+                )?) as Box<dyn NetWorker>)
             }),
 
             // Create an InMemoryWorker
@@ -102,8 +106,7 @@ impl P2pNetwork {
                     BackendConfig::Sim1h(config) => config.clone(),
                     _ => return Err(format_err!("mismatch backend type, expecting sim1h")),
                 };
-                Ok(Box::new(Sim1hWorker::new(h, backend_config)?)
-                    as Box<dyn NetWorker>)
+                Ok(Box::new(Sim1hWorker::new(h, backend_config)?) as Box<dyn NetWorker>)
             }),
             // Create an Sim2hWorker
             P2pBackendKind::SIM2H => Box::new(move |h| {
@@ -114,11 +117,13 @@ impl P2pNetwork {
                 Ok(Box::new(Sim2hWorker::new(
                     h,
                     backend_config,
-                    agent_id.clone().expect("Can't construct Sim2hWorker without agent ID"),
-                    conductor_api.clone().expect("Can't construct Sim2hWorker without conductor API"),
-                )?)
-
-                   as Box<dyn NetWorker>)
+                    agent_id
+                        .clone()
+                        .expect("Can't construct Sim2hWorker without agent ID"),
+                    conductor_api
+                        .clone()
+                        .expect("Can't construct Sim2hWorker without conductor API"),
+                )?) as Box<dyn NetWorker>)
             }),
         };
 
@@ -165,12 +170,12 @@ impl P2pNetwork {
 
     fn should_wait_for_p2p_ready(p2p_config: &P2pConfig) -> bool {
         match p2p_config.backend_kind {
-            P2pBackendKind::LIB3H |
-            P2pBackendKind::GhostEngineMemory |
-            P2pBackendKind::SIM1H |
-            P2pBackendKind::SIM2H |
-            P2pBackendKind::LegacyInMemory => false,
-            P2pBackendKind::N3H => true
+            P2pBackendKind::LIB3H
+            | P2pBackendKind::GhostEngineMemory
+            | P2pBackendKind::SIM1H
+            | P2pBackendKind::SIM2H
+            | P2pBackendKind::LegacyInMemory => false,
+            P2pBackendKind::N3H => true,
         }
     }
 

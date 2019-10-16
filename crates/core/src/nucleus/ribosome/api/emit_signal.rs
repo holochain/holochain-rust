@@ -18,10 +18,12 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(args) => args,
         // Exit on error
         Err(error) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_emit_signal failed to \
                  deserialize arguments: {:?} with error {:?}",
-                args_str, error
+                args_str,
+                error
             );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
@@ -30,7 +32,8 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     if let Some(sender) = context.signal_tx() {
         let signal = Signal::User(UserSignal::from(emit_signal_args));
         let _ = sender.send(signal).map_err(|err| {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_emit_signal() could not send signal: {:?}",
                 err,
             );

@@ -9,15 +9,15 @@ use crate::{
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
 };
+use holochain_conductor_api_api::ConductorApi;
 use holochain_core_types::{
     chain_header::ChainHeader,
     dna::Dna,
     eav::{Attribute, EaviQuery},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
-    sync::{HcRwLock as RwLock},
+    sync::HcRwLock as RwLock,
 };
-use holochain_conductor_api_api::ConductorApi;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -27,11 +27,7 @@ use holochain_persistence_api::{
 };
 
 use crate::dht::dht_store::DhtStoreSnapshot;
-use std::{
-    collections::HashSet,
-    convert::TryInto,
-    sync::{Arc},
-};
+use std::{collections::HashSet, convert::TryInto, sync::Arc};
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -114,15 +110,18 @@ impl State {
             .chain_store()
             .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
             .last()
-            .ok_or_else(|| HolochainError::ErrorGeneric(
-                "No DNA entry found in source chain while creating state from agent".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                HolochainError::ErrorGeneric(
+                    "No DNA entry found in source chain while creating state from agent"
+                        .to_string(),
+                )
+            })?;
         let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-        let entry: Entry = json
-            .map(|e| e.try_into())
-            .ok_or_else(|| HolochainError::ErrorGeneric(
+        let entry: Entry = json.map(|e| e.try_into()).ok_or_else(|| {
+            HolochainError::ErrorGeneric(
                 "No DNA entry found in storage while creating state from agent".to_string(),
-            ))??;
+            )
+        })??;
         match entry {
             Entry::Dna(dna) => Ok(*dna),
             _ => Err(HolochainError::SerializationError(

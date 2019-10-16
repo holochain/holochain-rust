@@ -2,16 +2,15 @@ use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
     network::actions::{
+        initialize_network::initialize_network, publish::publish,
         publish_header_entry::publish_header_entry,
-        publish::publish,
-        initialize_network::initialize_network,
     },
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
 };
 use holochain_core_types::{
     dna::Dna,
-    error::{HcResult, HolochainError},
     entry::Entry,
+    error::{HcResult, HolochainError},
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
@@ -28,7 +27,8 @@ pub async fn initialize(
     let first_initialization = match get_dna_and_agent(&instance_context).await {
         Ok(_) => false,
         Err(err) => {
-            log_debug!(context,
+            log_debug!(
+                context,
                 "dna/initialize: No DNA and agent in chain so assuming uninitialized: {:?}",
                 err
             );

@@ -259,7 +259,6 @@ impl<'a, T: ?Sized> Borrow<T> for HcRwLockReadGuard<'a, T> {
     }
 }
 
-
 // impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
 //     fn as_ref(&self) -> &T {
 //         &self.inner

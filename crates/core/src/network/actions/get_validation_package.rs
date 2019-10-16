@@ -69,6 +69,5 @@ impl Future for GetValidationPackageFuture {
         } else {
             Poll::Pending
         }
-
     }
 }

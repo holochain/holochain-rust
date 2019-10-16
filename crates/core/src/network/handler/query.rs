@@ -104,9 +104,11 @@ fn get_links(
                         "Single Entry required for Get Entry".to_string(),
                     )),
                 })
-                .unwrap_or_else(|_| Err(HolochainError::ErrorGeneric(
-                    "Could Not Get Entry for Link Data".to_string(),
-                )))
+                .unwrap_or_else(|_| {
+                    Err(HolochainError::ErrorGeneric(
+                        "Could Not Get Entry for Link Data".to_string(),
+                    ))
+                })
         })
         .partition(Result::is_ok);
 
@@ -164,7 +166,8 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
-    let query_json = JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
+    let query_json =
+        JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             let links = get_links(
@@ -193,9 +196,11 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
             ActionWrapper::new(Action::RespondQuery((query_data, respond_get)))
         }
         err => {
-            log_error!(context,
+            log_error!(
+                context,
                 "net: Error ({:?}) deserializing Query {:?}",
-                err, query_json
+                err,
+                query_json
             );
             return;
         }
@@ -206,8 +211,9 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 /// The network comes back with a result to our previous query with a result, so we
 /// examine the query result for its type and dispatch different actions according to variant
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
-    let query_result_json =
-        JsonString::from_json(std::str::from_utf8(&*query_result_data.clone().query_result).unwrap());
+    let query_result_json = JsonString::from_json(
+        std::str::from_utf8(&*query_result_data.clone().query_result).unwrap(),
+    );
     println!("handle_query_entry_result: {:?}", query_result_data);
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
@@ -221,8 +227,7 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             )))
         }
         Ok(NetworkQueryResult::Links(links_result, link_type, tag)) => {
-            let payload =
-                NetworkQueryResult::Links(links_result, link_type.clone(), tag.clone());
+            let payload = NetworkQueryResult::Links(links_result, link_type.clone(), tag.clone());
             ActionWrapper::new(Action::HandleQuery((
                 payload,
                 QueryKey::Links(GetLinksKey {
@@ -234,9 +239,11 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             )))
         }
         err => {
-            log_error!(context,
+            log_error!(
+                context,
                 "net: Error ({:?}) deserializing QueryResult {:?}",
-                err, query_result_json
+                err,
+                query_result_json
             );
             return;
         }

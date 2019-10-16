@@ -26,7 +26,8 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Exit on error
     if try_address.is_err() {
-        log_error!(context,
+        log_error!(
+            context,
             "zome: invoke_remove_entry failed to deserialize Address: {:?}",
             args_str
         );

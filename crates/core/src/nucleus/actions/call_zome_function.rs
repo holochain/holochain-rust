@@ -69,7 +69,8 @@ pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-    log_debug!(context,
+    log_debug!(
+        context,
         "actions/call_zome_fn: Validating call: {:?}",
         zome_call
     );
@@ -77,7 +78,8 @@ pub async fn call_zome_function(
     // 1. Validate the call (a number of things could go wrong)
     validate_call(context.clone(), &zome_call)?;
 
-    log_debug!(context,
+    log_debug!(
+        context,
         "actions/call_zome_fn: executing call: {:?}",
         zome_call
     );
@@ -105,21 +107,31 @@ pub async fn call_zome_function(
                 Some(zome_call_clone.clone().parameters.to_bytes()),
                 WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
             );
-            log_debug!(context_clone, "actions/call_zome_fn: got call_result from ribosome::run_dna.");
+            log_debug!(
+                context_clone,
+                "actions/call_zome_fn: got call_result from ribosome::run_dna."
+            );
             // Construct response
             let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
             // Send ReturnZomeFunctionResult Action
-            log_debug!(context_clone, "actions/call_zome_fn: sending ReturnZomeFunctionResult action.");
+            log_debug!(
+                context_clone,
+                "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
+            );
             lax_send_sync(
                 context_clone.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
                 "call_zome_function",
             );
-            log_debug!(context_clone, "actions/call_zome_fn: sent ReturnZomeFunctionResult action.");
+            log_debug!(
+                context_clone,
+                "actions/call_zome_fn: sent ReturnZomeFunctionResult action."
+            );
         })
         .expect("Could not spawn thread for call_zome_function");
 
-    log_debug!(context,
+    log_debug!(
+        context,
         "actions/call_zome_fn: awaiting for \
          future call result of {:?}",
         zome_call
@@ -139,9 +151,9 @@ pub fn validate_call(
 ) -> Result<(String, DnaWasm), HolochainError> {
     // make sure the dna, zome and function exists and return pretty errors if they don't
     let (dna_name, code) = {
-        let state = context.state().ok_or_else(||
-            HolochainError::ErrorGeneric("Context not initialized".to_string())
-        )?;
+        let state = context
+            .state()
+            .ok_or_else(|| HolochainError::ErrorGeneric("Context not initialized".to_string()))?;
 
         let nucleus_state = state.nucleus();
         let dna = nucleus_state
@@ -239,22 +251,27 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
     if maybe_zome_grants.is_none() {
-        log_debug!(context,
+        log_debug!(
+            context,
             "actions/verify_grant: no grant for zome {:?} in grant {:?}",
-            fn_call.zome_name, cap_functions
+            fn_call.zome_name,
+            cap_functions
         );
         return false;
     }
     if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
-        log_debug!(context,
+        log_debug!(
+            context,
             "actions/verify_grant: no grant for function {:?} in grant {:?}",
-            fn_call.fn_name, maybe_zome_grants
+            fn_call.fn_name,
+            maybe_zome_grants
         );
         return false;
     }
 
     if grant.token() != fn_call.cap_token() {
-        log_debug!(context,
+        log_debug!(
+            context,
             "actions/verify_grant: grant token doesn't match: expecting {:?} got {:?}",
             grant.token(),
             fn_call.cap_token()
@@ -267,7 +284,10 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
         &fn_call.fn_name,
         fn_call.parameters.clone(),
     ) {
-        log_debug!(context, "actions/verify_grant: call signature did not match");
+        log_debug!(
+            context,
+            "actions/verify_grant: call signature did not match"
+        );
         return false;
     }
 
@@ -282,7 +302,10 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
                 .unwrap()
                 .contains(&fn_call.cap.provenance.source())
             {
-                log_debug!(context, "actions/verify_grant: caller not one of the assignees");
+                log_debug!(
+                    context,
+                    "actions/verify_grant: caller not one of the assignees"
+                );
                 return false;
             }
             true

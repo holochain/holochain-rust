@@ -7,27 +7,24 @@ pub mod state;
 #[cfg(test)]
 pub mod test_utils;
 
-pub use holochain_core_types::network::query;
-pub use holochain_core_types::network::entry_aspect;
+pub use holochain_core_types::network::{entry_aspect, query};
 
 #[cfg(test)]
 pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
-        instance::tests::{
-            test_instance_and_context_by_name
-            //test_instance_and_context_with_memory_network_nodes,
-        },
+        instance::tests::test_instance_and_context_by_name,
         network::{
             actions::{
-                query::{query, QueryMethod},
-                //get_validation_package::get_validation_package,
                 publish::publish,
+                query::{query, QueryMethod},
             },
-            query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
+            query::{
+                GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
+                NetworkQueryResult,
+            },
             test_utils::test_wat_always_valid,
-        }
-        //workflows::author_entry::author_entry,
+        },
     };
     use holochain_core_types::{
         agent::test_agent_id,
@@ -219,7 +216,7 @@ pub mod tests {
     // TODO: Bring the old in-memory network up to speed and turn on this test again!
     #[cfg(feature = "broken-tests")]
     #[test]
-    #[cfg(feature="broken-tests")]
+    #[cfg(feature = "broken-tests")]
     fn get_validation_package_roundtrip() {
         enable_logging_for_test();
 
@@ -227,10 +224,18 @@ pub mod tests {
         let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = "get_validation_package_roundtrip".to_string();
 
-        let (_instance1, context1) =
-            test_instance_and_context_by_name(dna.clone(), "alice1", Some("get_validation_package_roundtrip")).unwrap();
-        let (_instance2, context2) =
-            test_instance_and_context_with_memory_network_nodes(dna.clone(), "bob1", Some("get_validation_package_roundtrip2")).unwrap();
+        let (_instance1, context1) = test_instance_and_context_by_name(
+            dna.clone(),
+            "alice1",
+            Some("get_validation_package_roundtrip"),
+        )
+        .unwrap();
+        let (_instance2, context2) = test_instance_and_context_with_memory_network_nodes(
+            dna.clone(),
+            "bob1",
+            Some("get_validation_package_roundtrip2"),
+        )
+        .unwrap();
 
         let entry = test_entry();
         context1
@@ -329,7 +334,10 @@ pub mod tests {
 
         assert!(maybe_links.is_ok());
         let link_results = maybe_links.unwrap();
-        let links = match link_results {NetworkQueryResult::Links(query,_,_)=>query,_=>panic!("Could not get query")};
+        let links = match link_results {
+            NetworkQueryResult::Links(query, _, _) => query,
+            _ => panic!("Could not get query"),
+        };
         let links = unwrap_to!(links=>GetLinksNetworkResult::Links);
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order

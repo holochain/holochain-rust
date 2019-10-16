@@ -143,15 +143,14 @@
 //! guard.shutdown();
 //! ```
 
-use log;
 use chrono;
 use colored::*;
-use log::{Level, Metadata, Record, SetLoggerError};
+use log::{self, Level, Metadata, Record, SetLoggerError};
 use serde_derive::Deserialize;
 use toml;
 
-pub mod prelude;
 pub mod color;
+pub mod prelude;
 pub mod rule;
 
 use color::{pick_color, ColoredLevelConfig};
@@ -162,9 +161,9 @@ use std::{
     default::Default,
     env,
     io::{self, Write},
+    ops::Drop,
     str::FromStr,
     thread,
-    ops::Drop,
 };
 
 /// Default format of the log's timestamp.
@@ -241,9 +240,8 @@ impl FastLogger {
     /// Flushes the write buffer inside the logging thread.
     pub fn flush(&self) {
         let flush_signal = Box::new(LogMessage::new_flush_signal());
-        self.sender.try_send(flush_signal)
-            .unwrap_or_else(|_| {}); // Let's safely handle any error from here
-            // .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
+        self.sender.try_send(flush_signal).unwrap_or_else(|_| {}); // Let's safely handle any error from here
+                                                                   // .unwrap_or_else(|_| eprintln!("Fail to send flush signal."));
     }
 
     /// Wrapper function to avoid collision with [flush](log::Log::flush) from the [`log`] crate trait.
@@ -255,8 +253,9 @@ impl FastLogger {
     pub fn shutdown(&mut self) {
         // Send a signal to exit the infinite loop of the logging thread
         let terminate_signal = Box::new(LogMessage::new_terminate_signal());
-        self.sender.send(terminate_signal)
-            .unwrap_or_else(|_| eprintln!("Fail to send thread shutdown signal. Maybe it was already sent ?"));
+        self.sender.send(terminate_signal).unwrap_or_else(|_| {
+            eprintln!("Fail to send thread shutdown signal. Maybe it was already sent ?")
+        });
 
         // And then gracefully shutdown the logging thread
         if let Some(handle) = self.handle.take() {
@@ -509,7 +508,7 @@ impl<'a> FastLoggerBuilder {
                             if msg.should_terminate() {
                                 drop(r);
                                 buffer.flush().expect("Fail to flush the logging buffer.");
-                                break
+                                break;
                             } else if msg.should_flush() {
                                 buffer.flush().expect("Fail to flush the logging buffer.")
                             } else {
@@ -525,7 +524,7 @@ impl<'a> FastLoggerBuilder {
                             if msg.should_terminate() {
                                 drop(r);
                                 buffer.flush().expect("Fail to flush the logging buffer.");
-                                break
+                                break;
                             } else if msg.should_flush() {
                                 buffer.flush().expect("Fail to flush the logging buffer.");
                             } else {
@@ -586,7 +585,7 @@ impl Default for FastLoggerBuilder {
             level_colors: ColoredLevelConfig::new(),
             channel_size: DEFAULT_CHANNEL_SIZE,
             file_path: None,
-            timestamp_format: String::from(DEFAULT_TIMESTAMP_FMT)
+            timestamp_format: String::from(DEFAULT_TIMESTAMP_FMT),
         }
     }
 }
@@ -665,7 +664,7 @@ impl Default for LogMessage {
             line: 0,
             file: String::default(),
             level: DEFAULT_LOG_LEVEL,
-            level_to_print : DEFAULT_LOG_LEVEL_STR.to_owned(),
+            level_to_print: DEFAULT_LOG_LEVEL_STR.to_owned(),
             thread_name: String::default(),
             color: None,
             timestamp_format: String::default(),
@@ -704,7 +703,7 @@ impl LogMessageTrait for LogMessage {
                 } else {
                     color
                 }
-            },
+            }
             None => pseudo_rng_color,
         };
 
@@ -777,7 +776,9 @@ impl From<Logger> for FastLoggerBuilder {
             level: Level::from_str(&logger.level).unwrap_or(Level::Info),
             rule_filters,
             file_path: logger.file,
-            timestamp_format: logger.timestamp_format.unwrap_or_else(|| String::from(DEFAULT_TIMESTAMP_FMT)),
+            timestamp_format: logger
+                .timestamp_format
+                .unwrap_or_else(|| String::from(DEFAULT_TIMESTAMP_FMT)),
             ..FastLoggerBuilder::default()
         }
     }
@@ -853,7 +854,6 @@ fn filtering_back_log_test() {
 
     // This next one should be logged in red: 'debug!(target: "holochain-app-6", "...'Red'...")'
     assert_eq!(logger.should_log_in("app-6"), Some(String::from("Green")));
-
 }
 
 #[test]

@@ -283,8 +283,8 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
                 info.last_msg = std::time::Instant::now();
                 *did_work = true;
                 //quick fix, url parsed in does not support tungstenite trait, converted to reqwest as a quick patch
-/*                let reqwest_url = reqwest::Url::parse(&info.url.clone().to_string())
-                                  .map_err(|_|TransportError::new("Could not parse url".to_string()))?;*/
+                /*                let reqwest_url = reqwest::Url::parse(&info.url.clone().to_string())
+                .map_err(|_|TransportError::new("Could not parse url".to_string()))?;*/
                 info.stateful_socket = self
                     .priv_ws_handshake(&info.id, tungstenite::client(info.url.clone(), socket))?;
                 Ok(())

@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     network::{
         actions::query::{query, QueryMethod},
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult,NetworkQueryResult},
+        query::{GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQueryResult},
     },
 };
 

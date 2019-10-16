@@ -1,20 +1,19 @@
 use crate::{
     action::{Action, ActionWrapper},
+    agent::state::create_new_chain_header,
     context::Context,
     entry::CanPublish,
     instance::dispatch_action,
-    network::handler::{get_content_aspect, get_meta_aspects},
+    network::{
+        entry_aspect::EntryAspect,
+        handler::{get_content_aspect, get_meta_aspects},
+    },
 };
-use holochain_core_types::{
-    error::HcResult,
-    entry::Entry,
-};
+use holochain_core_types::{entry::Entry, error::HcResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::data_types::{EntryListData, GetListData};
 use snowflake::ProcessUniqueId;
 use std::{collections::HashMap, sync::Arc, thread};
-use crate::network::entry_aspect::EntryAspect;
-use crate::agent::state::create_new_chain_header;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     thread::Builder::new()
@@ -74,9 +73,7 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
 
 fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().iter_chain();
-    chain
-        .map(Entry::ChainHeader)
-        .collect()
+    chain.map(Entry::ChainHeader).collect()
 }
 
 fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<Vec<Address>> {
@@ -125,14 +122,11 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::workflows::author_entry::author_entry;
-    use crate::nucleus::actions::tests::*;
-    use holochain_core_types::{
-        entry::{Entry, test_entry_with_value},
-    };
+    use crate::{nucleus::actions::tests::*, workflows::author_entry::author_entry};
+    use holochain_core_types::entry::{test_entry_with_value, Entry};
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::{thread, time};
-    
+
     #[test]
     fn test_can_get_chain_header_list() {
         let mut dna = test_dna();
@@ -154,11 +148,7 @@ pub mod tests {
         let chain = context.state().unwrap().agent().iter_chain();
         let header_entries: Vec<Entry> = chain.map(|header| Entry::ChainHeader(header)).collect();
 
-        assert_eq!(
-            get_all_chain_header_entries(context),
-            header_entries,
-        )
-
+        assert_eq!(get_all_chain_header_entries(context), header_entries,)
     }
 
     #[test]
@@ -179,8 +169,10 @@ pub mod tests {
 
         thread::sleep(time::Duration::from_millis(500));
 
-        assert!(get_all_chain_header_entries(context.clone()).iter().all(|chain_header| {
-            get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
-        }));
+        assert!(get_all_chain_header_entries(context.clone())
+            .iter()
+            .all(|chain_header| {
+                get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
+            }));
     }
 }

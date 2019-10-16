@@ -12,7 +12,13 @@ pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
-        instance::{tests::{test_instance_and_context_by_name, test_instance_and_context_with_memory_network_nodes}, Instance},
+        instance::{
+            tests::{
+                test_instance_and_context_by_name,
+                test_instance_and_context_with_memory_network_nodes,
+            },
+            Instance,
+        },
     };
     use holochain_core_types::{
         chain_header::ChainHeader,
@@ -95,19 +101,18 @@ pub mod tests {
         (instance, initialized_context)
     }
 
-#[cfg_attr(tarpaulin, skip)]
+    #[cfg_attr(tarpaulin, skip)]
     pub fn instance_with_bootstrap_nodes(
         name: &str,
         dna: Dna,
-        network_name: Option<&str>
+        network_name: Option<&str>,
     ) -> (Instance, Arc<Context>) {
-        let (instance, context) = test_instance_and_context_with_memory_network_nodes(
-            dna, name, network_name)
-            .expect("Could not create test instance");
+        let (instance, context) =
+            test_instance_and_context_with_memory_network_nodes(dna, name, network_name)
+                .expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
         (instance, initialized_context)
     }
-
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {

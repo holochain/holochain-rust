@@ -9,6 +9,7 @@ use lib3h_protocol::{
     data_types::{GenericResultData, Opaque},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
+    types::SpaceHash,
     Address,
 };
 use log::{debug, warn};
@@ -29,7 +30,6 @@ use sim1h::{
 };
 use std::io::{self, Write};
 use url::Url;
-use lib3h_protocol::types::SpaceHash;
 
 static DYNAMO_REGION: &str = "holochain-testing";
 
@@ -55,9 +55,7 @@ impl Sim1hWorker {
 
     /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn new(handler: NetHandler, config: Sim1hConfig) -> NetResult<Self> {
-        let dynamo_db_client = client_from_endpoint(
-            config.dynamo_url,
-            DYNAMO_REGION.to_string());
+        let dynamo_db_client = client_from_endpoint(config.dynamo_url, DYNAMO_REGION.to_string());
         Ok(Self {
             handler,
             dynamo_db_client,
@@ -68,7 +66,8 @@ impl Sim1hWorker {
     }
 
     fn fail_uninitialized(mut data: GenericResultData) -> NetResult<Lib3hServerProtocol> {
-        data.result_info = Opaque::from("Attempt to use Sim1hState before initialized (before space was joined)");
+        data.result_info =
+            Opaque::from("Attempt to use Sim1hState before initialized (before space was joined)");
         Ok(Lib3hServerProtocol::FailureResult(data))
     }
 
@@ -84,9 +83,9 @@ impl Sim1hWorker {
             }
             // Failure response to a request (any Command with an `request_id` field.)
             // Can also be a response to a mal-formed request.
-//            Lib3hClientProtocol::FailureResult(generic_result_data) => {
-//                Ok(Lib3hServerProtocol::FailureResult(generic_result_data))
-//            }
+            //            Lib3hClientProtocol::FailureResult(generic_result_data) => {
+            //                Ok(Lib3hServerProtocol::FailureResult(generic_result_data))
+            //            }
             // Connect to the specified multiaddr
             Lib3hClientProtocol::Connect(connect_data) => {
                 //let log_context = "Lib3hToClient::Connected";
@@ -104,7 +103,8 @@ impl Sim1hWorker {
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let ClientToLib3h::JoinSpace(space_data)= ClientToLib3h::from(data);
                 let log_context = "ClientToLib3h::JoinSpace";
-                let (_, state) = Sim1hState::join_space(&log_context, &self.dynamo_db_client, &space_data)?;
+                let (_, state) =
+                    Sim1hState::join_space(&log_context, &self.dynamo_db_client, &space_data)?;
                 self.state = Some(state);
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
                     request_id: space_data.request_id,
@@ -185,7 +185,7 @@ impl Sim1hWorker {
                 }))
             }
             // Tell network module Core is holding this entry
-/*            Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
+            /*            Lib3hClientProtocol::HoldEntry(provided_entry_data) => {
                 let log_context = "ClientToLib3h::HoldEntry";
                 Sim1hState::hold_entry(&log_context, &self.dynamo_db_client, &provided_entry_data)?;
                 Ok(Lib3hServerProtocol::SuccessResult(GenericResultData {
@@ -213,8 +213,8 @@ impl Sim1hWorker {
                             &query_entry_data,
                         )?;
                         Ok(Lib3hServerProtocol::SuccessResult(generic))
-                    },
-                    None => Self::fail_uninitialized(generic)
+                    }
+                    None => Self::fail_uninitialized(generic),
                 }
             }
             // Response to a `HandleQueryEntry` request
@@ -232,7 +232,7 @@ impl Sim1hWorker {
                         state.handle_query_entry_result(&log_context, &query_entry_result_data);
                         Ok(Lib3hServerProtocol::SuccessResult(generic))
                     }
-                    None => Self::fail_uninitialized(generic)
+                    None => Self::fail_uninitialized(generic),
                 }
             }
 
@@ -247,10 +247,11 @@ impl Sim1hWorker {
                 };
                 match self.state.as_mut() {
                     Some(state) => {
-                        state.handle_get_authoring_entry_list_result(&log_context, &entry_list_data);
+                        state
+                            .handle_get_authoring_entry_list_result(&log_context, &entry_list_data);
                         Ok(Lib3hServerProtocol::SuccessResult(generic))
                     }
-                    None => Self::fail_uninitialized(generic)
+                    None => Self::fail_uninitialized(generic),
                 }
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
@@ -360,9 +361,7 @@ impl NetWorker for Sim1hWorker {
 mod tests {
 
     use super::*;
-    use lib3h_protocol::{
-         protocol_server::Lib3hServerProtocol,
-    };
+    use lib3h_protocol::protocol_server::Lib3hServerProtocol;
     //use url::Url;
 
     #[allow(dead_code)]

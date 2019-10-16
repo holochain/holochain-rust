@@ -4,10 +4,7 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::{
-    error::HolochainError,
-    sync::{HcRwLock as RwLock},
-};
+use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
 
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent, Content},
@@ -18,7 +15,7 @@ use crate::{
     dht::dht_store::{DhtStoreSnapshot, DHT_STORE_SNAPSHOT_ADDRESS},
     state::StateWrapper,
 };
-use std::sync::{Arc};
+use std::sync::Arc;
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send + Sync {
@@ -44,8 +41,7 @@ impl PartialEq for SimplePersister {
 impl Persister for SimplePersister {
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
-        let mut store = lock
-            .write()?;
+        let mut store = lock.write()?;
         let agent_snapshot = AgentStateSnapshot::from(state);
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
         let dht_store_snapshot = DhtStoreSnapshot::from(state);

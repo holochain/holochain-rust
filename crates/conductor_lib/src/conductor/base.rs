@@ -25,8 +25,8 @@ use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -131,7 +131,9 @@ impl Drop for Conductor {
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
-        if let Some(mut network) = self.n3h_keepalive_network.take() { network.stop() }
+        if let Some(mut network) = self.n3h_keepalive_network.take() {
+            network.stop()
+        }
     }
 }
 

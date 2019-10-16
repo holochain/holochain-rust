@@ -58,6 +58,5 @@ impl Future for PublishFuture {
         } else {
             Poll::Pending
         }
-
     }
 }

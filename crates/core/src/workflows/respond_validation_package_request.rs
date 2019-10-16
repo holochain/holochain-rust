@@ -28,9 +28,11 @@ pub async fn respond_validation_package_request(
         };
 
     if maybe_validation_package.is_some() {
-        log_debug!(context,
+        log_debug!(
+            context,
             "workflows/validation: Sending validation package of entry {} to agent {}",
-            requested_entry_address, to_agent_id
+            requested_entry_address,
+            to_agent_id
         );
     } else {
         log_debug!(context, "workflow/validation: Got request for validation package of unknown entry {} from agent {}!",

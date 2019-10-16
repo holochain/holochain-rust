@@ -1,7 +1,10 @@
 use crate::{
     network::{
         actions::query::{query, QueryMethod},
-        query::{GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,NetworkQueryResult},
+        query::{
+            GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
+            NetworkQueryResult,
+        },
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
@@ -32,7 +35,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             );
@@ -45,7 +49,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             );
@@ -81,7 +86,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             )),
         };
         if links_result.is_err() {
-        log_error!(context, "zome : Could not get links for remove_link method");
+            log_error!(context, "zome : Could not get links for remove_link method");
             ribosome_error_code!(WorkflowFailed)
         } else {
             let links = links_result.expect("This is supposed to not fail");

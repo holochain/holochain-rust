@@ -1,4 +1,3 @@
-use holochain_logging::prelude::*;
 use crate::{
     context::Context,
     nucleus::{
@@ -9,6 +8,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
+use holochain_logging::prelude::*;
 
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
@@ -52,7 +52,8 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_call failed to deserialize: {:?}",
                 args_str
             );
@@ -60,7 +61,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
-    let result = if input.instance_handle ==THIS_INSTANCE {
+    let result = if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
@@ -94,7 +95,12 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
     log_debug!(context, "blocking on zome call: {:?}", input.clone());
     let result = context.block_on(call_zome_function(zome_call, context.clone()));
-    log_debug!(context, "blocked on zome call: {:?} with result {:?}", input, result);
+    log_debug!(
+        context,
+        "blocked on zome call: {:?} with result {:?}",
+        input,
+        result
+    );
     result
 }
 
@@ -197,10 +203,7 @@ pub mod tests {
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
-    use std::{
-        collections::BTreeMap,
-        sync::{Arc},
-    };
+    use std::{collections::BTreeMap, sync::Arc};
     use test_utils::create_test_dna_with_defs;
 
     /// dummy commit args from standard test entry
@@ -242,10 +245,7 @@ pub mod tests {
         let netname = Some(netname);
         let (instance, context) =
             test_instance_and_context(dna, netname).expect("Could not initialize test instance");
-        TestSetup {
-            context,
-            instance,
-        }
+        TestSetup { context, instance }
     }
 
     #[cfg_attr(tarpaulin, skip)]

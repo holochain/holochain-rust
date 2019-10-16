@@ -26,12 +26,13 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
 use std::{
-    sync::{Arc},
+    sync::{
+        atomic::Ordering::{self, Relaxed},
+        Arc,
+    },
     thread,
     time::Duration,
 };
-use std::sync::atomic::Ordering::Relaxed;
-use std::sync::atomic::Ordering;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -268,18 +269,19 @@ impl Instance {
                 );
             });
 
-            if let Some(signal) = self.consistency_model
+            if let Some(signal) = self
+                .consistency_model
                 .process_action(action_wrapper.action())
             {
-                tx.send(Signal::Consistency(signal.into())).unwrap_or_else(|e| {
-                            log_warn!(
-                                context,
-                                "reduce: Signal channel is closed! No signals can be sent ({:?}).",
-                                e
-                            );
-                });
+                tx.send(Signal::Consistency(signal.into()))
+                    .unwrap_or_else(|e| {
+                        log_warn!(
+                            context,
+                            "reduce: Signal channel is closed! No signals can be sent ({:?}).",
+                            e
+                        );
+                    });
             }
-
         }
     }
 
@@ -317,9 +319,7 @@ impl Instance {
     pub fn save(&self) -> HcResult<()> {
         self.persister
             .as_ref()
-            .ok_or_else(||HolochainError::new(
-                "Instance::save() called without persister set.",
-            ))?
+            .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?
             .try_write()
             .ok_or_else(|| HolochainError::new("Could not get lock on persister"))?
             .save(&self.state())
@@ -396,7 +396,7 @@ pub mod tests {
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
-        sync::{HcMutex as Mutex, HcRwLock as RwLock}
+        sync::{HcMutex as Mutex, HcRwLock as RwLock},
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -405,11 +405,7 @@ pub mod tests {
 
     use crate::persister::SimplePersister;
 
-    use std::{
-        sync::{Arc},
-        thread::sleep,
-        time::Duration,
-    };
+    use std::{sync::Arc, thread::sleep, time::Duration};
 
     use test_utils::mock_signing::registered_test_agent;
 
@@ -422,17 +418,14 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        test_context_and_logger_with_in_memory_network(
-            agent_name,
-            network_name
-        )
+        test_context_and_logger_with_in_memory_network(agent_name, network_name)
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_and_logger_with_in_memory_network(
         agent_name: &str,
-        network_name: Option<&str>
+        network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
         let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
@@ -464,9 +457,10 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_memory_network(
-        agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
-        let (context, _) = test_context_and_logger_with_in_memory_network(
-            agent_name, network_name);
+        agent_name: &str,
+        network_name: Option<&str>,
+    ) -> Arc<Context> {
+        let (context, _) = test_context_and_logger_with_in_memory_network(agent_name, network_name);
         context
     }
 
@@ -582,8 +576,8 @@ pub mod tests {
         dna: Dna,
         name: &str,
         network_name: Option<&str>,
-        ) -> Result<(Instance, Arc<Context>), String> {
-        test_instance_and_context_with_memory_network_nodes(dna,name,network_name)
+    ) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_with_memory_network_nodes(dna, name, network_name)
     }
 
     /// create a test instance
@@ -591,11 +585,10 @@ pub mod tests {
     pub fn test_instance_and_context_with_memory_network_nodes(
         dna: Dna,
         name: &str,
-        network_name: Option<&str>
+        network_name: Option<&str>,
     ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context_with_memory_network(
-            name, network_name);
+        let context = test_context_with_memory_network(name, network_name);
         let mut instance = Instance::new(context.clone());
         let context = instance.initialize(Some(dna.clone()), context.clone())?;
 

@@ -1,5 +1,4 @@
-use crate::sim1h_worker::Sim1hConfig;
-use crate::sim2h_worker::Sim2hConfig;
+use crate::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
@@ -17,7 +16,7 @@ pub enum P2pBackendKind {
     LIB3H,
     SIM1H,
     SIM2H,
-    LegacyInMemory
+    LegacyInMemory,
 }
 
 impl FromStr for P2pBackendKind {
@@ -29,7 +28,7 @@ impl FromStr for P2pBackendKind {
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
             "SIM1H" => Ok(P2pBackendKind::SIM1H),
             "SIM2H" => Ok(P2pBackendKind::SIM2H),
-            "LegacyInMemory" =>Ok(P2pBackendKind::LegacyInMemory),
+            "LegacyInMemory" => Ok(P2pBackendKind::LegacyInMemory),
             _ => Err(()),
         }
     }
@@ -43,7 +42,7 @@ impl From<P2pBackendKind> for String {
             P2pBackendKind::LIB3H => "LIB3H",
             P2pBackendKind::SIM1H => "SIM1H",
             P2pBackendKind::SIM2H => "SIM2H",
-            P2pBackendKind::LegacyInMemory =>"LegacyInMemory"
+            P2pBackendKind::LegacyInMemory => "LegacyInMemory",
         })
     }
 }
@@ -192,11 +191,7 @@ impl P2pConfig {
         )
     }
 
-
-    pub fn new_with_memory_lib3h_backend(
-        server_name: &str,
-        bootstrap_nodes: Vec<Url>,
-    ) -> Self {
+    pub fn new_with_memory_lib3h_backend(server_name: &str, bootstrap_nodes: Vec<Url>) -> Self {
         let _host_name = server_name
             .replace(":", "_")
             .replace(" ", "_")
@@ -211,7 +206,10 @@ impl P2pConfig {
                 },
                 //need to fix the transport configs
                 transport_configs: vec![TransportConfig::Memory(server_name.to_string())],
-                bootstrap_nodes: bootstrap_nodes.iter().map(|url|url.clone().into()).collect(),
+                bootstrap_nodes: bootstrap_nodes
+                    .iter()
+                    .map(|url| url.clone().into())
+                    .collect(),
                 work_dir: "".into(),
                 log_level: 'd',
                 bind_url: Lib3hUri::with_undefined(),
@@ -348,7 +346,7 @@ mod tests {
     #[test]
     fn it_can_json_round_trip() {
         let server_name = "memory";
-        let p2p_config =P2pConfig::new_with_memory_backend(server_name);
+        let p2p_config = P2pConfig::new_with_memory_backend(server_name);
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);

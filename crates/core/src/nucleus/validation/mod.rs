@@ -120,7 +120,7 @@ pub async fn validate_entry(
         }
 
         // chain headers always pass for now. In future this should check that the entry is valid
-        EntryType::ChainHeader => Ok(()), 
+        EntryType::ChainHeader => Ok(()),
 
         _ => Err(ValidationError::NotImplemented),
     }

@@ -227,7 +227,7 @@ impl NetWorker for IpcNetWorker {
     fn p2p_endpoint(&self) -> Option<url::Url> {
         match url::Url::parse(&self.p2p_uri) {
             Err(_) => None,
-            Ok(u) => Some(u)
+            Ok(u) => Some(u),
         }
     }
 }

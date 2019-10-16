@@ -6,7 +6,7 @@ use crate::{
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
-    state::State,
+    state::{State, StateWrapper},
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{
@@ -19,7 +19,6 @@ use holochain_core_types::{
 };
 use snowflake;
 use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
-use crate::state::StateWrapper;
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,

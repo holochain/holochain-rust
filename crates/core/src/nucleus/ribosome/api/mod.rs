@@ -16,13 +16,13 @@ mod macros;
 pub mod capabilities;
 pub mod crypto;
 pub mod keystore;
+pub mod meta;
 pub mod query;
 pub mod remove_entry;
 pub mod remove_link;
 pub mod send;
 pub mod sign;
 pub mod sleep;
-pub mod meta;
 pub mod update_entry;
 pub mod verify_signature;
 
@@ -45,13 +45,13 @@ use crate::nucleus::ribosome::{
             invoke_keystore_sign,
         },
         link_entries::invoke_link_entries,
+        meta::invoke_meta,
         query::invoke_query,
         remove_entry::invoke_remove_entry,
         remove_link::invoke_remove_link,
         send::invoke_send,
         sign::invoke_sign_one_time,
         sleep::invoke_sleep,
-        meta::invoke_meta,
         update_entry::invoke_update_entry,
         verify_signature::invoke_verify_signature,
     },
@@ -151,7 +151,7 @@ link_zome_api! {
 
     /// Send a DNA defined signal to UIs and other listeners
     "hc_emit_signal", EmitSignal, invoke_emit_signal;
-    
+
     ///send a meta
     "hc_meta",Meta,invoke_meta;
 }

@@ -1,15 +1,13 @@
 use crate::{
     action::{ActionWrapper, QueryKey},
-    network::{actions::ActionResponse, direct_message::DirectMessage,query::NetworkQueryResult},
+    network::{actions::ActionResponse, direct_message::DirectMessage, query::NetworkQueryResult},
 };
 use boolinator::*;
 use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use snowflake;
-use std::{
-    collections::HashMap,
-};
+use std::collections::HashMap;
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
 
@@ -76,11 +74,8 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.is_some()
-            && self.dna_address.is_some()
-            && self.agent_id.is_some())
-        .ok_or(HolochainError::ErrorGeneric(
-            "Network not initialized".to_string(),
-        ))
+        (self.network.is_some() && self.dna_address.is_some() && self.agent_id.is_some()).ok_or(
+            HolochainError::ErrorGeneric("Network not initialized".to_string()),
+        )
     }
 }

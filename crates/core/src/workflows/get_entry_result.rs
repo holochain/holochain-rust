@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    network::{self, actions::query::{QueryMethod},query::NetworkQueryResult},
+    network::{self, actions::query::QueryMethod, query::NetworkQueryResult},
     nucleus,
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
@@ -37,14 +37,11 @@ pub async fn get_entry_with_meta_workflow<'a>(
         }
     } else {
         // 3. If we've found the entry locally we also need to get the header from the local state:
-        let entry = maybe_entry_with_meta.ok_or_else(|| HolochainError::ErrorGeneric(
-            "Could not get entry".to_string(),
-        ))?;
+        let entry = maybe_entry_with_meta
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
         match context
             .state()
-            .ok_or_else(|| HolochainError::ErrorGeneric(
-                "Could not get state".to_string(),
-            ))?
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not get state".to_string()))?
             .get_headers(address.clone())
         {
             Ok(headers) => Ok(Some(EntryWithMetaAndHeader {
@@ -89,11 +86,11 @@ pub async fn get_entry_result_workflow<'a>(
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {
             // Erase history if request is for latest
-            if args.options.status_request == StatusRequestKind::Latest && entry_with_meta_and_headers.entry_with_meta.crud_status == CrudStatus::Deleted
+            if args.options.status_request == StatusRequestKind::Latest
+                && entry_with_meta_and_headers.entry_with_meta.crud_status == CrudStatus::Deleted
             {
-                 entry_result.clear();
-                 break;
-           
+                entry_result.clear();
+                break;
             }
 
             // Add entry

@@ -1,10 +1,8 @@
 use crate::{
-    action::{
-        Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload
-    },
+    action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload},
     context::Context,
     instance::dispatch_action,
-    network::query::{GetLinksNetworkQuery,NetworkQueryResult}
+    network::query::{GetLinksNetworkQuery, NetworkQueryResult},
 };
 use futures::{future::Future, task::Poll};
 
@@ -100,7 +98,6 @@ impl Future for QueryFuture {
             return Poll::Ready(Err(err));
         }
 
-
         if let Some(state) = self.context.try_state() {
             if let Err(error) = state.network().initialized() {
                 return Poll::Ready(Err(error));
@@ -110,17 +107,12 @@ impl Future for QueryFuture {
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
             cx.waker().clone().wake();
-            match state
-                .network()
-                .get_query_results
-                .get(&self.key)
-                {
-                    Some(Some(result)) => Poll::Ready(result.clone()),
-                    _ => Poll::Pending,
-                }
+            match state.network().get_query_results.get(&self.key) {
+                Some(Some(result)) => Poll::Ready(result.clone()),
+                _ => Poll::Pending,
+            }
         } else {
             Poll::Pending
         }
-
     }
 }

@@ -2,9 +2,9 @@
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the conductor.
 use chrono::Local;
-use holochain_core_types::sync::{HcMutex as Mutex};
-use std::sync::{Arc};
 use crossbeam_channel;
+use holochain_core_types::sync::HcMutex as Mutex;
+use std::sync::Arc;
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {

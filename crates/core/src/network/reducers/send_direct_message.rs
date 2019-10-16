@@ -19,16 +19,10 @@ fn inner(
     let content = content_json_string.to_bytes();
     let data = Lib3hDirectMessageData {
         request_id: direct_message_data.msg_id.clone(),
-        space_address: network_state
-            .dna_address
-            .clone()
-            .unwrap()
-            .into(),
-        to_agent_id: direct_message_data
-            .address
-            .clone(),
+        space_address: network_state.dna_address.clone().unwrap().into(),
+        to_agent_id: direct_message_data.address.clone(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
-        content : content.into(),
+        content: content.into(),
     };
 
     let protocol_object = if direct_message_data.is_response {

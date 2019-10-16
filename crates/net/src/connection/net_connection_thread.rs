@@ -135,7 +135,7 @@ impl NetConnectionThread {
     }
 
     /// Tell the worker thread to stop, but do not wait for it to join
-    pub fn stop(&mut self)  {
+    pub fn stop(&mut self) {
         debug!("Telling NetWorker to stop");
         self.can_keep_running.store(false, Ordering::Relaxed);
     }

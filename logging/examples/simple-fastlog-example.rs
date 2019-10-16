@@ -1,7 +1,6 @@
 use holochain_logging::prelude::*;
 
 fn main() {
-
     // We need a guard here in order to gracefully shutdown
     // the logging thread
     let mut guard = FastLoggerBuilder::new()

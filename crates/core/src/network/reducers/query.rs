@@ -1,26 +1,22 @@
 use crate::{
-    action::{ActionWrapper,  QueryKey},
-    network::{
-        query::NetworkQuery,
-        reducers::send,
-        state::NetworkState,
-    },
+    action::{ActionWrapper, QueryKey},
+    network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 
-
-
-fn reduce_query_inner(network_state: &mut NetworkState,key:  QueryKey,network_query : NetworkQuery)-> Result<(), HolochainError>
-{
+fn reduce_query_inner(
+    network_state: &mut NetworkState,
+    key: QueryKey,
+    network_query: NetworkQuery,
+) -> Result<(), HolochainError> {
     network_state.initialized()?;
     let query_json: JsonString = network_query.into();
-    let key_address = match key
-    {
-        QueryKey::Entry(key) => (key.id.clone(),key.address.clone()),
-        QueryKey::Links(key) => (key.id.clone(),key.base_address.clone())
+    let key_address = match key {
+        QueryKey::Entry(key) => (key.id.clone(), key.address.clone()),
+        QueryKey::Links(key) => (key.id.clone(), key.base_address.clone()),
     };
     send(
         network_state,
@@ -28,11 +24,10 @@ fn reduce_query_inner(network_state: &mut NetworkState,key:  QueryKey,network_qu
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key_address.0,
             space_address: network_state.dna_address.clone().unwrap().into(),
-            entry_address:key_address.1,
+            entry_address: key_address.1,
             query: query_json.to_string().into_bytes().into(),
         }),
     )
-
 }
 pub fn reduce_query(
     network_state: &mut NetworkState,
@@ -42,20 +37,24 @@ pub fn reduce_query(
     let action = action_wrapper.action();
     let (key_type, payload) = unwrap_to!(action => crate::action::Action::Query);
     let network_query = match key_type.clone() {
-        QueryKey::Entry(_) =>
-        {
-            NetworkQuery::GetEntry
-        }
+        QueryKey::Entry(_) => NetworkQuery::GetEntry,
         QueryKey::Links(key) => {
             let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
-            NetworkQuery::GetLinks(key.link_type.clone(),key.tag.clone(),*crud_status,query.clone())
+            NetworkQuery::GetLinks(
+                key.link_type.clone(),
+                key.tag.clone(),
+                *crud_status,
+                query.clone(),
+            )
         }
     };
 
-    let result = reduce_query_inner(network_state, key_type.clone(),network_query)
-            .map(|_| None)
-            .unwrap_or_else(|e| Some(Err(e)));
-    network_state.get_query_results.insert(key_type.clone(), result);
+    let result = reduce_query_inner(network_state, key_type.clone(), network_query)
+        .map(|_| None)
+        .unwrap_or_else(|e| Some(Err(e)));
+    network_state
+        .get_query_results
+        .insert(key_type.clone(), result);
 }
 
 pub fn reduce_query_timeout(
@@ -75,8 +74,6 @@ pub fn reduce_query_timeout(
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -231,10 +228,7 @@ mod tests {
         let dht_data = QueryEntryResultData {
             msg_id: new_key.id.clone(),
             address: new_key.address.to_string(),
-            content:
-                &serde_json::to_value(&Some(entry_with_meta.clone()).unwrap(),
-            )
-            .unwrap(),
+            content: &serde_json::to_value(&Some(entry_with_meta.clone()).unwrap()).unwrap(),
             ..Default::default()
         };
 

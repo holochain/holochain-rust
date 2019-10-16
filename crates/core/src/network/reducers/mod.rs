@@ -100,7 +100,8 @@ pub fn send(
         .network
         .as_mut()
         .map(|network| {
-            network.send(msg)
+            network
+                .send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?
@@ -115,10 +116,7 @@ pub fn send_message(
     to_agent_id: &Address,
     message: DirectMessage,
 ) -> Result<(), HolochainError> {
-    let rand_string: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .collect();
+    let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(10).collect();
     let id = format!("{}-{}", ProcessUniqueId::new().to_string(), rand_string);
 
     let content_json_string: JsonString = message.to_owned().into();

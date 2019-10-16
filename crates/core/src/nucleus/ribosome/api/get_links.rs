@@ -16,14 +16,16 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => {
-            log_debug!(context,
+            log_debug!(
+                context,
                 "zome/get_links: invoke_get_links called with {:?}",
                 input,
             );
             input
         }
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome/get_links: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
             );
@@ -46,7 +48,9 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         context::Context,
         dht::actions::add_link::add_link,
-        instance::tests::{test_instance_and_context, test_context_and_logger_with_in_memory_network},
+        instance::tests::{
+            test_context_and_logger_with_in_memory_network, test_instance_and_context,
+        },
         nucleus::ribosome::{
             api::{tests::*, ZomeApiFunction},
             Defn,
@@ -100,8 +104,10 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
         let netname2 = format!("{}-2", netname);
-        let (instance, _) = test_instance_and_context(dna, Some(netname)).expect("Could not create test instance");
-        let (context, _) = test_context_and_logger_with_in_memory_network("joan", Some(netname2.as_str()));
+        let (instance, _) =
+            test_instance_and_context(dna, Some(netname)).expect("Could not create test instance");
+        let (context, _) =
+            test_context_and_logger_with_in_memory_network("joan", Some(netname2.as_str()));
         let arc_context = instance.initialize_context(context);
         (instance, arc_context)
     }
@@ -123,7 +129,7 @@ pub mod tests {
                 ))
                 .is_ok());
             println!("added link {:?}", link);
-         });
+        });
     }
 
     pub fn get_links(
@@ -149,7 +155,6 @@ pub mod tests {
             .is_test(true)
             .try_init();
     }
-
 
     #[test]
     fn returns_list_of_links() {

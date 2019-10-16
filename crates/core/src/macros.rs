@@ -89,22 +89,17 @@ macro_rules! log_error {
     )
 }
 
-
-
 #[test]
 fn context_log_macro_test() {
-    use std::sync::{Arc};
-    use holochain_persistence_file::eav::file::EavFileStorage;
+    use crate::{context::Context, persister::SimplePersister};
+    use holochain_core_types::{agent::AgentId, sync::HcRwLock as RwLock};
     use holochain_net::p2p_config::P2pConfig;
-    use crate::persister::SimplePersister;
-    use holochain_core_types::{agent::AgentId, sync::{HcRwLock as RwLock}};
-    use holochain_persistence_file::cas::file::FilesystemStorage;
-    use crate::context::Context;
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use std::sync::Arc;
     use tempfile::tempdir;
 
-
     let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
     ));
     let ctx = Context::new(
         "LOG-TEST-ID",
@@ -113,8 +108,7 @@ fn context_log_macro_test() {
         file_storage.clone(),
         file_storage.clone(),
         Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                .unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         )),
         P2pConfig::new_with_unique_memory_backend(),
         None,
@@ -125,9 +119,9 @@ fn context_log_macro_test() {
     // Somehow we need to build our own logging instance for this test to show logs
     use holochain_logging::prelude::*;
     let _guard = FastLoggerBuilder::new()
-                .set_level_from_str("Trace")
-                .build()
-                .expect("Fail to init logger.");
+        .set_level_from_str("Trace")
+        .build()
+        .expect("Fail to init logger.");
 
     // Tests if the context logger can be customized by poassing a target value
     log_info!(target: "holochain-custom-log-target", "Custom target '{}' log here.", "Debug");

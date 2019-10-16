@@ -18,7 +18,8 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
             );

@@ -21,10 +21,12 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         Ok(commit_entry_arg_input) => commit_entry_arg_input,
         // Exit on error
         Err(error) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_commit_app_commit_entry_arg failed to \
                  deserialize Entry: {:?} with error {:?}",
-                args_str, error
+                args_str,
+                error
             );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }

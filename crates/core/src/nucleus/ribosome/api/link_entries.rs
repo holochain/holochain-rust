@@ -24,7 +24,8 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             );
@@ -36,7 +37,8 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             );

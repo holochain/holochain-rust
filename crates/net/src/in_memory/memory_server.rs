@@ -18,10 +18,8 @@ use lib3h_protocol::{
 
 use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
-use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
-};
 use lib3h_protocol::types::SpaceHash;
+use std::collections::{hash_map::Entry, HashMap, HashSet};
 
 type RequestId = String;
 
@@ -39,7 +37,8 @@ pub(crate) struct InMemoryServer {
     // keep track of senders by ChainId (dna_address::agent_id)
     senders: HashMap<ChainId, crossbeam_channel::Sender<Lib3hServerProtocol>>,
     // keep track of agents by dna_address
-    senders_by_dna: HashMap<Address, HashMap<Address, crossbeam_channel::Sender<Lib3hServerProtocol>>>,
+    senders_by_dna:
+        HashMap<Address, HashMap<Address, crossbeam_channel::Sender<Lib3hServerProtocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
@@ -214,7 +213,8 @@ impl InMemoryServer {
                 let to_agent_id = msg.to_agent_id.clone();
 
                 // Check if agent is tracking the dna
-                let is_tracked = self.priv_check_or_fail(&dna_address.clone().into(), &to_agent_id, None)?;
+                let is_tracked =
+                    self.priv_check_or_fail(&dna_address.clone().into(), &to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
@@ -225,7 +225,7 @@ impl InMemoryServer {
                     Lib3hServerProtocol::SuccessResult(msg.clone()),
                 )?;
             }
-/*           Lib3hClientProtocol::FailureResult(msg) => {
+            /*           Lib3hClientProtocol::FailureResult(msg) => {
                 let dna_address = msg.space_address.clone();
                 let to_agent_id = msg.to_agent_id.clone();
 
@@ -464,13 +464,17 @@ impl InMemoryServer {
 
         // Sender must be tracking
         let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address.clone().into(), &from_agent_id, sender_info.clone())?;
+        let is_tracking = self.priv_check_or_fail(
+            &dna_address.clone().into(),
+            &from_agent_id,
+            sender_info.clone(),
+        )?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
-        let is_tracking = self.priv_check_or_fail(&dna_address.clone().into(), &to_agent_id, sender_info)?;
+        let is_tracking =
+            self.priv_check_or_fail(&dna_address.clone().into(), &to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -495,13 +499,17 @@ impl InMemoryServer {
 
         // Sender must be tracking
         let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address.clone().into(), &from_agent_id, sender_info.clone())?;
+        let is_tracking = self.priv_check_or_fail(
+            &dna_address.clone().into(),
+            &from_agent_id,
+            sender_info.clone(),
+        )?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
-        let is_tracking = self.priv_check_or_fail(&dna_address.clone().into(), &to_agent_id, sender_info)?;
+        let is_tracking =
+            self.priv_check_or_fail(&dna_address.clone().into(), &to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -524,8 +532,11 @@ impl InMemoryServer {
 
         // Provider must be tracking
         let sender_info = Some((provider_agent_id.clone(), None));
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address.clone().into(), &provider_agent_id.clone(), sender_info)?;
+        let is_tracking = self.priv_check_or_fail(
+            &dna_address.clone().into(),
+            &provider_agent_id.clone(),
+            sender_info,
+        )?;
         if !is_tracking {
             return Ok(());
         }
@@ -601,8 +612,11 @@ impl InMemoryServer {
 
         // Provider must be tracking
         let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking =
-            self.priv_check_or_fail(&dna_address.clone().into(), &msg.requester_agent_id.clone(), sender_info)?;
+        let is_tracking = self.priv_check_or_fail(
+            &dna_address.clone().into(),
+            &msg.requester_agent_id.clone(),
+            sender_info,
+        )?;
         if !is_tracking {
             return Ok(());
         }
@@ -659,7 +673,11 @@ impl InMemoryServer {
         }
         // Requester must be tracking
         let is_tracking = requester_agent_id.to_string() == ""
-            || self.priv_check_or_fail(&dna_address.clone().into(), &requester_agent_id, sender_info)?;
+            || self.priv_check_or_fail(
+                &dna_address.clone().into(),
+                &requester_agent_id,
+                sender_info,
+            )?;
         if !is_tracking {
             return Ok(());
         }

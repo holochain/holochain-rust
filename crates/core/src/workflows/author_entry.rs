@@ -1,14 +1,11 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    network::actions::{
-        publish::publish,
-        publish_header_entry::publish_header_entry,
-    },
+    entry::CanPublish,
+    network::actions::{publish::publish, publish_header_entry::publish_header_entry},
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
-    entry::CanPublish,
 };
 
 use holochain_core_types::{
@@ -32,9 +29,11 @@ pub async fn author_entry<'a>(
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
-    log_debug!(context,
+    log_debug!(
+        context,
         "workflow/authoring_entry: {} with content: {:?}",
-        address, entry
+        address,
+        entry
     );
 
     // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
@@ -53,7 +52,8 @@ pub async fn author_entry<'a>(
     };
 
     // 2. Validate the entry
-    log_debug!(context,
+    log_debug!(
+        context,
         "workflow/authoring_entry/{}: validating...",
         address
     );
@@ -67,7 +67,8 @@ pub async fn author_entry<'a>(
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
-    log_debug!(context,
+    log_debug!(
+        context,
         "workflow/authoring_entry/{}: committing...",
         address
     );
@@ -76,7 +77,8 @@ pub async fn author_entry<'a>(
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     if entry.entry_type().can_publish(context) {
-        log_debug!(context,
+        log_debug!(
+            context,
             "workflow/authoring_entry/{}: publishing...",
             address
         );
@@ -110,12 +112,19 @@ pub async fn author_entry<'a>(
 #[cfg(test)]
 pub mod tests {
 
-use holochain_core_types::{entry::{Entry,test_entry_with_value},chain_header::ChainHeader};
-use crate::{workflows::author_entry::author_entry,
-            nucleus::actions::{tests::{instance_by_name,test_dna},get_entry::get_entry_from_dht},
-            holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent};
-use std::{time,thread};
-
+    use crate::{
+        holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
+        nucleus::actions::{
+            get_entry::get_entry_from_dht,
+            tests::{instance_by_name, test_dna},
+        },
+        workflows::author_entry::author_entry,
+    };
+    use holochain_core_types::{
+        chain_header::ChainHeader,
+        entry::{test_entry_with_value, Entry},
+    };
+    use std::{thread, time};
 
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
@@ -133,14 +142,12 @@ use std::{time,thread};
     #[test]
     /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
-
         enable_logging_for_test();
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
         let netname = Some("test_commit_with_dht_publish, the network");
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname.clone());
-        let (_instance2, context2) = instance_by_name(
-            "jack", dna, netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         let entry_address = context1
             .block_on(author_entry(
@@ -158,7 +165,8 @@ use std::{time,thread};
         while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &entry_address).expect("Could not retrieve entry from DHT");
+                entry = get_entry_from_dht(&context2, &entry_address)
+                    .expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
             if entry.is_none() {
@@ -195,7 +203,8 @@ use std::{time,thread};
 
         // get the header from the top of Jill's chain
         let state = &context1.state().unwrap();
-        let header = state.get_headers(entry_address)
+        let header = state
+            .get_headers(entry_address)
             .expect("Could not retrieve headers from authors chain")
             .into_iter()
             .next()
@@ -208,19 +217,16 @@ use std::{time,thread};
         while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &header_entry.address()).expect("Could not retrieve entry from DHT");
+                entry = get_entry_from_dht(&context2, &header_entry.address())
+                    .expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
             if entry.is_none() {
                 thread::sleep(time::Duration::from_millis(1000));
             }
         }
-        assert_eq!(
-            entry,
-            Some(header_entry),
-        );
+        assert_eq!(entry, Some(header_entry),);
     }
-
 
     #[test]
     /// test that all headers are published so an agents local chain can be reconstructed by another agent
@@ -258,11 +264,10 @@ use std::{time,thread};
 
         // collect Jills local chain
         let state = &context1.state().unwrap();
-        let jill_headers: Vec<ChainHeader> = state
-            .agent()
-            .iter_chain()
-            .collect();
-        let header = jill_headers.first().expect("Must be at least one header in chain");
+        let jill_headers: Vec<ChainHeader> = state.agent().iter_chain().collect();
+        let header = jill_headers
+            .first()
+            .expect("Must be at least one header in chain");
 
         // jack retrieves the top header addresss and reconstructs the Jills local chain by following the header back-links
         let mut jack_headers: Vec<ChainHeader> = Vec::new();
@@ -273,33 +278,31 @@ use std::{time,thread};
             while entry.is_none() && tries < 10 {
                 tries = tries + 1;
                 {
-                    entry = get_entry_from_dht(&context2, &next_header_addr).expect("Could not retrieve entry from DHT");
+                    entry = get_entry_from_dht(&context2, &next_header_addr)
+                        .expect("Could not retrieve entry from DHT");
                 }
                 println!("Try {}: {:?}", tries, entry);
                 if entry.is_none() {
                     thread::sleep(time::Duration::from_millis(1000));
                 }
-            }   
+            }
             if let Some(Entry::ChainHeader(header)) = entry {
                 jack_headers.push(header.clone());
                 if let Some(next_addr) = header.link() {
                     next_header_addr = next_addr
                 } else {
-                    break // chain has been followed to the genesis entry
+                    break; // chain has been followed to the genesis entry
                 }
             } else {
-                panic!(format!("Could not retrieve header at address: {}", next_header_addr))
+                panic!(format!(
+                    "Could not retrieve header at address: {}",
+                    next_header_addr
+                ))
             }
         }
 
-        assert_eq!(
-            jack_headers.len(),
-            4,
-        );
+        assert_eq!(jack_headers.len(), 4,);
 
-        assert_eq!(
-            jack_headers,
-            jill_headers,
-        );
+        assert_eq!(jack_headers, jill_headers,);
     }
 }

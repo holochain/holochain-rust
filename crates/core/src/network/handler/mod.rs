@@ -321,16 +321,14 @@ fn get_content_aspect(
             {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
-                let headers = state
-                    .get_headers(entry_address.clone())
-                    .map_err(|error| {
-                        let err_message = format!(
-                            "net/fetch/get_content_aspect: Error trying to get headers {:?}",
-                            error
-                        );
-                        log_error!(context, "{}", err_message);
-                        HolochainError::ErrorGeneric(err_message)
-                    })?;
+                let headers = state.get_headers(entry_address.clone()).map_err(|error| {
+                    let err_message = format!(
+                        "net/fetch/get_content_aspect: Error trying to get headers {:?}",
+                        error
+                    );
+                    log_error!(context, "{}", err_message);
+                    HolochainError::ErrorGeneric(err_message)
+                })?;
                 if !headers.is_empty() {
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one

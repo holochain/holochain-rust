@@ -22,7 +22,8 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            log_error!(context,
+            log_error!(
+                context,
                 "zome: invoke_update_entry failed to deserialize SerializedEntry: {:?}",
                 args_str
             );

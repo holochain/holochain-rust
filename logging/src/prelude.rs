@@ -5,7 +5,7 @@
 //! be imported manually:
 //!
 //! ```
-//! use logging::prelude::*;
+//! use holochain_logging::prelude::*;
 //! # logging::FastLoggerBuilder::new()
 //!     .build_test().unwrap();
 //! # // Test if the re-export from the prelude works

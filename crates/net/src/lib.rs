@@ -29,7 +29,7 @@ extern crate serde_json;
 extern crate serde_derive;
 
 #[macro_use]
-extern crate logging;
+extern crate holochain_logging;
 
 extern crate env_logger;
 

@@ -30,8 +30,8 @@ holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../../common" }
 holochain_conductor_api_api = { path = "../conductor_api" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transport-disconnect" }
+lib3h_protocol = "=0.0.16"
+lib3h_sodium = "=0.0.16"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.8"
@@ -40,7 +40,7 @@ holochain_persistence_mem = "=0.0.8"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
 log = "=0.4.8"
-logging = { path = "../../logging" }
+holochain_logging = {version="=0.0.1", path = "../../logging" }
 boolinator = "=2.4.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "=0.5.0"

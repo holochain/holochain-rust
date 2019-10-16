@@ -3,10 +3,9 @@ use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfigura
 use error::HolochainResult;
 use holochain_core_types::error::HolochainError;
 use static_file_server::{dna_connections_response, ConductorStaticFileServer, DNA_CONFIG_ROUTE};
-
+use crossbeam_channel::{self, Sender};
 use std::{
     net::SocketAddr,
-    sync::mpsc::{self, Sender},
     thread,
 };
 
@@ -39,7 +38,7 @@ impl ConductorStaticFileServer for NickelStaticServer {
     }
 
     fn start(&mut self) -> HolochainResult<()> {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = crossbeam_channel::unbounded();
 
         self.shutdown_signal = Some(tx);
         self.running = true;

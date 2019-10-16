@@ -1,4 +1,4 @@
-use logging::prelude::*;
+use holochain_logging::prelude::*;
 use crate::{
     context::Context,
     nucleus::{
@@ -178,6 +178,7 @@ pub mod tests {
         },
         workflows::author_entry::author_entry,
     };
+    use crossbeam_channel::RecvTimeoutError;
     use holochain_core_types::{
         dna::{
             capabilities::CapabilityRequest,
@@ -198,7 +199,7 @@ pub mod tests {
     use serde_json;
     use std::{
         collections::BTreeMap,
-        sync::{mpsc::RecvTimeoutError, Arc},
+        sync::{Arc},
     };
     use test_utils::create_test_dna_with_defs;
 

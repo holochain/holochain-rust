@@ -20,7 +20,6 @@ use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
 use holochain_persistence_api::cas::content::Address;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
-    sync::{mpsc},
 };
 use lib3h_protocol::types::SpaceHash;
 
@@ -38,9 +37,9 @@ lazy_static! {
 /// a global server for routing messages between nodes in-memory
 pub(crate) struct InMemoryServer {
     // keep track of senders by ChainId (dna_address::agent_id)
-    senders: HashMap<ChainId, mpsc::Sender<Lib3hServerProtocol>>,
+    senders: HashMap<ChainId, crossbeam_channel::Sender<Lib3hServerProtocol>>,
     // keep track of agents by dna_address
-    senders_by_dna: HashMap<Address, HashMap<Address, mpsc::Sender<Lib3hServerProtocol>>>,
+    senders_by_dna: HashMap<Address, HashMap<Address, crossbeam_channel::Sender<Lib3hServerProtocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
@@ -170,7 +169,7 @@ impl InMemoryServer {
         &mut self,
         dna_address: &Address,
         agent_id: &Address,
-        sender: mpsc::Sender<Lib3hServerProtocol>,
+        sender: crossbeam_channel::Sender<Lib3hServerProtocol>,
     ) -> NetResult<()> {
         self.senders
             .insert(into_chain_id(dna_address, agent_id), sender.clone());

@@ -59,7 +59,7 @@ pub mod validation;
 #[macro_use]
 extern crate log;
 #[macro_use]
-extern crate logging;
+extern crate holochain_logging;
 
 pub const GIT_HASH: &str = env!(
     "GIT_HASH",

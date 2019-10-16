@@ -5,11 +5,12 @@ use crate::{
 };
 use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
+use log::error;
 
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
-    let network = P2pNetwork::new(
+    let mut network = P2pNetwork::new(
         network_settings.handler.clone(),
         network_settings.p2p_config.clone(),
         Some(Address::from(network_settings.agent_id.clone())),
@@ -35,15 +36,17 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
         agent_id: network_settings.agent_id.clone().into(),
     });
 
-    let mut network_lock = state.network.lock().unwrap();
-    *network_lock = Some(network);
+
     state.dna_address = Some(network_settings.dna_address.clone());
     state.agent_id = Some(network_settings.agent_id.clone());
 
-    if let Err(err) = network_lock.as_mut().unwrap().send(json) {
-        println!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
-        println!("Failed to initialize network!");
-        let _ = network_lock.take().unwrap().stop();
+    if let Err(err) = network.send(json) {
+        error!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
+        error!("Failed to initialize network!");
+        network.stop();
+        state.network = None;
+    } else {
+        state.network = Some(network);
     }
 }
 

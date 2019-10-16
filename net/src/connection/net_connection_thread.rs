@@ -5,7 +5,6 @@ use super::{
 use failure::err_msg;
 use holochain_core_types::sync::HcMutex as Mutex;
 use holochain_logging::prelude::*;
-use logging::prelude::*;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{

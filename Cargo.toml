@@ -1,0 +1,23 @@
+[workspace]
+
+members = [
+  "crates/cli",
+  "common",
+  "crates/holochain",
+  "crates/conductor_lib",
+  "crates/conductor_api",
+  "crates/holochain_wasm",
+  "crates/core",
+  "crates/dpki",
+  "crates/hdk",
+  "crates/hdk-v2",
+  "crates/net",
+  "benchmarks",
+  "logging"
+]
+exclude = [
+  "test_utils",
+  "app_spec",
+  "app_spec_proc_macro",
+  "nodejs_conductor/native",
+]

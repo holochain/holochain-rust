@@ -191,9 +191,9 @@ impl P2pNetwork {
         };
     }
 
-    /// Stop the network connection (disconnect any sockets, join any threads, etc)
-    pub fn stop(self) -> NetResult<()> {
-        self.connection.stop()
+    /// Stop the network connection (tell thread to stop - asynchronous, does not wait for join)
+    pub fn stop(&mut self) {
+        self.connection.stop();
     }
 
     /// Getter of the endpoint of its connection
@@ -241,6 +241,6 @@ mod tests {
             .unwrap();
         res.send(Lib3hClientProtocol::Connect(connect_data))
             .unwrap();
-        res.stop().unwrap();
+        res.stop();
     }
 }

@@ -1806,7 +1806,7 @@ dependencies = [
 [[package]]
 name = "lib3h_crypto_api"
 version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#7270cf4e37222070575b63ca03ef76395afa59f7"
+source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1853,7 +1853,7 @@ dependencies = [
 [[package]]
 name = "lib3h_protocol"
 version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#7270cf4e37222070575b63ca03ef76395afa59f7"
+source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",

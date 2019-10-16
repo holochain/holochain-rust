@@ -7,7 +7,7 @@ use crate::{
 use holochain_net::connection::net_connection::NetSend;
 
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol};
-use log::{debug, error};
+use log::error;
 use std::{thread::sleep, time::Duration};
 
 pub fn reduce_shutdown(
@@ -37,13 +37,10 @@ pub fn reduce_shutdown(
 
     if let Some(mut network) = state.network.take() {
         let _ = network.send(json);
-        sleep(Duration::from_secs(2));  // TODO: comment for why we do magical sleep?
 
-        if let Err(err) = network.stop() {
-            error!("ERROR stopping network thread: {:?}", err);
-        } else {
-            debug!("Network thread successfully stopped");
-        }
+        sleep(Duration::from_secs(2));
+
+        network.stop();
     } else {
         error!("Tried to shutdown uninitialized network");
     }

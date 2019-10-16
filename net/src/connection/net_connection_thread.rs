@@ -135,10 +135,9 @@ impl NetConnectionThread {
     }
 
     /// Tell the worker thread to stop, but do not wait for it to join
-    pub fn stop(self) -> NetResult<()> {
+    pub fn stop(&mut self)  {
         debug!("Telling NetWorker to stop");
         self.can_keep_running.store(false, Ordering::Relaxed);
-        Ok(())
     }
 
     /// Wait for the worker thread to join (which it may not have done yet when running `stop`)
@@ -206,7 +205,7 @@ mod tests {
 
         con.send(success_client_result("tick".to_string().into_bytes()))
             .unwrap();
-        con.stop().unwrap();
+        con.stop();
     }
 
     struct SimpleWorker {
@@ -270,14 +269,14 @@ mod tests {
 
         assert_eq!("test".to_string().into_bytes(), *res);
 
-        con.stop().unwrap();
+        con.stop();
     }
 
     #[test]
     fn it_can_tick() {
         let (sender, receiver) = unbounded();
 
-        let con = NetConnectionThread::new(
+        let mut con = NetConnectionThread::new(
             NetHandler::new(Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())
@@ -294,6 +293,6 @@ mod tests {
             }
             msg => panic!("unexpected message received: {:?}", msg),
         }
-        con.stop().unwrap();
+        con.stop();
     }
 }

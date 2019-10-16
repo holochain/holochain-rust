@@ -43,9 +43,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     if let Err(err) = network.send(json) {
         error!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
         error!("Failed to initialize network!");
-        if let Err(e) = network.stop() {
-            error!("Error stopping newly created network: {:?}", e);
-        }
+        network.stop();
         state.network = None;
     } else {
         state.network = Some(network);

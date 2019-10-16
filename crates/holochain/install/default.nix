@@ -4,7 +4,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  cargo install -f --path conductor
+  cargo install -f --path crates/holochain
   '';
 in
 {

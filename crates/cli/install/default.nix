@@ -4,7 +4,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  cargo build -p hc --release && cargo install -f --path cli
+  cd crates/cli && cargo build -p hc --release && cargo install -f --path cli
   '';
 in
 {

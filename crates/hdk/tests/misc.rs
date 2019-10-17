@@ -258,6 +258,7 @@ fn can_invalidate_invalid_commit() {
         .to_string(),
     );
     let path = PathBuf::new()
+        .join("crates")
         .join("core")
         .join("src")
         .join("nucleus")

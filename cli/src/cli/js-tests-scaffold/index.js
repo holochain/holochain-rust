@@ -13,7 +13,6 @@ process.on('unhandledRejection', error => {
 });
 
 const dnaPath = path.join(__dirname, "../dist/<<DNA_NAME>>.dna.json")
-const dna = Diorama.dna(dnaPath, '<<DNA_NAME>>')
 
 const orchestrator = new Orchestrator({
   middleware: combine(
@@ -43,7 +42,7 @@ const orchestrator = new Orchestrator({
 
 const conductorConfig = {
   instances: {
-    myInstanceName: Config.dna('/path/to/my/dna/change/me.dna.json', 'scaffold-test')
+    myInstanceName: Config.dna(dnaPath, 'scaffold-test')
   }
 }
 

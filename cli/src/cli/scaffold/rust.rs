@@ -7,7 +7,6 @@ use crate::{
 use colored::*;
 use holochain_common::env_vars::EnvVar;
 use holochain_core_types::hdk_version::HDK_VERSION;
-use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -79,7 +78,7 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: &str, macro_style: HdkMacroStyle) -> RustScaffold {
-        let target_dir = wasm_target_dir(&package_name.into(), &String::new().into());
+        let target_dir = PathBuf::from("../target");
         let mut artifact_name = target_dir.clone();
         let artifact_path_component: PathBuf = [
             String::from("wasm32-unknown-unknown"),

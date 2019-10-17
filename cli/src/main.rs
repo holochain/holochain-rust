@@ -6,7 +6,6 @@ extern crate holochain_core_types;
 extern crate holochain_json_api;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
-extern crate holochain_wasm_utils;
 extern crate lib3h_sodium;
 extern crate structopt;
 #[macro_use]

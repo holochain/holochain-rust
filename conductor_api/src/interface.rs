@@ -524,7 +524,7 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let clean = Self::get_as_bool("clean", &params_map)?;
-            if clean = true {
+            if clean == true {
                 // delete instance's storage
             }
             conductor_call!(|c| c.remove_instance(&id))?;

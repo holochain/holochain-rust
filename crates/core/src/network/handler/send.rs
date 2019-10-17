@@ -82,7 +82,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 .expect("Could not spawn thread for handling of validation package request");
         }
         DirectMessage::ValidationPackage(_) => {
-            log_error!(context, 
+            log_error!(context,
             "net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",
         )
         }
@@ -128,7 +128,7 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
-        DirectMessage::RequestValidationPackage(_) => log_error!(context, 
+        DirectMessage::RequestValidationPackage(_) => log_error!(context,
             "net: Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),
         DirectMessage::ValidationPackage(maybe_validation_package) => {

@@ -19,9 +19,8 @@ let middleware = combine(
   tapeExecutor(require('tape')),
 );
 
-if (process.env.APP_SPEC_NETWORK_TYPE === "websocket")
-{
-  transport_config = "websocket"
+if (process.env.APP_SPEC_NETWORK_TYPE === 'websocket') {
+  transport_config = 'websocket'
 
   // omit singleConductor
   middleware = combine(
@@ -30,11 +29,10 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "websocket")
   );
 }
 
-if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
-{
+if (process.env.APP_SPEC_NETWORK_TYPE === 'sim1h') {
   transport_config = {
     type: 'sim1h',
-    dynamo_url: "http://localhost:8000",
+    dynamo_url: 'http://localhost:8000'
   }
 
   // omit singleConductor
@@ -44,12 +42,11 @@ if (process.env.APP_SPEC_NETWORK_TYPE === "sim1h")
   );
 }
 
-if (process.env.APP_SPEC_NETWORK_TYPE === "sim2h")
-{
-    transport_config = {
-        type: 'sim2h',
-        sim2h_url: "wss://localhost:9000",
-    }
+if (process.env.APP_SPEC_NETWORK_TYPE === 'sim2h') {
+  transport_config = {
+    type: 'sim2h',
+    sim2h_url: 'wss://localhost:9000'
+  }
 
     // omit singleConductor
     middleware = combine(
@@ -63,45 +60,45 @@ const orchestrator = new Orchestrator({
   middleware,
   waiter: {
     softTimeout: 5000,
-    hardTimeout: 10000,
+    hardTimeout: 10000
   },
   globalConfig: {
-      logger: {
-          type: "debug",
-          rules: {
-              rules: [
-                  {
-                      exclude: true,
-                      pattern: ".*parity.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*mio.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*tokio.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*hyper.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*rusoto_core.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*want.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*rpc.*"
-                  }
-              ]
+    logger: {
+      type: 'debug',
+      rules: {
+        rules: [
+          {
+            exclude: true,
+            pattern: '.*parity.*'
           },
-          state_dump: true,
+          {
+            exclude: true,
+            pattern: '.*mio.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*tokio.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*hyper.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*rusoto_core.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*want.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*rpc.*'
+          }
+        ]
       },
+      state_dump: true
+    },
     network: transport_config
   }
 })
@@ -115,17 +112,15 @@ require('./files/crypto')(orchestrator.registerScenario)
 require('./multi-dna')(orchestrator.registerScenario)
 // require('./validate-agent-test')(orchestrator.registerScenario)
 
-
 // Check to see that we haven't accidentally disabled a bunch of scenarios
 const num = orchestrator.numRegistered()
 if (num < MIN_EXPECTED_SCENARIOS) {
   console.error(`Expected at least ${MIN_EXPECTED_SCENARIOS} scenarios, but only ${num} were registered!`)
   process.exit(1)
-}
-else {
+} else {
   console.log(`Registered ${num} scenarios (at least ${MIN_EXPECTED_SCENARIOS} were expected)`)
 }
 
 orchestrator.run().then(stats => {
-  console.log("All done.")
+  console.log('All done.')
 })

@@ -3,6 +3,7 @@ import * as R from 'ramda'
 import { ScenarioApi } from '@holochain/try-o-rama/lib/api'
 import { Player } from '@holochain/try-o-rama/lib/player'
 import { ConductorConfig } from '@holochain/try-o-rama/lib/types'
+import { sleep } from 'sleep'
 
 const dna = Config.dna('https://github.com/holochain/passthrough-dna/releases/download/v0.0.3/passthrough-dna.dna.json', 'passthrough')
 
@@ -23,7 +24,11 @@ module.exports = (scenario, N, M) => {
   const batch = configBatchSimple(N, M)
 
   scenario('one at a time', async (s, t) => {
-    const players = R.values(await s.players(batch, true))
+    const players = R.values(await s.players(batch, false))
+    for(let player of players) {
+      await player.spawn()
+      sleep(10)
+    }
 
     // Make every instance of every conductor commit an entry
 
@@ -77,7 +82,11 @@ module.exports = (scenario, N, M) => {
   })
 
   scenario('all at once', async (s, t) => {
-    const players = R.values(await s.players(batch, true))
+    const players = R.values(await s.players(batch, false))
+    for(let player of players) {
+      await player.spawn()
+      sleep(1)
+    }
     const commitResults = await R.pipe(
       // Flatten into a 1d array
       R.flatten,

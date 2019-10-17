@@ -385,6 +385,7 @@ fn can_return_empty_string_as_validation_fail() {
         &String::from(JsonString::from(empty_string_validation_fail_entry())),
     );
     let path = PathBuf::new()
+        .join("crates")
         .join("core")
         .join("src")
         .join("nucleus")
@@ -397,5 +398,6 @@ fn can_return_empty_string_as_validation_fail() {
     let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
     let expected_substr = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\"",formatted_path_string);
     let result_str = result.unwrap().to_string();
+
     assert!(result_str.contains(&expected_substr));
 }

@@ -1,5 +1,7 @@
 {
-  "devDependencies": {},
+  "devDependencies": {
+    "standard": "^14.3.1"
+  },
   "dependencies": {
     "@holochain/try-o-rama": "^0.1.2-beta.4",
     "faucet": "0.0.1",

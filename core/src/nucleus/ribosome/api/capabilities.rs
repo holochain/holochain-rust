@@ -82,7 +82,7 @@ pub mod tests {
             id: "some_id".to_string(),
             cap_type: CapabilityType::Assigned,
             assignees: Some(vec![Address::from("fake address")]),
-            functions: functions,
+            functions,
         };
 
         JsonString::from(grant_args).to_bytes()
@@ -133,5 +133,4 @@ pub mod tests {
             ),
         );
     }
-
 }

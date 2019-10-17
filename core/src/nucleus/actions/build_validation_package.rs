@@ -177,11 +177,12 @@ pub async fn build_validation_package<'a>(
             .expect("Could not spawn thread for build_validation_package");
     }
 
-    await!(ValidationPackageFuture {
+    ValidationPackageFuture {
         context: context.clone(),
         key: id,
         error: None,
-    })
+    }
+    .await
 }
 
 // given a slice of headers return the entries for those marked public
@@ -282,7 +283,7 @@ mod tests {
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: chain_header,
+            chain_header,
             source_chain_entries: None,
             source_chain_headers: None,
             custom: None,
@@ -372,7 +373,7 @@ mod tests {
         let headers = all_chain_headers_before_header(&context, &chain_header);
 
         let expected = ValidationPackage {
-            chain_header: chain_header,
+            chain_header,
             source_chain_entries: Some(public_chain_entries_from_headers(&context, &headers)),
             source_chain_headers: Some(headers),
             custom: None,

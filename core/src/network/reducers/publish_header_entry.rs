@@ -5,7 +5,7 @@ use crate::{
         actions::ActionResponse,
         entry_aspect::EntryAspect,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
-        reducers::send,
+        reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
     },
     state::State,
@@ -35,7 +35,10 @@ fn publish_header(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: entry.address().clone(),
-                aspect_list: vec![EntryAspect::Content(entry.clone(), header).into()],
+                aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
+                    entry.clone(),
+                    header,
+                ))],
             },
         }),
     )
@@ -90,5 +93,4 @@ mod tests {
 
         store.reduce(action_wrapper);
     }
-
 }

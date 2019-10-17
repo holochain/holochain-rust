@@ -26,7 +26,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
+use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -131,14 +131,7 @@ impl Drop for Conductor {
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
-        if let Some(network) = self.n3h_keepalive_network.take() {
-            if let Err(err) = network.stop() {
-                println!("ERROR stopping network thread: {:?}", err);
-            } else {
-                println!("Network thread successfully stopped");
-            }
-            self.n3h_keepalive_network = None;
-        };
+        if let Some(mut network) = self.n3h_keepalive_network.take() { network.stop() }
     }
 }
 
@@ -565,6 +558,7 @@ impl Conductor {
             }
             NetworkConfig::Memory(_) => unimplemented!(),
             NetworkConfig::Sim1h(_) => unimplemented!(),
+            NetworkConfig::Sim2h(_) => unimplemented!(),
             NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
                 "Lib3h Network not implemented".to_string(),
             )),
@@ -581,10 +575,11 @@ impl Conductor {
                         .unwrap()
                         .context()
                         .unwrap()
-                        .network()
-                        .lock()
-                        .as_ref()
+                        .network_state()
                         .unwrap()
+                        .network
+                        .as_ref()
+                        .expect("Network not initialized")
                         .p2p_endpoint()
                 }).collect();
             match p2p_config.to_owned().backend_config {
@@ -636,9 +631,13 @@ impl Conductor {
                 );
                 // create an empty network with this config just so the n3h process doesn't
                 // kill itself in the case that all instances are closed down (as happens in app-spec)
-                let network =
-                    P2pNetwork::new(NetHandler::new(Box::new(|_r| Ok(()))), config.clone())
-                        .expect("unable to create conductor keepalive P2pNetwork");
+                let network = P2pNetwork::new(
+                    NetHandler::new(Box::new(|_r| Ok(()))),
+                    config.clone(),
+                    None,
+                    None,
+                )
+                .expect("unable to create conductor keepalive P2pNetwork");
                 self.n3h_keepalive_network = Some(network);
                 config
             }
@@ -655,6 +654,11 @@ impl Conductor {
             NetworkConfig::Sim1h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::SIM1H,
                 backend_config: BackendConfig::Sim1h(config),
+                maybe_end_user_config: None,
+            },
+            NetworkConfig::Sim2h(config) => P2pConfig {
+                backend_kind: P2pBackendKind::SIM2H,
+                backend_config: BackendConfig::Sim2h(config),
                 maybe_end_user_config: None,
             },
         }

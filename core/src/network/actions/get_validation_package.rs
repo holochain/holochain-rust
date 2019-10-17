@@ -26,10 +26,11 @@ pub async fn get_validation_package(
     let entry_address = header.entry_address().clone();
     let action_wrapper = ActionWrapper::new(Action::GetValidationPackage(header));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    await!(GetValidationPackageFuture {
+    GetValidationPackageFuture {
         context: context.clone(),
         address: entry_address,
-    })
+    }
+    .await
 }
 
 /// GetValidationPackageFuture resolves to an Option<ValidationPackage>
@@ -50,6 +51,7 @@ impl Future for GetValidationPackageFuture {
         {
             return Poll::Ready(Err(err));
         }
+
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {

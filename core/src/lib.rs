@@ -1,5 +1,5 @@
 //! The library implementing the holochain pattern of validation rules + local source chain + DHT
-#![feature(arbitrary_self_types, async_await, await_macro)]
+#![feature(arbitrary_self_types, async_await)]
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate serde_derive;
@@ -22,7 +22,7 @@ extern crate pretty_assertions;
 #[macro_use]
 extern crate log;
 #[macro_use]
-extern crate logging;
+extern crate holochain_logging;
 
 #[macro_use]
 pub mod macros;
@@ -44,6 +44,3 @@ pub mod signal;
 pub mod state;
 pub mod state_dump;
 pub mod workflows;
-
-mod conductor_api;
-

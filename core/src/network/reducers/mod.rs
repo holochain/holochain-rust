@@ -98,12 +98,9 @@ pub fn send(
 ) -> Result<(), HolochainError> {
     network_state
         .network
-        .lock()
-        .unwrap()
         .as_mut()
         .map(|network| {
-            network
-                .send(msg)
+            network.send(msg)
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?

@@ -1,5 +1,5 @@
 use crate::agent::state::create_entry_with_header_for_header;
-use logging::prelude::*;
+use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
 pub mod query;
@@ -273,7 +273,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 
 /// Get content aspect at this address, regardless of whether the address points to
 /// an Entry or a Header
-/// 
+///
 /// NB: this can be optimized by starting with a CAS lookup for the entry directly,
 /// to avoid traversing the chain unnecessarily in the case of a miss
 /// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
@@ -331,7 +331,7 @@ fn get_content_aspect(
                         log_error!(context, "{}", err_message);
                         HolochainError::ErrorGeneric(err_message)
                     })?;
-                if headers.len() > 0 {
+                if !headers.is_empty() {
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
@@ -418,7 +418,7 @@ fn get_meta_aspects(
         })
         .partition(Result::is_ok);
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         Err(errors[0].to_owned().err().unwrap())
     } else {
         Ok(aspects.into_iter().map(Result::unwrap).collect())

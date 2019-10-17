@@ -1,6 +1,5 @@
 use crate::{
     action::{Action, ActionWrapper},
-    conductor_api::ConductorApi,
     instance::Observer,
     network::state::NetworkState,
     nucleus::actions::get_entry::get_entry_from_cas,
@@ -12,6 +11,7 @@ use futures::{task::Poll, Future};
 
 use crate::state::StateWrapper;
 use futures::task::noop_waker_ref;
+use holochain_conductor_api_api::ConductorApi;
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -27,7 +27,6 @@ use holochain_core_types::{
         HcRwLockReadGuard as RwLockReadGuard,
     },
 };
-
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
@@ -52,7 +51,7 @@ pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {
     pub fn lock(&self) -> P2pNetworkMutexGuardWrapper<'_> {
-        return P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"));
+        P2pNetworkMutexGuardWrapper(self.0.lock().expect("network accessible"))
     }
 }
 
@@ -199,17 +198,7 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state
-            .as_ref()
-            .map(|s| s.try_read())
-            .unwrap_or(None)
-    }
-
-    pub fn network(&self) -> P2pNetworkWrapper {
-        P2pNetworkWrapper(match self.network_state() {
-            Some(s) => s.network.clone(),
-            None => Arc::new(Mutex::new(None)),
-        })
+        self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
@@ -393,7 +382,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
         .map(|name| P2pConfig::new_with_memory_backend(name))
-        .unwrap_or_else(|| P2pConfig::new_with_unique_memory_backend())
+        .unwrap_or_else(P2pConfig::new_with_unique_memory_backend)
 }
 
 #[cfg(test)]
@@ -430,7 +419,7 @@ pub mod tests {
         );
 
         // Somehow we need to build our own logging instance for this test to show logs
-        use logging::prelude::*;
+        use holochain_logging::prelude::*;
         let guard = FastLoggerBuilder::new()
             .set_level_from_str("Trace")
             .build()

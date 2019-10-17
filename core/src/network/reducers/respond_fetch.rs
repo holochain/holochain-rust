@@ -1,7 +1,10 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse, entry_aspect::EntryAspect, reducers::send, state::NetworkState,
+        actions::ActionResponse,
+        entry_aspect::EntryAspect,
+        reducers::{publish::entry_data_to_entry_aspect_data, send},
+        state::NetworkState,
     },
     state::State,
 };
@@ -28,8 +31,10 @@ fn reduce_respond_fetch_data_inner(
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
                 entry_address: fetch_data.entry_address.clone(),
-                aspect_list: aspects.iter().map(|a| a.to_owned().into()).collect(),
-
+                aspect_list: aspects
+                    .iter()
+                    .map(|a| entry_data_to_entry_aspect_data(a))
+                    .collect(),
             },
         }),
     )

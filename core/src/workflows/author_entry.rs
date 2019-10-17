@@ -46,11 +46,7 @@ pub async fn author_entry<'a>(
     }
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = await!(build_validation_package(
-        &entry,
-        context.clone(),
-        provenances
-    ))?;
+    let validation_package = build_validation_package(&entry, context.clone(), provenances).await?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -61,12 +57,13 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: validating...",
         address
     );
-    await!(validate_entry(
+    validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
-        &context
-    ))?;
+        &context,
+    )
+    .await?;
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
@@ -74,11 +71,7 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: committing...",
         address
     );
-    let addr = await!(commit_entry(
-        entry.clone(),
-        maybe_link_update_delete,
-        &context
-    ))?;
+    let addr = commit_entry(entry.clone(), maybe_link_update_delete, &context).await?;
     log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
@@ -87,23 +80,29 @@ pub async fn author_entry<'a>(
             "workflow/authoring_entry/{}: publishing...",
             address
         );
-        await!(publish(entry.address(), &context))?;
-        log_debug!(context,
-            "workflow/authoring_entry/{}: published!",
-            address
-        );
+        publish(entry.address(), &context).await?;
+        log_debug!(context, "workflow/authoring_entry/{}: published!", address);
     } else {
-        log_debug!(context,
-          "workflow/authoring_entry/{}: entry is private, no publishing",
-          address
+        log_debug!(
+            context,
+            "workflow/authoring_entry/{}: entry is private, no publishing",
+            address
         );
     }
 
     // 5. Publish the header for all types (including private entries)
-    log_debug!(context, "debug/workflow/authoring_entry/{}: publishing header...", address);
-    await!(publish_header_entry(entry.address(), &context))?;
-    log_debug!(context, "debug/workflow/authoring_entry/{}: header published!", address);
-    
+    log_debug!(
+        context,
+        "debug/workflow/authoring_entry/{}: publishing header...",
+        address
+    );
+    publish_header_entry(entry.address(), &context).await?;
+    log_debug!(
+        context,
+        "debug/workflow/authoring_entry/{}: header published!",
+        address
+    );
+
     Ok(CommitEntryResult::new(addr))
 }
 // TODO: Bring the old in-memory network up to speed and turn on this test again!

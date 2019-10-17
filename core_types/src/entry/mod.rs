@@ -121,7 +121,7 @@ impl AddressableContent for Entry {
 
     fn try_from_content(content: &Content) -> JsonResult<Entry> {
         Entry::try_from(content.to_owned())
-            .or_else(|_| ChainHeader::try_from(content).map(|header| Entry::ChainHeader(header)))
+            .or_else(|_| ChainHeader::try_from(content).map(Entry::ChainHeader))
     }
 }
 

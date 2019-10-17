@@ -45,10 +45,7 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
         .unwrap()
         .zomes
         .get(&zome_name)
-        .ok_or_else(|| HolochainError::new(&format!(
-            "No Ribosome found for Zome '{}'",
-            zome_name
-        )))?
+        .ok_or_else(|| HolochainError::new(&format!("No Ribosome found for Zome '{}'", zome_name)))?
         .code
         .get_wasm_module()?;
 
@@ -83,8 +80,8 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
             // Any other error is memory related
             Err(err) => {
                 return Err(HolochainError::RibosomeFailed(format!(
-                    "WASM Memory issue: {:?}",
-                    err
+                    "WASM Memory issue: {:?}. data = {:?}",
+                    err, runtime.data
                 )));
             }
             // Write successful, encode allocation
@@ -107,15 +104,25 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         wasm_instance
             .invoke_export(
                 &fn_name,
-                &[RuntimeValue::I64(encoded_allocation_of_input as RibosomeRuntimeBits)],
+                &[RuntimeValue::I64(
+                    encoded_allocation_of_input as RibosomeRuntimeBits,
+                )],
                 mut_runtime,
             )
             .map_err(|err| {
-                HolochainError::RibosomeFailed(format!("WASM invocation failed: {}", err))
+                HolochainError::RibosomeFailed(format!(
+                    "WASM invocation failed: {}. data = {:?}",
+                    err, runtime.data
+                ))
             })?
             .unwrap()
             .try_into() // Option<_>
-            .ok_or_else(|| HolochainError::RibosomeFailed("WASM return value missing".to_owned()))?
+            .ok_or_else(|| {
+                HolochainError::RibosomeFailed(format!(
+                    "WASM return value missing. data = {:?}",
+                    runtime.data
+                ))
+            })?
     };
 
     // Handle result returned by called zome function
@@ -141,10 +148,12 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 err_code.as_str()
             );
             match &runtime.data {
-                WasmCallData::ZomeCall(d) =>
-                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
-                WasmCallData::CallbackCall(d) =>
-                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call),
+                WasmCallData::ZomeCall(d) => {
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call)
+                }
+                WasmCallData::CallbackCall(d) => {
+                    log_info!(d.context, "{}, when calling: {:?}", log_message, d.call)
+                }
                 _ => {}
             };
         }
@@ -185,5 +194,5 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     //     zome_call.fn_name, return_log_msg,
     // );
     let _ = return_log_msg;
-    return return_result;
+    return_result
 }

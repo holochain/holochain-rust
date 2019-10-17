@@ -1188,14 +1188,64 @@ id = 'new-instance'"#,
 
     #[test]
     /// Tests if the removed instance is gone from the config file
-    /// as well as the mentions of the removed instance are gone from the interfaces
+    /// as well as the mentions of the removed instance are gone from the interfaces, as well as the storage of the instance has been cleared,
+    /// if the clean arg is true.
     /// (to not render the config invalid).
-    fn test_remove_instance() {
+    fn test_remove_instance_clean_false() {
         let test_name = "test_remove_instance";
         let mut conductor = create_test_conductor(test_name, 3002);
 
         assert_eq!(
-            conductor.remove_instance(&String::from("test-instance-1")),
+            conductor.remove_instance(&String::from("test-instance-1"), false),
+            Ok(()),
+        );
+
+        let mut config_contents = String::new();
+        let mut file =
+            File::open(&conductor.config_path()).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = header_block(test_name);
+
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        //toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
+admin = true
+id = 'websocket interface'
+
+[[interfaces.instances]]
+id = 'test-instance-2'
+
+[interfaces.driver]
+port = 3002
+type = 'websocket'"#,
+            ),
+        );
+        toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
+        toml = add_block(toml, signals());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(config_contents, toml,);
+    }
+
+        #[test]
+    /// Tests if the removed instance is gone from the config file
+    /// as well as the mentions of the removed instance are gone from the interfaces. If the clean arg is true, tests that the storage of the instance has been cleared,
+    /// (to not render the config invalid).
+    fn test_remove_instance_clean_true() {
+        let test_name = "test_remove_instance";
+        let mut conductor = create_test_conductor(test_name, 3002);
+
+        assert_eq!(
+            conductor.remove_instance(&String::from("test-instance-1"), true),
             Ok(()),
         );
 

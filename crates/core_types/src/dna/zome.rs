@@ -65,7 +65,6 @@ pub struct Zome {
     pub fn_declarations: ZomeFnDeclarations,
 
     /// Validation code for this entry_type.
-    #[serde(default)]
     pub code: DnaWasm,
 
     /// A list of bridges to other DNAs that this DNA can use or depends on.
@@ -75,22 +74,20 @@ pub struct Zome {
 
 impl Eq for Zome {}
 
-impl Default for Zome {
+impl Zome {
     /// Provide defaults for an individual "zome".
-    fn default() -> Self {
+    pub fn empty() -> Self {
         Zome {
             description: String::new(),
             config: Config::new(),
             entry_types: BTreeMap::new(),
             fn_declarations: Vec::new(),
             traits: BTreeMap::new(),
-            code: DnaWasm::new(),
+            code: DnaWasm::new_invalid(),
             bridges: Vec::new(),
         }
     }
-}
 
-impl Zome {
     /// Allow sane defaults for `Zome::new()`.
     pub fn new(
         description: &str,
@@ -160,7 +157,7 @@ pub mod tests {
     use std::{collections::BTreeMap, convert::TryFrom};
 
     pub fn test_zome() -> Zome {
-        Zome::default()
+        Zome::empty()
     }
 
     #[test]
@@ -176,7 +173,7 @@ pub mod tests {
         )
         .unwrap();
 
-        let mut zome = Zome::default();
+        let mut zome = Zome::empty();
         zome.description = String::from("test");
 
         assert_eq!(fixture, zome);
@@ -186,10 +183,8 @@ pub mod tests {
     fn zome_json_test() {
         let mut entry_types = BTreeMap::new();
         entry_types.insert(EntryType::from("foo"), EntryTypeDef::new());
-        let zome = Zome {
-            entry_types,
-            ..Default::default()
-        };
+        let mut zome = Zome::empty();
+        zome.entry_types = entry_types;
 
         let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"properties\":\"{}\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
@@ -206,7 +201,7 @@ pub mod tests {
 
     #[test]
     fn test_zome_add_fn_declaration() {
-        let mut zome = Zome::default();
+        let mut zome = Zome::empty();
         assert_eq!(zome.fn_declarations.len(), 0);
         zome.add_fn_declaration(
             String::from("hello"),
@@ -224,7 +219,7 @@ pub mod tests {
 
     #[test]
     fn test_zome_get_function() {
-        let mut zome = Zome::default();
+        let mut zome = Zome::empty();
         zome.add_fn_declaration(String::from("test"), vec![], vec![]);
         let result = zome.get_function("foo func");
         assert!(result.is_none());

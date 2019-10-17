@@ -103,12 +103,12 @@ pub struct DnaWasm {
     module: Arc<RwLock<Option<ModuleArc>>>,
 }
 
-impl Default for DnaWasm {
+impl DnaWasm {
     /// Provide defaults for wasm entries in dna structs.
-    fn default() -> Self {
+    pub fn new_invalid() -> Self {
         debug!("DnaWasm::default() called from:\n{:?}", Backtrace::new());
         DnaWasm {
-            code: Arc::new(vec![6,6,6]),
+            code: Arc::new(vec![6, 6, 6]),
             module: empty_module(),
         }
     }
@@ -137,11 +137,6 @@ impl Hash for DnaWasm {
 }
 
 impl DnaWasm {
-    /// Allow sane defaults for `DnaWasm::new()`.
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     /// Creates a new instance from given WASM binary
     pub fn from_bytes(wasm: Vec<u8>) -> Self {
         DnaWasm {
@@ -162,12 +157,14 @@ impl DnaWasm {
     }
 
     fn create_module(&self) -> Result<(), HolochainError> {
-        let module = wasmi::Module::from_buffer(&*self.code)
-            .map_err(|e| {
-                debug!("DnaWasm could not create a wasmi::Module from code bytes! Error: {:?}", e);
-                debug!("Unparsable bytes: {:?}", *self.code);
-                HolochainError::ErrorGeneric(e.into())
-            })?;
+        let module = wasmi::Module::from_buffer(&*self.code).map_err(|e| {
+            debug!(
+                "DnaWasm could not create a wasmi::Module from code bytes! Error: {:?}",
+                e
+            );
+            debug!("Unparsable bytes: {:?}", *self.code);
+            HolochainError::ErrorGeneric(e.into())
+        })?;
         let module_arc = ModuleArc::new(module);
         let mut lock = self.module.write().unwrap();
         *lock = Some(module_arc);

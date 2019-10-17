@@ -530,7 +530,7 @@ pub mod tests {
             uuid: String::from(UNIT_UUID),
             ..Default::default()
         };
-        let mut zome = zome::Zome::default();
+        let mut zome = zome::Zome::empty();
         zome.entry_types
             .insert("".into(), entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);

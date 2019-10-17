@@ -1,8 +1,6 @@
 use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
-use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-use lib3h_protocol::data_types::EntryAspectData;
 use std::{
     convert::{Into, TryFrom},
     fmt,
@@ -95,21 +93,6 @@ impl EntryAspect {
     }
 }
 
-impl Into<EntryAspectData> for EntryAspect {
-    fn into(self) -> EntryAspectData {
-        let type_hint = self.type_hint();
-        let aspect_address = self.address();
-        let ts: DateTime<FixedOffset> = self.header().timestamp().into();
-        let aspect_json: JsonString = self.into();
-        EntryAspectData {
-            type_hint,
-            aspect_address,
-            aspect: aspect_json.to_bytes().into(),
-            publish_ts: ts.timestamp() as u64,
-        }
-    }
-}
-
 fn format_header(header: &ChainHeader) -> String {
     format!(
         "Header[type: {}, crud_link: {:?}]",
@@ -157,25 +140,5 @@ impl fmt::Debug for EntryAspect {
                 write!(f, "EntryAspect::Deletion({})", format_header(header))
             }
         }
-    }
-}
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-    use crate::chain_header::test_chain_header;
-    use chrono::{offset::FixedOffset, DateTime};
-
-    #[test]
-    fn can_convert_into_entry_aspect_data() {
-        let chain_header = test_chain_header();
-        let aspect = EntryAspect::Header(chain_header.clone());
-        let aspect_data: EntryAspectData = aspect.clone().into();
-        let aspect_json: JsonString = aspect.clone().into();
-        let ts: DateTime<FixedOffset> = chain_header.timestamp().into();
-        assert_eq!(aspect_data.type_hint, aspect.type_hint());
-        assert_eq!(aspect_data.aspect_address, aspect.address());
-        assert_eq!(*aspect_data.aspect, aspect_json.to_bytes());
-        assert_eq!(aspect_data.publish_ts, ts.timestamp() as u64);
     }
 }

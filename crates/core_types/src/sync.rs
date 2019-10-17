@@ -66,6 +66,7 @@ struct GuardTracker {
     backtrace: Backtrace,
     lock_type: LockType,
     immortal: bool,
+    annotation: Option<String>,
 }
 
 impl GuardTracker {
@@ -76,6 +77,7 @@ impl GuardTracker {
             created: Instant::now(),
             backtrace: Backtrace::new_unresolved(),
             immortal: false,
+            annotation: None,
         }
     }
 
@@ -111,6 +113,11 @@ impl GuardTracker {
         }
         self.immortal = true;
         self.backtrace.resolve();
+        let annotation = self
+            .annotation
+            .as_ref()
+            .map(|a| format!("\nAnnotation: {}\n", a))
+            .unwrap_or_default();
         error!(
             r"
 
@@ -118,10 +125,15 @@ impl GuardTracker {
         !!! IMMORTAL LOCK GUARD FOUND !!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-{:?} guard {} lived for > {} seconds. Backtrace at the moment of guard creation follows:
+{type:?} guard {puid} lived for > {time} seconds.{annotation}
+Backtrace at the moment of guard creation follows:
 
-{:?}",
-            self.lock_type, self.puid, IMMORTAL_TIMEOUT_SECS, self.backtrace
+{backtrace:?}",
+            type=self.lock_type,
+            puid=self.puid,
+            time=IMMORTAL_TIMEOUT_SECS,
+            annotation=annotation,
+            backtrace=self.backtrace
         );
     }
 }
@@ -199,6 +211,14 @@ macro_rules! guard_struct {
                     .lock()
                     .insert(puid, GuardTracker::new(puid, LockType::$lock_type));
                 Self { puid, inner }
+            }
+
+            pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
+                GUARDS
+                    .lock()
+                    .entry(self.puid)
+                    .and_modify(|g| g.annotation = Some(annotation.into()));
+                self
             }
         }
 

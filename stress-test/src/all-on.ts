@@ -38,9 +38,9 @@ module.exports = (scenario, N, M) => {
     }
     const hashes = commitResults.map(x => x.Ok)
 
-    // All results are Ok
+    // All results are Ok (not Err)
+    t.deepEqual(commitResults.map(x => x.Err), R.repeat(undefined, N * M))
     t.ok(hashes.every(R.identity))
-    t.equal(hashes.length, N * M)
 
     await s.consistency()
 
@@ -58,6 +58,7 @@ module.exports = (scenario, N, M) => {
 
     t.ok(addLinkResults.every(r => r.Ok))
     t.equal(addLinkResults.length, N * M)
+    t.deepEqual(addLinkResults.map(x => x.Err), R.repeat(undefined, N * M))
 
     // Make each other instance getLinks on the base hash
 
@@ -71,9 +72,8 @@ module.exports = (scenario, N, M) => {
       }
     }
 
-    t.ok(getLinksResults.every(r => r.Ok))
-    t.ok(getLinksResults.every(r => r.Ok.links.length === N * M))
-
+    // All getLinks results contain the full set
+    t.deepEqual(getLinksResults.map(r => r.Ok.links.length), R.repeat(N * M, N * M))
   })
 
   scenario('all at once', async (s, t) => {
@@ -92,9 +92,9 @@ module.exports = (scenario, N, M) => {
     )
     const hashes = commitResults.map(x => x.Ok)
 
-    // All results are Ok
+    // All results are Ok (not Err)
+    t.deepEqual(commitResults.map(x => x.Err), R.repeat(undefined, N * M))
     t.ok(hashes.every(R.identity))
-    t.equal(hashes.length, N * M)
 
     await s.consistency()
 
@@ -106,6 +106,7 @@ module.exports = (scenario, N, M) => {
 
     t.ok(addLinkResults.every(r => r.Ok))
     t.equal(addLinkResults.length, N * M)
+    t.deepEqual(addLinkResults.map(x => x.Err), R.repeat(undefined, N * M))
 
     await s.consistency()
 
@@ -120,8 +121,7 @@ module.exports = (scenario, N, M) => {
       )
     )
 
-    t.ok(getLinksResults.every(r => r.Ok))
-    t.ok(getLinksResults.every(r => r.Ok.links.length === N * M))
-
+    // All getLinks results contain the full set
+    t.deepEqual(getLinksResults.map(r => r.Ok.links.length), R.repeat(N * M, N * M))
   })
 }

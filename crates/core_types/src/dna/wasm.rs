@@ -1,6 +1,7 @@
 //! holochain_core_types::dna::wasm is a module for managing webassembly code
 //!  - within the in-memory dna struct
 //!  - and serialized to json
+use backtrace::Backtrace;
 
 use crate::error::HolochainError;
 use base64;
@@ -105,8 +106,9 @@ pub struct DnaWasm {
 impl Default for DnaWasm {
     /// Provide defaults for wasm entries in dna structs.
     fn default() -> Self {
+        debug!("DnaWasm::default() called from:\n{:?}", Backtrace::new());
         DnaWasm {
-            code: Arc::new(vec![]),
+            code: Arc::new(vec![6,6,6]),
             module: empty_module(),
         }
     }
@@ -161,7 +163,11 @@ impl DnaWasm {
 
     fn create_module(&self) -> Result<(), HolochainError> {
         let module = wasmi::Module::from_buffer(&*self.code)
-            .map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
+            .map_err(|e| {
+                debug!("DnaWasm could not create a wasmi::Module from code bytes! Error: {:?}", e);
+                debug!("Unparsable bytes: {:?}", *self.code);
+                HolochainError::ErrorGeneric(e.into())
+            })?;
         let module_arc = ModuleArc::new(module);
         let mut lock = self.module.write().unwrap();
         *lock = Some(module_arc);

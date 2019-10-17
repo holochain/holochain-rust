@@ -7,7 +7,7 @@ import { ConductorConfig } from '@holochain/try-o-rama/lib/types'
 const dna = Config.dna('https://github.com/holochain/passthrough-dna/releases/download/v0.0.3/passthrough-dna.dna.json', 'passthrough')
 
 /** Generates a bunch of identical conductor configs with multiple identical instances */
-const batchSimple = (numConductors, numInstances) => {
+const configBatchSimple = (numConductors, numInstances) => {
   const conductor = R.pipe(
     R.map(n => [`instance-${n}`, dna]),
     R.fromPairs,
@@ -20,7 +20,7 @@ const trace = R.tap(x => console.log('{T}', x))
 
 module.exports = (scenario, N, M) => {
 
-  const batch = batchSimple(N, M)
+  const batch = configBatchSimple(N, M)
 
   scenario('one at a time', async (s, t) => {
     const players = R.values(await s.players(batch, true))

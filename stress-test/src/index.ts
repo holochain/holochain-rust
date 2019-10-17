@@ -35,7 +35,7 @@ const orchestrator = new Orchestrator({
   middleware,
   globalConfig: {
     network,
-    logger: false
+    logger: true
   }
 })
 

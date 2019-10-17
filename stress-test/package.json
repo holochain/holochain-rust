@@ -15,7 +15,7 @@
     "typescript": "^3.6.3"
   },
   "dependencies": {
-    "@holochain/try-o-rama": "^0.1.2-beta.3",
+    "@holochain/try-o-rama": "^0.1.2-beta.4",
     "ramda": "^0.26.1",
     "tape": "^4.11.0",
     "sleep": "^6.1.0"

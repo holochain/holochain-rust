@@ -225,7 +225,7 @@ impl ConductorAdmin for Conductor {
     /// Also removes all mentions of that instance from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
-    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
         new_config = new_config.save_remove_instance(id);
@@ -244,6 +244,9 @@ impl ConductorAdmin for Conductor {
         }
         if let Some(instance) = self.instances.remove(id) {
             instance.write().unwrap().kill();
+            if clean == true {
+                remove_dir_all(instance.storage.path)?;
+            }
         }
         let _ = self.start_signal_multiplexer();
 

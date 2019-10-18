@@ -66,7 +66,7 @@ macro_rules! conductor_call {
                 // with conductor_api::conductor::mount_conductor_from_config(config: Configuration).
                 // There are cases in which we don't want to treat the conductor as a singleton such as
                 // holochain_nodejs and tests in particular. In those cases, calling admin functions via
-                // interfaces (websockt/http) won't work, but also we don't need that.
+                // interfaces (websocket/http) won't work, but also we don't need that.
                 let mut error = jsonrpc_core::Error::internal_error();
                 error.message = String::from(
                     "Admin conductor function called without a conductor mounted as singleton!",
@@ -526,7 +526,8 @@ impl ConductorApiBuilder {
         self.io.add_method("admin/instance/remove", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.remove_instance(&id))?;
+            let clean = Self::get_as_bool("clean", &params_map)?;
+            conductor_call!(|c| c.remove_instance(&id), clean)?;
             Ok(json!({"success": true}))
         });
 

@@ -1,10 +1,6 @@
 use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-<<<<<<< HEAD:core_types/src/network/entry_aspect.rs
-use lib3h_protocol::data_types::{EntryAspectData};
-=======
->>>>>>> ac2b12b806f5730933a516ef805789affe22407d:crates/core_types/src/network/entry_aspect.rs
 use std::{
     convert::{Into, TryFrom},
     fmt,

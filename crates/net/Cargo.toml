@@ -24,7 +24,7 @@ holochain_conductor_lib_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.9"
+holochain_persistence_api = "=0.0.10"
 lazy_static = "=1.2.0"
 libc = "=0.2.58"
 reqwest = "=0.9.11"

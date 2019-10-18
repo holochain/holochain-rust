@@ -9,5 +9,5 @@ crate-type = ["staticlib"]
 
 [dependencies]
 holochain_core_types = { path = "../core_types" }
-holochain_persistence_api = "=0.0.9"
+holochain_persistence_api = "=0.0.10"
 holochain_json_api = "=0.0.17"

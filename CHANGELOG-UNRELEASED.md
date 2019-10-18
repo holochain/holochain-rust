@@ -5,14 +5,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
+* Adds a network back-end: `sim2h` and all corresponding integration. [#1744](https://github.com/holochain/holochain-rust/pull/1744)
 
-*  Adds the `--properties`/`-p` flag to `hc package` which takes a stringifed JSON object to be inserted in the .dna.json under the properties field. This will alter the DNA hash and can therefore be used for fork DNAs from their source code. [#1720](https://github.com/holochain/holochain-rust/pull/1720)
-* Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
-* Adds some deadlock diagnostic tools to detect when any mutex has been locked for a long time, and prints the backtrace of the moment it was locked [#1743](https://github.com/holochain/holochain-rust/pull/1743)
-
+  [Sim2h](https://github.com/holochain/sim2h) is the next iteration of sim1h.
+  In contrast to sim1h, it does not use a centralized database but a
+  centralized in-memory network that connects Holochain instances
+  like a switch-board.
+  
+  It is much faster than sim1h and will be able to implement Holochain
+  membranes based on the agent IDs and the `validate_agent` callback.
+  
+  It can be used by configuring conductors like so:
+  ```toml
+  [network]
+  type = "sim2h"
+  sim2h_url = "wss://localhost:9000"
+  ```
+  with `sim2h_url` pointing to a running `sim2h_server` instance.
+  
+  This also adds nix-shell commands:
+  - `hc-sim2h-server` which starts the server part with debug logs on
+    port 9000 (can be changed with `-p`)
+  - `hc-app-spec-test-sim2h` which runs the integration tests with 
+    networking configured to sim2h (expects to find a running 
+    sim2h_server on localhost:9000)
 ### Changed
-
-* Updates to work with version 0.0.13 of lib3h  [#1737](https://github.com/holochain/holochain-rust/pull/1737)
 
 ### Deprecated
 
@@ -20,4 +37,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Fixed the frequent deadlocks that would occur on conductor shutdown [#1752](https://github.com/holochain/holochain-rust/pull/1752)
+
 ### Security
+

@@ -1,0 +1,21 @@
+[package]
+name = "wasm-integration-test"
+version = "0.0.32-alpha2"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+
+[workspace]
+members = []
+
+[dependencies]
+serde = "=1.0.89"
+wasmi = "=0.4.4"
+serde_derive = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+holochain_wasm_utils = { path = "../../"}
+holochain_json_derive = "=0.0.17"

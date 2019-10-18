@@ -11,7 +11,7 @@ extern crate holochain_json_derive;
 pub mod mock_signing;
 
 use crossbeam_channel::Receiver;
-use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
+use holochain_conductor_lib::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
     context::Context,
@@ -33,7 +33,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,
     },
-    sync::{HcMutex as Mutex},
+    sync::HcMutex as Mutex,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -49,20 +49,19 @@ use hdk::error::{ZomeApiError, ZomeApiResult};
 
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
+    env,
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
     path::PathBuf,
-    sync::{Arc},
+    sync::Arc,
     thread,
     time::Duration,
-    env
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
-lazy_static!
-{
+lazy_static! {
     pub static ref DYNAMO_DB_LOCAL_TEST_HOST_PATH: &'static str = "http://localhost:8001";
 }
 
@@ -247,19 +246,18 @@ pub fn create_arbitrary_test_dna() -> Dna {
     create_test_dna_with_wat("test_zome", Some(wat))
 }
 
-#[derive(Clone,Deserialize)]
-pub enum TestNodeConfig
-{
+#[derive(Clone, Deserialize)]
+pub enum TestNodeConfig {
     MemoryGhostEngine(Vec<url::Url>),
     Sim1h(&'static str),
-    LegacyInMemory
+    LegacyInMemory,
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn create_test_context_with_logger_and_signal(
     agent_name: &str,
     network_name: Option<&str>,
-    test_config : TestNodeConfig,
+    test_config: TestNodeConfig,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
     let agent = mock_signing::registered_test_agent(agent_name);
     let (signal, recieve) = signal_channel();
@@ -272,12 +270,17 @@ pub fn create_test_context_with_logger_and_signal(
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
-            if let Some(network_name) = network_name
-            {
-                let config = match test_config{
-                    TestNodeConfig::Sim1h(dynamo_db_path) => P2pConfig::new_with_sim1h_backend(&dynamo_db_path),
-                    TestNodeConfig::MemoryGhostEngine(boostrap_nodes) => P2pConfig::new_with_memory_lib3h_backend(network_name,boostrap_nodes),
-                    TestNodeConfig::LegacyInMemory=>P2pConfig::new_with_memory_backend(network_name)
+            if let Some(network_name) = network_name {
+                let config = match test_config {
+                    TestNodeConfig::Sim1h(dynamo_db_path) => {
+                        P2pConfig::new_with_sim1h_backend(&dynamo_db_path)
+                    }
+                    TestNodeConfig::MemoryGhostEngine(boostrap_nodes) => {
+                        P2pConfig::new_with_memory_lib3h_backend(network_name, boostrap_nodes)
+                    }
+                    TestNodeConfig::LegacyInMemory => {
+                        P2pConfig::new_with_memory_backend(network_name)
+                    }
                 };
                 builder = builder.with_p2p_config(config);
             }
@@ -365,13 +368,13 @@ where
 
 pub fn start_holochain_instance<T: Into<String>>(
     uuid: T,
-    agent_name: T
+    agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>, SignalReceiver) {
     // Setup the holochain instance
 
     let mut wasm_path = PathBuf::new();
     let wasm_dir_component: PathBuf = wasm_target_dir(
-        &String::from("hdk-rust").into(),
+        &String::from("crates/hdk").into(),
         &String::from("wasm-test").into(),
     );
     wasm_path.push(wasm_dir_component);
@@ -473,24 +476,21 @@ pub fn start_holochain_instance<T: Into<String>>(
 
     //set this environmental variable to set up the backend for running tests.
     //if none has been set it will default to the legacy in memory worker implementation
-    let test_config = env::var("INTEGRATION_TEST_CONFIG").map(|test_config|{
-            if test_config =="lib3h"
-            {
+    let test_config = env::var("INTEGRATION_TEST_CONFIG")
+        .map(|test_config| {
+            if test_config == "lib3h" {
                 TestNodeConfig::MemoryGhostEngine(vec![])
-            }
-            else if test_config=="sim1h"
-            {
+            } else if test_config == "sim1h" {
                 TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
-            }
-            else
-            {
+            } else {
                 TestNodeConfig::LegacyInMemory
             }
-    }).unwrap_or(TestNodeConfig::LegacyInMemory);
+        })
+        .unwrap_or(TestNodeConfig::LegacyInMemory);
     let (context, test_logger, signal_recieve) = create_test_context_with_logger_and_signal(
         &dna.uuid,
         Some(&agent_name.into()),
-        test_config
+        test_config,
     );
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
@@ -603,6 +603,7 @@ where
 
 pub fn generate_zome_internal_error(error_kind: String) -> ZomeApiError {
     let path = PathBuf::new()
+        .join("crates")
         .join("core")
         .join("src")
         .join("nucleus")
@@ -618,4 +619,22 @@ pub fn generate_zome_internal_error(error_kind: String) -> ZomeApiError {
         error_kind, formatted_path_string
     );
     ZomeApiError::Internal(error_string)
+}
+
+/// Check that internal errors are equivalent, not including line number,
+/// which is fragile
+pub fn assert_zome_internal_errors_equivalent(left: &ZomeApiError, right: &ZomeApiError) {
+    match (left, right) {
+        (ZomeApiError::Internal(left_str), ZomeApiError::Internal(right_str)) => assert_eq!(
+            internal_error_substr(left_str),
+            internal_error_substr(right_str)
+        ),
+        _ => panic!("These are not both ZomeApiError::Internal"),
+    }
+}
+
+fn internal_error_substr<'a>(error_string: &'a str) -> Option<&'a str> {
+    error_string
+        .find(r#""line":"#)
+        .map(|idx| &error_string[0..idx])
 }

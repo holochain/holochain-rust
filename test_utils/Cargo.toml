@@ -1,21 +1,21 @@
 [package]
 name = "test_utils"
-version = "0.0.31-alpha1"
+version = "0.0.32-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-hdk = { path = "../hdk-rust" }
-holochain_net = { path = "../net" }
-holochain_core = { path = "../core" }
-holochain_conductor_api = { path = "../conductor_api" }
-holochain_core_types = { path = "../core_types" }
-holochain_dpki = { path = "../dpki" }
-holochain_wasm_utils = {path = "../wasm_utils"}
+hdk = { path = "../crates/hdk" }
+holochain_net = { path = "../crates/net" }
+holochain_core = { path = "../crates/core" }
+holochain_conductor_lib = { path = "../crates/conductor_lib" }
+holochain_core_types = { path = "../crates/core_types" }
+holochain_dpki = { path = "../crates/dpki" }
+holochain_wasm_utils = {path = "../crates/wasm_utils"}
 holochain_persistence_api = "=0.0.8"
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
-lib3h_sodium = { version = "=0.0.13" }
+lib3h_sodium = "=0.0.16"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
 serde = "=1.0.89"

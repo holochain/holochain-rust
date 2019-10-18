@@ -1,0 +1,23 @@
+[package]
+name = "test-globals"
+version = "0.0.32-alpha2"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+
+[workspace]
+members = []
+
+[dependencies]
+hdk = { path = ".." }
+holochain_wasm_utils = { path = "../../wasm_utils" }
+serde = "=1.0.89"
+serde_derive = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+boolinator = "=2.4.0"
+holochain_json_derive = "=0.0.17"
+

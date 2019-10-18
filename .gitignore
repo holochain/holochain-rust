@@ -28,10 +28,10 @@ cobertura.xml
 \#*\#
 
 # Things being generated on the FS that should not be
-conductor/example-config/tmp-storage*/*
-conductor/tmp-storage/*
-conductor_api/tmp-storage/*
-conductor_api/tmp-test/*
+crates/holochain/example-config/tmp-storage*/*
+crates/holochain/tmp-storage/*
+crates/conductor_lib/tmp-storage/*
+crates/conductor_lib/tmp-test/*
 tmp-test-conductor-config.toml
 tmp-*-conductor-config.toml
 

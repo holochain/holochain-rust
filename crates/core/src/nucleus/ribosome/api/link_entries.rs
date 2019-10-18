@@ -32,7 +32,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-    let top_chain_header_option = context.state().unwrap().agent().top_chain_header();
+    let top_chain_header_option = context.state().expect("Couldn't get state in invoke_linke_entries").agent().top_chain_header();
 
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,

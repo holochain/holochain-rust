@@ -37,6 +37,10 @@ use sim2h::{
 };
 use std::convert::TryFrom;
 use url::Url;
+use std::time::Instant;
+use failure::_core::time::Duration;
+
+const PING_DURATION_SECS: u64 = 10;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -54,15 +58,22 @@ pub struct Sim2hWorker {
     space_data: Option<SpaceData>,
     agent_id: Address,
     conductor_api: ConductorApi,
+    time_of_last_sent: Instant,
 }
 
 fn wire_message_into_escaped_string(message: &WireMessage) -> String {
-    let payload: String = message.clone().into();
-    let json_string: JsonString = RawString::from(payload).into();
-    let mut string: String = json_string.into();
-    string = String::from(string.trim_start_matches("\""));
-    string = String::from(string.trim_end_matches("\""));
-    string
+    match message {
+        WireMessage::Ping => String::from("\\\"Ping\\\""),
+        WireMessage::Pong => String::from("\\\"Pong\\\""),
+        _ => {
+            let payload: String = message.clone().into();
+            let json_string: JsonString = RawString::from(payload).into();
+            let mut string: String = json_string.into();
+            string = String::from(string.trim_start_matches("\""));
+            string = String::from(string.trim_end_matches("\""));
+            string
+        }
+    }
 }
 
 impl Sim2hWorker {
@@ -138,6 +149,7 @@ impl Sim2hWorker {
             space_data: None,
             agent_id,
             conductor_api,
+            time_of_last_sent: Instant::now(),
         };
 
         detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
@@ -152,13 +164,15 @@ impl Sim2hWorker {
     }
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
+        self.time_of_last_sent = Instant::now();
+        let payload = wire_message_into_escaped_string(&message);
         let signature = self
             .conductor_api
             .execute(
-                wire_message_into_escaped_string(&message),
+                payload.clone(),
                 CryptoMethod::Sign,
             )
-            .expect("Couldn't sign wire message in sim2h worker");
+            .expect(&format!("Couldn't sign wire message in sim2h worker: {}", payload));
 
         let signed_wire_message = SignedWireMessage::new(
             message,
@@ -355,6 +369,13 @@ impl Sim2hWorker {
         };
         Ok(())
     }
+
+    fn send_ping(&mut self) {
+        trace!("Ping");
+        if let Err(e) = self.send_wire_message(WireMessage::Ping) {
+            debug!("Ping failed with: {:?}", e);
+        }
+    }
 }
 
 impl NetWorker for Sim2hWorker {
@@ -367,13 +388,14 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        if Instant::now().duration_since(self.time_of_last_sent) > Duration::from_secs(PING_DURATION_SECS) {
+            self.send_ping();
+        }
         if let Err(transport_error) = detach_run!(&mut self.transport, |t| t.process(self)) {
             error!("Transport error: {:?}", transport_error);
             // This most likely means we have connection issues.
             // Send ping to reestablish a potentially lost connection.
-            if let Err(e) = self.send_wire_message(WireMessage::Ping) {
-                debug!("send ping failure: {:?}", e);
-            }
+            self.send_ping();
         }
         let mut did_something = WorkWasDone::from(false);
 

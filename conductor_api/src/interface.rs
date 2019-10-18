@@ -1,7 +1,7 @@
 use crate::{
     config::StorageConfiguration,
-    holo_signing_service::request_service;
-}
+    holo_signing_service::request_service,
+};
 use base64;
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;

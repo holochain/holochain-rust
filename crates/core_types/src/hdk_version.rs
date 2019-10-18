@@ -6,10 +6,9 @@ lazy_static! {
             "HDK_VERSION",
             "failed to obtain hdk version from build environment. Check build.rs"
         );
-        HDKVersion::new(version).expect(&format!(
-            "Failed to create HDK Version '{}'. Check Build.rs",
-            version
-        ))
+        HDKVersion::new(version).unwrap_or_else(|_| {
+            panic!("Failed to create HDK Version '{}'. Check Build.rs", version)
+        })
     };
 }
 

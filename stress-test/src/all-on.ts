@@ -27,7 +27,7 @@ module.exports = (scenario, N, M) => {
     const players = R.values(await s.players(batch, false))
     for(let player of players) {
       await player.spawn()
-      sleep(10)
+      sleep(1)
     }
 
     // Make every instance of every conductor commit an entry

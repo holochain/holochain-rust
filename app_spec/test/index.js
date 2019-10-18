@@ -76,45 +76,6 @@ const orchestrator = new Orchestrator({
     hardTimeout: 10000
   },
   globalConfig: {
-<<<<<<< HEAD
-      logger: {
-          type: "debug",
-          rules: {
-              rules: [
-                  {
-                      exclude: true,
-                      pattern: ".*parity.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*mio.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*tokio.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*hyper.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*rusoto_core.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*want.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*rpc.*"
-                  },
-                  {
-                      exclude: true,
-                      pattern: ".*lib3h.*"
-                  }
-              ]
-=======
     logger: {
       type: 'debug',
       rules: {
@@ -134,7 +95,6 @@ const orchestrator = new Orchestrator({
           {
             exclude: true,
             pattern: '.*hyper.*'
->>>>>>> ac2b12b806f5730933a516ef805789affe22407d
           },
           {
             exclude: true,

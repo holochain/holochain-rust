@@ -733,6 +733,7 @@ pub struct InterfaceConfiguration {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum InterfaceDriver {
     Websocket { port: u16 },
+    UnixSocket { path: PathBuf },
     Http { port: u16 },
     DomainSocket { file: String },
     Custom(toml::value::Value),

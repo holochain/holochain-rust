@@ -273,7 +273,7 @@ impl Conductor {
                     {
                         if let Ok(signal) = receiver.try_recv() {
                             signal_tx.clone().map(|s| s.send(signal.clone()));
-                            let broadcasters = broadcasters.read().unwrap();
+                            let mut broadcasters = broadcasters.write().unwrap();
                             let interfaces_with_instance: Vec<&InterfaceConfiguration> =
                                 match signal {
                                     // Send internal signals only to admin interfaces, if signals.trace is set:
@@ -325,7 +325,7 @@ impl Conductor {
                                 };
 
                             for interface in interfaces_with_instance {
-                                if let Some(broadcaster) = broadcasters.get(&interface.id) {
+                                if let Some(broadcaster) = broadcasters.get_mut(&interface.id) {
                                     if let Err(error) = broadcaster.send(SignalWrapper {
                                         signal: signal.clone(),
                                         instance_id: instance_id.clone(),

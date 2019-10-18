@@ -43,7 +43,7 @@ crossbeam-channel = "=0.3.8"
 lib3h_crypto_api = "=0.0.16"
 parking_lot ="=0.9.0"
 log = "=0.4.8"
-holochain_logging = { version="=0.0.1", path = "../logging" }
+holochain_logging = "=0.0.4"
 
 [dev-dependencies]
 test_utils = { path = "../../test_utils"}

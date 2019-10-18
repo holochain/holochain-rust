@@ -13,7 +13,6 @@ members = [
   "crates/hdk",
   "crates/net",
   "benchmarks",
-  "crates/logging"
 ]
 exclude = [
   "test_utils",

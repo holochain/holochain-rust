@@ -47,7 +47,7 @@ module.exports = scenario => {
         const post_address = create_result.Ok
         const params_get = { post_address }
 
-        t.comment('Waiting for Carol to get post') // <- gets stuck here, times out
+        t.comment('Waiting for Carol to get post') // <- fails here. Times out when using memory/sim1h and returns null with sim2h
         const result = await carol.call('app', "blog", "get_post", params_get)
         t.comment(JSON.stringify(result))
         const value = JSON.parse(result.Ok.App[1])

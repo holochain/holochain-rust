@@ -5,12 +5,7 @@ extern crate structopt;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use serde_json::{self, map::Map};
-use std::{
-    fs:: File,
-    path::PathBuf,
-    process::Command,
-    io::Write,
-};
+use std::{fs::File, io::Write, path::PathBuf, process::Command};
 use structopt::StructOpt;
 
 type Error = String;
@@ -76,6 +71,11 @@ fn get_as_string<T: Into<String>>(
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
+
+    io.add_method("ping", |_params: Params| {
+	Ok(Value::String("pong".into()))
+    });
+
     io.add_method("player", |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
@@ -94,49 +94,59 @@ fn main() {
                 message: format!("unable to create config file: {:?}", e),
                 data: None,
             })?
-            .write_all(&content[..]).map_err(|e| jsonrpc_core::types::error::Error {
+            .write_all(&content[..])
+            .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
                 message: format!("unable to write config file: {:?}", e),
                 data: None,
             })?;
-
-        println!("CONTENT:{:?}", String::from_utf8_lossy(&content));
-        let response = match exec_output(
+        let response = exec_output(
             "bash",
             vec!["hcm.bash", "player", &id, &config_file],
             ".",
             true,
-        ) {
-            Ok(output) => output,
-            Err(err) => format!("ERROR: {}", err),
-        };
+        )
+        .map_err(|e| jsonrpc_core::types::error::Error {
+            code: jsonrpc_core::types::error::ErrorCode::InternalError,
+            message: format!("unable to run hcm script: {:?}", e),
+            data: None,
+        })?;
         println!("config {}: {:?}", id, response);
         Ok(Value::String(response))
     });
     io.add_method("spawn", |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let response = match exec_output("bash", vec!["hcm.bash", "spawn", &id], ".", true) {
-            Ok(output) => output,
-            Err(err) => format!("ERROR: {}", err),
-        };
+        let response =
+            exec_output("bash", vec!["hcm.bash", "spawn", &id], ".", true).map_err(|e| {
+                jsonrpc_core::types::error::Error {
+                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
+                    message: format!("unable to run hcm script: {:?}", e),
+                    data: None,
+                }
+            })?;
         println!("spawn {}: {:?}", id, response);
         Ok(Value::String(response))
     });
     io.add_method("kill", |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let response = match exec_output("bash", vec!["hcm.bash", "kill", &id], ".", true) {
-            Ok(output) => output,
-            Err(err) => err.to_string(),
-        };
+        let response =
+            exec_output("bash", vec!["hcm.bash", "kill", &id], ".", true).map_err(|e| {
+                jsonrpc_core::types::error::Error {
+                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
+                    message: format!("unable to run hcm script: {:?}", e),
+                    data: None,
+                }
+            })?;
         println!("kill {}: {:?}", id, response);
         Ok(Value::String(response))
     });
 
     let server = ServerBuilder::new(io)
         .start(&format!("0.0.0.0:{}", args.port).parse().unwrap())
-        .expect("Unable to start RPC server");
+        .expect("server should start");
+    println!("waiting for connections on port {}", args.port);
 
-    server.wait().expect("should start");
+    server.wait().expect("server should wait");
 }

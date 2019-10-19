@@ -12,6 +12,7 @@ members = [
   "crates/hdk-v2",
   "crates/hdk",
   "crates/net",
+  "crates/trycp",
   "benchmarks",
 ]
 exclude = [

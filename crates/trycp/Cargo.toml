@@ -1,0 +1,21 @@
+[package]
+name = "trycp_server"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+description = "Conductor provisioner server for try-o-rama"
+keywords = ["holochain", "holo", "p2p", "network", "simulation"]
+categories = ["network-programming"]
+license = "Apache-2.0"
+readme = "readme.md"
+documentation = "https://github.com/holochain/holochain-rust"
+repository = "https://github.com/holochain/holochain-rust"
+
+[dependencies]
+log = "0.4.8"
+env_logger = "0.7.0"
+structopt = "0.2.15"
+jsonrpc-core = "14.0"
+jsonrpc-ws-server = "14.0"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+base64 = "=0.10.1"

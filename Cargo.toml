@@ -1,21 +1,18 @@
 [workspace]
 
 members = [
-  "cli",
+  "crates/cli",
   "common",
-  "conductor",
-  "conductor_api",
-  "conductor_api_api",
-  "conductor_wasm",
-  "core_api_c_binding",
-  "core",
-  "dna_c_binding",
-  "dpki",
-  "hdk-proc-macros",
-  "hdk-rust",
-  "net",
+  "crates/holochain",
+  "crates/conductor_lib",
+  "crates/conductor_api",
+  "crates/holochain_wasm",
+  "crates/core",
+  "crates/dpki",
+  "crates/hdk-v2",
+  "crates/hdk",
+  "crates/net",
   "benchmarks",
-  "logging"
 ]
 exclude = [
   "test_utils",

@@ -1,0 +1,31 @@
+[package]
+name = "hc"
+version = "0.0.32-alpha2"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[dependencies]
+holochain_core_types = { path = "../core_types" }
+holochain_core = { path = "../core" }
+holochain_common = { path = "../../common" }
+holochain_conductor_lib = { path = "../conductor_lib" }
+holochain_dpki = { path = "../dpki" }
+lib3h_sodium = "=0.0.16"
+holochain_json_api = "=0.0.17"
+holochain_persistence_api = "=0.0.8"
+holochain_persistence_file = "=0.0.8"
+structopt = "=0.2.15"
+failure = "=0.1.5"
+serde = "=1.0.89"
+serde_derive = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+toml = "=0.5.0"
+semver = { version = "0.9.0", features = ["serde"] }
+base64 = "=0.10.1"
+colored = "=1.7.0"
+ignore = "=0.4.6"
+rpassword = "=2.1.0"
+rustyline = "=5.0.0"
+
+[dev-dependencies]
+tempfile = "=3.0.7"
+assert_cmd = "=0.10.2"

@@ -730,13 +730,12 @@ pub struct InterfaceConfiguration {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum InterfaceDriver {
     Websocket { port: u16 },
     UnixSocket { path: PathBuf },
     Http { port: u16 },
-    DomainSocket { file: String },
-    Custom(toml::value::Value),
+    // Custom(toml::value::Value),
 }
 
 /// An instance reference makes an instance available in the scope

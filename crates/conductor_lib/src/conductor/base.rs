@@ -1378,11 +1378,13 @@ impl Conductor {
 
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interface> {
-    use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
-    match interface_config.driver {
+    use interface_impls::{
+        http::HttpInterface, unix_socket::UnixSocketInterface, websocket::WebsocketInterface,
+    };
+    match interface_config.driver.clone() {
         InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
+        InterfaceDriver::UnixSocket { path } => Box::new(UnixSocketInterface::new(path)),
         InterfaceDriver::Http { port } => Box::new(HttpInterface::new(port)),
-        _ => unimplemented!(),
     }
 }
 

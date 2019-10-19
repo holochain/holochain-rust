@@ -10,7 +10,7 @@ function _usage() {
     echo "holochain conductor manger"
     echo "usage: hcm [options] cmd"
     echo "commands:"
-    echo "  player - trcyp player <player-id> <config-file>"
+    echo "  player - hcm player <player-id> <config-file>"
     echo "  spawn - hcm spawn <player-id>"
     echo "  kill - hcm kill <player-id>"
     echo "options:"
@@ -67,7 +67,8 @@ function _spawn() {
         exit 1
     fi
     echo "starting conductor"
-    ping google.com > /dev/null &
+    #ping google.com > /dev/null &
+    holochain -c $player_config &
     echo "$!" > $pid_file
 }
 

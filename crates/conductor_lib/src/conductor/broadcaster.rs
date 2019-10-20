@@ -11,7 +11,7 @@ use std::{io::Write, net::Shutdown};
 pub enum Broadcaster {
     Ws(ws::Sender),
     #[cfg(unix)]
-    UnixSocket(UnixStream),
+    UnixSocket(PathBuf),
     Noop,
 }
 
@@ -31,20 +31,24 @@ impl Broadcaster {
     where
         J: Into<JsonString>,
     {
+        let msg = msg.into().to_string();
         match self {
-            Broadcaster::Ws(sender) => sender
-                .send(ws::Message::Text(msg.into().to_string()))
-                .map_err(|e| {
-                    HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e.to_string()))
-                })?,
-            Broadcaster::UnixSocket(stream) => stream
-                .write_all(msg.into().to_string().as_bytes())
-                .map_err(|e| {
+            Broadcaster::Ws(sender) => sender.send(ws::Message::Text(msg)).map_err(|e| {
+                HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e.to_string()))
+            })?,
+            Broadcaster::UnixSocket(path) => {
+                let path_str = self.path.to_str().ok_or("Invalid socket path")?;
+                let stream = UnixStream::connect(path_str)
+                    .map_err(|e| format!("Could not establish Unix domain socket! {:?}", e))?;
+
+                stream.write_all(msg.as_bytes()).map_err(|e| {
                     HolochainError::ErrorGeneric(format!(
                         "Broadcaster::UnixSocket -- {}",
                         e.to_string()
                     ))
-                })?,
+                })?;
+                stream.close();
+            }
             Broadcaster::Noop => (),
         }
         Ok(())

@@ -81,7 +81,7 @@ fn main() {
                     .expect("Could not start instances!");
                 println!("Starting interfaces...");
                 conductor.start_all_interfaces();
-                println!("Done.");
+                println!("Done. All interfaces started.");
                 println!("Starting UI servers");
                 conductor
                     .start_all_static_servers()

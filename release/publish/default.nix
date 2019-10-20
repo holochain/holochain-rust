@@ -15,9 +15,10 @@ for crate in \
  hdk-v2 \
  holochain \
  holochain_wasm \
- logging \
  net \
- wasm_utils
+ wasm_utils \
+ sim2h \
+ sim2h_server
 do
  cargo publish --manifest-path "crates/$crate/Cargo.toml"
  sleep 10

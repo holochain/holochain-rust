@@ -16,7 +16,8 @@ for dep in \
  holochain_wasm \
  net \
  wasm_utils \
- logging
+ sim2h \
+ sim2h_server
 do
  echo "bumping $dep dependency versions to ${config.release.version.current} in all Cargo.toml"
  find . \
@@ -31,4 +32,3 @@ in
 {
  buildInputs = [ script ];
 }
-

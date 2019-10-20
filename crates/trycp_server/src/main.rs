@@ -3,12 +3,12 @@ extern crate tempfile;
 
 //use log::error;
 //use std::process::exit;
+use self::tempfile::tempdir;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use serde_json::{self, map::Map};
 use std::{fs::File, io::Write, process::Command};
 use structopt::StructOpt;
-use self::tempfile::tempdir;
 
 type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
@@ -74,9 +74,7 @@ fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
 
-    io.add_method("ping", |_params: Params| {
-	Ok(Value::String("pong".into()))
-    });
+    io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
 
     io.add_method("player", |params: Params| {
         let params_map = unwrap_params_map(params)?;

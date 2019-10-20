@@ -59,6 +59,11 @@ with holonix.pkgs;
     config = config;
    }).buildInputs
 
+   ++ (holonix.pkgs.callPackage ./crates/trycp_server {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
    # qt specific testing
    ++ (holonix.pkgs.callPackage ./qt {
     pkgs = holonix.pkgs;

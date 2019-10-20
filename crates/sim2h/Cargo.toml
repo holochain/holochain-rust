@@ -7,7 +7,7 @@ description = "A simulation of lib3h"
 keywords = ["holochain", "holo", "p2p", "network", "simulation"]
 categories = ["network-programming"]
 license = "Apache-2.0"
-readme = "readme.md"
+readme = "README.md"
 documentation = "https://github.com/holochain/sim2h"
 repository = "https://github.com/holochain/sim2h"
 

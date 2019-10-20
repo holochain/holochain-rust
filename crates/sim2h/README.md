@@ -29,6 +29,7 @@ FLAGS:
 
 OPTIONS:
     -p, --port <port>    The port to run the websocket server at [default: 9000]
+    -m, --message_log_file <message_log_file>    CSV file to log all incoming and outgoing messages to
 ```
 
 ## License

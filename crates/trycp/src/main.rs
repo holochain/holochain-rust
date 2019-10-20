@@ -1,12 +1,14 @@
 extern crate structopt;
+extern crate tempfile;
 
 //use log::error;
 //use std::process::exit;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use serde_json::{self, map::Map};
-use std::{fs::File, io::Write, path::PathBuf, process::Command};
+use std::{fs::File, io::Write, process::Command};
 use structopt::StructOpt;
+use self::tempfile::tempdir;
 
 type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
@@ -86,9 +88,10 @@ fn main() {
                 message: format!("error decoding config: {:?}", e),
                 data: None,
             })?;
-        let config_file = format!("src_configs/{}_src_config.toml", id);
-        let file_path = PathBuf::from(config_file.clone());
-        File::create(file_path)
+
+        let tempdir = tempdir().unwrap();
+        let file_path = tempdir.path().join("config.toml");
+        File::create(file_path.clone())
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
                 message: format!("unable to create config file: {:?}", e),
@@ -102,7 +105,7 @@ fn main() {
             })?;
         let response = exec_output(
             "bash",
-            vec!["hcm.bash", "player", &id, &config_file],
+            vec!["hcm.bash", "player", &id, &file_path.to_string_lossy()],
             ".",
             true,
         )
@@ -111,7 +114,7 @@ fn main() {
             message: format!("unable to run hcm script: {:?}", e),
             data: None,
         })?;
-        println!("config {}: {:?}", id, response);
+        println!("player {}: {:?}", id, response);
         Ok(Value::String(response))
     });
     io.add_method("spawn", |params: Params| {

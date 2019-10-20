@@ -56,7 +56,7 @@ pub mod test {
     use crate::{
         context::Context,
         persister::SimplePersister,
-        state::{test_store, StateWrapper},
+        state::{test_store, State},
     };
     use holochain_core_types::{agent::AgentId, sync::HcRwLock as RwLock};
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
@@ -85,7 +85,7 @@ pub mod test {
             false,
         );
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

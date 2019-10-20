@@ -4,7 +4,7 @@ use crate::{
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 
-use crate::state::StateWrapper;
+use crate::state::State;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
@@ -169,8 +169,8 @@ pub struct NucleusStateSnapshot {
     pub pending_validations: HashMap<PendingValidationKey, PendingValidation>,
 }
 
-impl From<&StateWrapper> for NucleusStateSnapshot {
-    fn from(state: &StateWrapper) -> Self {
+impl From<&State> for NucleusStateSnapshot {
+    fn from(state: &State) -> Self {
         NucleusStateSnapshot {
             status: state.nucleus().status(),
             pending_validations: state.nucleus().pending_validations.clone(),

@@ -17,7 +17,7 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
-use crate::state::StateWrapper;
+use crate::state::State;
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::cas::content::Content;
 use std::{
@@ -59,8 +59,8 @@ pub struct DhtStoreSnapshot {
     pub holding_list: Vec<Address>,
 }
 
-impl From<&StateWrapper> for DhtStoreSnapshot {
-    fn from(state: &StateWrapper) -> Self {
+impl From<&State> for DhtStoreSnapshot {
+    fn from(state: &State) -> Self {
         DhtStoreSnapshot {
             holding_list: state.dht().holding_list.clone(),
         }

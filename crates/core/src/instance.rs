@@ -6,7 +6,7 @@ use crate::{
     persister::Persister,
     scheduled_jobs,
     signal::Signal,
-    state::{State, StateWrapper},
+    state::State,
     workflows::application,
 };
 #[cfg(test)]
@@ -41,7 +41,7 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 #[derive(Clone)]
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
-    state: Arc<RwLock<StateWrapper>>,
+    state: Arc<RwLock<State>>,
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
@@ -219,7 +219,7 @@ impl Instance {
     ) -> Vec<Observer> {
         // Mutate state
         {
-            let new_state: StateWrapper;
+            let new_state: State;
 
             // Get write lock
             let mut state = self
@@ -288,7 +288,7 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
+            state: Arc::new(RwLock::new(State::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -300,7 +300,7 @@ impl Instance {
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::from(state))),
+            state: Arc::new(RwLock::new(State::from(state))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -310,7 +310,7 @@ impl Instance {
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
+    pub fn state(&self) -> RwLockReadGuard<State> {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
@@ -335,16 +335,6 @@ impl Instance {
     }
 }
 
-impl Drop for Instance {
-    fn drop(&mut self) {
-        // TODO: this is already performed in Holochain::stop explicitly,
-        // can we get rid of one or the other?
-        let _ = self.shutdown_network();
-        self.stop_action_loop();
-        self.state.write().unwrap().drop_inner_state();
-    }
-}
-
 /*impl Default for Instance {
     fn default(context:Context) -> Self {
         Self::new(context)
@@ -361,7 +351,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     loop {
-        if context.state().unwrap().history().contains(&action_wrapper) {
+        if context.state().unwrap().history.contains(&action_wrapper) {
             return;
         } else {
             let _ = tick_rx.recv_timeout(Duration::from_millis(10));
@@ -518,7 +508,7 @@ pub mod tests {
             None,
             false,
         );
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
@@ -551,7 +541,7 @@ pub mod tests {
             Some(chain_header),
             context.agent_id.address(),
         );
-        let state = StateWrapper::new_with_agent(Arc::new(context.clone()), agent_state);
+        let state = State::new_with_agent(Arc::new(context.clone()), agent_state);
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -605,7 +595,7 @@ pub mod tests {
         // @see https://github.com/holochain/holochain-rust/issues/195
         while instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::InitializeChain(_) => true,
@@ -619,7 +609,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -640,7 +630,7 @@ pub mod tests {
 
         while instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::ReturnInitializationResult(_) => true,
@@ -850,10 +840,10 @@ pub mod tests {
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
+        assert_eq!(1, instance.state().history.iter().count());
         instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -888,10 +878,10 @@ pub mod tests {
         );
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
+        assert_eq!(1, instance.state().history.iter().count());
         instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {

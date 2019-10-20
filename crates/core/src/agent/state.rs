@@ -6,7 +6,6 @@ use crate::{
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
-use crate::state::StateWrapper;
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -135,8 +134,8 @@ impl AgentStateSnapshot {
     }
 }
 
-impl From<&StateWrapper> for AgentStateSnapshot {
-    fn from(state: &StateWrapper) -> Self {
+impl From<&State> for AgentStateSnapshot {
+    fn from(state: &State) -> Self {
         let agent = &*(state.agent());
         let top_chain = agent.top_chain_header();
         AgentStateSnapshot::new(top_chain)
@@ -175,14 +174,14 @@ pub enum ActionResponse {
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
-    root_state: &StateWrapper,
+    root_state: &State,
     crud_link: &Option<Address>,
     provenances: &Vec<Provenance>,
 ) -> Result<ChainHeader, HolochainError> {
     let agent_address = agent_state.get_agent_address()?;
     let signature = Signature::from(
         root_state
-            .conductor_api()
+            .conductor_api
             .execute(entry.address().to_string(), CryptoMethod::Sign)?,
         // Temporarily replaced by error handling for Holo hack signing.
         // TODO: pull in the expect below after removing the Holo signing hack again
@@ -217,7 +216,7 @@ pub fn create_new_chain_header(
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
 pub fn create_entry_with_header_for_header(
-    root_state: &StateWrapper,
+    root_state: &State,
     chain_header: ChainHeader,
 ) -> Result<EntryWithHeader, HolochainError> {
     let entry = Entry::ChainHeader(chain_header);
@@ -241,7 +240,7 @@ fn reduce_commit_entry(
     let result = create_new_chain_header(
         &entry,
         agent_state,
-        &StateWrapper::from(root_state.clone()),
+        &State::from(root_state.clone()),
         &maybe_link_update_delete,
         provenances,
     )
@@ -435,7 +434,7 @@ pub mod tests {
         let header = create_new_chain_header(
             &test_entry(),
             &agent_state,
-            &StateWrapper::from(state),
+            &State::from(state),
             &None,
             &vec![],
         )

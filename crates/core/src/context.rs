@@ -9,7 +9,7 @@ use crate::{
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{task::Poll, Future};
 
-use crate::state::StateWrapper;
+use crate::state::State;
 use futures::task::noop_waker_ref;
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
@@ -75,7 +75,7 @@ pub struct Context {
     pub(crate) instance_name: String,
     pub agent_id: AgentId,
     pub persister: Arc<RwLock<dyn Persister>>,
-    state: Option<Arc<RwLock<StateWrapper>>>,
+    state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<Sender<ActionWrapper>>,
     pub observer_channel: Option<Sender<Observer>>,
     pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -185,11 +185,11 @@ impl Context {
         self.instance_name.clone()
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
+    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
+    pub fn state(&self) -> Option<RwLockReadGuard<State>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
 
@@ -197,7 +197,7 @@ impl Context {
     /// Returns immediately either with the lock or with None if the lock
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
-    pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
+    pub fn try_state(&self) -> Option<RwLockReadGuard<State>> {
         self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
     }
 
@@ -465,7 +465,7 @@ pub mod tests {
             false,
         );
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

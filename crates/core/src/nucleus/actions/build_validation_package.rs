@@ -6,7 +6,7 @@ use crate::{
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
-    state::{State, StateWrapper},
+    state::State,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{
@@ -93,7 +93,7 @@ pub async fn build_validation_package<'a>(
             agent::state::create_new_chain_header(
                 &entry,
                 &context.state()?.agent(),
-                &StateWrapper::from(state),
+                &State::from(state),
                 &None,
                 provenances,
             )?

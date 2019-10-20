@@ -2,7 +2,7 @@ var WebSocket = require('rpc-websockets').Client
 
 const { spawn } = require('child_process');
 const port = "3000"
-const trycp = spawn('cargo', ['run', '--', '-p', port]);
+const trycp = spawn('trycp_server', ['-p', port]);
 trycp.stdout.on('data', (data) => {
     var regex = new RegExp("waiting for connections on port "+port);
     if (regex.test(data)){

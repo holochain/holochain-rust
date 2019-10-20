@@ -6,28 +6,24 @@
 
 An implementation of the Try-o-rama Control Protocol using simple bash conductor manager with a JsonRPC server wrapper.
 
-## Usage
+## Install
+
+From the nix-shell:
 
 ``` shell
-$ ./hcm.bash -h
-unexpected command '<unset>'
-holochain conductor manger
-usage: hcm [options] cmd
-commands:
-  player - hcm player <player-id> <config-file>
-  spawn - hcm spawn <player-id>
-  kill - hcm kill <player-id>
-options:
-  -h --help: additional help for command
+hc-trycp-server-install
 ```
+
+## Usage
 
 Start RPC the server with:
 
-`cargo run`
+`trycp_server`
 or
-`cargo run -- -p <port>`
+`trycp_server -p <port>`
 
-and then send it json RPC requests for example like this:
+
+Example usage from a nodejs script:
 
 ``` javascript
 var WebSocket = require('rpc-websockets').Client
@@ -62,6 +58,21 @@ ws.on('open', function() {
     // close a websocket connection
     //ws.close()
 })
+```
+
+You can also run trycp commands directly from the bash script on the command-line:
+
+``` shell
+$ ./hcm.bash -h
+unexpected command '<unset>'
+holochain conductor manger
+usage: hcm [options] cmd
+commands:
+  player - hcm player <player-id> <config-file>
+  spawn - hcm spawn <player-id>
+  kill - hcm kill <player-id>
+options:
+  -h --help: additional help for command
 ```
 
 

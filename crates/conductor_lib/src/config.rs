@@ -1363,7 +1363,9 @@ pub mod tests {
         path = "app3_spec_storage"
 
     {}
-    "#, bridges)
+    "#,
+            bridges
+        )
     }
 
     #[test]

@@ -9,9 +9,7 @@ use lib3h_protocol::{
     data_types::{GenericResultData, Opaque},
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-    types::SpaceHash,
-    types::AgentPubKey,
-    Address,
+    types::{AgentPubKey, SpaceHash},
 };
 use log::{debug, warn};
 use sim1h::{
@@ -274,8 +272,8 @@ impl Sim1hWorker {
             Lib3hClientProtocol::Shutdown => {
                 Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
                     request_id: "".into(),
-                    space_address: SpaceHash::new(),
-                    to_agent_id: Address::new(),
+                    space_address: SpaceHash::default(),
+                    to_agent_id: AgentPubKey::default(),
                     result_info: Opaque::new(),
                 }))
             }

@@ -1,8 +1,5 @@
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
-use lib3h_protocol::types::AgentPubKey;
-use lib3h_protocol::types::EntryHash;
-use lib3h_protocol::types::HashStringNewType;
-use lib3h_protocol::types::AspectHash;
+use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash, HashStringNewType};
 
 use std::collections::{HashMap, HashSet};
 
@@ -107,8 +104,17 @@ pub fn book_has_aspect(
 }
 
 ///
-pub fn book_has_entry(chain_book: &ChainBook, chain_id: ChainId, entry_address: &EntryHash) -> bool {
-    book_has_aspect(&chain_book, chain_id, entry_address, &AspectHash::from(entry_address.hash_string()))
+pub fn book_has_entry(
+    chain_book: &ChainBook,
+    chain_id: ChainId,
+    entry_address: &EntryHash,
+) -> bool {
+    book_has_aspect(
+        &chain_book,
+        chain_id,
+        entry_address,
+        &AspectHash::from(entry_address.hash_string()),
+    )
 }
 
 /// Remove an address from a book

@@ -166,8 +166,9 @@ mod tests {
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
-        types::AgentPubKey,
-        data_types::GenericResultData, protocol_server::Lib3hServerProtocol, types::SpaceHash,
+        data_types::GenericResultData,
+        protocol_server::Lib3hServerProtocol,
+        types::{AgentPubKey, SpaceHash},
     };
 
     struct DefWorker;

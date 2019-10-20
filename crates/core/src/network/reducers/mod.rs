@@ -125,7 +125,7 @@ pub fn send_message(
     let data = DirectMessageData {
         request_id: id.clone(),
         space_address: space_address.into(),
-        to_agent_id: to_agent_id.clone(),
+        to_agent_id: to_agent_id.clone().into(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content: content.into(),
     };

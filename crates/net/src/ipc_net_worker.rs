@@ -11,8 +11,7 @@ use crate::connection::{
 
 use lib3h_protocol::{
     data_types::ConnectData, protocol_client::Lib3hClientProtocol,
-    protocol_server::Lib3hServerProtocol,
-    types::NetworkHash,
+    protocol_server::Lib3hServerProtocol, types::NetworkHash,
 };
 
 use std::collections::HashMap;

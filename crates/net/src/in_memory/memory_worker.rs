@@ -157,9 +157,8 @@ mod tests {
     use super::*;
     use crate::p2p_config::P2pConfig;
     use crossbeam_channel::unbounded;
-    use holochain_persistence_api::{cas::content::Address};
-    use lib3h_protocol::data_types::SpaceData;
-    use lib3h_protocol::types::AgentPubKey;
+    use holochain_persistence_api::cas::content::Address;
+    use lib3h_protocol::{data_types::SpaceData, types::AgentPubKey};
 
     fn example_dna_address() -> Address {
         "QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu".into()

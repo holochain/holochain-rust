@@ -21,7 +21,7 @@ let
   ../conductor_lib \
   ../holochain_wasm \
   ../hdk \
-  ../hdk-v2 \
+  ../hdk_v2 \
   ../net \
   ../dpki \
   ../sim2h \

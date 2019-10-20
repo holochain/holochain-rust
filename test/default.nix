@@ -7,7 +7,7 @@ let
   set -euo pipefail
   hc-test-fmt
   hc-rust-test
-  hc-app-spec-test
+  # hc-app-spec-test
   '';
 in
 {

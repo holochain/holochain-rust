@@ -1,9 +1,11 @@
 extern crate structopt;
 
-use lib3h::transport::websocket::tls::TlsCertificate;
 use lib3h::transport::{
     protocol::DynTransportActor,
-    websocket::{actor::GhostTransportWebsocket, tls::TlsConfig},
+    websocket::{
+        actor::GhostTransportWebsocket,
+        tls::{TlsCertificate, TlsConfig},
+    },
 };
 use lib3h_protocol::{
     types::{NetworkHash, NodePubKey},
@@ -11,8 +13,7 @@ use lib3h_protocol::{
 };
 use log::error;
 use sim2h::{Sim2h, MESSAGE_LOGGER};
-use std::path::PathBuf;
-use std::process::exit;
+use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]

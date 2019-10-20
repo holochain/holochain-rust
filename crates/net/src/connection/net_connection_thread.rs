@@ -166,6 +166,7 @@ mod tests {
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
+        types::AgentPubKey,
         data_types::GenericResultData, protocol_server::Lib3hServerProtocol, types::SpaceHash,
     };
 
@@ -181,7 +182,7 @@ mod tests {
         Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
-            to_agent_id: HashString::from("test-agent"),
+            to_agent_id: AgentPubKey::from("test-agent"),
             result_info: result_info.clone().into(),
         })
     }
@@ -190,7 +191,7 @@ mod tests {
         Lib3hClientProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
-            to_agent_id: HashString::from("test-agent"),
+            to_agent_id: AgentPubKey::from("test-agent"),
             result_info: result_info.into(),
         })
     }

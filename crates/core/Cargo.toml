@@ -30,13 +30,13 @@ holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../../common" }
 holochain_conductor_lib_api = { path = "../conductor_api" }
-lib3h_protocol = "=0.0.16"
-lib3h_sodium = "=0.0.16"
+lib3h_protocol = "=0.0.19"
+lib3h_sodium = "=0.0.19"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.8"
-holochain_persistence_file = "=0.0.8"
-holochain_persistence_mem = "=0.0.8"
+holochain_persistence_api = "=0.0.10"
+holochain_persistence_file = "=0.0.10"
+holochain_persistence_mem = "=0.0.10"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
 log = "=0.4.8"

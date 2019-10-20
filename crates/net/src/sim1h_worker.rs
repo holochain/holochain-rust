@@ -10,6 +10,7 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
     types::SpaceHash,
+    types::AgentPubKey,
     Address,
 };
 use log::{debug, warn};
@@ -92,8 +93,8 @@ impl Sim1hWorker {
                 //connected(&log_context, &self.dynamo_db_client, &connect_data);
                 Ok(Lib3hServerProtocol::FailureResult(GenericResultData {
                     request_id: connect_data.request_id,
-                    space_address: SpaceHash::new(),
-                    to_agent_id: Address::new(),
+                    space_address: SpaceHash::default(),
+                    to_agent_id: AgentPubKey::default(),
                     result_info: Opaque::new(),
                 }))
             }

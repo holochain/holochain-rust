@@ -12,10 +12,10 @@ holochain_conductor_lib = { path = "../crates/conductor_lib" }
 holochain_core_types = { path = "../crates/core_types" }
 holochain_dpki = { path = "../crates/dpki" }
 holochain_wasm_utils = {path = "../crates/wasm_utils"}
-holochain_persistence_api = "=0.0.8"
+holochain_persistence_api = "=0.0.10"
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
-lib3h_sodium = "=0.0.16"
+lib3h_sodium = "=0.0.19"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
 serde = "=1.0.89"

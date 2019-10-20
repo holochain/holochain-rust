@@ -1,13 +1,9 @@
 use crate::WireMessage;
 use chrono::{DateTime, Utc};
-use lib3h_protocol::types::AgentPubKey;
-use lib3h_protocol::uri::Lib3hUri;
+use lib3h_protocol::{types::AgentPubKey, uri::Lib3hUri};
 use log::error;
 use parking_lot::Mutex;
-use std::collections::LinkedList;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::PathBuf;
+use std::{collections::LinkedList, fs::OpenOptions, io::Write, path::PathBuf};
 
 #[derive(Serialize, Debug)]
 enum Direction {

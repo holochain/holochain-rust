@@ -26,6 +26,8 @@ use serde_json::{self, map::Map};
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
 use Holochain;
 
+mod subscription;
+
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
 
@@ -92,7 +94,7 @@ pub struct ConductorApiBuilder {
     instances: InstanceMap,
     instance_ids_map: PublicInstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
-    io: Box<RpcHandler>,
+    handler: Box<RpcHandler>,
 }
 
 impl ConductorApiBuilder {
@@ -101,7 +103,7 @@ impl ConductorApiBuilder {
             instances: HashMap::new(),
             instance_ids_map: HashMap::new(),
             instance_configs: HashMap::new(),
-            io: Box::new(holochain_conductor_lib_api::make_rpc_handler()),
+            handler: Box::new(RpcHandler::new()),
         }
     }
 
@@ -109,7 +111,7 @@ impl ConductorApiBuilder {
     pub fn spawn(mut self) -> RpcHandler {
         self.setup_info_api();
         self.setup_call_api();
-        *self.io
+        *self.handler
     }
 
     /// Internal function for 'call' api method. Having it in its own function makes it easier to see
@@ -197,7 +199,7 @@ impl ConductorApiBuilder {
         let instances = self.instances.clone();
         let instance_ids_map = self.instance_ids_map.clone();
 
-        self.io.add_method("call", move |params| {
+        self.handler.io.add_method("call", move |params| {
             let instances = instances.clone();
             let instance_ids_map = instance_ids_map.clone();
             let response = Self::method_call(params, instances, instance_ids_map)?;
@@ -224,7 +226,7 @@ impl ConductorApiBuilder {
             })
             .collect();
 
-        self.io.add_method("info/instances", move |_| {
+        self.handler.io.add_method("info/instances", move |_| {
             Ok(serde_json::Value::Array(configs.clone()))
         });
     }
@@ -459,7 +461,8 @@ impl ConductorApiBuilder {
     ///     Returns an array of all bridges.
     ///
     pub fn with_admin_dna_functions(mut self) -> Self {
-        self.io
+        self.handler
+            .io
             .add_method("admin/dna/install_from_file", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("id", &params_map)?;
@@ -495,73 +498,89 @@ impl ConductorApiBuilder {
                 Ok(json!({ "success": true, "dna_hash": dna_hash }))
             });
 
-        self.io.add_method("admin/dna/uninstall", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.uninstall_dna(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/dna/uninstall", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.uninstall_dna(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/dna/list", move |_params| {
-            let dnas =
-                conductor_call!(|c| Ok(c.config().dnas) as Result<Vec<DnaConfiguration>, String>)?;
-            Ok(serde_json::Value::Array(
-                dnas.iter()
-                    .map(|dna| json!({"id": dna.id, "hash": dna.hash}))
-                    .collect(),
-            ))
-        });
+        self.handler
+            .io
+            .add_method("admin/dna/list", move |_params| {
+                let dnas = conductor_call!(
+                    |c| Ok(c.config().dnas) as Result<Vec<DnaConfiguration>, String>
+                )?;
+                Ok(serde_json::Value::Array(
+                    dnas.iter()
+                        .map(|dna| json!({"id": dna.id, "hash": dna.hash}))
+                        .collect(),
+                ))
+            });
 
-        self.io.add_method("admin/instance/add", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
+        self.handler
+            .io
+            .add_method("admin/instance/add", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
 
-            let id = Self::get_as_string("id", &params_map)?;
-            let dna_id = Self::get_as_string("dna_id", &params_map)?;
-            let agent_id = Self::get_as_string("agent_id", &params_map)?;
-            conductor_call!(|c| c.add_instance(&id, &dna_id, &agent_id))?;
-            Ok(json!({"success": true}))
-        });
+                let id = Self::get_as_string("id", &params_map)?;
+                let dna_id = Self::get_as_string("dna_id", &params_map)?;
+                let agent_id = Self::get_as_string("agent_id", &params_map)?;
+                conductor_call!(|c| c.add_instance(&id, &dna_id, &agent_id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/instance/remove", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.remove_instance(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/instance/remove", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.remove_instance(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/instance/start", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.start_instance(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/instance/start", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.start_instance(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/instance/stop", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.stop_instance(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/instance/stop", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.stop_instance(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/instance/list", move |_params| {
-            let instances = conductor_call!(
-                |c| Ok(c.config().instances) as Result<Vec<InstanceConfiguration>, String>
-            )?;
-            Ok(serde_json::Value::Array(
-                instances
-                    .iter()
-                    .map(|instance| {
-                        json!({
-                            "id": instance.id,
-                            "dna": instance.dna,
-                            "agent": instance.agent,
+        self.handler
+            .io
+            .add_method("admin/instance/list", move |_params| {
+                let instances = conductor_call!(
+                    |c| Ok(c.config().instances) as Result<Vec<InstanceConfiguration>, String>
+                )?;
+                Ok(serde_json::Value::Array(
+                    instances
+                        .iter()
+                        .map(|instance| {
+                            json!({
+                                "id": instance.id,
+                                "dna": instance.dna,
+                                "agent": instance.agent,
+                            })
                         })
-                    })
-                    .collect(),
-            ))
-        });
+                        .collect(),
+                ))
+            });
 
-        self.io
+        self.handler
+            .io
             .add_method("admin/instance/running", move |_params| {
                 let active_ids = conductor_call!(|c| Ok(c
                     .instances()
@@ -589,45 +608,50 @@ impl ConductorApiBuilder {
                 ))
             });
 
-        self.io.add_method("admin/interface/add", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
+        self.handler
+            .io
+            .add_method("admin/interface/add", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
 
-            let id = Self::get_as_string("id", &params_map)?;
-            let admin = Self::get_as_bool("admin", &params_map)?;
-            let driver_type = Self::get_as_string("type", &params_map)?;
-            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
-                jsonrpc_core::Error::invalid_params(String::from(
-                    "`port` has to be a 16bit integer",
-                ))
-            })?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let admin = Self::get_as_bool("admin", &params_map)?;
+                let driver_type = Self::get_as_string("type", &params_map)?;
+                let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                    jsonrpc_core::Error::invalid_params(String::from(
+                        "`port` has to be a 16bit integer",
+                    ))
+                })?;
 
-            let new_interface = InterfaceConfiguration {
-                id: id.to_string(),
-                admin,
-                driver: match driver_type.as_ref() {
-                    "websocket" => InterfaceDriver::Websocket { port },
-                    "http" => InterfaceDriver::Http { port },
-                    _ => {
-                        return Err(jsonrpc_core::Error::invalid_params(String::from(
-                            "`type` has to be either `websocket` or `http`",
-                        )));
-                    }
-                },
-                instances: Vec::new(),
-            };
+                let new_interface = InterfaceConfiguration {
+                    id: id.to_string(),
+                    admin,
+                    driver: match driver_type.as_ref() {
+                        "websocket" => InterfaceDriver::Websocket { port },
+                        "http" => InterfaceDriver::Http { port },
+                        _ => {
+                            return Err(jsonrpc_core::Error::invalid_params(String::from(
+                                "`type` has to be either `websocket` or `http`",
+                            )));
+                        }
+                    },
+                    instances: Vec::new(),
+                };
 
-            conductor_call!(|c| c.add_interface(new_interface))?;
-            Ok(json!({"success": true}))
-        });
+                conductor_call!(|c| c.add_interface(new_interface))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/interface/remove", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.remove_interface(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/interface/remove", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.remove_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io
+        self.handler
+            .io
             .add_method("admin/interface/add_instance", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let interface_id = Self::get_as_string("interface_id", &params_map)?;
@@ -641,7 +665,8 @@ impl ConductorApiBuilder {
                 Ok(json!({"success": true}))
             });
 
-        self.io
+        self.handler
+            .io
             .add_method("admin/interface/remove_instance", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let interface_id = Self::get_as_string("interface_id", &params_map)?;
@@ -650,74 +675,90 @@ impl ConductorApiBuilder {
                 Ok(json!({"success": true}))
             });
 
-        self.io.add_method("admin/interface/list", move |_params| {
-            let interfaces = conductor_call!(
-                |c| Ok(c.config().interfaces) as Result<Vec<InterfaceConfiguration>, String>
-            )?;
-            Ok(serde_json::to_value(interfaces)
-                .map_err(|_| jsonrpc_core::Error::internal_error())?)
-        });
+        self.handler
+            .io
+            .add_method("admin/interface/list", move |_params| {
+                let interfaces =
+                    conductor_call!(|c| Ok(c.config().interfaces)
+                        as Result<Vec<InterfaceConfiguration>, String>)?;
+                Ok(serde_json::to_value(interfaces)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?)
+            });
 
-        self.io.add_method("admin/agent/add", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            let name = Self::get_as_string("name", &params_map)?;
+        self.handler
+            .io
+            .add_method("admin/agent/add", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let name = Self::get_as_string("name", &params_map)?;
 
-            let holo_remote_key = params_map
-                .get("holo_remote_key")
-                .map(|k| {
-                    k.as_str()
-                        .ok_or("holo_remote_key must be a string")
-                        .map_err(|e| jsonrpc_core::Error::invalid_params(e))
-                }) // Option<Result<_, _>>
-                .transpose()?; // Result<Option<_>, _>
+                let holo_remote_key = params_map
+                    .get("holo_remote_key")
+                    .map(|k| {
+                        k.as_str()
+                            .ok_or("holo_remote_key must be a string")
+                            .map_err(|e| jsonrpc_core::Error::invalid_params(e))
+                    }) // Option<Result<_, _>>
+                    .transpose()?; // Result<Option<_>, _>
 
-            conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
-            Ok(json!({"success": true}))
-        });
+                conductor_call!(|c| c.add_agent(id, name, holo_remote_key))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/agent/remove", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.remove_agent(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/agent/remove", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.remove_agent(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/agent/list", move |_params| {
-            let agents = conductor_call!(
-                |c| Ok(c.config().agents) as Result<Vec<AgentConfiguration>, String>
-            )?;
-            Ok(serde_json::to_value(agents).map_err(|_| jsonrpc_core::Error::internal_error())?)
-        });
+        self.handler
+            .io
+            .add_method("admin/agent/list", move |_params| {
+                let agents = conductor_call!(
+                    |c| Ok(c.config().agents) as Result<Vec<AgentConfiguration>, String>
+                )?;
+                Ok(serde_json::to_value(agents)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?)
+            });
 
-        self.io.add_method("admin/bridge/add", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let caller_id = Self::get_as_string("caller_id", &params_map)?;
-            let callee_id = Self::get_as_string("callee_id", &params_map)?;
-            let handle = Self::get_as_string("handle", &params_map)?;
+        self.handler
+            .io
+            .add_method("admin/bridge/add", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let caller_id = Self::get_as_string("caller_id", &params_map)?;
+                let callee_id = Self::get_as_string("callee_id", &params_map)?;
+                let handle = Self::get_as_string("handle", &params_map)?;
 
-            let bridge = Bridge {
-                caller_id,
-                callee_id,
-                handle,
-            };
-            conductor_call!(|c| c.add_bridge(bridge))?;
-            Ok(json!({"success": true}))
-        });
+                let bridge = Bridge {
+                    caller_id,
+                    callee_id,
+                    handle,
+                };
+                conductor_call!(|c| c.add_bridge(bridge))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/bridge/remove", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let caller_id = Self::get_as_string("caller_id", &params_map)?;
-            let callee_id = Self::get_as_string("callee_id", &params_map)?;
-            conductor_call!(|c| c.remove_bridge(&caller_id, &callee_id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/bridge/remove", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let caller_id = Self::get_as_string("caller_id", &params_map)?;
+                let callee_id = Self::get_as_string("callee_id", &params_map)?;
+                conductor_call!(|c| c.remove_bridge(&caller_id, &callee_id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/bridge/list", move |_params| {
-            let bridges =
-                conductor_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
-            Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
-        });
+        self.handler
+            .io
+            .add_method("admin/bridge/list", move |_params| {
+                let bridges =
+                    conductor_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
+                Ok(serde_json::to_value(bridges)
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?)
+            });
 
         self
     }
@@ -741,36 +782,44 @@ impl ConductorApiBuilder {
     ///   Returns an object of the form: {type:"<entry type>", content: "<content>"}
     ///
     pub fn with_debug_functions(mut self) -> Self {
-        self.io
+        self.handler
+            .io
             .add_method("debug/running_instances", move |_params| {
                 let running_instances_ids = conductor_call!(|c| c.running_instances())?;
                 Ok(serde_json::to_value(running_instances_ids)
                     .map_err(|_| jsonrpc_core::Error::internal_error())?)
             });
 
-        self.io.add_method("debug/state_dump", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let instance_id = Self::get_as_string("instance_id", &params_map)?;
+        self.handler
+            .io
+            .add_method("debug/state_dump", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
 
-            let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+                let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
 
-            Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
-        });
+                Ok(
+                    serde_json::to_value(dump)
+                        .map_err(|_| jsonrpc_core::Error::internal_error())?,
+                )
+            });
 
-        self.io.add_method("debug/fetch_cas", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let instance_id = Self::get_as_string("instance_id", &params_map)?;
-            let address = Self::get_as_string("address", &params_map)?;
+        self.handler
+            .io
+            .add_method("debug/fetch_cas", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                let address = Self::get_as_string("address", &params_map)?;
 
-            let (entry_type, content) = conductor_call!(
-                |c| c.get_type_and_content_from_cas(&Address::from(address), &instance_id)
-            )?;
+                let (entry_type, content) = conductor_call!(
+                    |c| c.get_type_and_content_from_cas(&Address::from(address), &instance_id)
+                )?;
 
-            Ok(json!({
-                "type": entry_type,
-                "content": content,
-            }))
-        });
+                Ok(json!({
+                    "type": entry_type,
+                    "content": content,
+                }))
+            });
 
         self
     }
@@ -824,26 +873,30 @@ impl ConductorApiBuilder {
     ///     - `id` ID of the UI interface to stop
     ///
     pub fn with_admin_ui_functions(mut self) -> Self {
-        self.io.add_method("admin/ui/install", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let root_dir = Self::get_as_string("root_dir", &params_map)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.install_ui_bundle_from_file(
-                PathBuf::from(root_dir),
-                &id,
-                false
-            ))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/ui/install", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let root_dir = Self::get_as_string("root_dir", &params_map)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.install_ui_bundle_from_file(
+                    PathBuf::from(root_dir),
+                    &id,
+                    false
+                ))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/ui/uninstall", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            conductor_call!(|c| c.uninstall_ui_bundle(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.handler
+            .io
+            .add_method("admin/ui/uninstall", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                conductor_call!(|c| c.uninstall_ui_bundle(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/ui/list", move |_| {
+        self.handler.io.add_method("admin/ui/list", move |_| {
             let ui_bundles = conductor_call!(
                 |c| Ok(c.config().ui_bundles) as Result<Vec<UiBundleConfiguration>, String>
             )?;
@@ -852,29 +905,32 @@ impl ConductorApiBuilder {
             ))
         });
 
-        self.io.add_method("admin/ui_interface/add", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
-                jsonrpc_core::Error::invalid_params(String::from(
-                    "`port` has to be a 16bit integer",
-                ))
-            })?;
-            let bundle = Self::get_as_string("bundle", &params_map)?;
-            let dna_interface = Self::get_as_string("dna_interface", &params_map).ok();
+        self.handler
+            .io
+            .add_method("admin/ui_interface/add", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                    jsonrpc_core::Error::invalid_params(String::from(
+                        "`port` has to be a 16bit integer",
+                    ))
+                })?;
+                let bundle = Self::get_as_string("bundle", &params_map)?;
+                let dna_interface = Self::get_as_string("dna_interface", &params_map).ok();
 
-            conductor_call!(|c| c.add_ui_interface(UiInterfaceConfiguration {
-                id,
-                port,
-                bundle,
-                dna_interface,
-                reroute_to_root: true,
-                bind_address: "127.0.0.1".to_string(),
-            }))?;
-            Ok(json!({"success": true}))
-        });
+                conductor_call!(|c| c.add_ui_interface(UiInterfaceConfiguration {
+                    id,
+                    port,
+                    bundle,
+                    dna_interface,
+                    reroute_to_root: true,
+                    bind_address: "127.0.0.1".to_string(),
+                }))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io
+        self.handler
+            .io
             .add_method("admin/ui_interface/remove", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("id", &params_map)?;
@@ -882,7 +938,8 @@ impl ConductorApiBuilder {
                 Ok(json!({"success": true}))
             });
 
-        self.io
+        self.handler
+            .io
             .add_method("admin/ui_interface/start", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("id", &params_map)?;
@@ -890,7 +947,8 @@ impl ConductorApiBuilder {
                 Ok(json!({"success": true}))
             });
 
-        self.io
+        self.handler
+            .io
             .add_method("admin/ui_interface/stop", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("id", &params_map)?;
@@ -898,23 +956,24 @@ impl ConductorApiBuilder {
                 Ok(json!({"success": true}))
             });
 
-        self.io.add_method("admin/ui_interface/list", move |_| {
-            let ui_interfaces =
-                conductor_call!(|c| Ok(c.config().ui_interfaces)
+        self.handler
+            .io
+            .add_method("admin/ui_interface/list", move |_| {
+                let ui_interfaces = conductor_call!(|c| Ok(c.config().ui_interfaces)
                     as Result<Vec<UiInterfaceConfiguration>, String>)?;
-            Ok(serde_json::Value::Array(
-                ui_interfaces
-                    .iter()
-                    .map(|ui_interface| json!(ui_interface))
-                    .collect(),
-            ))
-        });
+                Ok(serde_json::Value::Array(
+                    ui_interfaces
+                        .iter()
+                        .map(|ui_interface| json!(ui_interface))
+                        .collect(),
+                ))
+            });
 
         self
     }
 
     pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
-        self.io.add_method("agent/sign", move |params| {
+        self.handler.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
@@ -938,7 +997,7 @@ impl ConductorApiBuilder {
     }
 
     pub fn with_agent_encryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
-        self.io.add_method("agent/encrypt", move |params| {
+        self.handler.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
@@ -962,7 +1021,7 @@ impl ConductorApiBuilder {
     }
 
     pub fn with_agent_decryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
-        self.io.add_method("agent/decrypt", move |params| {
+        self.handler.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             //decoded base64 string
@@ -998,7 +1057,7 @@ impl ConductorApiBuilder {
     ///         - name [String] Nickname for the agent. Can be the same as agent_id
     ///     Returns: Json object containing the newly created agent address
     pub fn with_test_admin_functions(mut self) -> Self {
-        self.io.add_method("test/agent/add", move |params| {
+        self.handler.io.add_method("test/agent/add", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             let name = Self::get_as_string("name", &params_map)?;
@@ -1018,7 +1077,7 @@ impl ConductorApiBuilder {
         let agent_id = agent_id.clone();
         let signing_service_uri = signing_service_uri.clone();
 
-        self.io.add_method("agent/sign", move |params| {
+        self.handler.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
@@ -1040,7 +1099,7 @@ impl ConductorApiBuilder {
         encryption_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
-        self.io.add_method("agent/encrypt", move |params| {
+        self.handler.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
@@ -1061,7 +1120,7 @@ impl ConductorApiBuilder {
         decryption_service_uri: String,
     ) -> Self {
         let agent_id = agent_id.clone();
-        self.io.add_method("agent/decrypt", move |params| {
+        self.handler.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
@@ -1078,19 +1137,22 @@ impl ConductorApiBuilder {
 
     pub fn with_agent_keystore_functions(mut self, keystore: Arc<Mutex<Keystore>>) -> Self {
         let k = keystore.clone();
-        self.io.add_method("agent/keystore/list", move |_params| {
-            Ok(serde_json::Value::Array(
-                k.lock()
-                    .unwrap()
-                    .list()
-                    .iter()
-                    .map(|secret_name| json!(secret_name))
-                    .collect(),
-            ))
-        });
+        self.handler
+            .io
+            .add_method("agent/keystore/list", move |_params| {
+                Ok(serde_json::Value::Array(
+                    k.lock()
+                        .unwrap()
+                        .list()
+                        .iter()
+                        .map(|secret_name| json!(secret_name))
+                        .collect(),
+                ))
+            });
 
         let k = keystore.clone();
-        self.io
+        self.handler
+            .io
             .add_method("agent/keystore/add_random_seed", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("dst_id", &params_map)?;
@@ -1104,7 +1166,8 @@ impl ConductorApiBuilder {
             });
 
         let k = keystore.clone();
-        self.io
+        self.handler
+            .io
             .add_method("agent/keystore/add_seed_from_seed", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let src_id = Self::get_as_string("src_id", &params_map)?;
@@ -1133,7 +1196,7 @@ impl ConductorApiBuilder {
             });
 
         let k = keystore.clone();
-        self.io
+        self.handler.io
             .add_method("agent/keystore/add_key_from_seed", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let src_id = Self::get_as_string("src_id", &params_map)?;
@@ -1158,22 +1221,25 @@ impl ConductorApiBuilder {
             });
 
         let k = keystore.clone();
-        self.io.add_method("agent/keystore/sign", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let src_id = Self::get_as_string("src_id", &params_map)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+        self.handler
+            .io
+            .add_method("agent/keystore/sign", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let src_id = Self::get_as_string("src_id", &params_map)?;
+                let payload = Self::get_as_string("payload", &params_map)?;
 
-            let signature = k
-                .lock()
-                .unwrap()
-                .sign(&src_id, payload.clone())
-                .map_err(|_| jsonrpc_core::Error::internal_error())?;
+                let signature = k
+                    .lock()
+                    .unwrap()
+                    .sign(&src_id, payload.clone())
+                    .map_err(|_| jsonrpc_core::Error::internal_error())?;
 
-            Ok(json!({ "signature": String::from(signature) }))
-        });
+                Ok(json!({ "signature": String::from(signature) }))
+            });
 
         let k = keystore.clone();
-        self.io
+        self.handler
+            .io
             .add_method("agent/keystore/get_public_key", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let src_id = Self::get_as_string("src_id", &params_map)?;
@@ -1288,6 +1354,7 @@ pub mod tests {
             .spawn();
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str("info/instances", None))
             .expect("Invalid call to handler");
         println!("{}", response_str);
@@ -1307,6 +1374,7 @@ pub mod tests {
             .spawn();
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str("call", None))
             .expect("Invalid call to handler");
         assert_eq!(
@@ -1315,6 +1383,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str("call", Some(json!({}))))
             .expect("Invalid call to handler");
         assert_eq!(
@@ -1323,6 +1392,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({"instance_id" : "bad instance id"})),
@@ -1334,6 +1404,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({"instance_id" : "test-instance-1"})),
@@ -1345,6 +1416,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({
@@ -1359,6 +1431,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({
@@ -1374,6 +1447,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({
@@ -1393,6 +1467,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({
@@ -1409,6 +1484,7 @@ pub mod tests {
         );
 
         let response_str = handler
+            .io
             .handle_request_sync(&create_call_str(
                 "call",
                 Some(json!({

@@ -23,7 +23,7 @@ impl Interface for HttpInterface {
         let url = format!("0.0.0.0:{}", self.port);
 
         let server =
-            ServerBuilder::with_meta_extractor(handler, |_: &hyper::Request<hyper::Body>| None)
+            ServerBuilder::with_meta_extractor(handler.io, |_: &hyper::Request<hyper::Body>| None)
                 .start_http(&url.parse().expect("Invalid URL!"))
                 .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Noop;

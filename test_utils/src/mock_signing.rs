@@ -153,7 +153,7 @@ pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String {
 pub fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
     let mut handler = IoHandler::new();
     let sign_agent = agent_id.clone();
-    handler.add_method("agent/sign", move |params: Params| {
+    handler.io.add_method("agent/sign", move |params: Params| {
         let params_map = match params {
             Params::Map(map) => Ok(map),
             _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
@@ -177,7 +177,7 @@ pub fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
     });
 
     let encrypt_agent = agent_id.clone();
-    handler.add_method("agent/encrypt", move |params| {
+    handler.io.add_method("agent/encrypt", move |params| {
         let params_map = match params {
             Params::Map(map) => Ok(map),
             _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
@@ -200,7 +200,7 @@ pub fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
         Ok(json!({"payload": payload, "message": mock_encrypt(payload, &encrypt_agent)}))
     });
 
-    handler.add_method("agent/decrypt", move |params| {
+    handler.io.add_method("agent/decrypt", move |params| {
         let params_map = match params {
             Params::Map(map) => Ok(map),
             _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),

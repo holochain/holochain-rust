@@ -1,15 +1,26 @@
-use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
+use holochain_core_types::{
+    error::HolochainError,
+    sync::{HcMutex as Mutex, HcRwLock as RwLock},
+};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use jsonrpc_core::MetaIoHandler;
 use jsonrpc_lite::JsonRpc;
-use jsonrpc_pubsub::{PubSubHandler, Session};
+use jsonrpc_pubsub::{PubSubHandler, Session, Sink, SubscriptionId};
 use snowflake::ProcessUniqueId;
-use std::{fmt, sync::Arc};
+use std::{collections::HashMap, fmt, sync::Arc};
 
-pub type RpcHandler = PubSubHandler<Option<Arc<Session>>>;
+pub struct RpcHandler {
+    pub io: PubSubHandler<Option<Arc<Session>>>,
+    pub subscriptions: Mutex<HashMap<SubscriptionId, Sink>>,
+}
 
-pub fn make_rpc_handler() -> RpcHandler {
-    PubSubHandler::new(MetaIoHandler::default())
+impl RpcHandler {
+    pub fn new() -> Self {
+        Self {
+            io: PubSubHandler::new(MetaIoHandler::default()),
+            subscriptions: Mutex::new(HashMap::new()),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -29,6 +40,7 @@ pub fn send_json_rpc(
     );
 
     let response = handler
+        .io
         .handle_request_sync(&request, None)
         .ok_or_else(|| format!("Conductor request agent/{} failed", request_reponse.0))?;
 

@@ -22,7 +22,7 @@ impl Interface for UnixSocketInterface {
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let path_str = self.path.to_str().ok_or("Invalid socket path")?;
-        let server = ServerBuilder::with_meta_extractor(handler, |context: &RequestContext| {
+        let server = ServerBuilder::with_meta_extractor(handler.io, |context: &RequestContext| {
             Some(Arc::new(Session::new(context.sender.clone())))
         })
         .start(path_str)

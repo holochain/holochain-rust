@@ -324,6 +324,10 @@ impl Conductor {
                                 };
 
                             for interface in interfaces_with_instance {
+                                // TODO: Instead of Broadcasters, need to use `jsonrpc_pubsub::Sink`s, which
+                                // are created with new subscribers. Need to figure out how to get them from
+                                // the subscription method over here. The registered subscription is Fn, not FnMut,
+                                // so we have to send them via a channel rather than directly adding them to a Mutex
                                 if let Some(broadcaster) = broadcasters.get_mut(&interface.id) {
                                     if let Err(error) = broadcaster.send(SignalWrapper {
                                         signal: signal.clone(),

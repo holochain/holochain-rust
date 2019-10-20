@@ -22,7 +22,7 @@ impl Interface for WebsocketInterface {
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let url = format!("0.0.0.0:{}", self.port);
-        let server = ServerBuilder::with_meta_extractor(handler, |context: &RequestContext| {
+        let server = ServerBuilder::with_meta_extractor(handler.io, |context: &RequestContext| {
             Some(Arc::new(Session::new(context.sender().clone())))
         })
         .start(&url.parse().expect("Invalid URL!"))

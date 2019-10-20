@@ -32,6 +32,7 @@ fn conductor_callback<S: Into<String>>(
     );
 
     let response = handler
+        .io
         .handle_request_sync(&request, None)
         .ok_or("Callback failed")?;
 

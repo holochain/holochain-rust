@@ -141,6 +141,7 @@ extern crate base64;
 extern crate lib3h;
 #[macro_use]
 extern crate nickel;
+extern crate snowflake;
 
 pub mod conductor;
 pub mod config;

@@ -664,6 +664,23 @@ pub mod tests {
     }
 
     #[test]
+    pub fn can_clone_instance() {
+        for _i in 0..100 {
+            let instance = test_instance_blank();
+            {
+                let instance2 = instance.clone();
+            }
+            instance.action_channel().send(ActionWrapper::new(Action::Ping)).unwrap();
+        }
+    }
+
+    #[test]
+    pub fn can_ping_instance() {
+        let instance = test_instance_blank();
+        instance.action_channel().send(ActionWrapper::new(Action::Ping)).unwrap();
+    }
+
+    #[test]
     /// This tests calling `process_action`
     /// with an action that dispatches no new ones.
     /// It tests that the desired effects do happen

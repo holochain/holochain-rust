@@ -12,7 +12,7 @@ failure = "=0.1.5"
 #sim1h = { path = "../../sim1h/crates/sim1h" }
 sim1h = { git = "https://github.com/holochain/sim1h", branch = "develop" }
 #sim2h = { path = "../../sim2h/crates/sim2h" }
-sim2h = { git = "https://github.com/holochain/sim2h", branch = "develop" }
+sim2h = { git = "https://github.com/holochain/sim2h", rev = "9206365a1b6a852a190b36a0e08ed989e2310936" }
 lib3h_sodium = "=0.0.16"
 lib3h_protocol = "=0.0.16"
 lib3h = "=0.0.16"

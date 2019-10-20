@@ -454,11 +454,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "detach"
 version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
-
-[[package]]
-name = "detach"
-version = "0.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -1375,7 +1370,7 @@ dependencies = [
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sim1h 0.0.3 (git+https://github.com/holochain/sim1h?branch=develop)",
- "sim2h 0.0.1 (git+https://github.com/holochain/sim2h)",
+ "sim2h 0.0.1 (git+https://github.com/holochain/sim2h?rev=9206365a1b6a852a190b36a0e08ed989e2310936)",
  "snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tungstenite 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1776,38 +1771,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lib3h"
 version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
-dependencies = [
- "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_mdns 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_p2p_protocol 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_protocol 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_sodium 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_zombie_actor 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "openssl 0.10.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "tungstenite 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h"
-version = "0.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1860,22 +1823,6 @@ dependencies = [
 [[package]]
 name = "lib3h_mdns"
 version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
-dependencies = [
- "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_mdns"
-version = "0.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1892,17 +1839,6 @@ dependencies = [
 [[package]]
 name = "lib3h_p2p_protocol"
 version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
-dependencies = [
- "capnp 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_p2p_protocol"
-version = "0.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "capnp 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1941,18 +1877,6 @@ dependencies = [
  "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url_serde 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_sodium"
-version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
-dependencies = [
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust_sodium 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust_sodium-sys 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1965,23 +1889,6 @@ dependencies = [
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium-sys 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_zombie_actor"
-version = "0.0.16"
-source = "git+https://github.com/holochain/lib3h?branch=transport-disconnect#efe292d74cc8ced123dba01d428833719af321dc"
-dependencies = [
- "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3521,9 +3428,10 @@ dependencies = [
 [[package]]
 name = "sim2h"
 version = "0.0.1"
-source = "git+https://github.com/holochain/sim2h#1e9dc5d73ab77dffb9faf2c1decdc418d61052a6"
+source = "git+https://github.com/holochain/sim2h?rev=9206365a1b6a852a190b36a0e08ed989e2310936#9206365a1b6a852a190b36a0e08ed989e2310936"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3533,10 +3441,10 @@ dependencies = [
  "holochain_persistence_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_protocol 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_sodium 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
- "lib3h_zombie_actor 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)",
+ "lib3h 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_zombie_actor 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4543,7 +4451,6 @@ dependencies = [
 "checksum crypto-mac 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4434400df11d95d556bac068ddfedd482915eb18fe8bea89bc80b6e4b1c179e5"
 "checksum ctor 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8ce37ad4184ab2ce004c33bf6379185d3b1c95801cab51026bd271bf68eedc"
 "checksum detach 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)" = "297e0fba1e3140f6adfbdfb7f65998c67a71282f20d8f83d02ee167f91a16c8d"
-"checksum detach 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum detach 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "c5b64e60840c4f8a3d3d1e2f8444f6d0c8da14482121df52f5b509f5ced0ce09"
 "checksum difference 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 "checksum digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)" = "03b072242a8cbaf9c145665af9d250c59af3b958f83ed6824e13533cf76d5b90"
@@ -4638,19 +4545,14 @@ dependencies = [
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"
 "checksum lazycell 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
-"checksum lib3h 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "85232784771392830b9186de4ac134643deeb2da8650d371c2ecc31591211d49"
 "checksum lib3h_crypto_api 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h_crypto_api 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "13544dd612a664f6897e43e589a00eb9a524a4708cd9b8fb75165ce2de9d422b"
-"checksum lib3h_mdns 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h_mdns 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "1a8d572200f2903291088c23ecd308b777770488e71edd5c9968754c36022405"
-"checksum lib3h_p2p_protocol 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h_p2p_protocol 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "a16f738cf612a6a7f704de0ace1e91117d6e3c47a378efeab36b11f9b503be25"
 "checksum lib3h_protocol 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h_protocol 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "5348d764cdcd410a50ec6c8663c41c442a1c10b9e917ada0410b07f78c4449bb"
-"checksum lib3h_sodium 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h_sodium 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "ca554772b02f3b9021ab9b30aa32d836d1f75a41e89fdb9a972146314d8fc039"
-"checksum lib3h_zombie_actor 0.0.16 (git+https://github.com/holochain/lib3h?branch=transport-disconnect)" = "<none>"
 "checksum lib3h_zombie_actor 0.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "0ed2b675730a64e1092893136a76ecccc96fa8634227cc96f5210207409c43df"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
 "checksum libflate 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)" = "d9135df43b1f5d0e333385cb6e7897ecd1a43d7d11b91ac003f4d2c2d2401fdd"
@@ -4814,7 +4716,7 @@ dependencies = [
 "checksum signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "4f61c4d59f3aaa9f61bba6450a9b80ba48362fd7d651689e7a10c453b1f6dc68"
 "checksum signal-hook-registry 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "1797d48f38f91643908bb14e35e79928f9f4b3cefb2420a564dde0991b4358dc"
 "checksum sim1h 0.0.3 (git+https://github.com/holochain/sim1h?branch=develop)" = "<none>"
-"checksum sim2h 0.0.1 (git+https://github.com/holochain/sim2h)" = "<none>"
+"checksum sim2h 0.0.1 (git+https://github.com/holochain/sim2h?rev=9206365a1b6a852a190b36a0e08ed989e2310936)" = "<none>"
 "checksum slab 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 "checksum smallvec 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)" = "ab606a9c5e214920bb66c458cd7be8ef094f813f20fe77a54cc7dbfff220d4b7"
 "checksum snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "27207bb65232eda1f588cf46db2fee75c0808d557f6b3cf19a75f5d6d7c94df1"

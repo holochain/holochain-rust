@@ -31,7 +31,7 @@ module.exports = scenario => {
     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.result.All.items[0].entry.App[1]), { content: 'Hello Holo world 321', date_created: 'now' })
   })
 
-  scenario.only('update_entry_validation', async (s, t) => {
+  scenario('update_entry_validation', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
     // update entry does not exist
     const updateParams = { post_address: '1234', new_content: 'Hello Holo V2' }

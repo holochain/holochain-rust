@@ -3,7 +3,7 @@ use crossbeam_channel::Receiver;
 use interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_ipc_server::ServerBuilder;
-use std::{os::unix::net::UnixStream, path::PathBuf, thread};
+use std::{path::PathBuf, thread};
 
 pub struct UnixSocketInterface {
     path: PathBuf,
@@ -21,6 +21,7 @@ impl Interface for UnixSocketInterface {
         handler: IoHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
+        let path_str = self.path.to_str().ok_or("Invalid socket path")?;
         let server = ServerBuilder::new(handler)
             .start(path_str)
             .map_err(|e| e.to_string())?;

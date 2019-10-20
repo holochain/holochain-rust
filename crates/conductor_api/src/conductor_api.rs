@@ -1,15 +1,22 @@
 use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
-use jsonrpc_core::IoHandler;
+use jsonrpc_core::MetaIoHandler;
 use jsonrpc_lite::JsonRpc;
+use jsonrpc_pubsub::{PubSubHandler, Session};
 use snowflake::ProcessUniqueId;
 use std::{fmt, sync::Arc};
 
+pub type RpcHandler = PubSubHandler<Option<Arc<Session>>>;
+
+pub fn make_rpc_handler() -> RpcHandler {
+    PubSubHandler::new(MetaIoHandler::default())
+}
+
 #[derive(Clone)]
-pub struct ConductorApi(Arc<RwLock<IoHandler>>);
+pub struct ConductorApi(Arc<RwLock<RpcHandler>>);
 
 pub fn send_json_rpc(
-    handle: Arc<RwLock<IoHandler>>,
+    handle: Arc<RwLock<RpcHandler>>,
     payload: String,
     request_reponse: (String, String),
 ) -> Result<String, HolochainError> {
@@ -22,7 +29,7 @@ pub fn send_json_rpc(
     );
 
     let response = handler
-        .handle_request_sync(&request)
+        .handle_request_sync(&request, None)
         .ok_or_else(|| format!("Conductor request agent/{} failed", request_reponse.0))?;
 
     let response = JsonRpc::parse(&response)?;
@@ -42,7 +49,7 @@ pub fn send_json_rpc(
 }
 
 impl ConductorApi {
-    pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi {
+    pub fn new(conductor_api: Arc<RwLock<RpcHandler>>) -> ConductorApi {
         ConductorApi(conductor_api)
     }
 
@@ -56,11 +63,11 @@ impl ConductorApi {
         send_json_rpc(self.0.clone(), payload, request_response)
     }
 
-    pub fn get(&self) -> &Arc<RwLock<IoHandler>> {
+    pub fn get(&self) -> &Arc<RwLock<RpcHandler>> {
         &self.0
     }
 
-    pub fn reset(&self, api: IoHandler) {
+    pub fn reset(&self, api: RpcHandler) {
         *self.0.write().unwrap() = api;
     }
 }
@@ -73,6 +80,6 @@ impl PartialEq for ConductorApi {
 
 impl fmt::Debug for ConductorApi {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "<ConductorApi (opaque)>")
     }
 }

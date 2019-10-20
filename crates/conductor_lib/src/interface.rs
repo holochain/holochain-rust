@@ -1,35 +1,35 @@
 use crate::holo_signing_service::request_service;
 use base64;
-use conductor::broadcaster::Broadcaster;
+use conductor::{
+    broadcaster::Broadcaster, ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin,
+    CONDUCTOR,
+};
+use config::{
+    AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
+    InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
+};
 use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
-
 use holochain_core_types::{
     agent::AgentId,
     dna::capabilities::CapabilityRequest,
     signature::Provenance,
     sync::{HcMutex as Mutex, HcRwLock as RwLock},
 };
-use holochain_dpki::key_bundle::KeyBundle;
+use holochain_dpki::{key_bundle::KeyBundle, utils::SeedContext};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use lib3h_sodium::secbuf::SecBuf;
-use Holochain;
-
-use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
-use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
-
-use conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
-use config::{
-    AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
-};
-use holochain_dpki::utils::SeedContext;
+use jsonrpc_core::{self, types::params::Params, Value};
 use keystore::{KeyType, Keystore, Secret};
+use lib3h_sodium::secbuf::SecBuf;
 use serde_json::{self, map::Map};
+use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
+use Holochain;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
+
+pub type RpcHandler = holochain_conductor_lib_api::RpcHandler;
 
 /// An identifier for an instance that is usable by UI in making calls to the conductor
 /// this type allows us to implement this identifier differently, i.e. as a DNA/agent ID pair, etc
@@ -43,10 +43,6 @@ impl From<String> for PublicInstanceIdentifier {
     fn from(s: String) -> PublicInstanceIdentifier {
         PublicInstanceIdentifier(s)
     }
-}
-
-pub trait DispatchRpc {
-    fn handler(self) -> IoHandler;
 }
 
 macro_rules! conductor_call {
@@ -91,12 +87,12 @@ macro_rules! conductor_call {
 /// This builder makes it convenient to create handlers with different configurations.
 ///
 /// Call any sequence of with_* functions on a ConductorApiBuilder object and finalize
-/// with spawn() to retrieve the IoHandler.
+/// with spawn() to retrieve the RpcHandler.
 pub struct ConductorApiBuilder {
     instances: InstanceMap,
     instance_ids_map: PublicInstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
-    io: Box<IoHandler>,
+    io: Box<RpcHandler>,
 }
 
 impl ConductorApiBuilder {
@@ -105,12 +101,12 @@ impl ConductorApiBuilder {
             instances: HashMap::new(),
             instance_ids_map: HashMap::new(),
             instance_configs: HashMap::new(),
-            io: Box::new(IoHandler::new()),
+            io: Box::new(holochain_conductor_lib_api::make_rpc_handler()),
         }
     }
 
     /// Finish the building and retrieve the populated handler
-    pub fn spawn(mut self) -> IoHandler {
+    pub fn spawn(mut self) -> RpcHandler {
         self.setup_info_api();
         self.setup_call_api();
         *self.io
@@ -1213,7 +1209,7 @@ impl ConductorApiBuilder {
 pub trait Interface {
     fn run(
         &self,
-        handler: IoHandler,
+        handler: RpcHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;
 }

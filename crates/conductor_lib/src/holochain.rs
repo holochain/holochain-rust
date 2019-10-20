@@ -90,7 +90,10 @@
 //!
 //!```
 
-use crate::error::{HolochainInstanceError, HolochainResult};
+use crate::{
+    error::{HolochainInstanceError, HolochainResult},
+    interface::RpcHandler,
+};
 use holochain_core::{
     context::Context,
     instance::Instance,
@@ -113,7 +116,6 @@ use holochain_core::{
     state_dump::{address_to_content_and_type, StateDump},
 };
 use holochain_persistence_api::cas::content::Address;
-use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -262,7 +264,7 @@ impl Holochain {
         Ok(self.context.as_ref().unwrap().clone())
     }
 
-    pub fn set_conductor_api(&mut self, api: IoHandler) -> Result<(), HolochainInstanceError> {
+    pub fn set_conductor_api(&mut self, api: RpcHandler) -> Result<(), HolochainInstanceError> {
         self.context()?.conductor_api.reset(api);
         Ok(())
     }

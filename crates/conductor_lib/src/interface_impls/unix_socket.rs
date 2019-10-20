@@ -1,9 +1,9 @@
+use crate::interface::{Interface, RpcHandler};
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
-use interface::Interface;
-use jsonrpc_core::IoHandler;
-use jsonrpc_ipc_server::ServerBuilder;
-use std::{path::PathBuf, thread};
+use jsonrpc_ipc_server::{RequestContext, ServerBuilder};
+use jsonrpc_pubsub::Session;
+use std::{path::PathBuf, sync::Arc, thread};
 
 pub struct UnixSocketInterface {
     path: PathBuf,
@@ -18,14 +18,16 @@ impl UnixSocketInterface {
 impl Interface for UnixSocketInterface {
     fn run(
         &self,
-        handler: IoHandler,
+        handler: RpcHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let path_str = self.path.to_str().ok_or("Invalid socket path")?;
-        let server = ServerBuilder::new(handler)
-            .start(path_str)
-            .map_err(|e| e.to_string())?;
-        let broadcaster = Broadcaster::UnixSocket(self.path.clone());
+        let server = ServerBuilder::with_meta_extractor(handler, |context: &RequestContext| {
+            Some(Arc::new(Session::new(context.sender.clone())))
+        })
+        .start(path_str)
+        .map_err(|e| e.to_string())?;
+        let broadcaster = Broadcaster::Noop;
         let handle = thread::Builder::new()
             .name(format!("unix_socket_interface/{:?}", path_str))
             .spawn(move || {

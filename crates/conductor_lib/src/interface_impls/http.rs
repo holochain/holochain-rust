@@ -1,7 +1,6 @@
 use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
-use interface::Interface;
-use jsonrpc_core::IoHandler;
+use interface::{Interface, RpcHandler};
 use jsonrpc_http_server::ServerBuilder;
 use std::thread;
 
@@ -18,14 +17,15 @@ impl HttpInterface {
 impl Interface for HttpInterface {
     fn run(
         &self,
-        handler: IoHandler,
+        handler: RpcHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let url = format!("0.0.0.0:{}", self.port);
 
-        let server = ServerBuilder::new(handler)
-            .start_http(&url.parse().expect("Invalid URL!"))
-            .map_err(|e| e.to_string())?;
+        let server =
+            ServerBuilder::with_meta_extractor(handler, |_: &hyper::Request<hyper::Body>| None)
+                .start_http(&url.parse().expect("Invalid URL!"))
+                .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Noop;
         let handle = thread::Builder::new()
             .name(format!("http_interface/{}", url))

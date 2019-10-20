@@ -26,7 +26,6 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -54,7 +53,7 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-use interface::{ConductorApiBuilder, InstanceMap, Interface};
+use interface::{ConductorApiBuilder, InstanceMap, Interface, RpcHandler};
 use signal_wrapper::SignalWrapper;
 use static_file_server::ConductorStaticFileServer;
 use static_server_impls::NickelStaticServer as StaticServer;
@@ -898,7 +897,7 @@ impl Conductor {
     pub fn build_conductor_api(
         &mut self,
         instance_id: String,
-    ) -> Result<IoHandler, HolochainError> {
+    ) -> Result<RpcHandler, HolochainError> {
         notify(format!(
             "conductor: build_conductor_api instance_id={}, config={:?}",
             instance_id, self.config
@@ -1207,7 +1206,7 @@ impl Conductor {
         Ok(())
     }
 
-    fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
+    fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> RpcHandler {
         let mut conductor_api_builder = ConductorApiBuilder::new();
         for instance_ref_config in interface_config.instances.iter() {
             let id = &instance_ref_config.id;

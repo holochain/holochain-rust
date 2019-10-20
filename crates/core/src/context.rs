@@ -11,7 +11,7 @@ use futures::{task::Poll, Future};
 
 use crate::state::StateWrapper;
 use futures::task::noop_waker_ref;
-use holochain_conductor_lib_api::ConductorApi;
+use holochain_conductor_lib_api::{ConductorApi, RpcHandler};
 use holochain_core_types::{
     agent::AgentId,
     dna::{wasm::DnaWasm, Dna},
@@ -35,7 +35,6 @@ use holochain_persistence_api::{
     },
     eav::EntityAttributeValueStorage,
 };
-use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering::Relaxed},
@@ -96,9 +95,9 @@ impl Context {
     // This allows unit tests of core to not have to deal with a conductor_api.
     #[cfg(not(test))]
     fn test_check_conductor_api(
-        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        conductor_api: Option<Arc<RwLock<RpcHandler>>>,
         _agent_id: AgentId,
-    ) -> Arc<RwLock<IoHandler>> {
+    ) -> Arc<RwLock<RpcHandler>> {
         // If you get here through this panic make sure that the context passed into the instance
         // gets created with a real conductor API. In test config it will be populated with mock API
         // that implements agent/sign with the mock_signer. We need this for testing but should
@@ -109,9 +108,9 @@ impl Context {
 
     #[cfg(test)]
     fn test_check_conductor_api(
-        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        conductor_api: Option<Arc<RwLock<RpcHandler>>>,
         agent_id: AgentId,
-    ) -> Arc<RwLock<IoHandler>> {
+    ) -> Arc<RwLock<RpcHandler>> {
         conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
     }
 
@@ -124,7 +123,7 @@ impl Context {
         dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
-        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        conductor_api: Option<Arc<RwLock<RpcHandler>>>,
         signal_tx: Option<SignalSender>,
         state_dump_logging: bool,
     ) -> Self {

@@ -1,3 +1,4 @@
+use crate::interface::RpcHandler;
 use holochain_core::{context::Context, persister::SimplePersister, signal::SignalSender};
 use holochain_core_types::{
     agent::AgentId, eav::Attribute, error::HolochainError, sync::HcRwLock as RwLock,
@@ -9,7 +10,6 @@ use holochain_persistence_api::{
 use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
-use jsonrpc_core::IoHandler;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -34,7 +34,7 @@ pub struct ContextBuilder {
     dht_storage: Option<Arc<RwLock<dyn ContentAddressableStorage>>>,
     eav_storage: Option<Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>>,
     p2p_config: Option<P2pConfig>,
-    conductor_api: Option<Arc<RwLock<IoHandler>>>,
+    conductor_api: Option<Arc<RwLock<RpcHandler>>>,
     signal_tx: Option<SignalSender>,
     state_dump_logging: bool,
 }
@@ -115,7 +115,7 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_conductor_api(mut self, api_handler: IoHandler) -> Self {
+    pub fn with_conductor_api(mut self, api_handler: RpcHandler) -> Self {
         self.conductor_api = Some(Arc::new(RwLock::new(api_handler)));
         self
     }

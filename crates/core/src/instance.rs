@@ -655,13 +655,13 @@ pub mod tests {
 
     #[test]
     pub fn can_clone_instance() {
-        for _i in 0..100 {
-            let instance = test_instance_blank();
-            {
-                let instance2 = instance.clone();
-            }
-            instance.action_channel().send(ActionWrapper::new(Action::Ping)).unwrap();
+        let instance = test_instance_blank();
+        {
+            let instance2 = instance.clone();
         }
+        // wait for the action thread to receive kill signal, if applicable
+        std::thread::sleep(Duration::from_secs(2));
+        instance.action_channel().send(ActionWrapper::new(Action::Ping)).unwrap();
     }
 
     #[test]

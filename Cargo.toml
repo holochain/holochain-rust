@@ -9,7 +9,7 @@ members = [
   "crates/holochain_wasm",
   "crates/core",
   "crates/dpki",
-  "crates/hdk-v2",
+  "crates/hdk_v2",
   "crates/hdk",
   "crates/net",
   "benchmarks",

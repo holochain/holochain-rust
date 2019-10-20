@@ -1,0 +1,17 @@
+version: 2
+jobs:
+ build:
+  docker:
+   - image: holochain/holonix
+  steps:
+   - checkout
+
+   - run:
+      name: run the tests
+      command: nix-shell --run sim2h-test
+
+workflows:
+ version: 2
+ build:
+  jobs:
+   - build

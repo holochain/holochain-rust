@@ -20,7 +20,6 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-use holochain_tracing::Span;
 use lib3h::transport::{protocol::*, websocket::streams::*};
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
@@ -28,7 +27,6 @@ use lib3h_protocol::{
     types::SpaceHash,
     uri::Lib3hUri,
 };
-use lib3h_zombie_actor::prelude::*;
 pub use wire_message::{WireError, WireMessage};
 
 use log::*;
@@ -625,18 +623,10 @@ impl Sim2h {
             }
         }
         let payload: Opaque = msg.clone().into();
-        let send_result = self.transport.request(
-            Span::fixme(),
-            RequestToChild::SendMessage { uri, payload },
-            Box::new(|_me, response| match response {
-                GhostCallbackData::Response(Ok(RequestToChildResponse::SendMessageSuccess)) => {
-                    Ok(())
-                }
-                GhostCallbackData::Response(Err(e)) => Err(e.into()),
-                GhostCallbackData::Timeout(bt) => Err(format!("timeout: {:?}", bt).into()),
-                _ => Err("bad response type".into()),
-            }),
-        );
+        let url: url::Url = uri.into();
+        let send_result = self
+            .stream_manager
+            .send(&url, payload.as_bytes().as_slice());
 
         if let Err(e) = send_result {
             error!("GhostError during broadcast send: {:?}", e)

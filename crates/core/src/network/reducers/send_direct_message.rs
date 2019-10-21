@@ -20,7 +20,7 @@ fn inner(
     let data = Lib3hDirectMessageData {
         request_id: direct_message_data.msg_id.clone(),
         space_address: network_state.dna_address.clone().unwrap().into(),
-        to_agent_id: direct_message_data.address.clone(),
+        to_agent_id: direct_message_data.address.clone().into(),
         from_agent_id: network_state.agent_id.clone().unwrap().into(),
         content: content.into(),
     };

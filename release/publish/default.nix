@@ -12,7 +12,7 @@ for crate in \
  conductor_lib \
  dpki \
  hdk \
- hdk-v2 \
+ hdk_v2 \
  holochain \
  holochain_wasm \
  net \

@@ -11,7 +11,7 @@ for dep in \
  core_types \
  dpki \
  hdk \
- hdk-v2 \
+ hdk_v2 \
  holochain \
  holochain_wasm \
  net \

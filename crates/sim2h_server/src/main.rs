@@ -33,13 +33,6 @@ struct Cli {
 fn create_stream_manager() -> StreamManager<std::net::TcpStream> {
     let tls_config = TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy());
     StreamManager::with_std_tcp_stream(tls_config)
-    /*
-    Box::new(GhostTransportWebsocket::new(
-        NodePubKey::from("sim2h-worker-transport"),
-        TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
-        NetworkHash::from("sim2h-network"),
-    ))
-    */
 }
 
 fn main() {

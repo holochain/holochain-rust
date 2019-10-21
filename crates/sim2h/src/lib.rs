@@ -2,8 +2,6 @@ extern crate env_logger;
 //#[macro_use]
 extern crate log;
 #[macro_use]
-extern crate detach;
-#[macro_use]
 extern crate serde;
 #[macro_use]
 extern crate lazy_static;
@@ -279,12 +277,11 @@ impl Sim2h {
             self.num_ticks = 0;
         }
         trace!("process transport");
-        detach_run!(&mut self.transport, |t| t.process(self)).map_err(|e| format!("{:?}", e))?;
+        let (_did_work, messages) = self.stream_manager.process()?;
+
         trace!("process transport done");
-        for mut transport_message in self.transport.drain_messages() {
+        for mut transport_message in messages {
             match transport_message
-                .take_message()
-                .expect("GhostMessage must have a message")
             {
                 RequestToParent::ReceivedData { uri, payload } => {
                     match Sim2h::verify_payload(payload.clone()) {

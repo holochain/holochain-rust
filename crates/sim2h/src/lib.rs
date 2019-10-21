@@ -55,8 +55,14 @@ impl Sim2h {
         };
 
         debug!("Trying to bind to {}...", bind_spec);
-        sim2h.bound_uri = sim2h.stream_manager.bind(
-            bind_spec.into()).unwrap_or_else(|e| panic!("Error binding to url {}: {:?}", bind_spec, e));
+        let url: url::Url = bind_spec.into();
+        sim2h.bound_uri = Some(
+            sim2h
+                .stream_manager
+                .bind(&url)
+                .unwrap_or_else(|e| panic!("Error binding to url {}: {:?}", bind_spec, e))
+                .into(),
+        );
 
         sim2h
     }

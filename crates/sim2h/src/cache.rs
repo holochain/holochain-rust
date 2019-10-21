@@ -1,8 +1,9 @@
 //! implements caching structures for spaces and aspects
 use crate::AgentId;
-use lib3h_protocol::types::AspectHash;
-use lib3h_protocol::types::EntryHash;
-use lib3h_protocol::uri::Lib3hUri;
+use lib3h_protocol::{
+    types::{AspectHash, EntryHash},
+    uri::Lib3hUri,
+};
 use std::collections::{HashMap, HashSet};
 
 pub struct Space {

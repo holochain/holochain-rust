@@ -1,6 +1,7 @@
 //! represents the state of connected agents
 use crate::wire_message::WireMessage;
-use lib3h_protocol::types::{AgentPubKey, SpaceHash};
+use lib3h_protocol::types::AgentPubKey;
+use lib3h_protocol::types::SpaceHash;
 pub type AgentId = AgentPubKey;
 
 #[derive(PartialEq, Debug, Clone)]

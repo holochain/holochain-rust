@@ -10,7 +10,8 @@ use holochain_core_types::{
     agent::Base32,
     error::{HcResult, HolochainError},
 };
-use lib3h_protocol::{data_types::Opaque, types::AgentPubKey};
+use lib3h_protocol::data_types::Opaque;
+use lib3h_protocol::types::AgentPubKey;
 use lib3h_sodium::{secbuf::SecBuf, sign};
 
 use std::convert::TryFrom;

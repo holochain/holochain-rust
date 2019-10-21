@@ -20,9 +20,8 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-use detach::prelude::*;
 use holochain_tracing::Span;
-use lib3h::transport::protocol::*;
+use lib3h::transport::{protocol::*, websocket::streams::*};
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -41,19 +40,17 @@ pub struct Sim2h {
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
-    transport: Detach<TransportActorParentWrapperDyn<Self>>,
+    stream_manager: StreamManager<std::net::TcpStream>,
     num_ticks: u32,
 }
 
 impl Sim2h {
-    pub fn new(transport: DynTransportActor, bind_spec: Lib3hUri) -> Self {
-        let t = Detach::new(TransportActorParentWrapperDyn::new(transport, "transport_"));
-
+    pub fn new(stream_manager: StreamManager<std::net::TcpStream>, bind_spec: Lib3hUri) -> Self {
         let mut sim2h = Sim2h {
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
-            transport: t,
+            stream_manager,
             num_ticks: 0,
         };
 

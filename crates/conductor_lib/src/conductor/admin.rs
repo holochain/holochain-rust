@@ -224,6 +224,7 @@ impl ConductorAdmin for Conductor {
     /// Removes the instance given by id from the config.
     /// Also removes all mentions of that instance from all interfaces to not render the config
     /// invalid.
+    /// Optionally removes the storage of the instance.
     /// Then saves the config.
     fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
@@ -244,7 +245,9 @@ impl ConductorAdmin for Conductor {
         }
         if let Some(instance) = self.instances.remove(id) {
             if clean {
-                remove_dir_all(self.instance_storage_dir_path().join(id.clone()))?;
+                // if storageConfiguration != memory (and contains the path) {
+                if instance.storage              
+                remove_dir_all(instance.)?;
             }
             instance.write().unwrap().kill();
         }

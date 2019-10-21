@@ -728,6 +728,18 @@ impl StorageConfiguration {
             _ => false,
         }
     }
+
+    fn get_path(&self) -> Option<String> {
+        if self.is_file() {
+            return(self::File(path))
+        }
+        if self.is_pickle() {
+            return Some(self::Pickle(path))
+        }
+        if self.is_memory {
+            return None
+        }
+    }
 }
 
 /// Here, interfaces are user facing and make available zome functions to

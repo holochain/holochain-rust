@@ -707,6 +707,29 @@ pub enum StorageConfiguration {
     Pickle { path: String },
 }
 
+impl StorageConfiguration {
+    fn is_memory(&self) -> bool {
+        match self {
+            StorageConfiguration::Memory => true,
+            _ => false,
+        }
+    }
+
+    fn is_file(&self) -> bool {
+        match self {
+            StorageConfiguration::File => true,
+            _ => false,
+        }
+    }
+
+    fn is_pickle(&self) -> bool {
+        match self {
+            StorageConfiguration::Pickle => true,
+            _ => false,
+        }
+    }
+}
+
 /// Here, interfaces are user facing and make available zome functions to
 /// GUIs, browser based web UIs, local native UIs, other local applications and scripts.
 /// We currently have:

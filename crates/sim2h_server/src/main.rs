@@ -1,19 +1,15 @@
 extern crate structopt;
 
-use lib3h::transport::{
-    protocol::DynTransportActor,
-    websocket::{
-        actor::GhostTransportWebsocket,
-        tls::{TlsCertificate, TlsConfig},
-    },
-};
+use lib3h::transport::websocket::tls::TlsCertificate;
+use lib3h::transport::websocket::{streams::*, tls::TlsConfig};
 use lib3h_protocol::{
     types::{NetworkHash, NodePubKey},
     uri::Builder,
 };
 use log::error;
 use sim2h::{Sim2h, MESSAGE_LOGGER};
-use std::{path::PathBuf, process::exit};
+use std::path::PathBuf;
+use std::process::exit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -33,17 +29,21 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
-fn create_websocket_transport() -> DynTransportActor {
+fn create_stream_manager() -> StreamManager<std::net::TcpStream> {
+    let tls_config = TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy());
+    StreamManager::with_std_tcp_stream(tls_config)
+    /*
     Box::new(GhostTransportWebsocket::new(
         NodePubKey::from("sim2h-worker-transport"),
         TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
         NetworkHash::from("sim2h-network"),
     ))
+    */
 }
 
 fn main() {
     env_logger::init();
-    let transport = create_websocket_transport();
+    let transport = create_stream_manager();
 
     let args = Cli::from_args();
 

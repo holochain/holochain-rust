@@ -516,11 +516,26 @@ impl Conductor {
 
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        self.stop_all_instances()?;
+        // 1. Stop interfaces so we don't have new threads spawned because
+        // incoming RPCs while we are spinning down:
         self.stop_all_interfaces();
+
+        // 2. Really make sure nobody can use the conductor through the
+        // static reference anymore.
+        // Waiting for the conductor lock here also ensure that any
+        // running RPC gets finished before we're trying to stop
+        // instances (which could lead to a dead-lock)
+        let mut conductor_guard = CONDUCTOR.lock().unwrap();
+        std::mem::replace(&mut *conductor_guard, None);
+
+        // 3. Stop running instances:
+        self.stop_all_instances()?;
+
+        // 4. Kill signal multiplexer threads:
         self.signal_multiplexer_kill_switch
             .as_ref()
             .map(|sender| sender.send(()));
+        
         self.instances = HashMap::new();
         Ok(())
     }

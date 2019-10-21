@@ -55,24 +55,9 @@ impl Sim2h {
         };
 
         debug!("Trying to bind to {}...", bind_spec);
-        let _ = sim2h.transport.request(
-            Span::fixme(),
-            RequestToChild::Bind { spec: bind_spec },
-            Box::new(|me, response| match response {
-                GhostCallbackData::Response(Ok(RequestToChildResponse::Bind(bind_result))) => {
-                    debug!("Bound as {}", &bind_result.bound_url);
-                    me.bound_uri = Some(bind_result.bound_url);
-                    Ok(())
-                }
-                GhostCallbackData::Response(Err(e)) => Err(format!("Bind error: {}", e).into()),
-                GhostCallbackData::Timeout(bt) => Err(format!("timeout: {:?}", bt).into()),
-                r => Err(format!(
-                    "Got unexpected response from transport actor during bind: {:?}",
-                    r
-                )
-                .into()),
-            }),
-        );
+        sim2h.bound_uri = sim2h.stream_manager.bind(
+            bind_spec.into()).unwrap_or_else(|e| panic!("Error binding to url {}: {:?}", bind_spec, e));
+
         sim2h
     }
 

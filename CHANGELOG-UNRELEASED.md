@@ -25,8 +25,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   with `sim2h_url` pointing to a running `sim2h_server` instance.
 
   This also adds nix-shell commands:
-  - `hc-sim2h-server` which starts the server part with debug logs on
-    port 9000 (can be changed with `-p`)
+  - `hc-sim2h-server-install` which installs the sim2h-server
+  - `hc-sim2h-server-uninstall` which removes the sim2h-server
+  - `hc-sim2h-server` which starts the server with on
+    port 9000 (can be changed with `-p`) and with  debug logs enabled
   - `hc-app-spec-test-sim2h` which runs the integration tests with
     networking configured to sim2h (expects to find a running
     sim2h_server on localhost:9000)

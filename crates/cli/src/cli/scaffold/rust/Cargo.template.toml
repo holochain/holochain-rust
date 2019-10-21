@@ -8,8 +8,8 @@ edition = <<EDITION>>
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 serde_derive = "=1.0.89"
-hdk = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
-holochain_wasm_utils = { git = "https://github.com/holochain/holochain-rust", <<VERSION>> }
+hdk = "=<<VERSION>>"
+holochain_wasm_utils = "=<<VERSION>>"
 holochain_json_derive = "=0.0.17"
 
 [lib]

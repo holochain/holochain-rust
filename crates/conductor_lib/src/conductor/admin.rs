@@ -13,7 +13,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use json_patch;
 use std::{
-    fs::{self, create_dir_all},
+    fs::{self, create_dir_all, remove_dir_all},
     path::PathBuf,
     sync::Arc,
     thread::sleep,
@@ -225,7 +225,7 @@ impl ConductorAdmin for Conductor {
     /// Also removes all mentions of that instance from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
-    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
         new_config = new_config.save_remove_instance(id);
@@ -245,7 +245,7 @@ impl ConductorAdmin for Conductor {
         if let Some(instance) = self.instances.remove(id) {
             instance.write().unwrap().kill();
             if clean == true {
-                remove_dir_all(instance.storage.path)?;
+                remove_dir_all(self.instance_storage_dir_path().join(id.clone()))?;
             }
         }
         let _ = self.start_signal_multiplexer();
@@ -1237,7 +1237,7 @@ type = 'websocket'"#,
     /// Tests if the removed instance is gone from the config file
     /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid). If the clean arg is true, tests that the storage of
-    /// the instance has been cleared,
+    ///ca the instance has been cleared,
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance";
         let mut conductor = create_test_conductor(test_name, 3002);

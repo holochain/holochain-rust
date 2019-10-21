@@ -243,10 +243,11 @@ impl ConductorAdmin for Conductor {
             ));
         }
         if let Some(instance) = self.instances.remove(id) {
-            instance.write().unwrap().kill();
             if clean {
-                remove_dir_all(self.instance_storage_dir_path().join(id.clone()))?;
+                remove_dir_all(instance.storage_path)
+                // remove_dir_all(self.instance_storage_dir_path().join(id.clone()))?;
             }
+            instance.write().unwrap().kill();
         }
         let _ = self.start_signal_multiplexer();
 

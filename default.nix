@@ -46,17 +46,22 @@ with holonix.pkgs;
     pkgs = holonix.pkgs;
    }).buildInputs
 
-   ++ (holonix.pkgs.callPackage ./conductor {
+   ++ (holonix.pkgs.callPackage ./crates/holochain {
     pkgs = holonix.pkgs;
    }).buildInputs
 
-   ++ (holonix.pkgs.callPackage ./conductor_wasm {
+   ++ (holonix.pkgs.callPackage ./crates/holochain_wasm {
     pkgs = holonix.pkgs;
    }).buildInputs
 
-   ++ (holonix.pkgs.callPackage ./cli {
+   ++ (holonix.pkgs.callPackage ./crates/cli {
     pkgs = holonix.pkgs;
     config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/sim2h_server {
+     pkgs = holonix.pkgs;
+     config = config;
    }).buildInputs
 
    # qt specific testing

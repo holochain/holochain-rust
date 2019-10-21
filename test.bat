@@ -23,7 +23,7 @@ set wasm_path=wasm-test
 set wasm_path_2=
 .\scripts\windows\do-ci-test.bat
 
-set test_p=holochain_conductor_api
+set test_p=holochain_conductor_lib
 set test_path=conductor_api
 set wasm_path=wasm-test
 set wasm_path_2=test-bridge-caller

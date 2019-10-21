@@ -12,7 +12,7 @@ documentation = "https://github.com/holochain/sim2h"
 repository = "https://github.com/holochain/sim2h"
 
 [dependencies]
-sim2h = { path = "../sim2h" }
+sim2h = {version = "=0.0.1" , path = "../sim2h" }
 detach = "=0.0.19"
 lib3h = "=0.0.19"
 lib3h_protocol = "=0.0.19"

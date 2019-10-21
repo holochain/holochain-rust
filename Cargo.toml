@@ -2,7 +2,7 @@
 
 members = [
   "crates/cli",
-  "common",
+  "crates/common",
   "crates/holochain",
   "crates/conductor_lib",
   "crates/conductor_api",

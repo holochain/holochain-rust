@@ -5,6 +5,7 @@ let
  script = pkgs.writeShellScriptBin name ''
 for dep in \
  cli \
+ common \
  conductor_api \
  conductor_lib \
  core \

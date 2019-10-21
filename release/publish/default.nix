@@ -8,6 +8,7 @@ echo "packaging for crates.io"
 # order is important here due to dependencies
 for crate in \
  cli \
+ common \
  conductor_api \
  conductor_lib \
  dpki \

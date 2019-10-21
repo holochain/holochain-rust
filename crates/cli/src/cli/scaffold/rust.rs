@@ -10,7 +10,7 @@ use holochain_core_types::hdk_version::HDK_VERSION;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 use toml::{self, value::Value};
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
@@ -78,8 +78,8 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: &str, macro_style: HdkMacroStyle) -> RustScaffold {
-        let target_dir = PathBuf::from("../target");
-        let mut artifact_name = target_dir.clone();
+        let target_dir = "../target";
+        let mut artifact_name = PathBuf::from(target_dir);
         artifact_name.push("wasm32-unknown-unknown");
         artifact_name.push("release");
         // TODO: if `package_name` can't contain `.`s then
@@ -88,10 +88,7 @@ impl RustScaffold {
         // artifact_name.set_extension(".wasm");
         artifact_name.push(format!("{}.wasm", &package_name));
 
-        let target_dir_flag = &match target_dir.to_str() {
-            Some(dir) => format!("--target-dir={}", dir),
-            None => String::new(),
-        };
+        let target_dir_flag = format!("--target-dir={}", target_dir);
 
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(
@@ -100,7 +97,7 @@ impl RustScaffold {
                     "build",
                     "--release",
                     "--target=wasm32-unknown-unknown",
-                    target_dir_flag,
+                    &target_dir_flag,
                 ],
             ),
             package_name: package_name.to_string(),

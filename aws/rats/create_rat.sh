@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -x
+
+aws --region eu-central-1 cloudformation create-stack --stack-name "$1"-test-ecs-service --template-body file://service-cluster-alb.yaml --parameters ParameterKey=ParentVPCStack,ParameterValue=VPC ParameterKey=LoadBalancerPriority,ParameterValue=${RANDOM:0:4} ParameterKey=LoadBalancerHttps,ParameterValue=true ParameterKey=SubDomainNameWithDot,ParameterValue="$1". ParameterKey=Cpu,ParameterValue=1 ParameterKey=Memory,ParameterValue=2 ParameterKey=DesiredCount,ParameterValue=1 ParameterKey=MaxCapacity,ParameterValue=1  ParameterKey=AppImage,ParameterValue=nginx:latest ParameterKey=ParentZoneStack,ParameterValue=vpc-public-zone ParameterKey=ParentAlertStack,ParameterValue=vpc-alerts ParameterKey=ParentClusterStack,ParameterValue=test-tryorama-cluster ParameterKey=LoadBalancerHostPattern,ParameterValue="$1".holochain-aws.org ParameterKey=MinCapacity,ParameterValue=1 --capabilities CAPABILITY_IAM

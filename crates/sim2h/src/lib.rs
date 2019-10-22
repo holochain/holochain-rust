@@ -18,7 +18,7 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-use lib3h::transport::{protocol::*, websocket::streams::*};
+use lib3h::transport::websocket::streams::*;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -51,7 +51,7 @@ impl Sim2h {
         };
 
         debug!("Trying to bind to {}...", bind_spec);
-        let url: url::Url = bind_spec.into();
+        let url: url::Url = bind_spec.clone().into();
         sim2h.bound_uri = Some(
             sim2h
                 .stream_manager
@@ -280,13 +280,15 @@ impl Sim2h {
         let (_did_work, messages) = self.stream_manager.process()?;
 
         trace!("process transport done");
-        for mut transport_message in messages {
-            match transport_message
-            {
-                RequestToParent::ReceivedData { uri, payload } => {
+        for transport_message in messages {
+            match transport_message {
+                StreamEvent::ReceivedData(uri, payload) => {
+                    let payload: Opaque = payload.into();
                     match Sim2h::verify_payload(payload.clone()) {
                         Ok((source, wire_message)) => {
-                            if let Err(error) = self.handle_message(&uri, wire_message, &source) {
+                            if let Err(error) =
+                                self.handle_message(&uri.into(), wire_message, &source)
+                            {
                                 error!("Error handling message: {:?}", error);
                             }
                         }
@@ -296,19 +298,19 @@ impl Sim2h {
                         ),
                     }
                 }
-                RequestToParent::IncomingConnection { uri } => {
-                    if let Err(error) = self.handle_incoming_connect(uri) {
+                StreamEvent::IncomingConnectionEstablished(uri) => {
+                    if let Err(error) = self.handle_incoming_connect(uri.into()) {
                         error!("Error handling incomming connection: {:?}", error);
                     }
                 }
-                RequestToParent::Disconnect(uri) => {
+                StreamEvent::ConnectionClosed(uri) => {
                     debug!("Disconnecting {} after connection reset", uri);
-                    self.disconnect(&uri);
+                    self.disconnect(&uri.into());
                 }
-                RequestToParent::Unbind(uri) => {
-                    panic!("Got Unbind from {}", uri);
+                StreamEvent::ConnectResult(uri, net_id) => {
+                    debug!("Connected to {} (net_id = {})", uri, net_id);
                 }
-                RequestToParent::ErrorOccured { uri, error } => {
+                StreamEvent::ErrorOccured(uri, error) => {
                     error!(
                         "Transport error occurred on connection to {}: {:?}",
                         uri, error,

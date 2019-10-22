@@ -24,11 +24,7 @@ module.exports = (scenario, N, M) => {
   const batch = configBatchSimple(N, M)
 
   scenario('one at a time', async (s, t) => {
-    const players = R.values(await s.players(batch, false))
-    for(let player of players) {
-      await player.spawn()
-      sleep(1)
-    }
+    const players = R.values(await s.players(batch, true))
 
     // Make every instance of every conductor commit an entry
 
@@ -82,11 +78,7 @@ module.exports = (scenario, N, M) => {
   })
 
   scenario('all at once', async (s, t) => {
-    const players = R.values(await s.players(batch, false))
-    for(let player of players) {
-      await player.spawn()
-      sleep(1)
-    }
+    const players = R.values(await s.players(batch, true))
     const commitResults = await R.pipe(
       // Flatten into a 1d array
       R.flatten,

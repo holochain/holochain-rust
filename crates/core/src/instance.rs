@@ -300,7 +300,7 @@ impl Instance {
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(State::from(state))),
+            state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,

@@ -93,7 +93,7 @@ pub async fn build_validation_package<'a>(
             agent::state::create_new_chain_header(
                 &entry,
                 &context.state()?.agent(),
-                &State::from(state),
+                &state,
                 &None,
                 provenances,
             )?

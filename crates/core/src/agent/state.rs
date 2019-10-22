@@ -240,7 +240,7 @@ fn reduce_commit_entry(
     let result = create_new_chain_header(
         &entry,
         agent_state,
-        &State::from(root_state.clone()),
+        &root_state,
         &maybe_link_update_delete,
         provenances,
     )
@@ -434,7 +434,7 @@ pub mod tests {
         let header = create_new_chain_header(
             &test_entry(),
             &agent_state,
-            &State::from(state),
+            &state,
             &None,
             &vec![],
         )

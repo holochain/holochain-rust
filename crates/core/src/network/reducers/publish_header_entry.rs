@@ -26,7 +26,7 @@ fn publish_header(
     chain_header: ChainHeader,
 ) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } =
-        create_entry_with_header_for_header(&State::from(root_state.clone()), chain_header)?;
+        create_entry_with_header_for_header(&root_state, chain_header)?;
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {

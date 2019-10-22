@@ -35,7 +35,7 @@ pub fn get_validation_package_definition(
             }
 
             let call = CallbackFnCall::new(
-                zome_name.as_ref().unwrap(),
+                zome_name.as_ref().expect("No zome_name in get_validation_package_defintion"),
                 "__hdk_get_validation_package_for_entry_type",
                 app_entry_type.clone(),
             );

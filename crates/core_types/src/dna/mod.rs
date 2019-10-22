@@ -587,6 +587,9 @@ pub mod tests {
             r#"{
                 "zomes": {
                     "zome1": {
+                        "code": {
+                            "code": ""
+                        },
                         "entry_types": {
                             "type1": {}
                         }

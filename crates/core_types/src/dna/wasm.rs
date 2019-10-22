@@ -104,11 +104,14 @@ pub struct DnaWasm {
 }
 
 impl DnaWasm {
-    /// Provide defaults for wasm entries in dna structs.
+    /// Provide basic placeholder for wasm entries in dna structs, used for testing only.
     pub fn new_invalid() -> Self {
-        debug!("DnaWasm::default() called from:\n{:?}", Backtrace::new());
+        debug!(
+            "DnaWasm::new_invalid() called from:\n{:?}",
+            Backtrace::new()
+        );
         DnaWasm {
-            code: Arc::new(vec![6, 6, 6]),
+            code: Arc::new(vec![]),
             module: empty_module(),
         }
     }

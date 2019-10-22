@@ -168,7 +168,10 @@ pub mod tests {
                 "config": {},
                 "entry_types": {},
                 "fn_delcarations": [],
-                "traits": {}
+                "traits": {},
+                "code": {
+                    "code": ""
+                }
             }"#,
         )
         .unwrap();

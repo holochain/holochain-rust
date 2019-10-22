@@ -64,11 +64,6 @@ with holonix.pkgs;
      config = config;
    }).buildInputs
 
-   # qt specific testing
-   ++ (holonix.pkgs.callPackage ./qt {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
     pkgs = holonix.pkgs;

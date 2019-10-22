@@ -3,7 +3,7 @@ import * as R from 'ramda'
 import { ScenarioApi } from '@holochain/try-o-rama/lib/api'
 import { Player } from '@holochain/try-o-rama/lib/player'
 import { ConductorConfig } from '@holochain/try-o-rama/lib/types'
-import { Batch } from '@holochain/try-o-rama/lib/stress'
+import { Batch } from '@holochain/fidget-spinner'
 
 const dna = Config.dna('https://github.com/holochain/passthrough-dna/releases/download/v0.0.3/passthrough-dna.dna.json', 'passthrough')
 

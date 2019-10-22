@@ -6,6 +6,7 @@ let
   ''
   set -euo pipefail
   hc-test-fmt
+  hn-rust-clippy
   hc-rust-test
   hc-app-spec-test
   '';

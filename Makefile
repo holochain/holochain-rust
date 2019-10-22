@@ -144,7 +144,7 @@ test_holochain: build_holochain
 	cd crates/core_types && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 	cd crates/dpki && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 	cd crates/hdk && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
-	cd crates/hdk-v2 && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/hdk_v2 && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 	cd crates/holochain && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
 	cd crates/net && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
 	cd crates/wasm_utils && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
@@ -204,7 +204,7 @@ build_holochain: wasm_build
 	cd crates/core_types && $(CARGO) build 
 	cd crates/dpki && $(CARGO) build 
 	cd crates/hdk && $(CARGO) build 
-	cd crates/hdk-v2 && $(CARGO) build 
+	cd crates/hdk_v2 && $(CARGO) build 
 	cd crates/holochain && $(CARGO) build 
 	cd crates/net && $(CARGO) build 
 	cd crates/wasm_utils && $(CARGO) build 

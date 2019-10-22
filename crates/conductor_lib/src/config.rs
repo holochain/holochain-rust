@@ -717,26 +717,26 @@ impl StorageConfiguration {
 
     fn is_file(&self) -> bool {
         match self {
-            StorageConfiguration::File => true,
+            StorageConfiguration::File { path }=> true,
             _ => false,
         }
     }
 
     fn is_pickle(&self) -> bool {
         match self {
-            StorageConfiguration::Pickle => true,
+            StorageConfiguration::Pickle { path } => true,
             _ => false,
         }
     }
 
     fn get_path(&self) -> Option<String> {
         if self.is_file() {
-            return(self::File(path))
+            return Some(StorageConfiguration::File { path })
         }
         if self.is_pickle() {
-            return Some(self::Pickle(path))
+            return Some(StorageConfiguration::Pickle { path })
         }
-        if self.is_memory {
+        else {
             return None
         }
     }

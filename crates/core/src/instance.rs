@@ -657,7 +657,7 @@ pub mod tests {
     pub fn can_clone_instance() {
         let instance = test_instance_blank();
         {
-            let instance2 = instance.clone();
+            let _instance2 = instance.clone();
         }
         // wait for the action thread to receive kill signal, if applicable
         std::thread::sleep(Duration::from_secs(2));

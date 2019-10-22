@@ -13,18 +13,20 @@ pub mod error;
 use lib3h_protocol::types::AgentPubKey;
 mod message_log;
 pub mod wire_message;
+pub mod websocket;
 
 pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-use lib3h::transport::websocket::streams::*;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
     types::SpaceHash,
     uri::Lib3hUri,
 };
+
+use websocket::streams::{StreamEvent, StreamManager};
 pub use wire_message::{WireError, WireMessage};
 
 use log::*;

@@ -1,6 +1,6 @@
 extern crate structopt;
 
-use lib3h::transport::websocket::{
+use sim2h::websocket::{
     streams::*,
     tls::{TlsCertificate, TlsConfig},
 };

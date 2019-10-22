@@ -14,7 +14,6 @@ members = [
   "crates/net",
   "crates/sim2h",
   "crates/sim2h_server",
-  "benchmarks",
 ]
 exclude = [
   "test_utils",

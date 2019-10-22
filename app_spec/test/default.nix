@@ -35,15 +35,7 @@ let
   hc-conductor-install
   (cd app_spec && APP_SPEC_NETWORK_TYPE="sim2h" ./build_and_test.sh);
   '';
-
-  name-sim2h-server = "hc-sim2h-server";
-
-  script-sim2h-server = pkgs.writeShellScriptBin name-sim2h-server ''
-  set -euo pipefail
-  cargo install sim2h_server -f --git https://github.com/holochain/sim2h
-  RUST_LOG=debug sim2h_server "$@"
-  '';
 in
 {
- buildInputs = [ script-n3h script-memory script-sim1h script-sim2h script-sim2h-server ];
+ buildInputs = [ script-n3h script-memory script-sim1h script-sim2h ];
 }

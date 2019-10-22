@@ -46,7 +46,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 ))
                 .spawn(move || {
                     if let Err(error) = context.block_on(handle_custom_direct_message(
-                        message_data.from_agent_id,
+                        message_data.from_agent_id.into(),
                         message_data.request_id,
                         custom_direct_message,
                         context.clone(),
@@ -72,7 +72,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 ))
                 .spawn(move || {
                     context.block_on(respond_validation_package_request(
-                        message_data.from_agent_id,
+                        message_data.from_agent_id.into(),
                         message_data.request_id,
                         address,
                         context.clone(),

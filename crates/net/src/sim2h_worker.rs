@@ -26,6 +26,7 @@ use lib3h_protocol::{
     protocol::*,
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
+    types::{AgentPubKey, NetworkHash, NodePubKey, SpaceHash},
     uri::Lib3hUri,
     Address,
 };
@@ -90,10 +91,10 @@ impl Sim2hWorker {
     ) -> NetResult<Self> {
         let transport_raw = GhostTransportWebsocket::new(
             // not used currently inside GhostTransportWebsocket:
-            Address::from("sim2h-worker-transport"),
+            NodePubKey::from("sim2h-worker-transport"),
             TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
             // not used currently inside GhostTransportWebsocket:\
-            Address::from("sim2h-network"),
+            NetworkHash::from("sim2h-network"),
         );
 
         let mut transport: TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket> =
@@ -220,8 +221,8 @@ impl Sim2hWorker {
                 self.to_core
                     .push(Lib3hServerProtocol::FailureResult(GenericResultData {
                         request_id: connect_data.request_id,
-                        space_address: Address::new().into(),
-                        to_agent_id: Address::new(),
+                        space_address: SpaceHash::default().into(),
+                        to_agent_id: AgentPubKey::default(),
                         result_info: Opaque::new(),
                     }));
                 Ok(())

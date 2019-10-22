@@ -13,7 +13,7 @@ mod tcp;
 pub mod tls;
 mod wss_info;
 
-use lib3h::transport::{error::TransportResult};
+use lib3h::transport::error::TransportResult;
 use lib3h_protocol::uri::Lib3hUri;
 use wss_info::WssInfo;
 

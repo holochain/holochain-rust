@@ -1,16 +1,12 @@
-use crate::{
-    websocket::{
-        tls::TlsConfig, wss_info::WssInfo, BaseStream, SocketMap, TlsConnectResult,
-        TlsMidHandshake, TlsSrvMidHandshake, TlsStream, WsConnectResult, WsMidHandshake,
-        WsSrvAcceptResult, WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake,
-        WssSrvAcceptResult, WssSrvMidHandshake, WssStream,
-    },
+use crate::websocket::{
+    tls::TlsConfig, wss_info::WssInfo, BaseStream, SocketMap, TlsConnectResult, TlsMidHandshake,
+    TlsSrvMidHandshake, TlsStream, WsConnectResult, WsMidHandshake, WsSrvAcceptResult,
+    WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake, WssSrvAcceptResult,
+    WssSrvMidHandshake, WssStream,
 };
 use log::*;
 
-use lib3h::transport::{
-    error::{TransportError, TransportResult},
-};
+use lib3h::transport::error::{TransportError, TransportResult};
 
 use lib3h_protocol::{uri::Lib3hUri, DidWork};
 use std::{

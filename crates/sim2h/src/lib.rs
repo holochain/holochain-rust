@@ -12,8 +12,8 @@ pub mod crypto;
 pub mod error;
 use lib3h_protocol::types::AgentPubKey;
 mod message_log;
-pub mod wire_message;
 pub mod websocket;
+pub mod wire_message;
 
 pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};

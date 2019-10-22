@@ -1,15 +1,11 @@
 //! abstraction for working with Websocket connections
 //! TcpStream specific functions
-use lib3h::transport::{
-    error::{ErrorKind, TransportError, TransportResult},
-};
+use lib3h::transport::error::{ErrorKind, TransportError, TransportResult};
 
-use crate::{
-    websocket::{
-        streams::{Acceptor, Bind, StreamManager},
-        tls::TlsConfig,
-        wss_info::WssInfo,
-    },
+use crate::websocket::{
+    streams::{Acceptor, Bind, StreamManager},
+    tls::TlsConfig,
+    wss_info::WssInfo,
 };
 use log::*;
 

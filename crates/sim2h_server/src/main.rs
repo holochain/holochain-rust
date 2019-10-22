@@ -1,12 +1,14 @@
 extern crate structopt;
 
-use sim2h::websocket::{
-    streams::*,
-    tls::{TlsCertificate, TlsConfig},
-};
 use lib3h_protocol::uri::Builder;
 use log::error;
-use sim2h::{Sim2h, MESSAGE_LOGGER};
+use sim2h::{
+    websocket::{
+        streams::*,
+        tls::{TlsCertificate, TlsConfig},
+    },
+    Sim2h, MESSAGE_LOGGER,
+};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
 

@@ -1109,8 +1109,7 @@ impl Conductor {
                     let keystore_file_path = PathBuf::from(agent_config.keystore_file.clone());
                     let keystore = Arc::get_mut(&mut self.key_loader).unwrap()(
                         &keystore_file_path,
-                        self.passphrase_manager.clone(),
-                        self.hash_config.clone(),
+                        self.passphrase_manager.clone()
                     )
                     .map_err(|_| {
                         HolochainError::ConfigError(format!(
@@ -1183,11 +1182,11 @@ impl Conductor {
     /// Default KeyLoader that actually reads files from the filesystem
     fn load_key(
         file: &PathBuf,
-        passphrase_manager: Arc<PassphraseManager>,
+        passphrase_manager: Arc<PassphraseManager>
     ) -> Result<Keystore, HolochainError> {
         notify(format!("Reading keystore from {}", file.display()));
 
-        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, hash_config)?;
+        let keystore = Keystore::new_from_file(file.clone(), passphrase_manager, None)?;
         Ok(keystore)
     }
 
@@ -1405,7 +1404,7 @@ pub mod tests {
     };
     use holochain_core_types::dna;
     use holochain_dpki::{
-        key_bundle::KeyBundle, password_encryption::PwHashConfig, CRYPTO, SEED_SIZE,
+        key_bundle::KeyBundle, CRYPTO, SEED_SIZE,
     };
     use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::wasm_target_dir;

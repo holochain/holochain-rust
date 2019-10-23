@@ -14,7 +14,7 @@ use holochain_dpki::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, secbuf_from_array, secbuf_new_insecure_from_string, SeedContext,
     },
-    CRYPTO, SEED_SIZE,
+    SEED_SIZE
 };
 
 use lib3h_sodium::{

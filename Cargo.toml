@@ -23,8 +23,8 @@ exclude = [
 ]
 
 [patch.crates-io]
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
+lib3h = { path = "/home/neonphog/projects/lib3h/crates/lib3h" }
+lib3h_protocol = { path = "/home/neonphog/projects/lib3h/crates/lib3h_protocol" }
+lib3h_crypto_api = { path = "/home/neonphog/projects/lib3h/crates/crypto_api" }
+lib3h_sodium = { path = "/home/neonphog/projects/lib3h/crates/sodium" }
+lib3h_zombie_actor = { path = "/home/neonphog/projects/lib3h/crates/zombie_actor" }

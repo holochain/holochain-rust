@@ -1,3 +1,4 @@
+extern crate lib3h_crypto_api;
 extern crate env_logger;
 //#[macro_use]
 extern crate log;
@@ -22,7 +23,8 @@ use cache::*;
 use connection_state::*;
 use detach::prelude::*;
 use holochain_tracing::Span;
-use lib3h::transport::protocol::*;
+use lib3h_crypto_api::CryptoSystem;
+use lib3h::{rrdht_util::*, transport::protocol::*};
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -38,6 +40,7 @@ use rand::Rng;
 use std::{collections::HashMap, convert::TryFrom};
 
 pub struct Sim2h {
+    crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
@@ -46,10 +49,11 @@ pub struct Sim2h {
 }
 
 impl Sim2h {
-    pub fn new(transport: DynTransportActor, bind_spec: Lib3hUri) -> Self {
+    pub fn new(crypto: Box<dyn CryptoSystem>, transport: DynTransportActor, bind_spec: Lib3hUri) -> Self {
         let t = Detach::new(TransportActorParentWrapperDyn::new(transport, "transport_"));
 
         let mut sim2h = Sim2h {
+            crypto,
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
@@ -114,9 +118,15 @@ impl Sim2h {
         trace!("join entered");
         let result =
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
+                let dht_data = DhtData {
+                    location: calc_location_for_id(
+                        &self.crypto,
+                        &data.agent_id.to_string(),
+                    )?,
+                };
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::Joined(data.space_address.clone(), data.agent_id.clone()),
+                    ConnectionState::Joined(data.space_address.clone(), data.agent_id.clone(), dht_data),
                 );
                 if !self.spaces.contains_key(&data.space_address) {
                     self.spaces
@@ -163,7 +173,7 @@ impl Sim2h {
 
     // removes an agent from a space
     fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
+        if let Some(ConnectionState::Joined(space_address, agent_id, _dht_data)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
                 Err(SPACE_MISMATCH_ERR_STR.into())
             } else {
@@ -178,7 +188,7 @@ impl Sim2h {
     // removes a uri from connection and from spaces
     fn disconnect(&self, uri: &Lib3hUri) {
         trace!("disconnect entered");
-        if let Some(ConnectionState::Joined(space_address, agent_id)) =
+        if let Some(ConnectionState::Joined(space_address, agent_id, _dht_data)) =
             self.connection_states.write().remove(uri)
         {
             self.spaces
@@ -265,7 +275,7 @@ impl Sim2h {
 
             // if the agent sending the messages has been vetted and is in the space
             // then build a message to be proxied to the correct destination, and forward it
-            ConnectionState::Joined(space_address, agent_id) => {
+            ConnectionState::Joined(space_address, agent_id, _dht_data) => {
                 if &agent_id != signer {
                     return Err(SIGNER_MISMATCH_ERR_STR.into());
                 }
@@ -668,7 +678,13 @@ pub mod tests {
         ghost_transport_memory::*, memory_server::get_memory_verse,
     };
     use lib3h_protocol::data_types::*;
-    use lib3h_sodium::secbuf::SecBuf;
+    use lib3h_sodium::{SodiumCryptoSystem, secbuf::SecBuf};
+
+    lazy_static! {
+        static ref CRYPTO: Box<dyn CryptoSystem> = {
+            Box::new(SodiumCryptoSystem::new().set_pwhash_interactive())
+        };
+    }
 
     // for this to actually show log entries you also have to run the tests like this:
     // RUST_LOG=lib3h=debug cargo test -- --nocapture
@@ -774,13 +790,21 @@ pub mod tests {
 
     fn make_test_sim2h_nonet() -> Sim2h {
         let transport = Box::new(GhostTransportMemory::new("null".into(), "nullnet".into()));
-        Sim2h::new(transport, Lib3hUri::with_undefined())
+        Sim2h::new(
+            CRYPTO.box_clone(),
+            transport,
+            Lib3hUri::with_undefined()
+        )
     }
 
     fn make_test_sim2h_memnet(netname: &str) -> Sim2h {
         let transport_id = "test_transport".into();
         let transport = Box::new(GhostTransportMemory::new(transport_id, netname));
-        Sim2h::new(transport, Lib3hUri::with_undefined())
+        Sim2h::new(
+            CRYPTO.box_clone(),
+            transport,
+            Lib3hUri::with_undefined()
+        )
     }
 
     fn make_signed(
@@ -822,7 +846,7 @@ pub mod tests {
         // pretend the agent has joined the space
         let _ = sim2h.connection_states.write().insert(
             uri.clone(),
-            ConnectionState::Joined("fake_agent".into(), "fake_space".into()),
+            ConnectionState::Joined("fake_agent".into(), "fake_space".into(), DhtData { location: 42.into() }),
         );
         // if we get a second incoming connection, the state should be reset.
         let result = sim2h.handle_incoming_connect(uri.clone());
@@ -855,8 +879,9 @@ pub mod tests {
         let result = sim2h.get_connection(&uri).clone();
         assert_eq!(
             format!(
-                "Some(Joined(SpaceHash(HashString(\"fake_space_address\")), AgentPubKey(HashString(\"{}\"))))",
-                data.agent_id
+                "Some(Joined(SpaceHash(HashString(\"fake_space_address\")), AgentPubKey(HashString(\"{}\")), DhtData {{ location: Location({}) }}))",
+                data.agent_id,
+                u32::from(calc_location_for_id(&*CRYPTO, &data.agent_id.to_string()).unwrap()),
             ),
             format!("{:?}", result)
         );
@@ -996,8 +1021,9 @@ pub mod tests {
         let result = sim2h.get_connection(&uri).clone();
         assert_eq!(
             format!(
-                "Some(Joined(SpaceHash(HashString(\"fake_space_address\")), AgentPubKey(HashString(\"{}\"))))",
-                space_data.agent_id
+                "Some(Joined(SpaceHash(HashString(\"fake_space_address\")), AgentPubKey(HashString(\"{}\")), DhtData {{ location: Location({}) }}))",
+                space_data.agent_id,
+                u32::from(calc_location_for_id(&*CRYPTO, &space_data.agent_id.to_string()).unwrap()),
             ),
             format!("{:?}", result)
         );

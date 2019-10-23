@@ -5,6 +5,7 @@ use holochain_core_types::{
     sync::HcMutex as Mutex,
 };
 use holochain_dpki::{
+    CRYPTO,
     key_blob::{BlobType, Blobbable, KeyBlob},
     key_bundle::KeyBundle,
     keypair::{EncryptingKeyPair, KeyPair, SigningKeyPair},

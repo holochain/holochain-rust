@@ -431,7 +431,6 @@ dependencies = [
 [[package]]
 name = "detach"
 version = "0.0.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "difference"
@@ -1731,7 +1730,7 @@ dependencies = [
 [[package]]
 name = "lib3h_crypto_api"
 version = "0.0.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/holochain/lib3h?branch=crypto-system-fix#eb34e01df63426fde01c12ad6acfb8e8cbe76517"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",

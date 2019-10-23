@@ -1,8 +1,9 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{error::HcResult, signature::Signature};
-use holochain_dpki::keypair::generate_random_sign_keypair;
+use holochain_dpki::{
+    keypair::generate_random_sign_keypair, utils::secbuf_new_insecure_from_string,
+};
 use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
-use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -35,12 +36,12 @@ pub fn sign_one_time(payloads: Vec<String>) -> HcResult<SignOneTimeResult> {
     let mut sign_keys = generate_random_sign_keypair()?;
     let mut signatures = Vec::new();
     for data in payloads {
-        let mut data_buf = SecBuf::with_insecure_from_string(data);
+        let mut data_buf = secbuf_new_insecure_from_string(data);
 
-        let mut signature_buf = sign_keys.sign(&mut data_buf)?;
+        let signature_buf = sign_keys.sign(&mut data_buf)?;
         let buf = signature_buf.read_lock();
         // Return as base64 encoded string
-        let signature_str = base64::encode(&**buf);
+        let signature_str = base64::encode(&*buf);
         signatures.push(Signature::from(signature_str))
     }
     Ok(SignOneTimeResult {

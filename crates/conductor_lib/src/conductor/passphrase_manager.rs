@@ -1,6 +1,8 @@
 use crossbeam_channel::{unbounded, Sender};
+
 use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
-use lib3h_sodium::secbuf::SecBuf;
+use holochain_dpki::{utils::secbuf_new_insecure_from_string, SecBuf, CRYPTO};
+
 #[cfg(unix)]
 use log::Level;
 use std::{
@@ -81,7 +83,7 @@ impl PassphraseManager {
 
         match *passphrase {
             Some(ref mut passphrase_buf) => {
-                let mut new_passphrase_buf = SecBuf::with_insecure(passphrase_buf.len());
+                let mut new_passphrase_buf = CRYPTO.buf_new_insecure(passphrase_buf.len());
                 new_passphrase_buf.write(0, &*(passphrase_buf.read_lock()))?;
                 Ok(new_passphrase_buf)
             }
@@ -111,7 +113,7 @@ impl PassphraseService for PassphraseServiceCmd {
 
         // Move passphrase in secure memory
         let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
-        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+        let mut passphrase_buf = CRYPTO.buf_new_insecure(passphrase_bytes.len());
         passphrase_buf.write(0, passphrase_bytes.as_slice())?;
 
         // Overwrite the unsafe passphrase memory with zeros
@@ -129,7 +131,7 @@ pub struct PassphraseServiceMock {
 
 impl PassphraseService for PassphraseServiceMock {
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
-        Ok(SecBuf::with_insecure_from_string(self.passphrase.clone()))
+        Ok(secbuf_new_insecure_from_string(self.passphrase.clone()))
     }
 }
 
@@ -205,7 +207,7 @@ impl PassphraseService for PassphraseServiceUnixSocket {
 
         // Move passphrase in secure memory
         let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
-        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+        let mut passphrase_buf = CRYPTO.buf_new_insecure(passphrase_bytes.len());
         passphrase_buf.write(0, passphrase_bytes.as_slice())?;
 
         // Overwrite the unsafe passphrase memory with zeros

@@ -1,7 +1,5 @@
-pub use aead::{ABYTES, NONCEBYTES};
+use crate::{utils::secbuf_from_array, SecBuf, CRYPTO};
 use holochain_core_types::error::HcResult;
-use lib3h_sodium::{aead, kx, pwhash, secbuf::SecBuf};
-pub use pwhash::SALTBYTES;
 use serde_derive::{Deserialize, Serialize};
 
 pub type OpsLimit = u64;
@@ -26,35 +24,52 @@ pub(crate) struct EncryptedData {
 /// @param {Option<PwHashConfig>} config - Optional hashing settings
 /// TODO make salt optional
 pub(crate) fn pw_hash(
+    hash_result: &mut SecBuf,
     password: &mut SecBuf,
     salt: &mut SecBuf,
-    hash_result: &mut SecBuf,
-    config: Option<PwHashConfig>,
 ) -> HcResult<()> {
-    let config = config.unwrap_or(PwHashConfig(
-        pwhash::OPSLIMIT_SENSITIVE,
-        pwhash::MEMLIMIT_SENSITIVE,
-        pwhash::ALG_ARGON2ID13,
-    ));
-    pwhash::hash(password, config.0, config.1, config.2, salt, hash_result)?;
+    CRYPTO.pwhash(hash_result, password, salt)?;
     Ok(())
 }
 
 /// Simple API for encrypting a buffer with a pwhash-ed passphrase
 /// @param {Buffer} data - the data to encrypt
 /// @param {SecBuf} passphrase - the passphrase to use for encrypting
-/// @param {Option<PwHashConfig>} config - Optional encrypting settings
 /// @return {EncryptedData} - the resulting encrypted data
-pub(crate) fn pw_enc(
+pub(crate) fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> HcResult<EncryptedData> {
+    let mut salt = CRYPTO.buf_new_insecure(CRYPTO.pwhash_salt_bytes());
+    CRYPTO.randombytes_buf(&mut salt)?;
+    let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
+    CRYPTO.randombytes_buf(&mut nonce)?;
+    pw_enc_base(data, passphrase, &mut salt, &mut nonce)
+}
+
+pub(crate) fn pw_enc_base(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
-    config: Option<PwHashConfig>,
+    mut salt: &mut SecBuf,
+    mut nonce: &mut SecBuf,
 ) -> HcResult<EncryptedData> {
-    let mut salt = SecBuf::with_insecure(SALTBYTES);
-    salt.randomize();
-    let mut nonce = SecBuf::with_insecure(NONCEBYTES);
-    nonce.randomize();
-    pw_enc_base(data, passphrase, &mut salt, &mut nonce, config)
+    let mut secret = CRYPTO.buf_new_secure(CRYPTO.kx_session_key_bytes());
+    let mut cipher = CRYPTO.buf_new_insecure(data.len() + CRYPTO.aead_auth_bytes());
+    pw_hash(&mut secret, passphrase, &mut salt)?;
+    CRYPTO.aead_encrypt(&mut cipher, data, None, &mut nonce, &mut secret)?;
+    // aead_encrypt!(CRYPTO =>
+    //               cipher: &mut cipher,
+    //               message: data,
+    //               adata: None,
+    //               nonce: &mut nonce,
+    //               secret: &mut secret)?;
+
+    let salt = salt.read_lock().to_vec();
+    let nonce = nonce.read_lock().to_vec();
+    let cipher = cipher.read_lock().to_vec();
+    // Done
+    Ok(EncryptedData {
+        salt,
+        nonce,
+        cipher,
+    })
 }
 
 /// Simple API for encrypting a buffer with a pwhash-ed passphrase but uses a zero nonce
@@ -68,80 +83,45 @@ pub(crate) fn pw_enc(
 pub(crate) fn pw_enc_zero_nonce(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
-    config: Option<PwHashConfig>,
 ) -> HcResult<EncryptedData> {
-    let mut salt = SecBuf::with_insecure(SALTBYTES);
-    salt.randomize();
-    let mut nonce = SecBuf::with_insecure(NONCEBYTES);
-    nonce.write(0, &[0; NONCEBYTES])?;
-    let data = pw_enc_base(data, passphrase, &mut salt, &mut nonce, config)?;
+    let mut salt = CRYPTO.buf_new_insecure(CRYPTO.pwhash_salt_bytes());
+    CRYPTO.randombytes_buf(&mut salt)?;
+    let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
+    let len = CRYPTO.aead_nonce_bytes();
+    let slice = vec![0; len];
+    nonce.write(0, &slice)?;
+    let data = pw_enc_base(data, passphrase, &mut salt, &mut nonce)?;
     Ok(data)
-}
-
-/// Private general wrapper of pw_enc
-fn pw_enc_base(
-    data: &mut SecBuf,
-    passphrase: &mut SecBuf,
-    mut salt: &mut SecBuf,
-    mut nonce: &mut SecBuf,
-    config: Option<PwHashConfig>,
-) -> HcResult<EncryptedData> {
-    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-    let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);
-    pw_hash(passphrase, &mut salt, &mut secret, config)?;
-    aead::enc(data, &mut secret, None, &mut nonce, &mut cipher)?;
-
-    let salt = salt.read_lock().to_vec();
-    let nonce = nonce.read_lock().to_vec();
-    let cipher = cipher.read_lock().to_vec();
-    // Done
-    Ok(EncryptedData {
-        salt,
-        nonce,
-        cipher,
-    })
 }
 
 /// Simple API for decrypting a buffer with a pwhash-ed passphrase
 /// @param {EncryptedData} encrypted_data - the data to decrypt
 /// @param {SecBuf} passphrase - the passphrase to use for encrypting
 /// @param {SecBuf} decrypted_data - the dresulting ecrypted data
-/// @param {Option<PwHashConfig>} config - Optional decrypting settings
 pub(crate) fn pw_dec(
     encrypted_data: &EncryptedData,
     passphrase: &mut SecBuf,
     decrypted_data: &mut SecBuf,
-    config: Option<PwHashConfig>,
 ) -> HcResult<()> {
-    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-    let mut salt = SecBuf::with_insecure(SALTBYTES);
-    salt.from_array(&encrypted_data.salt)
-        .expect("Failed to write SecBuf with array");
-    let mut nonce = SecBuf::with_insecure(encrypted_data.nonce.len());
-    nonce
-        .from_array(&encrypted_data.nonce)
-        .expect("Failed to write SecBuf with array");
-    let mut cipher = SecBuf::with_insecure(encrypted_data.cipher.len());
-    cipher
-        .from_array(&encrypted_data.cipher)
-        .expect("Failed to write SecBuf with array");
-    pw_hash(passphrase, &mut salt, &mut secret, config)?;
-    aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
+    let mut secret = CRYPTO.buf_new_secure(CRYPTO.kx_session_key_bytes());
+    let mut salt = CRYPTO.buf_new_insecure(CRYPTO.pwhash_salt_bytes());
+    secbuf_from_array(&mut salt, &encrypted_data.salt)?;
+    let mut nonce = CRYPTO.buf_new_insecure(encrypted_data.nonce.len());
+    secbuf_from_array(&mut nonce, &encrypted_data.nonce)?;
+    let mut cipher = CRYPTO.buf_new_insecure(encrypted_data.cipher.len());
+    secbuf_from_array(&mut cipher, &encrypted_data.cipher)?;
+    pw_hash(&mut secret, passphrase, &mut salt)?;
+    CRYPTO.aead_decrypt(decrypted_data, &mut cipher, None, &mut nonce, &mut secret)?;
     Ok(())
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-
-    pub const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
-        pwhash::OPSLIMIT_INTERACTIVE,
-        pwhash::MEMLIMIT_INTERACTIVE,
-        pwhash::ALG_ARGON2ID13,
-    ));
+    use crate::utils::tests::TEST_CRYPTO;
 
     fn test_password() -> SecBuf {
-        let mut password = SecBuf::with_insecure(pwhash::HASHBYTES);
+        let mut password = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
         {
             let mut password = password.write_lock();
             password[0] = 42;
@@ -153,63 +133,45 @@ pub(crate) mod tests {
     #[test]
     fn it_should_encrypt_data() {
         let mut password = test_password();
-        let mut data = SecBuf::with_insecure(32);
+        let mut data = TEST_CRYPTO.buf_new_insecure(32);
         {
             let mut data = data.write_lock();
             data[0] = 88;
             data[1] = 101;
         }
-        let encrypted_data = pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
+        let encrypted_data = pw_enc(&mut data, &mut password).unwrap();
 
-        let mut decrypted_data = SecBuf::with_insecure(32);
-        pw_dec(
-            &encrypted_data,
-            &mut password,
-            &mut decrypted_data,
-            TEST_CONFIG,
-        )
-        .unwrap();
+        let mut decrypted_data = TEST_CRYPTO.buf_new_insecure(32);
+        pw_dec(&encrypted_data, &mut password, &mut decrypted_data).unwrap();
 
         let data = data.read_lock();
         let decrypted_data = decrypted_data.read_lock();
-        assert_eq!(format!("{:?}", *decrypted_data), format!("{:?}", *data));
+        assert_eq!(format!("{:?}", decrypted_data), format!("{:?}", data));
     }
 
     #[test]
     fn it_should_generate_pw_hash_with_salt() {
         let mut password = test_password();
-        let mut salt = SecBuf::with_insecure(SALTBYTES);
-        let mut hashed_password = SecBuf::with_insecure(pwhash::HASHBYTES);
-        pw_hash(&mut password, &mut salt, &mut hashed_password, TEST_CONFIG).unwrap();
+        let mut salt = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_salt_bytes());
+        let mut hashed_password = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
+        pw_hash(&mut hashed_password, &mut password, &mut salt).unwrap();
         println!("salt = {:?}", salt);
         {
             let pw2_hash = hashed_password.read_lock();
             assert_eq!(
                 "[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",
-                format!("{:?}", *pw2_hash),
+                format!("{:?}", pw2_hash),
             );
         }
         // hash with different salt should have different result
-        salt.randomize();
-        let mut hashed_password_b = SecBuf::with_insecure(pwhash::HASHBYTES);
-        pw_hash(
-            &mut password,
-            &mut salt,
-            &mut hashed_password_b,
-            TEST_CONFIG,
-        )
-        .unwrap();
+        TEST_CRYPTO.randombytes_buf(&mut salt).expect("should work");
+        let mut hashed_password_b = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
+        pw_hash(&mut hashed_password_b, &mut password, &mut salt).unwrap();
         assert!(hashed_password.compare(&mut hashed_password_b) != 0);
 
         // same hash should have same result
-        let mut hashed_password_c = SecBuf::with_insecure(pwhash::HASHBYTES);
-        pw_hash(
-            &mut password,
-            &mut salt,
-            &mut hashed_password_c,
-            TEST_CONFIG,
-        )
-        .unwrap();
+        let mut hashed_password_c = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
+        pw_hash(&mut hashed_password_c, &mut password, &mut salt).unwrap();
         assert!(hashed_password_c.compare(&mut hashed_password_b) == 0);
     }
 

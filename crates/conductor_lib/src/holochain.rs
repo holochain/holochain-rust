@@ -47,8 +47,8 @@
 //!
 //! // We need to provide a cryptographic key that represents the agent.
 //! // Creating a new random one on the fly:
-//! let mut seed = SecBuf::with_insecure(SEED_SIZE);
-//! seed.randomize();
+//! let mut seed = CRYPTO.buf_new_insecure(SEED_SIZE);
+//! CRYPTO.randombytes_buf(&mut seed);
 //!
 //! let keybundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
 //!

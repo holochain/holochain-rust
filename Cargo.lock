@@ -1200,6 +1200,7 @@ dependencies = [
  "holochain_core_types 0.0.33-alpha5",
  "holochain_persistence_api 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",

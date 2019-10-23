@@ -2,9 +2,9 @@ use holochain_core_types::{agent::AgentId, sync::HcMutex as Mutex};
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE,CRYPTO,
+    utils::{secbuf_from_array,secbuf_new_insecure_from_string}};
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
-use lib3h_sodium::secbuf::SecBuf;
 use std::{collections::HashMap, sync::Arc};
 
 lazy_static! {
@@ -15,7 +15,7 @@ lazy_static! {
 pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
     let nick = nick.into();
     // Create deterministic seed from nick:
-    let mut seed = SecBuf::with_insecure(SEED_SIZE);
+    let mut seed = CRYPTO.buf_new_insecure(SEED_SIZE);
     let nick_bytes = nick.as_bytes();
     let seed_bytes: Vec<u8> = (1..SEED_SIZE)
         .map(|num| {
@@ -63,14 +63,14 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
         .lock()
         .map(|mut keybundle| {
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload);
+            let mut message = secbuf_new_insecure_from_string(payload);
 
             // Create signature
-            let mut message_signed = keybundle.sign(&mut message).expect("Mock signing failed.");
+            let message_signed = keybundle.sign(&mut message).expect("Mock signing failed.");
             let message_signed = message_signed.read_lock();
 
             // Return as base64 encoded string
-            base64::encode(&**message_signed)
+            base64::encode(&*message_signed)
         })
         .unwrap()
 }
@@ -96,16 +96,16 @@ pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String {
         .lock()
         .map(|mut keybundle| {
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload);
+            let mut message = secbuf_new_insecure_from_string(payload);
 
             // Create signature
-            let mut message_signed = keybundle
+            let message_signed = keybundle
                 .encrypt(&mut message)
                 .expect("Mock signing failed.");
             let message_signed = message_signed.read_lock();
 
             // Return as base64 encoded string
-            base64::encode(&**message_signed)
+            base64::encode(&*message_signed)
         })
         .unwrap()
 }
@@ -132,11 +132,11 @@ pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String {
         .map(|mut keybundle| {
             let decoded_base_64 = base64::decode(&payload).unwrap();
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure(decoded_base_64.len());
-            message.from_array(&decoded_base_64).unwrap();
+            let mut message = CRYPTO.buf_new_insecure(decoded_base_64.len());
+            secbuf_from_array(&mut message, &decoded_base_64).unwrap();
 
             // Create signature
-            let mut decrypted = keybundle
+            let decrypted = keybundle
                 .decrypt(&mut message)
                 .expect("Mock signing failed.");
             let decrypted_lock = decrypted.read_lock();

@@ -10,10 +10,8 @@ use holochain_core_types::{
     signature::Provenance,
     sync::{HcMutex as Mutex, HcRwLock as RwLock},
 };
-use holochain_dpki::key_bundle::KeyBundle;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use lib3h_sodium::secbuf::SecBuf;
 use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -24,7 +22,11 @@ use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
-use holochain_dpki::utils::SeedContext;
+use holochain_dpki::{
+    key_bundle::KeyBundle,
+    utils::{secbuf_from_array, secbuf_new_insecure_from_string, SeedContext},
+    CRYPTO,
+};
 use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
@@ -919,11 +921,11 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = secbuf_new_insecure_from_string(payload.clone());
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut message_signature = keybundle
+            let message_signature = keybundle
                 .lock()
                 .unwrap()
                 .sign(&mut message)
@@ -931,7 +933,7 @@ impl ConductorApiBuilder {
 
             let message_signature = message_signature.read_lock();
             // Return as base64 encoded string
-            let signature = base64::encode(&**message_signature);
+            let signature = base64::encode(&*message_signature);
 
             Ok(json!({ "signature": signature }))
         });
@@ -943,11 +945,11 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = secbuf_new_insecure_from_string(payload.clone());
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut encrypted_message = keybundle
+            let encrypted_message = keybundle
                 .lock()
                 .unwrap()
                 .encrypt(&mut message)
@@ -955,7 +957,7 @@ impl ConductorApiBuilder {
 
             let encrypted_message = encrypted_message.read_lock();
             // Return as base64 encoded string
-            let encrypted_message = base64::encode(&**encrypted_message);
+            let encrypted_message = base64::encode(&*encrypted_message);
 
             Ok(json!({ "message": encrypted_message }))
         });
@@ -969,20 +971,19 @@ impl ConductorApiBuilder {
             //decoded base64 string
             let decoded_message = base64::decode(&payload)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
-            let mut decoded_message_buf = SecBuf::with_insecure(decoded_message.len());
-            decoded_message_buf
-                .from_array(&decoded_message)
+            let mut decoded_message_buf = CRYPTO.buf_new_insecure(decoded_message.len());
+            secbuf_from_array(&mut decoded_message_buf, &decoded_message)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut decrypted_buf = keybundle
+            let decrypted_buf = keybundle
                 .lock()
                 .unwrap()
                 .decrypt(&mut decoded_message_buf)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
 
             let decrypted_bytes = decrypted_buf.read_lock();
-            let decrypted_string = std::str::from_utf8(&**decrypted_bytes)
+            let decrypted_string = std::str::from_utf8(&*decrypted_bytes)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             Ok(json!({ "message": decrypted_string }))
         });

@@ -1,11 +1,10 @@
 #![allow(warnings)]
-use lib3h_sodium::{kx, secbuf::SecBuf, sign, *};
 
 use crate::{
     keypair::*,
     password_encryption::{self, EncryptedData, PwHashConfig},
     seed::{Seed, SeedType},
-    utils, SEED_SIZE,
+    utils, SecBuf, CRYPTO, SEED_SIZE,
 };
 use holochain_core_types::{agent::Base32, error::HcResult};
 use serde_json::json;
@@ -60,26 +59,25 @@ impl KeyBundle {
     }
 
     pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
-        let mut encrypted_data = SecBuf::with_insecure(
-            data.len() + lib3h_sodium::aead::ABYTES + lib3h_sodium::aead::NONCEBYTES,
-        );
+        let mut encrypted_data = CRYPTO
+            .buf_new_insecure(data.len() + CRYPTO.aead_auth_bytes() + CRYPTO.aead_nonce_bytes());
         self.enc_keys.encrypt(data, &mut encrypted_data);
-        Ok(encrypted_data.clone())
+        Ok(encrypted_data.box_clone())
     }
 
     pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
-        let mut decrypted_data = SecBuf::with_insecure(
-            (cipher.len() - lib3h_sodium::aead::NONCEBYTES) + lib3h_sodium::aead::ABYTES,
+        let mut decrypted_data = CRYPTO.buf_new_insecure(
+            (cipher.len() - lib3h_sodium::aead::NONCEBYTES) + CRYPTO.aead_auth_bytes(),
         );
         self.enc_keys.decrypt(cipher, &mut decrypted_data);
-        Ok(decrypted_data.clone())
+        Ok(decrypted_data.box_clone())
     }
 
     /// verify data that was signed with our private signing key
     /// @param {SecBuf} data buffer to verify
     /// @param {SecBuf} signature candidate for that data buffer
     /// @return true if verification succeeded
-    pub fn verify(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
+    pub fn verify(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> HcResult<bool> {
         self.sign_keys.verify(data, signature)
     }
 
@@ -92,7 +90,11 @@ impl KeyBundle {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::{keypair::*, utils::generate_random_seed_buf, SIGNATURE_SIZE};
+    use crate::{
+        keypair::*,
+        utils::{generate_random_seed_buf, tests::TEST_CRYPTO},
+        SIGNATURE_SIZE,
+    };
     use lib3h_sodium::pwhash;
 
     pub(crate) const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
@@ -134,26 +136,32 @@ pub(crate) mod tests {
         let mut bundle = test_generate_random_bundle();
 
         // Create random data
-        let mut message = SecBuf::with_insecure(16);
-        message.randomize();
+        let mut message = TEST_CRYPTO.buf_new_insecure(16);
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
 
         // sign it
         let mut signature = bundle.sign(&mut message).unwrap();
         // authentify signature
         let succeeded = bundle.verify(&mut message, &mut signature);
-        assert!(succeeded);
+        assert_eq!(succeeded, Ok(true));
 
         // Create random data
-        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
-        random_signature.randomize();
+        let mut random_signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
+        TEST_CRYPTO
+            .randombytes_buf(&mut random_signature)
+            .expect("should work");
         // authentify random signature
         let succeeded = bundle.verify(&mut message, &mut random_signature);
-        assert!(!succeeded);
+        assert_eq!(succeeded, Ok(false));
 
         // Randomize data again
-        message.randomize();
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         let succeeded = bundle.verify(&mut message, &mut signature);
-        assert!(!succeeded);
+        assert_eq!(succeeded, Ok(false));
     }
 
     #[test]
@@ -162,10 +170,12 @@ pub(crate) mod tests {
         let mut bundle = test_generate_random_bundle();
 
         // Create random data
-        let mut message = SecBuf::with_insecure(16);
-        message.randomize();
+        let mut message = TEST_CRYPTO.buf_new_insecure(16);
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         //encrypt it
-        let mut encrypted_message = bundle.encrypt(&mut message.clone()).unwrap();
+        let mut encrypted_message = bundle.encrypt(&mut message.box_clone()).unwrap();
 
         //decrypted same message
         let mut decrypted_message = bundle.decrypt(&mut encrypted_message).unwrap();

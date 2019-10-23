@@ -3,11 +3,10 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,
+    utils, SecBuf, CODEC_HCK0, CODEC_HCS0, CRYPTO, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};
-use lib3h_sodium::{kx, secbuf::SecBuf, sign};
 use serde_json::json;
 use std::str;
 
@@ -77,9 +76,9 @@ impl KeyPair for SigningKeyPair {
     fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self> {
         assert_eq!(seed.len(), SEED_SIZE);
         // Generate keys
-        let mut pub_sec_buf = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
-        let mut priv_sec_buf = SecBuf::with_secure(sign::SECRETKEYBYTES);
-        lib3h_sodium::sign::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
+        let mut pub_sec_buf = CRYPTO.buf_new_insecure(CRYPTO.sign_secret_key_bytes());
+        let mut priv_sec_buf = CRYPTO.buf_new_secure(CRYPTO.sign_secret_key_bytes());
+        CRYPTO.sign_seed_keypair(seed, &mut pub_sec_buf, &mut priv_sec_buf)?;
         // Convert and encode public key side
         let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
@@ -87,7 +86,7 @@ impl KeyPair for SigningKeyPair {
     }
 
     fn new_from_self(&mut self) -> HcResult<Self> {
-        Ok(SigningKeyPair::new(self.public(), self.private.clone()))
+        Ok(SigningKeyPair::new(self.public(), self.private.box_clone()))
     }
 }
 
@@ -107,8 +106,8 @@ impl SigningKeyPair {
     /// @param {SecBuf} data - the data to sign
     /// @return {SecBuf} signature - Empty SecBuf to be filled with the signature
     pub fn sign(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
-        let mut signature = SecBuf::with_insecure(SIGNATURE_SIZE);
-        lib3h_sodium::sign::sign(data, &mut self.private, &mut signature)?;
+        let mut signature = CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
+        CRYPTO.sign(&mut signature, data, &mut self.private)?;
         Ok(signature)
     }
 
@@ -116,9 +115,10 @@ impl SigningKeyPair {
     /// @param {SecBuf} data
     /// @param {SecBuf} signature
     /// @return true if verification succeeded
-    pub fn verify(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> bool {
+    pub fn verify(&mut self, data: &mut SecBuf, signature: &mut SecBuf) -> HcResult<bool> {
         let mut pub_key = self.decode_pub_key_into_secbuf();
-        lib3h_sodium::sign::verify(signature, data, &mut pub_key)
+        let result = CRYPTO.sign_verify(signature, data, &mut pub_key)?;
+        Ok(result)
     }
 }
 
@@ -148,9 +148,9 @@ impl KeyPair for EncryptingKeyPair {
     fn new_from_seed(seed: &mut SecBuf) -> HcResult<Self> {
         assert_eq!(seed.len(), SEED_SIZE);
         // Generate keys
-        let mut pub_sec_buf = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
-        let mut priv_sec_buf = SecBuf::with_secure(kx::SECRETKEYBYTES);
-        lib3h_sodium::kx::seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
+        let mut pub_sec_buf = CRYPTO.buf_new_insecure(CRYPTO.sign_public_key_bytes());
+        let mut priv_sec_buf = CRYPTO.buf_new_secure(CRYPTO.sign_secret_key_bytes());
+        CRYPTO.kx_seed_keypair(&mut pub_sec_buf, &mut priv_sec_buf, seed)?;
         // Convert and encode public key side
         let pub_key_b32 = utils::encode_pub_key(&mut pub_sec_buf, Self::codec())?;
         // Done
@@ -158,7 +158,10 @@ impl KeyPair for EncryptingKeyPair {
     }
 
     fn new_from_self(&mut self) -> HcResult<Self> {
-        Ok(EncryptingKeyPair::new(self.public(), self.private.clone()))
+        Ok(EncryptingKeyPair::new(
+            self.public(),
+            self.private.box_clone(),
+        ))
     }
 }
 
@@ -176,20 +179,20 @@ impl EncryptingKeyPair {
     /// encrypt some arbitrary data with the signing private key
     /// @param {SecBuf} data - the data to encrypt
     /// @param {output} encrypted_data - result of data encryption
-    pub fn encrypt(&mut self, data: &mut SecBuf, encrypted_data: &mut SecBuf) -> HcResult<()> {
-        let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
-        nonce.randomize();
+    pub fn encrypt(&mut self, data: &mut SecBuf, mut encrypted_data: &mut SecBuf) -> HcResult<()> {
+        let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
+        CRYPTO.randombytes_buf(&mut nonce);
 
         //data to represent encryption data length
-        let cipher_length = data.len() + lib3h_sodium::aead::ABYTES;
-        let mut cipher = SecBuf::with_insecure(cipher_length);
+        let cipher_length = data.len() + CRYPTO.aead_auth_bytes();
+        let mut cipher = CRYPTO.buf_new_insecure(cipher_length.clone());
 
         //data is encrypted and cipher is populated
-        lib3h_sodium::aead::enc(data, &mut self.private, None, &mut nonce, &mut cipher)?;
+        CRYPTO.aead_encrypt(&mut cipher, data, None, &mut nonce, &mut self.private)?;
 
         //get read locks from cipher
-        let cipher_slice = &**cipher.read_lock();
-        let nonce_slice = &**nonce.read_lock();
+        let cipher_slice = &*cipher.read_lock();
+        let nonce_slice = &*nonce.read_lock();
 
         //append nonce to cipher
         let cipher_with_nonce_slice = cipher_slice
@@ -197,7 +200,7 @@ impl EncryptingKeyPair {
             .cloned()
             .chain(nonce_slice.into_iter().cloned())
             .collect::<Vec<u8>>();
-        encrypted_data.from_array(&cipher_with_nonce_slice);
+        utils::secbuf_from_array(&mut encrypted_data, &cipher_with_nonce_slice);
 
         Ok(())
     }
@@ -210,17 +213,17 @@ impl EncryptingKeyPair {
         cipher: &mut SecBuf,
         mut decrypted_message: &mut SecBuf,
     ) -> HcResult<()> {
-        let cipher_length = cipher.len() - lib3h_sodium::aead::NONCEBYTES;
+        let cipher_length = cipher.len() - CRYPTO.aead_nonce_bytes();
 
         //get nonce from buffer
-        let mut cipher_slice = &**cipher.read_lock();
-        let mut nonce = SecBuf::with_insecure(lib3h_sodium::aead::NONCEBYTES);
+        let mut cipher_slice = &*cipher.read_lock();
+        let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
         let nonce_slice_from_cipher = cipher_slice
             .iter()
             .skip(cipher_length)
             .cloned()
             .collect::<Vec<u8>>();
-        nonce.from_array(&nonce_slice_from_cipher)?;
+        utils::secbuf_from_array(&mut nonce, &nonce_slice_from_cipher)?;
 
         //get cipher only from buffer
         let cipher_no_nonce_slice = cipher_slice
@@ -228,15 +231,15 @@ impl EncryptingKeyPair {
             .cloned()
             .take(cipher_length)
             .collect::<Vec<u8>>();
-        let mut cipher_no_nonce = SecBuf::with_insecure(cipher_length);
-        cipher_no_nonce.from_array(&cipher_no_nonce_slice)?;
+        let mut cipher_no_nonce = CRYPTO.buf_new_insecure(cipher_length);
+        utils::secbuf_from_array(&mut cipher_no_nonce, &cipher_no_nonce_slice)?;
 
-        lib3h_sodium::aead::dec(
+        CRYPTO.aead_decrypt(
             &mut decrypted_message,
-            &mut self.private,
+            &mut cipher_no_nonce,
             None,
             &mut nonce,
-            &mut cipher_no_nonce,
+            &mut self.private,
         )?;
         Ok(())
     }
@@ -259,7 +262,7 @@ pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SEED_SIZE;
+    use crate::{utils::tests::TEST_CRYPTO, SEED_SIZE};
 
     pub fn test_generate_random_sign_keypair() -> SigningKeyPair {
         generate_random_sign_keypair().unwrap()
@@ -302,27 +305,33 @@ mod tests {
         let mut sign_keys = test_generate_random_sign_keypair();
 
         // Create random data
-        let mut message = SecBuf::with_insecure(16);
-        message.randomize();
+        let mut message = TEST_CRYPTO.buf_new_insecure(16);
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
 
         // sign it
         let mut signature = sign_keys.sign(&mut message).unwrap();
         println!("signature = {:?}", signature);
         // authentify signature
         let succeeded = sign_keys.verify(&mut message, &mut signature);
-        assert!(succeeded);
+        assert_eq!(succeeded, Ok(true));
 
         // Create random data
-        let mut random_signature = SecBuf::with_insecure(SIGNATURE_SIZE);
-        random_signature.randomize();
+        let mut random_signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
+        TEST_CRYPTO
+            .randombytes_buf(&mut random_signature)
+            .expect("should work");
         // authentify random signature
         let succeeded = sign_keys.verify(&mut message, &mut random_signature);
-        assert!(!succeeded);
+        assert_eq!(succeeded, Ok(false));
 
         // Randomize data again
-        message.randomize();
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         let succeeded = sign_keys.verify(&mut message, &mut signature);
-        assert!(!succeeded);
+        assert_eq!(succeeded, Ok(false));
     }
 
 }

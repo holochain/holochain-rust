@@ -1,12 +1,13 @@
 use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
-    utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, SEED_SIZE,
+    utils::{
+        generate_derived_seed_buf, secbuf_from_array, secbuf_new_insecure_from_string, SeedContext,
+    },
+    SecBuf, AGENT_ID_CTX, CRYPTO, SEED_SIZE,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
-use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
 use std::str;
 
@@ -24,7 +25,7 @@ pub enum SeedInitializer {
 // Seed Types
 //--------------------------------------------------------------------------------------------------
 
-/// Enum of all the types of seeds
+/// Enum of all the types of seedss
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum SeedType {
     /// Root / Master seed
@@ -57,14 +58,9 @@ pub trait SeedTrait {
     /// encrypt the contents of a seed with a passphrase
     /// Encrypted seeds preserve their seed type
     // TODO: passphrase should use SecBuf across the board
-    fn encrypt(
-        &mut self,
-        passphrase: String,
-        config: Option<PwHashConfig>,
-    ) -> HcResult<EncryptedSeed> {
-        let mut passphrase_buf = SecBuf::with_insecure_from_string(passphrase);
-        let encrypted_data =
-            pw_enc_zero_nonce(&mut self.seed_mut().buf, &mut passphrase_buf, config)?;
+    fn encrypt(&mut self, passphrase: String) -> HcResult<EncryptedSeed> {
+        let mut passphrase_buf = secbuf_new_insecure_from_string(passphrase);
+        let encrypted_data = pw_enc_zero_nonce(&mut self.seed_mut().buf, &mut passphrase_buf)?;
         Ok(EncryptedSeed::new(encrypted_data, self.seed().kind.clone()))
     }
 }
@@ -95,6 +91,23 @@ impl Seed {
             kind: seed_type,
             buf: seed_buf,
         }
+    }
+
+    // TODO: We need some way of zeroing the internal memory used by mnemonic
+    pub fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
+        let mnemonic = Mnemonic::from_phrase(phrase, Language::English).map_err(|e| {
+            HolochainError::ErrorGeneric(format!("Error loading Mnemonic phrase: {}", e))
+        })?;
+
+        let entropy = mnemonic.entropy().to_owned();
+        assert_eq!(entropy.len(), SEED_SIZE);
+        let mut seed_buf = CRYPTO.buf_new_secure(entropy.len());
+        secbuf_from_array(&mut seed_buf, entropy.as_slice())?;
+        // Done
+        Ok(Seed {
+            kind: seed_type,
+            buf: seed_buf,
+        })
     }
 
     ///  Construct this seed struct from a SeedInitializer
@@ -129,8 +142,8 @@ impl MnemonicableSeed for Seed {
 
         let entropy = mnemonic.entropy().to_owned();
         assert_eq!(entropy.len(), SEED_SIZE);
-        let mut seed_buf = SecBuf::with_secure(entropy.len());
-        seed_buf.from_array(entropy.as_slice())?;
+        let mut seed_buf = CRYPTO.buf_new_secure(entropy.len());
+        secbuf_from_array(&mut seed_buf, entropy.as_slice())?;
         // Done
         Ok(Self {
             kind: seed_type,
@@ -218,13 +231,12 @@ impl DeviceSeed {
     /// generate a device pin seed by applying pwhash of pin with this seed as the salt
     /// @param {string} pin - should be >= 4 characters 1-9
     /// @return {DevicePinSeed} Resulting Device Pin Seed
-    pub fn generate_device_pin_seed(
-        &mut self,
-        pin: &mut SecBuf,
-        config: Option<PwHashConfig>,
-    ) -> HcResult<DevicePinSeed> {
-        let mut hash = SecBuf::with_secure(pwhash::HASHBYTES);
-        pw_hash(pin, &mut self.inner.buf, &mut hash, config)?;
+    pub fn generate_device_pin_seed(&mut self, pin: &mut SecBuf) -> HcResult<DevicePinSeed> {
+        let mut hash = CRYPTO.buf_new_secure(CRYPTO.pwhash_bytes());
+        let mut salt = CRYPTO.buf_new_secure(CRYPTO.pwhash_salt_bytes());
+        //hash the seed into a salt sized buf
+        CRYPTO.generic_hash(&mut salt, &mut self.inner.buf, None)?;
+        pw_hash(&mut hash, pin, &mut salt)?;
         Ok(DevicePinSeed::new(hash))
     }
 }
@@ -262,10 +274,10 @@ impl DevicePinSeed {
         if index == 0 {
             return Err(HolochainError::ErrorGeneric("Invalid index".to_string()));
         }
-        let mut dna_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let mut dna_seed_buf = CRYPTO.buf_new_secure(SEED_SIZE);
         let context = SeedContext::new(AGENT_ID_CTX);
         let mut context = context.to_sec_buf();
-        kdf::derive(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
+        CRYPTO.kdf(&mut dna_seed_buf, index, &mut context, &mut self.inner.buf)?;
 
         Ok(KeyBundle::new_from_seed_buf(&mut dna_seed_buf)?)
     }
@@ -285,14 +297,10 @@ impl EncryptedSeed {
         Self { kind, data }
     }
 
-    pub fn decrypt(
-        &mut self,
-        passphrase: String,
-        config: Option<PwHashConfig>,
-    ) -> HcResult<TypedSeed> {
-        let mut passphrase_buf = SecBuf::with_insecure_from_string(passphrase);
-        let mut decrypted_data = SecBuf::with_secure(SEED_SIZE);
-        pw_dec(&self.data, &mut passphrase_buf, &mut decrypted_data, config)?;
+    pub fn decrypt(&mut self, passphrase: String) -> HcResult<TypedSeed> {
+        let mut passphrase_buf = secbuf_new_insecure_from_string(passphrase);
+        let mut decrypted_data = CRYPTO.buf_new_secure(SEED_SIZE);
+        pw_dec(&self.data, &mut passphrase_buf, &mut decrypted_data)?;
         Ok(
             Seed::new_with_initializer(SeedInitializer::Seed(decrypted_data), self.kind.clone())
                 .into_typed()?,
@@ -316,12 +324,15 @@ impl MnemonicableSeed for EncryptedSeed {
             .flatten()
             .collect();
 
-        assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
+        assert_eq!(
+            entropy.len(),
+            SEED_SIZE + CRYPTO.aead_auth_bytes() + CRYPTO.pwhash_salt_bytes()
+        );
 
         let enc_data = EncryptedData {
-            nonce: [0; NONCEBYTES].to_vec(), // zero nonce
-            cipher: entropy[..SEED_SIZE + ABYTES].to_vec(),
-            salt: entropy[SEED_SIZE + ABYTES..].to_vec(),
+            nonce: vec![0; CRYPTO.aead_nonce_bytes()], // zero nonce
+            cipher: entropy[..SEED_SIZE + CRYPTO.aead_auth_bytes()].to_vec(),
+            salt: entropy[SEED_SIZE + CRYPTO.aead_auth_bytes()..].to_vec(),
         };
         Ok(Self {
             kind: seed_type,
@@ -342,7 +353,10 @@ impl MnemonicableSeed for EncryptedSeed {
             .collect();
         let entropy = bytes.as_slice();
 
-        assert_eq!(entropy.len(), SEED_SIZE + ABYTES + SALTBYTES);
+        assert_eq!(
+            entropy.len(),
+            SEED_SIZE + CRYPTO.aead_auth_bytes() + CRYPTO.pwhash_salt_bytes()
+        );
 
         let mnemonic = entropy
             .chunks(SEED_SIZE)
@@ -366,7 +380,6 @@ impl MnemonicableSeed for EncryptedSeed {
 mod tests {
     use super::*;
     use crate::{
-        password_encryption::tests::TEST_CONFIG,
         utils::{self, generate_random_seed_buf},
         SEED_SIZE,
     };
@@ -421,9 +434,7 @@ mod tests {
         let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
         let mut device_seed = root_seed.generate_device_seed(&context, 3).unwrap();
-        let device_pin_seed = device_seed
-            .generate_device_pin_seed(&mut pin, TEST_CONFIG)
-            .unwrap();
+        let device_pin_seed = device_seed.generate_device_pin_seed(&mut pin).unwrap();
         assert_eq!(SeedType::DevicePin, device_pin_seed.seed().kind);
     }
 
@@ -435,7 +446,7 @@ mod tests {
         let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
         let mut ds = rs.generate_device_seed(&context, 3).unwrap();
-        let mut dps = ds.generate_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
+        let mut dps = ds.generate_device_pin_seed(&mut pin).unwrap();
         let mut keybundle_5 = dps.generate_dna_key(5).unwrap();
 
         assert_eq!(crate::SIGNATURE_SIZE, keybundle_5.sign_keys.private.len());
@@ -452,7 +463,7 @@ mod tests {
 
     #[test]
     fn it_should_roundtrip_mnemonic() {
-        let mut seed_buf = SecBuf::with_insecure(SEED_SIZE);
+        let mut seed_buf = CRYPTO.buf_new_insecure(SEED_SIZE);
         {
             let mut seed_buf = seed_buf.write_lock();
             seed_buf[0] = 12;
@@ -509,10 +520,8 @@ mod tests {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
         };
-        let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
-        let dec_seed_untyped = enc_seed
-            .decrypt("some passphrase".to_string(), None)
-            .unwrap();
+        let mut enc_seed = seed.encrypt("some passphrase".to_string()).unwrap();
+        let dec_seed_untyped = enc_seed.decrypt("some passphrase".to_string()).unwrap();
         let mut dec_seed = match dec_seed_untyped {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
@@ -528,7 +537,7 @@ mod tests {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
         };
-        let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
+        let mut enc_seed = seed.encrypt("some passphrase".to_string()).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
         assert_eq!(
@@ -537,10 +546,7 @@ mod tests {
         );
 
         let mut enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
-        let mut seed_2 = match enc_seed_2
-            .decrypt("some passphrase".to_string(), None)
-            .unwrap()
-        {
+        let mut seed_2 = match enc_seed_2.decrypt("some passphrase".to_string()).unwrap() {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
         };

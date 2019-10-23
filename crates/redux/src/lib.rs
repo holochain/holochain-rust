@@ -11,6 +11,13 @@ pub trait State: Default {
 pub type Observer<'a, S> = Box<dyn FnMut(&S) -> bool + Send + Sync + 'a>;
 
 /// Wraps a state to ensure that it can only be updated through actions.
+/// 
+/// The lifetime represents how long the `Store` will be alive. This is
+/// in place so that `Observer`s can depend on non-static data as long as it
+/// outlive the `Store`.
+/// 
+/// Ideally they could depend on data that lives until they return `false`,
+/// but that is too complicated for the borrow-checker.
 pub struct Store<'a, S: State> {
     state: S,
     history: Vec<S::Action>,

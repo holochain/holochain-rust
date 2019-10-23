@@ -4,19 +4,19 @@ version = "0.0.33-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core = { path = "../core" }
-holochain_core_types = { path = "../core_types" }
+holochain_core = { version = "=0.0.33-alpha5", path = "../core" }
+holochain_core_types = { version = "=0.0.33-alpha5", path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_mem = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_pickle = "=0.0.10"
-holochain_dpki = { path = "../dpki" }
+holochain_dpki = { version = "=0.0.33-alpha5", path = "../dpki" }
 holochain_net = { path = "../net" }
 lib3h = "=0.0.19"
 lib3h_sodium = "=0.0.19"
-holochain_common = { path = "../common" }
+holochain_common = { version = "=0.0.33-alpha5", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
@@ -25,9 +25,12 @@ serde_regex = "=0.3.1"
 toml = "=0.5.0"
 boolinator = "=2.4.0"
 tiny_http = "=0.6.2"
-jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
-jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
-jsonrpc-http-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-core = "=14.0.1"
+jsonrpc-ws-server = "=14.0.1"
+jsonrpc-http-server = "=14.0.1"
+# jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+# jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+# jsonrpc-http-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 petgraph = "=0.4.13"
 colored = "=1.7.0"
 regex = "=1.1.2"
@@ -47,7 +50,7 @@ url = { version = "=2.1.0", features = ["serde"] }
 [dev-dependencies]
 test_utils = { path = "../../test_utils"}
 tempfile = "=3.0.7"
-holochain_wasm_utils = { path = "../wasm_utils" }
+holochain_wasm_utils = { version = "=0.0.33-alpha5", path = "../wasm_utils" }
 structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"
 ws = "=0.8.0"

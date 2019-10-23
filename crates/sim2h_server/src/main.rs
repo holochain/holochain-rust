@@ -1,7 +1,6 @@
-extern crate structopt;
 extern crate lib3h_sodium;
+extern crate structopt;
 
-use lib3h_sodium::SodiumCryptoSystem;
 use lib3h::transport::{
     protocol::DynTransportActor,
     websocket::{
@@ -13,6 +12,7 @@ use lib3h_protocol::{
     types::{NetworkHash, NodePubKey},
     uri::Builder,
 };
+use lib3h_sodium::SodiumCryptoSystem;
 use log::error;
 use sim2h::{Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};

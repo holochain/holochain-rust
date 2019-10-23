@@ -1,5 +1,5 @@
-use lib3h_zombie_actor::prelude::*;
 use lib3h::error::Lib3hError;
+use lib3h_zombie_actor::prelude::*;
 use std::{fmt, result};
 
 #[derive(Debug, PartialEq)]

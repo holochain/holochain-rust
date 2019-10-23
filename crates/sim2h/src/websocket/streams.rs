@@ -201,10 +201,9 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
         self.stream_sockets
             .get(url)
             .map(|info| match info.stateful_socket {
-                WebsocketStreamState::TlsReady(_)
-                | WebsocketStreamState::TlsSrvReady(_)
-                | WebsocketStreamState::ReadyWs(_)
-                | WebsocketStreamState::ReadyWss(_) => ConnectionStatus::Ready,
+                WebsocketStreamState::ReadyWs(_) | WebsocketStreamState::ReadyWss(_) => {
+                    ConnectionStatus::Ready
+                }
                 _ => ConnectionStatus::Initializing,
             })
             .unwrap_or(ConnectionStatus::None)

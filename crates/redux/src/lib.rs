@@ -86,10 +86,10 @@ impl<'a, S: State> Store<'a, S> {
 #[cfg(test)]
 mod tests {
     use super::{State, Store};
-    #[derive(Debug, Default, Eq, PartialEq)]
+    #[derive(Clone, Debug, Default, Eq, PartialEq)]
     struct Counter(u32);
 
-    #[derive(Debug, Eq, PartialEq)]
+    #[derive(Clone, Debug, Eq, PartialEq)]
     enum CounterAction {
         Increment,
         Reset,
@@ -107,15 +107,27 @@ mod tests {
         }
     }
 
+    fn assert_recreatable<S, A>(store: &Store<S>)
+    where
+        S: State<Action = A> + std::fmt::Debug + Eq,
+        A: Clone + std::fmt::Debug + Eq,
+    {
+        let recreated: Store<'_, S> = Store::from_history(store.history().to_owned());
+        assert_eq!(recreated.state(), store.state());
+        assert_eq!(recreated.history(), store.history());
+    }
+
     #[test]
     fn can_reduce() {
         let mut store: Store<Counter> = Store::new();
         assert_eq!(*store.state(), Counter(0));
         assert_eq!(*store.history(), []);
+        assert_recreatable(&store);
 
         store.dispatch(CounterAction::Increment);
         assert_eq!(*store.state(), Counter(1));
         assert_eq!(*store.history(), [CounterAction::Increment]);
+        assert_recreatable(&store);
 
         store.dispatch(CounterAction::Increment);
         assert_eq!(*store.state(), Counter(2));
@@ -123,6 +135,7 @@ mod tests {
             *store.history(),
             [CounterAction::Increment, CounterAction::Increment]
         );
+        assert_recreatable(&store);
 
         store.dispatch(CounterAction::Reset);
         assert_eq!(*store.state(), Counter(0));
@@ -134,6 +147,7 @@ mod tests {
                 CounterAction::Reset
             ]
         );
+        assert_recreatable(&store);
     }
 
     #[test]
@@ -150,10 +164,12 @@ mod tests {
 
             assert_eq!(*store.state(), Counter(0));
             assert_eq!(*store.history(), []);
+            assert_recreatable(&store);
 
             store.dispatch(CounterAction::Reset);
             assert_eq!(*store.state(), Counter(0));
             assert_eq!(*store.history(), [CounterAction::Reset]);
+            assert_recreatable(&store);
 
             store.dispatch(CounterAction::Increment);
             assert_eq!(*store.state(), Counter(1));
@@ -161,6 +177,7 @@ mod tests {
                 *store.history(),
                 [CounterAction::Reset, CounterAction::Increment]
             );
+            assert_recreatable(&store);
         }
 
         assert_eq!(times_observed, 2);
@@ -185,10 +202,12 @@ mod tests {
 
             assert_eq!(*store.state(), Counter(0));
             assert_eq!(*store.history(), []);
+            assert_recreatable(&store);
 
             store.dispatch(CounterAction::Reset);
             assert_eq!(*store.state(), Counter(0));
             assert_eq!(*store.history(), [CounterAction::Reset]);
+            assert_recreatable(&store);
 
             store.dispatch(CounterAction::Increment);
             assert_eq!(*store.state(), Counter(1));
@@ -196,9 +215,18 @@ mod tests {
                 *store.history(),
                 [CounterAction::Reset, CounterAction::Increment]
             );
+            assert_recreatable(&store);
         }
 
         assert_eq!(times_observed_a, 2);
         assert_eq!(times_observed_b, 1);
+    }
+
+    #[test]
+    fn empty_history_equals_default() {
+        let default: Store<'_, Counter> = Store::new();
+        let empty: Store<'_, Counter> = Store::from_history(Vec::new());
+        assert_eq!(default.state(), empty.state());
+        assert_eq!(default.history(), empty.history());
     }
 }

@@ -7,12 +7,7 @@
   config = config;
  }).buildInputs
 
-  ++ (pkgs.callPackage ./versions {
-  pkgs = pkgs;
-  config = config;
- }).buildInputs
-
-   ++ (pkgs.callPackage ./publish {
+ ++ (pkgs.callPackage ./publish {
   pkgs = pkgs;
   config = config;
  }).buildInputs

@@ -82,3 +82,123 @@ impl<'a, S: State> Store<'a, S> {
         store
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{State, Store};
+    #[derive(Debug, Default, Eq, PartialEq)]
+    struct Counter(u32);
+
+    #[derive(Debug, Eq, PartialEq)]
+    enum CounterAction {
+        Increment,
+        Reset,
+    }
+
+    impl State for Counter {
+        type Action = CounterAction;
+
+        fn reduce(&mut self, action: &Self::Action) {
+            use CounterAction::*;
+            match action {
+                Increment => self.0 = self.0.wrapping_add(1),
+                Reset => self.0 = 0,
+            }
+        }
+    }
+
+    #[test]
+    fn can_reduce() {
+        let mut store: Store<Counter> = Store::new();
+        assert_eq!(*store.state(), Counter(0));
+        assert_eq!(*store.history(), []);
+
+        store.dispatch(CounterAction::Increment);
+        assert_eq!(*store.state(), Counter(1));
+        assert_eq!(*store.history(), [CounterAction::Increment]);
+
+        store.dispatch(CounterAction::Increment);
+        assert_eq!(*store.state(), Counter(2));
+        assert_eq!(
+            *store.history(),
+            [CounterAction::Increment, CounterAction::Increment]
+        );
+
+        store.dispatch(CounterAction::Reset);
+        assert_eq!(*store.state(), Counter(0));
+        assert_eq!(
+            *store.history(),
+            [
+                CounterAction::Increment,
+                CounterAction::Increment,
+                CounterAction::Reset
+            ]
+        );
+    }
+
+    #[test]
+    fn can_observe() {
+        let mut times_observed = 0;
+
+        {
+            let mut store: Store<Counter> = Store::new();
+
+            store.observe(Box::new(|_state| {
+                times_observed += 1;
+                true
+            }));
+
+            assert_eq!(*store.state(), Counter(0));
+            assert_eq!(*store.history(), []);
+
+            store.dispatch(CounterAction::Reset);
+            assert_eq!(*store.state(), Counter(0));
+            assert_eq!(*store.history(), [CounterAction::Reset]);
+
+            store.dispatch(CounterAction::Increment);
+            assert_eq!(*store.state(), Counter(1));
+            assert_eq!(
+                *store.history(),
+                [CounterAction::Reset, CounterAction::Increment]
+            );
+        }
+
+        assert_eq!(times_observed, 2);
+    }
+
+    #[test]
+    fn observers_can_complete() {
+        let mut times_observed_a = 0;
+        let mut times_observed_b = 0;
+
+        {
+            let mut store: Store<Counter> = Store::new();
+
+            store.observe(Box::new(|_state| {
+                times_observed_a += 1;
+                true
+            }));
+            store.observe(Box::new(|_state| {
+                times_observed_b += 1;
+                false
+            }));
+
+            assert_eq!(*store.state(), Counter(0));
+            assert_eq!(*store.history(), []);
+
+            store.dispatch(CounterAction::Reset);
+            assert_eq!(*store.state(), Counter(0));
+            assert_eq!(*store.history(), [CounterAction::Reset]);
+
+            store.dispatch(CounterAction::Increment);
+            assert_eq!(*store.state(), Counter(1));
+            assert_eq!(
+                *store.history(),
+                [CounterAction::Reset, CounterAction::Increment]
+            );
+        }
+
+        assert_eq!(times_observed_a, 2);
+        assert_eq!(times_observed_b, 1);
+    }
+}

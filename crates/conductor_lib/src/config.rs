@@ -26,6 +26,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
 use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+// use matches::matches;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -708,37 +709,34 @@ pub enum StorageConfiguration {
 }
 
 impl StorageConfiguration {
-    fn is_memory(&self) -> bool {
-        match self {
-            StorageConfiguration::Memory => true,
-            _ => false,
-        }
-    }
+    // Unused
+    // fn is_memory(&self) -> bool {
+    //     self == &StorageConfiguration::Memory
+    // }
 
-    fn is_file(&self) -> bool {
-        match self {
-            StorageConfiguration::File { path }=> true,
-            _ => false,
-        }
-    }
+    // fn is_file(&self) -> bool {
+    //     matches!(self, &StorageConfiguration::File { .. })
+    // }
 
-    fn is_pickle(&self) -> bool {
-        match self {
-            StorageConfiguration::Pickle { path } => true,
-            _ => false,
-        }
-    }
+    // fn is_pickle(&self) -> bool {
+    //     matches!(self, StorageConfiguration::Pickle { .. })
+    // }
 
     fn get_path(&self) -> Option<String> {
-        if self.is_file() {
-            return Some(StorageConfiguration::File { path })
+        match self {
+            StorageConfiguration::Memory => return None,
+            StorageConfiguration::File { path } => return Some(path.to_string()),
+            StorageConfiguration::Pickle { path } => return Some(path.to_string()),
         }
-        if self.is_pickle() {
-            return Some(StorageConfiguration::Pickle { path })
-        }
-        else {
-            return None
-        }
+        // if self.is_file() {
+        //     return Some(self.path.clone())
+        // }
+        // if self.is_pickle() {
+        //     return Some(self::Pickle.path)
+        // }
+        // else {
+        //     return None
+        // }
     }
 }
 

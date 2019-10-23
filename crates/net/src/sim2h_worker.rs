@@ -48,7 +48,7 @@ pub struct Sim2hWorker {
     stream_manager: StreamManager<std::net::TcpStream>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
-    stream_events:  Vec<StreamEvent>,
+    stream_events: Vec<StreamEvent>,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
     agent_id: Address,
@@ -397,7 +397,7 @@ impl NetWorker for Sim2hWorker {
             }
         };
         self.stream_events.append(&mut events);
-        for transport_message in self.stream_events.drain(..)::collect() {
+        for transport_message in self.stream_events.drain(..).collect::<Vec<StreamEvent>>() {
             match transport_message {
                 StreamEvent::ReceivedData(uri, payload) => {
                     let uri : Lib3hUri = uri.into();

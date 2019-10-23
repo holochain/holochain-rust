@@ -73,7 +73,7 @@ const orchestrator = new Orchestrator({
           }
         ]
       },
-      state_dump: true
+      state_dump: false
     }
   }
 })

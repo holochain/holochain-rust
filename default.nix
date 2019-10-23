@@ -64,11 +64,6 @@ with holonix.pkgs;
      config = config;
    }).buildInputs
 
-   # qt specific testing
-   ++ (holonix.pkgs.callPackage ./qt {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
     pkgs = holonix.pkgs;
@@ -77,6 +72,10 @@ with holonix.pkgs;
 
    ++ (holonix.pkgs.callPackage ./rust {
     holonix = holonix;
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./stress-test {
     pkgs = holonix.pkgs;
    }).buildInputs
 

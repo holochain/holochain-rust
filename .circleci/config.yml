@@ -148,6 +148,34 @@ jobs:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test
 
+ stress-tests-sim1h:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+       name: stress tests
+       command: nix-shell --run hc-stress-test-sim1h
+
+ stress-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run "hc-sim2h-server -p 9002"
+         background: true
+     - run:
+         name: stress tests
+         command: nix-shell --run hc-stress-test-sim2h
+
  cli-tests:
   docker:
    - image: holochain/holochain-rust:latest
@@ -248,6 +276,8 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
+   - stress-tests-sim1h
+   - stress-tests-sim2h
 
  cold.ubuntu:
   jobs:

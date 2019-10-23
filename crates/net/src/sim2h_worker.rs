@@ -112,7 +112,7 @@ impl Sim2hWorker {
 
         debug!("Successfully bound to {:?}", bound_url);
 
-        let connection_status = match instance.try_connect()? {
+        let connection_status = match instance.try_connect(std::time::Duration::from_millis(5000))? {
             ConnectionStatus::Ready => "Ready",
             ConnectionStatus::None => "None",
             ConnectionStatus::Initializing => "Initializing",
@@ -122,16 +122,28 @@ impl Sim2hWorker {
         Ok(instance)
     }
 
-    fn try_connect(&mut self) -> NetResult<ConnectionStatus> {
+    fn try_connect(&mut self, timeout: std::time::Duration) -> NetResult<ConnectionStatus> {
         let url: url::Url = self.server_url.clone().into();
-        match self.stream_manager.connection_status(&url) {
-            ConnectionStatus::Ready => Ok(ConnectionStatus::Ready),
-            ConnectionStatus::None => {
-                let url = self.server_url.clone().into();
-                self.stream_manager.connect(&url)?;
-                Ok(self.stream_manager.connection_status(&url))
-            }
-            status => Ok(status),
+        let clock = std::time::SystemTime::now();
+        let mut status : NetResult<ConnectionStatus> = Ok(ConnectionStatus::None);
+        loop {
+           match self.stream_manager.connection_status(&url) {
+               ConnectionStatus::Ready => return Ok(ConnectionStatus::Ready),
+               ConnectionStatus::None => {
+                   let url = self.server_url.clone().into();
+                   if let Err(e) = self.stream_manager.connect(&url) {
+                        status = Err(e.into());
+                   }
+               },
+               s => {
+                   status = Ok(s);
+                   std::thread::sleep(std::time::Duration::from_millis(10))
+               }
+           };
+           if clock.elapsed().unwrap() > timeout {
+                error!("Timed out waiting for connection for url {:?}", url);
+                return status;
+           }
         }
     }
 

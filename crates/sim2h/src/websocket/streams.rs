@@ -116,7 +116,7 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
 
     /// close a currently tracked connection
     #[allow(dead_code)]
-    fn close(&mut self, uri: &Url) -> TransportResult<()> {
+    pub fn close(&mut self, uri: &Url) -> TransportResult<()> {
         if let Some(mut info) = self.stream_sockets.remove(uri) {
             info.close()?;
         }
@@ -201,9 +201,10 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
         self.stream_sockets
             .get(url)
             .map(|info| match info.stateful_socket {
-                WebsocketStreamState::ReadyWs(_) | WebsocketStreamState::ReadyWss(_) => {
-                    ConnectionStatus::Ready
-                }
+                WebsocketStreamState::TlsReady(_)
+                | WebsocketStreamState::TlsSrvReady(_)
+                | WebsocketStreamState::ReadyWs(_)
+                | WebsocketStreamState::ReadyWss(_) => ConnectionStatus::Ready,
                 _ => ConnectionStatus::Initializing,
             })
             .unwrap_or(ConnectionStatus::None)

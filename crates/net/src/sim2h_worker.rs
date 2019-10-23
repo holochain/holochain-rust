@@ -34,8 +34,6 @@ use sim2h::{
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
 
-const PING_DURATION_SECS: u64 = 10;
-
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
     pub sim2h_url: String,
@@ -54,6 +52,7 @@ pub struct Sim2hWorker {
     agent_id: Address,
     conductor_api: ConductorApi,
     time_of_last_sent: Instant,
+    connection_status: ConnectionStatus,
 }
 
 fn wire_message_into_escaped_string(message: &WireMessage) -> String {
@@ -110,22 +109,23 @@ impl Sim2hWorker {
             agent_id,
             conductor_api,
             time_of_last_sent: Instant::now(),
+            connection_status: ConnectionStatus::None,
         };
 
         debug!("Successfully bound to {:?}", bound_url);
 
-        let connection_status =
-            match instance.try_connect(std::time::Duration::from_millis(5000))? {
-                ConnectionStatus::Ready => "Ready",
-                ConnectionStatus::None => "None",
-                ConnectionStatus::Initializing => "Initializing",
-            };
+        instance.connection_status = instance.try_connect(Duration::from_millis(5000))?;
 
-        debug!("Connection status: {:?}", connection_status);
+        match instance.connection_status {
+            ConnectionStatus::Ready => info!("Connected to sim2h server!"),
+            ConnectionStatus::None => error!("Could not connect to sim2h server!"),
+            ConnectionStatus::Initializing => warn!("Still initializing connection to sim2h after 5 seconds of waitign"),
+        };
+
         Ok(instance)
     }
 
-    fn try_connect(&mut self, timeout: std::time::Duration) -> NetResult<ConnectionStatus> {
+    fn try_connect(&mut self, timeout: Duration) -> NetResult<ConnectionStatus> {
         let url: url::Url = self.server_url.clone().into();
         let clock = std::time::SystemTime::now();
         let mut status: NetResult<ConnectionStatus> = Ok(ConnectionStatus::None);
@@ -339,6 +339,7 @@ impl Sim2hWorker {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn send_ping(&mut self) {
         trace!("Ping");
         if let Err(e) = self.send_wire_message(WireMessage::Ping) {
@@ -357,21 +358,25 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        if Instant::now().duration_since(self.time_of_last_sent)
-            > Duration::from_secs(PING_DURATION_SECS)
-        {
-            self.send_ping();
-        }
-
         let mut did_something = WorkWasDone::from(false);
 
-        let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
-        for data in client_messages {
-            debug!("CORE >> Sim2h: {:?}", data);
-            if let Err(error) = self.handle_client_message(data) {
-                error!("Error handling client message in Sim2hWorker: {:?}", error);
-            }
-            did_something = WorkWasDone::from(true);
+        match self.stream_manager.connection_status(&self.server_url.clone().into()) {
+            ConnectionStatus::None => {
+                warn!("No connection to sim2h server. Trying to reconnect...");
+                self.stream_manager.connect(&self.server_url.clone().into())?;
+            },
+            ConnectionStatus::Initializing => debug!("connecting..."),
+            ConnectionStatus::Ready => {
+                let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
+                for data in client_messages {
+                    debug!("CORE >> Sim2h: {:?}", data);
+                    if let Err(error) = self.handle_client_message(data) {
+                        error!("Error handling client message in Sim2hWorker: {:?}", error);
+                    }
+                    did_something = WorkWasDone::from(true);
+                }
+
+            },
         }
 
         let server_messages = self.to_core.drain(..).collect::<Vec<_>>();
@@ -390,9 +395,6 @@ impl NetWorker for Sim2hWorker {
             Ok((did_work, events)) => (did_work, events),
             Err(e) => {
                 error!("Transport error: {:?}", e);
-                // This most likely means we have connection issues.
-                // Send ping to reestablish a potentially lost connection.
-                self.send_ping();
                 (false.into(), vec![])
             }
         };
@@ -425,7 +427,12 @@ impl NetWorker for Sim2hWorker {
                     warn!("Got incoming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
                 StreamEvent::ErrorOccured(uri, error) =>
                     error!("Transport error occurred on connection to {:?}: {:?}", uri, error),
-                StreamEvent::ConnectionClosed(_) => warn!("Got connection close! Will try to reconnect."),
+                StreamEvent::ConnectionClosed(uri) => {
+                    warn!("Got connection close! Will try to reconnect.");
+                    if let Err(error) = self.stream_manager.close(&uri) {
+                        error!("Error when trying to close dead stream: {:?}", error);
+                    }
+                },
                 StreamEvent::ConnectResult(url, net_id) => {
                     info!("got connect result for url: {:?}, net_id: {:?}", url, net_id)
                 }

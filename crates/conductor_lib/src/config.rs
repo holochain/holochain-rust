@@ -26,6 +26,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
 use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+// use matches::matches;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -705,6 +706,29 @@ pub enum StorageConfiguration {
     Memory,
     File { path: String },
     Pickle { path: String },
+}
+
+impl StorageConfiguration {
+    // Unused
+    // fn is_memory(&self) -> bool {
+    //     self == &StorageConfiguration::Memory
+    // }
+
+    // fn is_file(&self) -> bool {
+    //     matches!(self, &StorageConfiguration::File { .. })
+    // }
+
+    // fn is_pickle(&self) -> bool {
+    //     matches!(self, StorageConfiguration::Pickle { .. })
+    // }
+
+    fn get_path(&self) -> Option<String> {
+        match self {
+            StorageConfiguration::Memory => return None,
+            StorageConfiguration::File { path } => return Some(path.to_string()),
+            StorageConfiguration::Pickle { path } => return Some(path.to_string()),
+        }
+    }
 }
 
 /// Here, interfaces are user facing and make available zome functions to

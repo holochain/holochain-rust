@@ -148,6 +148,34 @@ jobs:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test
 
+ stress-tests-sim1h:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+       name: stress tests
+       command: nix-shell --run hc-stress-test-sim1h
+
+ stress-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run "hc-sim2h-server -p 9002"
+         background: true
+     - run:
+         name: stress tests
+         command: nix-shell --run hc-stress-test-sim2h
+
  cli-tests:
   docker:
    - image: holochain/holochain-rust:latest
@@ -178,8 +206,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.ubuntu.xenial.auto:
   docker:
@@ -191,8 +219,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.debian.stable.auto:
   docker:
@@ -204,8 +232,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.mac.10.auto:
   macos:
@@ -217,8 +245,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.mac.10.nix:
   macos:
@@ -248,6 +276,8 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
+   - stress-tests-sim1h
+   - stress-tests-sim2h
 
  cold.ubuntu:
   jobs:

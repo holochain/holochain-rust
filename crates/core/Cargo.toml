@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.32-alpha2"
+version = "0.0.33-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -42,7 +42,7 @@ holochain_dpki = { path = "../dpki" }
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
 boolinator = "=2.4.0"
-jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-core = "14.0.1"
 jsonrpc-lite = "=0.5.0"
 globset = "=0.4.2"
 pretty_assertions = "=0.6.1"

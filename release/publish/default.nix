@@ -11,6 +11,7 @@ for crate in \
  common \
  conductor_api \
  conductor_lib \
+ core_types \
  dpki \
  hdk \
  hdk_v2 \

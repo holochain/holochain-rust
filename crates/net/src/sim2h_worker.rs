@@ -48,6 +48,7 @@ pub struct Sim2hWorker {
     stream_manager: StreamManager<std::net::TcpStream>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
+    stream_events:  Vec<StreamEvent>,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
     agent_id: Address,
@@ -101,6 +102,7 @@ impl Sim2hWorker {
             stream_manager,
             inbox: Vec::new(),
             to_core: Vec::new(),
+            stream_events: Vec::new(),
             server_url: Url::parse(&config.sim2h_url)
                 .expect("Sim2h URL can't be parsed")
                 .into(),
@@ -138,6 +140,8 @@ impl Sim2hWorker {
                 }
                 s => {
                     status = Ok(s);
+                    let (_did_work, mut events) = self.stream_manager.process()?;
+                    self.stream_events.append(&mut events);
                     std::thread::sleep(std::time::Duration::from_millis(10))
                 }
             };
@@ -382,7 +386,7 @@ impl NetWorker for Sim2hWorker {
             did_something = WorkWasDone::from(true);
         }
 
-        let (_did_work, events) = match self.stream_manager.process() {
+        let (_did_work, mut events) = match self.stream_manager.process() {
             Ok((did_work, events)) => (did_work, events),
             Err(e) => {
                 error!("Transport error: {:?}", e);
@@ -392,8 +396,8 @@ impl NetWorker for Sim2hWorker {
                 (false.into(), vec![])
             }
         };
-
-        for transport_message in events {
+        self.stream_events.append(&mut events);
+        for transport_message in self.stream_events.drain(..)::collect() {
             match transport_message {
                 StreamEvent::ReceivedData(uri, payload) => {
                     let uri : Lib3hUri = uri.into();

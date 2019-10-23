@@ -728,15 +728,6 @@ impl StorageConfiguration {
             StorageConfiguration::File { path } => return Some(path.to_string()),
             StorageConfiguration::Pickle { path } => return Some(path.to_string()),
         }
-        // if self.is_file() {
-        //     return Some(self.path.clone())
-        // }
-        // if self.is_pickle() {
-        //     return Some(self::Pickle.path)
-        // }
-        // else {
-        //     return None
-        // }
     }
 }
 

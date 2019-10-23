@@ -15,7 +15,7 @@ holochain_wasm_utils = {path = "../crates/wasm_utils"}
 holochain_persistence_api = "=0.0.10"
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
-lib3h_sodium = "=0.0.19"
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
 serde = "=1.0.89"

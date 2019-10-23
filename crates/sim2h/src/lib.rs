@@ -967,7 +967,7 @@ pub mod tests {
             let mut verse = get_memory_verse();
             verse.get_network(netname)
         };
-        let uri = network.lock().unwrap().bind();
+        let uri = network.lock().bind();
         let (space_data, _key) = make_test_agent();
         let test_agent = space_data.agent_id.clone();
 
@@ -1004,7 +1004,7 @@ pub mod tests {
 
         // dm
         // first we have to setup the to agent on the in-memory-network and in the space
-        let to_uri = network.lock().unwrap().bind();
+        let to_uri = network.lock().bind();
         let _ = sim2h.handle_incoming_connect(to_uri.clone());
         let (to_agent_data, _key) = make_test_space_data_with_agent("to_agent_id");
         let _ = sim2h.join(&to_uri, &to_agent_data);
@@ -1020,7 +1020,7 @@ pub mod tests {
         // which should result in showing up in the to_uri's inbox in the in-memory netowrk
         let result = sim2h.process();
         assert_eq!(result, Ok(()));
-        let mut reader = network.lock().unwrap();
+        let mut reader = network.lock();
         let server = reader
             .get_server(&to_uri)
             .expect("there should be a server for to_uri");
@@ -1045,14 +1045,14 @@ pub mod tests {
             let mut verse = get_memory_verse();
             verse.get_network(netname)
         };
-        let agent_uri = network.lock().unwrap().bind();
+        let agent_uri = network.lock().bind();
 
         // connect to sim2h with join messages
         let (space_data, mut secret_key) = make_test_space_data_with_agent(agent_name);
         let join = make_test_join_message_with_space_data(space_data.clone());
         let signed_join: Opaque = make_signed(&mut secret_key, &space_data, join).into();
         {
-            let mut net = network.lock().unwrap();
+            let mut net = network.lock();
             let server = net
                 .get_server(sim2h_uri)
                 .expect("there should be a server for to_uri");
@@ -1101,7 +1101,7 @@ pub mod tests {
         let message = make_test_dm_message_with(dm_data.clone());
         let signed_message: Opaque = make_signed(&mut secret_key1, &space_data1, message).into();
         {
-            let mut net = network.lock().unwrap();
+            let mut net = network.lock();
             let server = net
                 .get_server(&sim2h_uri)
                 .expect("there should be a server for to_uri");
@@ -1111,7 +1111,7 @@ pub mod tests {
         let _result = sim2h.process();
         let _result = sim2h.process();
         {
-            let mut net = network.lock().unwrap();
+            let mut net = network.lock();
             let server = net
                 .get_server(&agent2_uri)
                 .expect("there should be a server for to_uri");
@@ -1148,7 +1148,7 @@ pub mod tests {
             verse.get_network(netname)
         };
         {
-            let mut net = network.lock().unwrap();
+            let mut net = network.lock();
             let server = net
                 .get_server(&sim2h_uri)
                 .expect("there should be a server for sim2h_uri");
@@ -1163,7 +1163,7 @@ pub mod tests {
 
         // connect again and send a dm message
         {
-            let mut net = network.lock().unwrap();
+            let mut net = network.lock();
             let server = net
                 .get_server(&sim2h_uri)
                 .expect("there should be a server for sim2h_uri");
@@ -1183,7 +1183,7 @@ pub mod tests {
         let _result = sim2h.process();
         let _result = sim2h.process();
         {
-            let mut net = network.lock().unwrap();
+            let mut net = network.lock();
             let server = net
                 .get_server(&agent_uri)
                 .expect("there should be a server for agent_uri");

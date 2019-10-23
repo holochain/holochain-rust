@@ -1,6 +1,6 @@
 [package]
 name = "blog"
-version = "0.0.33-alpha3"
+version = "0.0.33-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]

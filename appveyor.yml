@@ -31,7 +31,7 @@ environment:
     wasm_path: wasm-test
     wasm_path_2:
 
-  - test_p: holochain_conductor_api
+  - test_p: holochain_conductor_lib
     test_path: conductor_api
     wasm_path: wasm-test
     wasm_path_2: test-bridge-caller

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.32-alpha2"
+version = "0.0.33-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -10,7 +10,7 @@ tempfile = "=3.0.7"
 [dependencies]
 failure = "=0.1.5"
 sim1h = "=0.0.4"
-sim2h = { version = "=0.0.1", path = "../sim2h" }
+sim2h = { path = "../sim2h" }
 lib3h_sodium = "=0.0.19"
 lib3h_protocol = "=0.0.19"
 lib3h = "=0.0.19"

@@ -26,7 +26,7 @@ use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     websocket::{
-        streams::{StreamEvent, StreamManager},
+        streams::{ConnectionStatus, StreamEvent, StreamManager},
         tls::{TlsCertificate, TlsConfig},
     },
     WireError, WireMessage,
@@ -89,15 +89,14 @@ impl Sim2hWorker {
         // bind to some port:
         // channel for making an async call sync
         debug!("Trying to bind to network...");
-        let uri = lib3h_protocol::uri::Builder::new()
-            .with_scheme("wss")
-            .with_host("127.0.0.1")
+        let uri = lib3h_protocol::uri::Builder::with_raw_url("wss://127.0.0.1")
+            .unwrap()
             .with_port(0)
             .build();
 
         let bound_url = stream_manager.bind(&uri)?;
 
-        let instance = Self {
+        let mut instance = Self {
             handler,
             stream_manager,
             inbox: Vec::new(),
@@ -113,7 +112,27 @@ impl Sim2hWorker {
 
         debug!("Successfully bound to {:?}", bound_url);
 
+        let connection_status = match instance.try_connect()? {
+            ConnectionStatus::Ready => "Ready",
+            ConnectionStatus::None => "None",
+            ConnectionStatus::Initializing => "Initializing",
+        };
+
+        debug!("Connection status: {:?}", connection_status);
         Ok(instance)
+    }
+
+    fn try_connect(&mut self) -> NetResult<ConnectionStatus> {
+        let url: url::Url = self.server_url.clone().into();
+        match self.stream_manager.connection_status(&url) {
+            ConnectionStatus::Ready => Ok(ConnectionStatus::Ready),
+            ConnectionStatus::None => {
+                let url = self.server_url.clone().into();
+                self.stream_manager.connect(&url)?;
+                Ok(self.stream_manager.connection_status(&url))
+            }
+            status => Ok(status),
+        }
     }
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {

@@ -4,11 +4,11 @@ version = "0.0.33-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = {version = "=0.0.32-alpha2" ,path = "../core_types" }
-holochain_core = {version = "=0.0.32-alpha2" , path = "../core" }
-holochain_common = { version = "=0.0.32-alpha2" ,path = "../common" }
-holochain_conductor_lib = {version = "=0.0.32-alpha2" , path = "../conductor_lib" }
-holochain_dpki = {version = "=0.0.32-alpha2" , path = "../dpki" }
+holochain_core_types = { path = "../core_types" }
+holochain_core = { path = "../core" }
+holochain_common = { path = "../common" }
+holochain_conductor_lib = { path = "../conductor_lib" }
+holochain_dpki = { path = "../dpki" }
 lib3h_sodium = "=0.0.19"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"

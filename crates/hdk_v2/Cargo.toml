@@ -1,5 +1,5 @@
 [package]
-name = "hdk-proc-macros"
+name = "hdk_proc_macros"
 version = "0.0.33-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
@@ -11,4 +11,4 @@ proc-macro = true
 syn = { version = "=0.15.31", features = ["full", "extra-traits"]}
 quote = "=0.6.11"
 proc-macro2 = "=0.4.27"
-hdk = {version = "=0.0.32-alpha2" , path = "../hdk" }
+hdk = { path = "../hdk" }

@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 lazy_static = "=1.2.0"
 base64 = "=0.10.1"
-holochain_core_types = {version = "=0.0.32-alpha2" , path = "../core_types" }
+holochain_core_types = { path = "../core_types" }
 lib3h_sodium = "=0.0.19"
 holochain_persistence_api = "=0.0.10"
 serde = "=1.0.89"

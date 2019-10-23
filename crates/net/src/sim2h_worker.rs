@@ -9,9 +9,6 @@ use holochain_json_api::{
     error::JsonError,
     json::{JsonString, RawString},
 };
-
-use lib3h_zombie_actor::WorkWasDone;
-
 use failure::_core::time::Duration;
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
@@ -358,7 +355,7 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        let mut did_something = WorkWasDone::from(false);
+        let mut did_something = false;
 
         match self.stream_manager.connection_status(&self.server_url.clone().into()) {
             ConnectionStatus::None => {
@@ -373,7 +370,7 @@ impl NetWorker for Sim2hWorker {
                     if let Err(error) = self.handle_client_message(data) {
                         error!("Error handling client message in Sim2hWorker: {:?}", error);
                     }
-                    did_something = WorkWasDone::from(true);
+                    did_something = true;
                 }
 
             },
@@ -388,7 +385,7 @@ impl NetWorker for Sim2hWorker {
                     error
                 );
             }
-            did_something = WorkWasDone::from(true);
+            did_something = true;
         }
 
         let (_did_work, mut events) = match self.stream_manager.process() {
@@ -437,9 +434,9 @@ impl NetWorker for Sim2hWorker {
                     info!("got connect result for url: {:?}, net_id: {:?}", url, net_id)
                 }
             }
-            did_something = WorkWasDone::from(true);
+            did_something = true;
         }
-        Ok(did_something.into())
+        Ok(did_something)
     }
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {

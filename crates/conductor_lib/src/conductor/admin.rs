@@ -244,10 +244,8 @@ impl ConductorAdmin for Conductor {
             ));
         }
         if let Some(instance) = self.instances.remove(id) {
-            if clean {
-                // if storageConfiguration != memory (and contains the path) {
-                if instance.storage              
-                remove_dir_all(instance.)?;
+            if clean {          
+                remove_dir_all(instance..get_storage_path())?;
             }
             instance.write().unwrap().kill();
         }

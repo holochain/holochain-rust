@@ -286,6 +286,14 @@ impl Holochain {
                 .expect("Context must be Some since we've checked it with check_instance()? above"),
         )?)
     }
+
+    pub fn get_storage_path(&self) -> Option<String> {
+        match self.from_state() {
+            StorageConfiguration::Memory => return None,
+            StorageConfiguration::File { path } => return Some(path.to_string()),
+            StorageConfiguration::Pickle { path } => return Some(path.to_string()),
+        }
+    }
 }
 
 #[cfg(test)]

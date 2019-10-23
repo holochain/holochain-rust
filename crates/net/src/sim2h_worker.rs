@@ -12,6 +12,7 @@ use holochain_json_api::{
 
 use lib3h_zombie_actor::WorkWasDone;
 
+use failure::_core::time::Duration;
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -30,10 +31,8 @@ use sim2h::{
     },
     WireError, WireMessage,
 };
-use std::convert::TryFrom;
+use std::{convert::TryFrom, time::Instant};
 use url::Url;
-use std::time::Instant;
-use failure::_core::time::Duration;
 
 const PING_DURATION_SECS: u64 = 10;
 
@@ -122,20 +121,20 @@ impl Sim2hWorker {
         let payload = wire_message_into_escaped_string(&message);
         let signature = self
             .conductor_api
-            .execute(
-                payload.clone(),
-                CryptoMethod::Sign,
-            )
-            .expect(&format!("Couldn't sign wire message in sim2h worker: {}", payload));
+            .execute(payload.clone(), CryptoMethod::Sign)
+            .expect(&format!(
+                "Couldn't sign wire message in sim2h worker: {}",
+                payload
+            ));
 
         let signed_wire_message = SignedWireMessage::new(
             message,
             Provenance::new(self.agent_id.clone(), signature.into()),
         );
-        let to_send : Opaque = signed_wire_message.into();
+        let to_send: Opaque = signed_wire_message.into();
         self.stream_manager.send(
             &self.server_url.clone().into(),
-            to_send.as_bytes().as_slice()
+            to_send.as_bytes().as_slice(),
         )?;
         Ok(())
     }
@@ -322,7 +321,9 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        if Instant::now().duration_since(self.time_of_last_sent) > Duration::from_secs(PING_DURATION_SECS) {
+        if Instant::now().duration_since(self.time_of_last_sent)
+            > Duration::from_secs(PING_DURATION_SECS)
+        {
             self.send_ping();
         }
 
@@ -350,7 +351,7 @@ impl NetWorker for Sim2hWorker {
         }
 
         let (_did_work, events) = match self.stream_manager.process() {
-            Ok((did_work ,events)) => (did_work, events),
+            Ok((did_work, events)) => (did_work, events),
             Err(e) => {
                 error!("Transport error: {:?}", e);
                 // This most likely means we have connection issues.

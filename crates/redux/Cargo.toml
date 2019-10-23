@@ -1,0 +1,7 @@
+[package]
+name = "redux"
+version = "0.1.0"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+
+[dependencies]

@@ -5,7 +5,7 @@ use crate::connection::{
     NetResult,
 };
 use detach::Detach;
-use failure::err_msg;
+use failure::{_core::time::Duration, err_msg};
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{
     error::JsonError,
@@ -36,10 +36,8 @@ use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     WireError, WireMessage,
 };
-use std::convert::TryFrom;
+use std::{convert::TryFrom, time::Instant};
 use url::Url;
-use std::time::Instant;
-use failure::_core::time::Duration;
 
 const PING_DURATION_SECS: u64 = 10;
 
@@ -169,11 +167,11 @@ impl Sim2hWorker {
         let payload = wire_message_into_escaped_string(&message);
         let signature = self
             .conductor_api
-            .execute(
-                payload.clone(),
-                CryptoMethod::Sign,
-            )
-            .expect(&format!("Couldn't sign wire message in sim2h worker: {}", payload));
+            .execute(payload.clone(), CryptoMethod::Sign)
+            .expect(&format!(
+                "Couldn't sign wire message in sim2h worker: {}",
+                payload
+            ));
 
         let signed_wire_message = SignedWireMessage::new(
             message,
@@ -389,7 +387,9 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        if Instant::now().duration_since(self.time_of_last_sent) > Duration::from_secs(PING_DURATION_SECS) {
+        if Instant::now().duration_since(self.time_of_last_sent)
+            > Duration::from_secs(PING_DURATION_SECS)
+        {
             self.send_ping();
         }
         if let Err(transport_error) = detach_run!(&mut self.transport, |t| t.process(self)) {

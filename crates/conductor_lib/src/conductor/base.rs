@@ -535,7 +535,7 @@ impl Conductor {
         self.signal_multiplexer_kill_switch
             .as_ref()
             .map(|sender| sender.send(()));
-        
+
         self.instances = HashMap::new();
         Ok(())
     }
@@ -695,7 +695,7 @@ impl Conductor {
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
-        
+
         self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 

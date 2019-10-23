@@ -107,13 +107,13 @@ pub struct Keystore {
 
 fn make_passphrase_check(
     passphrase: &mut SecBuf,
-    hash_config: Option<PwHashConfig>,
+    _hash_config: Option<PwHashConfig>,
 ) -> HcResult<String> {
     let mut check_buf = CRYPTO.buf_new_secure(PCHECK_SIZE);
-    CRYPTO.randombytes_buf(&mut check_buf);
+    CRYPTO.randombytes_buf(&mut check_buf)?;
     check_buf.write(0, &PCHECK_HEADER).unwrap();
     let mut passphrase_buf = CRYPTO.buf_new_secure(passphrase.len());
-    secbuf_from_array(&mut passphrase_buf, &passphrase);
+    secbuf_from_array(&mut passphrase_buf, &passphrase)?;
     encrypt_with_passphrase_buf(&mut check_buf, &mut passphrase_buf)
 }
 
@@ -124,9 +124,9 @@ impl Keystore {
         passphrase_manager: Arc<PassphraseManager>,
         hash_config: Option<PwHashConfig>,
     ) -> HcResult<Self> {
-        let mut passphrase = passphrase_manager.get_passphrase()?;
-        let passphrase_secbuf = SecBuf::with_secure(passphrase.len());
-        passphrase_secbuf.from_array(&passphrase);
+        let passphrase = passphrase_manager.get_passphrase()?;
+        let mut passphrase_secbuf = SecBuf::with_secure(passphrase.len());
+        passphrase_secbuf.from_array(&passphrase)?;
         Ok(Keystore {
             passphrase_check: make_passphrase_check(
                 &mut passphrase_secbuf,
@@ -171,10 +171,10 @@ impl Keystore {
     /// This tries to decrypt `passphrase_check` with the given passphrase and
     /// expects to read `PCHECK_HEADER` from the decrypted text, ignoring the
     /// random bytes following the header.
-    fn check_passphrase(&self, mut passphrase: &mut SecBuf) -> HcResult<bool> {
+    fn check_passphrase(&self, passphrase: &mut SecBuf) -> HcResult<bool> {
         let mut passphrase_crypto_buf = CRYPTO.buf_new_insecure(passphrase.len());
-        passphrase_crypto_buf.write(0,&*passphrase);
-        let mut decrypted_buf = decrypt_with_passphrase_buf(
+        passphrase_crypto_buf.write(0,&*passphrase)?;
+        let decrypted_buf = decrypt_with_passphrase_buf(
             &self.passphrase_check,
             &mut passphrase_crypto_buf,
             PCHECK_SIZE
@@ -205,14 +205,14 @@ impl Keystore {
     fn inner_decrypt(
         &self,
         blob: &KeyBlob,
-        mut passphrase: SecBuf,
+        passphrase: SecBuf,
     ) -> Result<Secret, HolochainError> {
         let mut passphrase_crypto_buf = CRYPTO.buf_new_insecure(passphrase.len());
-        passphrase_crypto_buf.write(0,&*passphrase);
+        passphrase_crypto_buf.write(0,&*passphrase)?;
         Ok(match blob.blob_type {
             BlobType::Seed => {
                 let seed = Seed::from_blob(blob, &mut passphrase_crypto_buf)?.buf;
-                let sec_buf = SecBuf::with_secure(seed.len());
+                let mut sec_buf = SecBuf::with_secure(seed.len());
                 sec_buf.from_array(&seed)?;
                 Secret::Seed(sec_buf)
             }
@@ -237,7 +237,7 @@ impl Keystore {
     fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
         let blob = self.secrets.get(id_str).ok_or("Secret not found")?;
 
-        let mut default_passphrase =
+        let default_passphrase =
             secbuf_new_insecure_from_string(holochain_common::DEFAULT_PASSPHRASE.to_string());
         let mut sec_buf = SecBuf::with_secure(default_passphrase.len());
         sec_buf.from_array(&default_passphrase)?;
@@ -246,7 +246,7 @@ impl Keystore {
             self.inner_decrypt(blob, sec_buf)
         } else {
             let passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
-            let passphrase_sec_buf = SecBuf::with_secure(passphrase.len());
+            let mut passphrase_sec_buf = SecBuf::with_secure(passphrase.len());
             passphrase_sec_buf.from_array(&passphrase)?;
             self.inner_decrypt(blob, passphrase_sec_buf)
         };
@@ -265,8 +265,8 @@ impl Keystore {
     fn encrypt(&mut self, id_str: &String) -> HcResult<()> {
         let secret = self.cache.get(id_str).ok_or("Secret not found")?;
         let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
-        let passphrase_sec_buf = SecBuf::with_secure(passphrase.len());
-        passphrase_sec_buf.from_array(&passphrase_sec_buf)?;
+        let mut passphrase_sec_buf = SecBuf::with_secure(passphrase.len());
+        passphrase_sec_buf.from_array(&passphrase)?;
 
         self.check_passphrase(&mut passphrase_sec_buf)?;
         let blob = match *secret.lock()? {
@@ -314,7 +314,7 @@ impl Keystore {
     pub fn add_random_seed(&mut self, dst_id_str: &str, size: usize) -> HcResult<()> {
         let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
-        let seed_sec_buf = SecBuf::with_secure(seed_buf.len());
+        let mut seed_sec_buf = SecBuf::with_secure(seed_buf.len());
         seed_sec_buf.from_array(&seed_buf)?;
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_sec_buf)));
         self.cache.insert(dst_id.clone(), secret);
@@ -372,9 +372,9 @@ impl Keystore {
             match *src_secret {
                 Secret::Seed(ref mut src) => {
                     let mut src_crypto_buf = CRYPTO.buf_new_insecure(src.len());
-                    src_crypto_buf.write(0,&*src);
+                    src_crypto_buf.write(0,&*src)?;
                     let seed = generate_derived_seed_buf(&mut src_crypto_buf, context, index, SEED_SIZE)?;
-                    let seed_sec_buf = SecBuf::with_secure(seed.len());
+                    let mut seed_sec_buf = SecBuf::with_secure(seed.len());
                     seed_sec_buf.from_array(&seed)?;
                     Arc::new(Mutex::new(Secret::Seed(seed_sec_buf)))
                 }
@@ -413,7 +413,7 @@ impl Keystore {
             match key_type {
                 KeyType::Signing => {
                     let mut seed_crypto_buf = CRYPTO.buf_new_insecure(seed_buf.len());
-                    seed_crypto_buf.write(0,&*seed_buf);
+                    seed_crypto_buf.write(0,&*seed_buf)?;
                     let key_pair = SigningKeyPair::new_from_seed(&mut seed_crypto_buf)?;
                     let public_key = key_pair.public();
                     (
@@ -423,7 +423,7 @@ impl Keystore {
                 }
                 KeyType::Encrypting => {
                     let mut seed_crypto_buf = CRYPTO.buf_new_insecure(seed_buf.len());
-                    seed_crypto_buf.write(0,&*seed_buf);
+                    seed_crypto_buf.write(0,&*seed_buf)?;
                     let key_pair = EncryptingKeyPair::new_from_seed(&mut seed_crypto_buf)?;
                     let public_key = key_pair.public();
                     (
@@ -537,7 +537,7 @@ impl Keystore {
             Secret::SigningKey(ref mut key_pair) => {
                 let mut data_buf = secbuf_new_insecure_from_string(data);
 
-                let mut signature_buf = key_pair.sign(&mut data_buf)?;
+                let signature_buf = key_pair.sign(&mut data_buf)?;
                 let buf = signature_buf.read_lock();
                 // Return as base64 encoded string
                 let signature_str = base64::encode(&*buf);
@@ -579,7 +579,7 @@ pub mod tests {
     }
 
     fn random_test_passphrase() -> String {
-        let mut buf = utils::generate_random_buf(10);
+        let buf = utils::generate_random_buf(10);
         let read_lock = buf.read_lock();
         String::from_utf8_lossy(&*read_lock).to_string()
     }
@@ -588,12 +588,16 @@ pub mod tests {
     fn test_keystore_new() {
         let random_passphrase = random_test_passphrase();
         let keystore = new_test_keystore(random_passphrase.clone());
-        let mut random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
+        let random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
         assert!(keystore.list().is_empty());
-        assert_eq!(keystore.check_passphrase(&mut random_passphrase), Ok(true));
-        let mut another_random_passphrase = utils::generate_random_buf(10);
+        let mut random_secbuf = SecBuf::with_secure(random_passphrase.len());
+        random_secbuf.from_array(&random_passphrase).expect("Could not create from array");
+        assert_eq!(keystore.check_passphrase(&mut random_secbuf), Ok(true));
+        let another_random_passphrase = utils::generate_random_buf(10);
+        let mut another_random_secbuf = SecBuf::with_secure(another_random_passphrase.len());
+        another_random_secbuf.from_array(&another_random_passphrase).expect("Could not create from array");
         assert_eq!(
-            keystore.check_passphrase(&mut another_random_passphrase),
+            keystore.check_passphrase(&mut another_random_secbuf),
             Ok(false)
         );
     }
@@ -642,22 +646,28 @@ pub mod tests {
     fn test_keystore_change_passphrase() {
         let random_passphrase = random_test_passphrase();
         let mut keystore = new_test_keystore(random_passphrase.clone());
-        let mut random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
-        let mut another_random_passphrase = utils::generate_random_buf(10);
+        let random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
+        let another_random_passphrase = utils::generate_random_buf(10);
+
+        let mut random_secbuf = SecBuf::with_secure(random_passphrase.len());
+        random_secbuf.from_array(&random_passphrase).expect("Could not create from array");
+        let mut another_random_secbuf = SecBuf::with_secure(another_random_passphrase.len());
+        another_random_secbuf.from_array(&another_random_passphrase).expect("Could not create from array");
+        
         assert!(
             // wrong passphrase
             keystore
-                .change_passphrase(&mut another_random_passphrase, &mut random_passphrase)
+                .change_passphrase(&mut another_random_secbuf, &mut random_secbuf)
                 .is_err()
         );
         assert_eq!(
-            keystore.change_passphrase(&mut random_passphrase, &mut another_random_passphrase),
+            keystore.change_passphrase(&mut random_secbuf, &mut another_random_secbuf),
             Ok(())
         );
         // check that passphrase was actually changed
-        assert_eq!(keystore.check_passphrase(&mut random_passphrase), Ok(false));
+        assert_eq!(keystore.check_passphrase(&mut random_secbuf), Ok(false));
         assert_eq!(
-            keystore.check_passphrase(&mut another_random_passphrase),
+            keystore.check_passphrase(&mut another_random_secbuf),
             Ok(true)
         );
     }
@@ -854,9 +864,9 @@ pub mod tests {
             "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         );
 
-        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(base64::encode(&*key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
         assert_eq!(
-            base64::encode(&**key_bundle.enc_keys.private().read_lock()),
+            base64::encode(&*key_bundle.enc_keys.private().read_lock()),
             "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()
         );
     }

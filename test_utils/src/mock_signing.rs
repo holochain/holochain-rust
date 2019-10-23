@@ -2,11 +2,9 @@ use holochain_core_types::{agent::AgentId, sync::HcMutex as Mutex};
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
-    utils::{secbuf_from_array,secbuf_new_insecure_from_string},
-    SecBuf,
+use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE,CRYPTO,
+    utils::{secbuf_from_array,secbuf_new_insecure_from_string}};
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
-use lib3h_sodium::secbuf::SecBuf;
 use std::{collections::HashMap, sync::Arc};
 
 lazy_static! {
@@ -68,11 +66,11 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
             let mut message = secbuf_new_insecure_from_string(payload);
 
             // Create signature
-            let mut message_signed = keybundle.sign(&mut message).expect("Mock signing failed.");
+            let message_signed = keybundle.sign(&mut message).expect("Mock signing failed.");
             let message_signed = message_signed.read_lock();
 
             // Return as base64 encoded string
-            base64::encode(&**message_signed)
+            base64::encode(&*message_signed)
         })
         .unwrap()
 }
@@ -101,13 +99,13 @@ pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String {
             let mut message = secbuf_new_insecure_from_string(payload);
 
             // Create signature
-            let mut message_signed = keybundle
+            let message_signed = keybundle
                 .encrypt(&mut message)
                 .expect("Mock signing failed.");
             let message_signed = message_signed.read_lock();
 
             // Return as base64 encoded string
-            base64::encode(&**message_signed)
+            base64::encode(&*message_signed)
         })
         .unwrap()
 }
@@ -135,10 +133,10 @@ pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String {
             let decoded_base_64 = base64::decode(&payload).unwrap();
             // Convert payload string into a SecBuf
             let mut message = CRYPTO.buf_new_insecure(decoded_base_64.len());
-            sebuf_from_array(&mut message, &decoded_base_64).unwrap();
+            secbuf_from_array(&mut message, &decoded_base_64).unwrap();
 
             // Create signature
-            let mut decrypted = keybundle
+            let decrypted = keybundle
                 .decrypt(&mut message)
                 .expect("Mock signing failed.");
             let decrypted_lock = decrypted.read_lock();

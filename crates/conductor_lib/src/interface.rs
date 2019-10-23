@@ -925,7 +925,7 @@ impl ConductorApiBuilder {
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut message_signature = keybundle
+            let message_signature = keybundle
                 .lock()
                 .unwrap()
                 .sign(&mut message)
@@ -949,7 +949,7 @@ impl ConductorApiBuilder {
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut encrypted_message = keybundle
+            let encrypted_message = keybundle
                 .lock()
                 .unwrap()
                 .encrypt(&mut message)
@@ -976,7 +976,7 @@ impl ConductorApiBuilder {
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            let mut decrypted_buf = keybundle
+            let decrypted_buf = keybundle
                 .lock()
                 .unwrap()
                 .decrypt(&mut decoded_message_buf)

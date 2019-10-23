@@ -924,7 +924,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdk-proc-macros"
+name = "hdk_proc_macros"
 version = "0.0.33-alpha5"
 dependencies = [
  "hdk 0.0.33-alpha5",

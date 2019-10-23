@@ -1,8 +1,8 @@
 { pkgs }:
 let
-  name = "hc-app-spec-cluster-test";
+  name-cluster = "hc-app-spec-cluster-test";
 
-  script = pkgs.writeShellScriptBin name
+  script-cluster = pkgs.writeShellScriptBin name-cluster
   ''
   hc-cli-install
   hc-conductor-install
@@ -12,5 +12,5 @@ let
   '';
 in
 {
- buildInputs = [ script ];
+ buildInputs = [ script-cluster ];
 }

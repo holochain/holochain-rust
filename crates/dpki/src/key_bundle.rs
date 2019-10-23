@@ -59,9 +59,8 @@ impl KeyBundle {
     }
 
     pub fn encrypt(&mut self, data: &mut SecBuf) -> HcResult<SecBuf> {
-        let mut encrypted_data = CRYPTO.buf_new_insecure(
-            data.len() + CRYPTO.aead_auth_bytes() + CRYPTO.aead_nonce_bytes(),
-        );
+        let mut encrypted_data = CRYPTO
+            .buf_new_insecure(data.len() + CRYPTO.aead_auth_bytes() + CRYPTO.aead_nonce_bytes());
         self.enc_keys.encrypt(data, &mut encrypted_data);
         Ok(encrypted_data.box_clone())
     }
@@ -138,7 +137,9 @@ pub(crate) mod tests {
 
         // Create random data
         let mut message = TEST_CRYPTO.buf_new_insecure(16);
-        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
 
         // sign it
         let mut signature = bundle.sign(&mut message).unwrap();
@@ -148,13 +149,17 @@ pub(crate) mod tests {
 
         // Create random data
         let mut random_signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
-        TEST_CRYPTO.randombytes_buf(&mut random_signature).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut random_signature)
+            .expect("should work");
         // authentify random signature
         let succeeded = bundle.verify(&mut message, &mut random_signature);
         assert_eq!(succeeded, Ok(false));
 
         // Randomize data again
-        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         let succeeded = bundle.verify(&mut message, &mut signature);
         assert_eq!(succeeded, Ok(false));
     }
@@ -166,7 +171,9 @@ pub(crate) mod tests {
 
         // Create random data
         let mut message = TEST_CRYPTO.buf_new_insecure(16);
-        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         //encrypt it
         let mut encrypted_message = bundle.encrypt(&mut message.box_clone()).unwrap();
 

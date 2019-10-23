@@ -11,7 +11,6 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::Address;
 use std::str;
 
-
 /// a trait for things that have a provenance that can be verified
 pub trait Verify {
     fn verify(&self, data: String) -> HcResult<bool>;
@@ -36,7 +35,7 @@ pub fn secbuf_from_array(buf: &mut SecBuf, data: &[u8]) -> HcResult<()> {
 pub fn secbuf_new_insecure_from_string(data: String) -> SecBuf {
     let u8_data = data.as_bytes();
     let mut buf = CRYPTO.buf_new_insecure(u8_data.len());
-    buf.write(0,u8_data).expect("FIXME");
+    buf.write(0, u8_data).expect("FIXME");
     buf
 }
 
@@ -190,7 +189,9 @@ pub mod tests {
     #[test]
     fn it_should_hcid_roundtrip() {
         let mut pub_sec_buf = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.sign_secret_key_bytes());
-        TEST_CRYPTO.randombytes_buf(&mut pub_sec_buf).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut pub_sec_buf)
+            .expect("should work");
 
         let codec = HcidEncoding::with_kind("hcs0").expect("HCID failed miserably with_hcs0");
         let pub_key_b32 = encode_pub_key(&mut pub_sec_buf, &codec).unwrap();
@@ -216,7 +217,9 @@ pub mod tests {
         let pub_key_b32 = encode_pub_key(&mut public_key, &codec).unwrap();
         // Create signing buffers
         let mut message = TEST_CRYPTO.buf_new_insecure(42);
-        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         let mut signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
         TEST_CRYPTO
             .sign(&mut signature, &mut message, &mut secret_key)

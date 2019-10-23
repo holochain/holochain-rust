@@ -158,7 +158,10 @@ impl KeyPair for EncryptingKeyPair {
     }
 
     fn new_from_self(&mut self) -> HcResult<Self> {
-        Ok(EncryptingKeyPair::new(self.public(), self.private.box_clone()))
+        Ok(EncryptingKeyPair::new(
+            self.public(),
+            self.private.box_clone(),
+        ))
     }
 }
 
@@ -220,7 +223,7 @@ impl EncryptingKeyPair {
             .skip(cipher_length)
             .cloned()
             .collect::<Vec<u8>>();
-        utils::secbuf_from_array(&mut nonce,&nonce_slice_from_cipher)?;
+        utils::secbuf_from_array(&mut nonce, &nonce_slice_from_cipher)?;
 
         //get cipher only from buffer
         let cipher_no_nonce_slice = cipher_slice
@@ -229,7 +232,7 @@ impl EncryptingKeyPair {
             .take(cipher_length)
             .collect::<Vec<u8>>();
         let mut cipher_no_nonce = CRYPTO.buf_new_insecure(cipher_length);
-        utils::secbuf_from_array(&mut cipher_no_nonce,&cipher_no_nonce_slice)?;
+        utils::secbuf_from_array(&mut cipher_no_nonce, &cipher_no_nonce_slice)?;
 
         CRYPTO.aead_decrypt(
             &mut decrypted_message,
@@ -259,8 +262,7 @@ pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SEED_SIZE;
-    use crate::utils::tests::TEST_CRYPTO;
+    use crate::{utils::tests::TEST_CRYPTO, SEED_SIZE};
 
     pub fn test_generate_random_sign_keypair() -> SigningKeyPair {
         generate_random_sign_keypair().unwrap()
@@ -304,7 +306,9 @@ mod tests {
 
         // Create random data
         let mut message = TEST_CRYPTO.buf_new_insecure(16);
-        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
 
         // sign it
         let mut signature = sign_keys.sign(&mut message).unwrap();
@@ -315,13 +319,17 @@ mod tests {
 
         // Create random data
         let mut random_signature = TEST_CRYPTO.buf_new_insecure(SIGNATURE_SIZE);
-        TEST_CRYPTO.randombytes_buf(&mut random_signature).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut random_signature)
+            .expect("should work");
         // authentify random signature
         let succeeded = sign_keys.verify(&mut message, &mut random_signature);
         assert_eq!(succeeded, Ok(false));
 
         // Randomize data again
-        TEST_CRYPTO.randombytes_buf(&mut message).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut message)
+            .expect("should work");
         let succeeded = sign_keys.verify(&mut message, &mut signature);
         assert_eq!(succeeded, Ok(false));
     }

@@ -24,8 +24,8 @@ use config::{
 };
 use holochain_dpki::{
     key_bundle::KeyBundle,
-    utils::{secbuf_new_insecure_from_string,secbuf_from_array, SeedContext},
-    CRYPTO
+    utils::{secbuf_from_array, secbuf_new_insecure_from_string, SeedContext},
+    CRYPTO,
 };
 use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};

@@ -1,7 +1,9 @@
 use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
-    utils::{secbuf_from_array, secbuf_new_insecure_from_string, generate_derived_seed_buf, SeedContext},
+    utils::{
+        generate_derived_seed_buf, secbuf_from_array, secbuf_new_insecure_from_string, SeedContext,
+    },
     SecBuf, AGENT_ID_CTX, CRYPTO, SEED_SIZE,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
@@ -56,13 +58,9 @@ pub trait SeedTrait {
     /// encrypt the contents of a seed with a passphrase
     /// Encrypted seeds preserve their seed type
     // TODO: passphrase should use SecBuf across the board
-    fn encrypt(
-        &mut self,
-        passphrase: String,
-    ) -> HcResult<EncryptedSeed> {
+    fn encrypt(&mut self, passphrase: String) -> HcResult<EncryptedSeed> {
         let mut passphrase_buf = secbuf_new_insecure_from_string(passphrase);
-        let encrypted_data =
-            pw_enc_zero_nonce(&mut self.seed_mut().buf, &mut passphrase_buf)?;
+        let encrypted_data = pw_enc_zero_nonce(&mut self.seed_mut().buf, &mut passphrase_buf)?;
         Ok(EncryptedSeed::new(encrypted_data, self.seed().kind.clone()))
     }
 }
@@ -144,8 +142,8 @@ impl MnemonicableSeed for Seed {
 
         let entropy = mnemonic.entropy().to_owned();
         assert_eq!(entropy.len(), SEED_SIZE);
-        let mut seed_buf =  CRYPTO.buf_new_secure(entropy.len());
-        secbuf_from_array(&mut seed_buf,entropy.as_slice())?;
+        let mut seed_buf = CRYPTO.buf_new_secure(entropy.len());
+        secbuf_from_array(&mut seed_buf, entropy.as_slice())?;
         // Done
         Ok(Self {
             kind: seed_type,
@@ -299,10 +297,7 @@ impl EncryptedSeed {
         Self { kind, data }
     }
 
-    pub fn decrypt(
-        &mut self,
-        passphrase: String,
-    ) -> HcResult<TypedSeed> {
+    pub fn decrypt(&mut self, passphrase: String) -> HcResult<TypedSeed> {
         let mut passphrase_buf = secbuf_new_insecure_from_string(passphrase);
         let mut decrypted_data = CRYPTO.buf_new_secure(SEED_SIZE);
         pw_dec(&self.data, &mut passphrase_buf, &mut decrypted_data)?;
@@ -329,7 +324,10 @@ impl MnemonicableSeed for EncryptedSeed {
             .flatten()
             .collect();
 
-        assert_eq!(entropy.len(), SEED_SIZE + CRYPTO.aead_auth_bytes() + CRYPTO.pwhash_salt_bytes());
+        assert_eq!(
+            entropy.len(),
+            SEED_SIZE + CRYPTO.aead_auth_bytes() + CRYPTO.pwhash_salt_bytes()
+        );
 
         let enc_data = EncryptedData {
             nonce: vec![0; CRYPTO.aead_nonce_bytes()], // zero nonce
@@ -355,7 +353,10 @@ impl MnemonicableSeed for EncryptedSeed {
             .collect();
         let entropy = bytes.as_slice();
 
-        assert_eq!(entropy.len(), SEED_SIZE + CRYPTO.aead_auth_bytes() + CRYPTO.pwhash_salt_bytes());
+        assert_eq!(
+            entropy.len(),
+            SEED_SIZE + CRYPTO.aead_auth_bytes() + CRYPTO.pwhash_salt_bytes()
+        );
 
         let mnemonic = entropy
             .chunks(SEED_SIZE)
@@ -520,9 +521,7 @@ mod tests {
             _ => unreachable!(),
         };
         let mut enc_seed = seed.encrypt("some passphrase".to_string()).unwrap();
-        let dec_seed_untyped = enc_seed
-            .decrypt("some passphrase".to_string())
-            .unwrap();
+        let dec_seed_untyped = enc_seed.decrypt("some passphrase".to_string()).unwrap();
         let mut dec_seed = match dec_seed_untyped {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
@@ -547,10 +546,7 @@ mod tests {
         );
 
         let mut enc_seed_2 = EncryptedSeed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
-        let mut seed_2 = match enc_seed_2
-            .decrypt("some passphrase".to_string())
-            .unwrap()
-        {
+        let mut seed_2 = match enc_seed_2.decrypt("some passphrase".to_string()).unwrap() {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
         };

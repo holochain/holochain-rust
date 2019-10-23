@@ -290,8 +290,6 @@ impl From<hcid::HcidError> for HolochainError {
     }
 }
 
-
-
 #[derive(Serialize, Deserialize, Default, Debug, DefaultJson)]
 pub struct ZomeApiInternalResult {
     pub ok: bool,

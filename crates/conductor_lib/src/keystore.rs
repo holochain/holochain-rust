@@ -11,10 +11,9 @@ use holochain_dpki::{
     seed::Seed,
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
-        generate_random_buf, secbuf_new_insecure_from_string, SeedContext,
-        secbuf_from_array
+        generate_random_buf, secbuf_from_array, secbuf_new_insecure_from_string, SeedContext,
     },
-    SEED_SIZE,CRYPTO
+    CRYPTO, SEED_SIZE,
 };
 
 use lib3h_sodium::{
@@ -128,10 +127,7 @@ impl Keystore {
         let mut passphrase_secbuf = SecBuf::with_secure(passphrase.len());
         passphrase_secbuf.from_array(&passphrase)?;
         Ok(Keystore {
-            passphrase_check: make_passphrase_check(
-                &mut passphrase_secbuf,
-                hash_config.clone(),
-            )?,
+            passphrase_check: make_passphrase_check(&mut passphrase_secbuf, hash_config.clone())?,
             secrets: BTreeMap::new(),
             cache: HashMap::new(),
             passphrase_manager: Some(passphrase_manager),
@@ -173,11 +169,11 @@ impl Keystore {
     /// random bytes following the header.
     fn check_passphrase(&self, passphrase: &mut SecBuf) -> HcResult<bool> {
         let mut passphrase_crypto_buf = CRYPTO.buf_new_insecure(passphrase.len());
-        passphrase_crypto_buf.write(0,&*passphrase)?;
+        passphrase_crypto_buf.write(0, &*passphrase)?;
         let decrypted_buf = decrypt_with_passphrase_buf(
             &self.passphrase_check,
             &mut passphrase_crypto_buf,
-            PCHECK_SIZE
+            PCHECK_SIZE,
         )?;
         let mut decrypted_header = CRYPTO.buf_new_insecure(PCHECK_HEADER_SIZE);
         let decrypted_buf = decrypted_buf.read_lock();
@@ -202,13 +198,9 @@ impl Keystore {
     /// Actually runs the decryption of the given KeyBlob with the given passphrase.
     /// Called by decrypt().
     /// Calls the matching from_blob function depending on the type of the KeyBlob.
-    fn inner_decrypt(
-        &self,
-        blob: &KeyBlob,
-        passphrase: SecBuf,
-    ) -> Result<Secret, HolochainError> {
+    fn inner_decrypt(&self, blob: &KeyBlob, passphrase: SecBuf) -> Result<Secret, HolochainError> {
         let mut passphrase_crypto_buf = CRYPTO.buf_new_insecure(passphrase.len());
-        passphrase_crypto_buf.write(0,&*passphrase)?;
+        passphrase_crypto_buf.write(0, &*passphrase)?;
         Ok(match blob.blob_type {
             BlobType::Seed => {
                 let seed = Seed::from_blob(blob, &mut passphrase_crypto_buf)?.buf;
@@ -216,13 +208,12 @@ impl Keystore {
                 sec_buf.from_array(&seed)?;
                 Secret::Seed(sec_buf)
             }
-            BlobType::SigningKey => Secret::SigningKey(SigningKeyPair::from_blob(
-                blob,
-                &mut passphrase_crypto_buf
-            )?),
+            BlobType::SigningKey => {
+                Secret::SigningKey(SigningKeyPair::from_blob(blob, &mut passphrase_crypto_buf)?)
+            }
             BlobType::EncryptingKey => Secret::EncryptingKey(EncryptingKeyPair::from_blob(
                 blob,
-                &mut passphrase_crypto_buf
+                &mut passphrase_crypto_buf,
             )?),
             _ => {
                 return Err(HolochainError::ErrorGeneric(
@@ -273,17 +264,10 @@ impl Keystore {
             Secret::Seed(ref mut buf) => {
                 let mut owned_buf = CRYPTO.buf_new_insecure(buf.len());
                 owned_buf.write(0, &*buf.read_lock())?;
-                Seed::new(owned_buf, SeedType::OneShot).as_blob(
-                    &mut passphrase,
-                    "".to_string()
-                )
+                Seed::new(owned_buf, SeedType::OneShot).as_blob(&mut passphrase, "".to_string())
             }
-            Secret::SigningKey(ref mut key) => {
-                key.as_blob(&mut passphrase, "".to_string())
-            }
-            Secret::EncryptingKey(ref mut key) => {
-                key.as_blob(&mut passphrase, "".to_string())
-            }
+            Secret::SigningKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string()),
+            Secret::EncryptingKey(ref mut key) => key.as_blob(&mut passphrase, "".to_string()),
         }?;
         self.secrets.insert(id_str.clone(), blob);
         Ok(())
@@ -372,8 +356,9 @@ impl Keystore {
             match *src_secret {
                 Secret::Seed(ref mut src) => {
                     let mut src_crypto_buf = CRYPTO.buf_new_insecure(src.len());
-                    src_crypto_buf.write(0,&*src)?;
-                    let seed = generate_derived_seed_buf(&mut src_crypto_buf, context, index, SEED_SIZE)?;
+                    src_crypto_buf.write(0, &*src)?;
+                    let seed =
+                        generate_derived_seed_buf(&mut src_crypto_buf, context, index, SEED_SIZE)?;
                     let mut seed_sec_buf = SecBuf::with_secure(seed.len());
                     seed_sec_buf.from_array(&seed)?;
                     Arc::new(Mutex::new(Secret::Seed(seed_sec_buf)))
@@ -413,7 +398,7 @@ impl Keystore {
             match key_type {
                 KeyType::Signing => {
                     let mut seed_crypto_buf = CRYPTO.buf_new_insecure(seed_buf.len());
-                    seed_crypto_buf.write(0,&*seed_buf)?;
+                    seed_crypto_buf.write(0, &*seed_buf)?;
                     let key_pair = SigningKeyPair::new_from_seed(&mut seed_crypto_buf)?;
                     let public_key = key_pair.public();
                     (
@@ -423,7 +408,7 @@ impl Keystore {
                 }
                 KeyType::Encrypting => {
                     let mut seed_crypto_buf = CRYPTO.buf_new_insecure(seed_buf.len());
-                    seed_crypto_buf.write(0,&*seed_buf)?;
+                    seed_crypto_buf.write(0, &*seed_buf)?;
                     let key_pair = EncryptingKeyPair::new_from_seed(&mut seed_crypto_buf)?;
                     let public_key = key_pair.public();
                     (
@@ -591,11 +576,15 @@ pub mod tests {
         let random_passphrase = utils::secbuf_new_insecure_from_string(random_passphrase);
         assert!(keystore.list().is_empty());
         let mut random_secbuf = SecBuf::with_secure(random_passphrase.len());
-        random_secbuf.from_array(&random_passphrase).expect("Could not create from array");
+        random_secbuf
+            .from_array(&random_passphrase)
+            .expect("Could not create from array");
         assert_eq!(keystore.check_passphrase(&mut random_secbuf), Ok(true));
         let another_random_passphrase = utils::generate_random_buf(10);
         let mut another_random_secbuf = SecBuf::with_secure(another_random_passphrase.len());
-        another_random_secbuf.from_array(&another_random_passphrase).expect("Could not create from array");
+        another_random_secbuf
+            .from_array(&another_random_passphrase)
+            .expect("Could not create from array");
         assert_eq!(
             keystore.check_passphrase(&mut another_random_secbuf),
             Ok(false)
@@ -650,10 +639,14 @@ pub mod tests {
         let another_random_passphrase = utils::generate_random_buf(10);
 
         let mut random_secbuf = SecBuf::with_secure(random_passphrase.len());
-        random_secbuf.from_array(&random_passphrase).expect("Could not create from array");
+        random_secbuf
+            .from_array(&random_passphrase)
+            .expect("Could not create from array");
         let mut another_random_secbuf = SecBuf::with_secure(another_random_passphrase.len());
-        another_random_secbuf.from_array(&another_random_passphrase).expect("Could not create from array");
-        
+        another_random_secbuf
+            .from_array(&another_random_passphrase)
+            .expect("Could not create from array");
+
         assert!(
             // wrong passphrase
             keystore

@@ -1406,7 +1406,9 @@ pub mod tests {
         signal::signal_channel,
     };
     use holochain_core_types::dna;
-    use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE,CRYPTO};
+    use holochain_dpki::{
+        key_bundle::KeyBundle, password_encryption::PwHashConfig, CRYPTO, SEED_SIZE,
+    };
     use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
@@ -1484,7 +1486,9 @@ pub mod tests {
         seed.write(0, mock_seed.as_slice())
             .expect("SecBuf must be writeable");
         let mut secret_secbuf = SecBuf::with_secure(seed.len());
-        secret_secbuf.from_array(&seed).expect("Could not create from array");
+        secret_secbuf
+            .from_array(&seed)
+            .expect("Could not create from array");
         let secret = Arc::new(Mutex::new(Secret::Seed(secret_secbuf)));
         keystore.add("root_seed", secret).unwrap();
 

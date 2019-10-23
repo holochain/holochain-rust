@@ -261,7 +261,7 @@ impl Blobbable for SigningKeyPair {
         data_buf
             .write(offset, &*self.private.read_lock())
             .expect("Failed blobbing private signing key");
-//        offset += CRYPTO.sign_secret_key_bytes();
+        //        offset += CRYPTO.sign_secret_key_bytes();
 
         // Finalize
         let encoded_blob = Self::finalize_blobbing(&mut data_buf, passphrase)?;
@@ -350,7 +350,7 @@ impl Blobbable for EncryptingKeyPair {
         data_buf
             .write(offset, &*self.private.read_lock())
             .expect("Failed blobbing private ecrypting key");
-//        offset += CRYPTO.sign_secret_key_bytes();
+        //        offset += CRYPTO.sign_secret_key_bytes();
 
         // Finalize
         let encoded_blob = Self::finalize_blobbing(&mut data_buf, passphrase)?;
@@ -420,7 +420,9 @@ mod tests {
         assert!(bundle.is_same(&mut unblob));
 
         // Test with wrong passphrase
-        TEST_CRYPTO.randombytes_buf(&mut passphrase).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut passphrase)
+            .expect("should work");
         let maybe_unblob = KeyBundle::from_blob(&blob, &mut passphrase);
         assert!(maybe_unblob.is_err());
     }
@@ -446,7 +448,9 @@ mod tests {
         assert_eq!(unblob.public(), signing_key.public());
 
         // Test with wrong passphrase
-        TEST_CRYPTO.randombytes_buf(&mut passphrase).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut passphrase)
+            .expect("should work");
         let maybe_unblob = SigningKeyPair::from_blob(&blob, &mut passphrase);
         assert!(maybe_unblob.is_err());
     }
@@ -472,7 +476,9 @@ mod tests {
         assert_eq!(unblob.public(), enc_key.public());
 
         // Test with wrong passphrase
-        TEST_CRYPTO.randombytes_buf(&mut passphrase).expect("should work");
+        TEST_CRYPTO
+            .randombytes_buf(&mut passphrase)
+            .expect("should work");
         let maybe_unblob = EncryptingKeyPair::from_blob(&blob, &mut passphrase);
         assert!(maybe_unblob.is_err());
     }

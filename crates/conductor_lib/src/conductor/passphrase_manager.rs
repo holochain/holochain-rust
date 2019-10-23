@@ -1,7 +1,7 @@
 use crossbeam_channel::{unbounded, Sender};
 
 use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
-use holochain_dpki::{utils::secbuf_new_insecure_from_string, CRYPTO,SecBuf};
+use holochain_dpki::{utils::secbuf_new_insecure_from_string, SecBuf, CRYPTO};
 
 #[cfg(unix)]
 use log::Level;

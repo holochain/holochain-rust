@@ -44,7 +44,12 @@ pub(crate) fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> HcResult<Enc
     pw_enc_base(data, passphrase, &mut salt, &mut nonce)
 }
 
-pub(crate) fn pw_enc_base(data: &mut SecBuf, passphrase: &mut SecBuf, mut salt: &mut SecBuf, mut nonce: &mut SecBuf) -> HcResult<EncryptedData> {
+pub(crate) fn pw_enc_base(
+    data: &mut SecBuf,
+    passphrase: &mut SecBuf,
+    mut salt: &mut SecBuf,
+    mut nonce: &mut SecBuf,
+) -> HcResult<EncryptedData> {
     let mut secret = CRYPTO.buf_new_secure(CRYPTO.kx_session_key_bytes());
     let mut cipher = CRYPTO.buf_new_insecure(data.len() + CRYPTO.aead_auth_bytes());
     pw_hash(&mut secret, passphrase, &mut salt)?;
@@ -84,7 +89,7 @@ pub(crate) fn pw_enc_zero_nonce(
     let mut nonce = CRYPTO.buf_new_insecure(CRYPTO.aead_nonce_bytes());
     let len = CRYPTO.aead_nonce_bytes();
     let slice = vec![0; len];
-    nonce.write(0, &slice )?;
+    nonce.write(0, &slice)?;
     let data = pw_enc_base(data, passphrase, &mut salt, &mut nonce)?;
     Ok(data)
 }
@@ -166,7 +171,7 @@ pub(crate) mod tests {
 
         // same hash should have same result
         let mut hashed_password_c = TEST_CRYPTO.buf_new_insecure(TEST_CRYPTO.pwhash_bytes());
-        pw_hash( &mut hashed_password_c, &mut password, &mut salt).unwrap();
+        pw_hash(&mut hashed_password_c, &mut password, &mut salt).unwrap();
         assert!(hashed_password_c.compare(&mut hashed_password_b) == 0);
     }
 

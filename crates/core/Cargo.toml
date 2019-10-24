@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.33-alpha5"
+version = "0.0.33-alpha6"
 description = "holochain core"
 license = "Apache-2.0"
 homepage = "https://github.com/holochain/holochain-rust"

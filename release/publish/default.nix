@@ -8,6 +8,7 @@ echo "packaging for crates.io"
 # order is important here due to dependencies
 # common \
 for crate in \
+ ../test_utils \
  core_types \
  conductor_api \
  core \

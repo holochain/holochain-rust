@@ -8,11 +8,11 @@ echo "packaging for crates.io"
 # order is important here due to dependencies
 # common \
 for crate in \
+ core_types \
+ conductor_api \
  core \
  conductor_lib \
  cli \
- conductor_api \
- core_types \
  dpki \
  hdk \
  hdk_v2 \

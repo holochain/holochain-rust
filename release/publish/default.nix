@@ -8,6 +8,7 @@ echo "packaging for crates.io"
 # order is important here due to dependencies
 for crate in \
  common \
+ core_types \
  wasm_utils \
  conductor_api \
  dpki \
@@ -15,8 +16,6 @@ for crate in \
  net \
  core \
  conductor_lib \
- core_types \
- cli \
  hdk \
  hdk_v2 \
  holochain \

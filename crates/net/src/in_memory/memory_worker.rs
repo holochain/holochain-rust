@@ -157,8 +157,8 @@ mod tests {
     use super::*;
     use crate::p2p_config::P2pConfig;
     use crossbeam_channel::unbounded;
-    use holochain_persistence_api::{cas::content::Address, hash::HashString};
-    use lib3h_protocol::data_types::SpaceData;
+    use holochain_persistence_api::cas::content::Address;
+    use lib3h_protocol::{data_types::SpaceData, types::AgentPubKey};
 
     fn example_dna_address() -> Address {
         "QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu".into()
@@ -199,7 +199,7 @@ mod tests {
             .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
                 request_id: "test_req1".to_string(),
                 space_address: example_dna_address().into(),
-                agent_id: HashString::from(AGENT_ID_1),
+                agent_id: AgentPubKey::from(AGENT_ID_1),
             }))
             .unwrap();
 
@@ -212,7 +212,7 @@ mod tests {
             .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
                 request_id: "test_req2".to_string(),
                 space_address: example_dna_address().into(),
-                agent_id: HashString::from(AGENT_ID_1),
+                agent_id: AgentPubKey::from(AGENT_ID_1),
             }))
             .unwrap();
 

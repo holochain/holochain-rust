@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.32-alpha2"
+version = "0.0.33-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -9,15 +9,13 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-#sim1h = { path = "../../sim1h/crates/sim1h" }
-sim1h = { git = "https://github.com/holochain/sim1h", branch = "develop" }
-#sim2h = { path = "../../sim2h/crates/sim2h" }
-sim2h = { git = "https://github.com/holochain/sim2h", branch = "develop" }
-lib3h_sodium = "=0.0.16"
-lib3h_protocol = "=0.0.16"
-lib3h = "=0.0.16"
-lib3h_zombie_actor = "=0.0.16"
-detach = "=0.0.16"
+sim1h = "=0.0.4"
+sim2h = { path = "../sim2h" }
+lib3h_sodium = "=0.0.19"
+lib3h_protocol = "=0.0.19"
+lib3h = "=0.0.19"
+lib3h_zombie_actor = "=0.0.19"
+detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../../common" }
 holochain_conductor_lib_api = { path = "../conductor_api" }
@@ -42,7 +40,7 @@ native-tls = "=0.2.2"
 crossbeam-channel = "=0.3.8"
 parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
-holochain_logging = { version="=0.0.1", path = "../logging" }
+holochain_logging = "=0.0.4"
 log = "0.4.8"
 
 [features]

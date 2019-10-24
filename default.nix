@@ -59,9 +59,9 @@ with holonix.pkgs;
     config = config;
    }).buildInputs
 
-   # qt specific testing
-   ++ (holonix.pkgs.callPackage ./qt {
-    pkgs = holonix.pkgs;
+   ++ (holonix.pkgs.callPackage ./crates/sim2h_server {
+     pkgs = holonix.pkgs;
+     config = config;
    }).buildInputs
 
    # release hooks
@@ -72,6 +72,10 @@ with holonix.pkgs;
 
    ++ (holonix.pkgs.callPackage ./rust {
     holonix = holonix;
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./stress-test {
     pkgs = holonix.pkgs;
    }).buildInputs
 

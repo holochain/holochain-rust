@@ -130,8 +130,8 @@ impl ContextBuilder {
             eav_path,
             initial_mmap_bytes,
         )));
-        self.chain_storage = Some(file_storage.clone());
-        self.dht_storage = Some(file_storage);
+        self.chain_storage = Some(cas_storage.clone());
+        self.dht_storage = Some(cas_storage);
         self.eav_storage = Some(eav_storage);
         Ok(self)
     }

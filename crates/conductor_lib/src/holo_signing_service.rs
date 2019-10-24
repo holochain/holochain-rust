@@ -5,8 +5,8 @@ use holochain_persistence_api::cas::content::AddressableContent;
 // this could be used for a lot of external callbacks and can be moved to somewhere more general?
 pub fn request_service(
     agent_id: &AgentId,
-    payload: &String,
-    service_uri: &String,
+    payload: &str,
+    service_uri: &str,
 ) -> Result<String, HolochainError> {
     let body_json = json!({"agent_id": agent_id.address(), "payload": payload});
     let client = reqwest::Client::new();

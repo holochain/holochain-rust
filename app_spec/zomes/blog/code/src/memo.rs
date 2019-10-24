@@ -91,9 +91,9 @@ mod tests {
         let date_created = "bar";
         let memo = Memo::new(content, date_created);
 
-        assert_eq!(content.to_string(), memo.content(),);
+        assert_eq!(content, memo.content(),);
 
-        assert_eq!(date_created.to_string(), memo.date_created(),);
+        assert_eq!(date_created, memo.date_created(),);
     }
 
     #[test]

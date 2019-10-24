@@ -70,16 +70,16 @@ pub fn get_interface_type_string(given_type: String) -> String {
 }
 
 pub fn hc_run_configuration(
-    dna_path: &PathBuf,
+    dna_path: PathBuf,
     port: u16,
     persist: bool,
     networked: bool,
-    interface_type: &String,
+    interface_type: &str,
     logging: bool,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
-        dnas: vec![dna_configuration(&dna_path)],
+        dnas: vec![dna_configuration(dna_path)],
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
@@ -110,7 +110,7 @@ fn agent_configuration() -> AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent_id.nick,
         public_address: agent_id.pub_sign_key,
-        keystore_file: agent_name,
+        keystore_file: agent_name.into(),
         holo_remote_key: None,
         test_agent: Some(true),
     }
@@ -119,19 +119,12 @@ fn agent_configuration() -> AgentConfiguration {
 // DNA
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
-fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
-    let dna = Conductor::load_dna(dna_path).unwrap_or_else(|_| {
-        panic!(
-            "Could not load DNA file {}",
-            dna_path.to_str().expect("No DNA file path given")
-        )
-    });
+fn dna_configuration(dna_path: PathBuf) -> DnaConfiguration {
+    let dna = Conductor::load_dna(&dna_path)
+        .unwrap_or_else(|_| panic!("Could not load DNA file {:?}", dna_path));
     DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
-        file: dna_path
-            .to_str()
-            .expect("Expected DNA path to be valid unicode")
-            .to_string(),
+        file: dna_path,
         hash: dna.address().to_string(),
         uuid: None,
     }
@@ -168,12 +161,12 @@ fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguratio
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 fn interface_configuration(
-    interface_type: &String,
+    interface_type: &str,
     port: u16,
 ) -> DefaultResult<InterfaceConfiguration> {
-    let driver = if interface_type == &String::from("websocket") {
+    let driver = if interface_type == "websocket" {
         InterfaceDriver::Websocket { port }
-    } else if interface_type == &String::from("http") {
+    } else if interface_type == "http" {
         InterfaceDriver::Http { port }
     } else {
         return Err(format_err!("unknown interface type: {}", interface_type));
@@ -231,10 +224,11 @@ fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
             .unwrap_or_else(default_n3h_mode),
         n3h_persistence_path: EnvVar::N3hWorkDir
             .value()
+            .map(|s| s.into())
             .ok()
             .unwrap_or_else(default_n3h_persistence_path),
         n3h_ipc_uri: Default::default(),
-        networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
+        networking_config_file: EnvVar::NetworkingConfigFile.value().ok().map(|s| s.into()),
     }))
 }
 
@@ -291,7 +285,7 @@ mod tests {
                 name: "testAgent".to_string(),
                 public_address: "HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma"
                     .to_string(),
-                keystore_file: "testAgent".to_string(),
+                keystore_file: "testAgent".into(),
                 holo_remote_key: None,
                 test_agent: Some(true),
             },
@@ -309,12 +303,12 @@ mod tests {
         let out_file = File::create(&temp_path).expect("Could not create temp file for test DNA");
         serde_json::to_writer_pretty(&out_file, &dna).expect("Could not write test DNA to file");
 
-        let dna_config = super::dna_configuration(&temp_path);
+        let dna_config = super::dna_configuration(temp_path.clone());
         assert_eq!(
             dna_config,
             DnaConfiguration {
                 id: "hc-run-dna".to_string(),
-                file: temp_path.to_str().unwrap().to_string(),
+                file: temp_path,
                 hash: dna.address().to_string(),
                 uuid: Default::default(),
             }
@@ -329,9 +323,7 @@ mod tests {
         let persist_store = super::storage_configuration(true).unwrap();
         assert_eq!(
             persist_store,
-            StorageConfiguration::Pickle {
-                path: ".hc".to_string()
-            }
+            StorageConfiguration::Pickle { path: ".hc".into() }
         );
     }
 

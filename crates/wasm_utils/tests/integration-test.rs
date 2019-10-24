@@ -36,10 +36,7 @@ fn call_zome_function_with_hc<J: Into<JsonString>>(
         [String::from("wasm-test"), String::from("integration-test")]
             .iter()
             .collect();
-    wasm_path.push(wasm_target_dir(
-        &String::from("wasm_utils").into(),
-        &wasm_path_component,
-    ));
+    wasm_path.push(wasm_target_dir("wasm_utils".as_ref(), &wasm_path_component));
     let wasm_file_path: PathBuf = [
         String::from("wasm32-unknown-unknown"),
         String::from("release"),

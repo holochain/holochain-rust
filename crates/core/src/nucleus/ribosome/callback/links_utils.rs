@@ -66,7 +66,7 @@ pub struct LinkDefinitionPath {
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
 pub fn find_link_definition_by_type(
-    link_type: &String,
+    link_type: &str,
     context: &Arc<Context>,
 ) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");
@@ -79,7 +79,7 @@ pub fn find_link_definition_by_type(
                             zome_name: zome_name.clone(),
                             entry_type_name: entry_type_name.to_string(),
                             direction: LinkDirection::To,
-                            link_type: link_type.clone(),
+                            link_type: link_type.to_string(),
                         });
                     }
                 }
@@ -90,7 +90,7 @@ pub fn find_link_definition_by_type(
                             zome_name: zome_name.clone(),
                             entry_type_name: entry_type_name.to_string(),
                             direction: LinkDirection::From,
-                            link_type: link_type.clone(),
+                            link_type: link_type.to_string(),
                         });
                     }
                 }

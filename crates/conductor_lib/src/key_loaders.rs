@@ -7,20 +7,20 @@ use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
 use holochain_dpki::{password_encryption::PwHashConfig, SEED_SIZE};
 use keystore::test_hash_config;
 use lib3h_sodium::{hash::sha256, secbuf::SecBuf};
-use std::{path::PathBuf, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 /// Key loader callback to use with conductor_api.
 /// This replaces filesystem access for getting keys mentioned in the config.
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_keystore_loader() -> KeyLoader {
     let loader = Box::new(
-        |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+        |path: &Path, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
             Ok(test_keystore(&path.to_str().unwrap().to_string()))
         },
     )
         as Box<
             dyn FnMut(
-                    &PathBuf,
+                    &Path,
                     Arc<PassphraseManager>,
                     Option<PwHashConfig>,
                 ) -> Result<Keystore, HolochainError>
@@ -31,15 +31,15 @@ pub fn test_keystore_loader() -> KeyLoader {
 }
 
 /// Create a deterministic test key from the SHA256 of the given name string.
-pub fn test_keystore(agent_name: &String) -> Keystore {
+pub fn test_keystore(agent_name: &str) -> Keystore {
     let mut keystore = Keystore::new(
-        mock_passphrase_manager(agent_name.clone()),
+        mock_passphrase_manager(agent_name.to_string()),
         test_hash_config(),
     )
     .unwrap();
 
     // Create seed from name
-    let mut name = SecBuf::with_insecure_from_string(agent_name.clone());
+    let mut name = SecBuf::with_insecure_from_string(agent_name.to_string());
     let mut seed = SecBuf::with_insecure(SEED_SIZE);
     sha256(&mut name, &mut seed).expect("Could not hash test agent name");
 

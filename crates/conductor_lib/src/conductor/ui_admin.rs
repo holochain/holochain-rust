@@ -12,26 +12,26 @@ pub trait ConductorUiAdmin {
     fn install_ui_bundle_from_file(
         &mut self,
         path: PathBuf,
-        id: &String,
+        id: &str,
         copy: bool,
     ) -> Result<(), HolochainError>;
-    fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn uninstall_ui_bundle(&mut self, id: &str) -> Result<(), HolochainError>;
 
     fn add_ui_interface(
         &mut self,
         new_instance: UiInterfaceConfiguration,
     ) -> Result<(), HolochainError>;
-    fn remove_ui_interface(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn remove_ui_interface(&mut self, id: &str) -> Result<(), HolochainError>;
 
-    fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
-    fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
+    fn start_ui_interface(&mut self, id: &str) -> Result<(), HolochainInstanceError>;
+    fn stop_ui_interface(&mut self, id: &str) -> Result<(), HolochainInstanceError>;
 }
 
 impl ConductorUiAdmin for Conductor {
     fn install_ui_bundle_from_file(
         &mut self,
         path: PathBuf,
-        id: &String,
+        id: &str,
         copy: bool,
     ) -> Result<(), HolochainError> {
         let path = match copy {
@@ -51,13 +51,9 @@ impl ConductorUiAdmin for Conductor {
             false => path,
         };
 
-        let path_string = path
-            .to_str()
-            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
-
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
-            root_dir: path_string.into(),
+            root_dir: path.clone(),
             hash: None,
         };
 
@@ -68,14 +64,15 @@ impl ConductorUiAdmin for Conductor {
         self.save_config()?;
         notify(format!(
             "Installed UI bundle from {} as \"{}\"",
-            path_string, id
+            path.display(),
+            id
         ));
         Ok(())
     }
 
     /// Removes the UI bundle in the config.
     /// Also stops then removes its UI interface if any exist
-    fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn uninstall_ui_bundle(&mut self, id: &str) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.ui_bundles = new_config
             .ui_bundles
@@ -126,7 +123,7 @@ impl ConductorUiAdmin for Conductor {
         Ok(())
     }
 
-    fn remove_ui_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_ui_interface(&mut self, id: &str) -> Result<(), HolochainError> {
         let to_stop = self
             .config
             .clone()
@@ -155,13 +152,13 @@ impl ConductorUiAdmin for Conductor {
         Ok(())
     }
 
-    fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+    fn start_ui_interface(&mut self, id: &str) -> Result<(), HolochainInstanceError> {
         let server = self.static_servers.get_mut(id)?;
         notify(format!("Starting UI interface \"{}\"...", id));
         server.start()
     }
 
-    fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+    fn stop_ui_interface(&mut self, id: &str) -> Result<(), HolochainInstanceError> {
         let server = self.static_servers.get_mut(id)?;
         notify(format!("Stopping UI interface \"{}\"...", id));
         server.stop()
@@ -172,11 +169,11 @@ impl ConductorUiAdmin for Conductor {
 pub mod tests {
     use super::*;
     use conductor::{admin::tests::*, base::UiDirCopier};
-    use std::{fs::File, io::Read, net::Ipv4Addr};
+    use std::{fs::File, io::Read, net::Ipv4Addr, path::Path};
 
     pub fn test_ui_copier() -> UiDirCopier {
-        let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
-            as Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
+        let copier = Box::new(|_source: &Path, _dest: &Path| Ok(()))
+            as Box<dyn FnMut(&Path, &Path) -> Result<(), HolochainError> + Send + Sync>;
         Arc::new(copier)
     }
 

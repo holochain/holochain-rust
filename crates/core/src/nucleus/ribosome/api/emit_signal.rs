@@ -97,7 +97,7 @@ pub mod tests {
         let context = Arc::new(context);
 
         let args_string: JsonString = test_args().into();
-        println!("{}", args_string.to_string());
+        println!("{}", args_string);
 
         let _ = test_zome_api_function_call(context.clone(), test_args_bytes());
 

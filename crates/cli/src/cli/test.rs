@@ -3,14 +3,14 @@ use colored::*;
 use failure::Error;
 use std::{
     io::ErrorKind,
-    path::PathBuf,
+    path::Path,
     process::{Command, Stdio},
 };
 
 pub const TEST_DIR_NAME: &str = "test";
 
 pub fn test(
-    path: &PathBuf,
+    path: &Path,
     tests_folder: &str,
     testfile: &str,
     skip_build: bool,

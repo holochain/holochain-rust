@@ -220,7 +220,7 @@ mod tests {
         assert_eq!(0, decrypted_data.compare(&mut random_data));
 
         // totally bogus data will return an error
-        let bogus_encrypted_data = "askdfklasjdasldkfjlkasdjflkasdjfasdf".to_string();
+        let bogus_encrypted_data = "askdfklasjdasldkfjlkasdjflkasdjfasdf";
         let decrypted_result = decrypt_with_passphrase_buf(
             &bogus_encrypted_data,
             &mut random_passphrase,

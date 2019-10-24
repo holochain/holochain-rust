@@ -25,10 +25,14 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core_types::{error::HolochainError, sync::spawn_hc_guard_watcher};
-#[cfg(unix)]
+use holochain_core_types::error::HolochainError;
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
-use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
+use std::{
+    fs::File,
+    io::prelude::*,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -61,12 +65,9 @@ fn main() {
     let config_path = opt
         .config
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
-    let config_path_str = config_path.to_str().unwrap();
 
-    let _ = spawn_hc_guard_watcher();
-
-    println!("Using config path: {}", config_path_str);
-    match bootstrap_from_config(config_path_str) {
+    println!("Using config path: {:?}", config_path);
+    match bootstrap_from_config(&config_path) {
         Ok(()) => {
             {
                 let mut conductor_guard = CONDUCTOR.lock().unwrap();
@@ -126,8 +127,8 @@ fn main() {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
-    let config = load_config_file(&String::from(path))?;
+fn bootstrap_from_config(path: &Path) -> Result<(), HolochainError> {
+    let config = load_config_file(path)?;
     config
         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
         .map_err(|string| HolochainError::ConfigError(string))?;
@@ -150,7 +151,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
+fn load_config_file(path: &Path) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;

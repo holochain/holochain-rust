@@ -43,7 +43,7 @@
 //! // But for now:
 //! let dna = test_utils::create_arbitrary_test_dna();
 //! let dir = tempdir().unwrap();
-//! let storage_directory_path = dir.path().to_str().unwrap();
+//! let storage_directory_path = dir.path();
 //!
 //! // We need to provide a cryptographic key that represents the agent.
 //! // Creating a new random one on the fly:
@@ -322,7 +322,7 @@ mod tests {
                     .with_agent(agent.clone())
                     .with_signals(signal_tx)
                     .with_conductor_api(mock_conductor_api(agent))
-                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                    .with_file_storage(tempdir().unwrap().path())
                     .unwrap()
                     .spawn(),
             ),
@@ -332,10 +332,7 @@ mod tests {
     }
 
     fn example_api_wasm_path() -> PathBuf {
-        let mut path = wasm_target_dir(
-            &String::from("conductor_api").into(),
-            &String::from("wasm-test").into(),
-        );
+        let mut path = wasm_target_dir("conductor_api".as_ref(), "wasm-test".as_ref());
         let wasm_path_component: PathBuf = [
             String::from("wasm32-unknown-unknown"),
             String::from("release"),
@@ -364,7 +361,7 @@ mod tests {
 
     #[test]
     fn can_instantiate() {
-        let mut dna = create_arbitrary_test_dna();;
+        let mut dna = create_arbitrary_test_dna();
         dna.name = "TestApp".to_string();
         let (context, _test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());

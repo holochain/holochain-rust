@@ -255,7 +255,7 @@ fn run() -> HolochainResult<()> {
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
             let interface_type = cli::get_interface_type_string(interface);
             let conductor_config = cli::hc_run_configuration(
-                &dna_path,
+                dna_path.clone(),
                 port,
                 persist,
                 networked,

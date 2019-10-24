@@ -17,8 +17,8 @@ pub mod tests {
 
     pub fn create_example_link() -> Link {
         Link::new(
-            &Address::from("12".to_string()),
-            &Address::from("34".to_string()),
+            &Address::from("12"),
+            &Address::from("34"),
             "fake",
             "fake-tag",
         )
@@ -30,8 +30,8 @@ pub mod tests {
 
     pub fn create_test_link_b() -> Link {
         Link::new(
-            &Address::from("56".to_string()),
-            &Address::from("78".to_string()),
+            &Address::from("56"),
+            &Address::from("78"),
             "faux",
             "fake-tag",
         )
@@ -39,8 +39,8 @@ pub mod tests {
 
     pub fn create_test_link_c() -> Link {
         Link::new(
-            &Address::from("90".to_string()),
-            &Address::from("ab".to_string()),
+            &Address::from("90"),
+            &Address::from("ab"),
             "fake",
             "fake-tag",
         )

@@ -13,11 +13,11 @@ use std::{
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::Write,
-    path::PathBuf,
+    path::Path,
 };
 
 fn create_test_file(
-    test_folder_path: &PathBuf,
+    test_folder_path: &Path,
     test_file_name: &str,
     test_file_contents: &str,
     maybe_replacements: Option<HashMap<&str, &str>>,
@@ -49,7 +49,7 @@ macro_rules! hashmap {
     }}
 }
 
-fn setup_test_folder(path: &PathBuf, test_folder: &str) -> DefaultResult<()> {
+fn setup_test_folder(path: &Path, test_folder: &str) -> DefaultResult<()> {
     let dir_name = path.file_name().expect("directory to be a file");
     let project_name = dir_name.to_string_lossy().to_string();
 
@@ -70,7 +70,7 @@ fn setup_test_folder(path: &PathBuf, test_folder: &str) -> DefaultResult<()> {
     Ok(())
 }
 
-fn setup_ops(path: &PathBuf) -> DefaultResult<()> {
+fn setup_ops(path: &Path) -> DefaultResult<()> {
     let mut vagrantfile_file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -88,7 +88,7 @@ fn setup_ops(path: &PathBuf) -> DefaultResult<()> {
     Ok(())
 }
 
-pub fn init(path: &PathBuf) -> DefaultResult<()> {
+pub fn init(path: &Path) -> DefaultResult<()> {
     if !path.exists() {
         fs::create_dir_all(&path)?;
     } else {

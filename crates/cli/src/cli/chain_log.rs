@@ -38,7 +38,7 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
             format_err!(
                 "Could not display chain for '{}': {}",
                 cas_path.to_string_lossy(),
-                err.to_string()
+                err
             )
         })?;
 

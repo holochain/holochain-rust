@@ -262,13 +262,13 @@ impl From<SerdeError> for HolochainError {
 
 impl From<base64::DecodeError> for HolochainError {
     fn from(error: base64::DecodeError) -> Self {
-        HolochainError::ErrorGeneric(format!("base64 decode error: {}", error.to_string()))
+        HolochainError::ErrorGeneric(format!("base64 decode error: {}", error))
     }
 }
 
 impl From<std::str::Utf8Error> for HolochainError {
     fn from(error: std::str::Utf8Error) -> Self {
-        HolochainError::ErrorGeneric(format!("std::str::Utf8Error error: {}", error.to_string()))
+        HolochainError::ErrorGeneric(format!("std::str::Utf8Error error: {}", error))
     }
 }
 
@@ -448,5 +448,4 @@ mod tests {
             .to_string(),
         );
     }
-
 }

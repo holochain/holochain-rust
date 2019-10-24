@@ -254,7 +254,7 @@ pub fn test_links_with_immediate_timeout() {
     let result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
     let expected_result: ZomeApiResult<()> =
         serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
-    let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));;
+    let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));
     assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error);
 }
 
@@ -277,7 +277,7 @@ pub fn test_links_with_load() {
     );
     println!("got first links");
     let expected_links = expected_result.expect("Could not get links for test");
-    assert_eq!(expected_links[0].stuff, "message me".to_string());
+    assert_eq!(expected_links[0].stuff, "message me");
 
     let result = make_test_call(
         &mut hc,

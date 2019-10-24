@@ -229,7 +229,7 @@ pub extern "C" fn round_trip_foo(_: RibosomeEncodingBits) -> RibosomeEncodingBit
         MemoryInt::from(allocation.length()),
     );
     assert_eq!(
-        "foo".to_string(),
+        "foo",
         allocation.read_to_string(),
     );
 
@@ -263,7 +263,7 @@ pub extern "C" fn round_trip_foo(_: RibosomeEncodingBits) -> RibosomeEncodingBit
         MemoryInt::from(allocation2.length()),
     );
     assert_eq!(
-        "barz".to_string(),
+        "barz",
         allocation2.read_to_string(),
     );
 

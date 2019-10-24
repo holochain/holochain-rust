@@ -100,7 +100,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
     let call_json = hdk::call(
         hdk::THIS_INSTANCE,
         "summer",
-        Address::from(PUBLIC_TOKEN.to_string()),
+        Address::from(PUBLIC_TOKEN),
         "sum",
         check_sum_args(num1, num2).into(),
     )?;
@@ -228,7 +228,7 @@ pub fn handle_receive(from: Address, json_msg: JsonString) -> String {
         Err(err) => format!("error: {}", err),
         Ok(message) => match message.msg_type.as_str() {
             // ping simply returns the body of the message
-            "ping" => format!("got {} from {}", message.body.to_string(), from),
+            "ping" => format!("got {} from {}", message.body, from),
 
             // post calls the create_post zome function handler after checking the supplied signature
             "post" => {
@@ -324,7 +324,7 @@ pub fn handle_create_post_with_claim(
 
     let response = hdk::send(grantor, JsonString::from(message).into(), 10000.into())?;
     let response_message: Message = JsonString::from_json(&response).try_into()?;
-    Ok(Address::from(response_message.body.to_string()))
+    Ok(Address::from(response_message.body))
 }
 
 pub fn handle_memo_address(content: String) -> ZomeApiResult<Address> {
@@ -527,8 +527,8 @@ pub fn handle_recommend_post(
     post_address: Address,
     agent_address: Address,
 ) -> ZomeApiResult<Address> {
-    hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
-    hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
+    hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS))?;
+    hdk::debug(format!("other address:\n{:?}", agent_address))?;
     hdk::link_entries(&agent_address, &post_address, "recommended_posts", "")
 }
 
@@ -541,7 +541,7 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
     let raw_json = hdk::call(
         "test-bridge",
         "blog",
-        Address::from(PUBLIC_TOKEN.to_string()),
+        Address::from(PUBLIC_TOKEN),
         "get_post",
         json!({
             "post_address": post_address,

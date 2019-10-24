@@ -68,8 +68,8 @@ impl ConductorStaticFileServer for NickelStaticServer {
                 .expect("invalid address or port");
 
             notify(format!(
-                "About to serve path \"{}\" at http://{}",
-                &self.bundle_config.root_dir, &addr
+                "About to serve path {:?} at http://{}",
+                self.bundle_config.root_dir, addr
             ));
 
             thread::Builder::new()

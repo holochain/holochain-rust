@@ -9,12 +9,12 @@ use crate::{
 use serde_json;
 use std::{
     fs::{self, File},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 pub const ZOME_CONFIG_FILE_NAME: &str = "zome.json";
 
-pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
+pub fn generate(zome_name: &Path, language: &str) -> DefaultResult<()> {
     if !zome_name.exists() {
         fs::create_dir_all(&zome_name)?;
     }
@@ -40,7 +40,6 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
     let zome_name_string = zome_name
         .to_str()
         .expect("Invalid zome path given")
-        .to_string()
         .replace("/", "_")
         .replace("zomes_", "");
 

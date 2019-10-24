@@ -123,5 +123,4 @@ pub mod tests {
             HolochainInstanceError::from(HolochainError::DnaMissing),
         );
     }
-
 }

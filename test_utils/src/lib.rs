@@ -53,9 +53,8 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
-    thread,
     time::Duration,
 };
 use tempfile::tempdir;
@@ -66,7 +65,7 @@ lazy_static! {
 }
 
 /// Load WASM from filesystem
-pub fn create_wasm_from_file(path: &PathBuf) -> Vec<u8> {
+pub fn create_wasm_from_file(path: &Path) -> Vec<u8> {
     let mut file = File::open(path)
         .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {:?}; {}", path, err));
     let mut buf = Vec::new();
@@ -266,7 +265,7 @@ pub fn create_test_context_with_logger_and_signal(
         Arc::new({
             let mut builder = ContextBuilder::new()
                 .with_agent(agent.clone())
-                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                .with_file_storage(tempdir().unwrap().path())
                 .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
@@ -303,7 +302,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
 pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
-    wasm_path: &PathBuf,
+    wasm_path: &Path,
     fn_name: &str,
     params: J,
 ) -> HolochainResult<JsonString> {
@@ -335,7 +334,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     Arc::new(
         ContextBuilder::new()
             .with_agent(agent.clone())
-            .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+            .with_file_storage(tempdir().unwrap().path())
             .expect("Tempdir must be accessible")
             .with_conductor_api(mock_signing::mock_conductor_api(agent))
             .with_instance_name("fake_instance_name")
@@ -374,8 +373,8 @@ pub fn start_holochain_instance<T: Into<String>>(
 
     let mut wasm_path = PathBuf::new();
     let wasm_dir_component: PathBuf = wasm_target_dir(
-        &String::from("crates/hdk").into(),
-        &String::from("wasm-test").into(),
+        "hdk-rust".as_ref(),
+        "wasm-test".as_ref(),
     );
     wasm_path.push(wasm_dir_component);
     let wasm_path_component: PathBuf = [
@@ -592,7 +591,7 @@ where
 
     //check if condition is satisifed
     if !boolean_condition(value) && tries > 0 {
-        thread::sleep(Duration::from_secs(10));
+        std::thread::sleep(Duration::from_secs(10));
 
         //recursively call function again and decrement tries so far
         wait_for_zome_result(holochain, zome_call, params, boolean_condition, tries - 1)

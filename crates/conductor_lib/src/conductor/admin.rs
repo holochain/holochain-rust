@@ -208,6 +208,7 @@ impl ConductorAdmin for Conductor {
                         HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
                     })?
                     .into(),
+                initial_mmap_bytes: None,
             },
         };
         new_config.instances.push(new_instance_config);

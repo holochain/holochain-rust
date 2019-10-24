@@ -46,7 +46,7 @@ fn generate_cargo_toml(name: &str, contents: &str, template: &str) -> DefaultRes
 
     let maybe_version = EnvVar::ScaffoldVersion.value().ok();
     let version_default = maybe_version
-        .unwrap_or_else(|| vec!["tag = \"v", &*HDK_VERSION.to_string(), "\""].join(""));
+        .unwrap_or_else(|| vec!["\"=", &*HDK_VERSION.to_string(), "\""].join(""));
     let maybe_package = config.get("package");
 
     let name = Value::from(name);

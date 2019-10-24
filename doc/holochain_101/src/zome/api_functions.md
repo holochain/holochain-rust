@@ -134,8 +134,8 @@ Not yet available.
 Canonical name: `remove_entry`
 
 Enables an entry, referred to by its address, to be marked in the chain as 'deleted'. This is done by adding a new entry
-which indicates the deleted status of the old one. This will changes which types of results that entry would then show up in,
-according to its new 'deleted' status. It can still be retrieved, but only if specifically asked for. This function also returns the Hash of the deletion entry on completion
+which indicates the deleted status of the old one. This will change which types of results that entry would then show up in,
+according to its new 'deleted' status. It can still be retrieved, but only if specifically asked for. This function also returns the Hash of the deletion entry on completion.
 
 [View it in the Rust HDK](https://developer.holochain.org/api/0.0.26-alpha1/hdk/api/fn.remove_entry.html)
 

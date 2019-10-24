@@ -6,8 +6,6 @@ rm -rf ./target/debug/libtest_utils*
 rm -rf ./target/debug/test_utils*
 rm -rf ./target/debug/integration_test*
 rm -rf ./target/debug/hdk*
-rm -rf ./target/debug/test_bin_ipc*
-rm -rf ./target/debug/test_bin_mock_net*
 rm -rf ./target/debug/hc*
 
 rm -rf ./target/debug/.fingerprint/holochain*/
@@ -20,8 +18,6 @@ rm -rf ./target/debug/deps/libtest_utils*
 rm -rf ./target/debug/deps/test_utils*
 rm -rf ./target/debug/deps/integration_test*
 rm -rf ./target/debug/deps/hdk*
-rm -rf ./target/debug/deps/test_bin_ipc*
-rm -rf ./target/debug/deps/test_bin_mock_net*
 rm -rf ./target/debug/deps/hc*
 
 # incremental is just our new stuff so should not cache

@@ -9,18 +9,45 @@ function _usage() {
   echo "  lib3h - deptool lib3h <subcmd>"
   echo "    version - deptool lib3h version <version>"
   echo "    branch - deptool lib3h branch <branch-name>"
+  echo "    path - deptool lib3h path <path>"
   echo "options:"
   echo "  -h --help: additional help for command"
   exit 1
+}
+
+function _patch_comment() {
+  if [ "${1:-}x" == "x" ]; then
+    sed -i'' "s/^[[:space:]]*[#]*[[:space:]]*\\(lib3h[^[:space:]]*[[:space:]]\\+=[[:space:]]\\+.*\\)$/#\\1/" "../../Cargo.toml"
+  else
+    sed -i'' "s/^[[:space:]]*[#]*[[:space:]]*\\(lib3h[^[:space:]]*[[:space:]]\\+=[[:space:]]\\+.*\\)$/\\1/" "../../Cargo.toml"
+  fi
 }
 
 function _lib3h_deps() {
   local __dep_str="${1}"
   echo "setting lib3h deps to ${__dep_str}"
 
-  local __deps=$(find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
+  local __deps=$(echo "../../Cargo.toml"; find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../crates -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
   echo "${__deps}"
   sed -i'' "s/\\(lib3h[^[:space:]]*[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__dep_str//\//\\\/}/" ${__deps}
+}
+
+function _lib3h_path_deps() {
+  local __l3h_path="$(readlink -f ${__pwd}/${1})"
+  local __l3h_lib3h="{ path = \"${__l3h_path}/crates/lib3h\" }"
+  local __l3h_proto="{ path = \"${__l3h_path}/crates/lib3h_protocol\" }"
+  local __l3h_crypto="{ path = \"${__l3h_path}/crates/crypto_api\" }"
+  local __l3h_sodium="{ path = \"${__l3h_path}/crates/sodium\" }"
+  local __l3h_zombie_actor="{ path = \"${__l3h_path}/crates/zombie_actor\" }"
+  echo "using ${__l3h_lib3h} ${__l3h_proto} ${__l3h_crypto} ${__l3h_sodium}"
+
+  local __deps=$(echo "../../Cargo.toml"; find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../crates -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
+  echo "${__deps}"
+  sed -i'' "s/\\(lib3h[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_lib3h//\//\\\/}/" ${__deps}
+  sed -i'' "s/\\(lib3h_protocol[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_proto//\//\\\/}/" ${__deps}
+  sed -i'' "s/\\(lib3h_crypto_api[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_crypto//\//\\\/}/" ${__deps}
+  sed -i'' "s/\\(lib3h_sodium[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_sodium//\//\\\/}/" ${__deps}
+  sed -i'' "s/\\(lib3h_zombie_actor[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_zombie_actor//\//\\\/}/" ${__deps}
 }
 
 function _cmd() {
@@ -37,7 +64,9 @@ function _cmd() {
             echo "   will set: lib3h = \"=0.0.9\""
             exit 1
           fi
+          _patch_comment false
           _lib3h_deps "\"=${3}\""
+          _patch_comment
           ;;
         branch)
           if [ ${__help} == 1 ]; then
@@ -47,8 +76,20 @@ function _cmd() {
             echo "   will set: lib3h = { git = \"https://github.com/holochain/lib3h\", branch = \"test-a\" }"
             exit 1
           fi
+          _patch_comment false
           _lib3h_deps "{ git = \"https://github.com/holochain/lib3h\", branch = \"${3}\" }"
           ;;
+        path)
+            if [ ${__help} == 1 ]; then
+                echo "deptool lib3h path"
+                echo " - set the various lib3h dep to a local file path"
+                echo " - example: deptool lib3h path ../lib3h"
+                echo "   will set: lib3h = { path = \"../lib3h/crates/...\" }"
+                exit 1
+            fi
+            _patch_comment false
+            _lib3h_path_deps "${3}"
+            ;;
         *)
           if [ ${__help} == 1 ]; then
             echo "deptool lib3h"
@@ -83,6 +124,8 @@ function _this_dir() {
 }
 
 function main() {
+  local __pwd="$(pwd)"
+
   _this_dir
 
   local __cmd=""

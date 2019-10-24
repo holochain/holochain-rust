@@ -63,16 +63,65 @@ jobs:
           exit 1
         fi
 
- app-spec-tests:
+ app-spec-tests-sim1h:
   docker:
    - image: holochain/holochain-rust:latest
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
    - run:
        name: app spec tests
-       command: nix-shell --run hc-app-spec-test
+       command: nix-shell --run hc-app-spec-test-sim1h
+
+ app-spec-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run hc-sim2h-server
+         background: true
+     - run:
+         name: app spec tests
+         command: nix-shell --run hc-app-spec-test-sim2h
+# app-spec-tests-n3h:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test n3h"
+#
+# app-spec-tests-memory:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test memory"
+#
+# app-spec-tests-websocket:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test websocket"
 
  app-spec-proc-tests:
   docker:
@@ -91,10 +140,41 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
+   - run:
+       name: sim2h server
+       command: nix-shell --run "hc-sim2h-server -p 9001"
+       background: true
    - run:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test
+
+ stress-tests-sim1h:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+       name: stress tests
+       command: nix-shell --run hc-stress-test-sim1h
+
+ stress-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run "hc-sim2h-server -p 9002"
+         background: true
+     - run:
+         name: stress tests
+         command: nix-shell --run hc-stress-test-sim2h
 
  cli-tests:
   docker:
@@ -126,8 +206,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.ubuntu.xenial.auto:
   docker:
@@ -139,8 +219,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.debian.stable.auto:
   docker:
@@ -152,8 +232,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.mac.10.auto:
   macos:
@@ -165,8 +245,8 @@ jobs:
       name: smoke test release compilation
       command: |
         source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
 
  cold.mac.10.nix:
   macos:
@@ -186,13 +266,18 @@ workflows:
   jobs:
    - build
    - fmt
-   - app-spec-tests
+   - app-spec-tests-sim1h
+   - app-spec-tests-sim2h
+   # - app-spec-tests-memory
+   # - app-spec-tests-websocket
    # @todo reimplement proc tests properly
    # i.e. don't copy and paste app spec and expec it to work with stale state
    # - app-spec-proc-tests
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
+   - stress-tests-sim1h
+   - stress-tests-sim2h
 
  cold.ubuntu:
   jobs:

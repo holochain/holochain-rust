@@ -2,6 +2,166 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.33-alpha6] - 2019-10-24
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha5] - 2019-10-23
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha4] - 2019-10-23
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha3] - 2019-10-23
+
+### Added
+* Adds a network back-end: `sim2h` and all corresponding integration. [#1744](https://github.com/holochain/holochain-rust/pull/1744)
+
+  [Sim2h](https://github.com/holochain/sim2h) is the next iteration of sim1h.
+  In contrast to sim1h, it does not use a centralized database but a
+  centralized in-memory network that connects Holochain instances
+  like a switch-board.
+
+  It is much faster than sim1h and will be able to implement Holochain
+  membranes based on the agent IDs and the `validate_agent` callback.
+
+  It can be used by configuring conductors like so:
+  ```toml
+  [network]
+  type = "sim2h"
+  sim2h_url = "wss://localhost:9000"
+  ```
+  with `sim2h_url` pointing to a running `sim2h_server` instance.
+
+  This also adds nix-shell commands:
+  - `hc-sim2h-server-install` which installs the sim2h-server
+  - `hc-sim2h-server-uninstall` which removes the sim2h-server
+  - `hc-sim2h-server` which starts the server with on
+    port 9000 (can be changed with `-p`) and with  debug logs enabled
+  - `hc-app-spec-test-sim2h` which runs the integration tests with
+    networking configured to sim2h (expects to find a running
+    sim2h_server on localhost:9000)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixed the frequent deadlocks that would occur on conductor shutdown [#1752](https://github.com/holochain/holochain-rust/pull/1752)
+
+### Security
+
+## [0.0.32-alpha2] - 2019-10-08
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.32-alpha1] - 2019-10-08
+
+### Added
+
+*  Adds the `--properties`/`-p` flag to `hc package` which takes a stringifed JSON object to be inserted in the .dna.json under the properties field. This will alter the DNA hash and can therefore be used for fork DNAs from their source code. [#1720](https://github.com/holochain/holochain-rust/pull/1720)
+* Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
+* Adds some deadlock diagnostic tools to detect when any mutex has been locked for a long time, and prints the backtrace of the moment it was locked [#1743](https://github.com/holochain/holochain-rust/pull/1743)
+
+### Changed
+
+* Updates to work with version 0.0.13 of lib3h  [#1737](https://github.com/holochain/holochain-rust/pull/1737)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.31-alpha1] - 2019-10-03
+
+### Added
+
+* Adds publishing of headers again after rollback. Header publishing is now its own action rather than part of the `Publish` action that plays nicely with the testing framework. It also adds header entries to the author list so they are gossiped properly. [#1640](https://github.com/holochain/holochain-rust/pull/1640).
+
+* Adds new networking back-end `sim1h` which can be configured in conductor config with:
+    ```toml
+    [network]
+    type = "sim1h"
+    dynamo_url = "http://localhost:8000"
+    ```
+    [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+* Adds nix-shell commands for running app-spec tests with different network implementations
+  - `hc-app-spec-test-sim1h`
+  - `hc-app-spec-test-n3h`
+  - `hc-app-spec-test-memory`
+  
+  [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+  
+* Adds nix-shell commands for running a local DynamoDB instance:
+  - `dynamodb` and
+  - `dynamodb-memory`
+  
+  [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+* Adds zome+function name to ConsistencyEvent::Hold representation for pending zome function call returns for better hachiko timeouts. [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+* Adds `UUID` to DNA configs which will change the DNA when initializing an instance with it and sets the given UUID. This disables the hash check of the DNA if set. [#1724](https://github.com/holochain/holochain-rust/pull/1724) [#1725](https://github.com/holochain/holochain-rust/pull/1725) 
+
+### Changed
+* Converts app-spec tests to the new multi-conductor [try-o-rama](https://github.com/holochain/try-o-rama) [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+* Fixes several conditions that lead to occasional deadlocks [#1725](https://github.com/holochain/holochain-rust/pull/1725)
+
+
+### Security
+
 ## [0.0.30-alpha6] - 2019-09-17
 
 ### Added

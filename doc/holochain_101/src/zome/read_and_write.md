@@ -19,7 +19,7 @@ With Holochain, there are two aspects that combine to form each "element" in thi
 
 The fundamental chain-like aspect of Holochain is driven by "headers". They are a minimal data structure containing only a handful of values, but are sufficient to supply Holochain with verifiable data integrity.
 
-Fundamental to creating the "chain", each header contains a reference to the "last" header. There are a couple aspects to this:
+Fundamental to creating the "chain", each header contains a reference to the "last" header. There are a couple of aspects to this:
 1. The cryptographic hash (its data "fingerprint") for a header is determined
 2. The hash of the previously written header is used as a fixed-length input for the next header, thus influencing the hash of that new header (since any change to contents change a hash)
 3. The only time this does not apply is for the very first header, for which there is no previous header hash, and a value of `0` is used
@@ -59,7 +59,7 @@ With `private`, the Entry will never leave your device. In order to still be abl
 After any chain-modifying functions are called, Holochain will attempt to notify other peers in the network of those actions. Note that it is not a requirement that the device be online or connected to any other networks or nodes for Holochain to be usable! Holochain will persist the changes locally to be gossiped to connected peers at a later date. As mentioned previously, if the entry is one of a `private` App Entry type, then only the Header will be published, not the entry itself. Publishing of the data is secondary to being able to author data in the first place, so this will be further elaborated in the [entry validation](./entry_validation.md) article.
 
 ## Writing Data
-Broadly speaking, writing data is accomplished by writing Zome source code that makes API calls to Holochain to affect the local source chain. One should only modify chain data by calling Holochain API functions, as there is lots of internal logic that it is instrumental that Holochain perform, for each change. When an API function to alter the chain from Zome source code is invoked, a series of steps is performed internally. It is important to know, at least roughly, what those steps are so that you can use Holochain effectively.
+Broadly speaking, writing data is accomplished by writing Zome source code that makes API calls to Holochain to affect the local source chain. One should only modify chain data by calling Holochain API functions, as there is lots of internal logic that that Holochain must perform, for each change. When an API function to alter the chain from Zome source code is invoked, a series of steps is performed internally. It is important to know, at least roughly, what those steps are so that you can use Holochain effectively.
 
 Apart from the following three functions, there is only one additional way that data can be written to the local source chain, which is written about in [linking](./linking.md).
 
@@ -73,7 +73,7 @@ Invoking the commit entry API function will not always return "success". The cal
 So in general, the process that Holochain follows while trying to write an Entry during a "commit" call is this:
 
 1. Collects data necessary for use in validation (a "validation package")
-2. Checks whether the new entry is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+2. Checks whether the new entry is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level, error message
 3. Creates a new Header for the Entry, and writes it to storage
 4. Writes the Entry itself to storage
 5. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing".
@@ -82,7 +82,7 @@ So in general, the process that Holochain follows while trying to write an Entry
 
 ### Updating Entries
 
-The act of updating an Entry is technically speaking just the same "committing an Entry", plus storing a bit of metadata indicating that this new entry is an "update" to the entry at an old address which is also given. This has the effect that when an attempt to retrieve an Entry by its address, it will forward the request along to the latest version in a potential series of updates, and return that instead. There is always the option to return the results for an Entry according to whether it's the "initial" version, the "latest", or getting the entire history too.
+The act of updating an Entry is technically speaking just the same as "committing an Entry", plus storing a bit of metadata indicating that this new entry is an "update" to the entry at an old address which is also given. This has the effect that when an attempt to retrieve an Entry by its address, it will forward the request along to the latest version in a potential series of updates, and return that instead. There is always the option to return the results for an Entry according to whether it's the "initial" version, the "latest", or getting the entire history too.
 
 So to update an Entry, use the address of that entry, and provide the new Entry to replace it. You can use the address of the Entry at any point in its update history as the address to update (as long as it hasn't been marked deleted), and it will still work, technically updating the very latest version of that Entry instead of whatever you pass in.
 
@@ -90,7 +90,7 @@ So in general, the process that Holochain follows while trying to update an Entr
 
 1. Retrieves the very latest version of the Entry at the given address
 2. Collects data necessary for use in validation (a "validation package")
-3. Checks whether the new entry is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+3. Checks whether the new entry is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level, error message
 4. Creates a new Header for the Entry, and writes it to storage
 5. Writes the Entry itself to storage
 6. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata for the Entry at the old address such that default requests for it will forward to the new Entry.**
@@ -108,7 +108,7 @@ So in general, the process that Holochain follows while trying to remove an Entr
 1. Retrieves the very latest version of the Entry at the given address
 2. Collects data necessary for use in validation (a "validation package")
 3. Creates a new `DeletionEntry`, containing the address of the very latest version of the given entry
-4. Checks whether the `DeletionEntry` is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level error message
+4. Checks whether the `DeletionEntry` is valid by passing it through the validation callback specified in the Zome for its given entry type. If this fails, it will exit here and return either a user defined, or system level, error message
 5. Creates a new Header for the Entry, and writes it to storage
 6. Writes the Entry itself to storage
 7. Announces over the network module this new Header and Entry, requesting that peers validate and hold a copy of it. This is known internally as "publishing". **This step also involves updating the metadata for the Entry at the old address such that default requests for it will return no Entry.**

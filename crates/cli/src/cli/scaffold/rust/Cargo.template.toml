@@ -1,0 +1,17 @@
+[package]
+name = <<NAME>>
+version = "0.1.0"
+authors = <<AUTHORS>>
+edition = <<EDITION>>
+
+[dependencies]
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
+hdk = <<VERSION>>
+holochain_wasm_utils = <<VERSION>>
+holochain_json_derive = "=0.0.17"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]

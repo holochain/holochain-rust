@@ -6,7 +6,7 @@ let
   ''
   set -euo pipefail
   hc-test-fmt
-  hc-qt-c-bindings-test
+  hn-rust-clippy
   hc-rust-test
   hc-app-spec-test
   '';

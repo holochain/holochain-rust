@@ -3,13 +3,13 @@ _cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-07-14
-  if: tag =~ /^\d+\.\d+\.\d+-alpha\d+/
+  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
   before_script:
     - ./scripts/install/auto.sh
   script:
-    - cargo rustc --manifest-path cli/Cargo.toml --target $TARGET --release -- -C lto
+    - cargo rustc --manifest-path crates/cli/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir cli-$TRAVIS_TAG-$TARGET
-    - cp target/$TARGET/release/hc cli/LICENSE cli/README.md cli-$TRAVIS_TAG-$TARGET/
+    - cp target/$TARGET/release/hc crates/cli/LICENSE crates/cli/README.md cli-$TRAVIS_TAG-$TARGET/
     - tar czf cli-$TRAVIS_TAG-$TARGET.tar.gz cli-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases
@@ -27,13 +27,13 @@ _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-07-14
-  if: tag =~ /^\d+\.\d+\.\d+-alpha\d+/
+  if: tag =~ /^v\d+\.\d+\.\d+-alpha\d+/
   before_script:
     - ./scripts/install/auto.sh
   script:
-    - cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto
+    - cargo rustc --manifest-path crates/holochain/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir conductor-$TRAVIS_TAG-$TARGET
-    - cp target/$TARGET/release/holochain conductor/LICENSE conductor/README.md conductor-$TRAVIS_TAG-$TARGET/
+    - cp target/$TARGET/release/holochain crates/holochain/LICENSE crates/holochain/README.md conductor-$TRAVIS_TAG-$TARGET/
     - tar czf conductor-$TRAVIS_TAG-$TARGET.tar.gz conductor-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases

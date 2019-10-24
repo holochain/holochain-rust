@@ -4,18 +4,18 @@ use jsonrpc_ws_server::ws;
 
 /// An abstraction which represents the ability to (maybe) send a message to the client
 /// over the existing connection.
-#[derive(Debug)]
 pub enum Broadcaster {
-    Ws(ws::Sender),
+    Ws(jsonrpc_ws_server::Broadcaster),
     Noop,
 }
 
-impl Drop for Broadcaster {
-    fn drop(&mut self) {
-        match self {
-            Broadcaster::Ws(sender) => sender.close(ws::CloseCode::Normal).unwrap_or(()),
-            Broadcaster::Noop => (),
-        }
+impl std::fmt::Debug for Broadcaster {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let variant = match self {
+            Broadcaster::Ws(_) => "Ws",
+            Broadcaster::Noop => "Noop",
+        };
+        write!(f, "Broadcaster::{}", variant)
     }
 }
 
@@ -26,7 +26,7 @@ impl Broadcaster {
         J: Into<JsonString>,
     {
         match self {
-            Broadcaster::Ws(sender) => sender
+            Broadcaster::Ws(broadcaster) => broadcaster
                 .send(ws::Message::Text(msg.into().to_string()))
                 .map_err(|e| {
                     HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e.to_string()))

@@ -36,7 +36,7 @@ pub fn fetch_entry_with_header(
 ) -> Result<EntryWithHeader, HolochainError> {
     let entry = fetch_entry_from_cas(address, state)?;
 
-    let header = find_chain_header(&entry, &State::from(state.clone()))
+    let header = find_chain_header(&entry, &state)
         .ok_or_else(|| HolochainError::from("No header found for entry"))?;
 
     Ok(EntryWithHeader::new(entry, header))

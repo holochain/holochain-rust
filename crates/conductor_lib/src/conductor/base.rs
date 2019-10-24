@@ -313,10 +313,13 @@ impl Conductor {
                                             .interfaces
                                             .iter()
                                             .filter(|interface_config| {
-                                                interface_config
+                                                let contains_instance = interface_config
                                                     .instances
                                                     .iter()
-                                                    .any(|instance| instance.id == *instance_id)
+                                                    .any(|instance| instance.id == *instance_id);
+                                                let is_admin = interface_config.admin;
+
+                                                contains_instance || is_admin
                                             })
                                             .collect();
                                         println!("INTERFACEs for SIGNAL: {:?}", interfaces);
@@ -535,7 +538,7 @@ impl Conductor {
         self.signal_multiplexer_kill_switch
             .as_ref()
             .map(|sender| sender.send(()));
-        
+
         self.instances = HashMap::new();
         Ok(())
     }
@@ -695,7 +698,7 @@ impl Conductor {
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
-        
+
         self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 

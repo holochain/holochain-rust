@@ -1,6 +1,6 @@
 [package]
 name = "sim2h"
-version = "0.0.33-alpha5"
+version = "0.0.33-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h"
@@ -36,3 +36,6 @@ serde_json = "=1.0.39"
 rand = "=0.7.2"
 base64 = "=0.10.1"
 chrono = "=0.4.6"
+native-tls = "=0.2.2"
+openssl = "=0.10.25"
+tungstenite = "=0.9.1"

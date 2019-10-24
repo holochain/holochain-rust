@@ -804,6 +804,14 @@ impl Conductor {
                                     format!("Error creating context: {}", hc_err.to_string())
                                 })?
                     }
+                    StorageConfiguration::Lmdb { path, initial_mmap_bytes } => {
+                        context_builder =
+                            context_builder
+                                .with_lmdb_storage(path, initial_mmap_bytes)
+                                .map_err(|hc_err| {
+                                    format!("Error creating context: {}", hc_err.to_string())
+                                })?
+                    }
                 }
 
                 let instance_name = instance_config.id.clone();

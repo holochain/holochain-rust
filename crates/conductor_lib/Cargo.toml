@@ -8,19 +8,19 @@ version = "0.0.33-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core = { version = "=0.0.33-alpha5", path = "../core" }
-holochain_core_types = { version = "=0.0.33-alpha5", path = "../core_types" }
+holochain_core = { version = "=0.0.33-alpha6", path = "../core" }
+holochain_core_types = { version = "=0.0.33-alpha6", path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_mem = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_pickle = "=0.0.10"
-holochain_dpki = { version = "=0.0.33-alpha5", path = "../dpki" }
-holochain_net = { version = "=0.0.33-alpha5", path = "../net" }
+holochain_dpki = { version = "=0.0.33-alpha6", path = "../dpki" }
+holochain_net = { version = "=0.0.33-alpha6", path = "../net" }
 lib3h = "=0.0.19"
 lib3h_sodium = "=0.0.19"
-holochain_common = { version = "=0.0.33-alpha5", path = "../common" }
+holochain_common = { version = "=0.0.33-alpha6", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

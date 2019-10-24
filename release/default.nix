@@ -12,6 +12,11 @@
   config = config;
  }).buildInputs
 
+ ++ (pkgs.callPackage ./version {
+  pkgs = pkgs;
+  config = config;
+ }).buildInputs
+
  ++ (pkgs.callPackage ./github {
   pkgs = pkgs;
   config = config;

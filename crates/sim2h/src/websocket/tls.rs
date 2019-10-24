@@ -242,10 +242,7 @@ mod tests {
 
         pub fn write_all(&mut self, is_srv: bool, mut data: &[u8]) {
             for _ in 0..10 {
-                match match is_srv {
-                    true => &mut self.srv,
-                    false => &mut self.cli,
-                } {
+                match if is_srv { &mut self.srv } else { &mut self.cli } {
                     Some(MockTlsStream::Ready(stream)) => {
                         println!("(is_srv: {}) TRY WRITE {} bytes", is_srv, data.len());
                         match stream.write(data) {

@@ -57,11 +57,8 @@ ${debugging ? '' : 'exclude = true'}
 ${debugging ? '': 'pattern = "^debug"'}
 
 [network]
-type = "n3h"
-n3h_log_level = "${debugging ? 'i' : 'e'}"
-bootstrap_nodes = []
-n3h_mode = "REAL"
-n3h_persistence_path = "${n3hPath}"
+type = "sim2h"
+sim2h_url = "wss://localhost:9001"
     `
 
   return { config, adminPort, instancePort }

@@ -159,7 +159,7 @@ define_zome! {
 }
 ```
 
-In this example, `hc_public` is the reserved trait name which creates a `Public` Capbility-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
+In this example, `hc_public` is the reserved trait name which creates a `Public` Capbaility-type grant at init time for access to the `read_post` function.  Additionally it names an `authoring` trait for the `create_post` and `update_post` functions.
 
 ### Adding a Zome Function
 
@@ -234,7 +234,7 @@ define_zome! {
 }
 ```
 
-To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.4/hdk-rust/wasm-test/src/lib.rs).
+To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/develop/hdk-rust/wasm-test/src/lib.rs).
 
 ### Adding Traits:
 

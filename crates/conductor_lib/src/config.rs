@@ -704,9 +704,16 @@ pub struct InstanceConfiguration {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
     Memory,
-    File { path: String },
-    Pickle { path: String },
-    Lmdb { path: String, initial_mmap_bytes: Option<usize> },
+    File {
+        path: String,
+    },
+    Pickle {
+        path: String,
+    },
+    Lmdb {
+        path: String,
+        initial_mmap_bytes: Option<usize>,
+    },
 }
 
 /// Here, interfaces are user facing and make available zome functions to

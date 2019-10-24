@@ -1,4 +1,0 @@
-[submodule "forks/jsonrpc"]
-	path = forks/jsonrpc
-	url = git@github.com:holochain/jsonrpc.git
-	branch = broadcaster-getter

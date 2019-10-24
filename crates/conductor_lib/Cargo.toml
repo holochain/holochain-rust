@@ -1,5 +1,9 @@
 [package]
 name = "holochain_conductor_lib"
+description = "holochain conductor library"
+license = "Apache-2.0"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
 version = "0.0.33-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
@@ -13,7 +17,7 @@ holochain_persistence_mem = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_pickle = "=0.0.10"
 holochain_dpki = { version = "=0.0.33-alpha5", path = "../dpki" }
-holochain_net = { path = "../net" }
+holochain_net = { version = "=0.0.33-alpha5", path = "../net" }
 lib3h = "=0.0.19"
 lib3h_sodium = "=0.0.19"
 holochain_common = { version = "=0.0.33-alpha5", path = "../common" }
@@ -45,7 +49,7 @@ holochain_logging = "=0.0.4"
 nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
 [dev-dependencies]
-test_utils = { path = "../../test_utils"}
+test_utils = { version = "=0.0.33-alpha5", path = "../../test_utils" }
 tempfile = "=3.0.7"
 holochain_wasm_utils = { version = "=0.0.33-alpha5", path = "../wasm_utils" }
 structopt = "=0.2.15"

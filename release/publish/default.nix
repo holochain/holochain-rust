@@ -6,11 +6,11 @@ let
 set -euox pipefail
 echo "packaging for crates.io"
 # order is important here due to dependencies
+# common \
 for crate in \
- common \
+ conductor_lib \
  cli \
  conductor_api \
- conductor_lib \
  core \
  core_types \
  dpki \

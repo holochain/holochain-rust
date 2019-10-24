@@ -4,12 +4,12 @@ use crate::connection::{
     net_connection::{NetHandler, NetWorker},
     NetResult,
 };
+use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{
     error::JsonError,
     json::{JsonString, RawString},
 };
-use failure::_core::time::Duration;
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -116,7 +116,9 @@ impl Sim2hWorker {
         match instance.connection_status {
             ConnectionStatus::Ready => info!("Connected to sim2h server!"),
             ConnectionStatus::None => error!("Could not connect to sim2h server!"),
-            ConnectionStatus::Initializing => warn!("Still initializing connection to sim2h after 5 seconds of waitign"),
+            ConnectionStatus::Initializing => {
+                warn!("Still initializing connection to sim2h after 5 seconds of waiting")
+            }
         };
 
         Ok(instance)
@@ -155,10 +157,12 @@ impl Sim2hWorker {
         let signature = self
             .conductor_api
             .execute(payload.clone(), CryptoMethod::Sign)
-            .expect(&format!(
-                "Couldn't sign wire message in sim2h worker: {}",
-                payload
-            ));
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
+                    payload, e
+                )
+            });
 
         let signed_wire_message = SignedWireMessage::new(
             message,
@@ -357,11 +361,15 @@ impl NetWorker for Sim2hWorker {
     fn tick(&mut self) -> NetResult<bool> {
         let mut did_something = false;
 
-        match self.stream_manager.connection_status(&self.server_url.clone().into()) {
+        match self
+            .stream_manager
+            .connection_status(&self.server_url.clone().into())
+        {
             ConnectionStatus::None => {
                 warn!("No connection to sim2h server. Trying to reconnect...");
-                self.stream_manager.connect(&self.server_url.clone().into())?;
-            },
+                self.stream_manager
+                    .connect(&self.server_url.clone().into())?;
+            }
             ConnectionStatus::Initializing => debug!("connecting..."),
             ConnectionStatus::Ready => {
                 let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
@@ -372,8 +380,7 @@ impl NetWorker for Sim2hWorker {
                     }
                     did_something = true;
                 }
-
-            },
+            }
         }
 
         let server_messages = self.to_core.drain(..).collect::<Vec<_>>();

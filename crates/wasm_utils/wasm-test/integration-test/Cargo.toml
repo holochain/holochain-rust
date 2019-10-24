@@ -1,6 +1,6 @@
 [package]
 name = "wasm-integration-test"
-version = "0.0.32-alpha2"
+version = "0.0.33-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

@@ -1,6 +1,6 @@
 [package]
 name = "sim2h_server"
-version = "0.0.1"
+version = "0.0.33-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h - server executable"

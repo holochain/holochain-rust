@@ -617,6 +617,7 @@ impl Configuration {
             .iter()
             .filter_map(|stg_config| match stg_config.storage {
                 StorageConfiguration::File { ref path }
+                | StorageConfiguration::Lmdb { ref path, .. }
                 | StorageConfiguration::Pickle { ref path } => Some(path.as_str()),
                 _ => None,
             })
@@ -703,8 +704,16 @@ pub struct InstanceConfiguration {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
     Memory,
-    File { path: String },
-    Pickle { path: String },
+    File {
+        path: String,
+    },
+    Pickle {
+        path: String,
+    },
+    Lmdb {
+        path: String,
+        initial_mmap_bytes: Option<usize>,
+    },
 }
 
 /// Here, interfaces are user facing and make available zome functions to

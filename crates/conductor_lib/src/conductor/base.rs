@@ -313,10 +313,13 @@ impl Conductor {
                                             .interfaces
                                             .iter()
                                             .filter(|interface_config| {
-                                                interface_config
+                                                let contains_instance = interface_config
                                                     .instances
                                                     .iter()
-                                                    .any(|instance| instance.id == *instance_id)
+                                                    .any(|instance| instance.id == *instance_id);
+                                                let is_admin = interface_config.admin;
+
+                                                contains_instance || is_admin
                                             })
                                             .collect();
                                         println!("INTERFACEs for SIGNAL: {:?}", interfaces);

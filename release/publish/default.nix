@@ -6,25 +6,24 @@ let
 set -euox pipefail
 echo "packaging for crates.io"
 # order is important here due to dependencies
-# common \
 for crate in \
- ../test_utils \
- core_types \
+ common \
+ wasm_utils \
  conductor_api \
+ dpki \
+ sim2h \
+ net \
  core \
  conductor_lib \
+ core_types \
  cli \
- dpki \
  hdk \
  hdk_v2 \
  holochain \
  holochain_wasm \
- net \
- sim2h \
- sim2h_server \
- wasm_utils
+ sim2h_server
 do
- cargo publish --manifest-path "crates/$crate/Cargo.toml"
+ cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty
  sleep 10
 done
 '';

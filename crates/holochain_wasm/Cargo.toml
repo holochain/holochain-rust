@@ -1,6 +1,10 @@
 [package]
 name = "holochain_conductor_wasm"
 version = "0.0.33-alpha5"
+description = "holochain wasm"
+license = "Apache-2.0"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
 authors = ["neonphog <neonphog@gmail.com>"]
 edition = "2018"
 

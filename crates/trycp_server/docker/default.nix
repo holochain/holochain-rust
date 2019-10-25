@@ -5,6 +5,11 @@ let
   docker build . -f crates/trycp_server/docker/Dockerfile.trycp -t holochain/holochain-rust:trycp
   '';
 
+  docker-push = pkgs.writeShellScriptBin "hc-trycp-docker-push"
+  ''
+  docker push holochain/holochain-rust:trycp
+  '';
+
   docker-run = pkgs.writeShellScriptBin "hc-trycp-docker-run"
   ''
   docker run --rm -d -p 443:443/tcp --name holochain-trycp -t holochain/holochain-rust:trycp
@@ -16,5 +21,5 @@ let
   '';
 in
 {
-  buildInputs = [ docker-build docker-run docker-attach ];
+  buildInputs = [ docker-build docker-push docker-run docker-attach ];
 }

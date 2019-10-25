@@ -69,6 +69,10 @@ with holonix.pkgs;
      config = config;
    }).buildInputs
 
+   ++ (holonix.pkgs.callPackage ./docker {
+     pkgs = holonix.pkgs;
+   }).buildInputs
+
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
     pkgs = holonix.pkgs;

@@ -13,6 +13,7 @@ for crate in \
  conductor_api \
  dpki \
  sim2h \
+ sim1h \
  net \
  core \
  conductor_lib \

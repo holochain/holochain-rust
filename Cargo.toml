@@ -12,6 +12,7 @@ members = [
   "crates/hdk_v2",
   "crates/hdk",
   "crates/net",
+  "crates/sim1h",
   "crates/sim2h",
   "crates/sim2h_server",
 ]

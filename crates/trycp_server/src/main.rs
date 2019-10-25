@@ -132,13 +132,12 @@ fn main() {
     io.add_method("kill", |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let response =
-            exec_output("bash", vec!["hcm.bash", "kill", &id], ".", true).map_err(|e| {
-                jsonrpc_core::types::error::Error {
-                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                    message: format!("unable to run hcm script: {:?}", e),
-                    data: None,
-                }
+        let signal = get_as_string("signal", &params_map)?;
+        let response = exec_output("bash", vec!["hcm.bash", "kill", &id, &signal], ".", true)
+            .map_err(|e| jsonrpc_core::types::error::Error {
+                code: jsonrpc_core::types::error::ErrorCode::InternalError,
+                message: format!("unable to run hcm script: {:?}", e),
+                data: None,
             })?;
         println!("kill {}: {:?}", id, response);
         Ok(Value::String(response))

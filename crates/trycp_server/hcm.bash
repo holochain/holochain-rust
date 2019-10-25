@@ -74,11 +74,12 @@ function _spawn() {
 
 function _kill() {
     local id="${1}";
+    local signal="${2}";
     _check_player "$id"
     rm $pid_file
     if ps -p $conductor_pid &> /dev/null
     then
-        kill $conductor_pid
+        kill -$signal $conductor_pid
         echo "conductor stopped"
 
     else

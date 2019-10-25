@@ -16,5 +16,5 @@ let
   '';
 in
 {
-  buildInputs = [ docker-build docker-run ];
+  buildInputs = [ docker-build docker-run docker-attach ];
 }

@@ -2,6 +2,38 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.34-alpha1] - 2019-10-25
+
+### Added
+
+*  Adds the holochain_persistence_lmdb crate and makes this an option for the instance config. This is now the default store implementation. [#1758](https://github.com/holochain/holochain-rust/pull/1758)
+
+### Changed
+
+* Custom signals that are emitted from DNA/zome code ("user" signals) are now send to all admin interfaces to enable UI switching logic in Holoscape [#1799](https://github.com/holochain/holochain-rust/pull/1799)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha6] - 2019-10-24
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.33-alpha5] - 2019-10-23
 
 ### Added

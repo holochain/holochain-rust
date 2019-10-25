@@ -1,6 +1,6 @@
 [package]
 name = "hc"
-version = "0.0.33-alpha5"
+version = "0.0.34-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -13,6 +13,7 @@ lib3h_sodium = "=0.0.19"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
+holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.2.15"
 failure = "=0.1.5"
 serde = "=1.0.89"
@@ -24,6 +25,9 @@ base64 = "=0.10.1"
 colored = "=1.7.0"
 ignore = "=0.4.6"
 rpassword = "=2.1.0"
+git2 = "=0.9.1"
+tera = "=0.11.20"
+glob = "=0.3.0"
 rustyline = "=5.0.0"
 
 [dev-dependencies]

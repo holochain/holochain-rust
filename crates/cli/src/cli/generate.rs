@@ -1,78 +1,81 @@
-use crate::{
-    cli::{
-        package::CODE_DIR_NAME,
-        scaffold::{self, Scaffold},
-    },
-    error::DefaultResult,
-    util,
-};
-use serde_json;
-use std::{
-    fs::{self, File},
-    path::PathBuf,
-};
+use crate::error::DefaultResult;
+use git2::Repository;
+use glob::glob;
+use std::{fs, io::prelude::*, path::PathBuf};
+use tera::{Context, Tera};
 
-pub const ZOME_CONFIG_FILE_NAME: &str = "zome.json";
+const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
+const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
 
-pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
-    if !zome_name.exists() {
-        fs::create_dir_all(&zome_name)?;
-    }
+const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-    ensure!(
-        zome_name.is_dir(),
-        "argument \"zome_name\" doesn't point to a directory"
-    );
+pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
+    let zome_name = zome_path
+        .components()
+        .last()
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?
+        .as_os_str()
+        .to_str()
+        .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
 
-    let file_name = util::file_name_string(&zome_name)?;
-
-    let zome_config_json = json! {
-        {
-            "description": format!("The {} App", file_name)
-        }
+    // match against all supported templates
+    let url = match scaffold.as_ref() {
+        "rust" => RUST_TEMPLATE_REPO_URL,
+        "rust-proc" => RUST_PROC_TEMPLATE_REPO_URL,
+        _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
-    let file = File::create(zome_name.join(ZOME_CONFIG_FILE_NAME))?;
-    serde_json::to_writer_pretty(file, &zome_config_json)?;
+    Repository::clone(url, zome_path)?;
 
-    let code_dir = zome_name.join(CODE_DIR_NAME);
-    fs::create_dir_all(&code_dir)?;
-    let zome_name_string = zome_name
-        .to_str()
-        .expect("Invalid zome path given")
-        .to_string()
-        .replace("/", "_")
-        .replace("zomes_", "");
+    // delete the .git directory
+    fs::remove_dir_all(zome_path.join(".git"))?;
 
-    // match against all supported languages
-    match language {
-        "rust" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Declarative,
-            ),
-            code_dir,
-        )?,
-        "rust-proc" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Procedural,
-            ),
-            code_dir,
-        )?,
-        "assemblyscript" => scaffold(
-            &scaffold::assemblyscript::AssemblyScriptScaffold::new(),
-            code_dir,
-        )?,
-        // TODO: supply zome name for AssemblyScriptScaffold as well
-        _ => bail!("unsupported language: {}", language),
-    }
+    let mut context = Context::new();
+    context.insert("name", &zome_name);
+    context.insert("author", &"hc-scaffold-framework");
+    context.insert("version", HOLOCHAIN_VERSION);
+
+    apply_template_substitution(zome_path, context)?;
 
     Ok(())
 }
 
-fn scaffold<S: Scaffold>(tooling: &S, base_path: PathBuf) -> DefaultResult<()> {
-    tooling.gen(base_path)
+fn apply_template_substitution(root_path: &PathBuf, context: Context) -> DefaultResult<()> {
+    let zome_name_component = root_path
+        .components()
+        .last()
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?;
+    let template_glob_path: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
+    let template_glob = template_glob_path
+        .to_str()
+        .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
+
+    let templater =
+        Tera::new(template_glob).map_err(|_| format_err!("Could not load repo for templating"))?;
+
+    for entry in glob(template_glob).map_err(|_| format_err!("Failed to read glob pattern"))? {
+        match entry {
+            Ok(path) => {
+                if path.is_file() {
+                    let template_id: PathBuf = path
+                        .components()
+                        .skip_while(|c| c != &zome_name_component)
+                        .skip(1)
+                        .collect();
+                    let result = templater
+                        .render(template_id.to_str().unwrap(), &context)
+                        .unwrap();
+                    let mut file = fs::OpenOptions::new()
+                        .write(true)
+                        .truncate(true)
+                        .open(path)?;
+                    file.write_all(result.as_bytes())?;
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

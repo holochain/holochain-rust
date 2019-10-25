@@ -37,8 +37,6 @@ extern crate env_logger;
 extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
-#[macro_use]
-extern crate detach;
 
 #[macro_use]
 pub mod tweetlog;

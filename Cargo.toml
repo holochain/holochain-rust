@@ -21,3 +21,10 @@ exclude = [
   "app_spec_proc_macro",
   "nodejs_conductor/native",
 ]
+
+[patch.crates-io]
+#lib3h = "=0.0.19"
+#lib3h_protocol = "=0.0.19"
+#lib3h_crypto_api = "=0.0.19"
+#lib3h_sodium = "=0.0.19"
+#lib3h_zombie_actor = "=0.0.19"

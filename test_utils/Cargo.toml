@@ -1,6 +1,6 @@
 [package]
 name = "test_utils"
-version = "0.0.33-alpha6"
+version = "0.0.34-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 description = "holochain test utils"
 license = "Apache-2.0"

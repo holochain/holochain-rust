@@ -1,0 +1,15 @@
+[package]
+name = "holochain_core_api_c_binding"
+version = "0.0.34-alpha1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[lib]
+name = "holochain_core_api_c_binding"
+crate-type = ["staticlib"]
+
+
+[dependencies]
+holochain_core = { path = "../crates/core" }
+holochain_conductor_api = { path = "../crates/conductor_api" }
+holochain_core_types = { path = "../crates/core_types" }
+holochain_persistence_api = "=0.0.10"

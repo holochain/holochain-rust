@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_lib"
-version = "0.0.33-alpha6"
+version = "0.0.34-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -12,6 +12,7 @@ holochain_persistence_api = "=0.0.10"
 holochain_persistence_mem = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_pickle = "=0.0.10"
+holochain_persistence_lmdb = "=0.0.10"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }

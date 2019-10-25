@@ -22,7 +22,7 @@ function spinner() {
 
 #export AWS_DEFAULT_REGION=us-east-1
 #export AWS_DEFAULT_REGION=ap-southeast-2
-export AWS_DEFAULT_REGION=eu-central-1
+#export AWS_DEFAULT_REGION=eu-central-1
 
 stackStatus=$(aws cloudformation describe-stacks --stack-name "$1"-test-ecs-service --query 'Stacks[0].StackStatus' --output text)
 

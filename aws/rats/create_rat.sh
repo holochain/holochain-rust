@@ -22,17 +22,17 @@ function spinner() {
 
 #export AWS_DEFAULT_REGION=us-east-1
 #export AWS_DEFAULT_REGION=ap-southeast-2
-export AWS_DEFAULT_REGION=eu-central-1
+#export AWS_DEFAULT_REGION=eu-central-1
 
 stackStatus=$(aws cloudformation describe-stacks --stack-name "$1"-test-ecs-service --query 'Stacks[0].StackStatus' --output text)
 
 if [[ $stackStatus == "CREATE_COMPLETE" ]]; then
     echo "$1 stack has been created"
 else
-    aws cloudformation create-stack --stack-name "$1"-test-ecs-service --template-body file://service-cluster-alb.yaml --parameters ParameterKey=ParentVPCStack,ParameterValue=VPC ParameterKey=LoadBalancerPriority,ParameterValue=${RANDOM:0:4} ParameterKey=LoadBalancerHttps,ParameterValue=true ParameterKey=SubDomainNameWithDot,ParameterValue="$1". ParameterKey=Cpu,ParameterValue=1 ParameterKey=Memory,ParameterValue=2 ParameterKey=DesiredCount,ParameterValue=1 ParameterKey=MaxCapacity,ParameterValue=1  ParameterKey=AppImage,ParameterValue=nginx:latest ParameterKey=ParentZoneStack,ParameterValue=vpc-public-zone ParameterKey=ParentAlertStack,ParameterValue=vpc-alerts ParameterKey=ParentClusterStack,ParameterValue=test-tryorama-cluster ParameterKey=LoadBalancerHostPattern,ParameterValue="$1".holochain-aws.org ParameterKey=MinCapacity,ParameterValue=1 --capabilities CAPABILITY_IAM
+    aws cloudformation create-stack --stack-name "$1"-test-ecs-service --template-body file://service-cluster-alb.yaml --parameters ParameterKey=ParentVPCStack,ParameterValue=VPC ParameterKey=LoadBalancerPriority,ParameterValue=${RANDOM:0:4} ParameterKey=LoadBalancerHttps,ParameterValue=true ParameterKey=SubDomainNameWithDot,ParameterValue="$1"."$AWS_DEFAULT_REGION" ParameterKey=Cpu,ParameterValue=1 ParameterKey=Memory,ParameterValue=2 ParameterKey=DesiredCount,ParameterValue=1 ParameterKey=MaxCapacity,ParameterValue=1  ParameterKey=AppImage,ParameterValue=nginx:latest ParameterKey=ParentZoneStack,ParameterValue=vpc-public-zone ParameterKey=ParentAlertStack,ParameterValue=vpc-alerts ParameterKey=ParentClusterStack,ParameterValue=test-tryorama-cluster ParameterKey=LoadBalancerHostPattern,ParameterValue="$1".holochain-aws.org ParameterKey=MinCapacity,ParameterValue=1 --capabilities CAPABILITY_IAM
 
     stackStatus=$(aws cloudformation wait stack-create-complete --stack-name "$1"-test-ecs-service) &
     spinner "Stack is being deployed"
     echo "///////////////"
-    echo "Stack deployed and should be available at stack: "$1"-test-ecs-service / url: $1.holochain-aws.org"
+    echo "Stack deployed and should be available at stack: "$1"-test-ecs-service / url: $1.$AWS_DEFAULT_REGION.holochain-aws.org"
 fi

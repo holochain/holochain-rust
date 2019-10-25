@@ -25,6 +25,7 @@ pub fn wasm_target_dir(test_path: &PathBuf, wasm_path: &PathBuf) -> PathBuf {
     let mut target_dir = PathBuf::new();
     if let Ok(prefix) = std::env::var("HC_TARGET_PREFIX") {
         target_dir.push(PathBuf::from(prefix));
+        target_dir.push("crates");
         target_dir.push(test_path);
     }
     target_dir.push(wasm_path);

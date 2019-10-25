@@ -15,11 +15,13 @@ extern crate serde_derive;
 extern crate base64;
 extern crate colored;
 extern crate semver;
-extern crate toml;
 #[macro_use]
 extern crate serde_json;
+extern crate git2;
+extern crate glob;
 extern crate ignore;
 extern crate rpassword;
+extern crate tera;
 
 mod cli;
 mod config_files;
@@ -71,7 +73,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given functions"
+        about = "Generates a new zome from a template"
     )]
     Generate {
         #[structopt(
@@ -79,8 +81,11 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(help = "The language of the generated zome", default_value = "rust")]
-        language: String,
+        #[structopt(
+            help = "Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.",
+            default_value = "rust"
+        )]
+        template: String,
     },
     #[structopt(
         name = "run",
@@ -238,8 +243,8 @@ fn run() -> HolochainResult<()> {
 
         Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
 
-        Cli::Generate { zome, language } => {
-            cli::generate(&zome, &language).map_err(HolochainError::Default)?
+        Cli::Generate { zome, template } => {
+            cli::generate(&zome, &template).map_err(HolochainError::Default)?
         }
 
         Cli::Run {

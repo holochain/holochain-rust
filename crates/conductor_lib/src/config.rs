@@ -731,11 +731,14 @@ impl StorageConfiguration {
     //     matches!(self, StorageConfiguration::Pickle { .. })
     // }
 
+    // fn is_lmdb(&self) -> bool {
+
     pub fn get_path(&self) -> Option<String> {
         match self {
             StorageConfiguration::Memory => return None,
             StorageConfiguration::File { path } => return Some(path.to_string()),
             StorageConfiguration::Pickle { path } => return Some(path.to_string()),
+            StorageConfiguration::Lmdb { path, .. } => return Some(path.to_string()),
         }
     }
 }

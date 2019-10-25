@@ -2,6 +2,107 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.34-alpha1] - 2019-10-25
+
+### Added
+
+*  Adds the holochain_persistence_lmdb crate and makes this an option for the instance config. This is now the default store implementation. [#1758](https://github.com/holochain/holochain-rust/pull/1758)
+
+### Changed
+
+* Custom signals that are emitted from DNA/zome code ("user" signals) are now send to all admin interfaces to enable UI switching logic in Holoscape [#1799](https://github.com/holochain/holochain-rust/pull/1799)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha6] - 2019-10-24
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha5] - 2019-10-23
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha4] - 2019-10-23
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.33-alpha3] - 2019-10-23
+
+### Added
+* Adds a network back-end: `sim2h` and all corresponding integration. [#1744](https://github.com/holochain/holochain-rust/pull/1744)
+
+  [Sim2h](https://github.com/holochain/sim2h) is the next iteration of sim1h.
+  In contrast to sim1h, it does not use a centralized database but a
+  centralized in-memory network that connects Holochain instances
+  like a switch-board.
+
+  It is much faster than sim1h and will be able to implement Holochain
+  membranes based on the agent IDs and the `validate_agent` callback.
+
+  It can be used by configuring conductors like so:
+  ```toml
+  [network]
+  type = "sim2h"
+  sim2h_url = "wss://localhost:9000"
+  ```
+  with `sim2h_url` pointing to a running `sim2h_server` instance.
+
+  This also adds nix-shell commands:
+  - `hc-sim2h-server-install` which installs the sim2h-server
+  - `hc-sim2h-server-uninstall` which removes the sim2h-server
+  - `hc-sim2h-server` which starts the server with on
+    port 9000 (can be changed with `-p`) and with  debug logs enabled
+  - `hc-app-spec-test-sim2h` which runs the integration tests with
+    networking configured to sim2h (expects to find a running
+    sim2h_server on localhost:9000)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixed the frequent deadlocks that would occur on conductor shutdown [#1752](https://github.com/holochain/holochain-rust/pull/1752)
+
+### Security
+
 ## [0.0.32-alpha2] - 2019-10-08
 
 ### Added

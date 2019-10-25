@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.32-alpha2"
+version = "0.0.34-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 description = "core types needed for all holochain development"

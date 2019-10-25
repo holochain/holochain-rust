@@ -9,13 +9,13 @@ documentation = "https://github.com/holochain/holochain-rust"
 edition = "2018"
 
 [dependencies]
-hdk = { version = "=0.0.33-alpha6", path = "../crates/hdk" }
-holochain_net = { version = "=0.0.33-alpha6", path = "../crates/net" }
-holochain_core = { version = "=0.0.33-alpha6", path = "../crates/core" }
-holochain_conductor_lib = { version = "=0.0.33-alpha6", path = "../crates/conductor_lib" }
-holochain_core_types = { version = "=0.0.33-alpha6", path = "../crates/core_types" }
-holochain_dpki = { version = "=0.0.33-alpha6", path = "../crates/dpki" }
-holochain_wasm_utils = { version = "=0.0.33-alpha6", path = "../crates/wasm_utils" }
+hdk = { version = "=0.0.34-alpha1", path = "../crates/hdk" }
+holochain_net = { version = "=0.0.34-alpha1", path = "../crates/net" }
+holochain_core = { version = "=0.0.34-alpha1", path = "../crates/core" }
+holochain_conductor_lib = { version = "=0.0.34-alpha1", path = "../crates/conductor_lib" }
+holochain_core_types = { version = "=0.0.34-alpha1", path = "../crates/core_types" }
+holochain_dpki = { version = "=0.0.34-alpha1", path = "../crates/dpki" }
+holochain_wasm_utils = { version = "=0.0.34-alpha1", path = "../crates/wasm_utils" }
 holochain_persistence_api = "=0.0.10"
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"

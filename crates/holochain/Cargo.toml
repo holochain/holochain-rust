@@ -8,10 +8,10 @@ documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.33-alpha6", path = "../core_types" }
-holochain_conductor_lib = { version = "=0.0.33-alpha6", path = "../conductor_lib" }
+holochain_core_types = { version = "=0.0.34-alpha1", path = "../core_types" }
+holochain_conductor_lib = { version = "=0.0.34-alpha1", path = "../conductor_lib" }
 lib3h_sodium = "=0.0.19"
-holochain_common = { version = "=0.0.33-alpha6", path = "../common" }
+holochain_common = { version = "=0.0.34-alpha1", path = "../common" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"

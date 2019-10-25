@@ -1,0 +1,14 @@
+FROM holochain/holochain-rust:latest
+
+WORKDIR /holochain-rust
+
+# get latest develop
+ADD https://github.com/holochain/holochain-rust/archive/trycp.tar.gz /holochain-rust/develop.tar.gz
+RUN tar --strip-components=1 -zxvf develop.tar.gz
+
+# install server
+RUN nix-shell --run hc-trycp-server-install
+
+EXPOSE 443/tcp
+
+CMD nix-shell --run 'trycp_server -p 443'

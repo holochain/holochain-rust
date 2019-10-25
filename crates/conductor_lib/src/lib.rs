@@ -100,6 +100,7 @@ extern crate holochain_json_api;
 extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
+extern crate holochain_persistence_lmdb;
 extern crate holochain_persistence_mem;
 extern crate holochain_persistence_pickle;
 extern crate lib3h_sodium;

@@ -15,11 +15,19 @@ function _usage() {
   exit 1
 }
 
+function _patch_comment() {
+  if [ "${1:-}x" == "x" ]; then
+    sed -i'' "s/^[[:space:]]*[#]*[[:space:]]*\\(lib3h[^[:space:]]*[[:space:]]\\+=[[:space:]]\\+.*\\)$/#\\1/" "../../Cargo.toml"
+  else
+    sed -i'' "s/^[[:space:]]*[#]*[[:space:]]*\\(lib3h[^[:space:]]*[[:space:]]\\+=[[:space:]]\\+.*\\)$/\\1/" "../../Cargo.toml"
+  fi
+}
+
 function _lib3h_deps() {
   local __dep_str="${1}"
   echo "setting lib3h deps to ${__dep_str}"
 
-  local __deps=$(find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
+  local __deps=$(echo "../../Cargo.toml"; find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../crates -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
   echo "${__deps}"
   sed -i'' "s/\\(lib3h[^[:space:]]*[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__dep_str//\//\\\/}/" ${__deps}
 }
@@ -33,7 +41,7 @@ function _lib3h_path_deps() {
   local __l3h_zombie_actor="{ path = \"${__l3h_path}/crates/zombie_actor\" }"
   echo "using ${__l3h_lib3h} ${__l3h_proto} ${__l3h_crypto} ${__l3h_sodium}"
 
-  local __deps=$(find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
+  local __deps=$(echo "../../Cargo.toml"; find ../.. -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../crates -maxdepth 2 -mindepth 2 -name Cargo.toml; find ../../app_spec/zomes -maxdepth 3 -mindepth 3 -name Cargo.toml)
   echo "${__deps}"
   sed -i'' "s/\\(lib3h[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_lib3h//\//\\\/}/" ${__deps}
   sed -i'' "s/\\(lib3h_protocol[[:space:]]\\+=[[:space:]]\\+\\).*/\\1${__l3h_proto//\//\\\/}/" ${__deps}
@@ -56,7 +64,9 @@ function _cmd() {
             echo "   will set: lib3h = \"=0.0.9\""
             exit 1
           fi
+          _patch_comment false
           _lib3h_deps "\"=${3}\""
+          _patch_comment
           ;;
         branch)
           if [ ${__help} == 1 ]; then
@@ -66,6 +76,7 @@ function _cmd() {
             echo "   will set: lib3h = { git = \"https://github.com/holochain/lib3h\", branch = \"test-a\" }"
             exit 1
           fi
+          _patch_comment false
           _lib3h_deps "{ git = \"https://github.com/holochain/lib3h\", branch = \"${3}\" }"
           ;;
         path)
@@ -76,6 +87,7 @@ function _cmd() {
                 echo "   will set: lib3h = { path = \"../lib3h/crates/...\" }"
                 exit 1
             fi
+            _patch_comment false
             _lib3h_path_deps "${3}"
             ;;
         *)

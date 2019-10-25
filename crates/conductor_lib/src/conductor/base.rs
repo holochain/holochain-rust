@@ -313,10 +313,13 @@ impl Conductor {
                                             .interfaces
                                             .iter()
                                             .filter(|interface_config| {
-                                                interface_config
+                                                let contains_instance = interface_config
                                                     .instances
                                                     .iter()
-                                                    .any(|instance| instance.id == *instance_id)
+                                                    .any(|instance| instance.id == *instance_id);
+                                                let is_admin = interface_config.admin;
+
+                                                contains_instance || is_admin
                                             })
                                             .collect();
                                         println!("INTERFACEs for SIGNAL: {:?}", interfaces);
@@ -797,6 +800,14 @@ impl Conductor {
                         context_builder =
                             context_builder
                                 .with_pickle_storage(path)
+                                .map_err(|hc_err| {
+                                    format!("Error creating context: {}", hc_err.to_string())
+                                })?
+                    }
+                    StorageConfiguration::Lmdb { path, initial_mmap_bytes } => {
+                        context_builder =
+                            context_builder
+                                .with_lmdb_storage(path, initial_mmap_bytes)
                                 .map_err(|hc_err| {
                                     format!("Error creating context: {}", hc_err.to_string())
                                 })?
@@ -2065,7 +2076,7 @@ pub mod tests {
         let mut path = PathBuf::new();
 
         path.push(wasm_target_dir(
-            &String::from("conductor_api").into(),
+            &String::from("conductor_lib").into(),
             &String::from("test-bridge-caller").into(),
         ));
         let wasm_path_component: PathBuf = [

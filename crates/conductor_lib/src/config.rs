@@ -609,14 +609,15 @@ impl Configuration {
     /// TOML configuration file. For efficiency purposes, we short-circuit on the first encounter of a
     /// duplicated values.
     fn check_instances_storage(&self) -> Result<(), String> {
-        let mut storage_paths =
-            self.instances
-                .iter()
-                .filter_map(|stg_config| match stg_config.storage {
-                    StorageConfiguration::File { ref path }
-                    | StorageConfiguration::Pickle { ref path } => Some(path),
-                    _ => None,
-                });
+        let mut storage_paths = self
+            .instances
+            .iter()
+            .filter_map(|stg_config| match stg_config.storage {
+                StorageConfiguration::File { ref path }
+                | StorageConfiguration::Lmdb { ref path, .. }
+                | StorageConfiguration::Pickle { ref path } => Some(path),
+                _ => None,
+            });
 
         // Here we don't use the already implemented 'detect_dupes' function because we don't need
         // to keep track of all the duplicated values of storage instances. But instead we use the
@@ -699,8 +700,16 @@ pub struct InstanceConfiguration {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
     Memory,
-    File { path: PathBuf },
-    Pickle { path: PathBuf },
+    File {
+        path: PathBuf,
+    },
+    Pickle {
+        path: PathBuf,
+    },
+    Lmdb {
+        path: PathBuf,
+        initial_mmap_bytes: Option<usize>,
+    },
 }
 
 /// Here, interfaces are user facing and make available zome functions to

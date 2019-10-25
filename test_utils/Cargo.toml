@@ -1,6 +1,6 @@
 [package]
 name = "test_utils"
-version = "0.0.33-alpha3"
+version = "0.0.34-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -23,7 +23,7 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 serde_derive = "=1.0.89"
 crossbeam-channel = "=0.3.8"
 lazy_static = "=1.2.0"
-jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-ws-server = "14.0.1"
 base64 = "=0.10.1"
 url = { version = "=2.1.0", features = ["serde"] }
 uuid = { version = "0.7", features = ["serde", "v4"] }

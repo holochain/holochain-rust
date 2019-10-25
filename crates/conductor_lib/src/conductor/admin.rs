@@ -194,7 +194,10 @@ impl ConductorAdmin for Conductor {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::Pickle { path: storage_path },
+            storage: StorageConfiguration::Lmdb {
+                path: storage_path,
+                initial_mmap_bytes: None,
+            },
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
@@ -1153,7 +1156,7 @@ id = 'new-instance'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
+                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
                 storage_path_string
             ),
         );
@@ -1445,7 +1448,7 @@ id = 'new-instance-2'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
+                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
                 storage_path_string
             ),
         );

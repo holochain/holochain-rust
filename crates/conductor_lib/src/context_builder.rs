@@ -7,8 +7,10 @@ use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
 use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+
 use jsonrpc_core::IoHandler;
 use std::{
     fs,
@@ -105,6 +107,31 @@ impl ContextBuilder {
         let eav_storage = Arc::new(RwLock::new(EavPickleStorage::new(eav_path)));
         self.chain_storage = Some(file_storage.clone());
         self.dht_storage = Some(file_storage);
+        self.eav_storage = Some(eav_storage);
+        Ok(self)
+    }
+
+    /// Sets all three storages, chain, DHT and EAV storage, to persistent lmdb based implementations.
+    /// Chain and DHT storages get set to the same pikcle CAS.
+    /// Returns an error if no lmdb storage could be spawned on the given path.
+    pub fn with_lmdb_storage<P: AsRef<Path>>(
+        mut self,
+        path: P,
+        initial_mmap_bytes: Option<usize>,
+    ) -> Result<Self, HolochainError> {
+        let base_path: PathBuf = path.as_ref().into();
+        let cas_path = base_path.join("cas");
+        let eav_path = base_path.join("eav");
+        fs::create_dir_all(&cas_path)?;
+        fs::create_dir_all(&eav_path)?;
+
+        let cas_storage = Arc::new(RwLock::new(LmdbStorage::new(&cas_path, initial_mmap_bytes)));
+        let eav_storage = Arc::new(RwLock::new(EavLmdbStorage::new(
+            eav_path,
+            initial_mmap_bytes,
+        )));
+        self.chain_storage = Some(cas_storage.clone());
+        self.dht_storage = Some(cas_storage);
         self.eav_storage = Some(eav_storage);
         Ok(self)
     }

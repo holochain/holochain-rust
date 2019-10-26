@@ -132,7 +132,7 @@ fn main() {
     io.add_method("kill", |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let signal = get_as_string("signal", &params_map)?;
+        let signal = get_as_string("signal", &params_map)?; // TODO: make optional?
         let response = exec_output("bash", vec!["hcm.bash", "kill", &id, &signal], ".", true)
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,

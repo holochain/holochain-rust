@@ -192,6 +192,12 @@ enum Cli {
             help = "Path to .dna.json file [default: dist/<dna-name>.dna.json]"
         )]
         path: Option<PathBuf>,
+        #[structopt(
+            long,
+            short = "x",
+            help = "Property (in the from 'name=value') that gets set/overwritten before calculating hash"
+        )]
+        property: Option<Vec<String>>,
     },
 }
 
@@ -313,11 +319,11 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             }
         },
-        Cli::HashDna { path } => {
+        Cli::HashDna { path, property } => {
             let dna_path = path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
 
-            let dna_hash = cli::hash_dna(&dna_path)
+            let dna_hash = cli::hash_dna(&dna_path, property)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
         }

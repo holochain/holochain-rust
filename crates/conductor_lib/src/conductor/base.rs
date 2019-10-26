@@ -2076,7 +2076,7 @@ pub mod tests {
         let mut path = PathBuf::new();
 
         path.push(wasm_target_dir(
-            &String::from("conductor_api").into(),
+            &String::from("conductor_lib").into(),
             &String::from("test-bridge-caller").into(),
         ));
         let wasm_path_component: PathBuf = [

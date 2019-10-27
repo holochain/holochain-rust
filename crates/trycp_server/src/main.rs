@@ -1,12 +1,14 @@
 extern crate structopt;
 extern crate tempfile;
+#[macro_use]
+extern crate serde_json;
 
 //use log::error;
 //use std::process::exit;
 use self::tempfile::tempdir;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
-use serde_json::{self, map::Map};
+use serde_json::map::Map;
 use std::{fs::File, io::Write, process::Command};
 use structopt::StructOpt;
 
@@ -76,6 +78,17 @@ fn main() {
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
 
+    // TODO: supply values which have some validity guarantees.
+    // i.e. ensure ports are open, and ensure that configDir is the same one
+    // that the actual config will be written to
+    io.add_method("get_args", |_params: Params| {
+        Ok(json!({
+            "adminPort": 1111,
+            "zomePort": 2222,
+            "configDir": "TODO",
+        }))
+    });
+
     io.add_method("player", |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
@@ -86,7 +99,6 @@ fn main() {
                 message: format!("error decoding config: {:?}", e),
                 data: None,
             })?;
-
         let tempdir = tempdir().unwrap();
         let file_path = tempdir.path().join("config.toml");
         File::create(file_path.clone())
@@ -101,6 +113,7 @@ fn main() {
                 message: format!("unable to write config file: {:?}", e),
                 data: None,
             })?;
+        println!("Wrote config for player {} to {:?}", id, file_path);
         let response = exec_output(
             "bash",
             vec!["hcm.bash", "player", &id, &file_path.to_string_lossy()],

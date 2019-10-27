@@ -50,6 +50,7 @@ function _player() {
         exit 1
     fi
     _setup_player "$id"
+    echo "using config path: $player_config"
     if [ -f $player_config ]; then
         echo "player config already exists"
         exit 1

@@ -19,7 +19,7 @@ pub fn hash_dna(
     if let Some(properties) = properties {
         for property_string in properties {
             let mut parts = property_string
-                .split("=")
+                .split('=')
                 .map(String::from)
                 .collect::<Vec<String>>();
             if parts.len() != 2 {

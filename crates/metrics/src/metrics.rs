@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Metric {
-    name: String,
-    value: f64,
+    pub name: String,
+    pub value: f64,
 }
 
 impl Metric {

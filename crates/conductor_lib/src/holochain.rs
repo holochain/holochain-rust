@@ -333,7 +333,7 @@ mod tests {
 
     fn example_api_wasm_path() -> PathBuf {
         let mut path = wasm_target_dir(
-            &String::from("conductor_api").into(),
+            &String::from("conductor_lib").into(),
             &String::from("wasm-test").into(),
         );
         let wasm_path_component: PathBuf = [
@@ -770,7 +770,7 @@ mod tests {
         let wasm = include_bytes!(format!(
             "{}{slash}wasm32-unknown-unknown{slash}release{slash}example_api_wasm.wasm",
             slash = std::path::MAIN_SEPARATOR,
-            wasm_target_dir("conductor_api", "wasm-test"),
+            wasm_target_dir("conductor_lib", "wasm-test"),
         ));
         let defs = test_utils::create_test_defs_with_fn_name("commit_test");
         let mut dna = test_utils::create_test_dna_with_defs("test_zome", defs, wasm);

@@ -15,11 +15,7 @@ use std::{
     sync::Arc,
 };
 
-use cli::scaffold::rust::CARGO_FILE_NAME;
-
 use holochain_core_types::hdk_version::{HDKVersion, HDK_VERSION};
-
-pub const CODE_DIR_NAME: &str = "code";
 
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
 
@@ -36,6 +32,8 @@ pub const META_BIN_ID: &str = "bin";
 pub const META_SECTION_NAME: &str = "__META__";
 pub const META_TREE_SECTION_NAME: &str = "tree";
 pub const META_CONFIG_SECTION_NAME: &str = "config_file";
+
+const CARGO_FILE_NAME: &str = "Cargo.toml";
 
 pub type Object = Map<String, Value>;
 

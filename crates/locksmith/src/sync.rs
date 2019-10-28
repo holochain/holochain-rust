@@ -23,10 +23,6 @@ const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
 // We filter out any guards alive less than this long
 const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
 
-// How often to retry getting a lock after receiving a WouldBlock error
-// during try_lock
-const LOCK_POLL_INTERVAL_MS: u64 = 10;
-
 #[derive(Debug)]
 pub enum LocksmithErrorKind {
     LocksmithTimeout,
@@ -140,8 +136,6 @@ Backtrace at the moment of guard creation follows:
 
 lazy_static! {
     static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
-    static ref PENDING_LOCKS: Mutex<HashMap<ProcessUniqueId, (LockType, Instant, Backtrace)>> =
-        Mutex::new(HashMap::new());
 }
 
 pub fn spawn_locksmith_guard_watcher() {
@@ -180,18 +174,6 @@ pub fn spawn_locksmith_guard_watcher() {
             thread::sleep(Duration::from_millis(GUARD_WATCHER_POLL_INTERVAL_MS));
         });
     debug!("spawn_locksmith_guard_watcher: SPAWNED");
-}
-
-fn _print_pending_locks() {
-    for (puid, (lock_type, instant, backtrace)) in PENDING_LOCKS.lock().iter() {
-        debug!(
-            "PENDING LOCK {:?} locktype={:?}, pending for {:?}, backtrace:\n{:?}",
-            puid,
-            lock_type,
-            Instant::now().duration_since(*instant),
-            backtrace
-        );
-    }
 }
 
 // /////////////////////////////////////////////////////////////
@@ -361,59 +343,30 @@ impl<T> HcRwLock<T> {
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident) => {
+    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_for_fn:ident, $try_lock_until_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> LocksmithResult<$Guard<T>> {
-                let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
-                self.$try_lock_until_fn(deadline)
+                self.$try_lock_for_fn(Duration::from_secs(LOCK_TIMEOUT_SECS))
+                    .ok_or_else(|| {
+                        LocksmithError::new(
+                            LockType::$lock_type,
+                            LocksmithErrorKind::LocksmithTimeout,
+                        )
+                    })
             }
 
-            fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$Guard<T>> {
-                // Set a number twice the expected number of iterations, just to prevent an infinite loop
-                let max_iters = 2 * LOCK_TIMEOUT_SECS * 1000 / LOCK_POLL_INTERVAL_MS;
-                let mut pending_puid = None;
-                for _i in 0..max_iters {
-                    match self.$try_lock_fn() {
-                        Some(v) => {
-                            if let Some(puid) = pending_puid {
-                                PENDING_LOCKS.lock().remove(&puid);
-                            }
-                            return Ok(v);
-                        }
-                        None => {
-                            pending_puid.get_or_insert_with(|| {
-                                let p = ProcessUniqueId::new();
-                                PENDING_LOCKS.lock().insert(
-                                    p,
-                                    (
-                                        LockType::$lock_type,
-                                        Instant::now(),
-                                        Backtrace::new_unresolved(),
-                                    ),
-                                );
-                                p
-                            });
-
-                            // TIMEOUT
-                            if let None = deadline.checked_duration_since(Instant::now()) {
-                                // PENDING_LOCKS.lock().remove(&puid);
-                                return Err(LocksmithError::new(
-                                    LockType::$lock_type,
-                                    LocksmithErrorKind::LocksmithTimeout,
-                                ));
-                            }
-                        }
-                    }
-                    std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
-                }
-                error!(
-                    "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"
-                );
-                return Err(LocksmithError::new(
-                    LockType::$lock_type,
-                    LocksmithErrorKind::LocksmithTimeout,
-                ));
+            pub fn $try_lock_for_fn(&self, duration: Duration) -> Option<$Guard<T>> {
+                self.inner
+                    .$try_lock_for_fn(duration)
+                    .map(|g| $Guard::new(g))
             }
+
+            pub fn $try_lock_until_fn(&self, instant: Instant) -> Option<$Guard<T>> {
+                self.inner
+                    .$try_lock_until_fn(instant)
+                    .map(|g| $Guard::new(g))
+            }
+
             pub fn $try_lock_fn(&self) -> Option<$Guard<T>> {
                 (*self).inner.$try_lock_fn().map(|g| $Guard::new(g))
             }
@@ -428,6 +381,7 @@ mutex_impl!(
     Lock,
     lock,
     try_lock,
+    try_lock_for,
     try_lock_until
 );
 mutex_impl!(
@@ -437,6 +391,7 @@ mutex_impl!(
     Read,
     read,
     try_read,
+    try_read_for,
     try_read_until
 );
 mutex_impl!(
@@ -446,5 +401,6 @@ mutex_impl!(
     Write,
     write,
     try_write,
+    try_write_for,
     try_write_until
 );

@@ -195,7 +195,7 @@ enum Cli {
         #[structopt(
             long,
             short = "x",
-            help = "Property (in the from 'name=value') that gets set/overwritten before calculating hash"
+            help = "Property (in the form 'name=value') that gets set/overwritten before calculating hash"
         )]
         property: Option<Vec<String>>,
     },

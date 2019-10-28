@@ -9,12 +9,12 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-sim1h = "=0.0.4"
+sim1h = "=0.0.5"
 sim2h = { path = "../sim2h" }
-lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
-lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "ghost-mutex" }
+lib3h_sodium = "=0.0.20"
+lib3h_protocol = "=0.0.20"
+lib3h = "=0.0.20"
+lib3h_zombie_actor = "=0.0.20"
 detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../../common" }

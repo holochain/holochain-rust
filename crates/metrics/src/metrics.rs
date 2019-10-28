@@ -33,12 +33,13 @@ impl MetricPublisher for StdoutMetricPublisher {
 #[cfg(test)]
 mod test {
 
+    use super::*;
     #[test]
     fn can_publish_to_stdout() {
-        let publisher = StdoutMetricPublisher;
-        let metric = Metric("latency", 100);
+        let mut publisher = StdoutMetricPublisher;
+        let metric = Metric::new("latency", 100.0);
 
-        publisher.publish(metric);
+        publisher.publish(&metric);
     }
 
 }

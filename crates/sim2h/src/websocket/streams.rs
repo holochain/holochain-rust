@@ -8,10 +8,11 @@ use log::*;
 
 use lib3h::transport::error::{TransportError, TransportResult};
 
+use holochain_locksmith::Mutex;
 use lib3h_protocol::{uri::Lib3hUri, DidWork};
 use std::{
     io::{Read, Write},
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use url::Url;

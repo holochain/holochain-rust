@@ -4,10 +4,11 @@ version = "0.0.34-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
+holochain_common = { path = "../../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_conductor_lib = { path = "../conductor_lib" }
+holochain_locksmith = { path = "../locksmith" }
 lib3h_sodium = "=0.0.19"
-holochain_common = { path = "../../common" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"

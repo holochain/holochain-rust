@@ -3,8 +3,8 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
-    sync::HcRwLock as RwLock,
 };
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,

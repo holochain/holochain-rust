@@ -39,6 +39,7 @@ holochain_persistence_file = "=0.0.10"
 holochain_persistence_mem = "=0.0.10"
 holochain_core_types = { path = "../core_types" }
 holochain_dpki = { path = "../dpki" }
+holochain_locksmith = { path = "../locksmith" }
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
 boolinator = "=2.4.0"

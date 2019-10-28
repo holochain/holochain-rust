@@ -1,8 +1,7 @@
-use holochain_core_types::{agent::AgentId, sync::HcMutex as Mutex};
-
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
-
+use holochain_core_types::agent::AgentId;
 use holochain_dpki::{key_bundle::KeyBundle, SEED_SIZE};
+use holochain_locksmith::Mutex;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use lib3h_sodium::secbuf::SecBuf;
 use std::{collections::HashMap, sync::Arc};

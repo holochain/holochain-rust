@@ -28,10 +28,10 @@ const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
 const LOCK_POLL_INTERVAL_MS: u64 = 10;
 
 #[derive(Debug)]
-pub enum HcLockErrorKind {
-    HcLockTimeout,
-    HcLockPoisonError,
-    HcLockWouldBlock,
+pub enum LocksmithErrorKind {
+    LocksmithTimeout,
+    LocksmithPoisonError,
+    LocksmithWouldBlock,
 }
 
 #[derive(Debug)]
@@ -42,14 +42,14 @@ pub enum LockType {
 }
 
 #[derive(Debug)]
-pub struct HcLockError {
+pub struct LocksmithError {
     lock_type: LockType,
     backtraces: Option<Vec<Backtrace>>,
-    kind: HcLockErrorKind,
+    kind: LocksmithErrorKind,
 }
 
-impl HcLockError {
-    pub fn new(lock_type: LockType, kind: HcLockErrorKind) -> Self {
+impl LocksmithError {
+    pub fn new(lock_type: LockType, kind: LocksmithErrorKind) -> Self {
         Self {
             lock_type,
             backtraces: None,
@@ -58,7 +58,7 @@ impl HcLockError {
     }
 }
 
-pub type HcLockResult<T> = Result<T, HcLockError>;
+pub type LocksmithResult<T> = Result<T, LocksmithError>;
 
 struct GuardTracker {
     puid: ProcessUniqueId,
@@ -144,7 +144,7 @@ lazy_static! {
         Mutex::new(HashMap::new());
 }
 
-pub fn spawn_hc_guard_watcher() {
+pub fn spawn_locksmith_guard_watcher() {
     let _ = thread::Builder::new()
         .name(format!(
             "hc_guard_watcher/{}",
@@ -179,7 +179,7 @@ pub fn spawn_hc_guard_watcher() {
 
             thread::sleep(Duration::from_millis(GUARD_WATCHER_POLL_INTERVAL_MS));
         });
-    debug!("spawn_hc_guard_watcher: SPAWNED");
+    debug!("spawn_locksmith_guard_watcher: SPAWNED");
 }
 
 fn _print_pending_locks() {
@@ -363,12 +363,12 @@ impl<T> HcRwLock<T> {
 macro_rules! mutex_impl {
     ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
-            pub fn $lock_fn(&self) -> HcLockResult<$Guard<T>> {
+            pub fn $lock_fn(&self) -> LocksmithResult<$Guard<T>> {
                 let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
                 self.$try_lock_until_fn(deadline)
             }
 
-            fn $try_lock_until_fn(&self, deadline: Instant) -> HcLockResult<$Guard<T>> {
+            fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$Guard<T>> {
                 // Set a number twice the expected number of iterations, just to prevent an infinite loop
                 let max_iters = 2 * LOCK_TIMEOUT_SECS * 1000 / LOCK_POLL_INTERVAL_MS;
                 let mut pending_puid = None;
@@ -397,9 +397,9 @@ macro_rules! mutex_impl {
                             // TIMEOUT
                             if let None = deadline.checked_duration_since(Instant::now()) {
                                 // PENDING_LOCKS.lock().remove(&puid);
-                                return Err(HcLockError::new(
+                                return Err(LocksmithError::new(
                                     LockType::$lock_type,
-                                    HcLockErrorKind::HcLockTimeout,
+                                    LocksmithErrorKind::LocksmithTimeout,
                                 ));
                             }
                         }
@@ -409,9 +409,9 @@ macro_rules! mutex_impl {
                 error!(
                     "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"
                 );
-                return Err(HcLockError::new(
+                return Err(LocksmithError::new(
                     LockType::$lock_type,
-                    HcLockErrorKind::HcLockTimeout,
+                    LocksmithErrorKind::LocksmithTimeout,
                 ));
             }
             pub fn $try_lock_fn(&self) -> Option<$Guard<T>> {

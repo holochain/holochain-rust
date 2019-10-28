@@ -1,5 +1,6 @@
 use crossbeam_channel::{unbounded, Sender};
-use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
+use holochain_core_types::error::HolochainError;
+use holochain_locksmith::Mutex;
 use lib3h_sodium::secbuf::SecBuf;
 #[cfg(unix)]
 use log::Level;

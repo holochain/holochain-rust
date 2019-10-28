@@ -13,10 +13,11 @@ impl Metric {
     }
 }
 
-pub trait MetricPublisher {
+pub trait MetricPublisher: Sync + Send {
     fn publish(&mut self, metric: &Metric);
 }
 
+#[derive(Debug, Clone)]
 pub struct StdoutMetricPublisher;
 
 impl StdoutMetricPublisher {
@@ -24,6 +25,9 @@ impl StdoutMetricPublisher {
         StdoutMetricPublisher
     }
 }
+
+pub type DefaultPublisher = StdoutMetricPublisher;
+
 impl MetricPublisher for StdoutMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
         println!("{} {}", metric.name, metric.value);

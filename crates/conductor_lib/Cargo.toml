@@ -18,6 +18,7 @@ holochain_net = { path = "../net" }
 lib3h = "=0.0.19"
 lib3h_sodium = "=0.0.19"
 holochain_common = { path = "../../common" }
+holochain_metrics = { path = "../metrics" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

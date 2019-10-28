@@ -18,6 +18,8 @@ use std::{
     sync::Arc,
 };
 
+use holochain_metrics::{MetricPublisher, StdoutMetricPublisher};
+
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
 ///
@@ -39,6 +41,7 @@ pub struct ContextBuilder {
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
     state_dump_logging: bool,
+    metric_publisher: Option<Arc<RwLock<dyn MetricPublisher>>>,
 }
 
 impl ContextBuilder {
@@ -53,6 +56,7 @@ impl ContextBuilder {
             conductor_api: None,
             signal_tx: None,
             state_dump_logging: false,
+            metric_publisher: None,
         }
     }
 
@@ -175,6 +179,9 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or_else(|| Arc::new(RwLock::new(EavMemoryStorage::new())));
+        let metric_publisher = self
+            .metric_publisher
+            .unwrap_or_else(|| Arc::new(RwLock::new(StdoutMetricPublisher::new())));
 
         Context::new(
             &self
@@ -192,6 +199,7 @@ impl ContextBuilder {
             self.conductor_api,
             self.signal_tx,
             self.state_dump_logging,
+            metric_publisher,
         )
     }
 }

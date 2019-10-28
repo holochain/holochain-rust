@@ -29,6 +29,7 @@ toml = "=0.5.0"
 holochain_net = { path = "../net" }
 holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../../common" }
+holochain_metrics = { path = "../metrics" }
 holochain_conductor_lib_api = { path = "../conductor_api" }
 lib3h_protocol = "=0.0.19"
 lib3h_sodium = "=0.0.19"

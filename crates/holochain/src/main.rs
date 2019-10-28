@@ -81,6 +81,9 @@ fn main() {
                     .expect("Could not start instances!");
                 println!("Starting interfaces...");
                 conductor.start_all_interfaces();
+                // NB: the following println is very important!
+                // Others are using it as an easy way to know that the interfaces have started.
+                // Leave it as is!
                 println!("Done. All interfaces started.");
                 println!("Starting UI servers");
                 conductor

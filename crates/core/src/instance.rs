@@ -443,7 +443,7 @@ pub mod tests {
                 None,
                 None,
                 false,
-                Arc::new(RwLock::new(holochain_metrics::DefaultPublisher::new())),
+                Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
             )),
             logger,
         )
@@ -493,7 +493,7 @@ pub mod tests {
                 // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name),
                 false,
-                Arc::new(RwLock::new(holochain_metrics::DefaultPublisher::new())),
+                Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
             )
             .unwrap(),
         )
@@ -519,7 +519,7 @@ pub mod tests {
             None,
             None,
             false,
-            Arc::new(RwLock::new(holochain_metrics::DefaultPublisher::new())),
+            Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -546,7 +546,7 @@ pub mod tests {
             None,
             None,
             false,
-            Arc::new(RwLock::new(holochain_metrics::DefaultPublisher::new())),
+            Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

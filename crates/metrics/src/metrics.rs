@@ -18,19 +18,19 @@ pub trait MetricPublisher: Sync + Send {
 }
 
 #[derive(Debug, Clone)]
-pub struct StdoutMetricPublisher;
+pub struct LoggerMetricPublisher;
 
-impl StdoutMetricPublisher {
+impl LoggerMetricPublisher {
     pub fn new() -> Self {
-        StdoutMetricPublisher
+        Self
     }
 }
 
-pub type DefaultPublisher = StdoutMetricPublisher;
+pub type DefaultMetricPublisher = LoggerMetricPublisher;
 
-impl MetricPublisher for StdoutMetricPublisher {
+impl MetricPublisher for LoggerMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
-        println!("{} {}", metric.name, metric.value);
+        trace!("{} {}", metric.name, metric.value);
     }
 }
 
@@ -39,8 +39,8 @@ mod test {
 
     use super::*;
     #[test]
-    fn can_publish_to_stdout() {
-        let mut publisher = StdoutMetricPublisher;
+    fn can_publish_to_logger() {
+        let mut publisher = LoggerMetricPublisher;
         let metric = Metric::new("latency", 100.0);
 
         publisher.publish(&metric);

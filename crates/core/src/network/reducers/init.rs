@@ -83,7 +83,7 @@ pub mod test {
             None,
             None,
             false,
-            Arc::new(RwLock::new(holochain_metrics::DefaultPublisher::new())),
+            Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

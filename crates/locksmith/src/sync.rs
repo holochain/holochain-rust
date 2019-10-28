@@ -183,7 +183,7 @@ macro_rules! guard_struct {
     ($HcGuard:ident, $Guard:ident, $lock_type:ident) => {
         pub struct $HcGuard<'a, T: ?Sized> {
             puid: ProcessUniqueId,
-            pub inner: $Guard<'a, T>,
+            inner: Option<$Guard<'a, T>>,
         }
 
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
@@ -192,7 +192,10 @@ macro_rules! guard_struct {
                 GUARDS
                     .lock()
                     .insert(puid, GuardTracker::new(puid, LockType::$lock_type));
-                Self { puid, inner }
+                Self {
+                    puid,
+                    inner: Some(inner),
+                }
             }
 
             pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
@@ -201,6 +204,12 @@ macro_rules! guard_struct {
                     .entry(self.puid)
                     .and_modify(|g| g.annotation = Some(annotation.into()));
                 self
+            }
+
+            pub fn unlock_fair(mut self) {
+                if let Some(inner) = std::mem::replace(&mut self.inner, None) {
+                    $Guard::unlock_fair(inner);
+                }
             }
         }
 
@@ -216,100 +225,102 @@ guard_struct!(HcMutexGuard, MutexGuard, Lock);
 guard_struct!(HcRwLockReadGuard, RwLockReadGuard, Read);
 guard_struct!(HcRwLockWriteGuard, RwLockWriteGuard, Write);
 
+// HcMutexGuard
+
 impl<'a, T: ?Sized> Borrow<T> for HcMutexGuard<'a, T> {
     fn borrow(&self) -> &T {
-        &self.inner
+        self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
 
 impl<'a, T: ?Sized> BorrowMut<T> for HcMutexGuard<'a, T> {
     fn borrow_mut(&mut self) -> &mut T {
-        &mut self.inner
+        self.inner.as_mut().expect("accessed mutex mid-unlock!")
     }
 }
 
-// impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
-//     fn as_ref(&self) -> &T {
-//         self.deref()
-//     }
-// }
+impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
+    fn as_ref(&self) -> &T {
+        self.deref()
+    }
+}
 
-// impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
-//     fn as_mut(&mut self) -> &mut T {
-//         self.deref_mut()
-//     }
-// }
+impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
+    fn as_mut(&mut self) -> &mut T {
+        self.deref_mut()
+    }
+}
 
 impl<'a, T: ?Sized> Deref for HcMutexGuard<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        self.inner.deref()
+        &*self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
 
 impl<'a, T: ?Sized> DerefMut for HcMutexGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut T {
-        self.inner.deref_mut()
+        &mut *self.inner.as_mut().expect("accessed mutex mid-unlock!")
     }
 }
 
-//
+// HcRwLockReadGuard
 
 impl<'a, T: ?Sized> Borrow<T> for HcRwLockReadGuard<'a, T> {
     fn borrow(&self) -> &T {
-        &self.inner
+        self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
 
-// impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
-//     fn as_ref(&self) -> &T {
-//         self.deref()
-//     }
-// }
+impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
+    fn as_ref(&self) -> &T {
+        self.deref()
+    }
+}
 
 impl<'a, T: ?Sized> Deref for HcRwLockReadGuard<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        self.inner.deref()
+        &*self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
 
-// HcRwLockWriteGuard
-
 impl<'a, T: ?Sized> Borrow<T> for HcRwLockWriteGuard<'a, T> {
     fn borrow(&self) -> &T {
-        &self.inner
+        self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
 
 impl<'a, T: ?Sized> BorrowMut<T> for HcRwLockWriteGuard<'a, T> {
     fn borrow_mut(&mut self) -> &mut T {
-        &mut self.inner
+        self.inner.as_mut().expect("accessed mutex mid-unlock!")
     }
 }
 
-// impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
-//     fn as_ref(&self) -> &T {
-//         self.deref()
-//     }
-// }
+// HcRwLockWriteGuard
 
-// impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
-//     fn as_mut(&mut self) -> &mut T {
-//         self.deref_mut()
-//     }
-// }
+impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
+    fn as_ref(&self) -> &T {
+        self.deref()
+    }
+}
+
+impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
+    fn as_mut(&mut self) -> &mut T {
+        self.deref_mut()
+    }
+}
 
 impl<'a, T: ?Sized> Deref for HcRwLockWriteGuard<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        self.inner.deref()
+        &*self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
 
 impl<'a, T: ?Sized> DerefMut for HcRwLockWriteGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut T {
-        self.inner.deref_mut()
+        &mut *self.inner.as_mut().expect("accessed mutex mid-unlock!")
     }
 }
 

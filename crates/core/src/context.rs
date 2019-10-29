@@ -293,6 +293,10 @@ impl Context {
         self.instance_is_alive.load(Relaxed)
     }
 
+    pub fn reset_instance(&mut self) {
+        self.instance_is_alive = Arc::new(AtomicBool::new(true));
+    }
+
     /// This creates an observer for the instance's redux loop and installs it.
     /// The returned receiver gets sent ticks from the instance every time the state
     /// got mutated.

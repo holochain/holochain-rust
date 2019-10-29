@@ -71,7 +71,7 @@ lazy_static! {
     /// the config and hence mutate the Conductor, we need something that owns the Conductor
     /// and is accessible from everywhere (esp. those conductor interface method closures
     /// in interface.rs).
-    pub static ref CONDUCTOR: Arc<Mutex<Option<Conductor>>> = Arc::new(Mutex::new_with_fair_unlocking(None));
+    pub static ref CONDUCTOR: Arc<Mutex<Option<Conductor>>> = Arc::new(Mutex::new(None));
 }
 
 /// Conductor constructor that makes sure the Conductor instance object is mounted

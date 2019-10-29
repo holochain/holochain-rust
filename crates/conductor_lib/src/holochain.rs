@@ -90,8 +90,7 @@
 //!
 //!```
 
-use crate::error::{HolochainInstanceError, HolochainResult},
-};
+use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,

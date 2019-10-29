@@ -37,13 +37,19 @@ use parking_lot::RwLock;
 use rand::Rng;
 use std::{collections::HashMap, convert::TryFrom};
 
+const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
+
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
     stream_manager: StreamManager<std::net::TcpStream>,
-    num_ticks: u32,
+    num_ticks: u64,
+    /// sim2h currently uses the same radius for all connections
+    rrdht_arc_radius: u32,
+    /// when should we recalculated the rrdht_arc_radius
+    rrdht_arc_radius_recalc: std::time::Instant,
 }
 
 impl Sim2h {
@@ -59,6 +65,9 @@ impl Sim2h {
             spaces: HashMap::new(),
             stream_manager,
             num_ticks: 0,
+            // default to max radius
+            rrdht_arc_radius: ARC_RADIUS_MAX,
+            rrdht_arc_radius_recalc: std::time::Instant::now(),
         };
 
         debug!("Trying to bind to {}...", bind_spec);
@@ -72,6 +81,44 @@ impl Sim2h {
         );
 
         sim2h
+    }
+
+    /// recalculate arc radius for our connections
+    fn recalc_rrdht_arc_radius(&mut self) {
+        let mut peer_record_set = RValuePeerRecordSet::default()
+            // sim2h is currently omniscient
+            .arc_of_included_peer_records(Arc::new(0.into(), ARC_LENGTH_MAX));
+        for (_k, c_state) in self.connection_states.read().iter() {
+            match c_state {
+                ConnectionState::Limbo(_) => (),
+                ConnectionState::Joined(_, _, dht_data) => {
+                    peer_record_set = peer_record_set.push_peer_record(
+                        RValuePeerRecord::default()
+                            // since sim2h uses the same storage arc for all nodes
+                            // we just put that same value in here for all nodes
+                            .storage_arc(Arc::new_radius(dht_data.location, self.rrdht_arc_radius))
+                            // we do not yet have the metrics infrastructure to track
+                            // uptime, let's pretend all nodes are up exactly 1/2 the time
+                            .uptime_0_to_1(0.5),
+                    );
+                }
+            }
+        }
+
+        let mut new_arc_radius = get_recommended_storage_arc_radius(
+            &peer_record_set,
+            25.0, // target_minimum_r_value
+            50.0, // target_maximum_r_value
+            Some(self.rrdht_arc_radius),
+        );
+
+        if new_arc_radius != ARC_RADIUS_MAX {
+            let pct = 100 * new_arc_radius / ARC_RADIUS_MAX;
+            warn!("rrdht-r-value recommends shrinking arc radius to {} %, sim2h is not yet set up to do this, but, yay sharding!", pct);
+            new_arc_radius = ARC_RADIUS_MAX;
+        }
+
+        self.rrdht_arc_radius = new_arc_radius;
     }
 
     fn request_authoring_list(
@@ -109,16 +156,13 @@ impl Sim2h {
         trace!("join entered");
         let result =
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
-                let dht_data = DhtData {
-                    location: calc_location_for_id(&self.crypto, &data.agent_id.to_string())?,
-                };
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::Joined(
+                    ConnectionState::new_joined(
+                        &self.crypto,
                         data.space_address.clone(),
                         data.agent_id.clone(),
-                        dht_data,
-                    ),
+                    )?,
                 );
                 if !self.spaces.contains_key(&data.space_address) {
                     self.spaces
@@ -296,6 +340,18 @@ impl Sim2h {
             debug!(".");
             self.num_ticks = 0;
         }
+
+        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
+            self.rrdht_arc_radius_recalc = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
+                ))
+                .expect("can add interval ms");
+
+            self.recalc_rrdht_arc_radius();
+            trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
+        }
+
         trace!("process transport");
         let (_did_work, messages) = self.stream_manager.process()?;
 

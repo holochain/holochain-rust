@@ -13,7 +13,7 @@ holochain_core = { version = "=0.0.34-alpha1", path = "../core" }
 holochain_common = { version = "=0.0.34-alpha1", path = "../common" }
 holochain_conductor_lib = { version = "=0.0.34-alpha1", path = "../conductor_lib" }
 holochain_dpki = { version = "=0.0.34-alpha1", path = "../dpki" }
-lib3h_sodium = "=0.0.19"
+lib3h_sodium = "=0.0.20"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_file = "=0.0.10"

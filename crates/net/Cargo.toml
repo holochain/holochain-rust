@@ -15,10 +15,10 @@ tempfile = "=3.0.7"
 failure = "=0.1.5"
 sim1h = { version = "=0.0.34-alpha1", path = "../sim1h" }
 sim2h = { version = "=0.0.34-alpha1", path = "../sim2h" }
-lib3h_sodium = "=0.0.19"
-lib3h_protocol = "=0.0.19"
-lib3h = "=0.0.19"
-lib3h_zombie_actor = "=0.0.19"
+lib3h_sodium = "=0.0.20"
+lib3h_protocol = "=0.0.20"
+lib3h = "=0.0.20"
+lib3h_zombie_actor = "=0.0.20"
 detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { version = "=0.0.34-alpha1", path = "../common" }

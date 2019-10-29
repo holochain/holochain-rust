@@ -10,7 +10,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 holochain_core_types = { version = "=0.0.34-alpha1", path = "../core_types" }
 holochain_conductor_lib = { version = "=0.0.34-alpha1", path = "../conductor_lib" }
-lib3h_sodium = "=0.0.19"
+lib3h_sodium = "=0.0.20"
 holochain_common = { version = "=0.0.34-alpha1", path = "../common" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"

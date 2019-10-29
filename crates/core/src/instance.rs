@@ -288,7 +288,9 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
+            state: Arc::new(RwLock::new_with_fair_unlocking(StateWrapper::new(
+                context.clone(),
+            ))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -300,7 +302,7 @@ impl Instance {
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::from(state))),
+            state: Arc::new(RwLock::new_with_fair_unlocking(StateWrapper::from(state))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -314,7 +316,6 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
-            .use_fair_unlocking()
             .annotate("Instance::state")
     }
 

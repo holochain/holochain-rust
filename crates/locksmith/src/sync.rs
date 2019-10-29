@@ -362,6 +362,11 @@ impl<T> HcMutex<T> {
             inner: Mutex::new(v),
         }
     }
+
+    pub fn use_fair_unlocking(mut self) -> Self {
+        self.fair_unlocking = true;
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -383,6 +388,11 @@ impl<T> HcRwLock<T> {
             fair_unlocking: true,
             inner: RwLock::new(v),
         }
+    }
+
+    pub fn use_fair_unlocking(mut self) -> Self {
+        self.fair_unlocking = true;
+        self
     }
 }
 

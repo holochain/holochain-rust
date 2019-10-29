@@ -179,7 +179,7 @@ macro_rules! guard_struct {
         pub struct $HcGuard<'a, T: ?Sized> {
             puid: ProcessUniqueId,
             inner: Option<$Guard<'a, T>>,
-            fair_unlock: bool,
+            fair_unlocking: bool,
         }
 
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
@@ -191,7 +191,7 @@ macro_rules! guard_struct {
                 Self {
                     puid,
                     inner: Some(inner),
-                    fair_unlock: false,
+                    fair_unlocking: false,
                 }
             }
 
@@ -208,7 +208,7 @@ macro_rules! guard_struct {
             /// Declare that this mutex should be unlocked fairly when it is
             /// dropped, if it hasn't already been unlocked some other way
             pub fn use_fair_unlocking(mut self) -> Self {
-                self.fair_unlock = true;
+                self.fair_unlocking = true;
                 self
             }
 
@@ -228,7 +228,7 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
                 GUARDS.lock().remove(&self.puid);
-                if self.fair_unlock {
+                if self.fair_unlocking {
                     self._unlock_fair();
                 }
             }
@@ -344,12 +344,21 @@ impl<'a, T: ?Sized> DerefMut for HcRwLockWriteGuard<'a, T> {
 
 #[derive(Debug)]
 pub struct HcMutex<T: ?Sized> {
+    fair_unlocking: bool,
     inner: Mutex<T>,
 }
 
 impl<T> HcMutex<T> {
     pub fn new(v: T) -> Self {
         Self {
+            fair_unlocking: false,
+            inner: Mutex::new(v),
+        }
+    }
+
+    pub fn new_with_fair_unlocking(v: T) -> Self {
+        Self {
+            fair_unlocking: true,
             inner: Mutex::new(v),
         }
     }
@@ -357,21 +366,30 @@ impl<T> HcMutex<T> {
 
 #[derive(Debug)]
 pub struct HcRwLock<T: ?Sized> {
+    fair_unlocking: bool,
     inner: RwLock<T>,
 }
 
 impl<T> HcRwLock<T> {
     pub fn new(v: T) -> Self {
         Self {
+            fair_unlocking: false,
+            inner: RwLock::new(v),
+        }
+    }
+
+    pub fn new_with_fair_unlocking(v: T) -> Self {
+        Self {
+            fair_unlocking: true,
             inner: RwLock::new(v),
         }
     }
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_for_fn:ident, $try_lock_until_fn:ident) => {
+    ($HcMutex: ident, $Mutex: ident, $HcGuard:ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_for_fn:ident, $try_lock_until_fn:ident, $new_guard_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
-            pub fn $lock_fn(&self) -> LocksmithResult<$Guard<T>> {
+            pub fn $lock_fn(&self) -> LocksmithResult<$HcGuard<T>> {
                 self.$try_lock_for_fn(Duration::from_secs(LOCK_TIMEOUT_SECS))
                     .ok_or_else(|| {
                         LocksmithError::new(
@@ -381,20 +399,28 @@ macro_rules! mutex_impl {
                     })
             }
 
-            pub fn $try_lock_for_fn(&self, duration: Duration) -> Option<$Guard<T>> {
+            pub fn $try_lock_for_fn(&self, duration: Duration) -> Option<$HcGuard<T>> {
                 self.inner
                     .$try_lock_for_fn(duration)
-                    .map(|g| $Guard::new(g))
+                    .map(|g| self.$new_guard_fn(g))
             }
 
-            pub fn $try_lock_until_fn(&self, instant: Instant) -> Option<$Guard<T>> {
+            pub fn $try_lock_until_fn(&self, instant: Instant) -> Option<$HcGuard<T>> {
                 self.inner
                     .$try_lock_until_fn(instant)
-                    .map(|g| $Guard::new(g))
+                    .map(|g| self.$new_guard_fn(g))
             }
 
-            pub fn $try_lock_fn(&self) -> Option<$Guard<T>> {
-                (*self).inner.$try_lock_fn().map(|g| $Guard::new(g))
+            pub fn $try_lock_fn(&self) -> Option<$HcGuard<T>> {
+                (*self).inner.$try_lock_fn().map(|g| self.$new_guard_fn(g))
+            }
+
+            fn $new_guard_fn<'a>(&self, inner: $Guard<'a, T>) -> $HcGuard<'a, T> {
+                if self.fair_unlocking {
+                    $HcGuard::new(inner).use_fair_unlocking()
+                } else {
+                    $HcGuard::new(inner)
+                }
             }
         }
     };
@@ -404,29 +430,35 @@ mutex_impl!(
     HcMutex,
     Mutex,
     HcMutexGuard,
+    MutexGuard,
     Lock,
     lock,
     try_lock,
     try_lock_for,
-    try_lock_until
+    try_lock_until,
+    new_guard
 );
 mutex_impl!(
     HcRwLock,
     RwLock,
     HcRwLockReadGuard,
+    RwLockReadGuard,
     Read,
     read,
     try_read,
     try_read_for,
-    try_read_until
+    try_read_until,
+    new_guard_read
 );
 mutex_impl!(
     HcRwLock,
     RwLock,
     HcRwLockWriteGuard,
+    RwLockWriteGuard,
     Write,
     write,
     try_write,
     try_write_for,
-    try_write_until
+    try_write_until,
+    new_guard_write
 );

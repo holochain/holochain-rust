@@ -10,10 +10,11 @@
 
 ## changelog
 
-Please check one of the following, relating to the [CHANGELOG-UNRELEASED.md](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG-UNRELEASED.md)
+- [ ] if this is a code change that effects some consumer (e.g. zome developers) of holochain core,  then it has been added to [CHANGELOG-UNRELEASED.md](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG-UNRELEASED.md) with the format 
 
-- [ ] this is a code change that effects some consumer (e.g. zome developers) of holochain core so it is added to the CHANGELOG-UNRELEASED.md (linked above), with the format `- summary of change [PR#1234](https://github.com/holochain/holochain-rust/pull/1234)`
-- [ ] this is not a code change, or doesn't effect anyone outside holochain core development
+```markdown
+- summary of change [PR#1234](https://github.com/holochain/holochain-rust/pull/1234)
+```
 
 ## documentation
 

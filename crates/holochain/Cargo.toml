@@ -6,7 +6,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 holochain_core_types = { path = "../core_types" }
 holochain_conductor_lib = { path = "../conductor_lib" }
-lib3h_sodium = { path = "/home/neonphog/projects/lib3h/crates/sodium" }
+lib3h_sodium = "=0.0.20"
 holochain_common = { path = "../../common" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"

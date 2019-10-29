@@ -40,7 +40,7 @@ uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"
 crossbeam-channel = "=0.3.8"
-lib3h_crypto_api = { path = "/home/neonphog/projects/lib3h/crates/crypto_api" }
+lib3h_crypto_api = "=0.0.20"
 parking_lot ="=0.9.0"
 log = "=0.4.8"
 holochain_logging = "=0.0.4"

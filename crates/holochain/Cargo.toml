@@ -8,7 +8,7 @@ holochain_common = { path = "../../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_conductor_lib = { path = "../conductor_lib" }
 holochain_locksmith = { path = "../locksmith" }
-lib3h_sodium = "=0.0.19"
+lib3h_sodium = "=0.0.20"
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"

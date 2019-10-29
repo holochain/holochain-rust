@@ -16,8 +16,8 @@ holochain_persistence_pickle = "=0.0.10"
 holochain_persistence_lmdb = "=0.0.10"
 holochain_dpki = { path = "../dpki" }
 holochain_net = { path = "../net" }
-lib3h = "=0.0.19"
-lib3h_sodium = "=0.0.19"
+lib3h = "=0.0.20"
+lib3h_sodium = "=0.0.20"
 holochain_common = { path = "../../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

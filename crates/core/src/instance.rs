@@ -314,6 +314,8 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+            .use_fair_unlocking()
+            .annotate("Instance::state")
     }
 
     pub fn save(&self) -> HcResult<()> {

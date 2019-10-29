@@ -374,7 +374,7 @@ pub fn start_holochain_instance<T: Into<String>>(
 
     let mut wasm_path = PathBuf::new();
     let wasm_dir_component: PathBuf = wasm_target_dir(
-        &String::from("crates/hdk").into(),
+        &String::from("hdk").into(),
         &String::from("wasm-test").into(),
     );
     wasm_path.push(wasm_dir_component);

@@ -244,9 +244,12 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
+
         if let Some(instance) = self.instances.remove(id) {
-            if clean {          
-                remove_dir_all(instance..get_storage_path())?;
+            if clean {
+                let Some(instance_config) = self.config.instance_by_id(id);
+                let Some(storage_path) = instance_config.storage.get_path();
+                remove_dir_all(storage_path)?;
             }
             instance.write().unwrap().kill();
         }
@@ -1190,7 +1193,7 @@ id = 'new-instance'"#,
 
     #[test]
     /// Tests if the removed instance is gone from the config file
-    /// as well as the mentions of the removed instance are gone from the interfaces.
+    /// as well as the mentions 
     /// (to not render the config invalid).
     fn test_remove_instance_clean_false() {
         let test_name = "test_remove_instance";

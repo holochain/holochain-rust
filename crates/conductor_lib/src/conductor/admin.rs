@@ -1198,7 +1198,7 @@ id = 'new-instance'"#,
     /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid).
     fn test_remove_instance_clean_false() {
-        let test_name = "test_remove_instance";
+        let test_name = "test-instance-1";
         let mut conductor = create_test_conductor(test_name, 3002);
 
         assert_eq!(

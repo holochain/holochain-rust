@@ -9,7 +9,7 @@ holochain_core = { path = "../core" }
 holochain_common = { path = "../../common" }
 holochain_conductor_lib = { path = "../conductor_lib" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = "=0.0.20"
+lib3h_sodium = "=0.0.21"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_file = "=0.0.10"

@@ -290,13 +290,6 @@ impl Holochain {
         )?)
     }
 
-    pub fn storage_path(&self) -> Option<String> {
-        match self.state() {
-            StorageConfiguration::Memory => return None,
-            StorageConfiguration::File { path } => return Some(path.to_string()),
-            StorageConfiguration::Pickle { path } => return Some(path.to_string()),
-        }
-    }
 }
 
 #[cfg(test)]

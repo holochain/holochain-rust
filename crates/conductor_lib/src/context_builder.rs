@@ -19,6 +19,7 @@ use std::{
 };
 
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
+use rusoto_core::region::Region;
 
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
@@ -163,6 +164,12 @@ impl ContextBuilder {
 
     pub fn with_state_dump_logging(mut self) -> Self {
         self.state_dump_logging = true;
+        self
+    }
+
+    pub fn with_cloudwatch_metric_publisher(mut self, region: &Region) -> Self {
+        let metric_publisher = holochain_metrics::CloudWatchPublisher::new(region);
+        self.metric_publisher = Some(Arc::new(RwLock::new(metric_publisher)));
         self
     }
 

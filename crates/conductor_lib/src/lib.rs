@@ -111,6 +111,7 @@ extern crate holochain_logging;
 
 extern crate chrono;
 extern crate crossbeam_channel;
+extern crate rusoto_core;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;

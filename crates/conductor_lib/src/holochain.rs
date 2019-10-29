@@ -90,9 +90,7 @@
 //!
 //!```
 
-use crate::{
-    config::StorageConfiguration,
-    error::{HolochainInstanceError, HolochainResult},
+use crate::error::{HolochainInstanceError, HolochainResult},
 };
 use holochain_core::{
     context::Context,

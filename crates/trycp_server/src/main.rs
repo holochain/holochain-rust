@@ -2,6 +2,8 @@ extern crate structopt;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate lazy_static;
 
 //use log::error;
 //use std::process::exit;
@@ -9,7 +11,7 @@ use self::tempfile::tempdir;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use serde_json::map::Map;
-use std::{fs::File, io::Write, process::Command};
+use std::{fs::File, io::Write, process::Command, path::PathBuf};
 use structopt::StructOpt;
 
 type Error = String;
@@ -72,20 +74,32 @@ fn get_as_string<T: Into<String>>(
         .to_string())
 }
 
+const CONDUCTOR_CONFIG_FILE_NAME :&str = "conductor-config.toml";
+lazy_static! {
+    pub static ref TEMP_PATH: tempfile::TempDir = tempdir().expect("should create tmp dir");
+}
+
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
 
+    fn get_dir(id: &String) -> PathBuf {
+        TEMP_PATH.path().join(id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+    }
+
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
 
-    // TODO: supply values which have some validity guarantees.
+    // Return to try-o-rama information it can use to build config files
     // i.e. ensure ports are open, and ensure that configDir is the same one
     // that the actual config will be written to
-    io.add_method("get_args", |_params: Params| {
+    io.add_method("setup", |params: Params| {
+        let params_map = unwrap_params_map(params)?;
+        let id = get_as_string("id", &params_map)?;
+        let file_path = get_dir(&id);
         Ok(json!({
             "adminPort": 1111,
             "zomePort": 2222,
-            "configDir": "TODO",
+            "configDir": file_path.to_string_lossy(),
         }))
     });
 
@@ -99,8 +113,7 @@ fn main() {
                 message: format!("error decoding config: {:?}", e),
                 data: None,
             })?;
-        let tempdir = tempdir().unwrap();
-        let file_path = tempdir.path().join("config.toml");
+        let file_path = get_dir(&id);
         File::create(file_path.clone())
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,

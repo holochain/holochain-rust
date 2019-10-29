@@ -30,6 +30,14 @@ async function  doTest(url) {
             console.log(result)
         })
 
+        console.log("making setup call")
+        // call an RPC method with parameters
+
+        ws.call('setup', {"id": "my-player"}).then(function(result) {
+            console.log(result)
+        })
+
+
         const config_toml = "[config]"  // THIS IS A BROKEN CONFIG
         const config = Buffer.from(config_toml).toString('base64')
         console.log("making player call with config", config)

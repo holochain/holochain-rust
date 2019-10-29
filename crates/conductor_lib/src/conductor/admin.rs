@@ -1193,7 +1193,7 @@ id = 'new-instance'"#,
 
     #[test]
     /// Tests if the removed instance is gone from the config file
-    /// as well as the mentions 
+    /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid).
     fn test_remove_instance_clean_false() {
         let test_name = "test_remove_instance";

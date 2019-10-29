@@ -109,7 +109,7 @@ pub fn get_aspect(
             Some(aspect_item) => Ok(Some(try_aspect_from_item(aspect_item)?)),
             None => Ok(None),
         },
-        Err(err) => Err(err.into()),
+        Err(err) => Err(err),
     }
 }
 
@@ -142,7 +142,7 @@ pub fn get_entry_aspects(
             }
             None => Ok(Vec::new()),
         },
-        Err(err) => Err(err.into()),
+        Err(err) => Err(err),
     }
 }
 
@@ -165,7 +165,7 @@ pub fn scan_aspects(
         .map(|result| {
             let items = result
                 .items
-                .unwrap_or(Vec::new())
+                .unwrap_or_default()
                 .into_iter()
                 .filter_map(|mut item: Item| {
                     Some((

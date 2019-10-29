@@ -3,7 +3,7 @@ use crate::{
     workflow::state::Sim1hState,
 };
 use lib3h_protocol::{
-    data_types::QueryEntryResultData, protocol::ClientToLib3hResponse, types::SpaceHash,
+    data_types::QueryEntryResultData, protocol::ClientToLib3hResponse,
 };
 
 impl Sim1hState {
@@ -23,7 +23,7 @@ impl Sim1hState {
         // request is yourself, ultimately. Query requests are intercepted, they trigger Holds
         // on entry aspects, which triggers a HandleQuery request, which ultimately triggers
         // this mirroring you're seeing here.
-        if data.space_address == SpaceHash::from(self.space_hash.clone())
+        if data.space_address == self.space_hash
             && data.requester_agent_id == self.agent_id
         {
             self.client_response_outbox

@@ -48,18 +48,18 @@ impl Sim1hState {
     }
 
     fn should_get_authoring_list(&mut self) -> bool {
-        self.initialized == false
+        !self.initialized
     }
 
     fn create_authoring_gossip_list_requests(&self) -> Vec<Lib3hToClient> {
         let mut requests = Vec::new();
         requests.push(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-            space_address: self.space_hash.clone().into(),
+            space_address: self.space_hash.clone(),
             provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
         requests.push(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-            space_address: self.space_hash.clone().into(),
+            space_address: self.space_hash.clone(),
             provider_agent_id: self.agent_id.clone(),
             request_id: "".into(),
         }));
@@ -136,7 +136,7 @@ impl Sim1hState {
                     .map(|entry_aspect| {
                         Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
                             request_id: Uuid::new_v4().to_string(), // XXX: well, is this so bad?
-                            space_address: space_hash.clone().into(),
+                            space_address: space_hash.clone(),
                             provider_agent_id: agent_id.clone(), // TODO: is this OK?
                             entry_address: entry_hash.clone(),
                             entry_aspect,

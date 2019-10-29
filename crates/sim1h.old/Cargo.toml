@@ -1,5 +1,0 @@
-[workspace]
-
-members = [
- "crates/sim1h"
-]

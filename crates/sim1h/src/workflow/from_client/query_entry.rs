@@ -30,7 +30,7 @@ pub fn query_entry_aspects(
     let entry_address = query_entry_data.entry_address.clone();
 
     let query_raw = query_entry_data.query.as_slice();
-    let utf8_result = std::str::from_utf8(&query_raw.clone());
+    let utf8_result = std::str::from_utf8(&(*query_raw));
     let query_str = match utf8_result {
         Ok(v) => v,
         Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,

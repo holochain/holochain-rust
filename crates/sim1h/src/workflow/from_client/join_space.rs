@@ -33,7 +33,7 @@ impl Sim1hState {
         )?;
 
         let state = Sim1hState::new(
-            join_space_data.space_address.clone().into(),
+            join_space_data.space_address.clone(),
             join_space_data.agent_id.clone(),
         );
 

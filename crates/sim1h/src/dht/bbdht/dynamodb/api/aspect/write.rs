@@ -62,7 +62,7 @@ pub fn put_aspect(
 
     aspect_item.insert(
         String::from(ASPECT_PUBLISH_TS_KEY),
-        number_attribute_value(&aspect.publish_ts),
+        number_attribute_value(aspect.publish_ts),
     );
 
     if should_put_item_retry(

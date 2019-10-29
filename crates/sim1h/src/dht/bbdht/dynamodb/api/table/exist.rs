@@ -17,11 +17,7 @@ pub fn table_exists(
     match table_description_result {
         Ok(table_description) => Ok(match table_description.table_status {
             Some(status) => {
-                if status == "ACTIVE".to_string() {
-                    true
-                } else {
-                    false
-                }
+                status == "ACTIVE"
             }
             _ => false,
         }),

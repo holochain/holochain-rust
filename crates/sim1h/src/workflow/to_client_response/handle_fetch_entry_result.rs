@@ -17,7 +17,7 @@ pub fn handle_fetch_entry_result(
         &format!("handle_fetch_entry_result {:?}", fetch_entry_result_data),
     );
 
-    if fetch_entry_result_data.request_id == String::from("fetch-and-publish") {
+    if fetch_entry_result_data.request_id == "fetch-and-publish" {
         publish_entry(
             log_context,
             client,

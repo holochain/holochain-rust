@@ -40,7 +40,7 @@ pub fn blob_attribute_value(value: &Vec<u8>) -> AttributeValue {
     }
 }
 
-pub fn number_attribute_value(value: &u64) -> AttributeValue {
+pub fn number_attribute_value(value: u64) -> AttributeValue {
     AttributeValue {
         n: Some(value.to_string()),
         ..Default::default()

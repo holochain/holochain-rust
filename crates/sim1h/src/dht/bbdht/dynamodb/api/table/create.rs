@@ -107,7 +107,7 @@ pub fn ensure_table(
                 &attribute_definitions,
             )
         }
-        Err(err) => Err(err.into()),
+        Err(err) => Err(err),
     }
 }
 

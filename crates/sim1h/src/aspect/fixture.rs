@@ -72,7 +72,7 @@ pub fn aspect_list_fresh() -> Vec<EntryAspectData> {
         aspects.push(entry_aspect_data_fresh())
     }
 
-    aspects.into()
+    aspects
 }
 
 pub fn opaque_aspect_fresh() -> Opaque {

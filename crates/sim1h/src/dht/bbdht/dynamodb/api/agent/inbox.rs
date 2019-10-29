@@ -23,6 +23,7 @@ use rusoto_dynamodb::{DynamoDb, GetItemInput, PutItemInput, UpdateItemInput};
 use std::collections::HashMap;
 
 /// put an item that can be reconstructed to DirectMessageData against the request id
+#[allow(clippy::too_many_arguments)]
 pub fn put_inbox_message(
     log_context: &LogContext,
     client: &Client,
@@ -136,6 +137,7 @@ pub fn append_request_id_to_inbox(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn send_to_agent_inbox(
     log_context: &LogContext,
     client: &Client,
@@ -257,7 +259,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
         }
     };
 
-    let is_response = match item[MESSAGE_IS_RESPONSE_KEY].bool.clone() {
+    let is_response = match item[MESSAGE_IS_RESPONSE_KEY].bool {
         Some(v) => v,
         None => {
             return Err(BbDhtError::MissingData(format!(

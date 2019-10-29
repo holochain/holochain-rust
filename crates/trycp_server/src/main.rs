@@ -84,7 +84,11 @@ fn main() {
     let mut io = IoHandler::new();
 
     fn get_dir(id: &String) -> PathBuf {
-        TEMP_PATH.path().join(id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+        TEMP_PATH.path().join(id).clone()
+    }
+
+    fn get_file(id: &String) -> PathBuf {
+        get_dir(id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
     }
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
@@ -113,17 +117,23 @@ fn main() {
                 message: format!("error decoding config: {:?}", e),
                 data: None,
             })?;
-        let file_path = get_dir(&id);
+        let dir_path = get_dir(&id);
+        std::fs::create_dir_all(dir_path.clone()).map_err(|e| jsonrpc_core::types::error::Error {
+            code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+            message: format!("error making temporary directory for config: {:?} {:?}", e, dir_path),
+            data: None,
+        })?;
+        let file_path = get_file(&id);
         File::create(file_path.clone())
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!("unable to create config file: {:?}", e),
+                message: format!("unable to create config file: {:?} {:?}", e, file_path),
                 data: None,
             })?
             .write_all(&content[..])
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!("unable to write config file: {:?}", e),
+                message: format!("unable to write config file: {:?} {:?}", e, file_path),
                 data: None,
             })?;
         println!("Wrote config for player {} to {:?}", id, file_path);

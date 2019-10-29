@@ -9,12 +9,12 @@ holochain_core = { path = "../core" }
 holochain_common = { path = "../../common" }
 holochain_conductor_lib = { path = "../conductor_lib" }
 holochain_dpki = { path = "../dpki" }
-lib3h_sodium = "=0.0.19"
+lib3h_sodium = "=0.0.20"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_wasm_utils = { path = "../wasm_utils" }
-structopt = "=0.2.15"
+structopt = "=0.3.3"
 failure = "=0.1.5"
 serde = "=1.0.89"
 serde_derive = "=1.0.89"

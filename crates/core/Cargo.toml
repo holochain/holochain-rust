@@ -31,8 +31,8 @@ holochain_wasm_utils = { path = "../wasm_utils"}
 holochain_common = { path = "../../common" }
 holochain_metrics = { path = "../metrics" }
 holochain_conductor_lib_api = { path = "../conductor_api" }
-lib3h_protocol = "=0.0.19"
-lib3h_sodium = "=0.0.19"
+lib3h_protocol = "=0.0.20"
+lib3h_sodium = "=0.0.20"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"

@@ -23,6 +23,7 @@ impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
         match zome_api_error {
             ZomeApiError::ValidationFailed(s) => HolochainError::ValidationFailed(s),
+            ZomeApiError::Timeout => HolochainError::Timeout,
             _ => HolochainError::RibosomeFailed(zome_api_error.to_string()),
         }
     }

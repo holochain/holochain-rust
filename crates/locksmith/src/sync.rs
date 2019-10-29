@@ -23,6 +23,10 @@ const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
 // We filter out any guards alive less than this long
 const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
 
+// How often to retry getting a lock after receiving a WouldBlock error
+// during try_lock
+const LOCK_POLL_INTERVAL_MS: u64 = 10;
+
 #[derive(Debug)]
 pub enum LocksmithErrorKind {
     LocksmithTimeout,
@@ -352,13 +356,33 @@ macro_rules! mutex_impl {
     ($HcMutex: ident, $Mutex: ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_for_fn:ident, $try_lock_until_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> LocksmithResult<$Guard<T>> {
-                self.$try_lock_for_fn(Duration::from_secs(LOCK_TIMEOUT_SECS))
-                    .ok_or_else(|| {
-                        LocksmithError::new(
-                            LockType::$lock_type,
-                            LocksmithErrorKind::LocksmithTimeout,
-                        )
-                    })
+                let deadline = Instant::now() + Duration::from_secs(LOCK_TIMEOUT_SECS);
+                let max_iters = 2 * LOCK_TIMEOUT_SECS * 1000 / LOCK_POLL_INTERVAL_MS;
+                for _i in 0..max_iters {
+                    match self.$try_lock_fn() {
+                        Some(v) => {
+                            return Ok(v);
+                        }
+                        None => {
+                            // TIMEOUT
+                            if let None = deadline.checked_duration_since(Instant::now()) {
+                                // PENDING_LOCKS.lock().remove(&puid);
+                                return Err(LocksmithError::new(
+                                    LockType::$lock_type,
+                                    LocksmithErrorKind::LocksmithTimeout,
+                                ));
+                            }
+                        }
+                    }
+                    std::thread::sleep(Duration::from_millis(LOCK_POLL_INTERVAL_MS));
+                }
+                error!(
+                    "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"
+                );
+                return Err(LocksmithError::new(
+                    LockType::$lock_type,
+                    LocksmithErrorKind::LocksmithTimeout,
+                ));
             }
 
             pub fn $try_lock_for_fn(&self, duration: Duration) -> Option<$Guard<T>> {

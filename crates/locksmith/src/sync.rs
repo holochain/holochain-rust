@@ -248,13 +248,13 @@ impl<'a, T: ?Sized> BorrowMut<T> for HcMutexGuard<'a, T> {
 
 // impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
 //     fn as_ref(&self) -> &T {
-//         &self.inner
+//         self.deref()
 //     }
 // }
 
 // impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
 //     fn as_mut(&mut self) -> &mut T {
-//         &mut self.inner
+//         self.deref_mut()
 //     }
 // }
 
@@ -281,7 +281,7 @@ impl<'a, T: ?Sized> Borrow<T> for HcRwLockReadGuard<'a, T> {
 
 // impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
 //     fn as_ref(&self) -> &T {
-//         &self.inner
+//         self.deref()
 //     }
 // }
 
@@ -292,7 +292,7 @@ impl<'a, T: ?Sized> Deref for HcRwLockReadGuard<'a, T> {
     }
 }
 
-//
+// HcRwLockWriteGuard
 
 impl<'a, T: ?Sized> Borrow<T> for HcRwLockWriteGuard<'a, T> {
     fn borrow(&self) -> &T {
@@ -308,13 +308,13 @@ impl<'a, T: ?Sized> BorrowMut<T> for HcRwLockWriteGuard<'a, T> {
 
 // impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
 //     fn as_ref(&self) -> &T {
-//         &self.inner
+//         self.deref()
 //     }
 // }
 
 // impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
 //     fn as_mut(&mut self) -> &mut T {
-//         &mut self.inner
+//         self.deref_mut()
 //     }
 // }
 

@@ -1,6 +1,7 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::dynamodb::client::Client,
+    trace::{tracer, LogContext},
+};
 use lib3h_protocol::data_types::EntryListData;
 
 /// -- Entry lists -- //

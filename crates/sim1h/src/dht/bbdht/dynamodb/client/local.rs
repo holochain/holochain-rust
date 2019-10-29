@@ -1,7 +1,6 @@
 //! settings and convenience fns for a local client
 
-use crate::dht::bbdht::dynamodb::client::client;
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::client::{client, Client};
 use rusoto_core::region::Region;
 
 /// the region means nothing for a local install
@@ -22,10 +21,9 @@ pub fn local_client() -> Client {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_region;
-    use crate::dht::bbdht::dynamodb::client::local::LOCAL_ENDPOINT;
-    use crate::dht::bbdht::dynamodb::client::local::LOCAL_REGION;
+    use crate::dht::bbdht::dynamodb::client::local::{
+        local_client, local_region, LOCAL_ENDPOINT, LOCAL_REGION,
+    };
 
     use crate::trace::tracer;
     use rusoto_core::region::Region;

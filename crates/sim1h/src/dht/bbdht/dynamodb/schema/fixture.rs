@@ -1,7 +1,5 @@
-use crate::dht::bbdht::dynamodb::schema::hash_key;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
-use rusoto_dynamodb::AttributeDefinition;
-use rusoto_dynamodb::KeySchemaElement;
+use crate::dht::bbdht::dynamodb::schema::{hash_key, string_attribute_definition};
+use rusoto_dynamodb::{AttributeDefinition, KeySchemaElement};
 use uuid::Uuid;
 
 pub fn primary_key_attribute_name_a() -> String {

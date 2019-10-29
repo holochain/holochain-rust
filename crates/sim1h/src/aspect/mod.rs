@@ -2,10 +2,8 @@ pub mod fixture;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h_protocol::data_types::EntryAspectData;
-use lib3h_protocol::types::AspectHash;
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
+use lib3h_protocol::{data_types::EntryAspectData, types::AspectHash};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn entry_aspect_to_entry_aspect_data(entry_aspect: EntryAspect) -> EntryAspectData {
     EntryAspectData {

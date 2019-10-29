@@ -1,13 +1,16 @@
-use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::item::Item,
+            client::Client,
+            schema::{cas::ADDRESS_KEY, string_attribute_value},
+        },
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
 use holochain_persistence_api::cas::content::Address;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::GetItemInput;
+use rusoto_dynamodb::{DynamoDb, GetItemInput};
 use std::collections::HashMap;
 
 pub fn get_item_by_address(
@@ -37,13 +40,16 @@ pub fn get_item_by_address(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
-    use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::dynamodb::{
+            api::{
+                item::{fixture::content_fresh, write::ensure_content},
+                table::{create::ensure_cas_table, exist::table_exists, fixture::table_name_fresh},
+            },
+            client::local::local_client,
+        },
+        trace::tracer,
+    };
 
     #[test]
     fn get_item_by_address_test() {

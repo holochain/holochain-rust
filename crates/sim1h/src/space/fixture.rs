@@ -1,8 +1,6 @@
-use crate::agent::fixture::agent_id_fresh;
-use crate::network::fixture::request_id_fresh;
+use crate::{agent::fixture::agent_id_fresh, network::fixture::request_id_fresh};
 use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::data_types::SpaceData;
-use lib3h_protocol::types::SpaceHash;
+use lib3h_protocol::{data_types::SpaceData, types::SpaceHash};
 use uuid::Uuid;
 
 pub fn space_address_fresh() -> SpaceHash {

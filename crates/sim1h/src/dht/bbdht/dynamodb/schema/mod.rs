@@ -1,9 +1,7 @@
 pub mod cas;
 pub mod fixture;
 
-use rusoto_dynamodb::AttributeDefinition;
-use rusoto_dynamodb::AttributeValue;
-use rusoto_dynamodb::KeySchemaElement;
+use rusoto_dynamodb::{AttributeDefinition, AttributeValue, KeySchemaElement};
 
 pub type TableName = String;
 
@@ -66,13 +64,11 @@ pub fn list_attribute_value(value: Vec<AttributeValue>) -> AttributeValue {
 #[cfg(test)]
 pub mod test {
 
-    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_name_fresh;
-    use crate::dht::bbdht::dynamodb::schema::hash_key;
-    use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
-    use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-    use rusoto_dynamodb::AttributeDefinition;
-    use rusoto_dynamodb::AttributeValue;
-    use rusoto_dynamodb::KeySchemaElement;
+    use crate::dht::bbdht::dynamodb::schema::{
+        fixture::attribute_name_fresh, hash_key, string_attribute_definition,
+        string_attribute_value,
+    };
+    use rusoto_dynamodb::{AttributeDefinition, AttributeValue, KeySchemaElement};
 
     #[test]
     fn hash_key_test() {

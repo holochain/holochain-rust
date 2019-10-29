@@ -1,6 +1,7 @@
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::Sim1hState;
+use crate::{
+    trace::{tracer, LogContext},
+    workflow::state::Sim1hState,
+};
 use lib3h_protocol::data_types::EntryListData;
 
 impl Sim1hState {

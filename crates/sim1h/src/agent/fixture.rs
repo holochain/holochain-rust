@@ -1,10 +1,9 @@
-use holochain_core_types::agent::AgentId;
-use holochain_core_types::signature::Provenance;
-use holochain_core_types::signature::Signature;
-use holochain_json_api::json::JsonString;
-use holochain_json_api::json::RawString;
-use lib3h_protocol::types::AgentPubKey;
-use lib3h_protocol::types::HashStringNewType;
+use holochain_core_types::{
+    agent::AgentId,
+    signature::{Provenance, Signature},
+};
+use holochain_json_api::json::{JsonString, RawString};
+use lib3h_protocol::types::{AgentPubKey, HashStringNewType};
 use uuid::Uuid;
 
 pub fn agent_id_fresh() -> AgentPubKey {

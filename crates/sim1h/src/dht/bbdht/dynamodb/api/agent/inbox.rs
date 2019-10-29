@@ -1,30 +1,25 @@
-use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
-use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_CONTENT_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_FROM_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_SPACE_ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::MESSAGE_TO_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::{inbox_key, MESSAGE_IS_RESPONSE_KEY};
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::dynamodb::schema::{blob_attribute_value, bool_attribute_value};
-use crate::dht::bbdht::error::BbDhtError;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use holochain_persistence_api::cas::content::Address;
-use holochain_persistence_api::hash::HashString;
-use lib3h_protocol::data_types::DirectMessageData;
-use lib3h_protocol::types::AgentPubKey;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::GetItemInput;
-use rusoto_dynamodb::PutItemInput;
-use rusoto_dynamodb::UpdateItemInput;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::item::{write::should_put_item_retry, Item},
+            client::Client,
+            schema::{
+                blob_attribute_value, bool_attribute_value,
+                cas::{
+                    inbox_key, ADDRESS_KEY, MESSAGE_CONTENT_KEY, MESSAGE_FROM_KEY,
+                    MESSAGE_IS_RESPONSE_KEY, MESSAGE_SPACE_ADDRESS_KEY, MESSAGE_TO_KEY,
+                    REQUEST_IDS_KEY, REQUEST_IDS_SEEN_KEY,
+                },
+                string_attribute_value, string_set_attribute_value, TableName,
+            },
+        },
+        error::{BbDhtError, BbDhtResult},
+    },
+    trace::{tracer, LogContext},
+};
+use holochain_persistence_api::{cas::content::Address, hash::HashString};
+use lib3h_protocol::{data_types::DirectMessageData, types::AgentPubKey};
+use rusoto_dynamodb::{DynamoDb, GetItemInput, PutItemInput, UpdateItemInput};
 use std::collections::HashMap;
 
 /// put an item that can be reconstructed to DirectMessageData against the request id
@@ -377,20 +372,22 @@ pub fn check_inbox(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
-    use crate::agent::fixture::message_content_fresh;
-    use crate::dht::bbdht::dynamodb::api::agent::inbox::append_request_id_to_inbox;
-    use crate::dht::bbdht::dynamodb::api::agent::inbox::check_inbox;
-    use crate::dht::bbdht::dynamodb::api::agent::inbox::get_inbox_request_ids;
-    use crate::dht::bbdht::dynamodb::api::agent::inbox::put_inbox_message;
-    use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_KEY;
-    use crate::dht::bbdht::dynamodb::schema::cas::REQUEST_IDS_SEEN_KEY;
-    use crate::network::fixture::request_id_fresh;
-    use crate::trace::tracer;
+    use crate::{
+        agent::fixture::{agent_id_fresh, message_content_fresh},
+        dht::bbdht::dynamodb::{
+            api::{
+                agent::inbox::{
+                    append_request_id_to_inbox, check_inbox, get_inbox_request_ids,
+                    put_inbox_message, send_to_agent_inbox,
+                },
+                table::{create::ensure_cas_table, fixture::table_name_fresh},
+            },
+            client::local::local_client,
+            schema::cas::{REQUEST_IDS_KEY, REQUEST_IDS_SEEN_KEY},
+        },
+        network::fixture::request_id_fresh,
+        trace::tracer,
+    };
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::data_types::DirectMessageData;
 

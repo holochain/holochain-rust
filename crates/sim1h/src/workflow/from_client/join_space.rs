@@ -1,13 +1,16 @@
-use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::Sim1hState;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::{agent::write::touch_agent, table::create::ensure_cas_table},
+            client::Client,
+        },
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+    workflow::state::Sim1hState,
+};
 use holochain_persistence_api::hash::HashString;
-use lib3h_protocol::data_types::SpaceData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
+use lib3h_protocol::{data_types::SpaceData, protocol::ClientToLib3hResponse};
 
 impl Sim1hState {
     /// create space if not exists
@@ -42,10 +45,11 @@ impl Sim1hState {
 pub mod tests {
 
     use super::Sim1hState;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::space::fixture::space_data_fresh;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::dynamodb::client::{fixture::bad_client, local::local_client},
+        space::fixture::space_data_fresh,
+        trace::tracer,
+    };
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]

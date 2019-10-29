@@ -1,28 +1,28 @@
-use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
-use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::error::BbDhtError;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::AspectAddressMap;
-use lib3h_protocol::types::AspectHash;
-use lib3h_protocol::types::EntryHash;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::item::{read::get_item_by_address, Item},
+            client::Client,
+            schema::{
+                cas::{
+                    ADDRESS_KEY, ASPECT_ADDRESS_KEY, ASPECT_KEY, ASPECT_LIST_KEY,
+                    ASPECT_PUBLISH_TS_KEY, ASPECT_TYPE_HINT_KEY,
+                },
+                TableName,
+            },
+        },
+        error::{BbDhtError, BbDhtResult},
+    },
+    trace::{tracer, LogContext},
+    workflow::state::AspectAddressMap,
+};
+use lib3h_protocol::types::{AspectHash, EntryHash};
 
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::ScanInput;
+use rusoto_dynamodb::{DynamoDb, ScanInput};
 
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
-use std::collections::HashMap;
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 fn get_or_err<'a, V: Debug>(item: &'a HashMap<String, V>, key: &'a str) -> BbDhtResult<&'a V> {
     item.get(&key.to_string()).ok_or_else(|| {
@@ -189,22 +189,23 @@ fn projection_expression(fields: Vec<&str>) -> Option<String> {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::aspect::fixture::aspect_list_fresh;
-    use crate::aspect::fixture::entry_aspect_data_fresh;
-    use crate::dht::bbdht::dynamodb::api::aspect::read::get_aspect;
-    use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
-    use crate::dht::bbdht::dynamodb::api::aspect::read::scan_aspects;
-    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
-    use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_hash_fresh;
-    use crate::test::unordered_vec_compare;
-    use crate::trace::tracer;
-    use lib3h_protocol::data_types::EntryAspectData;
-    use lib3h_protocol::types::AspectHash;
+    use crate::{
+        aspect::fixture::{aspect_list_fresh, entry_aspect_data_fresh},
+        dht::bbdht::dynamodb::{
+            api::{
+                aspect::{
+                    read::{get_aspect, get_entry_aspects, scan_aspects},
+                    write::{append_aspect_list_to_entry, put_aspect},
+                },
+                table::{create::ensure_cas_table, exist::table_exists, fixture::table_name_fresh},
+            },
+            client::local::local_client,
+        },
+        entry::fixture::entry_hash_fresh,
+        test::unordered_vec_compare,
+        trace::tracer,
+    };
+    use lib3h_protocol::{data_types::EntryAspectData, types::AspectHash};
 
     #[test]
     fn get_entry_aspects_test() {

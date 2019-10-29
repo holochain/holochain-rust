@@ -1,8 +1,8 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::from_client::publish_entry::publish_entry;
+use crate::{
+    dht::bbdht::{dynamodb::client::Client, error::BbDhtResult},
+    trace::{tracer, LogContext},
+    workflow::from_client::publish_entry::publish_entry,
+};
 use lib3h_protocol::data_types::{FetchEntryResultData, ProvidedEntryData};
 
 /// Successful data response for a `HandleFetchEntryData` request

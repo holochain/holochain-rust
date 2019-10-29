@@ -1,5 +1,4 @@
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::trace::{tracer, LogContext};
 use lib3h_protocol::data_types::DirectMessageData;
 
 /// Our response to a direct message from another agent.

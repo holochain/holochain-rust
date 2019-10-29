@@ -1,9 +1,8 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use lib3h_protocol::data_types::SpaceData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::{
+    dht::bbdht::{dynamodb::client::Client, error::BbDhtResult},
+    trace::{tracer, LogContext},
+};
+use lib3h_protocol::{data_types::SpaceData, protocol::ClientToLib3hResponse};
 
 /// no-op
 pub fn leave_space(
@@ -19,10 +18,10 @@ pub fn leave_space(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::space::fixture::space_data_fresh;
-    use crate::trace::tracer;
-    use crate::workflow::from_client::leave_space::leave_space;
+    use crate::{
+        dht::bbdht::dynamodb::client::local::local_client, space::fixture::space_data_fresh,
+        trace::tracer, workflow::from_client::leave_space::leave_space,
+    };
     use lib3h_protocol::protocol::ClientToLib3hResponse;
 
     #[test]

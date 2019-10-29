@@ -1,8 +1,10 @@
-use crate::dht::bbdht::dynamodb::account::describe_limits;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{account::describe_limits, client::Client},
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
 use lib3h_protocol::protocol::ClientToLib3hResponse;
 
 /// check database connection
@@ -18,10 +20,11 @@ pub fn bootstrap(log_context: &LogContext, client: &Client) -> BbDhtResult<Clien
 pub mod tests {
 
     use super::*;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
-    use crate::workflow::from_client::bootstrap::bootstrap;
+    use crate::{
+        dht::bbdht::dynamodb::client::{fixture::bad_client, local::local_client},
+        trace::tracer,
+        workflow::from_client::bootstrap::bootstrap,
+    };
 
     #[test]
     fn bootstrap_test() {

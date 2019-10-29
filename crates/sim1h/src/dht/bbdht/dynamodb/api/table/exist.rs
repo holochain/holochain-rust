@@ -1,9 +1,10 @@
-use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtError;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{api::table::describe::describe_table, client::Client},
+        error::{BbDhtError, BbDhtResult},
+    },
+    trace::{tracer, LogContext},
+};
 
 pub fn table_exists(
     log_context: &LogContext,
@@ -63,14 +64,17 @@ pub fn until_table_not_exists(log_context: &LogContext, client: &Client, table_n
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
-    use crate::dht::bbdht::dynamodb::api::table::delete::delete_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
-    use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::dynamodb::{
+            api::table::{
+                create::ensure_table, delete::delete_table, exist::table_exists,
+                fixture::table_name_fresh,
+            },
+            client::local::local_client,
+            schema::fixture::{attribute_definitions_a, key_schema_a},
+        },
+        trace::tracer,
+    };
 
     #[test]
     fn table_exists_test() {

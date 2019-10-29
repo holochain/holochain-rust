@@ -1,9 +1,10 @@
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::Sim1hState;
-use lib3h_protocol::data_types::QueryEntryResultData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
-use lib3h_protocol::types::SpaceHash;
+use crate::{
+    trace::{tracer, LogContext},
+    workflow::state::Sim1hState,
+};
+use lib3h_protocol::{
+    data_types::QueryEntryResultData, protocol::ClientToLib3hResponse, types::SpaceHash,
+};
 
 impl Sim1hState {
     /// Response to a `HandleQueryEntry` request

@@ -1,11 +1,11 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtError;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use rusoto_dynamodb::DescribeTableInput;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::TableDescription;
+use crate::{
+    dht::bbdht::{
+        dynamodb::client::Client,
+        error::{BbDhtError, BbDhtResult},
+    },
+    trace::{tracer, LogContext},
+};
+use rusoto_dynamodb::{DescribeTableInput, DynamoDb, TableDescription};
 
 pub fn describe_table(
     log_context: &LogContext,
@@ -30,15 +30,20 @@ pub fn describe_table(
 #[cfg(test)]
 pub mod test {
 
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
-    use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
-    use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::dht::bbdht::error::BbDhtError;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::{
+            dynamodb::{
+                api::table::{
+                    create::ensure_table, describe::describe_table, exist::table_exists,
+                    fixture::table_name_fresh,
+                },
+                client::local::local_client,
+                schema::fixture::{attribute_definitions_a, key_schema_a},
+            },
+            error::BbDhtError,
+        },
+        trace::tracer,
+    };
 
     #[test]
     fn describe_table_test() {

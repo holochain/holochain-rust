@@ -1,14 +1,14 @@
-use crate::agent::fixture::agent_id_fresh;
-use crate::entry::fixture::entry_data_fresh;
-use crate::network::fixture::request_id_fresh;
+use crate::{
+    agent::fixture::agent_id_fresh, entry::fixture::entry_data_fresh,
+    network::fixture::request_id_fresh,
+};
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use lib3h_protocol::data_types::Opaque;
-use lib3h_protocol::data_types::ProvidedEntryData;
-use lib3h_protocol::data_types::QueryEntryData;
-use lib3h_protocol::data_types::SpaceData;
-use lib3h_protocol::types::EntryHash;
+use lib3h_protocol::{
+    data_types::{Opaque, ProvidedEntryData, QueryEntryData, SpaceData},
+    types::EntryHash,
+};
 
 pub fn query_fresh(_entry_address: &Address) -> Opaque {
     let query = NetworkQuery::GetEntry;

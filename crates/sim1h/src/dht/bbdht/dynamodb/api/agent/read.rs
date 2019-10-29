@@ -1,10 +1,14 @@
-use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
-use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::{item::read::get_item_by_address, table::exist::table_exists},
+            client::Client,
+            schema::TableName,
+        },
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
 use lib3h_protocol::types::AgentPubKey;
 
 pub fn agent_exists(
@@ -26,13 +30,17 @@ pub fn agent_exists(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::agent::fixture::agent_id_fresh;
-    use crate::dht::bbdht::dynamodb::api::agent::read::agent_exists;
-    use crate::dht::bbdht::dynamodb::api::agent::write::touch_agent;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
+    use crate::{
+        agent::fixture::agent_id_fresh,
+        dht::bbdht::dynamodb::{
+            api::{
+                agent::{read::agent_exists, write::touch_agent},
+                table::{create::ensure_cas_table, fixture::table_name_fresh},
+            },
+            client::local::local_client,
+        },
+        trace::tracer,
+    };
 
     #[test]
     fn agent_exists_test() {

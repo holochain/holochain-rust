@@ -1,15 +1,10 @@
 #[cfg(ghost)]
 use lib3h::error::Lib3hError;
 use rusoto_core::RusotoError;
-use rusoto_dynamodb::CreateTableError;
-use rusoto_dynamodb::DeleteTableError;
-use rusoto_dynamodb::DescribeLimitsError;
-use rusoto_dynamodb::DescribeTableError;
-use rusoto_dynamodb::GetItemError;
-use rusoto_dynamodb::ListTablesError;
-use rusoto_dynamodb::PutItemError;
-use rusoto_dynamodb::ScanError;
-use rusoto_dynamodb::UpdateItemError;
+use rusoto_dynamodb::{
+    CreateTableError, DeleteTableError, DescribeLimitsError, DescribeTableError, GetItemError,
+    ListTablesError, PutItemError, ScanError, UpdateItemError,
+};
 use std::num::ParseIntError;
 
 #[derive(Debug, PartialEq)]

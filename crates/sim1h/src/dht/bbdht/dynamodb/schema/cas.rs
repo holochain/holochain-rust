@@ -1,8 +1,6 @@
-use crate::dht::bbdht::dynamodb::schema::hash_key;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_definition;
+use crate::dht::bbdht::dynamodb::schema::{hash_key, string_attribute_definition};
 use holochain_persistence_api::cas::content::Address;
-use rusoto_dynamodb::AttributeDefinition;
-use rusoto_dynamodb::KeySchemaElement;
+use rusoto_dynamodb::{AttributeDefinition, KeySchemaElement};
 
 pub const ADDRESS_KEY: &str = "address";
 pub const CONTENT_KEY: &str = "content";
@@ -56,17 +54,15 @@ pub fn attribute_definitions_cas() -> Vec<AttributeDefinition> {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::schema::cas::address_attribute_definition;
-    use crate::dht::bbdht::dynamodb::schema::cas::address_key_schema;
-    use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
-    use crate::dht::bbdht::dynamodb::schema::cas::content_attribute_definition;
-    use crate::dht::bbdht::dynamodb::schema::cas::content_key_schema;
-    use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
-    use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-    use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
-    use crate::trace::tracer;
-    use rusoto_dynamodb::AttributeDefinition;
-    use rusoto_dynamodb::KeySchemaElement;
+    use crate::{
+        dht::bbdht::dynamodb::schema::cas::{
+            address_attribute_definition, address_key_schema, attribute_definitions_cas,
+            content_attribute_definition, content_key_schema, key_schema_cas, ADDRESS_KEY,
+            CONTENT_KEY,
+        },
+        trace::tracer,
+    };
+    use rusoto_dynamodb::{AttributeDefinition, KeySchemaElement};
 
     #[test]
     fn address_key_schema_test() {

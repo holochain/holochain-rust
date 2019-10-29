@@ -1,8 +1,11 @@
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::Sim1hState;
-use lib3h_protocol::data_types::{EntryListData, FetchEntryData};
-use lib3h_protocol::protocol::Lib3hToClient;
+use crate::{
+    trace::{tracer, LogContext},
+    workflow::state::Sim1hState,
+};
+use lib3h_protocol::{
+    data_types::{EntryListData, FetchEntryData},
+    protocol::Lib3hToClient,
+};
 
 impl Sim1hState {
     // result of no-op is no-op

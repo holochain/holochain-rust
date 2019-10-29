@@ -1,15 +1,17 @@
-use crate::dht::bbdht::dynamodb::api::aspect::read::get_entry_aspects;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::{BbDhtError, BbDhtResult};
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::Sim1hState;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{api::aspect::read::get_entry_aspects, client::Client},
+        error::{BbDhtError, BbDhtResult},
+    },
+    trace::{tracer, LogContext},
+    workflow::state::Sim1hState,
+};
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::data_types::EntryAspectData;
-use lib3h_protocol::data_types::Opaque;
-use lib3h_protocol::data_types::QueryEntryData;
-use lib3h_protocol::protocol::Lib3hToClient;
+use lib3h_protocol::{
+    data_types::{EntryAspectData, Opaque, QueryEntryData},
+    protocol::Lib3hToClient,
+};
 use std::convert::TryFrom;
 
 pub fn get_entry_aspect_filter_fn(aspect: &EntryAspectData) -> bool {
@@ -73,25 +75,28 @@ impl Sim1hState {
 #[cfg(test)]
 pub mod tests {
 
-    use crate::aspect::entry_aspect_to_entry_aspect_data;
-    use crate::aspect::fixture::content_aspect_fresh;
-    use crate::aspect::fixture::deletion_aspect_fresh;
-    use crate::aspect::fixture::header_aspect_fresh;
-    use crate::aspect::fixture::link_add_aspect_fresh;
-    use crate::aspect::fixture::link_remove_aspect_fresh;
-    use crate::aspect::fixture::update_aspect_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_fresh;
-    use crate::entry::fixture::entry_hash_fresh;
-    use crate::space::fixture::space_data_fresh;
-    use crate::test::unordered_vec_compare;
-    use crate::trace::tracer;
-    use crate::workflow::from_client::fixture::provided_entry_data_fresh;
-    use crate::workflow::from_client::fixture::query_entry_data_fresh;
-    use crate::workflow::from_client::publish_entry::publish_entry;
-    use crate::workflow::from_client::query_entry::get_entry_aspect_filter_fn;
-    use crate::workflow::from_client::query_entry::query_entry_aspects;
-    use crate::workflow::state::Sim1hState;
+    use crate::{
+        aspect::{
+            entry_aspect_to_entry_aspect_data,
+            fixture::{
+                content_aspect_fresh, deletion_aspect_fresh, header_aspect_fresh,
+                link_add_aspect_fresh, link_remove_aspect_fresh, update_aspect_fresh,
+            },
+        },
+        dht::bbdht::dynamodb::client::local::local_client,
+        entry::fixture::{entry_fresh, entry_hash_fresh},
+        space::fixture::space_data_fresh,
+        test::unordered_vec_compare,
+        trace::tracer,
+        workflow::{
+            from_client::{
+                fixture::{provided_entry_data_fresh, query_entry_data_fresh},
+                publish_entry::publish_entry,
+                query_entry::{get_entry_aspect_filter_fn, query_entry_aspects},
+            },
+            state::Sim1hState,
+        },
+    };
 
     #[test]
     pub fn get_entry_aspect_filter_fn_test() {

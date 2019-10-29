@@ -1,8 +1,8 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use crate::workflow::state::Sim1hState;
+use crate::{
+    dht::bbdht::{dynamodb::client::Client, error::BbDhtResult},
+    trace::{tracer, LogContext},
+    workflow::state::Sim1hState,
+};
 use lib3h_protocol::data_types::ProvidedEntryData;
 
 impl Sim1hState {
@@ -20,11 +20,11 @@ impl Sim1hState {
 pub mod tests {
 
     use super::Sim1hState;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_hash_fresh;
-    use crate::space::fixture::space_data_fresh;
-    use crate::trace::tracer;
-    use crate::workflow::from_client::fixture::provided_entry_data_fresh;
+    use crate::{
+        dht::bbdht::dynamodb::client::local::local_client, entry::fixture::entry_hash_fresh,
+        space::fixture::space_data_fresh, trace::tracer,
+        workflow::from_client::fixture::provided_entry_data_fresh,
+    };
 
     #[test]
     fn hold_entry_test() {

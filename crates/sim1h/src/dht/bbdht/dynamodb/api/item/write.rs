@@ -1,18 +1,20 @@
-use crate::dht::bbdht::dynamodb::api::item::Item;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::CONTENT_KEY;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::item::Item,
+            client::Client,
+            schema::{
+                cas::{ADDRESS_KEY, CONTENT_KEY},
+                string_attribute_value, TableName,
+            },
+        },
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
 use holochain_persistence_api::cas::content::AddressableContent;
 use rusoto_core::RusotoError;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::PutItemError;
-use rusoto_dynamodb::PutItemInput;
-use rusoto_dynamodb::PutItemOutput;
+use rusoto_dynamodb::{DynamoDb, PutItemError, PutItemInput, PutItemOutput};
 use std::collections::HashMap;
 
 pub fn content_to_item(content: &dyn AddressableContent) -> Item {
@@ -108,18 +110,20 @@ pub fn ensure_content(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::api::item::fixture::content_fresh;
-    use crate::dht::bbdht::dynamodb::api::item::write::content_to_item;
-    use crate::dht::bbdht::dynamodb::api::item::write::ensure_content;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
-    use rusoto_dynamodb::DynamoDb;
-    use rusoto_dynamodb::Put;
-    use rusoto_dynamodb::TransactWriteItem;
-    use rusoto_dynamodb::TransactWriteItemsInput;
+    use crate::{
+        dht::bbdht::dynamodb::{
+            api::{
+                item::{
+                    fixture::content_fresh,
+                    write::{content_to_item, ensure_content},
+                },
+                table::{create::ensure_cas_table, exist::table_exists, fixture::table_name_fresh},
+            },
+            client::local::local_client,
+        },
+        trace::tracer,
+    };
+    use rusoto_dynamodb::{DynamoDb, Put, TransactWriteItem, TransactWriteItemsInput};
 
     #[test]
     /// older versions of dynamodb don't support transact writes

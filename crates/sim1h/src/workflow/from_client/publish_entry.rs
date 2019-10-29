@@ -1,8 +1,10 @@
-use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{api::aspect::write::append_aspect_list_to_entry, client::Client},
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
 use lib3h_protocol::data_types::ProvidedEntryData;
 
 /// MVP
@@ -30,14 +32,16 @@ pub fn publish_entry(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::entry::fixture::entry_hash_fresh;
-    use crate::space::fixture::space_data_fresh;
-    use crate::trace::tracer;
-    use crate::workflow::from_client::fixture::provided_entry_data_fresh;
-    use crate::workflow::from_client::publish_entry::publish_entry;
-    use crate::workflow::state::Sim1hState;
+    use crate::{
+        dht::bbdht::dynamodb::client::{fixture::bad_client, local::local_client},
+        entry::fixture::entry_hash_fresh,
+        space::fixture::space_data_fresh,
+        trace::tracer,
+        workflow::{
+            from_client::{fixture::provided_entry_data_fresh, publish_entry::publish_entry},
+            state::Sim1hState,
+        },
+    };
 
     #[test]
     fn publish_entry_test() {

@@ -1,13 +1,11 @@
-use crate::agent::fixture::core_agent_id_fresh;
-use crate::agent::fixture::provenances_fresh;
-use crate::aspect::fixture::aspect_list_fresh;
-use crate::network::fixture::timestamp_fresh;
-use holochain_core_types::chain_header::ChainHeader;
-use holochain_core_types::entry::Entry;
-use holochain_persistence_api::cas::content::Address;
-use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h_protocol::data_types::EntryData;
-use lib3h_protocol::types::EntryHash;
+use crate::{
+    agent::fixture::{core_agent_id_fresh, provenances_fresh},
+    aspect::fixture::aspect_list_fresh,
+    network::fixture::timestamp_fresh,
+};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use lib3h_protocol::{data_types::EntryData, types::EntryHash};
 use uuid::Uuid;
 
 pub fn entry_hash_fresh() -> EntryHash {

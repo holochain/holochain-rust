@@ -1,18 +1,18 @@
-use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-use crate::dht::bbdht::dynamodb::api::table::exist::until_table_exists;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
-use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
-use crate::dht::bbdht::error::BbDhtError;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::table::exist::{table_exists, until_table_exists},
+            client::Client,
+            schema::cas::{attribute_definitions_cas, key_schema_cas},
+        },
+        error::{BbDhtError, BbDhtResult},
+    },
+    trace::{tracer, LogContext},
+};
 use dynomite::dynamodb::CreateTableInput;
-use rusoto_dynamodb::AttributeDefinition;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::KeySchemaElement;
-use rusoto_dynamodb::ProvisionedThroughput;
-use rusoto_dynamodb::TableDescription;
+use rusoto_dynamodb::{
+    AttributeDefinition, DynamoDb, KeySchemaElement, ProvisionedThroughput, TableDescription,
+};
 
 pub fn create_table(
     log_context: &LogContext,
@@ -129,19 +129,22 @@ pub fn ensure_cas_table(
 
 #[cfg(test)]
 pub mod test {
-    use crate::dht::bbdht::dynamodb::api::table::create::create_table;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_table;
+    use crate::dht::bbdht::dynamodb::api::table::create::{create_table, ensure_table};
 
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::describe::describe_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::cas::attribute_definitions_cas;
-    use crate::dht::bbdht::dynamodb::schema::cas::key_schema_cas;
-    use crate::dht::bbdht::dynamodb::schema::fixture::attribute_definitions_a;
-    use crate::dht::bbdht::dynamodb::schema::fixture::key_schema_a;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::dynamodb::{
+            api::table::{
+                create::ensure_cas_table, describe::describe_table, exist::table_exists,
+                fixture::table_name_fresh,
+            },
+            client::local::local_client,
+            schema::{
+                cas::{attribute_definitions_cas, key_schema_cas},
+                fixture::{attribute_definitions_a, key_schema_a},
+            },
+        },
+        trace::tracer,
+    };
 
     #[test]
     fn create_table_test() {

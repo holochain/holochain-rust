@@ -1,10 +1,11 @@
-use crate::dht::bbdht::dynamodb::api::agent::inbox::send_to_agent_inbox;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use lib3h_protocol::data_types::DirectMessageData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{api::agent::inbox::send_to_agent_inbox, client::Client},
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
+use lib3h_protocol::{data_types::DirectMessageData, protocol::ClientToLib3hResponse};
 
 /// A: append message to inbox in database
 pub fn send_direct_message(

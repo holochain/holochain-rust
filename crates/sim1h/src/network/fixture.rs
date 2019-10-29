@@ -1,5 +1,4 @@
-use holochain_core_types::time::test_iso_8601;
-use holochain_core_types::time::Iso8601;
+use holochain_core_types::time::{test_iso_8601, Iso8601};
 use lib3h_protocol::data_types::Opaque;
 use uuid::Uuid;
 

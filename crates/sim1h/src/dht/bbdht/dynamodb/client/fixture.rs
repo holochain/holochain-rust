@@ -1,7 +1,6 @@
 //! fixtures for test clients
 
-use crate::dht::bbdht::dynamodb::client::client;
-use crate::dht::bbdht::dynamodb::client::Client;
+use crate::dht::bbdht::dynamodb::client::{client, Client};
 use rusoto_core::region::Region;
 
 /// the region means nothing for a local install
@@ -22,10 +21,9 @@ pub fn bad_client() -> Client {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_region;
-    use crate::dht::bbdht::dynamodb::client::fixture::BAD_ENDPOINT;
-    use crate::dht::bbdht::dynamodb::client::fixture::BAD_REGION;
+    use crate::dht::bbdht::dynamodb::client::fixture::{
+        bad_client, bad_region, BAD_ENDPOINT, BAD_REGION,
+    };
 
     use crate::trace::tracer;
     use rusoto_core::region::Region;

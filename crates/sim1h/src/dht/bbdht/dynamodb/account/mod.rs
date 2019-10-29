@@ -1,9 +1,8 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
-use rusoto_dynamodb::DescribeLimitsOutput;
-use rusoto_dynamodb::DynamoDb;
+use crate::{
+    dht::bbdht::{dynamodb::client::Client, error::BbDhtResult},
+    trace::{tracer, LogContext},
+};
+use rusoto_dynamodb::{DescribeLimitsOutput, DynamoDb};
 
 pub fn describe_limits(
     log_context: &LogContext,
@@ -16,10 +15,13 @@ pub fn describe_limits(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::dht::bbdht::dynamodb::account::describe_limits;
-    use crate::dht::bbdht::dynamodb::client::fixture::bad_client;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::dynamodb::{
+            account::describe_limits,
+            client::{fixture::bad_client, local::local_client},
+        },
+        trace::tracer,
+    };
 
     #[test]
     fn describe_limits_ok_test() {

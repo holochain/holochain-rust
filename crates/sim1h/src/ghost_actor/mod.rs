@@ -1,45 +1,44 @@
-use crate::dht::bbdht::dynamodb::client::{client, Client};
-use crate::workflow::from_client::bootstrap::bootstrap;
-use crate::workflow::from_client::fetch_entry::fetch_entry;
-use crate::workflow::from_client::hold_entry::hold_entry;
-use crate::workflow::from_client::join_space::join_space;
-use crate::workflow::from_client::leave_space::leave_space;
-use crate::workflow::from_client::publish_entry::publish_entry;
-use crate::workflow::from_client::query_entry::query_entry;
-use crate::workflow::from_client::send_direct_message::send_direct_message;
-use crate::workflow::to_client::connected::connected;
-use crate::workflow::to_client::disconnected::disconnected;
-use crate::workflow::to_client::handle_drop_entry::handle_drop_entry;
-use crate::workflow::to_client::handle_fetch_entry::handle_fetch_entry;
-use crate::workflow::to_client::handle_get_authoring_entry_list::handle_get_authoring_entry_list;
-use crate::workflow::to_client::handle_get_gossiping_entry_list::handle_get_gossiping_entry_list;
-use crate::workflow::to_client::handle_query_entry::handle_query_entry;
-use crate::workflow::to_client::handle_send_direct_message::handle_send_direct_message;
-use crate::workflow::to_client::handle_store_entry_aspect::handle_store_entry_aspect;
-use crate::workflow::to_client::send_direct_message_result::send_direct_message_result;
-use crate::workflow::to_client_response::handle_drop_entry_result::handle_drop_entry_result;
-use crate::workflow::to_client_response::handle_fetch_entry_result::handle_fetch_entry_result;
-use crate::workflow::to_client_response::handle_get_authoring_entry_list_result::handle_get_authoring_entry_list_result;
-use crate::workflow::to_client_response::handle_get_gossiping_entry_list_result::handle_get_gossiping_entry_list_result;
-use crate::workflow::to_client_response::handle_query_entry_result::handle_query_entry_result;
-use crate::workflow::to_client_response::handle_send_direct_message_result::handle_send_direct_message_result;
-use crate::workflow::to_client_response::handle_store_entry_aspect_result::handle_store_entry_aspect_result;
+use crate::{
+    dht::bbdht::dynamodb::client::{client, Client},
+    workflow::{
+        from_client::{
+            bootstrap::bootstrap, fetch_entry::fetch_entry, hold_entry::hold_entry,
+            join_space::join_space, leave_space::leave_space, publish_entry::publish_entry,
+            query_entry::query_entry, send_direct_message::send_direct_message,
+        },
+        to_client::{
+            connected::connected, disconnected::disconnected, handle_drop_entry::handle_drop_entry,
+            handle_fetch_entry::handle_fetch_entry,
+            handle_get_authoring_entry_list::handle_get_authoring_entry_list,
+            handle_get_gossiping_entry_list::handle_get_gossiping_entry_list,
+            handle_query_entry::handle_query_entry,
+            handle_send_direct_message::handle_send_direct_message,
+            handle_store_entry_aspect::handle_store_entry_aspect,
+            send_direct_message_result::send_direct_message_result,
+        },
+        to_client_response::{
+            handle_drop_entry_result::handle_drop_entry_result,
+            handle_fetch_entry_result::handle_fetch_entry_result,
+            handle_get_authoring_entry_list_result::handle_get_authoring_entry_list_result,
+            handle_get_gossiping_entry_list_result::handle_get_gossiping_entry_list_result,
+            handle_query_entry_result::handle_query_entry_result,
+            handle_send_direct_message_result::handle_send_direct_message_result,
+            handle_store_entry_aspect_result::handle_store_entry_aspect_result,
+        },
+    },
+};
 use detach::Detach;
-use lib3h::engine::engine_actor::ClientToLib3hMessage;
-use lib3h::engine::CanAdvertise;
-use lib3h::error::Lib3hError;
-use lib3h::error::Lib3hResult;
-use lib3h_protocol::protocol::ClientToLib3h;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
-use lib3h_protocol::protocol::Lib3hToClient;
-use lib3h_protocol::protocol::Lib3hToClientResponse;
-use lib3h_zombie_actor::create_ghost_channel;
-use lib3h_zombie_actor::GhostActor;
-use lib3h_zombie_actor::GhostCanTrack;
-use lib3h_zombie_actor::GhostContextEndpoint;
-use lib3h_zombie_actor::GhostEndpoint;
-use lib3h_zombie_actor::GhostResult;
-use lib3h_zombie_actor::WorkWasDone;
+use lib3h::{
+    engine::{engine_actor::ClientToLib3hMessage, CanAdvertise},
+    error::{Lib3hError, Lib3hResult},
+};
+use lib3h_protocol::protocol::{
+    ClientToLib3h, ClientToLib3hResponse, Lib3hToClient, Lib3hToClientResponse,
+};
+use lib3h_zombie_actor::{
+    create_ghost_channel, GhostActor, GhostCanTrack, GhostContextEndpoint, GhostEndpoint,
+    GhostResult, WorkWasDone,
+};
 use rusoto_core::Region;
 use url::Url;
 

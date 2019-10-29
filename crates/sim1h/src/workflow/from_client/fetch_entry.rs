@@ -1,14 +1,14 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::LogContext;
-use crate::workflow::from_client::query_entry::query_entry_aspects;
+use crate::{
+    dht::bbdht::{dynamodb::client::Client, error::BbDhtResult},
+    trace::LogContext,
+    workflow::from_client::query_entry::query_entry_aspects,
+};
 use holochain_core_types::network::query::NetworkQuery;
 use holochain_json_api::json::JsonString;
-use lib3h_protocol::data_types::EntryData;
-use lib3h_protocol::data_types::FetchEntryData;
-use lib3h_protocol::data_types::FetchEntryResultData;
-use lib3h_protocol::data_types::QueryEntryData;
-use lib3h_protocol::protocol::ClientToLib3hResponse;
+use lib3h_protocol::{
+    data_types::{EntryData, FetchEntryData, FetchEntryResultData, QueryEntryData},
+    protocol::ClientToLib3hResponse,
+};
 
 /// MVP (needs tests, wrapping query atm)
 /// query entry but hardcoded to entry query right?

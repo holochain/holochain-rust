@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-use std::hash::Hash;
+use std::{collections::HashSet, hash::Hash};
 
 pub fn unordered_vec_compare<T: Hash + Eq>(a: Vec<T>, b: Vec<T>) -> bool {
     let mut set_a = HashSet::new();

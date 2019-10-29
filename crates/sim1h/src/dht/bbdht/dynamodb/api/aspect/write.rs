@@ -1,25 +1,25 @@
-use crate::dht::bbdht::dynamodb::api::item::write::should_put_item_retry;
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::blob_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_ADDRESS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_PUBLISH_TS_KEY;
-use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_TYPE_HINT_KEY;
-use crate::dht::bbdht::dynamodb::schema::number_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::string_set_attribute_value;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::error::BbDhtResult;
-use crate::trace::tracer;
-use crate::trace::LogContext;
+use crate::{
+    dht::bbdht::{
+        dynamodb::{
+            api::item::write::should_put_item_retry,
+            client::Client,
+            schema::{
+                blob_attribute_value,
+                cas::{
+                    ADDRESS_KEY, ASPECT_ADDRESS_KEY, ASPECT_KEY, ASPECT_LIST_KEY,
+                    ASPECT_PUBLISH_TS_KEY, ASPECT_TYPE_HINT_KEY,
+                },
+                number_attribute_value, string_attribute_value, string_set_attribute_value,
+                TableName,
+            },
+        },
+        error::BbDhtResult,
+    },
+    trace::{tracer, LogContext},
+};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::EntryAspectData;
-use rusoto_dynamodb::AttributeValue;
-use rusoto_dynamodb::DynamoDb;
-use rusoto_dynamodb::PutItemInput;
-use rusoto_dynamodb::UpdateItemInput;
+use rusoto_dynamodb::{AttributeValue, DynamoDb, PutItemInput, UpdateItemInput};
 use std::collections::HashMap;
 
 pub fn aspect_list_to_attribute(aspect_list: &Vec<EntryAspectData>) -> AttributeValue {
@@ -130,21 +130,25 @@ pub fn append_aspect_list_to_entry(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::aspect::fixture::aspect_list_fresh;
-    use crate::aspect::fixture::entry_aspect_data_fresh;
-    use crate::dht::bbdht::dynamodb::api::aspect::write::append_aspect_list_to_entry;
-    use crate::dht::bbdht::dynamodb::api::aspect::write::aspect_list_to_attribute;
-    use crate::dht::bbdht::dynamodb::api::aspect::write::put_aspect;
-    use crate::dht::bbdht::dynamodb::api::item::read::get_item_by_address;
-    use crate::dht::bbdht::dynamodb::api::table::create::ensure_cas_table;
-    use crate::dht::bbdht::dynamodb::api::table::exist::table_exists;
-    use crate::dht::bbdht::dynamodb::api::table::fixture::table_name_fresh;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::dht::bbdht::dynamodb::schema::cas::ADDRESS_KEY;
-    use crate::dht::bbdht::dynamodb::schema::cas::ASPECT_LIST_KEY;
-    use crate::dht::bbdht::dynamodb::schema::string_attribute_value;
-    use crate::entry::fixture::entry_hash_fresh;
-    use crate::trace::tracer;
+    use crate::{
+        aspect::fixture::{aspect_list_fresh, entry_aspect_data_fresh},
+        dht::bbdht::dynamodb::{
+            api::{
+                aspect::write::{
+                    append_aspect_list_to_entry, aspect_list_to_attribute, put_aspect,
+                },
+                item::read::get_item_by_address,
+                table::{create::ensure_cas_table, exist::table_exists, fixture::table_name_fresh},
+            },
+            client::local::local_client,
+            schema::{
+                cas::{ADDRESS_KEY, ASPECT_LIST_KEY},
+                string_attribute_value,
+            },
+        },
+        entry::fixture::entry_hash_fresh,
+        trace::tracer,
+    };
     use std::collections::HashMap;
 
     #[test]

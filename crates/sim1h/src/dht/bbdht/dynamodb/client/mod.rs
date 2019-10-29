@@ -1,10 +1,11 @@
 pub mod fixture;
 pub mod local;
 
-use dynomite::dynamodb::DynamoDbClient;
-use dynomite::retry::Policy;
-use dynomite::retry::RetryingDynamoDb;
-use dynomite::Retries;
+use dynomite::{
+    dynamodb::DynamoDbClient,
+    retry::{Policy, RetryingDynamoDb},
+    Retries,
+};
 use rusoto_core::Region;
 use std::time::Duration;
 
@@ -23,8 +24,7 @@ pub fn client_from_endpoint(endpoint: String, region: String) -> Client {
 
 #[cfg(test)]
 pub mod test {
-    use crate::dht::bbdht::dynamodb::client::client;
-    use crate::trace::tracer;
+    use crate::{dht::bbdht::dynamodb::client::client, trace::tracer};
     use rusoto_core::region::Region;
 
     #[test]

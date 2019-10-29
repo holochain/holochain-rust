@@ -1,6 +1,7 @@
-use crate::dht::bbdht::dynamodb::client::Client;
-use crate::dht::bbdht::dynamodb::schema::TableName;
-use crate::dht::bbdht::error::BbDhtResult;
+use crate::dht::bbdht::{
+    dynamodb::{client::Client, schema::TableName},
+    error::BbDhtResult,
+};
 use dynomite::dynamodb::{DynamoDb, ListTablesInput};
 
 pub fn list_tables(client: &Client) -> BbDhtResult<Option<Vec<TableName>>> {
@@ -14,9 +15,10 @@ pub fn list_tables(client: &Client) -> BbDhtResult<Option<Vec<TableName>>> {
 
 #[cfg(test)]
 pub mod test {
-    use crate::dht::bbdht::dynamodb::api::table::list::list_tables;
-    use crate::dht::bbdht::dynamodb::client::local::local_client;
-    use crate::trace::tracer;
+    use crate::{
+        dht::bbdht::dynamodb::{api::table::list::list_tables, client::local::local_client},
+        trace::tracer,
+    };
 
     #[test]
     pub fn list_tables_test() {

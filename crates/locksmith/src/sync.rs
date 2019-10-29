@@ -40,17 +40,12 @@ pub enum LockType {
 #[derive(Debug)]
 pub struct LocksmithError {
     lock_type: LockType,
-    backtraces: Option<Vec<Backtrace>>,
     kind: LocksmithErrorKind,
 }
 
 impl LocksmithError {
     pub fn new(lock_type: LockType, kind: LocksmithErrorKind) -> Self {
-        Self {
-            lock_type,
-            backtraces: None,
-            kind,
-        }
+        Self { lock_type, kind }
     }
 }
 

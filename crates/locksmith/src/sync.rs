@@ -239,17 +239,17 @@ impl<'a, T: ?Sized> BorrowMut<T> for HcMutexGuard<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
-    fn as_ref(&self) -> &T {
-        self.deref()
-    }
-}
+// impl<'a, T: ?Sized> AsRef<T> for HcMutexGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         self.deref()
+//     }
+// }
 
-impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
-    fn as_mut(&mut self) -> &mut T {
-        self.deref_mut()
-    }
-}
+// impl<'a, T: ?Sized> AsMut<T> for HcMutexGuard<'a, T> {
+//     fn as_mut(&mut self) -> &mut T {
+//         self.deref_mut()
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcMutexGuard<'a, T> {
     type Target = T;
@@ -272,11 +272,11 @@ impl<'a, T: ?Sized> Borrow<T> for HcRwLockReadGuard<'a, T> {
     }
 }
 
-impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
-    fn as_ref(&self) -> &T {
-        self.deref()
-    }
-}
+// impl<'a, T: ?Sized> AsRef<T> for HcRwLockReadGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         self.deref()
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcRwLockReadGuard<'a, T> {
     type Target = T;
@@ -284,6 +284,8 @@ impl<'a, T: ?Sized> Deref for HcRwLockReadGuard<'a, T> {
         &*self.inner.as_ref().expect("accessed mutex mid-unlock!")
     }
 }
+
+// HcRwLockWriteGuard
 
 impl<'a, T: ?Sized> Borrow<T> for HcRwLockWriteGuard<'a, T> {
     fn borrow(&self) -> &T {
@@ -297,19 +299,17 @@ impl<'a, T: ?Sized> BorrowMut<T> for HcRwLockWriteGuard<'a, T> {
     }
 }
 
-// HcRwLockWriteGuard
+// impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
+//     fn as_ref(&self) -> &T {
+//         self.deref()
+//     }
+// }
 
-impl<'a, T: ?Sized> AsRef<T> for HcRwLockWriteGuard<'a, T> {
-    fn as_ref(&self) -> &T {
-        self.deref()
-    }
-}
-
-impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
-    fn as_mut(&mut self) -> &mut T {
-        self.deref_mut()
-    }
-}
+// impl<'a, T: ?Sized> AsMut<T> for HcRwLockWriteGuard<'a, T> {
+//     fn as_mut(&mut self) -> &mut T {
+//         self.deref_mut()
+//     }
+// }
 
 impl<'a, T: ?Sized> Deref for HcRwLockWriteGuard<'a, T> {
     type Target = T;

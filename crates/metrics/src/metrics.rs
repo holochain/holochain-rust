@@ -30,7 +30,7 @@ pub type DefaultMetricPublisher = LoggerMetricPublisher;
 
 impl MetricPublisher for LoggerMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
-        trace!("{} {}", metric.name, metric.value);
+        debug!("{} {}", metric.name, metric.value);
     }
 }
 

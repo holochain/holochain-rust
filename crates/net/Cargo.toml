@@ -18,6 +18,7 @@ lib3h_zombie_actor = "=0.0.20"
 detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.1" }
 holochain_common = { path = "../../common" }
+holochain_metrics = { path = "../metrics" }
 holochain_conductor_lib_api = { path = "../conductor_api" }
 holochain_core_types = { path = "../core_types" }
 holochain_json_derive = "=0.0.17"

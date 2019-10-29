@@ -10,7 +10,7 @@
 
 ## changelog
 
-- [ ] if this is a code change that effects some consumer (e.g. zome developers) of holochain core,  then it has been added to [CHANGELOG-UNRELEASED.md](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG-UNRELEASED.md) with the format 
+- [ ] if this is a code change that effects some consumer (e.g. zome developers) of holochain core,  then it has been added to [our between-release changelog](https://github.com/holochain/holochain-rust/blob/develop/CHANGELOG-UNRELEASED.md) with the format 
 
 ```markdown
 - summary of change [PR#1234](https://github.com/holochain/holochain-rust/pull/1234)

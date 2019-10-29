@@ -179,6 +179,7 @@ macro_rules! guard_struct {
         pub struct $HcGuard<'a, T: ?Sized> {
             puid: ProcessUniqueId,
             inner: Option<$Guard<'a, T>>,
+            fair_unlock: bool,
         }
 
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
@@ -190,9 +191,12 @@ macro_rules! guard_struct {
                 Self {
                     puid,
                     inner: Some(inner),
+                    fair_unlock: false,
                 }
             }
 
+            /// Add some context which will output in the case that this guard
+            /// lives to be an immortal
             pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
                 GUARDS
                     .lock()
@@ -201,7 +205,20 @@ macro_rules! guard_struct {
                 self
             }
 
+            /// Declare that this mutex should be unlocked fairly when it is
+            /// dropped, if it hasn't already been unlocked some other way
+            pub fn use_fair_unlocking(mut self) -> Self {
+                self.fair_unlock = true;
+                self
+            }
+
+            /// Explicitly consume and unlock this mutex fairly, regardless
+            /// of what kind of unlocking was specified at initialization
             pub fn unlock_fair(mut self) {
+                self._unlock_fair();
+            }
+
+            fn _unlock_fair(&mut self) {
                 if let Some(inner) = std::mem::replace(&mut self.inner, None) {
                     $Guard::unlock_fair(inner);
                 }
@@ -211,6 +228,9 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
                 GUARDS.lock().remove(&self.puid);
+                if self.fair_unlock {
+                    self._unlock_fair();
+                }
             }
         }
     };

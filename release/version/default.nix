@@ -14,7 +14,9 @@ for dep in \
  holochain_conductor_lib_api \
  hdk \
  sim2h \
- sim1h
+ sim1h \
+ test_utils \
+ core_types
 do
  echo "bumping $dep dependency versions to ${config.release.version.current} in all Cargo.toml"
  find . \

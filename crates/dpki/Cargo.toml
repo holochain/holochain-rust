@@ -1,6 +1,6 @@
 [package]
 name = "holochain_dpki"
-version = "0.0.34-alpha1"
+version = "0.0.35-alpha7"
 description = "holochain dpki"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -11,7 +11,7 @@ edition = "2018"
 [dependencies]
 lazy_static = "=1.2.0"
 base64 = "=0.10.1"
-holochain_core_types = { version = "=0.0.34-alpha1", path = "../core_types" }
+holochain_core_types = { version = "=0.0.35-alpha7", path = "../core_types" }
 lib3h_sodium = "=0.0.20"
 holochain_persistence_api = "=0.0.10"
 serde = "=1.0.89"

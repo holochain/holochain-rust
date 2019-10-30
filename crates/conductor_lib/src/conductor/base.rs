@@ -894,6 +894,7 @@ impl Conductor {
                     }
                 };
 
+                let mut context_clone = context.clone();
                 let context = Arc::new(context);
                                Holochain::load(context.clone())
                     .and_then(|hc| {
@@ -904,6 +905,8 @@ impl Conductor {
                         Ok(hc)
                     })
                     .or_else(|loading_error| {
+                        context_clone.reset_instance();
+                        let context = Arc::new(context_clone);
                         // NoneError just means it didn't find a pre-existing state
                         // that's not a problem and so isn't logged as such
                         if loading_error == HolochainError::from(NoneError) {
@@ -2076,7 +2079,7 @@ pub mod tests {
         let mut path = PathBuf::new();
 
         path.push(wasm_target_dir(
-            &String::from("conductor_api").into(),
+            &String::from("conductor_lib").into(),
             &String::from("test-bridge-caller").into(),
         ));
         let wasm_path_component: PathBuf = [

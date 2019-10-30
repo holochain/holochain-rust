@@ -1291,7 +1291,8 @@ type = 'websocket'"#,
 
         assert_eq!(config_contents, toml, "expected toml (right), got config_contents (left)");
 
-        assert_eq!(conductor.
+        // TODO: check storage is deleted
+        // assert_eq!(conductor.
     }
 
     #[test]

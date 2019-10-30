@@ -30,25 +30,43 @@ const configBatchSimple = (numConductors, numInstances) => {
 // * stepCheck:
 const telephoneGame = async (s, t, N, players, functions) => {
     let {init, preSpawn, postSpawn, stepCheck} = functions
-    console.log("### Sequenced 'telephone game': links from constant base entry to one entry per agent")
+    console.log("##################################")
+    console.log("### Starting 'telephone game'")
+    console.log("##################################")
     console.log("Initializing first node")
     await players[0].spawn()
     const instance1 = await players[0]._instances[0]
     const baseHash = await init(instance1)
 
     for(let i=1;i<N-1;i++) {
-        console.log(`Iteration ${i} (${i-1} -> ${i})`)
+        console.log("----------------------------------")
+        console.log("##################################")
+        console.log(`###Iteration ${i} (${i-1} -> ${i})`)
+        console.log("##################################")
+        console.log("----------------------------------")
         const instance1 = await players[i-1]._instances[0]
 
+        console.log("##################################")
+        console.log("### PRE SPAWN")
+        console.log("##################################")
         await preSpawn(instance1, baseHash, i)
         await s.consistency()
-        console.log("Spawning new node")
+        console.log("##################################")
+        console.log(`### SPAWNING NODE ${i}`)
+        console.log("##################################")
         await players[i].spawn()
         await s.consistency()
         const instance2 = await players[i]._instances[0]
 
+        console.log("##################################")
+        console.log("### POST SPAWN")
+        console.log("##################################")
         await postSpawn(instance1, baseHash, i)
         await s.consistency()
+
+        console.log("##################################")
+        console.log("### STEP CHECK")
+        console.log("##################################")
         await stepCheck(instance2, baseHash, i)
 
         console.log("Killing old node")

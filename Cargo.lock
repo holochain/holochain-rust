@@ -939,8 +939,6 @@ dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_conductor_lib 0.0.35-alpha7",
- "holochain_core 0.0.35-alpha7",
  "holochain_core_types 0.0.35-alpha7",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -952,7 +950,6 @@ dependencies = [
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_utils 0.0.35-alpha7",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1041,7 +1038,6 @@ dependencies = [
  "holochain_persistence_lmdb 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_mem 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_pickle 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_wasm_utils 0.0.35-alpha7",
  "hyper 0.12.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core 14.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1065,7 +1061,6 @@ dependencies = [
  "serde_regex 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_utils 0.0.35-alpha7",
  "tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1142,7 +1137,6 @@ dependencies = [
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_utils 0.0.35-alpha7",
  "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unwrap_to 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1186,7 +1180,6 @@ dependencies = [
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "snowflake 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_utils 0.0.35-alpha7",
  "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasmi 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1416,8 +1409,6 @@ dependencies = [
 name = "holochain_wasm_utils"
 version = "0.0.35-alpha7"
 dependencies = [
- "holochain_conductor_lib 0.0.35-alpha7",
- "holochain_core 0.0.35-alpha7",
  "holochain_core_types 0.0.35-alpha7",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1426,7 +1417,6 @@ dependencies = [
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "test_utils 0.0.35-alpha7",
 ]
 
 [[package]]
@@ -3680,34 +3670,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "test_utils"
-version = "0.0.35-alpha7"
-dependencies = [
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdk 0.0.35-alpha7",
- "holochain_conductor_lib 0.0.35-alpha7",
- "holochain_core 0.0.35-alpha7",
- "holochain_core_types 0.0.35-alpha7",
- "holochain_dpki 0.0.35-alpha7",
- "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_net 0.0.35-alpha7",
- "holochain_persistence_api 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_wasm_utils 0.0.35-alpha7",
- "jsonrpc-ws-server 14.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "wabt 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "textwrap"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4225,7 +4187,6 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rand 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

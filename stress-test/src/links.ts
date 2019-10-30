@@ -145,7 +145,7 @@ module.exports = (scenario, N, M) => {
         await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
     })
 
-    scenario.only('telephone game:  agent_id -> const entry', async (s, t) => {
+    scenario('telephone game:  agent_id -> const entry', async (s, t) => {
         const players = R.values(await s.players(configBatchSimple(N, M), false))
 
         const init = (instance) => {
@@ -176,6 +176,69 @@ module.exports = (scenario, N, M) => {
             const links = await instance.call('main', 'get_links', { base: baseHash })
             t.ok(links)
             t.equal(links.Ok.links.length, i)
+        }
+
+        await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
+    })
+
+    scenario('telephone game:  complex initial data', async (s, t) => {
+        const players = R.values(await s.players(configBatchSimple(N, M), false))
+
+        const init = async (instance) => {
+            console.log("Committing entry")
+            const aHash = await instance.call('main', 'commit_entry', { content: 'a' }).then(r => r.Ok)
+            const bHash = await instance.call('main', 'commit_entry', { content: 'b' }).then(r => r.Ok)
+            const link1 = await instance.call('main', 'link_entries_typed', {
+                base: instance.agentAddress,
+                target: aHash,
+                link_type: 'agent_2_entry'
+            })
+            t.ok(link1)
+            const link2 = await instance.call('main', 'link_entries_typed', {
+                base: aHash,
+                target: bHash,
+                link_type: ''
+            })
+            t.ok(link2)
+            const link3 = await instance.call('main', 'link_entries_typed', {
+                base: bHash,
+                target: instance.agentAddress,
+                link_type: 'entry_2_agent'
+            })
+            t.ok(link3)
+            return {agent: instance.agentAddress, aHash, bHash}
+        }
+
+        const preSpawn = () => {}
+
+        const postSpawn = async () => {}
+
+        const stepCheck = async (instance, initialData, i) => {
+            let {agent, aHash, bHash} = initialData
+            console.log(`Trying to get base from node ${i}`)
+            const agent_entry = await instance.call('main', 'get_entry', {address: agent})
+            t.ok(agent_entry)
+            const a = await instance.call('main', 'get_entry', {address: aHash})
+            t.ok(a)
+            t.ok(a.Ok)
+            const b = await instance.call('main', 'get_entry', {address: bHash})
+            t.ok(b)
+            t.ok(b.Ok)
+
+            const agent_links = await instance.call('main', 'get_links', { base: agent })
+            t.ok(agent_links)
+            t.equal(agent_links.Ok.links.length, 1)
+            t.equal(agent_links.Ok.links[0].address, aHash)
+
+            const a_links = await instance.call('main', 'get_links', { base: aHash })
+            t.ok(a_links)
+            t.equal(a_links.Ok.links.length, 1)
+            t.equal(a_links.Ok.links[0].address, bHash)
+
+            const b_links = await instance.call('main', 'get_links', { base: bHash })
+            t.ok(b_links)
+            t.equal(b_links.Ok.links.length, 1)
+            t.equal(b_links.Ok.links[0].address, agent)
         }
 
         await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})

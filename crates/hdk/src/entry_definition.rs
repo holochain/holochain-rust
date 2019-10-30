@@ -190,8 +190,8 @@ macro_rules! entry {
     ) => (
 
         {
-            let mut entry_type = hdk::holochain_core_types::dna::entry_types::EntryTypeDef::new();
-            entry_type.properties = JsonString::from($properties);
+            let mut entry_type = $crate::holochain_core_types::dna::entry_types::EntryTypeDef::new();
+            entry_type.properties = $crate::holochain_json_api::json::JsonString::from($properties);
             entry_type.sharing = $sharing;
 
             $($(
@@ -220,15 +220,15 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::entry::Entry>| {
-                let $validation_data = hdk::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
+            let validator = Box::new(|validation_data: $crate::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<$crate::holochain_core_types::entry::Entry>| {
+                let $validation_data = $crate::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
                 use std::convert::TryFrom;
-                let e_type = hdk::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
+                let e_type = $crate::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
                 match e_type {
-                    hdk::holochain_core_types::entry::entry_type::EntryType::App(_) => {
+                    $crate::holochain_core_types::entry::entry_type::EntryType::App(_) => {
                         $entry_validation
                     },
-                    hdk::holochain_core_types::entry::entry_type::EntryType::Deletion =>
+                    $crate::holochain_core_types::entry::entry_type::EntryType::Deletion =>
                     {
                         $entry_validation
                     }
@@ -238,8 +238,8 @@ macro_rules! entry {
                 }
             });
 
-            hdk::entry_definition::ValidatingEntryType {
-                name: hdk::holochain_core_types::entry::entry_type::EntryType::App(hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
+            $crate::entry_definition::ValidatingEntryType {
+                name: $crate::holochain_core_types::entry::entry_type::EntryType::App($crate::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
                 entry_type_definition: entry_type,
                 package_creator,
                 validator,

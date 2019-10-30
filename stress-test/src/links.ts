@@ -99,7 +99,11 @@ module.exports = (scenario, N, M) => {
 
         const postSpawn = async (instance, baseHash, i) => {
             console.log("Committing link")
-            const link_result = await instance.call('main', 'link_entries', { base: baseHash, target: instance.agentAddress })
+            const link_result = await instance.call('main', 'link_entries_typed', {
+                base: baseHash,
+                target: instance.agentAddress,
+                link_type: 'entry_2_agent'
+            })
             console.log(`link result: ${link_result}`)
             t.ok(link_result)
         }

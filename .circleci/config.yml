@@ -9,6 +9,13 @@ jobs:
   resource_class: large
   steps:
    - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run: nix-shell --run hc-rust-test
 
  fmt:
@@ -73,6 +80,9 @@ jobs:
        name: DynamoDB
        command: nix-shell --run dynamodb-memory
        background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h
@@ -158,6 +168,9 @@ jobs:
        name: DynamoDB
        command: nix-shell --run dynamodb-memory
        background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: stress tests
        command: nix-shell --run hc-stress-test-sim1h

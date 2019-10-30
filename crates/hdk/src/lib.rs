@@ -15,22 +15,15 @@
 //! that Holochain offers: [the API](api/index.html).
 #![warn(unused_extern_crates)]
 #![feature(never_type)]
-pub extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate bitflags;
-#[macro_use]
-extern crate lazy_static;
-pub extern crate holochain_core_types;
-#[macro_use]
-pub extern crate holochain_json_derive;
-pub extern crate holochain_json_api;
-pub extern crate holochain_persistence_api;
-pub extern crate holochain_wasm_utils;
-// #[macro_use]
-pub extern crate pretty_assertions;
+
+pub use serde;
+pub use serde_derive;
+pub use holochain_core_types;
+pub use holochain_json_derive;
+pub use holochain_json_api;
+pub use holochain_persistence_api;
+pub use holochain_wasm_utils;
+pub use pretty_assertions;
 
 pub mod api;
 pub mod utils;
@@ -44,6 +37,7 @@ pub mod macros;
 pub use holochain_wasm_utils::api_serialization::{validation::*, THIS_INSTANCE};
 
 pub mod meta;
+pub mod prelude;
 
 pub use crate::api::*;
 pub use holochain_core_types::validation::*;

@@ -1,7 +1,7 @@
-use error::{ZomeApiError, ZomeApiResult};
+use crate::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::entry::entry_type::EntryType;
 use holochain_json_api::json::JsonString;
-use meta::ZomeDefinition;
+use crate::meta::ZomeDefinition;
 
 #[allow(improper_ctypes)]
 extern "C" {

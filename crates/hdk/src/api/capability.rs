@@ -1,5 +1,5 @@
-use super::Dispatch;
-use error::ZomeApiResult;
+use crate::Dispatch;
+use crate::error::ZomeApiResult;
 use holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::capabilities::{

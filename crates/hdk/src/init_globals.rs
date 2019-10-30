@@ -3,7 +3,7 @@
 //! It is automatically called at startup of each Zome function call.
 
 use crate::api::Dispatch;
-use error::ZomeApiResult;
+use crate::error::ZomeApiResult;
 use holochain_core_types::error::RibosomeEncodingBits;
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 

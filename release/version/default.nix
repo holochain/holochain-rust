@@ -16,7 +16,7 @@ for dep in \
  sim2h \
  sim1h \
  test_utils \
- holochain_core_types
+ core_types
 do
  echo "bumping $dep dependency versions to ${config.release.version.current} in all Cargo.toml"
  find . \

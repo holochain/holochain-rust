@@ -351,7 +351,7 @@ pub struct HcMutex<T: ?Sized> {
 impl<T> HcMutex<T> {
     pub fn new(v: T) -> Self {
         Self {
-            fair_unlocking: true,
+            fair_unlocking: false,
             inner: Mutex::new(v),
         }
     }

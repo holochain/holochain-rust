@@ -63,11 +63,13 @@ hn-release-hook-version-readme
 hc-cli-release-hook-version
 # refresh root Cargo.lock file
 cargo update
+hc-release-hook-version
 '';
 
    # publish artifacts to the world
    publish = ''
 echo "go look at travis for binary building!"
+hc-release-hook-publish
 '';
   };
 

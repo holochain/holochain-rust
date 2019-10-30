@@ -34,6 +34,22 @@ impl MetricPublisher for LoggerMetricPublisher {
     }
 }
 
+#[macro_export]
+macro_rules! with_latency_publishing {
+    ($metric_prefix:expr, $publisher:ident, $f:expr, $($args:expr),* ) => {{
+        let clock = std::time::SystemTime::now();
+
+        let ret = ($f)($($args),*);
+        let latency = clock.elapsed().unwrap().as_millis();
+
+        let metric_name = format!("{}.latency", $metric_prefix);
+
+        let metric = $crate::Metric::new(metric_name.as_str(), latency as f64);
+        $publisher.publish(&metric);
+        ret
+    }}
+}
+
 #[cfg(test)]
 mod test {
 
@@ -44,6 +60,19 @@ mod test {
         let metric = Metric::new("latency", 100.0);
 
         publisher.publish(&metric);
+    }
+
+    fn test_latency_fn(x: bool) -> bool {
+        x
+    }
+
+    #[test]
+    fn can_publish_latencies() {
+        let mut publisher = LoggerMetricPublisher;
+
+        let ret = with_latency_publishing!("test", publisher, test_latency_fn, true);
+
+        assert!(ret)
     }
 
 }

@@ -109,8 +109,8 @@ impl GuardTracker {
             .as_ref()
             .map(|a| format!("\nAnnotation: {}\n", a))
             .unwrap_or_default();
-        println!(
-            r"[LS]ERROR:
+        error!(
+            r"
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!! IMMORTAL LOCK GUARD FOUND !!!
@@ -152,23 +152,23 @@ pub fn spawn_locksmith_guard_watcher() {
                 let num_active = reports.len();
                 let lines: Vec<String> = reports.into_iter().map(|(_, report)| report).collect();
                 let output = lines.join("\n");
-                println!(
-                    "[LS]WARN: tracking {} active guard(s) alive for > {}ms:\n{}\n{}",
+                debug!(
+                    "tracking {} active guard(s) alive for > {}ms:\n{}\n{}",
                     num_active,
                     ACTIVE_GUARD_MIN_ELAPSED_MS,
                     GuardTracker::report_header(),
                     output
                 );
             } else {
-                println!(
-                    "[LS]DEBUG: no active guards alive for > {}ms",
+                debug!(
+                    "no active guards alive for > {}ms",
                     ACTIVE_GUARD_MIN_ELAPSED_MS
                 );
             }
 
             thread::sleep(Duration::from_millis(GUARD_WATCHER_POLL_INTERVAL_MS));
         });
-    println!("[LS]DEBUG: spawn_locksmith_guard_watcher: SPAWNED");
+    debug!("spawn_locksmith_guard_watcher: SPAWNED");
 }
 
 // /////////////////////////////////////////////////////////////

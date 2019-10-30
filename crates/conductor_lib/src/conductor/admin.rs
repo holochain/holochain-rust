@@ -1225,8 +1225,10 @@ id = 'new-instance'"#,
                 r#"[[interfaces]]
 admin = true
 id = 'websocket interface'
+
 [[interfaces.instances]]
 id = 'test-instance-2'
+
 [interfaces.driver]
 port = 3002
 type = 'websocket'"#,

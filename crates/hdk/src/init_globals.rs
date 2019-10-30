@@ -6,7 +6,6 @@ use crate::api::Dispatch;
 use error::ZomeApiResult;
 use holochain_core_types::error::RibosomeEncodingBits;
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
-
 #[allow(dead_code)]
 extern "C" {
     pub fn hc_init_globals(

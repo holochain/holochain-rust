@@ -11,6 +11,7 @@ bitflags = "=1.0.4"
 lazy_static = "=1.2.0"
 holochain_wasm_utils = { path = "../wasm_utils" }
 holochain_core_types = { path = "../core_types" }
+holochain_metrics = { path = "../metrics" }
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
 holochain_persistence_api = "=0.0.10"

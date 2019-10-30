@@ -9,6 +9,7 @@ use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
 };
+
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::ZomeApiGlobals,
@@ -95,6 +96,8 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
+                let clock = std::time::SystemTime::now();
+
                 let mut mem_stack = unsafe { G_MEM_STACK }
                 .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
 
@@ -109,6 +112,10 @@ macro_rules! def_api_fns {
                     })(encoded_input)
                 };
 
+                let function_name_str = match self {
+                    $(Dispatch::$enum_variant => "$function_name"),*
+                };
+
                 let result: ZomeApiInternalResult =
                     load_ribosome_encoded_json(encoded_output).or_else(|e| {
                         mem_stack.deallocate(wasm_allocation)?;
@@ -119,13 +126,18 @@ macro_rules! def_api_fns {
                 mem_stack.deallocate(wasm_allocation)?;
 
                 // Done
-                if result.ok {
+                let ret_val = if result.ok {
                     JsonString::from_json(&result.value)
                         .try_into()
                         .map_err(|_| ZomeApiError::from(format!("Failed to deserialize return value: {}", result.value)))
                 } else {
                     Err(ZomeApiError::from(result.error))
-                }
+                };
+                let metric = holochain_metrics::Metric::new(
+                    format!("hdk.{}.latency", function_name_str),
+                    clock.elapsed().unwrap().as_millis() as f64);
+                METRIC_PUBLISHER.write().unwrap().publish(&metric);
+                ret_val
             }
         }
 
@@ -244,6 +256,8 @@ lazy_static! {
     /// Deserialize this into a serde_json::Value or a zome specific struct to access the fields
     pub static ref PROPERTIES: &'static JsonString = &GLOBALS.properties;
 
+    pub static ref METRIC_PUBLISHER : std::sync::Arc<std::sync::RwLock<dyn holochain_metrics::MetricPublisher>> =
+        std::sync::Arc::new(std::sync::RwLock::new(holochain_metrics::DefaultMetricPublisher::new()));
 }
 
 impl From<DNA_NAME> for JsonString {

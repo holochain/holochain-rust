@@ -980,7 +980,6 @@ dependencies = [
  "holochain_core_types 0.0.34-alpha1",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_metrics 0.0.34-alpha1",
  "holochain_persistence_api 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.34-alpha1",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",

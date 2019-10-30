@@ -144,4 +144,40 @@ module.exports = (scenario, N, M) => {
 
         await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
     })
+
+    scenario.only('telephone game:  agent_id -> const entry', async (s, t) => {
+        const players = R.values(await s.players(configBatchSimple(N, M), false))
+
+        const init = (instance) => {
+            return instance.agentAddress
+        }
+
+        const preSpawn = () => {}
+
+        const postSpawn = async (instance, baseHash, i) => {
+            console.log("Committing entry")
+            const entryHash = await instance.call('main', 'commit_entry', { content: 'player'+(i-1) }).then(r => r.Ok)
+            console.log("Committing link")
+            const link_result = await instance.call('main', 'link_entries_typed', {
+                base: baseHash,
+                target: entryHash,
+                link_type: 'agent_2_entry'
+            })
+            console.log(`link result: ${link_result}`)
+            t.ok(link_result)
+        }
+
+        const stepCheck = async (instance, baseHash, i) => {
+            console.log(`Trying to get base from node ${i}`)
+            const base = await instance.call('main', 'get_entry', {address: baseHash})
+            t.ok(base)
+
+            console.log("Trying to get all previous links on new node")
+            const links = await instance.call('main', 'get_links', { base: baseHash })
+            t.ok(links)
+            t.equal(links.Ok.links.length, i)
+        }
+
+        await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
+    })
 }

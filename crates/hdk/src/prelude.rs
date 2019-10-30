@@ -1,6 +1,7 @@
-/// Types required by all but the most trivial zomes.
-/// This can greatly simplify imports for the majority of developers
-/// by simply adding use hdk::prelude::*;
+//! Types required by all but the most trivial zomes.
+//! This can greatly simplify imports for the majority of developers
+//! by simply adding use hdk::prelude::*;
+
 // macros
 pub use crate::{define_zome, entry, from, link, load_json, to};
 

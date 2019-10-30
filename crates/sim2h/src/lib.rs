@@ -20,7 +20,7 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-use lib3h::rrdht_util::*;
+//use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
@@ -46,8 +46,6 @@ pub struct Sim2h {
     spaces: HashMap<SpaceHash, RwLock<Space>>,
     stream_manager: StreamManager<std::net::TcpStream>,
     num_ticks: u64,
-    /// sim2h currently uses the same radius for all connections
-    rrdht_arc_radius: u32,
     /// when should we recalculated the rrdht_arc_radius
     rrdht_arc_radius_recalc: std::time::Instant,
 }
@@ -65,8 +63,6 @@ impl Sim2h {
             spaces: HashMap::new(),
             stream_manager,
             num_ticks: 0,
-            // default to max radius
-            rrdht_arc_radius: ARC_RADIUS_MAX,
             rrdht_arc_radius_recalc: std::time::Instant::now(),
         };
 
@@ -85,40 +81,9 @@ impl Sim2h {
 
     /// recalculate arc radius for our connections
     fn recalc_rrdht_arc_radius(&mut self) {
-        let mut peer_record_set = RValuePeerRecordSet::default()
-            // sim2h is currently omniscient
-            .arc_of_included_peer_records(Arc::new(0.into(), ARC_LENGTH_MAX));
-        for (_k, c_state) in self.connection_states.read().iter() {
-            match c_state {
-                ConnectionState::Limbo(_) => (),
-                ConnectionState::Joined(_, _, dht_data) => {
-                    peer_record_set = peer_record_set.push_peer_record(
-                        RValuePeerRecord::default()
-                            // since sim2h uses the same storage arc for all nodes
-                            // we just put that same value in here for all nodes
-                            .storage_arc(Arc::new_radius(dht_data.location, self.rrdht_arc_radius))
-                            // we do not yet have the metrics infrastructure to track
-                            // uptime, let's pretend all nodes are up exactly 1/2 the time
-                            .uptime_0_to_1(0.5),
-                    );
-                }
-            }
+        for (_, space) in self.spaces.iter_mut() {
+            space.write().recalc_rrdht_arc_radius();
         }
-
-        let mut new_arc_radius = get_recommended_storage_arc_radius(
-            &peer_record_set,
-            25.0, // target_minimum_r_value
-            50.0, // target_maximum_r_value
-            Some(self.rrdht_arc_radius),
-        );
-
-        if new_arc_radius != ARC_RADIUS_MAX {
-            let pct = 100 * new_arc_radius / ARC_RADIUS_MAX;
-            warn!("rrdht-r-value recommends shrinking arc radius to {} %, sim2h is not yet set up to do this, but, yay sharding!", pct);
-            new_arc_radius = ARC_RADIUS_MAX;
-        }
-
-        self.rrdht_arc_radius = new_arc_radius;
     }
 
     fn request_authoring_list(
@@ -158,15 +123,13 @@ impl Sim2h {
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::new_joined(
-                        &self.crypto,
-                        data.space_address.clone(),
-                        data.agent_id.clone(),
-                    )?,
+                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
                 );
                 if !self.spaces.contains_key(&data.space_address) {
-                    self.spaces
-                        .insert(data.space_address.clone(), RwLock::new(Space::new()));
+                    self.spaces.insert(
+                        data.space_address.clone(),
+                        RwLock::new(Space::new(self.crypto.box_clone())),
+                    );
                     info!(
                         "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                         data.space_address
@@ -176,7 +139,7 @@ impl Sim2h {
                     .get(&data.space_address)
                     .unwrap()
                     .write()
-                    .join_agent(data.agent_id.clone(), uri.clone());
+                    .join_agent(data.agent_id.clone(), uri.clone())?;
                 info!(
                     "Agent {:?} joined space {:?}",
                     data.agent_id, data.space_address
@@ -209,9 +172,7 @@ impl Sim2h {
 
     // removes an agent from a space
     fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        if let Some(ConnectionState::Joined(space_address, agent_id, _dht_data)) =
-            self.get_connection(uri)
-        {
+        if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
                 Err(SPACE_MISMATCH_ERR_STR.into())
             } else {
@@ -226,7 +187,7 @@ impl Sim2h {
     // removes a uri from connection and from spaces
     fn disconnect(&self, uri: &Lib3hUri) {
         trace!("disconnect entered");
-        if let Some(ConnectionState::Joined(space_address, agent_id, _dht_data)) =
+        if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.connection_states.write().remove(uri)
         {
             self.spaces
@@ -313,7 +274,7 @@ impl Sim2h {
 
             // if the agent sending the messages has been vetted and is in the space
             // then build a message to be proxied to the correct destination, and forward it
-            ConnectionState::Joined(space_address, agent_id, _dht_data) => {
+            ConnectionState::Joined(space_address, agent_id) => {
                 if &agent_id != signer {
                     return Err(SIGNER_MISMATCH_ERR_STR.into());
                 }
@@ -349,7 +310,7 @@ impl Sim2h {
                 .expect("can add interval ms");
 
             self.recalc_rrdht_arc_radius();
-            trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
+            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
         }
 
         trace!("process transport");
@@ -679,10 +640,10 @@ impl Sim2h {
                     true
                 }
             })
-            .collect::<Vec<(AgentId, Lib3hUri)>>();
-        for (agent, uri) in all_agents {
-            debug!("Broadcast: Sending to {:?}", uri);
-            self.send(agent, uri, msg);
+            .collect::<Vec<(AgentId, AgentInfo)>>();
+        for (agent, info) in all_agents {
+            debug!("Broadcast: Sending to {:?}", info.uri);
+            self.send(agent, info.uri, msg);
         }
         Ok(())
     }

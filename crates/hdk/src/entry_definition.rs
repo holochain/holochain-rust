@@ -292,13 +292,13 @@ macro_rules! link {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: ::hdk::holochain_wasm_utils::holochain_core_types::validation::LinkValidationData| {
+            let validator = Box::new(|validation_data: $crate::holochain_wasm_utils::holochain_core_types::validation::LinkValidationData| {
                 let $validation_data = validation_data;
                 $link_validation
             });
 
 
-            ::hdk::entry_definition::ValidatingLinkDefinition {
+            $crate::entry_definition::ValidatingLinkDefinition {
                 direction: $direction,
                 other_entry_type: String::from($other_type),
                 link_type: String::from($link_type),

@@ -5,9 +5,9 @@ pub struct Metric {
 }
 
 impl Metric {
-    pub fn new<S: Into<String>>(name: S, value: f64) -> Self {
+    pub fn new(name: &str, value: f64) -> Self {
         Self {
-            name: name.into(),
+            name: name.to_string(),
             value,
         }
     }

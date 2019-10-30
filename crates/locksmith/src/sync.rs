@@ -9,19 +9,27 @@ use std::{
     time::{Duration, Instant},
 };
 
-// if a lock guard lives this long, it is assumed it will never die
-const IMMORTAL_TIMEOUT_SECS: u64 = 60;
+lazy_static! {
 
-// this should be a bit longer than IMMORTAL_TIMEOUT, so that locks don't timeout
-// before all long-running guards are detected, in the case of a deadlock.
-// (But NOT longer than try-o-rama's conductor timeout)
-const LOCK_TIMEOUT_SECS: u64 = 100;
+    /// if a lock guard lives this long, it is assumed it will never die
+    static ref IMMORTAL_TIMEOUT: Duration = Duration::from_secs(60);
 
-// This is how often we check the elapsed time of guards
-const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
+    /// this should be a bit longer than IMMORTAL_TIMEOUT, so that locks don't timeout
+    /// before all long-running guards are detected, in the case of a deadlock.
+    /// (But NOT longer than try-o-rama's conductor timeout)
+    static ref LOCK_TIMEOUT: Duration = Duration::from_millis(100);
 
-// We filter out any guards alive less than this long
-const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
+    /// This is how often we check the elapsed time of guards
+    static ref GUARD_WATCHER_POLL_INTERVAL: Duration = Duration::from_millis(1000);
+
+    /// We filter out any guards alive less than this long
+    static ref ACTIVE_GUARD_MIN_ELAPSED: Duration = Duration::from_millis(1000);
+
+    /// Only report about no activity if this much time has passed
+    static ref ACTIVE_GUARD_NO_ACTIVITY_INTERVAL: Duration = Duration::from_secs(10);
+
+    static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
+}
 
 #[derive(Debug)]
 pub enum LocksmithErrorKind {
@@ -74,9 +82,9 @@ impl GuardTracker {
 
     pub fn report_and_update(&mut self) -> Option<(i64, String)> {
         let elapsed = Instant::now().duration_since(self.created);
-        let elapsed_ms = elapsed.as_millis() as i64;
-        if elapsed_ms > ACTIVE_GUARD_MIN_ELAPSED_MS {
-            if !self.immortal && elapsed.as_secs() > IMMORTAL_TIMEOUT_SECS {
+        if elapsed > *ACTIVE_GUARD_MIN_ELAPSED {
+            let elapsed_ms = elapsed.as_millis() as i64;
+            if !self.immortal && elapsed > *IMMORTAL_TIMEOUT {
                 self.immortalize();
             }
             let lock_type_str = format!("{:?}", self.lock_type);
@@ -122,51 +130,56 @@ Backtrace at the moment of guard creation follows:
 {backtrace:?}",
             type=self.lock_type,
             puid=self.puid,
-            time=IMMORTAL_TIMEOUT_SECS,
+            time=IMMORTAL_TIMEOUT.as_secs(),
             annotation=annotation,
             backtrace=self.backtrace
         );
     }
 }
 
-lazy_static! {
-    static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
-}
-
 pub fn spawn_locksmith_guard_watcher() {
     let _ = thread::Builder::new()
         .name(format!(
-            "hc_guard_watcher/{}",
+            "locksmith_guard_watcher/{}",
             ProcessUniqueId::new().to_string()
         ))
-        .spawn(move || loop {
-            let mut reports: Vec<(i64, String)> = {
-                GUARDS
-                    .lock()
-                    .values_mut()
-                    .filter_map(|gt| gt.report_and_update())
-                    .collect()
-            };
-            if reports.len() > 0 {
-                reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
-                let num_active = reports.len();
-                let lines: Vec<String> = reports.into_iter().map(|(_, report)| report).collect();
-                let output = lines.join("\n");
-                debug!(
-                    "tracking {} active guard(s) alive for > {}ms:\n{}\n{}",
-                    num_active,
-                    ACTIVE_GUARD_MIN_ELAPSED_MS,
-                    GuardTracker::report_header(),
-                    output
-                );
-            } else {
-                debug!(
-                    "no active guards alive for > {}ms",
-                    ACTIVE_GUARD_MIN_ELAPSED_MS
-                );
-            }
+        .spawn(move || {
+            let mut inactive_for = Duration::from_millis(0);
+            loop {
+                let mut reports: Vec<(i64, String)> = {
+                    GUARDS
+                        .lock()
+                        .values_mut()
+                        .filter_map(|gt| gt.report_and_update())
+                        .collect()
+                };
+                if reports.len() > 0 {
+                    reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
+                    let num_active = reports.len();
+                    let lines: Vec<String> =
+                        reports.into_iter().map(|(_, report)| report).collect();
+                    let output = lines.join("\n");
+                    debug!(
+                        "tracking {} active guard(s) alive for > {}ms:\n{}\n{}",
+                        num_active,
+                        ACTIVE_GUARD_MIN_ELAPSED.as_millis(),
+                        GuardTracker::report_header(),
+                        output
+                    );
+                } else {
+                    inactive_for += *GUARD_WATCHER_POLL_INTERVAL;
+                    if inactive_for > *ACTIVE_GUARD_NO_ACTIVITY_INTERVAL {
+                        debug!(
+                            "no active guards alive > {:?}ms for the last {:?} seconds",
+                            ACTIVE_GUARD_MIN_ELAPSED.as_millis(),
+                            ACTIVE_GUARD_NO_ACTIVITY_INTERVAL.as_secs(),
+                        );
+                        inactive_for = Duration::from_millis(0);
+                    }
+                }
 
-            thread::sleep(Duration::from_millis(GUARD_WATCHER_POLL_INTERVAL_MS));
+                thread::sleep(*GUARD_WATCHER_POLL_INTERVAL);
+            }
         });
     debug!("spawn_locksmith_guard_watcher: SPAWNED");
 }
@@ -400,13 +413,9 @@ macro_rules! mutex_impl {
     ($HcMutex: ident, $Mutex: ident, $HcGuard:ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_for_fn:ident, $try_lock_until_fn:ident, $new_guard_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> LocksmithResult<$HcGuard<T>> {
-                self.$try_lock_for_fn(Duration::from_secs(LOCK_TIMEOUT_SECS))
-                    .ok_or_else(|| {
-                        LocksmithError::new(
-                            LockType::$lock_type,
-                            LocksmithErrorKind::LocksmithTimeout,
-                        )
-                    })
+                self.$try_lock_for_fn(*LOCK_TIMEOUT).ok_or_else(|| {
+                    LocksmithError::new(LockType::$lock_type, LocksmithErrorKind::LocksmithTimeout)
+                })
             }
 
             pub fn $try_lock_for_fn(&self, duration: Duration) -> Option<$HcGuard<T>> {

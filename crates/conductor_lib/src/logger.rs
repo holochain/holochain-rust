@@ -25,7 +25,7 @@ impl Default for LogRules {
         let mut rules = LogRules::new();
         // Filtering out all the logs from our dependencies
         rules
-            .add_rule(".*", true, None)
+            .add_rule(".*", false, None)
             .expect("Invalid logging rule.");
         // And logging back all our logs
         rules

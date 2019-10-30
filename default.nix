@@ -91,7 +91,6 @@ with holonix.pkgs;
    ++ (holonix.pkgs.callPackage ./dynamodb {
     pkgs = holonix.pkgs;
    }).buildInputs
-
   ;
  });
 }

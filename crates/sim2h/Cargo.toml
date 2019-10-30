@@ -6,7 +6,7 @@ edition = "2018"
 description = "A simulation of lib3h"
 keywords = ["holochain", "holo", "p2p", "network", "simulation"]
 categories = ["network-programming"]
-license = "Apache-2.0"
+license = "GPL-3.0-only"
 readme = "README.md"
 documentation = "https://github.com/holochain/sim2h"
 repository = "https://github.com/holochain/sim2h"
@@ -21,7 +21,7 @@ lib3h_sodium = "=0.0.20"
 lib3h_protocol = "=0.0.20"
 lib3h_zombie_actor = "=0.0.20"
 holochain_tracing = "=0.0.1"
-holochain_core_types = { path = "../core_types" }
+holochain_core_types = { version = "=0.0.34-alpha1", path = "../core_types" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "=0.4.8"
 env_logger = "=0.6.1"

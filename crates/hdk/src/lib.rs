@@ -17,6 +17,7 @@
 #![feature(never_type)]
 
 pub use serde;
+pub use serde_json;
 pub use serde_derive;
 pub use holochain_core_types;
 pub use holochain_json_derive;

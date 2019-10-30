@@ -6,8 +6,6 @@ use crate::{
     api::G_MEM_STACK,
     entry_definition::{AgentValidator, ValidatingEntryType},
 };
-use holochain_json_derive::DefaultJson;
-use serde_derive::{Serialize, Deserialize};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
@@ -16,6 +14,8 @@ use holochain_core_types::{
     entry::entry_type::{AppEntryType, EntryType},
     error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
+use holochain_json_derive::DefaultJson;
+use serde_derive::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
@@ -222,9 +222,9 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
             })
             .and_then(|mut link_definition| {
                 let package = (*link_definition.package_creator)();
-                Some(return_code_for_allocation_result(crate::global_fns::write_json(
-                    package,
-                )))
+                Some(return_code_for_allocation_result(
+                    crate::global_fns::write_json(package),
+                ))
             })
             .unwrap_or(RibosomeEncodedValue::Failure(
                 RibosomeErrorCode::CallbackFailed,

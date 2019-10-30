@@ -16,15 +16,15 @@
 #![warn(unused_extern_crates)]
 #![feature(never_type)]
 
-pub use serde;
-pub use serde_json;
-pub use serde_derive;
 pub use holochain_core_types;
-pub use holochain_json_derive;
 pub use holochain_json_api;
+pub use holochain_json_derive;
 pub use holochain_persistence_api;
 pub use holochain_wasm_utils;
 pub use pretty_assertions;
+pub use serde;
+pub use serde_derive;
+pub use serde_json;
 
 pub mod api;
 pub mod utils;

@@ -1,46 +1,33 @@
-
-/// Types required by all but the most trivial zomes. 
+/// Types required by all but the most trivial zomes.
 /// This can greatly simplify imports for the majority of developers
 /// by simply adding use hdk::prelude::*;
-
-
 // macros
-pub use crate::{
-	define_zome,
-	entry,
-	link, to, from, load_json,
-};
+pub use crate::{define_zome, entry, from, link, load_json, to};
 
 // derive macros
-pub use {
-	serde_derive::{Serialize, Deserialize},
-	holochain_json_derive::DefaultJson,
-};
+pub use holochain_json_derive::DefaultJson;
+pub use serde_derive::{Deserialize, Serialize};
 
 // types
 pub use crate::{
-	holochain_json_api::{
-		json::{JsonString},
-		error::JsonError,
-	},
-	holochain_persistence_api::cas::content::{Address, AddressableContent},
-	error::{ZomeApiError, ZomeApiResult},
-	entry_definition::ValidatingEntryType,
-	EntryValidationData, LinkValidationData,
-	ValidationPackageDefinition,
-	holochain_core_types::{
-		error::HolochainError,
-	    dna::entry_types::Sharing,
-	    entry::{Entry, entry_type::EntryType},
-	    link::LinkMatch,
-	    agent::AgentId,
-	},
+    entry_definition::ValidatingEntryType,
+    error::{ZomeApiError, ZomeApiResult},
+    holochain_core_types::{
+        agent::AgentId,
+        dna::entry_types::Sharing,
+        entry::{entry_type::EntryType, Entry},
+        error::HolochainError,
+        link::LinkMatch,
+    },
+    holochain_json_api::{error::JsonError, json::JsonString},
+    holochain_persistence_api::cas::content::{Address, AddressableContent},
     holochain_wasm_utils::api_serialization::{
         commit_entry::CommitEntryOptions,
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
-        get_links::{GetLinksOptions, GetLinksResult, LinksStatusRequestKind, GetLinksResultCount},
+        get_links::{GetLinksOptions, GetLinksResult, GetLinksResultCount, LinksStatusRequestKind},
         QueryArgsOptions, QueryResult,
     },
+    EntryValidationData, LinkValidationData, ValidationPackageDefinition,
 };

@@ -1,10 +1,10 @@
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
-use lazy_static::lazy_static;
-use bitflags::bitflags;
 use crate::error::{ZomeApiError, ZomeApiResult};
+use bitflags::bitflags;
 use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
+use lazy_static::lazy_static;
 
 use holochain_core_types::{
     dna::capabilities::CapabilityRequest,

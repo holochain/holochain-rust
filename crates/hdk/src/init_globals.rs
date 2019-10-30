@@ -2,8 +2,7 @@
 //! which initializes the Zome API Globals with the values it receives from the Ribosome.
 //! It is automatically called at startup of each Zome function call.
 
-use crate::api::Dispatch;
-use crate::error::ZomeApiResult;
+use crate::{api::Dispatch, error::ZomeApiResult};
 use holochain_core_types::error::RibosomeEncodingBits;
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 

@@ -1,5 +1,4 @@
-use crate::Dispatch;
-use crate::error::ZomeApiResult;
+use crate::{error::ZomeApiResult, Dispatch};
 use holochain_json_api::json::JsonString;
 
 /// Prints a string through the stdout of the running Conductor, and also

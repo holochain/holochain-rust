@@ -1,5 +1,4 @@
-use crate::Dispatch;
-use crate::error::ZomeApiResult;
+use crate::{error::ZomeApiResult, Dispatch};
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::commit_entry::{

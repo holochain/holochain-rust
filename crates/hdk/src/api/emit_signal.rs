@@ -1,5 +1,4 @@
-use crate::Dispatch;
-use crate::error::ZomeApiResult;
+use crate::{error::ZomeApiResult, Dispatch};
 use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 

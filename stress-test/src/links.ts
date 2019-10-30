@@ -88,7 +88,7 @@ module.exports = (scenario, N, M) => {
         await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
     })
 
-    scenario.only('telephone game: const entry -> agent_id', async (s, t) => {
+    scenario('telephone game: const entry -> agent_id', async (s, t) => {
         const players = R.values(await s.players(configBatchSimple(N, M), false))
 
         const init = (instance) => {
@@ -113,6 +113,29 @@ module.exports = (scenario, N, M) => {
             const links = await instance.call('main', 'get_links', { base: baseHash })
             t.ok(links)
             t.equal(links.Ok.links.length, i)
+        }
+
+        await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
+    })
+
+    scenario('telephone game: get all previously seen agent entries', async (s, t) => {
+        const players = R.values(await s.players(configBatchSimple(N, M), false))
+
+        const init = () => {
+            return []
+        }
+
+        const preSpawn = (instance, all_agents) => { all_agents.push(instance.agentAddress) }
+
+        const postSpawn = () => {}
+
+        const stepCheck = async (instance, all_agents, i) => {
+            for(let agent_id of all_agents) {
+                const agent_entry = await instance.call('main', 'get_entry', {address: agent_id})
+                console.log("AGENT ENTRY:", agent_entry)
+                t.ok(agent_entry)
+                t.ok(agent_entry.Ok)
+            }
         }
 
         await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})

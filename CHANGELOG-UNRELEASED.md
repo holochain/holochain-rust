@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 *  Allows the HC CLI to generate zomes from template repos. This will by default use the default holochain template repos (holochain/rust-zome-template and holochain/rust-proc-zome-template) but can also point to custom templates in remote repos or locally (e.g. `hc generate zomes/my_zome https://github.com/org/some-custom-zome-template`). [#1565](https://github.com/holochain/holochain-rust/pull/1565)
 * Adds option `--property` to `hc hash` that sets DNA properties for hash calculation. [#1807](https://github.com/holochain/holochain-rust/pull/1807)
+* Adds a clean option to the `admin/instance/remove` method on the `ConductorApiBuilder` (and to the `remove_instance` method on a `Conductor`). [#1775](https://github.com/holochain/holochain-rust/pull/1775).
+* Adds checkers to see what the `StorageConfiguration` variant is, as well as a `path` getter. [#1775](https://github.com/holochain/holochain-rust/pull/1775).
+
 ### Changed
 
 ### Deprecated

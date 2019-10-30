@@ -734,7 +734,7 @@ impl StorageConfiguration {
         matches!(self, StorageConfiguration::Lmdb { .. })
     }
 
-    pub fn get_path(&self) -> Option<String> {
+    pub fn path(&self) -> Option<String> {
         match self {
             StorageConfiguration::Memory => return None,
             StorageConfiguration::File { path } => return Some(path.to_string()),

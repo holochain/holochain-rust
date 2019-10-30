@@ -248,7 +248,7 @@ impl ConductorAdmin for Conductor {
         if let Some(instance) = self.instances.remove(id) {
             if clean {
                 if let Some(instance_config) = self.config.instance_by_id(id) {
-                    if let Some(storage_path) = instance_config.storage.get_path() {
+                    if let Some(storage_path) = instance_config.storage.path() {
                         remove_dir_all(storage_path)?;
                     }
                 }
@@ -1246,7 +1246,7 @@ type = 'websocket'"#,
     /// Tests if the removed instance is gone from the config file
     /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid). If the clean arg is true, tests that the storage of
-    ///ca the instance has been cleared,
+    /// the instance has been cleared,
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
         let mut conductor = create_test_conductor(test_name, 3002);
@@ -1290,6 +1290,8 @@ type = 'websocket'"#,
         toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml, "expected toml (right), got config_contents (left)");
+
+        assert_eq!(conductor.
     }
 
     #[test]

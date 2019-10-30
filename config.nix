@@ -61,9 +61,10 @@ hn-release-hook-preflight-manual
 hn-release-hook-version-rust
 hn-release-hook-version-readme
 hc-cli-release-hook-version
-# refresh root Cargo.lock file
-cargo update
 hc-release-hook-version
+# refresh root Cargo.lock file
+echo "updating cargo"
+cargo update
 '';
 
    # publish artifacts to the world

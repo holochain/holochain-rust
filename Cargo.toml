@@ -2,7 +2,7 @@
 
 members = [
   "crates/cli",
-  "common",
+  "crates/common",
   "crates/holochain",
   "crates/conductor_lib",
   "crates/conductor_api",
@@ -12,6 +12,7 @@ members = [
   "crates/hdk_v2",
   "crates/hdk",
   "crates/net",
+  "crates/sim1h",
   "crates/sim2h",
   "crates/sim2h_server",
 ]

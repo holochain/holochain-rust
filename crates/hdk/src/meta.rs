@@ -355,7 +355,7 @@ pub mod tests {
         zome::{ZomeFnDeclarations, ZomeTraits},
     };
     use holochain_json_api::{error::JsonError, json::JsonString};
-    use meta::PartialZome;
+    use crate::meta::PartialZome;
     use std::collections::BTreeMap;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.

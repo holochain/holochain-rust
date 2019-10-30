@@ -1,6 +1,10 @@
 [package]
 name = "holochain_core"
-version = "0.0.34-alpha1"
+version = "0.0.35-alpha7"
+description = "holochain core"
+license = "GPL-3.0-only"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -26,11 +30,11 @@ unwrap_to = "=0.1.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"
 toml = "=0.5.0"
-holochain_net = { path = "../net" }
-holochain_wasm_utils = { path = "../wasm_utils"}
-holochain_common = { path = "../../common" }
-holochain_metrics = { path = "../metrics" }
-holochain_conductor_lib_api = { path = "../conductor_api" }
+holochain_metrics = { version = "0.0.35-alpha7", path = "../metrics" }
+holochain_net = { version = "=0.0.35-alpha7", path = "../net" }
+holochain_wasm_utils = { version = "=0.0.35-alpha7", path = "../wasm_utils" }
+holochain_common = { version = "=0.0.35-alpha7", path = "../common" }
+holochain_conductor_lib_api = { version = "=0.0.35-alpha7", path = "../conductor_api" }
 lib3h_protocol = "=0.0.20"
 lib3h_sodium = "=0.0.20"
 holochain_json_derive = "=0.0.17"
@@ -38,8 +42,8 @@ holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_mem = "=0.0.10"
-holochain_core_types = { path = "../core_types" }
-holochain_dpki = { path = "../dpki" }
+holochain_core_types = { version = "=0.0.35-alpha7", path = "../core_types" }
+holochain_dpki = { version = "=0.0.35-alpha7", path = "../dpki" }
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
 boolinator = "=2.4.0"
@@ -57,5 +61,5 @@ rand = "0.7.2"
 
 [dev-dependencies]
 wabt = "=0.7.4"
-test_utils = { path = "../../test_utils"}
+test_utils = { version = "=0.0.35-alpha7", path = "../../test_utils" }
 tempfile = "=3.0.7"

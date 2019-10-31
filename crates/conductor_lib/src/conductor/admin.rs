@@ -1334,7 +1334,7 @@ type = 'websocket'"#,
             .expect("Could not read temp config file");
         let toml2 = start_toml();
 
-        toml2 = finish_toml();
+        toml2 = finish_toml(toml2);
 
         assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
     }

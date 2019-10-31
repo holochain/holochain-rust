@@ -8,7 +8,6 @@ let
   hc-test-fmt
   hn-rust-clippy
   hc-rust-test
-  hc-app-spec-test
   '';
 in
 {

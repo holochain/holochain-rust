@@ -348,14 +348,12 @@ pub extern "C" fn __hdk_get_json_definition(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::prelude::*;
-    use crate::ValidationPackageDefinition;
+    use crate::{meta::PartialZome, prelude::*, ValidationPackageDefinition};
     use holochain_core_types::dna::{
         entry_types::Sharing,
         zome::{ZomeFnDeclarations, ZomeTraits},
     };
     use holochain_json_api::{error::JsonError, json::JsonString};
-    use crate::meta::PartialZome;
     use std::collections::BTreeMap;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.

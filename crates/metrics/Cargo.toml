@@ -42,7 +42,7 @@ rand = "0.7.2"
 ## For cloudwatch
 rusoto_cloudwatch = "=0.41.0"
 rusoto_core = "=0.41.0"
-
+holochain_core_types = {version = "=0.0.35-alpha7", path = "../core_types" }
 
 [dev-dependencies]
 tempfile = "=3.0.7"

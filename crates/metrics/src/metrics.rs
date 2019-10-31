@@ -54,6 +54,7 @@ macro_rules! with_latency_publishing {
 mod test {
 
     use super::*;
+    use std::sync::{Arc, RwLock};
     #[test]
     fn can_publish_to_logger() {
         let mut publisher = LoggerMetricPublisher;
@@ -68,7 +69,7 @@ mod test {
 
     #[test]
     fn can_publish_latencies() {
-        let publisher = std::sync::Arc::new(std::sync::RwLock::new(LoggerMetricPublisher));
+        let publisher = Arc::new(RwLock::new(LoggerMetricPublisher));
 
         let ret = with_latency_publishing!("test", publisher, test_latency_fn, true);
 

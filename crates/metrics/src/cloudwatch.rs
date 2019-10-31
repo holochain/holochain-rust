@@ -5,12 +5,12 @@ use rusoto_core::region::Region;
 const DEFAULT_REGION: Region = Region::UsEast1;
 
 #[derive(Clone)]
-pub struct CloudWatchPublisher {
+pub struct CloudWatchMetricPublisher {
     client: CloudWatchClient,
 }
 
-impl From<&Metric> for MetricDatum {
-    fn from(metric: &Metric) -> Self {
+impl From<Metric> for MetricDatum {
+    fn from(metric: Metric) -> Self {
         let cloud_watch_metric = MetricDatum {
             /// <p>Array of numbers that is used along with the <code>Values</code> array. Each number in the <code>Count</code> array is the number of times the corresponding value in the <code>Values</code> array occurred during the period. </p> <p>If you omit the <code>Counts</code> array, the default of 1 is used as the value for each count. If you include a <code>Counts</code> array, it must include the same amount of values as the <code>Values</code> array.</p>
             counts: None,
@@ -35,20 +35,27 @@ impl From<&Metric> for MetricDatum {
     }
 }
 
-impl CloudWatchPublisher {
+impl From<&Metric> for MetricDatum {
+    fn from(metric: &Metric) -> Self {
+        let m: Self = metric.clone().into();
+        m
+    }
+}
+
+impl CloudWatchMetricPublisher {
     pub fn new(region: &Region) -> Self {
         let client = CloudWatchClient::new(region.clone());
         Self { client }
     }
 }
 
-impl Default for CloudWatchPublisher {
+impl Default for CloudWatchMetricPublisher {
     fn default() -> Self {
-        CloudWatchPublisher::new(&DEFAULT_REGION)
+        CloudWatchMetricPublisher::new(&DEFAULT_REGION)
     }
 }
 
-impl MetricPublisher for CloudWatchPublisher {
+impl MetricPublisher for CloudWatchMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
         let cloud_watch_metric: MetricDatum = metric.into();
         let data_input = PutMetricDataInput {

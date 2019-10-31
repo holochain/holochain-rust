@@ -6,7 +6,9 @@
 extern crate log;
 
 pub mod cloudwatch;
+pub mod config;
 pub mod metrics;
 
 pub use cloudwatch::*;
+pub use config::*;
 pub use metrics::*;

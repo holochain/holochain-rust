@@ -184,7 +184,7 @@ impl PassphraseService for PassphraseServiceUnixSocket {
                 "Could not lock mutex holding unix domain socket connection for passphrase service",
             )
             .as_mut().as_mut()
-            .ok_or(HolochainError::ErrorGeneric("This option can't possibly be None".into()))
+            .ok_or_else(|| HolochainError::ErrorGeneric("This option can't possibly be None".into()))
             .and_then(|result| result.as_mut().map(|stream| {
                     log_debug!("Sending passphrase request via unix socket...");
                     stream

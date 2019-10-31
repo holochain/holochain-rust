@@ -16,6 +16,7 @@
 /// A custom config can be provided with the --config, -c flag.
 extern crate holochain_conductor_lib;
 extern crate holochain_core_types;
+extern crate holochain_locksmith;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
@@ -25,7 +26,8 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core_types::{error::HolochainError, sync::spawn_hc_guard_watcher};
+use holochain_core_types::error::HolochainError;
+use holochain_locksmith::spawn_locksmith_guard_watcher;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
@@ -63,7 +65,7 @@ fn main() {
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
 
-    let _ = spawn_hc_guard_watcher();
+    let _ = spawn_locksmith_guard_watcher();
 
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {

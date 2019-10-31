@@ -1,16 +1,7 @@
-#[macro_use]
-extern crate hdk;
-#[macro_use]
-extern crate serde_derive;
-
+use hdk::prelude::*;
 use hdk::{
-    error::ZomeApiResult,
     holochain_core_types::{
         signature::{Provenance, Signature},
-    },
-    holochain_json_api::{
-        error::JsonError,
-        json::JsonString,
     },
     holochain_wasm_utils::api_serialization::keystore::KeyType,
 };

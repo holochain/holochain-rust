@@ -1,0 +1,12 @@
+[package]
+name = "holochain_common"
+description = "holochain core commons"
+license = "GPL-3.0-only"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
+version = "0.0.35-alpha7"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+
+[dependencies]
+directories = "=1.0.2"

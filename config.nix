@@ -1,7 +1,7 @@
 let
- release-commit = "ee89132a83489df4eda558d0174e829bac3bb889";
- current = "0.0.34-alpha1";
- previous = "0.0.33-alpha6";
+ release-commit = "dce2cef858c144608feff7a552d471060d8aeed7";
+ current = "0.0.35-alpha7";
+ previous = "0.0.34-alpha1";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";
@@ -61,13 +61,16 @@ hn-release-hook-preflight-manual
 hn-release-hook-version-rust
 hn-release-hook-version-readme
 hc-cli-release-hook-version
+hc-release-hook-version
 # refresh root Cargo.lock file
+echo "updating cargo"
 cargo update
 '';
 
    # publish artifacts to the world
    publish = ''
 echo "go look at travis for binary building!"
+hc-release-hook-publish
 '';
   };
 

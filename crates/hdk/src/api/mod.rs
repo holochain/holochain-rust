@@ -1,9 +1,10 @@
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
-
 use crate::error::{ZomeApiError, ZomeApiResult};
+use bitflags::bitflags;
 use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
+use lazy_static::lazy_static;
 
 use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
@@ -15,7 +16,7 @@ use holochain_wasm_utils::{
     memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
 };
 
-use init_globals::init_globals;
+use crate::init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};
 
 mod bundle;

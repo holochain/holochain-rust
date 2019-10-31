@@ -1,15 +1,15 @@
 [package]
 name = "simple"
-version = "0.0.34-alpha1"
+version = "0.0.35-alpha7"
 authors = ["Ashanti Mutinta <Ashantimutinta@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+hdk = { path = "../../../../crates/hdk" }
+hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 serde_derive = "=1.0.89"
-hdk = { path = "../../../../crates/hdk" }
-hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
 holochain_json_derive = "=0.0.17"
 
 [lib]

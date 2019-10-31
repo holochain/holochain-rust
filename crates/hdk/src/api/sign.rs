@@ -1,4 +1,4 @@
-use error::ZomeApiResult;
+use crate::error::ZomeApiResult;
 use holochain_core_types::signature::Provenance;
 use holochain_wasm_utils::api_serialization::{
     crypto::{CryptoArgs, CryptoMethod},

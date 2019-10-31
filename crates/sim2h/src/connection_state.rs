@@ -3,6 +3,8 @@ use crate::wire_message::WireMessage;
 use lib3h_protocol::types::{AgentPubKey, SpaceHash};
 pub type AgentId = AgentPubKey;
 
+use crate::error::*;
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum ConnectionState {
     #[allow(clippy::all)]
@@ -14,6 +16,13 @@ impl ConnectionState {
     pub fn new() -> ConnectionState {
         ConnectionState::Limbo(Box::new(Vec::new()))
     }
+
+    /// construct a new "Joined" ConnectionState item
+    #[allow(clippy::borrowed_box)]
+    pub fn new_joined(space_hash: SpaceHash, agent_id: AgentId) -> Sim2hResult<Self> {
+        Ok(ConnectionState::Joined(space_hash, agent_id))
+    }
+
     pub fn in_limbo(&self) -> bool {
         match self {
             ConnectionState::Limbo(_) => true,

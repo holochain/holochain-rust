@@ -11,10 +11,10 @@ use self::tempfile::tempdir;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use serde_json::map::Map;
-use std::{fs::File, io::Write, process::Command, path::PathBuf};
+use std::{fs::File, io::Write, process::Command, path::PathBuf,collections::HashMap, sync::{RwLock,Arc}};
 use structopt::StructOpt;
 
-type Error = String;
+/*type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
 where
     P: AsRef<std::path::Path>,
@@ -38,7 +38,8 @@ where
         );
     }
     Ok(String::from_utf8_lossy(&res.stdout).trim().to_string())
-}
+}*/
+
 #[derive(StructOpt)]
 struct Cli {
     #[structopt(
@@ -77,19 +78,24 @@ fn get_as_string<T: Into<String>>(
 const CONDUCTOR_CONFIG_FILE_NAME :&str = "conductor-config.toml";
 lazy_static! {
     pub static ref TEMP_PATH: tempfile::TempDir = tempdir().expect("should create tmp dir");
+    //pub static ref PLAYERS: Mutex<HashMap<String,std::process::Child>> = Mutex::new(HashMap::new());
 }
+
+fn get_dir(id: &String) -> PathBuf {
+    TEMP_PATH.path().join(id).clone()
+}
+
+fn get_file(id: &String) -> PathBuf {
+    get_dir(id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+}
+
 
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
 
-    fn get_dir(id: &String) -> PathBuf {
-        TEMP_PATH.path().join(id).clone()
-    }
-
-    fn get_file(id: &String) -> PathBuf {
-        get_dir(id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
-    }
+    let players_arc: Arc<RwLock<HashMap<String,std::process::Child>>> = Arc::new(RwLock::new(HashMap::new()));
+    let players_arc2 = players_arc.clone();
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
 
@@ -136,46 +142,66 @@ fn main() {
                 message: format!("unable to write config file: {:?} {:?}", e, file_path),
                 data: None,
             })?;
-        println!("Wrote config for player {} to {:?}", id, file_path);
-        let response = exec_output(
-            "bash",
-            vec!["hcm.bash", "player", &id, &file_path.to_string_lossy()],
-            ".",
-            true,
-        )
-        .map_err(|e| jsonrpc_core::types::error::Error {
-            code: jsonrpc_core::types::error::ErrorCode::InternalError,
-            message: format!("unable to run hcm script: {:?}", e),
-            data: None,
-        })?;
+
+        let response = format!("wrote config for player {} to {:?}", id, file_path);
         println!("player {}: {:?}", id, response);
         Ok(Value::String(response))
     });
-    io.add_method("spawn", |params: Params| {
+
+
+
+    io.add_method("spawn", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let response =
-            exec_output("bash", vec!["hcm.bash", "spawn", &id], ".", true).map_err(|e| {
-                jsonrpc_core::types::error::Error {
-                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                    message: format!("unable to run hcm script: {:?}", e),
-                    data: None,
-                }
-            })?;
-        println!("spawn {}: {:?}", id, response);
-        Ok(Value::String(response))
-    });
-    io.add_method("kill", |params: Params| {
-        let params_map = unwrap_params_map(params)?;
-        let id = get_as_string("id", &params_map)?;
-        let signal = get_as_string("signal", &params_map)?; // TODO: make optional?
-        let response = exec_output("bash", vec!["hcm.bash", "kill", &id, &signal], ".", true)
+
+        check_player_config(&id)?;
+        let mut players = players_arc.write().expect("should_lock");
+        if players.contains_key(&id) {
+            return Err(jsonrpc_core::types::error::Error {
+                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+                message: format!("{} is already running", id),
+                data: None,
+            });
+        };
+
+        let player_config = format!("{}",get_file(&id).to_string_lossy());
+        let conductor = Command::new("holochain")
+            .args(&["-c", &player_config])
+            .spawn()
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!("unable to run hcm script: {:?}", e),
+                message: format!("unable to spawn conductor: {:?}", e),
                 data: None,
             })?;
-        println!("kill {}: {:?}", id, response);
+        players.insert(id.clone(),conductor);
+        let response = format!("conductor spawned for {}",id);
+        Ok(Value::String(response))
+    });
+
+    io.add_method("kill", move |params: Params| {
+        let params_map = unwrap_params_map(params)?;
+        let id = get_as_string("id", &params_map)?;
+        let _signal = get_as_string("signal", &params_map)?; // TODO: make optional?
+
+        check_player_config(&id)?;
+        let mut players = players_arc2.write().unwrap();
+        match players.remove(&id) {
+            None => {
+                return Err(jsonrpc_core::types::error::Error {
+                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+                message: format!("no conductor spawned for {}", id),
+                data: None,
+                });
+            }
+            Some(ref mut child) => {
+                child.kill().map_err(|e| jsonrpc_core::types::error::Error {
+                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
+                    message: format!("unable to run kill conductor for {} script: {:?}", id, e),
+                    data: None,
+                })?;
+            }
+        }
+        let response = format!("killed conductor for {}", id);
         Ok(Value::String(response))
     });
 
@@ -185,4 +211,16 @@ fn main() {
     println!("waiting for connections on port {}", args.port);
 
     server.wait().expect("server should wait");
+}
+
+fn check_player_config(id: &String) -> Result<(),jsonrpc_core::types::error::Error> {
+    let file_path = get_file(id);
+    if !file_path.is_file() {
+        return Err(jsonrpc_core::types::error::Error {
+            code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+            message: format!("player config for {} not setup", id),
+            data: None,
+        });
+    }
+    Ok(())
 }

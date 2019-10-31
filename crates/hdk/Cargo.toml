@@ -1,5 +1,6 @@
 [package]
 name = "hdk"
+edition = "2018"
 version = "0.0.35-alpha7"
 description = "holochain hdk"
 license = "GPL-3.0-only"

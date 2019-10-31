@@ -138,6 +138,7 @@ Backtrace at the moment of guard creation follows:
 }
 
 pub fn spawn_locksmith_guard_watcher() {
+    debug!("spawning locksmith_guard_watcher");
     let _ = thread::Builder::new()
         .name(format!(
             "locksmith_guard_watcher/{}",
@@ -154,6 +155,7 @@ pub fn spawn_locksmith_guard_watcher() {
                         .collect()
                 };
                 if reports.len() > 0 {
+                    inactive_for = Duration::from_millis(0);
                     reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
                     let num_active = reports.len();
                     let lines: Vec<String> =
@@ -181,7 +183,6 @@ pub fn spawn_locksmith_guard_watcher() {
                 thread::sleep(*GUARD_WATCHER_POLL_INTERVAL);
             }
         });
-    debug!("spawn_locksmith_guard_watcher: SPAWNED");
 }
 
 // /////////////////////////////////////////////////////////////

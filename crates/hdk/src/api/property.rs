@@ -1,5 +1,7 @@
-use super::super::PROPERTIES;
-use error::{ZomeApiError, ZomeApiResult};
+use crate::{
+    api::PROPERTIES,
+    error::{ZomeApiError, ZomeApiResult},
+};
 use holochain_json_api::json::JsonString;
 use serde_json::Value;
 

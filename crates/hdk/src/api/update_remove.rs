@@ -1,5 +1,7 @@
-use super::Dispatch;
-use error::{ZomeApiError, ZomeApiResult};
+use crate::{
+    error::{ZomeApiError, ZomeApiResult},
+    Dispatch,
+};
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::UpdateEntryArgs;

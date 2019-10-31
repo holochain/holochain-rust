@@ -4,7 +4,8 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
+use holochain_core_types::error::HolochainError;
+use holochain_locksmith::RwLock;
 
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent, Content},

@@ -17,8 +17,8 @@ use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
     error::{HcResult, HolochainError},
-    sync::{HcMutex as Mutex, HcRwLock as RwLock},
 };
+use holochain_locksmith::{Mutex, RwLock};
 use key_loaders::test_keystore;
 
 use holochain_json_api::json::JsonString;

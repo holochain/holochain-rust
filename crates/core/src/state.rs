@@ -16,8 +16,8 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
-    sync::HcRwLock as RwLock,
 };
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},

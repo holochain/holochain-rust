@@ -6,8 +6,8 @@ use crate::connection::{
     NetResult,
 };
 
-use holochain_core_types::sync::HcMutex as Mutex;
 use holochain_json_api::json::JsonString;
+use holochain_locksmith::Mutex;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use std::collections::{hash_map::Entry, HashMap};

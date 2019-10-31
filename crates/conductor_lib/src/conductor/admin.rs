@@ -1259,7 +1259,7 @@ r#"id = 'test-instance-1'
 
 [instances.storage]
 type = 'file'
-path = '/home/($USER)/hc-instance-data'"#);
+path = '/home/$USER/hc-instance-data'"#);
 
         let mut conductor = create_test_conductor_from_toml(test_toml, test_name);
 

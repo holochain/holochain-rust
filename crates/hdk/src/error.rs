@@ -115,7 +115,7 @@ pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 #[cfg(test)]
 mod tests {
 
-    use error::{ZomeApiError, ZomeApiResult};
+    use crate::error::{ZomeApiError, ZomeApiResult};
     use holochain_json_api::json::JsonString;
 
     #[test]

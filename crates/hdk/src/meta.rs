@@ -348,7 +348,7 @@ pub extern "C" fn __hdk_get_json_definition(
 
 #[cfg(test)]
 pub mod tests {
-    use crate as hdk;
+    use crate::prelude::*;
     use crate::ValidationPackageDefinition;
     use holochain_core_types::dna::{
         entry_types::Sharing,

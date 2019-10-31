@@ -1,6 +1,8 @@
-use super::Dispatch;
-use api::get_entry::get_entry_result;
-use error::{ZomeApiError, ZomeApiResult};
+use crate::{
+    api::get_entry::get_entry_result,
+    error::{ZomeApiError, ZomeApiResult},
+    Dispatch,
+};
 use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use holochain_wasm_utils::api_serialization::{

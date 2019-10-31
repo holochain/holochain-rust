@@ -13,8 +13,7 @@ const configBatchSimple = (numConductors, numInstances) => {
     return R.repeat(conductor, numConductors)
 }
 
-// This is a customizable blue print for telephone game (aka chinese whispers)
-// network/time topology setups.
+// This is a customizable blue print for "telephone game" network/time topology setups.
 // It cycles through all N agents in a way that at any given point only two agents
 // are online. Before the next agent is spawned, the older one gets killed,
 // such that every agent needs to first receive all previous data so it can gossip

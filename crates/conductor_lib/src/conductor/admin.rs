@@ -1261,7 +1261,7 @@ r#"id = 'test-instance-1'
 type = 'file'
 path = '/home/$USER/hc-instance-data'"#);
 
-        let mut conductor = create_test_conductor_from_toml(test_toml, test_name);
+        let mut conductor = create_test_conductor_from_toml(&test_toml, test_name);
 
         // TODO: refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
         assert!(conductor.instance_storage_dir_path().exists(), "The storage directory for the instance doesn't exist after creating the test conductor!");
@@ -1271,6 +1271,7 @@ path = '/home/$USER/hc-instance-data'"#);
             toml = add_block(toml, agent1());
             toml = add_block(toml, agent2());
             toml = add_block(toml, dna());
+            toml
         };
 
         let mut toml = start_toml();
@@ -1309,6 +1310,7 @@ type = 'websocket'"#,
             toml = add_block(toml, passphrase_service());
             toml = add_block(toml, signals());
             toml = format!("{}\n", toml);
+            toml
         };
 
         toml = finish_toml(toml);

@@ -22,6 +22,8 @@ use holochain_core_types::{
 };
 
 use holochain_json_api::json::JsonString;
+use holochain_metrics::MetricPublisherConfig;
+
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
@@ -115,6 +117,8 @@ pub struct Configuration {
     /// This config setting selects one of the available services (i.e. CLI prompt, IPC, mock)
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
+
+    pub metric_publisher: Option<MetricPublisherConfig>,
 }
 
 /// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.

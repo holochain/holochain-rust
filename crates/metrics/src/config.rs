@@ -1,8 +1,9 @@
 use crate::{cloudwatch::CloudWatchMetricPublisher, LoggerMetricPublisher, MetricPublisher};
 use holochain_core_types::sync::HcRwLock;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MetricPublisherConfig {
     Logger,
     CloudWatch(Option<rusoto_core::region::Region>),

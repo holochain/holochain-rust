@@ -35,18 +35,17 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 /// A command line for Holochain
 enum Cli {
-    #[structopt(name = "package", alias = "p")]
+    #[structopt(alias = "p")]
     ///  Builds DNA source files into a single .dna.json DNA file
     Package {
-        #[structopt(long = "strip-meta")]
+        #[structopt(long)]
         /// Strips all __META__ sections off the target bundle. Makes unpacking of the bundle impossible
         strip_meta: bool,
-        #[structopt(long = "output", short = "o", parse(from_os_str))]
+        #[structopt(long, short, parse(from_os_str))]
         output: Option<PathBuf>,
-        #[structopt(long = "properties", short = "p")]
+        #[structopt(long, short)]
         properties: Option<String>,
     },
-    #[structopt(name = "unpack")]
     /// Unpacks a Holochain bundle into it's original file system structure
     Unpack {
         #[structopt(parse(from_os_str))]
@@ -54,13 +53,13 @@ enum Cli {
         #[structopt(parse(from_os_str))]
         to: PathBuf,
     },
-    #[structopt(name = "init", alias = "i")]
+    #[structopt(alias = "i")]
     /// Initializes a new Holochain app at the given directory
     Init {
         #[structopt(parse(from_os_str))]
         path: PathBuf,
     },
-    #[structopt(name = "generate", alias = "g")]
+    #[structopt(alias = "g")]
     /// Generates a new zome from a template
     Generate {
         #[structopt(parse(from_os_str))]
@@ -70,7 +69,7 @@ enum Cli {
         /// Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.
         template: String,
     },
-    #[structopt(name = "run", alias = "r")]
+    #[structopt(alias = "r")]
     /// Starts a development conductor with a websocket or http interface
     Run {
         #[structopt(long, short, default_value = "8888")]
@@ -95,7 +94,7 @@ enum Cli {
         /// Specify interface type to use: websocket/http
         interface: String,
     },
-    #[structopt(name = "test", alias = "t")]
+    #[structopt(alias = "t")]
     /// Runs tests written in the test folder
     Test {
         #[structopt(long, short, default_value = "test")]

@@ -78,7 +78,7 @@ enum Cli {
         #[structopt(long, short = "b")]
         /// Automatically package project before running
         package: bool,
-        #[structopt(long = "dna", short = "d")]
+        #[structopt(long = "dna", short = "d", parse(from_os_str))]
         /// Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]
         dna_path: Option<PathBuf>,
         #[structopt(long)]
@@ -113,7 +113,7 @@ enum Cli {
     #[structopt(name = "keygen", alias = "k")]
     /// Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)
     KeyGen {
-        #[structopt(long, short)]
+        #[structopt(long, short, parse(from_os_str))]
         /// Specify path of file
         path: Option<PathBuf>,
         #[structopt(long, short)]
@@ -129,7 +129,7 @@ enum Cli {
         #[structopt(name = "INSTANCE")]
         /// Instance ID to view
         instance_id: Option<String>,
-        #[structopt(long, short)]
+        #[structopt(long, short, parse(from_os_str))]
         /// Location of chain storage
         path: Option<PathBuf>,
         #[structopt(long, short)]
@@ -139,7 +139,7 @@ enum Cli {
     #[structopt(name = "hash")]
     /// Parse and hash a DNA file to determine its unique network hash
     HashDna {
-        #[structopt(long, short)]
+        #[structopt(long, short, parse(from_os_str))]
         /// Path to .dna.json file [default: dist/<dna-name>.dna.json]
         path: Option<PathBuf>,
         #[structopt(long, short = "x")]

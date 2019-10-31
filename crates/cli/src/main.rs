@@ -35,15 +35,10 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 /// A command line for Holochain
 enum Cli {
-    #[structopt(
-        name = "package",
-        alias = "p",
-    )]
+    #[structopt(name = "package", alias = "p")]
     ///  Builds DNA source files into a single .dna.json DNA file
     Package {
-        #[structopt(
-            long = "strip-meta",
-        )]
+        #[structopt(long = "strip-meta")]
         /// Strips all __META__ sections off the target bundle. Makes unpacking of the bundle impossible
         strip_meta: bool,
         #[structopt(long = "output", short = "o", parse(from_os_str))]
@@ -51,9 +46,7 @@ enum Cli {
         #[structopt(long = "properties", short = "p")]
         properties: Option<String>,
     },
-    #[structopt(
-        name = "unpack",
-    )]
+    #[structopt(name = "unpack")]
     /// Unpacks a Holochain bundle into it's original file system structure
     Unpack {
         #[structopt(parse(from_os_str))]
@@ -61,55 +54,32 @@ enum Cli {
         #[structopt(parse(from_os_str))]
         to: PathBuf,
     },
-    #[structopt(
-        name = "init",
-        alias = "i",
-    )]
+    #[structopt(name = "init", alias = "i")]
     /// Initializes a new Holochain app at the given directory
     Init {
         #[structopt(parse(from_os_str))]
         path: PathBuf,
     },
-    #[structopt(
-        name = "generate",
-        alias = "g",
-    )]
+    #[structopt(name = "generate", alias = "g")]
     /// Generates a new zome from a template
     Generate {
-        #[structopt(
-            parse(from_os_str)
-        )]
+        #[structopt(parse(from_os_str))]
         /// The path to the zome that should be generated (usually in ./zomes/)
         zome: PathBuf,
-        #[structopt(
-            default_value = "rust"
-        )]
+        #[structopt(default_value = "rust")]
         /// Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.
         template: String,
     },
-    #[structopt(
-        name = "run",
-        alias = "r",
-    )]
+    #[structopt(name = "run", alias = "r")]
     /// Starts a development conductor with a websocket or http interface
     Run {
-        #[structopt(
-            long,
-            short,
-            default_value = "8888"
-        )]
+        #[structopt(long, short, default_value = "8888")]
         /// The port to run the websocket server at
         port: u16,
-        #[structopt(
-            long,
-            short = "b",
-        )]
+        #[structopt(long, short = "b")]
         /// Automatically package project before running
         package: bool,
-        #[structopt(
-            long = "dna",
-            short = "d",
-        )]
+        #[structopt(long = "dna", short = "d")]
         /// Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]
         dna_path: Option<PathBuf>,
         #[structopt(long)]
@@ -121,57 +91,33 @@ enum Cli {
         #[structopt(long)]
         /// Use real networking
         networked: bool,
-        #[structopt(
-            long,
-            short,
-            default_value = "websocket"
-        )]
+        #[structopt(long, short, default_value = "websocket")]
         /// Specify interface type to use: websocket/http
         interface: String,
     },
-    #[structopt(
-        name = "test",
-        alias = "t",
-    )]
+    #[structopt(name = "test", alias = "t")]
     /// Runs tests written in the test folder
     Test {
-        #[structopt(
-            long,
-            short,
-            default_value = "test",
-        )]
+        #[structopt(long, short, default_value = "test")]
         /// The folder containing the test files
         dir: String,
-        #[structopt(
-            long,
-            short,
-            default_value = "test/index.js",
-        )]
+        #[structopt(long, short, default_value = "test/index.js")]
         /// The path of the file to test
         testfile: String,
         #[structopt(long = "skip-package", short = "s")]
         /// Skip packaging DNA
         skip_build: bool,
-        #[structopt(
-            long = "show-npm-output",
-            short = "n",
-        )]
+        #[structopt(long = "show-npm-output", short = "n")]
         /// Show NPM output when installing test dependencies
         show_npm_output: bool,
     },
-    #[structopt(
-        name = "keygen",
-        alias = "k",
-    )]
+    #[structopt(name = "keygen", alias = "k")]
     /// Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)
     KeyGen {
         #[structopt(long, short)]
         /// Specify path of file
         path: Option<PathBuf>,
-        #[structopt(
-            long,
-            short,
-        )]
+        #[structopt(long, short)]
         /// Only print machine-readable output; intended for use by programs and scripts
         quiet: bool,
         #[structopt(long, short)]
@@ -191,21 +137,13 @@ enum Cli {
         /// List available instances
         list: bool,
     },
-    #[structopt(
-        name = "hash",
-    )]
+    #[structopt(name = "hash")]
     /// Parse and hash a DNA file to determine its unique network hash
     HashDna {
-        #[structopt(
-            long,
-            short,
-        )]
+        #[structopt(long, short)]
         /// Path to .dna.json file [default: dist/<dna-name>.dna.json]
         path: Option<PathBuf>,
-        #[structopt(
-            long,
-            short = "x",
-        )]
+        #[structopt(long, short = "x")]
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
     },

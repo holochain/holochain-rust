@@ -30,7 +30,7 @@ let
   wasm_utils
  do
   echo "checking ''${p}"
-  if ! ( cd "crates/$p" && cargo fmt -- --check ); then echo "BAA"; __fmtexit=1; fi
+  if ! ( cd "crates/$p" && cargo fmt -- --check ); then __fmtexit=1; fi
  done
  exit ''${__fmtexit}
  '';

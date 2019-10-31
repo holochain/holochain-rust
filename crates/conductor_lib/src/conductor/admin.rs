@@ -1,5 +1,5 @@
 use crate::{
-    conductor::{base::{notify, instance_storage_dir_path}, Conductor},
+    conductor::{base::notify, Conductor},
     config::{
         AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
@@ -14,7 +14,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 use json_patch;
 use std::{
     fs::{self, create_dir_all, remove_dir_all},
-    path::{PathBuf, Path},
+    path::PathBuf,
     sync::Arc,
     thread::sleep,
     time::Duration,
@@ -1264,16 +1264,16 @@ path = '/home/$USER/hc-instance-data'"#);
         let mut conductor = create_test_conductor_from_toml(test_toml, test_name);
 
         // TODO: refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
-        assert!(conductor.instance_storage_dir_path().exists(), "The storage directory for the instance doesn't exist after creating the test conductor!")
+        assert!(conductor.instance_storage_dir_path().exists(), "The storage directory for the instance doesn't exist after creating the test conductor!");
 
         let start_toml = || {
             let mut toml = header_block(test_name);
             toml = add_block(toml, agent1());
             toml = add_block(toml, agent2());
             toml = add_block(toml, dna());
-        }
+        };
 
-        let mut toml = start_toml()
+        let mut toml = start_toml();
 
         toml = add_block(toml, instance1());
 
@@ -1309,11 +1309,11 @@ type = 'websocket'"#,
             toml = add_block(toml, passphrase_service());
             toml = add_block(toml, signals());
             toml = format!("{}\n", toml);
-        }
+        };
 
-        toml = finish_toml(toml)
+        toml = finish_toml(toml);
 
-        assert_eq!(toml, test_toml, "toml not as expected (left) after creating a conductor with persistent file storage")
+        assert_eq!(toml, test_toml, "toml not as expected (left) after creating a conductor with persistent file storage");
 
         assert_eq!(
             conductor.remove_instance(&String::from("test-instance-1"), true),
@@ -1323,7 +1323,7 @@ type = 'websocket'"#,
         assert!(
             !conductor.instance_storage_dir_path().exists(), 
             "storage directory still exists after trying to remove it!"
-        )
+        );
 
         let mut config_contents = String::new();
         let mut file =

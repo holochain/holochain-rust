@@ -1,3 +1,4 @@
+use crate::error::{LockType, LocksmithError, LocksmithErrorKind, LocksmithResult};
 use backtrace::Backtrace;
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
@@ -30,34 +31,6 @@ lazy_static! {
 
     static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
 }
-
-#[derive(Debug)]
-pub enum LocksmithErrorKind {
-    LocksmithTimeout,
-    LocksmithPoisonError,
-    LocksmithWouldBlock,
-}
-
-#[derive(Debug)]
-pub enum LockType {
-    Lock,
-    Read,
-    Write,
-}
-
-#[derive(Debug)]
-pub struct LocksmithError {
-    lock_type: LockType,
-    kind: LocksmithErrorKind,
-}
-
-impl LocksmithError {
-    pub fn new(lock_type: LockType, kind: LocksmithErrorKind) -> Self {
-        Self { lock_type, kind }
-    }
-}
-
-pub type LocksmithResult<T> = Result<T, LocksmithError>;
 
 struct GuardTracker {
     puid: ProcessUniqueId,

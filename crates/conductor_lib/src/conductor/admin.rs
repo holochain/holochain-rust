@@ -1,5 +1,5 @@
 use crate::{
-    conductor::{base::notify, Conductor},
+    conductor::{base::{notify, instance_storage_dir_path}, Conductor},
     config::{
         AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
@@ -14,7 +14,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 use json_patch;
 use std::{
     fs::{self, create_dir_all, remove_dir_all},
-    path::PathBuf,
+    path::{PathBuf, Path},
     sync::Arc,
     thread::sleep,
     time::Duration,
@@ -1245,33 +1245,54 @@ type = 'websocket'"#,
     #[test]
     /// Tests if the removed instance is gone from the config file
     /// as well as the mentions of the removed instance are gone from the interfaces
-    /// (to not render the config invalid). If the clean arg is true, tests that the storage of
+    /// (to not render the config invalid). If the clean argument is true, it tests that the storage of
     /// the instance has been cleared,
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
-        let mut conductor = create_test_conductor(test_name, 3002);
 
-        assert_eq!(
-            conductor.remove_instance(&String::from("test-instance-1"), true),
-            Ok(()),
-        );
+        let test_toml = test_toml(test_name, 3002);
+        test_toml.replace(r#"id = 'test-instance-1'
 
-        let mut config_contents = String::new();
-        let mut file =
-            File::open(&conductor.config_path()).expect("Could not open temp config file");
-        file.read_to_string(&mut config_contents)
-            .expect("Could not read temp config file");
+[instances.storage]
+type = 'memory'"#,
+r#"id = 'test-instance-1'
 
-        let mut toml = header_block(test_name);
+[instances.storage]
+type = 'file'
+path = '/home/($USER)/hc-instance-data'"#);
 
-        toml = add_block(toml, agent1());
-        toml = add_block(toml, agent2());
-        toml = add_block(toml, dna());
-        //toml = add_block(toml, instance1());
-        toml = add_block(toml, instance2());
-        toml = add_block(
-            toml,
-            String::from(
+        let mut conductor = create_test_conductor_from_toml(test_toml, test_name);
+
+        // TODO: refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
+        assert!(conductor.instance_storage_dir_path().exists(), "The storage directory for the instance doesn't exist after creating the test conductor!")
+
+        let start_toml = || {
+            let mut toml = header_block(test_name);
+            toml = add_block(toml, agent1());
+            toml = add_block(toml, agent2());
+            toml = add_block(toml, dna());
+        }
+
+        let mut toml = start_toml()
+
+        toml = add_block(toml, instance1());
+
+        toml.replace(r#"id = 'test-instance-1'
+
+[instances.storage]
+type = 'memory'"#,
+r#"id = 'test-instance-1'
+
+[instances.storage]
+type = 'file'
+path = '/home/($USER)/hc-instance-data'"#);
+
+        let finish_toml = |started_toml| {
+            let toml = started_toml;
+            toml = add_block(toml, instance2());
+            toml = add_block(
+                toml,
+                String::from(
                 r#"[[interfaces]]
 admin = true
 id = 'websocket interface'
@@ -1282,17 +1303,38 @@ id = 'test-instance-2'
 [interfaces.driver]
 port = 3002
 type = 'websocket'"#,
-            ),
+                ),
+            );
+            toml = add_block(toml, logger());
+            toml = add_block(toml, passphrase_service());
+            toml = add_block(toml, signals());
+            toml = format!("{}\n", toml);
+        }
+
+        toml = finish_toml(toml)
+
+        assert_eq!(toml, test_toml, "toml not as expected (left) after creating a conductor with persistent file storage")
+
+        assert_eq!(
+            conductor.remove_instance(&String::from("test-instance-1"), true),
+            Ok(()), "test-instance-1 not removed"
         );
-        toml = add_block(toml, logger());
-        toml = add_block(toml, passphrase_service());
-        toml = add_block(toml, signals());
-        toml = format!("{}\n", toml);
 
-        assert_eq!(config_contents, toml, "expected toml (right), got config_contents (left)");
+        assert!(
+            !conductor.instance_storage_dir_path().exists(), 
+            "storage directory still exists after trying to remove it!"
+        )
 
-        // TODO: check storage is deleted
-        // assert_eq!(conductor.
+        let mut config_contents = String::new();
+        let mut file =
+            File::open(&conductor.config_path()).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+        let toml2 = start_toml();
+
+        toml2 = finish_toml();
+
+        assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
     }
 
     #[test]

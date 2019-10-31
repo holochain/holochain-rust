@@ -1,6 +1,8 @@
+extern crate lib3h_sodium;
 extern crate structopt;
 
 use lib3h_protocol::uri::Builder;
+use lib3h_sodium::SodiumCryptoSystem;
 use log::error;
 use sim2h::{
     websocket::{
@@ -50,7 +52,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(transport, uri);
+    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), transport, uri);
 
     loop {
         let result = sim2h.process();

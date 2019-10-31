@@ -1,38 +1,18 @@
-#![warn(unused_extern_crates)]
 #![feature(proc_macro_hygiene)]
-
-extern crate hdk_proc_macros;
+use hdk::prelude::*;
+use hdk::{
+    holochain_core_types::{signature::Provenance},
+    holochain_wasm_utils::api_serialization::{
+        get_entry::{EntryHistory, GetEntryResult},
+        get_links::GetLinksResult,
+    },
+};
 use hdk_proc_macros::zome;
 
-#[macro_use]
-extern crate hdk;
-#[macro_use]
-extern crate serde_derive;
-extern crate boolinator;
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate holochain_json_derive;
+mod blog;
+mod memo;
+mod post;
 
-pub mod blog;
-pub mod post;
-pub mod memo;
-
-use hdk::{
-    error::ZomeApiResult,
-    entry_definition::ValidatingEntryType,
-    holochain_core_types::{
-        entry::Entry,
-        signature::Provenance,
-    },
-    holochain_persistence_api::{
-        cas::content::Address,
-    },
-    holochain_json_api::{
-        json::JsonString,
-    },
-    holochain_wasm_utils::api_serialization::{get_links::GetLinksResult,get_entry::{EntryHistory,GetEntryResult}}
-};
 use blog::Env;
 
 #[zome]
@@ -233,4 +213,8 @@ pub mod blog {
         blog::handle_my_posts_get_my_sources(agent)
     }
 
+    #[zome_fn("hc_public")]
+    pub fn get_test_properties() -> ZomeApiResult<JsonString> {
+        hdk::property("test_property")
+    }
 }

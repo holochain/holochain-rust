@@ -1289,7 +1289,7 @@ type = 'file'
 path = '/home/($USER)/hc-instance-data'"#);
 
         let finish_toml = |started_toml| {
-            let toml = started_toml;
+            let mut toml = started_toml;
             toml = add_block(toml, instance2());
             toml = add_block(
                 toml,
@@ -1332,7 +1332,7 @@ type = 'websocket'"#,
             File::open(&conductor.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
-        let toml2 = start_toml();
+        let mut toml2 = start_toml();
 
         toml2 = finish_toml(toml2);
 

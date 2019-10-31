@@ -1,5 +1,5 @@
 use super::Dispatch;
-use error::ZomeApiResult;
+use crate::error::ZomeApiResult;
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 /// Reconstructs an address of the given entry data.

@@ -1,13 +1,6 @@
 #![feature(proc_macro_hygiene)]
 
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-extern crate hdk;
-extern crate hdk_proc_macros;
-
-use hdk::error::ZomeApiResult;
+use hdk::prelude::*;
 use hdk_proc_macros::zome;
 
 #[zome]

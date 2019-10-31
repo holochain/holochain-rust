@@ -21,3 +21,4 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 base64 = "=0.10.1"
 tempfile = "=3.0.7"
 lazy_static = "=1.2.0"
+nix = "=0.14.1"

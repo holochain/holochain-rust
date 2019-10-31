@@ -13,6 +13,8 @@ use jsonrpc_ws_server::ServerBuilder;
 use serde_json::map::Map;
 use std::{fs::File, io::Write, process::Command, path::PathBuf,collections::HashMap, sync::{RwLock,Arc}};
 use structopt::StructOpt;
+use nix::unistd::Pid;
+use nix::sys::signal::{self, Signal};
 
 /*type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
@@ -181,7 +183,7 @@ fn main() {
     io.add_method("kill", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let _signal = get_as_string("signal", &params_map)?; // TODO: make optional?
+        let signal = get_as_string("signal", &params_map)?; // TODO: make optional?
 
         check_player_config(&id)?;
         let mut players = players_arc2.write().unwrap();
@@ -194,7 +196,12 @@ fn main() {
                 });
             }
             Some(ref mut child) => {
-                child.kill().map_err(|e| jsonrpc_core::types::error::Error {
+                let sig = match signal.as_str() {
+                    "SIGKILL" => Signal::SIGKILL,
+                    "SIGTERM" => Signal::SIGTERM,
+                    _ => Signal::SIGINT,
+                };
+                signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| jsonrpc_core::types::error::Error {
                     code: jsonrpc_core::types::error::ErrorCode::InternalError,
                     message: format!("unable to run kill conductor for {} script: {:?}", id, e),
                     data: None,

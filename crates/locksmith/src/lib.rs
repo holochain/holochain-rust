@@ -5,12 +5,17 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+mod common;
 mod error;
+mod guard;
+mod mutex;
 mod sync;
+mod tracker;
 
 pub use error::LocksmithError;
-pub use sync::{
-    spawn_locksmith_guard_watcher, HcMutex as Mutex, HcMutexGuard as MutexGuard,
-    HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard,
+pub use guard::{
+    HcMutexGuard as MutexGuard, HcRwLockReadGuard as RwLockReadGuard,
     HcRwLockWriteGuard as RwLockWriteGuard,
 };
+pub use mutex::{HcMutex as Mutex, HcRwLock as RwLock};
+pub use tracker::spawn_locksmith_guard_watcher;

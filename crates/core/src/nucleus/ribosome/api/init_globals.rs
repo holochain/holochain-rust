@@ -17,7 +17,10 @@ use wasmi::RuntimeArgs;
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let call_data = runtime.call_data()?;
-    let dna = runtime.context()?.get_dna().expect("No DNA found in invoke_init_globals");
+    let dna = runtime
+        .context()?
+        .get_dna()
+        .expect("No DNA found in invoke_init_globals");
     let dna_name = dna.name.clone();
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {

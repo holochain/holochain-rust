@@ -71,7 +71,10 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     };
 
     // Perform query
-    let agent = context.state().expect("Couldn't get state in invoke_query").agent();
+    let agent = context
+        .state()
+        .expect("Couldn't get state in invoke_query")
+        .agent();
     let top = agent.top_chain_header().expect("Should have init entries.");
     let maybe_result = match query.entry_type_names {
         // Result<ChainStoreQueryResult,...>

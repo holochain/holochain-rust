@@ -5,9 +5,9 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::HolochainError,
-    sync::HcRwLock as RwLock,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},

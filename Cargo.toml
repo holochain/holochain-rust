@@ -11,6 +11,7 @@ members = [
   "crates/dpki",
   "crates/hdk_v2",
   "crates/hdk",
+  "crates/locksmith",
   "crates/net",
   "crates/trycp_server",
   "crates/sim1h",

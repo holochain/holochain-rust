@@ -1,4 +1,5 @@
-use std::{collections::HashMap, string::*, sync::RwLock};
+use holochain_locksmith::RwLock;
+use std::{collections::HashMap, string::*};
 
 //--------------------------------------------------------------------------------------------------
 // MACROS

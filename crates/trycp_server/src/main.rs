@@ -53,6 +53,21 @@ struct Cli {
     port: u16,
 }
 
+struct Store {
+    dir: tempfile::TempDir
+}
+
+impl Store {
+    pub fn new() -> Self {
+        Store {
+            dir: tempdir().expect("should create tmp dir")
+        }
+    }
+    pub fn reset(&mut self) {
+        self.dir = tempdir().expect("should create tmp dir")
+    }
+}
+
 fn unwrap_params_map(params: Params) -> Result<Map<String, Value>, jsonrpc_core::Error> {
     match params {
         Params::Map(map) => Ok(map),
@@ -83,12 +98,13 @@ lazy_static! {
     //pub static ref PLAYERS: Mutex<HashMap<String,std::process::Child>> = Mutex::new(HashMap::new());
 }
 
-fn get_dir(id: &String) -> PathBuf {
-    TEMP_PATH.path().join(id).clone()
+fn get_dir(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
+    let temp_path =  temp_path_arc.read().expect("should_lock");
+    temp_path.dir.path().join(id).clone()
 }
 
-fn get_file(id: &String) -> PathBuf {
-    get_dir(id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+fn get_file(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
+    get_dir(temp_path_arc, id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
 }
 
 
@@ -96,18 +112,40 @@ fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
 
+    let temp_path_arc: Arc<RwLock<Store>> = Arc::new(RwLock::new(Store::new()));
+    let temp_path_arc_setup = temp_path_arc.clone();
+    let temp_path_arc_player = temp_path_arc.clone();
+    let temp_path_arc_spawn = temp_path_arc.clone();
+    let temp_path_arc_kill = temp_path_arc.clone();
+
     let players_arc: Arc<RwLock<HashMap<String,std::process::Child>>> = Arc::new(RwLock::new(HashMap::new()));
-    let players_arc2 = players_arc.clone();
+    let players_arc_kill = players_arc.clone();
+    let players_arc_reset = players_arc.clone();
+    let players_arc_spawn = players_arc.clone();
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
+
+    io.add_method("reset", move |_params: Params| {
+        let output = Command::new("killall")
+            .args(&["holochain", "-s", "SIGKILL"])
+            .output()
+            .expect("failed to execute process");
+        println!("killall result: {:?}", output);
+        let mut players = players_arc_reset.write().expect("should_lock");
+        players.clear();
+        let mut temp_path =  temp_path_arc.write().expect("should_lock");
+        temp_path.reset();
+
+        Ok(Value::String("reset".into()))
+    });
 
     // Return to try-o-rama information it can use to build config files
     // i.e. ensure ports are open, and ensure that configDir is the same one
     // that the actual config will be written to
-    io.add_method("setup", |params: Params| {
+    io.add_method("setup", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let file_path = get_dir(&id);
+        let file_path = get_dir(temp_path_arc_setup.clone(), &id);
         Ok(json!({
             "adminPort": 1111,
             "zomePort": 2222,
@@ -115,7 +153,7 @@ fn main() {
         }))
     });
 
-    io.add_method("player", |params: Params| {
+    io.add_method("player", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
         let config_base64 = get_as_string("config", &params_map)?;
@@ -125,13 +163,13 @@ fn main() {
                 message: format!("error decoding config: {:?}", e),
                 data: None,
             })?;
-        let dir_path = get_dir(&id);
+        let dir_path = get_dir(temp_path_arc_player.clone(), &id);
         std::fs::create_dir_all(dir_path.clone()).map_err(|e| jsonrpc_core::types::error::Error {
             code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
             message: format!("error making temporary directory for config: {:?} {:?}", e, dir_path),
             data: None,
         })?;
-        let file_path = get_file(&id);
+        let file_path = get_file(temp_path_arc_player.clone(), &id);
         File::create(file_path.clone())
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
@@ -156,8 +194,8 @@ fn main() {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
 
-        check_player_config(&id)?;
-        let mut players = players_arc.write().expect("should_lock");
+        check_player_config(temp_path_arc_spawn.clone(), &id)?;
+        let mut players = players_arc_spawn.write().expect("should_lock");
         if players.contains_key(&id) {
             return Err(jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
@@ -166,7 +204,7 @@ fn main() {
             });
         };
 
-        let player_config = format!("{}",get_file(&id).to_string_lossy());
+        let player_config = format!("{}",get_file(temp_path_arc_spawn.clone(), &id).to_string_lossy());
         let conductor = Command::new("holochain")
             .args(&["-c", &player_config])
             .spawn()
@@ -185,8 +223,8 @@ fn main() {
         let id = get_as_string("id", &params_map)?;
         let signal = get_as_string("signal", &params_map)?; // TODO: make optional?
 
-        check_player_config(&id)?;
-        let mut players = players_arc2.write().unwrap();
+        check_player_config(temp_path_arc_kill.clone(), &id)?;
+        let mut players = players_arc_kill.write().unwrap();
         match players.remove(&id) {
             None => {
                 return Err(jsonrpc_core::types::error::Error {
@@ -220,8 +258,8 @@ fn main() {
     server.wait().expect("server should wait");
 }
 
-fn check_player_config(id: &String) -> Result<(),jsonrpc_core::types::error::Error> {
-    let file_path = get_file(id);
+fn check_player_config(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> Result<(),jsonrpc_core::types::error::Error> {
+    let file_path = get_file(temp_path_arc, id);
     if !file_path.is_file() {
         return Err(jsonrpc_core::types::error::Error {
             code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,

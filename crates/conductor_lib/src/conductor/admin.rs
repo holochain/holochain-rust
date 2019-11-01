@@ -7,8 +7,8 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
-
+use holochain_core_types::error::HolochainError;
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use json_patch;

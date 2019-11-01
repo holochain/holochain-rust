@@ -16,9 +16,7 @@ pub fn table_exists(
     let table_description_result = describe_table(log_context, client, table_name);
     match table_description_result {
         Ok(table_description) => Ok(match table_description.table_status {
-            Some(status) => {
-                status == "ACTIVE"
-            }
+            Some(status) => status == "ACTIVE",
             _ => false,
         }),
         Err(err) => match err {

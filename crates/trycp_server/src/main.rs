@@ -2,8 +2,6 @@ extern crate structopt;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
 
 //use log::error;
 //use std::process::exit;
@@ -11,7 +9,7 @@ use self::tempfile::tempdir;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use serde_json::map::Map;
-use std::{fs::File, io::Write, process::Command, path::PathBuf,collections::HashMap, sync::{RwLock,Arc}};
+use std::{fs::File, io::Write, process::{Command, Child}, path::PathBuf,collections::HashMap, sync::{RwLock,Arc}};
 use structopt::StructOpt;
 use nix::unistd::Pid;
 use nix::sys::signal::{self, Signal};
@@ -91,12 +89,25 @@ fn get_as_string<T: Into<String>>(
         })?
         .to_string())
 }
+fn get_as_bool<T: Into<String>>(
+    key: T,
+    params_map: &Map<String, Value>,
+    default: Option<bool>,
+) -> Result<bool, jsonrpc_core::Error> {
+    let key = key.into();
+    match params_map.get(&key) {
+        Some(value) => {
+            value.as_bool()
+                .ok_or_else(|| {
+                    jsonrpc_core::Error::invalid_params(format!("`{}` has to be a boolean", &key))
+                })
+        }
+        None => default.ok_or_else(||
+            jsonrpc_core::Error::invalid_params(format!("required param `{}` not provided", &key)))
+    }
+}
 
 const CONDUCTOR_CONFIG_FILE_NAME :&str = "conductor-config.toml";
-lazy_static! {
-    pub static ref TEMP_PATH: tempfile::TempDir = tempdir().expect("should create tmp dir");
-    //pub static ref PLAYERS: Mutex<HashMap<String,std::process::Child>> = Mutex::new(HashMap::new());
-}
 
 fn get_dir(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
     let temp_path =  temp_path_arc.read().expect("should_lock");
@@ -118,20 +129,28 @@ fn main() {
     let temp_path_arc_spawn = temp_path_arc.clone();
     let temp_path_arc_kill = temp_path_arc.clone();
 
-    let players_arc: Arc<RwLock<HashMap<String,std::process::Child>>> = Arc::new(RwLock::new(HashMap::new()));
+    let players_arc: Arc<RwLock<HashMap<String, Child>>> = Arc::new(RwLock::new(HashMap::new()));
     let players_arc_kill = players_arc.clone();
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc.clone();
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
 
-    io.add_method("reset", move |_params: Params| {
-        let output = Command::new("killall")
-            .args(&["holochain", "-s", "SIGKILL"])
-            .output()
-            .expect("failed to execute process");
-        println!("killall result: {:?}", output);
+    io.add_method("reset", move |params: Params| {
+        let params_map = unwrap_params_map(params)?;
+        let killall = get_as_bool("killall", &params_map, Some(false))?;
         let mut players = players_arc_reset.write().expect("should_lock");
+        if killall {
+            let output = Command::new("killall")
+                .args(&["holochain", "-s", "SIGKILL"])
+                .output()
+                .expect("failed to execute process");
+            println!("killall result: {:?}", output);
+        } else {
+            for (id, child) in &*players {
+                let _= do_kill(id, child,"SIGKILL"); //ignore any errors
+            }
+        }
         players.clear();
         let mut temp_path =  temp_path_arc.write().expect("should_lock");
         temp_path.reset();
@@ -234,16 +253,7 @@ fn main() {
                 });
             }
             Some(ref mut child) => {
-                let sig = match signal.as_str() {
-                    "SIGKILL" => Signal::SIGKILL,
-                    "SIGTERM" => Signal::SIGTERM,
-                    _ => Signal::SIGINT,
-                };
-                signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| jsonrpc_core::types::error::Error {
-                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                    message: format!("unable to run kill conductor for {} script: {:?}", id, e),
-                    data: None,
-                })?;
+                do_kill(&id, child, signal.as_str())?;
             }
         }
         let response = format!("killed conductor for {}", id);
@@ -256,6 +266,19 @@ fn main() {
     println!("waiting for connections on port {}", args.port);
 
     server.wait().expect("server should wait");
+}
+
+fn do_kill(id: &String, child: &Child, signal: &str) -> Result<(),jsonrpc_core::types::error::Error> {
+    let sig = match signal {
+        "SIGKILL" => Signal::SIGKILL,
+        "SIGTERM" => Signal::SIGTERM,
+        _ => Signal::SIGINT,
+    };
+    signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| jsonrpc_core::types::error::Error {
+        code: jsonrpc_core::types::error::ErrorCode::InternalError,
+        message: format!("unable to run kill conductor for {} script: {:?}", id, e),
+        data: None,
+    })
 }
 
 fn check_player_config(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> Result<(),jsonrpc_core::types::error::Error> {

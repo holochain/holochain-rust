@@ -1250,7 +1250,7 @@ type = 'websocket'"#,
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
 
-        let test_toml = test_toml(test_name, 3002);
+        let mut test_toml = test_toml(test_name, 3002);
         test_toml = test_toml.replace(r#"id = 'test-instance-1'
 
 [instances.storage]

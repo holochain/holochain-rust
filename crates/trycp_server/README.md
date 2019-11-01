@@ -37,7 +37,7 @@ ws.on('open', function() {
         console.log(result)
     })
 
-    const config_toml = "[config]"
+    const config_toml = "[config]"  // note that this is not a valid config so spawn will fail
     const config = Buffer.from(config_toml).toString('base64')
     console.log("making player call")
     ws.call('player', {"id": "my-player", "config": config}).then(function(result) {
@@ -60,24 +60,9 @@ ws.on('open', function() {
 })
 ```
 
-You can also run trycp commands directly from the bash script on the command-line:
-
-``` shell
-$ ./hcm.bash -h
-unexpected command '<unset>'
-holochain conductor manger
-usage: hcm [options] cmd
-commands:
-  player - hcm player <player-id> <config-file>
-  spawn - hcm spawn <player-id>
-  kill - hcm kill <player-id>
-options:
-  -h --help: additional help for command
-```
-
 ## Docker
 
-This is all intended to run from inside many docker boxes all floating around on the internet somehwere.
+This is all intended to run from inside many docker boxes all floating around on the internet somewhere.
 
 There are some nix commands to help make this work.
 

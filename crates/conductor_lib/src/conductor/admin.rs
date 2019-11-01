@@ -19,7 +19,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use tempfile::tempdir;
 
 /// how many milliseconds sleep all bugs under rugs
 const SWEET_SLEEP: u64 = 500;
@@ -1243,6 +1242,12 @@ type = 'websocket'"#,
         assert_eq!(config_contents, toml, "expected toml (right), got config_contents (left)");
     }
 
+#[cfg(test)]
+pub mod test {
+    use super::*;
+    extern crate tempfile;
+    use self::tempfile::tempdir;
+
     #[test]
     /// Tests if the removed instance is gone from the config file
     /// as well as the mentions of the removed instance are gone from the interfaces
@@ -1343,6 +1348,7 @@ type = 'websocket'"#,
 
         assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
     }
+} 
 
     #[test]
     /// Tests if the uninstalled DNA is gone from the config file

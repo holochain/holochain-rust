@@ -1,0 +1,39 @@
+bridges = []
+
+agents = []
+
+dnas = []
+
+instances = []
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+    [interfaces.driver]
+    port = 3000
+    type = "websocket"
+
+[[interfaces]]
+admin = true
+id = "http interface"
+
+    [interfaces.driver]
+    port = 4000
+    type = "http"
+
+[logger]
+type = "debug"
+    [[logger.rules.rules]]
+    color = "red"
+    exclude = false
+    pattern = "^err/"
+
+    [[logger.rules.rules]]
+    color = "white"
+    exclude = false
+    pattern = "^debug/dna"
+
+    [[logger.rules.rules]]
+    exclude = false
+    pattern = ".*"

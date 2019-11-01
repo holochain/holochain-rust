@@ -1,6 +1,0 @@
-[package]
-name = "holochain_agent"
-version = "0.1.0"
-authors = ["Eric Harris-Braun <eric@harris-braun.com>"]
-
-[dependencies]

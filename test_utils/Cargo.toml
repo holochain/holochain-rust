@@ -1,11 +1,34 @@
 [package]
 name = "test_utils"
-version = "0.1.0"
-authors = ["Nicolas Luck <nicolas@lucksus.org>"]
+version = "0.0.35-alpha7"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+description = "holochain test utils"
+license = "GPL-3.0-only"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
+edition = "2018"
 
 [dependencies]
-holochain_dna = { path = "../dna" }
-holochain_core = { path = "../core" }
-holochain_agent = { path = "../agent" }
-wabt = "0.2.0"
-
+hdk = { version = "=0.0.35-alpha7", path = "../crates/hdk" }
+holochain_net = { version = "=0.0.35-alpha7", path = "../crates/net" }
+holochain_core = { version = "=0.0.35-alpha7", path = "../crates/core" }
+holochain_conductor_lib = { version = "=0.0.35-alpha7", path = "../crates/conductor_lib" }
+holochain_core_types = { version = "=0.0.35-alpha7", path = "../crates/core_types" }
+holochain_dpki = { version = "=0.0.35-alpha7", path = "../crates/dpki" }
+holochain_wasm_utils = { version = "=0.0.35-alpha7", path = "../crates/wasm_utils" }
+holochain_locksmith = { path = "../crates/locksmith" }
+holochain_persistence_api = "=0.0.10"
+holochain_json_api = "=0.0.17"
+holochain_json_derive = "=0.0.17"
+lib3h_sodium = "=0.0.21"
+wabt = "=0.7.4"
+tempfile = "=3.0.7"
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
+crossbeam-channel = "=0.3.8"
+lazy_static = "=1.2.0"
+jsonrpc-ws-server = "14.0.1"
+base64 = "=0.10.1"
+url = { version = "=2.1.0", features = ["serde"] }
+uuid = { version = "0.7", features = ["serde", "v4"] }

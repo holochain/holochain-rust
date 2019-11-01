@@ -2,47 +2,42 @@
 
 ## Zome API functions
 
-Each zome API function is implemented under `nucleus::ribosome`.
+Each zome API function is implemented under `nucleus::ribosome::api`.
 
 There is a fair bit of boilerplate at the moment, sorry!
 
 To co-ordinate the execution of an API function across Rust and WASM we need to
-implement several items:
+define a few related items.
 
-- An integer index in the `nucleus::ribosome::HcApiFuncIndex` enum
-- Map the index to the canonical name for the API function under `nucleus::ribosome::index_canonical_name`
-- An invocation dispatch in `nucleus::ribosome::call` under `Externals for Runtime`
+Within `nucleus::ribosome::api`:
+
+- A variant in the `ZomeApiFunction` enum
+- The same canonical string in _both_ `as_str` and `from_str`
+- A mapping to the API function under `as_fn`
+
+As a new module under `nucleus::ribosome::api`:
+
 - A ribosome module implementing the invocation logic as `invoke_*`
+- A struct to hold/serialize any input args if needed
+
+In `::action`:
+
 - An action if the zome API function has side effects
 
-### Zome API function index
+### Zome API function definition
 
 Simply add the name of the new zome API function to the end of the enum.
+
+Make sure to add the canonical names carefully. The Rust compiler will guide you
+through the rest if you miss something.
 
 DO add a doc comment summarising what the zome function does and sketching the
 function signature.
 
+DO extend the relevant unit tests.
+
 Do NOT add to the start or middle of the enum as that will renumber the other
 zome functions.
-
-### Map the canonical name index
-
-Add a mapping from the canonical name to the enum variant in `nucleus::ribosome::index_canonical_name`.
-
-`nucleus::ribosome::call` will automatically resolve the correct function name
-once the enum mapping is set.
-
-### Invocation dispatch
-
-Add the match arm for the new enum under `invoke_index`.
-
-It should look something like this:
-
-```rust
-index if index == HcApiFuncIndex::Foo as usize => invoke_foo(self, &args),
-```
-
-Where `Foo` and `invoke_foo` should replace foo with the canonical name.
 
 ### Zome API function ribosome module
 
@@ -56,7 +51,7 @@ This function will be called by the invocation dispatch (see above).
 #### Zome API function arguments
 
 The `wasmi::RuntimeArgs` passed to the Zome API function contains only a single
-`u32` value. This is an encoded representation of a single page of memory
+`u64` value. This is an encoded representation of a single page of memory
 supported by the memory manager. The 16 high bits are the memory offset and the
 16 low bits are the memory length. See the `wasm_utils` crate for more
 implementation details.
@@ -98,7 +93,7 @@ In summary, if you want to send an action and wait for a return value:
 
 The zome API function returns a value to wasm representing success or a wasm trap.
 
-The success value can only be a single `i32`.
+The success value can only be a single `u64`.
 
 Traps are a low level wasm concern and are unlikely to be directly useful to a
 zome API function implementation.
@@ -116,10 +111,10 @@ error enum variant.
 
 For an example implementation returning a complex struct see:
 
-- `agent::state::ActionResult::Get` defining a result containing a `Pair` struct
+- `agent::state::ActionResponse::GetEntry` containing an `Entry` struct
 - `nucleus::ribosome::get::invoke_get`
   - match the action result against the correct enum variant
-  - serialize the pair using serde
+  - serialize the entry using serde
   - return the result of `runtime_allocate_encode_str`
   - if the action result variant does NOT match then return `HcApiReturnCode::ErrorActionResult`
 
@@ -132,10 +127,8 @@ Actions are covered in more detail in the state chapter.
 
 In summary, if a new agent action (for example) is needed:
 
-- extend the `agent::state::Action` enum
+- extend the `action::Action` enum
+  - this sets the data type, the `ActionWrapper` provides a unique ID
   - use the canonical name if that makes sense
-  - implement a constructor method in the enum impl
-  - include a snowflake ID or there will be key collisions in the state history
-- extend the `agent::state::ActionResult` enum if the action has a return value
-- implement a function dispatch off the new action in `agent::state::reduce`
-- implement the dispatched `agent::state::do_action_*` function
+- extend an `ActionResult` enum if the action has a return value
+- implement a reducer for the new action

@@ -1,0 +1,42 @@
+{
+  "steps": [
+    {
+      "command": "cargo",
+      "arguments": [
+        "build",
+        "--release",
+        "--target=wasm32-unknown-unknown",
+        "--target-dir=/tmp/holochain/target"
+      ]
+    },
+    {
+      "command": "wasm-gc",
+      "arguments": ["/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wasm"]
+    },
+    {
+      "command": "wasm-opt",
+      "arguments": [
+        "-Oz",
+        "--vacuum",
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wasm"
+      ]
+    },
+    {
+      "command": "wasm2wat",
+      "arguments": [
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wasm",
+        "-o",
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wat"
+      ]
+    },
+    {
+      "command": "wat2wasm",
+      "arguments": [
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wat",
+        "-o",
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wasm"
+      ]
+    }
+  ],
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/summer.wasm"
+}

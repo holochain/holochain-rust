@@ -1,0 +1,331 @@
+version: 2
+
+jobs:
+ # must be called build for local circle cli to work
+ # is actually unit tests
+ build:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: large
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
+   - run: nix-shell --run hc-rust-test
+
+ fmt:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+   - run: nix-shell --run hc-test-fmt
+   - run: nix-shell --run hn-rust-clippy
+   # don't allow unpinned deps
+   - run:
+      name: no unpinnned deps
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNPINNED=`nix-shell --run hc-rust-manifest-list-unpinned`
+        set -eo pipefail
+        if [[ $UNPINNED ]]
+        then
+         echo "unpinned deps must be empty:"
+         echo "$UNPINNED"
+         exit 1
+        fi
+   # don't allow changelog root items with no PR reference
+   - run:
+      name: no changelogs without PR references
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export UNREFERENCED=`nix-shell --run hc-release-docs-changelog-list-missing-references`
+        set -eo pipefail
+        if [[ $UNREFERENCED ]]
+        then
+          echo "all root level changelog items need a PR reference:"
+          echo "$UNREFERENCED"
+          exit 1
+        fi
+
+   # flag any references to a nightly version in a readme other than the
+   # ${date} in nix-shell
+   - run:
+      name: no readmes with bad rust nightly versions
+      command: |
+        # temporary avoid build fails due to greps
+        set +eo pipefail
+        export BAD_NIGHTLY=`nix-shell --run hc-release-docs-readme-list-stale-nightlies`
+        set -eo pipefail
+        if [[ $BAD_NIGHTLY ]]
+        then
+          echo "there is an incorrect nightly version in a readme file:"
+          echo $BAD_NIGHTLY
+          exit 1
+        fi
+
+ app-spec-tests-sim1h:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
+   - run:
+       name: app spec tests
+       command: nix-shell --run hc-app-spec-test-sim1h
+
+ app-spec-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run hc-sim2h-server
+         background: true
+     - run:
+         name: app spec tests
+         command: nix-shell --run hc-app-spec-test-sim2h
+# app-spec-tests-n3h:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test n3h"
+#
+# app-spec-tests-memory:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test memory"
+#
+# app-spec-tests-websocket:
+#  docker:
+#   - image: holochain/holochain-rust:latest
+#  resource_class: xlarge
+#  steps:
+#   - checkout
+#
+#   - run:
+#       name: app spec tests
+#       command: nix-shell --run "hc-app-spec-test websocket"
+
+ app-spec-proc-tests:
+  docker:
+   - image: holochain/holonix:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+
+   - run:
+       name: proc macro app spec tests
+       command: nix-shell --run hc-app-spec-test-proc
+
+ cluster-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: sim2h server
+       command: nix-shell --run "hc-sim2h-server -p 9001"
+       background: true
+   - run:
+       name: app spec cluster tests
+       command: nix-shell --run hc-app-spec-cluster-test
+
+ stress-tests-sim1h:
+  docker:
+   - image: holochain/holochain-rust:latest
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
+   - run:
+       name: stress tests
+       command: nix-shell --run hc-stress-test-sim1h
+
+ stress-tests-sim2h:
+   docker:
+     - image: holochain/holochain-rust:latest
+   resource_class: xlarge
+   steps:
+     - checkout
+     - run:
+         name: sim2h server
+         command: nix-shell --run "hc-sim2h-server -p 9002"
+         background: true
+     - run:
+         name: stress tests
+         command: nix-shell --run hc-stress-test-sim2h
+
+ cli-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+      name: test cli
+      command: nix-shell --run hc-cli-test
+
+ wasm-conductor-tests:
+  docker:
+   - image: holochain/holochain-rust:latest
+  steps:
+   - checkout
+
+   - run:
+       name: wasm conductor tests
+       command: nix-shell --run hc-conductor-wasm-test
+
+ cold.ubuntu.bionic.auto:
+  docker:
+   - image: ubuntu:bionic
+  steps:
+   - checkout
+   - run: ./scripts/install/auto.sh
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
+
+ cold.ubuntu.xenial.auto:
+  docker:
+   - image: ubuntu:xenial
+  steps:
+   - checkout
+   - run: ./scripts/install/auto.sh
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
+
+ cold.debian.stable.auto:
+  docker:
+   - image: debian:stable
+  steps:
+   - checkout
+   - run: ./scripts/install/auto.sh
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
+
+ cold.mac.10.auto:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run: ./scripts/install/auto.sh
+   - run:
+      name: smoke test release compilation
+      command: |
+        source $HOME/.cargo/env
+        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
+        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
+
+ cold.mac.10.nix:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: Install and run all tests via nix
+      command: |
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-test
+
+workflows:
+ version: 2
+ tests:
+  jobs:
+   - build
+   - fmt
+   - app-spec-tests-sim1h
+   - app-spec-tests-sim2h
+   # - app-spec-tests-memory
+   # - app-spec-tests-websocket
+   # @todo reimplement proc tests properly
+   # i.e. don't copy and paste app spec and expec it to work with stale state
+   # - app-spec-proc-tests
+   - cluster-tests
+   - cli-tests
+   - wasm-conductor-tests
+   - stress-tests-sim1h
+   - stress-tests-sim2h
+
+ cold.ubuntu:
+  jobs:
+   - cold.ubuntu.bionic.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   # - cold.ubuntu.bionic.nix
+
+   - cold.ubuntu.xenial.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   # - cold.ubuntu.xenial.nix
+
+ cold.debian:
+  jobs:
+   - cold.debian.stable.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   # - cold.debian.stable.nix
+
+ cold.mac:
+  jobs:
+   - cold.mac.10.auto:
+      filters:
+       branches:
+        only:
+         - develop
+   - cold.mac.10.nix:
+      filters:
+       branches:
+        only:
+         - develop

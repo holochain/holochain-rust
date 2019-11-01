@@ -1,13 +1,15 @@
 .qmake.stash
-/target/
+target
+.cargo
+.vagrant
+node_modules
+**/*.sock
+package-lock.json
 **/*.rs.bk
-**/Cargo.lock
-Cargo.lock
-core_api/wasm-test/round_trip/target
-core_api/wasm-test/commit/target
-core/src/nucleus/ribosome/target
-core/src/nucleus/wasm-test/target
+*.log
+net_ipc/tests/node-p2p-ipc
 build_docs_key
+*.orig
 
 cobertura.xml
 
@@ -15,3 +17,30 @@ cobertura.xml
 .DS_Store
 /**/Makefile
 !/Makefile
+.vs
+*.hcpkg
+# symlinked Makefile for docker hub
+!/docker/Makefile
+
+# Editor temporary files
+*~
+.\#*
+\#*\#
+
+# Things being generated on the FS that should not be
+crates/holochain/example-config/tmp-storage*/*
+crates/holochain/tmp-storage/*
+crates/conductor_lib/tmp-storage/*
+crates/conductor_lib/tmp-test/*
+tmp-test-conductor-config.toml
+tmp-*-conductor-config.toml
+
+app_spec_proc_macro/test/*
+**/diorama-storage
+
+dist/**
+
+Cargo.lock
+!/Cargo.lock
+
+stress-test/passthrough-dna.dna.json

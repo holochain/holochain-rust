@@ -1,2 +1,4 @@
-#!/bin/bash
-./docker/run make test
+#!/usr/bin/env bash
+
+# runs the basic rust tests inside docker
+./docker/run nix-shell --run hc-rust-test

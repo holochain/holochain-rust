@@ -1,0 +1,10 @@
+{
+  "name": "HDK-spec-rust",
+  "description": "This app is a living specification of Holochain and its HDK.",
+  "version": "0.1",
+  "uuid": "00000000-0000-0000-0000-000000000000",
+  "dna_spec_version": "2.0",
+  "properties": {
+      "test_property": "test-property-value"
+  }
+}

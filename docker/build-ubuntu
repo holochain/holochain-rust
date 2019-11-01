@@ -1,2 +1,2 @@
-#!/bin/bash
+#!/usr/bin/env bash
 docker build -f docker/Dockerfile.ubuntu -t holochain/holochain-rust:develop "$@" .

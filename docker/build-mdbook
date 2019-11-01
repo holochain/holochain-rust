@@ -1,2 +1,2 @@
-#!/bin/bash
+#!/usr/bin/env bash
 docker run --name holochain-mdbook --rm -v `pwd`:/holochain -it holochain/mdbook:latest mdbook build 

@@ -1,0 +1,16 @@
+[package]
+name = "blog"
+version = "0.0.35-alpha7"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+
+[dependencies]
+hdk = { path = "../../../../crates/hdk" }
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_derive = "=1.0.89"
+boolinator = "=2.4.0"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]

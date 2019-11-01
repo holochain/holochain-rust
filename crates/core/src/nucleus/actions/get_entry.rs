@@ -4,9 +4,8 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
-    sync::HcRwLock as RwLock,
 };
-
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -14,7 +13,6 @@ use holochain_persistence_api::{
     },
     eav::IndexFilter,
 };
-
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
 
 pub(crate) fn get_entry_from_cas(

@@ -14,6 +14,8 @@ use holochain_core_types::{
     entry::entry_type::{AppEntryType, EntryType},
     error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
+use holochain_json_derive::DefaultJson;
+use serde_derive::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
@@ -75,7 +77,7 @@ extern "C" {
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
-    let allocation = match ::global_fns::init_global_memory_from_ribosome_encoding(
+    let allocation = match crate::global_fns::init_global_memory_from_ribosome_encoding(
         encoded_allocation_of_input,
     ) {
         Ok(allocation) => allocation,
@@ -106,7 +108,7 @@ pub extern "C" fn __hdk_validate_app_entry(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
-        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
     {
         return allocation_error.as_ribosome_encoding();
     }
@@ -150,7 +152,7 @@ pub extern "C" fn __hdk_validate_agent_entry(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
-        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
     {
         return allocation_error.as_ribosome_encoding();
     }
@@ -192,7 +194,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
-        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
     {
         return allocation_error.as_ribosome_encoding();
     };
@@ -220,9 +222,9 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
             })
             .and_then(|mut link_definition| {
                 let package = (*link_definition.package_creator)();
-                Some(return_code_for_allocation_result(::global_fns::write_json(
-                    package,
-                )))
+                Some(return_code_for_allocation_result(
+                    crate::global_fns::write_json(package),
+                ))
             })
             .unwrap_or(RibosomeEncodedValue::Failure(
                 RibosomeErrorCode::CallbackFailed,
@@ -235,7 +237,7 @@ pub extern "C" fn __hdk_validate_link(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
-        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
     {
         return allocation_error.as_ribosome_encoding();
     };
@@ -268,7 +270,7 @@ pub extern "C" fn __hdk_validate_link(
                 Some(match validation_result {
                     Ok(()) => RibosomeEncodedValue::Success,
                     Err(fail_string) => return_code_for_allocation_result(
-                        ::global_fns::write_json(JsonString::from_json(&fail_string)),
+                        crate::global_fns::write_json(JsonString::from_json(&fail_string)),
                     ),
                 })
             })
@@ -283,7 +285,7 @@ pub extern "C" fn __hdk_git_hash(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
-        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
     {
         return allocation_error.as_ribosome_encoding();
     }
@@ -305,7 +307,7 @@ pub extern "C" fn __hdk_get_json_definition(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
-        ::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
+        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
     {
         return allocation_error.as_ribosome_encoding();
     }
@@ -346,14 +348,12 @@ pub extern "C" fn __hdk_get_json_definition(
 
 #[cfg(test)]
 pub mod tests {
-    use crate as hdk;
-    use crate::ValidationPackageDefinition;
+    use crate::{meta::PartialZome, prelude::*, ValidationPackageDefinition};
     use holochain_core_types::dna::{
         entry_types::Sharing,
         zome::{ZomeFnDeclarations, ZomeTraits},
     };
     use holochain_json_api::{error::JsonError, json::JsonString};
-    use meta::PartialZome;
     use std::collections::BTreeMap;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.

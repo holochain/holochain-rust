@@ -1,26 +1,75 @@
 //! implements caching structures for spaces and aspects
-use crate::AgentId;
+use crate::{error::*, AgentId};
+use lib3h::rrdht_util::*;
+use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     types::{AspectHash, EntryHash},
     uri::Lib3hUri,
 };
+use log::*;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug, Clone)]
+pub(crate) struct AgentInfo {
+    pub uri: Lib3hUri,
+    pub location: Location,
+}
+
 pub struct Space {
-    agents: HashMap<AgentId, Lib3hUri>,
+    crypto: Box<dyn CryptoSystem>,
+    agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
+    /// sim2h currently uses the same radius for all connections
+    rrdht_arc_radius: u32,
 }
 
 impl Space {
-    pub fn new() -> Self {
+    pub fn new(crypto: Box<dyn CryptoSystem>) -> Self {
         Space {
+            crypto,
             agents: HashMap::new(),
             all_aspects_hashes: AspectList::from(HashMap::new()),
+            // default to max radius
+            rrdht_arc_radius: ARC_RADIUS_MAX,
         }
     }
 
-    pub fn join_agent(&mut self, agent_id: AgentId, uri: Lib3hUri) {
-        self.agents.insert(agent_id, uri);
+    pub(crate) fn recalc_rrdht_arc_radius(&mut self) {
+        let mut peer_record_set = RValuePeerRecordSet::default()
+            // sim2h is currently omniscient
+            .arc_of_included_peer_records(Arc::new(0.into(), ARC_LENGTH_MAX));
+        for (_id, info) in self.agents.iter() {
+            peer_record_set = peer_record_set.push_peer_record(
+                RValuePeerRecord::default()
+                    // since sim2h uses the same storage arc for all nodes
+                    // we just put that same value in here for all nodes
+                    .storage_arc(Arc::new_radius(info.location, self.rrdht_arc_radius))
+                    // we do not yet have the metrics infrastructure to track
+                    // uptime, let's pretend all nodes are up exactly 1/2 the time
+                    .uptime_0_to_1(0.5),
+            );
+        }
+
+        let mut new_arc_radius = get_recommended_storage_arc_radius(
+            &peer_record_set,
+            25.0, // target_minimum_r_value
+            50.0, // target_maximum_r_value
+            Some(self.rrdht_arc_radius),
+        );
+
+        if new_arc_radius != ARC_RADIUS_MAX {
+            let pct = 100 * new_arc_radius / ARC_RADIUS_MAX;
+            warn!("rrdht-r-value recommends shrinking arc radius to {} %, sim2h is not yet set up to do this, but, yay sharding!", pct);
+            new_arc_radius = ARC_RADIUS_MAX;
+        }
+
+        self.rrdht_arc_radius = new_arc_radius;
+    }
+
+    pub fn join_agent(&mut self, agent_id: AgentId, uri: Lib3hUri) -> Sim2hResult<()> {
+        let location = calc_location_for_id(&self.crypto, &agent_id.to_string())?;
+        self.agents.insert(agent_id, AgentInfo { uri, location });
+        Ok(())
     }
 
     pub fn remove_agent(&mut self, agent_id: &AgentId) {
@@ -28,15 +77,15 @@ impl Space {
     }
 
     pub fn agent_id_to_uri(&self, agent_id: &AgentId) -> Option<Lib3hUri> {
-        for (found_agent, uri) in self.agents.iter() {
+        for (found_agent, info) in self.agents.iter() {
             if found_agent == agent_id {
-                return Some(uri.clone());
+                return Some(info.uri.clone());
             }
         }
         None
     }
 
-    pub fn all_agents(&self) -> &HashMap<AgentId, Lib3hUri> {
+    pub(crate) fn all_agents(&self) -> &HashMap<AgentId, AgentInfo> {
         &self.agents
     }
 

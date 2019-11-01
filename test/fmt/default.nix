@@ -11,6 +11,7 @@ let
  script = pkgs.writeShellScriptBin name
  ''
  echo "checking rust formatting";
+ local __fmtexit=0
  for p in \
   cli \
   common \
@@ -29,8 +30,9 @@ let
   wasm_utils
  do
   echo "checking ''${p}"
-  ( cd "crates/$p" && cargo fmt -- --check )
+  if ! ( cd "crates/$p" && cargo fmt -- --check ); then __fmtexit=1; fi
  done
+ exit ''${__fmtexit}
  '';
 in
 {

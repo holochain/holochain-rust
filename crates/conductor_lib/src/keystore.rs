@@ -2,7 +2,6 @@ use holochain_core_types::{
     agent::Base32,
     error::{HcResult, HolochainError},
     signature::Signature,
-    sync::HcMutex as Mutex,
 };
 use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
@@ -15,6 +14,7 @@ use holochain_dpki::{
     },
     SEED_SIZE,
 };
+use holochain_locksmith::Mutex;
 
 use lib3h_sodium::{
     pwhash::{ALG_ARGON2ID13, MEMLIMIT_INTERACTIVE, OPSLIMIT_INTERACTIVE},

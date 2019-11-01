@@ -8,7 +8,6 @@
 #![feature(checked_duration_since)]
 #![warn(unused_extern_crates)]
 
-extern crate backtrace;
 extern crate base64;
 extern crate chrono;
 extern crate futures;
@@ -25,6 +24,7 @@ extern crate snowflake;
 #[macro_use]
 extern crate holochain_json_derive;
 extern crate holochain_json_api;
+extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
 extern crate lib3h_crypto_api;
 extern crate regex;
@@ -34,7 +34,6 @@ extern crate maplit;
 // #[macro_use]
 // extern crate shrinkwraprs;
 extern crate hcid;
-extern crate parking_lot;
 extern crate wasmi;
 pub mod chain_header;
 pub mod crud_status;
@@ -51,12 +50,9 @@ pub mod hdk_version;
 pub mod link;
 pub mod network;
 pub mod signature;
-pub mod sync;
 pub mod time;
 pub mod ugly;
 pub mod validation;
-#[macro_use]
-extern crate log;
 #[macro_use]
 extern crate holochain_logging;
 

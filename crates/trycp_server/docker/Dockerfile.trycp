@@ -14,12 +14,9 @@ ENV NIX_PATH nixpkgs=https://github.com/NixOs/nixpkgs-channels/tarball/8634c3b61
 ENV HC_TARGET_PREFIX /tmp/holochain
 
 # get latest develop
-ADD https://github.com/holochain/holochain-rust/archive/trycp.tar.gz develop.tar.gz
-RUN tar --strip-components=1 -zxvf develop.tar.gz
-
-RUN pwd
-
-RUN ls
+# ADD https://github.com/holochain/holochain-rust/archive/trycp.tar.gz develop.tar.gz
+# RUN tar --strip-components=1 -zxvf develop.tar.gz
+ADD . .
 
 RUN nix-shell $PWD/crates/trycp_server/docker/build.default.nix --run echo
 
@@ -28,7 +25,7 @@ RUN nix-shell $PWD/crates/trycp_server/docker/build.default.nix --run echo
 # @TODO set this up as a prebuilt binary that nix-env can install
 # RUN cd crates/trycp_server && cargo build -p trycp_server --release && cargo install --path . -f
 
-# RUN nix-shell -f default.nix -iA holochain.hc holochain.holochain
+RUN nix-env -f crates/trycp_server/docker/build.default.nix -iA holochain.holochain
 
 EXPOSE 443/tcp
 

@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 base64 = "=0.10.1"
+shrinkwraprs = "=0.2.1"
 serde = { version = "=1.0.89", features = ["rc"] }
 serde_derive = "=1.0.89"
 holochain_locksmith = { path = "../locksmith" }
@@ -43,6 +44,8 @@ rand = "0.7.2"
 ## For cloudwatch
 rusoto_cloudwatch = "=0.41.0"
 rusoto_core = "=0.41.0"
+## For descriptive statistics on metrics
+streaming-stats = "=0.2.2"
 
 [dev-dependencies]
 tempfile = "=3.0.7"

@@ -33,9 +33,9 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,
     },
-    sync::HcMutex as Mutex,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_locksmith::Mutex;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_net::p2p_config::P2pConfig;

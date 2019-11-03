@@ -1,5 +1,4 @@
-use super::Dispatch;
-use error::ZomeApiResult;
+use crate::{error::ZomeApiResult, Dispatch};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;

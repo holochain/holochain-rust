@@ -1,4 +1,4 @@
-use error::ZomeApiResult;
+use crate::error::ZomeApiResult;
 use holochain_wasm_utils::api_serialization::crypto::{CryptoArgs, CryptoMethod};
 
 use super::Dispatch;

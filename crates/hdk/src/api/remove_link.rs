@@ -1,5 +1,4 @@
-use super::Dispatch;
-use error::ZomeApiError;
+use crate::{error::ZomeApiError, Dispatch};
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 

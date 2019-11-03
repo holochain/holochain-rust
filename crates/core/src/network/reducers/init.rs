@@ -58,7 +58,8 @@ pub mod test {
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
-    use holochain_core_types::{agent::AgentId, sync::HcRwLock as RwLock};
+    use holochain_core_types::agent::AgentId;
+    use holochain_locksmith::RwLock;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};

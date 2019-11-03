@@ -1,4 +1,5 @@
 extern crate env_logger;
+extern crate lib3h_crypto_api;
 //#[macro_use]
 extern crate log;
 #[macro_use]
@@ -19,6 +20,8 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
+//use lib3h::rrdht_util::*;
+use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -34,22 +37,33 @@ use parking_lot::RwLock;
 use rand::Rng;
 use std::{collections::HashMap, convert::TryFrom};
 
+const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
+
 pub struct Sim2h {
+    crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
     stream_manager: StreamManager<std::net::TcpStream>,
-    num_ticks: u32,
+    num_ticks: u64,
+    /// when should we recalculated the rrdht_arc_radius
+    rrdht_arc_radius_recalc: std::time::Instant,
 }
 
 impl Sim2h {
-    pub fn new(stream_manager: StreamManager<std::net::TcpStream>, bind_spec: Lib3hUri) -> Self {
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        stream_manager: StreamManager<std::net::TcpStream>,
+        bind_spec: Lib3hUri,
+    ) -> Self {
         let mut sim2h = Sim2h {
+            crypto,
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
             stream_manager,
             num_ticks: 0,
+            rrdht_arc_radius_recalc: std::time::Instant::now(),
         };
 
         debug!("Trying to bind to {}...", bind_spec);
@@ -63,6 +77,13 @@ impl Sim2h {
         );
 
         sim2h
+    }
+
+    /// recalculate arc radius for our connections
+    fn recalc_rrdht_arc_radius(&mut self) {
+        for (_, space) in self.spaces.iter_mut() {
+            space.write().recalc_rrdht_arc_radius();
+        }
     }
 
     fn request_authoring_list(
@@ -102,11 +123,13 @@ impl Sim2h {
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::Joined(data.space_address.clone(), data.agent_id.clone()),
+                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
                 );
                 if !self.spaces.contains_key(&data.space_address) {
-                    self.spaces
-                        .insert(data.space_address.clone(), RwLock::new(Space::new()));
+                    self.spaces.insert(
+                        data.space_address.clone(),
+                        RwLock::new(Space::new(self.crypto.box_clone())),
+                    );
                     info!(
                         "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                         data.space_address
@@ -116,7 +139,7 @@ impl Sim2h {
                     .get(&data.space_address)
                     .unwrap()
                     .write()
-                    .join_agent(data.agent_id.clone(), uri.clone());
+                    .join_agent(data.agent_id.clone(), uri.clone())?;
                 info!(
                     "Agent {:?} joined space {:?}",
                     data.agent_id, data.space_address
@@ -278,6 +301,18 @@ impl Sim2h {
             debug!(".");
             self.num_ticks = 0;
         }
+
+        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
+            self.rrdht_arc_radius_recalc = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
+                ))
+                .expect("can add interval ms");
+
+            self.recalc_rrdht_arc_radius();
+            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
+        }
+
         trace!("process transport");
         let (_did_work, messages) = self.stream_manager.process()?;
 
@@ -605,10 +640,10 @@ impl Sim2h {
                     true
                 }
             })
-            .collect::<Vec<(AgentId, Lib3hUri)>>();
-        for (agent, uri) in all_agents {
-            debug!("Broadcast: Sending to {:?}", uri);
-            self.send(agent, uri, msg);
+            .collect::<Vec<(AgentId, AgentInfo)>>();
+        for (agent, info) in all_agents {
+            debug!("Broadcast: Sending to {:?}", info.uri);
+            self.send(agent, info.uri, msg);
         }
         Ok(())
     }

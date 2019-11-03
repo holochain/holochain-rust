@@ -1,7 +1,6 @@
 use holochain_core::{context::Context, persister::SimplePersister, signal::SignalSender};
-use holochain_core_types::{
-    agent::AgentId, eav::Attribute, error::HolochainError, sync::HcRwLock as RwLock,
-};
+use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
+use holochain_locksmith::RwLock;
 use holochain_net::p2p_config::P2pConfig;
 use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,

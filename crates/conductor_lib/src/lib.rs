@@ -98,6 +98,7 @@ extern crate holochain_core_types;
 extern crate holochain_json_derive;
 extern crate holochain_dpki;
 extern crate holochain_json_api;
+extern crate holochain_locksmith;
 extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;

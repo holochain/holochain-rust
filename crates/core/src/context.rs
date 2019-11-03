@@ -23,12 +23,9 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    sync::{
-        HcMutex as Mutex, HcMutexGuard as MutexGuard, HcRwLock as RwLock,
-        HcRwLockReadGuard as RwLockReadGuard,
-    },
 };
 use holochain_metrics::MetricPublisher;
+use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
@@ -402,7 +399,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::persister::SimplePersister;
-    use holochain_core_types::{agent::AgentId, sync::HcRwLock as RwLock};
+    use holochain_core_types::agent::AgentId;
+    use holochain_locksmith::RwLock;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::Arc;
     use tempfile;

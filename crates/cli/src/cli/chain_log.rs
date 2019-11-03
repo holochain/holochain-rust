@@ -4,7 +4,8 @@ use holochain_core::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, sync::HcRwLock as RwLock};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_file::cas::file::FilesystemStorage;
 use std::{convert::TryFrom, fs, path::PathBuf};

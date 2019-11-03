@@ -36,6 +36,7 @@ objekt= "=0.1.2"
 holochain_persistence_api = "=0.0.10"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
+holochain_locksmith = { path = "../locksmith" }
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"

@@ -9,9 +9,6 @@ in
  dev-shell = holonix.pkgs.stdenv.mkDerivation({
   CARGO_HOME = "/holochain";
   name = "dev-shell";
-  shellHook = ''
-  export PATH="$PATH:$CARGO_HOME/bin"
-  '';
   buildInputs = [
    holonix.pkgs.wget
   ]

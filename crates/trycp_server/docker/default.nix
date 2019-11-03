@@ -2,8 +2,8 @@
 let
   docker-build = pkgs.writeShellScriptBin "hc-trycp-docker-build"
   ''
-  # docker build crates/trycp_server/docker -f crates/trycp_server/docker/Dockerfile.trycp -t holochain/holochain-rust:trycp
-  docker build . -f crates/trycp_server/docker/Dockerfile.trycp -t holochain/holochain-rust:trycp
+  docker build crates/trycp_server/docker -f crates/trycp_server/docker/Dockerfile.trycp -t holochain/holochain-rust:trycp
+  # docker build . -f crates/trycp_server/docker/Dockerfile.trycp -t holochain/holochain-rust:trycp
   '';
 
   docker-push = pkgs.writeShellScriptBin "hc-trycp-docker-push"

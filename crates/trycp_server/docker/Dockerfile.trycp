@@ -1,8 +1,10 @@
-FROM nixorg/nix:circleci
+FROM nixorg/nix:circleci as build
 
 RUN mkdir /holochain
 
 WORKDIR /holochain
+ENV CARGO_HOME /holochain
+ENV PATH "/holochain/bin:${PATH}"
 
 # need $USER to be set for CI, cargo, etc.
 # it isn't set by default
@@ -16,13 +18,21 @@ ENV NIX_PATH nixpkgs=https://github.com/NixOs/nixpkgs-channels/tarball/8634c3b61
 ENV HC_TARGET_PREFIX /tmp/holochain
 
 # get latest develop
-# ADD https://github.com/holochain/holochain-rust/archive/trycp.tar.gz develop.tar.gz
-# RUN tar --strip-components=1 -zxvf develop.tar.gz
-ADD . .
+ADD https://github.com/holochain/holochain-rust/archive/trycp.tar.gz develop.tar.gz
+RUN tar --strip-components=1 -zxvf develop.tar.gz
+# ADD . .
 
 RUN nix-env -f $shellfile -iA holochain.holochain
 RUN nix-shell $shellfile --run hc-trycp-server-install
+RUN nix-shell $shellfile --run 'cargo clean'
+RUN nix-collect-garbage
 
+# https://stackoverflow.com/questions/22713551/how-to-flatten-a-docker-image#22714556
+FROM scratch
+COPY --from=build / /
 EXPOSE 443/tcp
+WORKDIR /holochain
+ENV CARGO_HOME /holochain
+ENV PATH "/holochain/bin:${PATH}"
 
-CMD nix-shell $shellfile --run 'trycp_server -p 443'
+CMD trycp_server -p 443

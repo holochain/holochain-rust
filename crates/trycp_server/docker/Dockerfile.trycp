@@ -30,9 +30,9 @@ RUN nix-collect-garbage
 # https://stackoverflow.com/questions/22713551/how-to-flatten-a-docker-image#22714556
 FROM scratch
 COPY --from=build / /
-EXPOSE 443/tcp
+#EXPOSE 80/tcp
 WORKDIR /holochain
 ENV CARGO_HOME /holochain
 ENV PATH "/holochain/bin:${PATH}"
 
-CMD trycp_server -p 443
+CMD trycp_server -p 80

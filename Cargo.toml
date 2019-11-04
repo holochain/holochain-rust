@@ -30,3 +30,9 @@ exclude = [
 #lib3h_crypto_api = "=0.0.21"
 #lib3h_sodium = "=0.0.21"
 #lib3h_zombie_actor = "=0.0.21"
+
+[patch."https://github.com/holochain/holochain-rust"]
+holochain_core_types = { path = "./crates/core_types" }
+
+ [patch."https://github.com/holochain/holochain-tracing"]
+holochain_tracing = "=0.0.1"

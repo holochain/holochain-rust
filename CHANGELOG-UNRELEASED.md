@@ -18,5 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+* Fixes handling if DNA properties during `hc package`. DNA properties mentioned in the DNA's JSON manifest are now included in the package. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)  
+
 ### Security
 

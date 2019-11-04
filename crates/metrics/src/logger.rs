@@ -37,18 +37,21 @@ pub struct LogLine(String);
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;
     fn try_from(source: LogLine) -> Result<Metric, ParseError> {
-        for cap in PARSE_METRIC_REGEX.captures_iter(source.as_str()) {
-            let metric_name: String = cap[1].to_string();
-            let value_str = cap[2].to_string();
-            let metric_value: f64 = value_str.as_str().parse()?;
-            let metric = Metric::new(&metric_name, metric_value);
-            return Ok(metric);
-        }
-
-        Err(ParseError(format!(
-            "No metrics found in source: {:?}",
-            source
-        )))
+        let cap = PARSE_METRIC_REGEX
+            .captures_iter(source.as_str())
+            .next()
+            .map(|cap| Ok(cap))
+            .unwrap_or_else(|| {
+                Err(ParseError(format!(
+                    "expected at least one capture group for a metric value: {:?}",
+                    source
+                )))
+            })?;
+        let metric_name: String = cap[1].to_string();
+        let value_str = cap[2].to_string();
+        let metric_value: f64 = value_str.as_str().parse()?;
+        let metric = Metric::new(&metric_name, metric_value);
+        return Ok(metric);
     }
 }
 

@@ -1266,7 +1266,7 @@ type = 'memory'"#;
 
 [instances.storage]
 type = 'file'
-path = '{}'"#, tmp_dir);
+path = '{:?}'"#, tmp_dir);
 
         let mut test_toml = test_toml(test_name, 3002);
         test_toml = test_toml.replace(old_file_storage_conf, &new_file_storage_conf);

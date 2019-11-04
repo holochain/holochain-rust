@@ -1256,7 +1256,7 @@ pub mod test {
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
         
-        let tmp_dir = temp_dir()?;
+        let tmp_dir = tempdir()?;
         let old_file_storage_conf = r#"id = 'test-instance-1'
 
 [instances.storage]
@@ -1269,7 +1269,7 @@ type = 'file'
 path = '{}'"#, tmp_dir);
 
         let mut test_toml = test_toml(test_name, 3002);
-        test_toml = test_toml.replace(old_file_storage_conf, new_file_storage_conf);
+        test_toml = test_toml.replace(old_file_storage_conf, &new_file_storage_conf);
 
         let mut conductor = create_test_conductor_from_toml(&test_toml, test_name);
 
@@ -1347,6 +1347,8 @@ type = 'websocket'"#,
         toml2 = finish_toml(toml2);
 
         assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
+        
+        tmp_dir.close();
     }
 } 
 

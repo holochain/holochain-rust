@@ -10,9 +10,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Adds option `--property` to `hc hash` that sets DNA properties for hash calculation. [#1807](https://github.com/holochain/holochain-rust/pull/1807)
 * Adds a prelude module to the HDK. Adding the statement `use hdk::prelude::*` should be enough for 90% of zome development [#1816](https://github.com/holochain/holochain-rust/pull/1816)
 * Adds a special DNA property sim2h_url that, if set, overrides the conductor wide setting for the network configuration variable sim2h_url. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)
+* Adds ability to download DNA from URL rather than pointing to local filesystem
+
 ### Changed
 
 ### Deprecated
+
+* `file` key of DNA configuration is deprecated. It is now called `location`, and can refer to either a local file path or an HTTP(S) URL.
 
 ### Removed
 

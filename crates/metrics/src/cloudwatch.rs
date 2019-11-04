@@ -2,6 +2,9 @@ use crate::*;
 
 use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, MetricDatum, PutMetricDataInput};
 use rusoto_core::region::Region;
+use rusoto_logs::*;
+use std::time::UNIX_EPOCH;
+
 const DEFAULT_REGION: Region = Region::UsEast1;
 
 #[derive(Clone)]
@@ -64,5 +67,46 @@ impl MetricPublisher for CloudWatchMetricPublisher {
         };
         let _rusoto_future = self.client.put_metric_data(data_input);
         trace!("published metric to cloudwatch: {:?}", metric);
+    }
+}
+
+pub struct CloudWatchLogQuery {
+    pub client: CloudWatchLogsClient,
+}
+
+const LOG_LIMIT: i64 = 1000000;
+impl CloudWatchLogQuery {
+    pub fn query(
+        &self,
+        start_time: &std::time::SystemTime,
+        end_time: &std::time::SystemTime,
+    ) -> Vec<Vec<ResultField>> {
+        // TODO figure out what this should be
+        let query_string = "".to_string();
+        let start_query_request = StartQueryRequest {
+            limit: Some(LOG_LIMIT),
+            query_string,
+            start_time: start_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
+            end_time: end_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
+            log_group_name: None,
+            log_group_names: None,
+        };
+
+        let query: StartQueryResponse =
+            self.client.start_query(start_query_request).sync().unwrap();
+
+        let get_query_results_request = GetQueryResultsRequest {
+            query_id: query.query_id.unwrap(),
+        };
+
+        let query_result: GetQueryResultsResponse = self
+            .client
+            .get_query_results(get_query_results_request)
+            .sync()
+            .unwrap();
+
+        let log_records = query_result.results.unwrap_or_default();
+
+        log_records
     }
 }

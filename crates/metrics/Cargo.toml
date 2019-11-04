@@ -43,7 +43,9 @@ url = { version = "=2.1.0", features = ["serde"] }
 rand = "0.7.2"
 ## For cloudwatch
 rusoto_cloudwatch = "=0.41.0"
+rusoto_logs = "=0.41.0"
 rusoto_core = "=0.41.0"
+##rusoto = { version="0.41.0", features= ["cloudwatch", "logs", "core"] }
 ## For descriptive statistics on metrics
 streaming-stats = "=0.2.2"
 

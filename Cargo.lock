@@ -1324,6 +1324,7 @@ dependencies = [
  "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_cloudwatch 0.41.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_core 0.41.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rusoto_logs 0.41.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3206,6 +3207,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusoto_logs"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rusoto_core 0.41.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4959,6 +4973,7 @@ dependencies = [
 "checksum rusoto_credential 0.40.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b0d6cc3a602f01b9c5a04c8ed4ee281b789c5b2692d93202367c9b99ebc022ed"
 "checksum rusoto_credential 0.41.1 (registry+https://github.com/rust-lang/crates.io-index)" = "22a9b3b73099876f50d3de8e0974de71934ddca4d48d11268456b47c4d2fff87"
 "checksum rusoto_dynamodb 0.40.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8ea354d7f60689a0034d511471bbd12b5c517726ce0951c9455db4f6549331f6"
+"checksum rusoto_logs 0.41.0 (registry+https://github.com/rust-lang/crates.io-index)" = "691f665f2ae401d4fddaac8d6a33c3e7c388e93494242ea937ebdddf9961f7f6"
 "checksum rust-argon2 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4ca4eaef519b494d1f2848fc602d18816fed808a981aedf4f1f00ceb7c9d32cf"
 "checksum rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b313b91fcdc6719ad41fa2dad2b7e810b03833fae4bf911950e15529a5f04439"
 "checksum rust_sodium 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "0c1d4c517ad3d421a390cad0afa1108a507be2b86ea1f11afb12809e57a2f0c9"

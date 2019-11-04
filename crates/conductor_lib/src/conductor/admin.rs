@@ -1256,7 +1256,7 @@ pub mod test {
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
         
-        let tmp_dir = tempdir();
+        let tmp_dir = tempdir()?;
         let tmp_dir_path = tmp_dir.path();
         
         let old_file_storage_conf = r#"id = 'test-instance-1'
@@ -1292,7 +1292,7 @@ path = '{:?}'"#, tmp_dir_path);
 
         toml = add_block(toml, instance1());
 
-        toml = toml.replace(old_file_storage_conf, new_file_storage_conf);
+        toml = toml.replace(old_file_storage_conf, &new_file_storage_conf);
 
         let finish_toml = |started_toml| {
             let mut toml = started_toml;

@@ -8,6 +8,7 @@
 #![feature(checked_duration_since)]
 #![warn(unused_extern_crates)]
 
+extern crate backtrace;
 extern crate base64;
 extern crate chrono;
 extern crate futures;
@@ -35,6 +36,9 @@ extern crate maplit;
 // extern crate shrinkwraprs;
 extern crate hcid;
 extern crate wasmi;
+#[macro_use]
+extern crate log;
+
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;

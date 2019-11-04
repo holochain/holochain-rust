@@ -116,7 +116,7 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
 pub fn run_pending_validations(context: Arc<Context>) {
     let pending_validations = context
         .state()
-        .unwrap()
+        .expect("Couldn't get state in run_pending_validations")
         .nucleus()
         .pending_validations
         .clone();

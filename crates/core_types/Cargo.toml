@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.35-alpha7"
+version = "0.0.36-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 description = "core types needed for all holochain development"
@@ -47,5 +47,5 @@ log = "=0.4.8"
 holochain_logging = "=0.0.4"
 
 [dev-dependencies]
-test_utils = { version = "=0.0.35-alpha7", path = "../../test_utils"}
+test_utils = { version = "=0.0.36-alpha1", path = "../../test_utils"}
 maplit = "=1.0.1"

@@ -15,6 +15,7 @@ let
       ]);
 
       buildInputs = optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
+        libiconv
         CoreServices
         Security
       ]);

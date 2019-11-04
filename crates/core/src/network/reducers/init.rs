@@ -3,16 +3,56 @@ use crate::{
     network::state::NetworkState,
     state::State,
 };
-use holochain_net::{connection::net_connection::NetSend, p2p_network::P2pNetwork};
+use holochain_net::{
+    connection::net_connection::NetSend, p2p_config::BackendConfig, p2p_network::P2pNetwork,
+};
+use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
-use log::error;
+use log::{debug, error, info};
 
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
+    let handler = network_settings.handler.clone();
+    let mut p2p_config = network_settings.p2p_config.clone();
+
+    // Handle magic DNA property sim2h_url:
+    // If our DNA sets a property with name "sim2h_url" and if this instance is configured
+    // to use sim2h networking, override the conductor wide sim2h_url setting from the
+    // conductor config with the DNA property's value.
+
+    // Get the property from the DNA:
+    let nucleus = root_state.nucleus();
+    let dna = nucleus
+        .dna
+        .as_ref()
+        .expect("No DNA found when initializing network!");
+    let maybe_sim2h_url_override = dna
+        .properties
+        .as_object()
+        .and_then(|props| props.get("sim2h_url"))
+        .and_then(|sim2h_url_value| sim2h_url_value.as_str())
+        .map(|sim2h_url_str| sim2h_url_str.to_string());
+
+    // If we found a "sim2h_url" property...
+    if let Some(sim2h_url) = maybe_sim2h_url_override {
+        // ..and we're configured to use sim2h...
+        if let BackendConfig::Sim2h(sim2h_config) = &mut p2p_config.backend_config {
+            info!(
+                "Found property 'sim2h_url' in DNA {} - overriding conductor wide sim2h URL with: {}",
+                dna.address(),
+                sim2h_url,
+            );
+            // ..override the conductor wide setting.
+            sim2h_config.sim2h_url = sim2h_url;
+        } else {
+            debug!("DNA has 'sim2h_url' override property set, but it's ignored as we are not running a sim2h network backend");
+        }
+    }
+
     let mut network = P2pNetwork::new(
-        network_settings.handler.clone(),
-        network_settings.p2p_config.clone(),
+        handler,
+        p2p_config,
         Some(Address::from(network_settings.agent_id.clone())),
         Some(root_state.conductor_api.clone()),
     )
@@ -58,7 +98,7 @@ pub mod test {
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId, dna::Dna};
     use holochain_locksmith::RwLock;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -107,7 +147,9 @@ pub mod test {
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
 
         let mut network_state = NetworkState::new();
-        let root_state = test_store(context.clone());
+        let mut root_state = test_store(context.clone());
+        root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(Dna::new())));
+
         let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
 
         assert_eq!(result, ());

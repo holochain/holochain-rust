@@ -1256,7 +1256,7 @@ pub mod test {
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
         
-        let tmp_dir = tempdir()?;
+        let tmp_dir = tempdir();
         let old_file_storage_conf = r#"id = 'test-instance-1'
 
 [instances.storage]

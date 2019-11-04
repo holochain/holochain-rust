@@ -6,10 +6,10 @@ use serde_json::Map;
 use std::path::PathBuf;
 
 pub fn hash_dna(
-    dna_file_path: &PathBuf,
+    dna_file_path: PathBuf,
     properties: Option<Vec<String>>,
 ) -> DefaultResult<Address> {
-    let mut dna = Conductor::load_dna(dna_file_path)?;
+    let mut dna = Conductor::load_dna(&dna_file_path.into())?;
     let mut map = if let serde_json::Value::Object(map) = dna.properties {
         map.clone()
     } else {

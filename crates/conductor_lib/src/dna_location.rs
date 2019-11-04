@@ -24,7 +24,7 @@ impl DnaLocation {
                 Ok(content)
             }
             DnaLocation::Url(url) => {
-                let content: String = reqwest::get::<Url>(url.clone().into())
+                let content: String = reqwest::get::<Url>(url.clone())
                     .map_err(|e| HolochainError::ErrorGeneric(format!("request failed: {}", e)))?
                     .text()
                     .map_err(|e| {
@@ -66,7 +66,7 @@ impl Serialize for DnaLocation {
             DnaLocation::Url(url) => url.as_str(),
             DnaLocation::File(path) => path
                 .to_str()
-                .ok_or(ser::Error::custom(format!("invalid PathBuf: {:?}", path)))?,
+                .ok_or_else(|| ser::Error::custom(format!("invalid PathBuf: {:?}", path)))?,
         })
     }
 }

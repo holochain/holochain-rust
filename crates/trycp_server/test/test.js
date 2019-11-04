@@ -5,10 +5,9 @@ process.on('unhandledRejection', error => {
     console.error('got unhandledRejection:', error);
 });
 
-//doTest("ws://localhost:9000")
-//doTest("ws://tester1-eu-central-1.holochain-aws.org:80")
-//doTest("ws://tester1-eu-central-1.holochain-aws.org:80")
-magic_remote_machine_manager("3000")
+//doTest("wss://localhost:9000")
+doTest("wss://test1-eu-central-1.holochain-aws.org")
+//magic_remote_machine_manager("3000")
 function magic_remote_machine_manager(port) {
     const { spawn } = require('child_process');
     const trycp = spawn('trycp_server', ['-p', port]);
@@ -25,21 +24,22 @@ function magic_remote_machine_manager(port) {
 }
 
 // instantiate Client and connect to an RPC server
-async function  doTest(url) {
+function  doTest(url) {
+    return new Promise( (resolve) => {
     console.log("starting up at ",url)
     var ws = new WebSocket(url)
     ws.on('open', async function() {
         console.log("making ping call")
         // call an RPC method with parameters
 
-        ws.call('ping', {"id": "my-player"}).then(function(result) {
+        await ws.call('ping', {"id": "my-player"}).then(function(result) {
             console.log(result)
         })
 
         console.log("making setup call")
         // call an RPC method with parameters
 
-        ws.call('setup', {"id": "my-player"}).then(function(result) {
+        await ws.call('setup', {"id": "my-player"}).then(function(result) {
             console.log(result)
         })
 
@@ -110,5 +110,8 @@ sim2h_url = "wss://localhost:9001"
 
         // close a websocket connection
         ws.close()
+
+        resolve()
+    })
     })
 }

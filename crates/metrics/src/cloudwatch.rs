@@ -5,6 +5,7 @@ use rusoto_core::region::Region;
 use rusoto_logs::*;
 use std::{
     convert::{TryFrom, TryInto},
+    iter::FromIterator,
     time::UNIX_EPOCH,
 };
 
@@ -145,6 +146,14 @@ impl CloudWatchLogger {
             .into_iter();
 
         Box::new(iterator)
+    }
+
+    pub fn query_and_aggregate(
+        &self,
+        start_time: &std::time::SystemTime,
+        end_time: &std::time::SystemTime,
+    ) -> crate::stats::Stats {
+        crate::stats::Stats::from_iter(self.query_metrics(start_time, end_time))
     }
 
     pub fn default_log_stream() -> String {

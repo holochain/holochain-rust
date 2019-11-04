@@ -273,6 +273,22 @@ jobs:
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-test
 
+ deploy.mac:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: Deploy mac binaries
+      command: |
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+       export TARGET=x86_64-apple-darwin
+       nix-shell --run 'cargo rustc --manifest-path crates/cli/Cargo.toml --target $TARGET --release -- -C lto'
+       mkdir cli-$CIRCLE_TAG-$TARGET
+       cp target/$TARGET/release/hc crates/cli/LICENSE crates/cli/README.md cli-$CIRCLE_TAG-$TARGET/
+       tar czf cli-$CIRCLE_TAG-$TARGET.tar.gz cli-$CIRCLE_TAG-$TARGET/
+
 workflows:
  version: 2
  tests:
@@ -329,3 +345,7 @@ workflows:
        branches:
         only:
          - develop
+
+ deploy:
+  jobs:
+   - deploy.mac

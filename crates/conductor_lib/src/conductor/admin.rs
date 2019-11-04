@@ -1254,8 +1254,9 @@ pub mod test {
     /// the instance has been cleared,
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
+        let tmpdir = tempdir().expect("Directory can not be created with tempdir()");
 
-        let tmp_dir_path = tempdir.path().expect("Directory can not be created with tempdir()");
+        let tmp_dir_path = tmpdir.path();
         
         let old_file_storage_conf = r#"id = 'test-instance-1'
 

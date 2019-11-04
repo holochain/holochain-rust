@@ -677,7 +677,10 @@ pub struct DnaConfiguration {
 
 impl DnaConfiguration {
     pub fn get_location(&self) -> &DnaLocation {
-        self.location.as_ref().or_else(|| self.file.as_ref()).unwrap()
+        self.location
+            .as_ref()
+            .or_else(|| self.file.as_ref())
+            .unwrap()
     }
 
     pub fn new(id: String, location: DnaLocation, hash: String, uuid: Option<String>) -> Self {

@@ -1255,7 +1255,7 @@ pub mod test {
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
            
-        let tmp_dir_path = tmp_dir.path().expect("{:?} directory can not be created", tmp_dir)
+        let tmp_dir_path = tmp_dir.path().expect("{:?} directory can not be created", tmp_dir);
         
         let old_file_storage_conf = r#"id = 'test-instance-1'
 

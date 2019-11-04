@@ -142,8 +142,7 @@ impl CloudWatchLogger {
                     metric
                 })
             })
-            .flatten()
-            .into_iter();
+            .flatten();
 
         Box::new(iterator)
     }

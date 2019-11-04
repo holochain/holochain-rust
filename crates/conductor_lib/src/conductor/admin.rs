@@ -1257,6 +1257,8 @@ pub mod test {
         let test_name = "test_remove_instance_clean_true";
         
         let tmp_dir = tempdir();
+        let tmp_dir_path = tmp_dir.path();
+        
         let old_file_storage_conf = r#"id = 'test-instance-1'
 
 [instances.storage]
@@ -1266,7 +1268,7 @@ type = 'memory'"#;
 
 [instances.storage]
 type = 'file'
-path = '{:?}'"#, tmp_dir);
+path = '{:?}'"#, tmp_dir_path);
 
         let mut test_toml = test_toml(test_name, 3002);
         test_toml = test_toml.replace(old_file_storage_conf, &new_file_storage_conf);
@@ -1274,8 +1276,7 @@ path = '{:?}'"#, tmp_dir);
         let mut conductor = create_test_conductor_from_toml(&test_toml, test_name);
 
         // TODO: refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
-        // fails, not sure why
-        // assert!(conductor.instance_storage_dir_path().exists(), "The storage directory for the instance doesn't exist after creating the test conductor!");
+        assert!(conductor.instance_storage_dir_path().exists(), "The storage directory for the instance doesn't exist after creating the test conductor!");
 
         let start_toml = || {
             let mut toml = header_block(test_name);
@@ -1289,15 +1290,7 @@ path = '{:?}'"#, tmp_dir);
 
         toml = add_block(toml, instance1());
 
-        toml = toml.replace(r#"id = 'test-instance-1'
-
-[instances.storage]
-type = 'memory'"#,
-r#"id = 'test-instance-1'
-
-[instances.storage]
-type = 'file'
-path = '{:?}'"#, tmp_dir);
+        toml = toml.replace(old_file_storage_conf, new_file_storage_conf);
 
         let finish_toml = |started_toml| {
             let mut toml = started_toml;

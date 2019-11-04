@@ -912,6 +912,7 @@ dependencies = [
  "holochain_persistence_file 0.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.35-alpha7",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustyline 5.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

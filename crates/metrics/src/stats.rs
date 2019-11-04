@@ -1,6 +1,6 @@
 use crate::Metric;
 /// Extends the metric api with statistical aggregation functions
-use stats::OnlineStats;
+use stats::{Commute, OnlineStats};
 use std::{collections::HashMap, iter::FromIterator};
 
 #[derive(Shrinkwrap)]
@@ -26,6 +26,22 @@ impl FromIterator<Metric> for Stats {
     }
 }
 
+// TODO could implement stats::Commute's merge function instead
+impl std::ops::Add<Stats> for Stats {
+    type Output = Stats;
+    fn add(self, rhs: Stats) -> Stats {
+        Stats(self.iter().fold(
+            HashMap::new(),
+            |mut stats_by_metric_name, (metric_name, online_stats)| {
+                let entry = stats_by_metric_name.entry(metric_name.to_string());
+                let online_stats = entry.or_insert_with(|| *online_stats);
+                rhs.get(&metric_name.to_string())
+                    .map(|online_stats_rhs| online_stats.merge(*online_stats_rhs));
+                stats_by_metric_name
+            },
+        ))
+    }
+}
 #[cfg(test)]
 mod tests {
 

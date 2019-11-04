@@ -1,4 +1,5 @@
 #![feature(checked_duration_since)]
+#![allow(dead_code)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -6,6 +7,7 @@ extern crate lazy_static;
 extern crate log;
 
 mod common;
+mod detection;
 mod error;
 mod guard;
 mod mutex;

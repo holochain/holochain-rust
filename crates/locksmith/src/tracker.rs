@@ -14,6 +14,7 @@ use std::{
 
 pub(crate) struct GuardTracker {
     pub(crate) puid: ProcessUniqueId,
+    pub(crate) thread_id: thread::ThreadId,
     pub(crate) created: Instant,
     pub(crate) backtrace: Backtrace,
     pub(crate) lock_type: LockType,
@@ -25,6 +26,7 @@ impl GuardTracker {
     pub fn new(puid: ProcessUniqueId, lock_type: LockType) -> Self {
         Self {
             puid,
+            thread_id: thread::current().id(),
             lock_type,
             created: Instant::now(),
             backtrace: Backtrace::new_unresolved(),
@@ -43,11 +45,11 @@ impl GuardTracker {
             let lock_type_str = format!("{:?}", self.lock_type);
             let report = if self.immortal {
                 format!(
-                    "{:<6} {:<13} {:>12} [!!!]",
-                    lock_type_str, self.puid, elapsed_ms
+                    "{:<6} {:<13} {:<11?} {:>12} [!!!]",
+                    lock_type_str, self.puid, self.thread_id, elapsed_ms
                 )
             } else {
-                format!("{:<6} {:<13} {:>12}", lock_type_str, self.puid, elapsed_ms)
+                format!("{:<6} {:<13} {:<11?} {:>12}", lock_type_str, self.puid, self.thread_id, elapsed_ms)
             };
             Some((elapsed_ms, report))
         } else {
@@ -56,7 +58,7 @@ impl GuardTracker {
     }
 
     pub fn report_header() -> String {
-        format!("{:6} {:^13} {:>12}", "KIND", "PUID", "ELAPSED (ms)")
+        format!("{:6} {:^13} {:^11} {:>12}", "KIND", "PUID", "THREAD ID", "ELAPSED (ms)")
     }
 
     fn immortalize(&mut self) {

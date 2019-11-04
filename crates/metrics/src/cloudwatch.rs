@@ -3,7 +3,10 @@ use crate::*;
 use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, MetricDatum, PutMetricDataInput};
 use rusoto_core::region::Region;
 use rusoto_logs::*;
-use std::time::UNIX_EPOCH;
+use std::{
+    convert::{TryFrom, TryInto},
+    time::UNIX_EPOCH,
+};
 
 const DEFAULT_REGION: Region = Region::UsEast1;
 
@@ -33,6 +36,26 @@ impl From<&Metric> for MetricDatum {
     fn from(metric: &Metric) -> Self {
         let m: Self = metric.clone().into();
         m
+    }
+}
+
+// TODO Test this
+impl TryFrom<ResultField> for Metric {
+    type Error = std::num::ParseFloatError;
+    fn try_from(result_field: ResultField) -> Result<Self, Self::Error> {
+        let metric_name = result_field
+            .field
+            .unwrap_or_else(|| "unlabeled".to_string());
+        let metric_value: f64 = result_field.value.unwrap_or_default().parse()?;
+        Ok(Metric::new(&metric_name, metric_value))
+    }
+}
+
+impl TryFrom<&ResultField> for Metric {
+    type Error = std::num::ParseFloatError;
+    fn try_from(result_field: &ResultField) -> Result<Self, Self::Error> {
+        let r: Result<Self, Self::Error> = result_field.clone().try_into();
+        r
     }
 }
 
@@ -102,6 +125,26 @@ impl CloudWatchLogger {
         let log_records = query_result.results.unwrap_or_default();
 
         log_records
+    }
+
+    pub fn query_metrics(
+        &self,
+        start_time: &std::time::SystemTime,
+        end_time: &std::time::SystemTime,
+    ) -> Box<dyn Iterator<Item = Metric>> {
+        let query = self.query(start_time, end_time);
+        let iterator = query
+            .into_iter()
+            .map(|result_vec| {
+                result_vec.into_iter().map(|result_field| {
+                    let metric: Metric = result_field.try_into().unwrap();
+                    metric
+                })
+            })
+            .flatten()
+            .into_iter();
+
+        Box::new(iterator)
     }
 
     pub fn default_log_stream() -> String {

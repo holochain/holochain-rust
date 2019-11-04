@@ -1,7 +1,13 @@
 var WebSocket = require('rpc-websockets').Client
 
 
+process.on('unhandledRejection', error => {
+    console.error('got unhandledRejection:', error);
+});
+
 //doTest("ws://localhost:9000")
+//doTest("ws://tester1-eu-central-1.holochain-aws.org:80")
+//doTest("ws://tester1-eu-central-1.holochain-aws.org:80")
 magic_remote_machine_manager("3000")
 function magic_remote_machine_manager(port) {
     const { spawn } = require('child_process');
@@ -38,18 +44,68 @@ async function  doTest(url) {
         })
 
 
-        const config_toml = "[config]"  // THIS IS A BROKEN CONFIG
+        const config_toml =`
+persistence_dir = "/tmp/somepath"
+
+agents = []
+dnas = []
+instances = []
+
+[signals]
+consistency = false
+trace = true
+
+[[interfaces]]
+admin = true
+id = "someadminid"
+instances = []
+    [interfaces.driver]
+    type = "websocket"
+    port = 1112
+
+[[interfaces]]
+admin = true
+id = "somednaid"
+instances = []
+    [interfaces.driver]
+    type = "websocket"
+    port = 1111
+
+[logger]
+type = "debug"
+
+[network]
+type = "sim2h"
+sim2h_url = "wss://localhost:9001"
+    `
+
         const config = Buffer.from(config_toml).toString('base64')
         console.log("making player call with config", config)
         let result = await ws.call('player', {"id": "my-player", "config": config})
+        console.log(result)
+
+        console.log("making player call with config", config)
+        result = await ws.call('player', {"id": "my-player2", "config": config})
         console.log(result)
 
         console.log("making spawn call")
         result = await ws.call('spawn', {"id": "my-player"})
         console.log(result)
 
-        console.log("making kill call")
+/*        console.log("making kill call")
         result = await ws.call('kill', {"id": "my-player"})
+        console.log(result)
+
+        console.log("making spawn call2")
+        result = await ws.call('spawn', {"id": "my-player"})
+        console.log(result)
+*/
+        console.log("making reset call")
+        result = await ws.call('reset', {})
+        console.log(result)
+
+        console.log("making player2 call with config", config)
+        result = await ws.call('player', {"id": "my-player", "config": config})
         console.log(result)
 
         // close a websocket connection

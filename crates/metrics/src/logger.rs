@@ -19,7 +19,7 @@ impl MetricPublisher for LoggerMetricPublisher {
 
 lazy_static! {
     pub static ref PARSE_METRIC_REGEX: Regex =
-        Regex::new("metrics.rs:\\d+ ([\\w\\d~\\-\\.]+) ([\\d\\.]+)").unwrap();
+        Regex::new("metrics.rs:\\d* ([\\w\\d~\\-\\.]+) ([\\d\\.]+)").unwrap();
 }
 
 #[derive(Debug, Clone)]
@@ -66,4 +66,15 @@ mod tests {
         assert_eq!("sim2h_worker.tick.latency", metric.name);
         assert_eq!(123.0, metric.value);
     }
+
+    #[test]
+    fn can_convert_cloudwatch_log_line_to_metric() {
+        let line =
+            "metrics.rs: sim2h_worker.tick.latency 123";
+        let log_line = LogLine(line.to_string());
+        let metric: Metric = log_line.try_into().unwrap();
+        assert_eq!("sim2h_worker.tick.latency", metric.name);
+        assert_eq!(123.0, metric.value);
+    }
+
 }

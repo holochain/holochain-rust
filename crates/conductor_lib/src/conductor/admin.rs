@@ -667,9 +667,9 @@ public_address = '{}'"#,
 
     pub fn dna() -> String {
         r#"[[dnas]]
-file = 'app_spec.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'test-dna'"#
+id = 'test-dna'
+location = 'app_spec.dna.json'"#
             .to_string()
     }
 
@@ -847,9 +847,9 @@ type = 'cmd'"#
             toml,
             String::from(
                 r#"[[dnas]]
-file = 'new-dna.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'new-dna'"#,
+id = 'new-dna'
+location = 'new-dna.dna.json'"#,
             ),
         );
         toml = add_block(toml, instance1());
@@ -1155,9 +1155,9 @@ id = 'new-dna'"#,
             toml,
             String::from(
                 r#"[[dnas]]
-file = 'new-dna.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'new-dna'"#,
+id = 'new-dna'
+location = 'new-dna.dna.json'"#,
             ),
         );
         toml = add_block(toml, instance1());
@@ -1447,9 +1447,9 @@ type = 'http'"#,
             toml,
             String::from(
                 r#"[[dnas]]
-file = 'new-dna.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'new-dna'"#,
+id = 'new-dna'
+location = 'new-dna.dna.json'"#,
             ),
         );
         toml = add_block(toml, instance1());

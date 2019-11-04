@@ -1242,7 +1242,6 @@ type = 'websocket'"#,
         assert_eq!(config_contents, toml, "expected toml (right), got config_contents (left)");
     }
 
-#[cfg(test)]
 pub mod test {
     use super::*;
     extern crate tempfile;
@@ -1255,9 +1254,7 @@ pub mod test {
     /// the instance has been cleared,
     fn test_remove_instance_clean_true() {
         let test_name = "test_remove_instance_clean_true";
-        
-        if let Ok(tmp_dir) = tempdir() {
-            
+           
         let tmp_dir_path = tmp_dir.path().expect("{:?} directory can not be created", tmp_dir)
         
         let old_file_storage_conf = r#"id = 'test-instance-1'

@@ -1,11 +1,11 @@
 use holochain_core_types::error::HolochainError;
+use reqwest::{self, Url};
 use serde::{
     de::{self, Deserializer, Visitor},
     ser::{self, Serialize, Serializer},
     Deserialize,
 };
 use std::{fmt, fs::File, io::Read, path::PathBuf};
-use url::Url;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DnaLocation {
@@ -19,11 +19,19 @@ impl DnaLocation {
         match self {
             DnaLocation::File(file) => {
                 let mut f = File::open(file)?;
-                let mut contents = String::new();
-                f.read_to_string(&mut contents)?;
-                Ok(contents)
+                let mut content = String::new();
+                f.read_to_string(&mut content)?;
+                Ok(content)
             }
-            DnaLocation::Url(_url) => unimplemented!(),
+            DnaLocation::Url(url) => {
+                let content: String = reqwest::get::<Url>(url.clone().into())
+                    .map_err(|e| HolochainError::ErrorGeneric(format!("request failed: {}", e)))?
+                    .text()
+                    .map_err(|e| {
+                        HolochainError::ErrorGeneric(format!("could not get text response: {}", e))
+                    })?;
+                Ok(content)
+            }
         }
     }
 }
@@ -102,10 +110,9 @@ impl<'de> Deserialize<'de> for DnaLocation {
 #[cfg(test)]
 mod tests {
 
-    use super::DnaLocation;
+    use super::{DnaLocation, Url};
     use serde_json;
     use std::path::PathBuf;
-    use url::Url;
 
     #[test]
     fn serialize_dna_location() {

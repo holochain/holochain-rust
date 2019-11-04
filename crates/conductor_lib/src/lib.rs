@@ -133,6 +133,7 @@ extern crate maplit;
 #[macro_use]
 extern crate lazy_static;
 extern crate hyper;
+extern crate reqwest;
 extern crate json_patch;
 #[cfg(test)]
 #[macro_use]
@@ -141,7 +142,6 @@ extern crate base64;
 extern crate lib3h;
 #[macro_use]
 extern crate nickel;
-extern crate url;
 
 pub mod conductor;
 pub mod config;

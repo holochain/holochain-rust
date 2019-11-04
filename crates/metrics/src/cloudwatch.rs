@@ -65,7 +65,7 @@ impl MetricPublisher for CloudWatchMetricPublisher {
 pub struct CloudWatchLogger {
     pub client: CloudWatchLogsClient,
     pub log_group_name: Option<String>,
-    pub log_stream_name: Option<String>
+    pub log_stream_name: Option<String>,
 }
 
 const LOG_LIMIT: i64 = 1000000;
@@ -93,7 +93,7 @@ impl CloudWatchLogger {
             query_id: query.query_id.unwrap(),
         };
 
-       let query_result: GetQueryResultsResponse = self
+        let query_result: GetQueryResultsResponse = self
             .client
             .get_query_results(get_query_results_request)
             .sync()
@@ -104,25 +104,34 @@ impl CloudWatchLogger {
         log_records
     }
 
+    pub fn default_log_stream() -> String {
+        format!("holochain-{:?}", snowflake::ProcessUniqueId::new())
+    }
 
-    pub fn with_log_stream(log_stream_name:String, log_group_name:String, region: &Region) -> Self {
+    pub fn default_log_group() -> String {
+        "holochain".to_string()
+    }
+
+    pub fn with_log_stream(
+        log_stream_name: String,
+        log_group_name: String,
+        region: &Region,
+    ) -> Self {
         let client = CloudWatchLogsClient::new(region.clone());
 
         let log_stream_request = CreateLogStreamRequest {
-           log_group_name: log_group_name.clone(),
-           log_stream_name: log_stream_name.clone()
+            log_group_name: log_group_name.clone(),
+            log_stream_name: log_stream_name.clone(),
         };
 
         client.create_log_stream(log_stream_request).sync().unwrap();
         Self {
             client,
             log_stream_name: Some(log_stream_name),
-            log_group_name: Some(log_group_name)
-        } 
+            log_group_name: Some(log_group_name),
+        }
     }
-
 }
-
 
 impl MetricPublisher for CloudWatchLogger {
     fn publish(&mut self, metric: &Metric) {
@@ -135,12 +144,24 @@ impl MetricPublisher for CloudWatchLogger {
         };
         let put_log_events_request = PutLogEventsRequest {
             log_events: vec![input_log_event],
-            log_group_name: self.log_group_name.clone().unwrap_or_else(
-                || panic!("log_group_name must be set")),
-            log_stream_name: self.log_stream_name.clone().unwrap_or_else(
-                || panic!("log_stream_name must be set")),
+            log_group_name: self
+                .log_group_name
+                .clone()
+                .unwrap_or_else(|| panic!("log_group_name must be set")),
+            log_stream_name: self
+                .log_stream_name
+                .clone()
+                .unwrap_or_else(|| panic!("log_stream_name must be set")),
             sequence_token: None,
         };
         self.client.put_log_events(put_log_events_request);
+    }
+}
+
+impl Default for CloudWatchLogger {
+    fn default() -> Self {
+        let default_log_stream = Self::default_log_stream();
+        let default_log_group = Self::default_log_group();
+        CloudWatchLogger::with_log_stream(default_log_stream, default_log_group, &DEFAULT_REGION)
     }
 }

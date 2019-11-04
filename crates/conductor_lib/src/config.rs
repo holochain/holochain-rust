@@ -664,10 +664,12 @@ impl From<AgentConfiguration> for AgentId {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
+    // TODO: after deprecation period, remove file and make location non-Optional
+    /// DEPRECATED. `file` will be going away in favor of `location`, for the time being it is just an alias.
     #[serde(default)]
     pub(crate) file: Option<DnaLocation>,
     #[serde(default)]
-    pub location: Option<DnaLocation>,
+    pub(crate) location: Option<DnaLocation>,
     pub hash: String,
     #[serde(default)]
     pub uuid: Option<String>,
@@ -692,6 +694,11 @@ impl DnaConfiguration {
 impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
     fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {
+        if dna_config.file.is_some() {
+            warn!("The 'file' field of DNA configuration is deprecated. Use 'location' instead.")
+        } else if dna_config.location.is_none() {
+            return Err(HolochainError::ErrorGeneric(format!("DNA config must specify either 'file' or 'location'. Neither was specified in this config: {:?}", dna_config)));
+        }
         let contents = dna_config.get_location().get_content()?;
         Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }

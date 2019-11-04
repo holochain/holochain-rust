@@ -98,7 +98,7 @@ pub mod test {
         persister::SimplePersister,
         state::{test_store, StateWrapper},
     };
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::{agent::AgentId, dna::Dna};
     use holochain_locksmith::RwLock;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -146,7 +146,9 @@ pub mod test {
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
 
         let mut network_state = NetworkState::new();
-        let root_state = test_store(context.clone());
+        let mut root_state = test_store(context.clone());
+        root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(Dna::new())));
+
         let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
 
         assert_eq!(result, ());

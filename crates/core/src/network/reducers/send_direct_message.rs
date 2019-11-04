@@ -79,7 +79,7 @@ mod tests {
         },
         state::test_store,
     };
-    use holochain_core_types::error::HolochainError;
+    use holochain_core_types::{dna::Dna, error::HolochainError};
     use holochain_persistence_api::cas::content::Address;
 
     #[test]
@@ -87,6 +87,7 @@ mod tests {
         let netname = Some("reduce_send_direct_message_timeout_test");
         let context = test_context("alice", netname);
         let mut store = test_store(context.clone());
+        store = store.reduce(ActionWrapper::new(Action::InitializeChain(Dna::new())));
 
         let dna_address: Address = "reduce_send_direct_message_timeout_test".into();
         let handler = create_handler(&context, dna_address.to_string());

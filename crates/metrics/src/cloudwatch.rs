@@ -70,12 +70,14 @@ impl MetricPublisher for CloudWatchMetricPublisher {
     }
 }
 
-pub struct CloudWatchLogQuery {
+#[derive(Clone)]
+pub struct CloudWatchLogger {
     pub client: CloudWatchLogsClient,
+    pub log_group_name: String,
 }
 
 const LOG_LIMIT: i64 = 1000000;
-impl CloudWatchLogQuery {
+impl CloudWatchLogger {
     pub fn query(
         &self,
         start_time: &std::time::SystemTime,
@@ -88,7 +90,7 @@ impl CloudWatchLogQuery {
             query_string,
             start_time: start_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
             end_time: end_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
-            log_group_name: None,
+            log_group_name: Some(self.log_group_name.clone()),
             log_group_names: None,
         };
 
@@ -108,5 +110,26 @@ impl CloudWatchLogQuery {
         let log_records = query_result.results.unwrap_or_default();
 
         log_records
+    }
+}
+
+impl MetricPublisher for CloudWatchLogger {
+    fn publish(&mut self, metric: &Metric) {
+        let input_log_event = InputLogEvent {
+            message: format!("{} {}", metric.name, metric.value),
+            timestamp: std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as i64,
+        };
+        // TODO study stream api
+        let log_stream_name = "TODO".to_string();
+        let put_log_events_request = PutLogEventsRequest {
+            log_events: vec![input_log_event],
+            log_group_name: self.log_group_name.clone(),
+            log_stream_name,
+            sequence_token: None,
+        };
+        self.client.put_log_events(put_log_events_request);
     }
 }

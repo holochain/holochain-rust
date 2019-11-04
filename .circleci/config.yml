@@ -276,6 +276,7 @@ jobs:
  deploy.mac:
   macos:
    xcode: "10.2.0"
+  resource_class: xlarge
   steps:
    - checkout
    - run:
@@ -288,6 +289,7 @@ jobs:
        mkdir cli-$CIRCLE_TAG-$TARGET
        cp target/$TARGET/release/hc crates/cli/LICENSE crates/cli/README.md cli-$CIRCLE_TAG-$TARGET/
        tar czf cli-$CIRCLE_TAG-$TARGET.tar.gz cli-$CIRCLE_TAG-$TARGET/
+       github-release upload --file ./cli-$CIRCLE_TAG-$TARGET.tar.gz --owner holochain --repo holochain-rust --tag $CIRCLE_TAG --name cli-$CIRCLE_TAG-$TARGET.tar.gz --token $GITHUB_DEPLOY_TOKEN
 
 workflows:
  version: 2
@@ -346,6 +348,6 @@ workflows:
         only:
          - develop
 
- deploy:
-  jobs:
-   - deploy.mac
+ # deploy:
+ #  jobs:
+ #   - deploy.mac

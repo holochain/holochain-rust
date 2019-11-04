@@ -198,14 +198,13 @@ impl ConductorAdmin for Conductor {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::Lmdb {
+            storage: StorageConfiguration::Pickle {
                 path: storage_path
                     .to_str()
                     .ok_or_else(|| {
                         HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
                     })?
                     .into(),
-                initial_mmap_bytes: None,
             },
         };
         new_config.instances.push(new_instance_config);
@@ -1177,7 +1176,7 @@ id = 'new-instance'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
+                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
                 storage_path_string
             ),
         );
@@ -1469,7 +1468,7 @@ id = 'new-instance-2'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
+                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
                 storage_path_string
             ),
         );

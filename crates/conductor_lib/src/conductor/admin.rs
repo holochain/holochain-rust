@@ -91,13 +91,14 @@ impl ConductorAdmin for Conductor {
         let path_string = path
             .to_str()
             .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
-        let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&path.clone().into()).map_err(|e| {
-            HolochainError::ConfigError(format!(
-                "Could not load DNA file \"{}\", Error: {}",
-                path_string,
-                e.to_string()
-            ))
-        })?;
+        let mut dna =
+            Arc::get_mut(&mut self.dna_loader).unwrap()(&path.clone().into()).map_err(|e| {
+                HolochainError::ConfigError(format!(
+                    "Could not load DNA file \"{}\", Error: {}",
+                    path_string,
+                    e.to_string()
+                ))
+            })?;
 
         if let Some(provided_hash) = expected_hash {
             let actual_hash = dna.address();
@@ -807,9 +808,10 @@ type = 'cmd'"#
             )
             .is_ok());
 
-        let new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json").into())
-                .unwrap();
+        let new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
+            &PathBuf::from("new-dna.dna.json").into(),
+        )
+        .unwrap();
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
@@ -882,9 +884,10 @@ location = 'new-dna.dna.json'"#,
             )
             .is_ok());
 
-        let new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json").into())
-                .unwrap();
+        let new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
+            &PathBuf::from("new-dna.dna.json").into(),
+        )
+        .unwrap();
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
@@ -925,7 +928,8 @@ location = 'new-dna.dna.json'"#,
         let mut conductor = create_test_conductor(test_name, 3000);
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
-        let dna = Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path.clone().into()).unwrap();
+        let dna =
+            Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path.clone().into()).unwrap();
 
         assert!(conductor
             .install_dna_from_file(
@@ -988,9 +992,10 @@ location = 'new-dna.dna.json'"#,
             )
             .is_ok());
 
-        let mut new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json").into())
-                .unwrap();
+        let mut new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
+            &PathBuf::from("new-dna.dna.json").into(),
+        )
+        .unwrap();
         let original_hash = new_dna.address();
         new_dna.properties = new_props;
         let new_hash = new_dna.address();
@@ -1059,9 +1064,10 @@ location = 'new-dna.dna.json'"#,
             )
             .is_ok());
 
-        let mut new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json").into())
-                .unwrap();
+        let mut new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
+            &PathBuf::from("new-dna.dna.json").into(),
+        )
+        .unwrap();
         let original_hash = new_dna.address();
         new_dna.uuid = uuid.clone();
         let new_hash = new_dna.address();

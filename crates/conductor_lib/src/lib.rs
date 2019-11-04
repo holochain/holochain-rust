@@ -133,8 +133,8 @@ extern crate maplit;
 #[macro_use]
 extern crate lazy_static;
 extern crate hyper;
-extern crate reqwest;
 extern crate json_patch;
+extern crate reqwest;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;

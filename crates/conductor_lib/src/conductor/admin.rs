@@ -1347,8 +1347,6 @@ type = 'websocket'"#,
         toml2 = finish_toml(toml2);
 
         assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
-        
-        tmp_dir.close();
     }
 } 
 

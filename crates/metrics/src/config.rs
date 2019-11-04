@@ -1,4 +1,6 @@
-use crate::{cloudwatch::CloudWatchMetricPublisher, LoggerMetricPublisher, MetricPublisher};
+use crate::{
+    cloudwatch::CloudWatchMetricPublisher, logger::LoggerMetricPublisher, MetricPublisher,
+};
 use holochain_locksmith::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;

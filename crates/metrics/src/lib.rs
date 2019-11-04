@@ -8,8 +8,12 @@ extern crate log;
 #[macro_use]
 extern crate shrinkwraprs;
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod cloudwatch;
 pub mod config;
+pub mod logger;
 pub mod metrics;
 pub mod stats;
 

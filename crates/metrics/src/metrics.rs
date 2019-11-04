@@ -17,22 +17,7 @@ pub trait MetricPublisher: Sync + Send {
     fn publish(&mut self, metric: &Metric);
 }
 
-#[derive(Debug, Clone)]
-pub struct LoggerMetricPublisher;
-
-impl LoggerMetricPublisher {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-pub type DefaultMetricPublisher = LoggerMetricPublisher;
-
-impl MetricPublisher for LoggerMetricPublisher {
-    fn publish(&mut self, metric: &Metric) {
-        debug!("{} {}", metric.name, metric.value);
-    }
-}
+pub type DefaultMetricPublisher = crate::logger::LoggerMetricPublisher;
 
 #[macro_export]
 macro_rules! with_latency_publishing {
@@ -57,7 +42,7 @@ mod test {
     use std::sync::{Arc, RwLock};
     #[test]
     fn can_publish_to_logger() {
-        let mut publisher = LoggerMetricPublisher;
+        let mut publisher = crate::logger::LoggerMetricPublisher;
         let metric = Metric::new("latency", 100.0);
 
         publisher.publish(&metric);
@@ -69,7 +54,7 @@ mod test {
 
     #[test]
     fn can_publish_latencies() {
-        let publisher = Arc::new(RwLock::new(LoggerMetricPublisher));
+        let publisher = Arc::new(RwLock::new(crate::logger::LoggerMetricPublisher));
 
         let ret = with_latency_publishing!("test", publisher, test_latency_fn, true);
 

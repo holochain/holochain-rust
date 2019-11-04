@@ -9,7 +9,7 @@ use std::{
     time::UNIX_EPOCH,
 };
 
-const DEFAULT_REGION: Region = Region::UsEast1;
+const DEFAULT_REGION: Region = Region::EuCentral1;
 
 #[derive(Clone)]
 pub struct CloudWatchMetricPublisher {

@@ -186,6 +186,19 @@ impl CloudWatchLogger {
     ) -> Self {
         let client = CloudWatchLogsClient::new(region.clone());
 
+        let log_group_request = CreateLogGroupRequest {
+            log_group_name: log_group_name.clone(),
+            ..Default::default()
+        };
+
+        // TODO Check if log group already exists or set them up a priori
+        client
+            .create_log_group(log_group_request)
+            .sync()
+            .unwrap_or_else(|e| {
+                debug!("Could not create log group- maybe already created: {:?}", e)
+            });
+
         let log_stream_request = CreateLogStreamRequest {
             log_group_name: log_group_name.clone(),
             log_stream_name: log_stream_name.clone(),

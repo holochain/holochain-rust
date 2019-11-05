@@ -134,6 +134,7 @@ extern crate maplit;
 extern crate lazy_static;
 extern crate hyper;
 extern crate json_patch;
+extern crate reqwest;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
@@ -145,6 +146,7 @@ extern crate nickel;
 pub mod conductor;
 pub mod config;
 pub mod context_builder;
+pub mod dna_location;
 pub mod dpki_instance;
 pub mod error;
 pub mod holo_signing_service;

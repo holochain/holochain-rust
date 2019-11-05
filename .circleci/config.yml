@@ -351,5 +351,7 @@ workflows:
   jobs:
    - deploy.mac:
       filters:
+       branches:
+        ignore: /.*/
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/

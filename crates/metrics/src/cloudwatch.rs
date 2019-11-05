@@ -101,7 +101,7 @@ pub struct CloudWatchLogger {
     pub client: CloudWatchLogsClient,
     pub log_group_name: Option<String>,
     pub log_stream_name: Option<String>,
-    pub sequence_token: Option<String>
+    pub sequence_token: Option<String>,
 }
 
 impl CloudWatchLogger {
@@ -127,11 +127,25 @@ impl CloudWatchLogger {
             query_id: query.query_id.unwrap(),
         };
 
-        let query_result: GetQueryResultsResponse = self
-            .client
-            .get_query_results(get_query_results_request)
-            .sync()
-            .unwrap();
+        let mut query_result: GetQueryResultsResponse;
+
+        loop {
+            query_result = self
+                .client
+                .get_query_results(get_query_results_request.clone())
+                .sync()
+                .unwrap();
+            if query_result
+                .status
+                .map(|x| x == "Running")
+                .unwrap_or_else(|| false)
+            {
+                std::thread::sleep(std::time::Duration::from_millis(20));
+                continue;
+            } else {
+                break;
+            }
+        }
 
         let log_records = query_result.results.unwrap_or_default();
 
@@ -213,7 +227,7 @@ impl CloudWatchLogger {
             client,
             log_stream_name: Some(log_stream_name),
             log_group_name: Some(log_group_name),
-            sequence_token: None
+            sequence_token: None,
         }
     }
 }
@@ -237,9 +251,13 @@ impl MetricPublisher for CloudWatchLogger {
                 .log_stream_name
                 .clone()
                 .unwrap_or_else(|| panic!("log_stream_name must be set")),
-            sequence_token: self.sequence_token.clone()
+            sequence_token: self.sequence_token.clone(),
         };
-        let result = self.client.put_log_events(put_log_events_request).sync().unwrap();
+        let result = self
+            .client
+            .put_log_events(put_log_events_request)
+            .sync()
+            .unwrap();
         self.sequence_token = result.next_sequence_token
     }
 }

@@ -230,7 +230,7 @@ impl ConductorAdmin for Conductor {
     fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        new_config = new_config.save_remove_instance(id);
+        new_config = new_config.save_remove_instance(id, clean);
 
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
@@ -246,13 +246,6 @@ impl ConductorAdmin for Conductor {
         }
 
         if let Some(instance) = self.instances.remove(id) {
-            if clean {
-                if let Some(instance_config) = self.config.instance_by_id(id) {
-                    if let Some(storage_path) = instance_config.storage.path() {
-                        remove_dir_all(storage_path)?;
-                    }
-                }
-            }
             instance.write().unwrap().kill();
         }
         let _ = self.start_signal_multiplexer();

@@ -47,7 +47,7 @@ impl From<&Metric> for MetricDatum {
 impl TryFrom<ResultField> for Metric {
     type Error = ParseError;
     fn try_from(result_field: ResultField) -> Result<Self, Self::Error> {
-        if result_field.field != Some("message".to_string()) {
+        if result_field.field != Some("@message".to_string()) {
             return Err(ParseError(format!(
                 "Expected message field but got: {:?}",
                 result_field.field

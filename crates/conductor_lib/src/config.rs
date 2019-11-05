@@ -586,7 +586,15 @@ impl Configuration {
 
     /// Removes the instance given by id and all mentions of it in other elements so
     /// that the config is guaranteed to be valid afterwards if it was before.
-    pub fn save_remove_instance(mut self, id: &String) -> Self {
+    pub fn save_remove_instance(mut self, id: &String, clean: bool) -> Self {
+        if clean {
+            if let Some(instance_config) = self.instance_by_id(id) {
+                if let Some(storage_path) = instance_config.storage.path() {
+                    remove_dir_all(storage_path)?;
+                }
+            }
+        }
+        
         self.instances = self
             .instances
             .into_iter()

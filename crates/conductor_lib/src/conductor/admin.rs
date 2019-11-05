@@ -1258,7 +1258,7 @@ pub mod test {
 
         let tmp_dir_path = tmpdir.path();
         
-        let tmpdirpathdisp = tmp_dir_path.display()
+        let tmpdirpathdisp = tmp_dir_path.display();
         
         let old_file_storage_conf = r#"id = 'test-instance-1'
 

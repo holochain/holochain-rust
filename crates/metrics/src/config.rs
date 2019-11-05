@@ -20,7 +20,11 @@ pub enum MetricPublisherConfig {
 
 impl Default for MetricPublisherConfig {
     fn default() -> Self {
-        Self::Logger
+        Self::CloudWatchLogs {
+            region: Default::default(),
+            log_group_name: crate::cloudwatch::CloudWatchLogger::default_log_group(),
+            log_stream_name: crate::cloudwatch::CloudWatchLogger::default_log_stream(),
+        }
     }
 }
 

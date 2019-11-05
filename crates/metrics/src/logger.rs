@@ -17,6 +17,12 @@ impl MetricPublisher for LoggerMetricPublisher {
     }
 }
 
+impl Default for LoggerMetricPublisher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 lazy_static! {
     pub static ref PARSE_METRIC_REGEX: Regex =
         Regex::new("metrics.rs:\\d* ([\\w\\d~\\-\\.]+) ([\\d\\.]+)").unwrap();

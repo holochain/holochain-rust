@@ -110,7 +110,7 @@ impl Sim2hWorker {
             time_of_last_sent: Instant::now(),
             connection_status: ConnectionStatus::None,
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
-                DefaultMetricPublisher::new(),
+                DefaultMetricPublisher::default(),
             )),
         };
 

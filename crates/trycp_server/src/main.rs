@@ -8,11 +8,20 @@ extern crate serde_json;
 use self::tempfile::tempdir;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
+use nix::{
+    sys::signal::{self, Signal},
+    unistd::Pid,
+};
 use serde_json::map::Map;
-use std::{fs::File, io::Write, process::{Command, Child}, path::PathBuf,collections::HashMap, sync::{RwLock,Arc}};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    path::PathBuf,
+    process::{Child, Command},
+    sync::{Arc, RwLock},
+};
 use structopt::StructOpt;
-use nix::unistd::Pid;
-use nix::sys::signal::{self, Signal};
 
 /*type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
@@ -52,13 +61,13 @@ struct Cli {
 }
 
 struct Store {
-    dir: tempfile::TempDir
+    dir: tempfile::TempDir,
 }
 
 impl Store {
     pub fn new() -> Self {
         Store {
-            dir: tempdir().expect("should create tmp dir")
+            dir: tempdir().expect("should create tmp dir"),
         }
     }
     pub fn reset(&mut self) {
@@ -96,28 +105,27 @@ fn get_as_bool<T: Into<String>>(
 ) -> Result<bool, jsonrpc_core::Error> {
     let key = key.into();
     match params_map.get(&key) {
-        Some(value) => {
-            value.as_bool()
-                .ok_or_else(|| {
-                    jsonrpc_core::Error::invalid_params(format!("`{}` has to be a boolean", &key))
-                })
-        }
-        None => default.ok_or_else(||
-            jsonrpc_core::Error::invalid_params(format!("required param `{}` not provided", &key)))
+        Some(value) => value.as_bool().ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("`{}` has to be a boolean", &key))
+        }),
+        None => default.ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("required param `{}` not provided", &key))
+        }),
     }
 }
 
-const CONDUCTOR_CONFIG_FILE_NAME :&str = "conductor-config.toml";
+const CONDUCTOR_CONFIG_FILE_NAME: &str = "conductor-config.toml";
 
 fn get_dir(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
-    let temp_path =  temp_path_arc.read().expect("should_lock");
+    let temp_path = temp_path_arc.read().expect("should_lock");
     temp_path.dir.path().join(id).clone()
 }
 
 fn get_file(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
-    get_dir(temp_path_arc, id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+    get_dir(temp_path_arc, id)
+        .join(CONDUCTOR_CONFIG_FILE_NAME)
+        .clone()
 }
-
 
 fn main() {
     let args = Cli::from_args();
@@ -148,11 +156,11 @@ fn main() {
             println!("killall result: {:?}", output);
         } else {
             for (id, child) in &*players {
-                let _= do_kill(id, child,"SIGKILL"); //ignore any errors
+                let _ = do_kill(id, child, "SIGKILL"); //ignore any errors
             }
         }
         players.clear();
-        let mut temp_path =  temp_path_arc.write().expect("should_lock");
+        let mut temp_path = temp_path_arc.write().expect("should_lock");
         temp_path.reset();
 
         Ok(Value::String("reset".into()))
@@ -183,10 +191,15 @@ fn main() {
                 data: None,
             })?;
         let dir_path = get_dir(temp_path_arc_player.clone(), &id);
-        std::fs::create_dir_all(dir_path.clone()).map_err(|e| jsonrpc_core::types::error::Error {
-            code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-            message: format!("error making temporary directory for config: {:?} {:?}", e, dir_path),
-            data: None,
+        std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
+            jsonrpc_core::types::error::Error {
+                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+                message: format!(
+                    "error making temporary directory for config: {:?} {:?}",
+                    e, dir_path
+                ),
+                data: None,
+            }
         })?;
         let file_path = get_file(temp_path_arc_player.clone(), &id);
         File::create(file_path.clone())
@@ -207,8 +220,6 @@ fn main() {
         Ok(Value::String(response))
     });
 
-
-
     io.add_method("spawn", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
@@ -223,7 +234,10 @@ fn main() {
             });
         };
 
-        let player_config = format!("{}",get_file(temp_path_arc_spawn.clone(), &id).to_string_lossy());
+        let player_config = format!(
+            "{}",
+            get_file(temp_path_arc_spawn.clone(), &id).to_string_lossy()
+        );
         let conductor = Command::new("holochain")
             .args(&["-c", &player_config])
             .spawn()
@@ -232,8 +246,8 @@ fn main() {
                 message: format!("unable to spawn conductor: {:?}", e),
                 data: None,
             })?;
-        players.insert(id.clone(),conductor);
-        let response = format!("conductor spawned for {}",id);
+        players.insert(id.clone(), conductor);
+        let response = format!("conductor spawned for {}", id);
         Ok(Value::String(response))
     });
 
@@ -247,9 +261,9 @@ fn main() {
         match players.remove(&id) {
             None => {
                 return Err(jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-                message: format!("no conductor spawned for {}", id),
-                data: None,
+                    code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+                    message: format!("no conductor spawned for {}", id),
+                    data: None,
                 });
             }
             Some(ref mut child) => {
@@ -268,20 +282,29 @@ fn main() {
     server.wait().expect("server should wait");
 }
 
-fn do_kill(id: &String, child: &Child, signal: &str) -> Result<(),jsonrpc_core::types::error::Error> {
+fn do_kill(
+    id: &String,
+    child: &Child,
+    signal: &str,
+) -> Result<(), jsonrpc_core::types::error::Error> {
     let sig = match signal {
         "SIGKILL" => Signal::SIGKILL,
         "SIGTERM" => Signal::SIGTERM,
         _ => Signal::SIGINT,
     };
-    signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| jsonrpc_core::types::error::Error {
-        code: jsonrpc_core::types::error::ErrorCode::InternalError,
-        message: format!("unable to run kill conductor for {} script: {:?}", id, e),
-        data: None,
+    signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| {
+        jsonrpc_core::types::error::Error {
+            code: jsonrpc_core::types::error::ErrorCode::InternalError,
+            message: format!("unable to run kill conductor for {} script: {:?}", id, e),
+            data: None,
+        }
     })
 }
 
-fn check_player_config(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> Result<(),jsonrpc_core::types::error::Error> {
+fn check_player_config(
+    temp_path_arc: Arc<RwLock<Store>>,
+    id: &String,
+) -> Result<(), jsonrpc_core::types::error::Error> {
     let file_path = get_file(temp_path_arc, id);
     if !file_path.is_file() {
         return Err(jsonrpc_core::types::error::Error {

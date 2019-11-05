@@ -185,7 +185,7 @@ impl ContextBuilder {
             .unwrap_or_else(|| Arc::new(RwLock::new(EavMemoryStorage::new())));
         let metric_publisher = self
             .metric_publisher
-            .unwrap_or_else(|| Arc::new(RwLock::new(DefaultMetricPublisher::new())));
+            .unwrap_or_else(|| Arc::new(RwLock::new(DefaultMetricPublisher::default())));
 
         Context::new(
             &self

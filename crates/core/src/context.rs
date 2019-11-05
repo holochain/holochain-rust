@@ -426,7 +426,9 @@ pub mod tests {
             None,
             None,
             false,
-            Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
 
         // Somehow we need to build our own logging instance for this test to show logs
@@ -470,7 +472,9 @@ pub mod tests {
             None,
             None,
             false,
-            Arc::new(RwLock::new(holochain_metrics::DefaultMetricPublisher::new())),
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

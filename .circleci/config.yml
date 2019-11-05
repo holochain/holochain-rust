@@ -348,6 +348,9 @@ workflows:
         only:
          - develop
 
- # deploy:
- #  jobs:
- #   - deploy.mac
+ deploy:
+  jobs:
+   - deploy.mac:
+      filters:
+       tags:
+        only: /^v\d+\.\d+\.\d+-alpha\d+/

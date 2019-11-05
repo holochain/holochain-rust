@@ -96,7 +96,7 @@ pub mod test {
     use crate::{
         context::Context,
         persister::SimplePersister,
-        state::{test_store, StateWrapper},
+        state::{test_store, State},
     };
     use holochain_core_types::{agent::AgentId, dna::Dna};
     use holochain_locksmith::RwLock;
@@ -126,7 +126,7 @@ pub mod test {
             false,
         );
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

@@ -64,10 +64,10 @@ pub mod tests {
         let context = instance.initialize_context(context);
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
+        assert_eq!(1, instance.state().history.iter().count());
         instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {
@@ -100,10 +100,10 @@ pub mod tests {
         let context = instance.initialize_context(context);
         instance.process_action(&commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
+        assert_eq!(1, instance.state().history.iter().count());
         instance
             .state()
-            .history()
+            .history
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit((entry, _, _)) => {

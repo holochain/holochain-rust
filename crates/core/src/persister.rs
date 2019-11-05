@@ -14,7 +14,6 @@ use holochain_persistence_api::cas::{
 
 use crate::{
     dht::dht_store::{DhtStoreSnapshot, DHT_STORE_SNAPSHOT_ADDRESS},
-    state::StateWrapper,
 };
 use std::sync::Arc;
 
@@ -24,7 +23,7 @@ pub trait Persister: Send + Sync {
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
-    fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError>;
+    fn save(&mut self, state: &State) -> Result<(), HolochainError>;
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
 }
 
@@ -40,7 +39,7 @@ impl PartialEq for SimplePersister {
 }
 
 impl Persister for SimplePersister {
-    fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
+    fn save(&mut self, state: &State) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write()?;
         let agent_snapshot = AgentStateSnapshot::from(state);

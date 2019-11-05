@@ -109,7 +109,7 @@ use holochain_core_types::{
 use holochain_json_api::json::JsonString;
 
 use holochain_core::{
-    state::StateWrapper,
+    state::State,
     state_dump::{address_to_content_and_type, StateDump},
 };
 use holochain_persistence_api::cas::content::Address;
@@ -252,7 +252,7 @@ impl Holochain {
     }
 
     /// return
-    pub fn state(&self) -> Result<StateWrapper, HolochainInstanceError> {
+    pub fn state(&self) -> Result<State, HolochainInstanceError> {
         self.check_instance()?;
         Ok(self.instance.as_ref().unwrap().state().clone())
     }

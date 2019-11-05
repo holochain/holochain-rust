@@ -7,14 +7,14 @@ use futures::{future::Future, task::Poll};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_locksmith::RwLock;
 
-use crate::state::StateWrapper;
+use crate::state::State;
 use std::{pin::Pin, sync::Arc};
 
 /// Shutdown the network
 /// This tells the network to untrack this instance and then stops the network thread
 /// and sets the P2pNetwork instance in the state to None.
 pub async fn shutdown(
-    state: Arc<RwLock<StateWrapper>>,
+    state: Arc<RwLock<State>>,
     action_channel: Sender<ActionWrapper>,
 ) -> HcResult<()> {
     if state.read().unwrap().network().initialized().is_ok() {
@@ -29,7 +29,7 @@ pub async fn shutdown(
 }
 
 pub struct ShutdownFuture {
-    state: Arc<RwLock<StateWrapper>>,
+    state: Arc<RwLock<State>>,
 }
 
 impl Future for ShutdownFuture {

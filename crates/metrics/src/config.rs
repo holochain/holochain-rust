@@ -24,7 +24,6 @@ impl Default for MetricPublisherConfig {
     }
 }
 
-
 impl MetricPublisherConfig {
     pub fn create_metric_publisher(&self) -> Arc<RwLock<dyn MetricPublisher>> {
         let publisher: Arc<RwLock<dyn MetricPublisher>> = match self {
@@ -49,7 +48,9 @@ impl MetricPublisherConfig {
         publisher
     }
 
-    pub fn default_logger() -> Self { Self::Logger }
+    pub fn default_logger() -> Self {
+        Self::Logger
+    }
 
     pub fn default_cloudwatch_logs() -> Self {
         Self::CloudWatchLogs {

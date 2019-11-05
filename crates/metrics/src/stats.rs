@@ -3,7 +3,7 @@ use crate::Metric;
 use stats::{Commute, OnlineStats};
 use std::{collections::HashMap, iter::FromIterator};
 
-#[derive(Shrinkwrap)]
+#[derive(Shrinkwrap, Debug)]
 pub struct Stats(HashMap<String, OnlineStats>);
 
 fn empty_stat() -> OnlineStats {

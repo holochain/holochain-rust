@@ -138,12 +138,9 @@ impl CloudWatchLogger {
         log_records
     }
 
-    pub fn query_metrics(
-        &self,
-        start_time: &std::time::SystemTime,
-        end_time: &std::time::SystemTime,
-    ) -> Box<dyn Iterator<Item = Metric>> {
-        let query = self.query(start_time, end_time);
+    pub fn metrics_of_query<'a>(
+        query: Vec<Vec<ResultField>>,
+    ) -> Box<dyn Iterator<Item = Metric> + 'a> {
         let iterator = query
             .into_iter()
             .map(|result_vec| {
@@ -155,6 +152,15 @@ impl CloudWatchLogger {
             .flatten();
 
         Box::new(iterator)
+    }
+
+    pub fn query_metrics(
+        &self,
+        start_time: &std::time::SystemTime,
+        end_time: &std::time::SystemTime,
+    ) -> Box<dyn Iterator<Item = Metric>> {
+        let query = self.query(start_time, end_time);
+        Self::metrics_of_query(query)
     }
 
     pub fn query_and_aggregate(

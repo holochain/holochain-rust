@@ -33,7 +33,7 @@ use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     env,
-    fs::File,
+    fs::{File, remove_dir_all},
     io::prelude::*,
     net::Ipv4Addr,
     path::PathBuf,
@@ -589,7 +589,7 @@ impl Configuration {
     pub fn save_remove_instance(mut self, id: &String, clean: bool) -> Self {
         if clean {
             if let Some(instance_config) = self.instance_by_id(id) {
-                if let Some(storage_path) = self.storage.path() {
+                if let Some(storage_path) = instance_config.storage.path() {
                     remove_dir_all(storage_path)?;
                 }
             }

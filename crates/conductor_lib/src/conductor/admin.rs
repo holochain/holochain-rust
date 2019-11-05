@@ -13,7 +13,7 @@ use holochain_persistence_api::{cas::content::AddressableContent, hash::HashStri
 
 use json_patch;
 use std::{
-    fs::{self, create_dir_all, remove_dir_all},
+    fs::{self, create_dir_all},
     path::PathBuf,
     sync::Arc,
     thread::sleep,
@@ -147,8 +147,9 @@ impl ConductorAdmin for Conductor {
     /// Removes the DNA given by id from the config.
     /// Also removes all instances and their mentions from all interfaces to not render the config
     /// invalid.
-    /// Then saves the config.
-    fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
+    /// Then saves the config. 
+    /// Removes the storage of the instances.
+    fn uninstall_dna(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.dnas = new_config
             .dnas
@@ -164,7 +165,7 @@ impl ConductorAdmin for Conductor {
             .collect();
 
         for id in instance_ids.iter() {
-            new_config = new_config.save_remove_instance(id);
+            new_config = new_config.save_remove_instance(id, true);
         }
 
         new_config.check_consistency(&mut self.dna_loader)?;
@@ -230,7 +231,7 @@ impl ConductorAdmin for Conductor {
     fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        new_config = new_config.save_remove_instancee(id, clean);
+        new_config = new_config.save_remove_instance(id, clean);
 
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
@@ -500,7 +501,7 @@ impl ConductorAdmin for Conductor {
             .collect();
 
         for id in instance_ids.iter() {
-            new_config = new_config.save_remove_instance(id);
+            new_config = new_config.save_remove_instance(id, true);
         }
 
         new_config.check_consistency(&mut self.dna_loader)?;

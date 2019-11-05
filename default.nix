@@ -75,6 +75,7 @@ with holonix.pkgs;
 
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
+    holonix = holonix;
     pkgs = holonix.pkgs;
     config = config;
    }).buildInputs

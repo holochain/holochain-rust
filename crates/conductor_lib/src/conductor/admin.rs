@@ -786,6 +786,7 @@ type = 'cmd'"#
     pub fn barebones_test_toml(test_name: &str) -> String {
         let mut toml = header_block(test_name);
         toml = add_block(toml, agent1());
+        toml = format!("{}\n", toml);
         toml
     }
 

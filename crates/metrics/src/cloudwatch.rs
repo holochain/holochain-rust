@@ -103,7 +103,6 @@ pub struct CloudWatchLogger {
     pub log_stream_name: Option<String>,
 }
 
-const LOG_LIMIT: i64 = 1000000;
 impl CloudWatchLogger {
     pub fn query(
         &self,
@@ -112,7 +111,7 @@ impl CloudWatchLogger {
     ) -> Vec<Vec<ResultField>> {
         let query_string = "fields @message | filter @message like /metrics.rs/".to_string();
         let start_query_request = StartQueryRequest {
-            limit: Some(LOG_LIMIT),
+            limit: None,
             query_string,
             start_time: start_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
             end_time: end_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
@@ -172,7 +171,11 @@ impl CloudWatchLogger {
     }
 
     pub fn default_log_stream() -> String {
-        format!("holochain-{:?}", snowflake::ProcessUniqueId::new())
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+        format!("holochain-{}", now)
     }
 
     pub fn default_log_group() -> String {

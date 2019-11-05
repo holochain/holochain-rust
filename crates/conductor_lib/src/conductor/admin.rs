@@ -1281,7 +1281,7 @@ path = '{}'"#, tmpdirpathdisp);
         // TODO: maybe refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
         // this is failing, e.g. in https://circleci.com/gh/holochain/holochain-rust/45590?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
         // assert!(tmp_dir_path.exists(), no_sd_err);
-        notify("tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}", tmpdirpathdisp, tmp_dir_path.exists());
+        notify(format!("tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}", tmpdirpathdisp, tmp_dir_path.exists()));
 
         let start_toml = || {
             let mut toml = header_block(test_name);
@@ -1334,7 +1334,7 @@ type = 'websocket'"#,
         // let still_sd_err = format!("The storage directory {} still exists after trying to remove it!", tmpdirpathdisp);
 
         // assert!(!tmp_dir_path.exists(), still_sd_err);
-        notify("tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}", tmpdirpathdisp, tmp_dir_path.exists());
+        notify(format!("tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}", tmpdirpathdisp, tmp_dir_path.exists()));
 
         let mut config_contents = String::new();
         let mut file =

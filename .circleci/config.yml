@@ -352,4 +352,4 @@ workflows:
    - deploy.mac:
       filters:
        tags:
-        only: /v\d+\.\d+\.\d+-alpha\d+/
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/

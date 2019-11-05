@@ -6,8 +6,9 @@ extern crate serde_json;
 //use log::error;
 //use std::process::exit;
 use self::tempfile::tempdir;
-use jsonrpc_core::{IoHandler, Params, Value};
-use jsonrpc_ws_server::ServerBuilder;
+use jsonrpc_core::{MetaIoHandler, Params, Value};
+use jsonrpc_ws_server::{RequestContext, ServerBuilder};
+use jsonrpc_pubsub::{PubSubHandler, Session};
 use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
@@ -22,6 +23,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
+
+pub type RpcHandler = PubSubHandler<Arc<Session>>;
 
 /*type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
@@ -129,7 +132,7 @@ fn get_file(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
 
 fn main() {
     let args = Cli::from_args();
-    let mut io = IoHandler::new();
+    let mut io: RpcHandler = PubSubHandler::new(MetaIoHandler::default());
 
     let temp_path_arc: Arc<RwLock<Store>> = Arc::new(RwLock::new(Store::new()));
     let temp_path_arc_setup = temp_path_arc.clone();
@@ -286,7 +289,9 @@ fn main() {
         Ok(Value::String(response))
     });
 
-    let server = ServerBuilder::new(io)
+    let server = ServerBuilder::with_meta_extractor(io, |context: &RequestContext| {
+        Arc::new(Session::new(context.sender().clone()))
+    })
         .start(&format!("0.0.0.0:{}", args.port).parse().unwrap())
         .expect("server should start");
     println!("waiting for connections on port {}", args.port);

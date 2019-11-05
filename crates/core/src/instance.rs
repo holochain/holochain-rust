@@ -20,6 +20,7 @@ use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
     ugly::lax_send_sync,
+    diagnostic::FuturesDiagnosticTrace
 };
 use holochain_locksmith::{RwLock, RwLockReadGuard};
 #[cfg(test)]
@@ -157,6 +158,7 @@ impl Instance {
         sub_context.set_state(self.state.clone());
         sub_context.action_channel = self.action_channel.clone();
         sub_context.observer_channel = self.observer_channel.clone();
+        FuturesDiagnosticTrace::run(sub_context.future_trace.clone());
         Arc::new(sub_context)
     }
 

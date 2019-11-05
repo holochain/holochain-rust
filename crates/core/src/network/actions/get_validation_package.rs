@@ -45,6 +45,7 @@ impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        self.context.future_trace.write().expect("Could not get future trace").capture();
         if let Some(err) = self
             .context
             .action_channel_error("GetValidationPackageFuture")
@@ -62,6 +63,7 @@ impl Future for GetValidationPackageFuture {
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
             cx.waker().clone().wake();
+            self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("GetValidationPackageFuture"));
             match state.get_validation_package_results.get(&self.address) {
                 Some(Some(result)) => Poll::Ready(result.clone()),
                 _ => Poll::Pending,

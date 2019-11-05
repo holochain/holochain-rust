@@ -59,9 +59,11 @@ impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
+       self.context.future_trace.write().expect("Could not get future trace").capture();
+       if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
             return Poll::Ready(Err(err));
         }
+        
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
@@ -71,6 +73,7 @@ impl Future for SendResponseFuture {
             // TODO: connect the waker to state updates for performance reasons
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
+            self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("custom_send"));
             cx.waker().clone().wake();
             match state.custom_direct_message_replys.get(&self.id) {
                 Some(result) => Poll::Ready(result.clone()),

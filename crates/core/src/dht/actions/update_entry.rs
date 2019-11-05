@@ -36,6 +36,8 @@ impl Future for UpdateEntryFuture {
     type Output = Result<Address, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        self.context.future_trace.write().expect("Could not get future trace").capture();
+        
         if let Some(err) = self.context.action_channel_error("UpdateEntryFuture") {
             return Poll::Ready(Err(err));
         }
@@ -44,6 +46,7 @@ impl Future for UpdateEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
+        self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("UpdateEntryFuture"));
         if let Some(state) = self.context.try_state() {
             match state.dht().actions().get(&self.action) {
                 Some(Ok(address)) => Poll::Ready(Ok(address.clone())),

@@ -22,6 +22,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
+    diagnostic::FuturesDiagnosticTrace
 };
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -83,6 +84,7 @@ pub struct Context {
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
+    pub future_trace : Arc<RwLock<FuturesDiagnosticTrace<String>>>
 }
 
 impl Context {
@@ -143,6 +145,7 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
+            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new()))
         }
     }
 
@@ -174,6 +177,7 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
+            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new()))
         })
     }
 
@@ -189,6 +193,8 @@ impl Context {
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
+
+    
 
     /// Try to acquire read-lock on the state.
     /// Returns immediately either with the lock or with None if the lock

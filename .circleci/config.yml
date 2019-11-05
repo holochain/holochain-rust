@@ -283,12 +283,16 @@ jobs:
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       export TARGET=x86_64-apple-darwin
-       nix-shell --run 'cargo rustc --manifest-path crates/cli/Cargo.toml --target $TARGET --release -- -C lto'
-       mkdir cli-$CIRCLE_TAG-$TARGET
-       cp target/$TARGET/release/hc crates/cli/LICENSE crates/cli/README.md cli-$CIRCLE_TAG-$TARGET/
-       tar czf cli-$CIRCLE_TAG-$TARGET.tar.gz cli-$CIRCLE_TAG-$TARGET/
-       nix-shell --run "github-release upload --file ./cli-$CIRCLE_TAG-$TARGET.tar.gz --owner holochain --repo holochain-rust --tag $CIRCLE_TAG --name cli-$CIRCLE_TAG-$TARGET.tar.gz --token $GITHUB_DEPLOY_TOKEN"
+       nix-shell --run hc-release-github-binaries
+
+ deploy.linux:
+  docker:
+   - image: holochain/holonix:ubuntu
+  steps:
+   - checkout
+   - run:
+      name: Deploy linux binaries
+      command: nix-shell --run hc-release-github-binaries
 
 workflows:
  version: 2
@@ -350,6 +354,12 @@ workflows:
  deploy:
   jobs:
    - deploy.mac:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.linux:
       filters:
        branches:
         ignore: /.*/

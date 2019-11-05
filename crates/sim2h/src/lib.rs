@@ -706,7 +706,8 @@ impl Sim2h {
     fn retry_sync_missing_aspects(&mut self) {
         // Extract all needed info for the call to self.request_gossiping_list() below
         // as copies so we don't have to keep a reference to self.
-        let spaces_with_agents_and_uris = self.spaces
+        let spaces_with_agents_and_uris = self
+            .spaces
             .iter()
             .filter_map(|(space_hash, space_lock)| {
                 let space = space_lock.read();
@@ -721,9 +722,9 @@ impl Sim2h {
                     let agent_ids_with_uris: Vec<(AgentId, Lib3hUri)> = agents
                         .iter()
                         .filter_map(|agent_id| {
-                            space.agent_id_to_uri(agent_id).map(|uri| {
-                                (agent_id.clone(), uri)
-                            })
+                            space
+                                .agent_id_to_uri(agent_id)
+                                .map(|uri| (agent_id.clone(), uri))
                         })
                         .collect();
 
@@ -732,14 +733,9 @@ impl Sim2h {
             })
             .collect::<HashMap<SpaceHash, Vec<_>>>();
 
-
         for (space_hash, agents) in spaces_with_agents_and_uris {
             for (agent_id, uri) in agents {
-                self.request_gossiping_list(
-                    uri,
-                    space_hash.clone(),
-                    agent_id,
-                );
+                self.request_gossiping_list(uri, space_hash.clone(), agent_id);
             }
         }
     }

@@ -51,7 +51,7 @@ impl Space {
         }
     }
 
-    pub fn agents_with_missing_aspects(&self) -> Vec<AgentId>{
+    pub fn agents_with_missing_aspects(&self) -> Vec<AgentId> {
         self.missing_aspects.keys().cloned().collect()
     }
 

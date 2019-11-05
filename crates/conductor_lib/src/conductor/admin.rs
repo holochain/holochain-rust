@@ -149,7 +149,7 @@ impl ConductorAdmin for Conductor {
     /// invalid.
     /// Then saves the config. 
     /// Removes the storage of the instances.
-    fn uninstall_dna(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
+    fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.dnas = new_config
             .dnas

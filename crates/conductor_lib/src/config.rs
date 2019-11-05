@@ -588,8 +588,10 @@ impl Configuration {
     /// that the config is guaranteed to be valid afterwards if it was before.
     pub fn save_remove_instance(mut self, id: &String, clean: bool) -> Self {
         if clean {
-            if let Some(storage_path) = self.storage.path() {
-                remove_dir_all(storage_path)?;
+            if let Some(instance_config) = self.instance_by_id(id) {
+                if let Some(storage_path) = self.storage.path() {
+                    remove_dir_all(storage_path)?;
+                }
             }
         }
         

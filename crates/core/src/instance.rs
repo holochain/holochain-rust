@@ -662,6 +662,17 @@ pub mod tests {
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
         test_instance(dna, None).expect("Blank instance could not be initialized!")
     }
+    
+    #[test]
+    pub fn can_clone_instance() {
+        let instance = test_instance_blank();
+        {
+            let instance2 = instance.clone();
+        }
+        // wait for the action thread to receive kill signal, if applicable
+        std::thread::sleep(Duration::from_secs(2));
+        instance.action_channel().send(ActionWrapper::new(Action::Ping)).unwrap();
+    }
 
     #[test]
     /// This tests calling `process_action`

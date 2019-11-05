@@ -869,7 +869,7 @@ impl Conductor {
                                     &dna_hash_computed_from_file, &dna_location)?;
                             },
                             Err(_) => {
-                                let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_location);
+                                let msg = format!("Conductor: Could not load DNA from {:?}.", &dna_location);
                                 log_error!(context, "{}", msg);
 
                                 // If something is wrong with the DNA file, we only

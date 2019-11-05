@@ -237,7 +237,7 @@ impl Configuration {
             let dna_config = dna_config.unwrap();
             let dna_location = dna_config.get_location();
             let dna = Arc::get_mut(&mut dna_loader).unwrap()(&dna_location)
-                .map_err(|_| format!("Could not load DNA file \"{}\"", dna_location))?;
+                .map_err(|_| format!("Could not load DNA from \"{}\"", dna_location))?;
 
             for zome in dna.zomes.values() {
                 for bridge in zome.bridges.iter() {
@@ -344,12 +344,12 @@ impl Configuration {
             )
         })?;
 
-        let caller_dna_file = caller_dna_config.get_location();
+        let caller_dna_location = caller_dna_config.get_location();
         let caller_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&caller_dna_file).map_err(|err| {
+            Arc::get_mut(&mut dna_loader).unwrap()(&caller_dna_location).map_err(|err| {
                 format!(
-                    "Could not load DNA file \"{:?}\"; error was: {}",
-                    caller_dna_file, err
+                    "Could not load DNA from \"{:?}\"; error was: {}",
+                    caller_dna_location, err
                 )
             })?;
 
@@ -372,12 +372,12 @@ impl Configuration {
             )
         })?;
 
-        let callee_dna_file = callee_dna_config.get_location();
+        let callee_dna_location = callee_dna_config.get_location();
         let callee_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&callee_dna_file).map_err(|err| {
+            Arc::get_mut(&mut dna_loader).unwrap()(&callee_dna_location).map_err(|err| {
                 format!(
-                    "Could not load DNA file \"{}\"; error was: {}",
-                    callee_dna_file, err
+                    "Could not load DNA from \"{}\"; error was: {}",
+                    callee_dna_location, err
                 )
             })?;
 

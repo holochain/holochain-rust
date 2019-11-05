@@ -192,17 +192,17 @@ fn main() {
         File::create(file_path.clone())
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!("unable to create config file: {:?} {:?}", e, file_path),
+                message: format!("unable to create config file: {:?} {}", e, file_path.to_string_lossy()),
                 data: None,
             })?
             .write_all(&content[..])
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!("unable to write config file: {:?} {:?}", e, file_path),
+                message: format!("unable to write config file: {:?} {}", e, file_path.to_string_lossy()),
                 data: None,
             })?;
 
-        let response = format!("wrote config for player {} to {:?}", id, file_path);
+        let response = format!("wrote config for player {} to {}", id, file_path.to_string_lossy());
         println!("player {}: {:?}", id, response);
         Ok(Value::String(response))
     });

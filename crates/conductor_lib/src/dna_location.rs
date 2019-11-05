@@ -30,6 +30,7 @@ impl DnaLocation {
                     .map_err(|e| {
                         HolochainError::ErrorGeneric(format!("could not get text response: {}", e))
                     })?;
+                debug!("Finished downloading file from {}", url);
                 Ok(content)
             }
         }
@@ -39,7 +40,7 @@ impl DnaLocation {
 impl fmt::Display for DnaLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DnaLocation::File(file) => write!(f, "{:?}", file),
+            DnaLocation::File(file) => write!(f, "{}", file.to_string_lossy()),
             DnaLocation::Url(url) => write!(f, "{}", url),
         }
     }

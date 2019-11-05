@@ -126,7 +126,6 @@ extern crate petgraph;
 extern crate regex;
 #[macro_use]
 extern crate serde_json;
-extern crate tempfile;
 #[cfg(test)]
 extern crate test_utils;
 extern crate toml;

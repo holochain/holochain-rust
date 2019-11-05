@@ -31,10 +31,10 @@ pub async fn build_validation_package<'a>(
         EntryType::App(app_entry_type) => {
             if context
                 .state()
-                .unwrap()
+                .expect("No state in build_validation_package")
                 .nucleus()
                 .dna()
-                .unwrap()
+                .expect("No DNA in build_valdation_package")
                 .get_zome_name_for_app_entry_type(&app_entry_type)
                 .is_none()
             {
@@ -75,7 +75,12 @@ pub async fn build_validation_package<'a>(
     {
         let entry = entry.clone();
         let context = context.clone();
-        let maybe_entry_header = find_chain_header(&entry.clone(), &context.state().unwrap());
+        let maybe_entry_header = find_chain_header(
+            &entry.clone(),
+            &context
+                .state()
+                .expect("No state in build_validation_package"),
+        );
         let entry_header = if maybe_entry_header.is_none() {
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
@@ -195,14 +200,16 @@ fn public_chain_entries_from_headers(
         .map(|chain_header| {
             let storage = context
                 .state()
-                .unwrap()
+                .expect("No state in public_chain_entries_from_headers")
                 .agent()
                 .chain_store()
                 .content_storage()
                 .clone();
-            let json = (*storage.read().unwrap())
-                .fetch(chain_header.entry_address())
-                .expect("Could not fetch from CAS");
+            let json = (*storage.read().expect(
+                "Couldn't get read lock on content storage in public_chain_entries_from_headers",
+            ))
+            .fetch(chain_header.entry_address())
+            .expect("Could not fetch from CAS");
             json.expect("Could not find CAS for existing chain header")
                 .try_into()
                 .expect("Could not convert to serialized entry")
@@ -214,7 +221,11 @@ fn all_chain_headers_before_header(
     context: &Arc<Context>,
     header: &ChainHeader,
 ) -> Vec<ChainHeader> {
-    let chain = context.state().unwrap().agent().chain_store();
+    let chain = context
+        .state()
+        .expect("No state in all_chain_headers_before_header")
+        .agent()
+        .chain_store();
     chain.iter(&Some(header.clone())).skip(1).collect()
 }
 

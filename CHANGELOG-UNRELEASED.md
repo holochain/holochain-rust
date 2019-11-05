@@ -15,6 +15,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Adds a special DNA property sim2h_url that, if set, overrides the conductor wide setting for the network configuration variable sim2h_url. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)
 * Adds ability to download DNA from URL rather than pointing to local filesystem
 
+* Adds ability to download DNA from URL rather than pointing to local filesystem
+
 ### Changed
 
 ### Deprecated

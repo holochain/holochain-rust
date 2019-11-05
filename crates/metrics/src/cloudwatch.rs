@@ -1,5 +1,9 @@
 use crate::*;
 
+use crate::{
+    logger::{LogLine, ParseError},
+    stats::Stats,
+};
 use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, MetricDatum, PutMetricDataInput};
 use rusoto_core::region::Region;
 use rusoto_logs::*;
@@ -8,8 +12,6 @@ use std::{
     iter::FromIterator,
     time::UNIX_EPOCH,
 };
-
-use crate::logger::{LogLine, ParseError};
 const DEFAULT_REGION: Region = Region::EuCentral1;
 
 #[derive(Clone)]
@@ -159,8 +161,8 @@ impl CloudWatchLogger {
         &self,
         start_time: &std::time::SystemTime,
         end_time: &std::time::SystemTime,
-    ) -> crate::stats::Stats {
-        crate::stats::Stats::from_iter(self.query_metrics(start_time, end_time))
+    ) -> Stats {
+        Stats::from_iter(self.query_metrics(start_time, end_time))
     }
 
     pub fn default_log_stream() -> String {

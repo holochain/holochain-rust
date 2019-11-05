@@ -15,6 +15,8 @@ let
 set -euox pipefail
 echo "packaging for crates.io"
 
+cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Cargo.toml
+
 # order is important here due to dependencies
 for crate in \
  locksmith \
@@ -37,6 +39,8 @@ do
  cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty
  sleep 10
 done
+
+git checkout -f
 '';
 in
 {

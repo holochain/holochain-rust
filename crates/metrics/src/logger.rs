@@ -29,7 +29,7 @@ lazy_static! {
 }
 
 #[derive(Debug, Clone)]
-pub struct ParseError(String);
+pub struct ParseError(pub String);
 
 impl From<std::num::ParseFloatError> for ParseError {
     fn from(f: std::num::ParseFloatError) -> Self {
@@ -38,7 +38,7 @@ impl From<std::num::ParseFloatError> for ParseError {
 }
 
 #[derive(Debug, Clone, Shrinkwrap)]
-pub struct LogLine(String);
+pub struct LogLine(pub String);
 
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;

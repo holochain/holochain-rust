@@ -45,16 +45,24 @@ impl From<&Metric> for MetricDatum {
 impl TryFrom<ResultField> for Metric {
     type Error = ParseError;
     fn try_from(result_field: ResultField) -> Result<Self, Self::Error> {
-        if result_field.field != Some("message") {
-            return Err(ParseError("Expected message field but got: {:?}", resut_field.field))
+        if result_field.field != Some("message".to_string()) {
+            return Err(ParseError(format!(
+                "Expected message field but got: {:?}",
+                result_field.field
+            )));
         }
-        let message = result_field.value?;
-        LogLine(message).try_into()
+        let message = result_field.value.map(|m| Ok(m)).unwrap_or_else(|| {
+            Err(ParseError(
+                "Expected message value but got none".to_string(),
+            ))
+        })?;
+        let metric: Metric = LogLine(message).try_into()?;
+        Ok(metric)
     }
 }
 
 impl TryFrom<&ResultField> for Metric {
-    type Error = std::num::ParseFloatError;
+    type Error = ParseError;
     fn try_from(result_field: &ResultField) -> Result<Self, Self::Error> {
         let r: Result<Self, Self::Error> = result_field.clone().try_into();
         r
@@ -159,7 +167,8 @@ impl CloudWatchLogger {
         format!("holochain-{:?}", snowflake::ProcessUniqueId::new())
     }
 
-    pub fn default_log_group() -> String { "holochain".to_string()
+    pub fn default_log_group() -> String {
+        "holochain".to_string()
     }
 
     pub fn with_log_stream(

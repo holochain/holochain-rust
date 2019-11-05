@@ -38,6 +38,7 @@ use rand::Rng;
 use std::{collections::HashMap, convert::TryFrom};
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
@@ -48,6 +49,8 @@ pub struct Sim2h {
     num_ticks: u64,
     /// when should we recalculated the rrdht_arc_radius
     rrdht_arc_radius_recalc: std::time::Instant,
+    /// when should we try to resync nodes that are still missing aspect data
+    missing_aspects_resync: std::time::Instant,
 }
 
 impl Sim2h {
@@ -64,6 +67,7 @@ impl Sim2h {
             stream_manager,
             num_ticks: 0,
             rrdht_arc_radius_recalc: std::time::Instant::now(),
+            missing_aspects_resync: std::time::Instant::now(),
         };
 
         debug!("Trying to bind to {}...", bind_spec);
@@ -313,6 +317,16 @@ impl Sim2h {
             //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
         }
 
+        if std::time::Instant::now() >= self.missing_aspects_resync {
+            self.missing_aspects_resync = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
+                ))
+                .expect("can add interval ms");
+
+            self.retry_sync_missing_aspects();
+        }
+
         trace!("process transport");
         let (_did_work, messages) = self.stream_manager.process()?;
 
@@ -483,6 +497,17 @@ impl Sim2h {
                     (agents_in_space, aspects_missing_at_node)
                 };
 
+                let aspect_hashes = aspects_missing_at_node.aspect_hashes();
+                if aspect_hashes.len() > 0 {
+                    let mut space = self.spaces
+                        .get(space_address)
+                        .expect("This function should not get called if we don't have this space")
+                        .write();
+                    for aspect_hash in aspect_hashes.clone() {
+                        space.add_missing_aspect(agent_id.clone(), aspect_hash);
+                    }
+                }
+
                 if agents_in_space.len() == 1 {
                     error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
                 } else {
@@ -543,6 +568,11 @@ impl Sim2h {
                     }
                     let url = maybe_url.unwrap();
                     for aspect in fetch_result.entry.aspect_list {
+                        self.spaces
+                            .get(space_address)
+                            .expect("This function should not get called if we don't have this space")
+                            .write()
+                            .remove_missing_aspect(&to_agent_id, &aspect.aspect_address);
                         let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
                                 request_id: "".into(),
@@ -670,6 +700,47 @@ impl Sim2h {
         match msg {
             WireMessage::Ping | WireMessage::Pong => {}
             _ => debug!("sent."),
+        }
+    }
+
+    fn retry_sync_missing_aspects(&mut self) {
+        // Extract all needed info for the call to self.request_gossiping_list() below
+        // as copies so we don't have to keep a reference to self.
+        let spaces_with_agents_and_uris = self.spaces
+            .iter()
+            .filter_map(|(space_hash, space_lock)| {
+                let space = space_lock.read();
+                let agents = space.agents_with_missing_aspects();
+                // If this space doesn't have any agents with missing aspects,
+                // ignore it:
+                if agents.is_empty() {
+                    None
+                } else {
+                    // For spaces with agents with missing aspects,
+                    // annotate all agent IDs with their corresponding URI:
+                    let agent_ids_with_uris: Vec<(AgentId, Lib3hUri)> = agents
+                        .iter()
+                        .filter_map(|agent_id| {
+                            space.agent_id_to_uri(agent_id).map(|uri| {
+                                (agent_id.clone(), uri)
+                            })
+                        })
+                        .collect();
+
+                    Some((space_hash.clone(), agent_ids_with_uris))
+                }
+            })
+            .collect::<HashMap<SpaceHash, Vec<_>>>();
+
+
+        for (space_hash, agents) in spaces_with_agents_and_uris {
+            for (agent_id, uri) in agents {
+                self.request_gossiping_list(
+                    uri,
+                    space_hash.clone(),
+                    agent_id,
+                );
+            }
         }
     }
 }

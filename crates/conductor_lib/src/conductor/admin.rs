@@ -777,6 +777,9 @@ type = 'cmd'"#
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(port));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
+        toml = add_block(toml, signals());
+        toml = format!("{}\n", toml);
         toml
     }
 

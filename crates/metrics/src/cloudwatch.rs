@@ -158,10 +158,19 @@ impl CloudWatchLogger {
         let iterator = query
             .into_iter()
             .map(|result_vec| {
-                result_vec.into_iter().map(|result_field| {
-                    let metric: Metric = result_field.try_into().unwrap();
-                    metric
-                })
+                result_vec
+                    .into_iter()
+                    .filter(|result_field| {
+                        result_field
+                            .clone()
+                            .field
+                            .map(|x| x == "@message")
+                            .unwrap_or_else(|| false)
+                    })
+                    .map(|result_field| {
+                        let metric: Metric = result_field.try_into().unwrap();
+                        metric
+                    })
             })
             .flatten();
 

@@ -230,7 +230,7 @@ impl ConductorAdmin for Conductor {
     fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        new_config = new_config.save_remove_instance(id, clean);
+        new_config = new_config.save_remove_instancee(id, clean);
 
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
@@ -1305,6 +1305,9 @@ admin = true
 id = 'websocket interface'
 
 [[interfaces.instances]]
+id = 'test-instance-1'
+
+[[interfaces.instances]]
 id = 'test-instance-2'
 
 [interfaces.driver]
@@ -1341,6 +1344,11 @@ type = 'websocket'"#,
         let mut toml2 = start_toml();
 
         toml2 = finish_toml(toml2);
+
+        toml2 = toml2.replace(
+            r#"[[[interfaces.instances]]
+id = 'test-instance-1'
+"#, "");
 
         assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
     }

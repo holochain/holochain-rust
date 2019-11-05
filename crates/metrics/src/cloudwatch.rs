@@ -99,8 +99,7 @@ impl CloudWatchLogger {
         start_time: &std::time::SystemTime,
         end_time: &std::time::SystemTime,
     ) -> Vec<Vec<ResultField>> {
-        // TODO figure out what this should be
-        let query_string = "".to_string();
+        let query_string = "@message like /metrics.rs/".to_string();
         let start_query_request = StartQueryRequest {
             limit: Some(LOG_LIMIT),
             query_string,

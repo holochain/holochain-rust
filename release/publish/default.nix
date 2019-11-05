@@ -7,6 +7,7 @@ set -euox pipefail
 echo "packaging for crates.io"
 # order is important here due to dependencies
 for crate in \
+ locksmith \
  common \
  core_types \
  wasm_utils \

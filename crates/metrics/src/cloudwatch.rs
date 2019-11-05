@@ -101,6 +101,7 @@ pub struct CloudWatchLogger {
     pub client: CloudWatchLogsClient,
     pub log_group_name: Option<String>,
     pub log_stream_name: Option<String>,
+    pub sequence_token: Option<String>
 }
 
 impl CloudWatchLogger {
@@ -212,6 +213,7 @@ impl CloudWatchLogger {
             client,
             log_stream_name: Some(log_stream_name),
             log_group_name: Some(log_group_name),
+            sequence_token: None
         }
     }
 }
@@ -235,9 +237,10 @@ impl MetricPublisher for CloudWatchLogger {
                 .log_stream_name
                 .clone()
                 .unwrap_or_else(|| panic!("log_stream_name must be set")),
-            sequence_token: None,
+            sequence_token: self.sequence_token.clone()
         };
-        self.client.put_log_events(put_log_events_request);
+        let result = self.client.put_log_events(put_log_events_request).sync().unwrap();
+        self.sequence_token = result.next_sequence_token
     }
 }
 

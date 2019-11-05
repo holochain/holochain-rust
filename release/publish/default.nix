@@ -5,6 +5,10 @@ let
  script = pkgs.writeShellScriptBin name ''
 set -euox pipefail
 echo "packaging for crates.io"
+
+# regenerate this with `git diff >> release/publish/dev-dependencies.patch`
+git apply release/publish/dev-dependencies.patch
+
 # order is important here due to dependencies
 for crate in \
  locksmith \
@@ -27,6 +31,8 @@ do
  cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty
  sleep 10
 done
+
+git checkout -f
 '';
 in
 {

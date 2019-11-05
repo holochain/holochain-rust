@@ -9,6 +9,7 @@ use std::{
     time::UNIX_EPOCH,
 };
 
+use crate::logger::{LogLine, ParseError};
 const DEFAULT_REGION: Region = Region::EuCentral1;
 
 #[derive(Clone)]
@@ -42,13 +43,13 @@ impl From<&Metric> for MetricDatum {
 
 // TODO Test this
 impl TryFrom<ResultField> for Metric {
-    type Error = std::num::ParseFloatError;
+    type Error = ParseError;
     fn try_from(result_field: ResultField) -> Result<Self, Self::Error> {
-        let metric_name = result_field
-            .field
-            .unwrap_or_else(|| "unlabeled".to_string());
-        let metric_value: f64 = result_field.value.unwrap_or_default().parse()?;
-        Ok(Metric::new(&metric_name, metric_value))
+        if result_field.field != Some("message") {
+            return Err(ParseError("Expected message field but got: {:?}", resut_field.field))
+        }
+        let message = result_field.value?;
+        LogLine(message).try_into()
     }
 }
 
@@ -158,8 +159,7 @@ impl CloudWatchLogger {
         format!("holochain-{:?}", snowflake::ProcessUniqueId::new())
     }
 
-    pub fn default_log_group() -> String {
-        "holochain".to_string()
+    pub fn default_log_group() -> String { "holochain".to_string()
     }
 
     pub fn with_log_stream(

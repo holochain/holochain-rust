@@ -4,13 +4,13 @@ description = "holochain conductor library"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.37-alpha3"
+version = "0.0.37-alpha4"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core = { version = "=0.0.37-alpha3", path = "../core" }
-holochain_core_types = { version = "=0.0.37-alpha3", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.37-alpha3", path = "../locksmith" }
+holochain_core = { version = "=0.0.37-alpha4", path = "../core" }
+holochain_core_types = { version = "=0.0.37-alpha4", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.37-alpha4", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
@@ -18,11 +18,11 @@ holochain_persistence_mem = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_pickle = "=0.0.10"
 holochain_persistence_lmdb = "=0.0.10"
-holochain_dpki = { version = "=0.0.37-alpha3", path = "../dpki" }
-holochain_net = { version = "=0.0.37-alpha3", path = "../net" }
+holochain_dpki = { version = "=0.0.37-alpha4", path = "../dpki" }
+holochain_net = { version = "=0.0.37-alpha4", path = "../net" }
 lib3h = "=0.0.21"
 lib3h_sodium = "=0.0.21"
-holochain_common = { version = "=0.0.37-alpha3", path = "../common" }
+holochain_common = { version = "=0.0.37-alpha4", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
@@ -52,9 +52,9 @@ nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
 
 [dev-dependencies]
-test_utils = { version = "=0.0.37-alpha3", path = "../../test_utils" }
+test_utils = { version = "=0.0.37-alpha4", path = "../../test_utils" }
 tempfile = "=3.0.7"
-holochain_wasm_utils = { version = "=0.0.37-alpha3", path = "../wasm_utils" }
+holochain_wasm_utils = { version = "=0.0.37-alpha4", path = "../wasm_utils" }
 structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"
 ws = "=0.8.0"

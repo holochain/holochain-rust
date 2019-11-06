@@ -62,18 +62,39 @@ struct Cli {
     port: u16,
 }
 
-struct Store {
+type PortRange = (u16, u16);
+
+struct TrycpServer {
     dir: tempfile::TempDir,
+    next_port: u16,
+    port_range: PortRange,
 }
 
-impl Store {
-    pub fn new() -> Self {
-        Store {
+impl TrycpServer {
+    pub fn new(port_range: PortRange) -> Self {
+        TrycpServer {
             dir: tempdir().expect("should create tmp dir"),
+            next_port: port_range.0,
+            port_range,
         }
     }
+
+    pub fn acquire_port(&mut self) -> Result<u16, String> {
+        let port = self.next_port;
+        self.next_port += 1;
+        if port >= self.port_range.1 {
+            Err(format!(
+                "All available ports have been used up! Port range: {:?}",
+                self.port_range
+            ))
+        } else {
+            Ok(port)
+        }
+    }
+
     pub fn reset(&mut self) {
-        self.dir = tempdir().expect("should create tmp dir")
+        self.dir = tempdir().expect("should create tmp dir");
+        self.next_port = self.port_range.0;
     }
 }
 
@@ -118,26 +139,34 @@ fn get_as_bool<T: Into<String>>(
 
 const CONDUCTOR_CONFIG_FILE_NAME: &str = "conductor-config.toml";
 
-fn get_dir(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
-    let temp_path = temp_path_arc.read().expect("should_lock");
-    temp_path.dir.path().join(id).clone()
+fn get_dir(state: &TrycpServer, id: &String) -> PathBuf {
+    state.dir.path().join(id).clone()
 }
 
-fn get_file(temp_path_arc: Arc<RwLock<Store>>, id: &String) -> PathBuf {
-    get_dir(temp_path_arc, id)
-        .join(CONDUCTOR_CONFIG_FILE_NAME)
-        .clone()
+fn get_file(state: &TrycpServer, id: &String) -> PathBuf {
+    get_dir(state, id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+}
+
+fn internal_error(message: String) -> jsonrpc_core::types::error::Error {
+    jsonrpc_core::types::error::Error {
+        code: jsonrpc_core::types::error::ErrorCode::InternalError,
+        message,
+        data: None,
+    }
 }
 
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
 
-    let temp_path_arc: Arc<RwLock<Store>> = Arc::new(RwLock::new(Store::new()));
-    let temp_path_arc_setup = temp_path_arc.clone();
-    let temp_path_arc_player = temp_path_arc.clone();
-    let temp_path_arc_spawn = temp_path_arc.clone();
-    let temp_path_arc_kill = temp_path_arc.clone();
+    let conductor_port_range: PortRange = (5050, 5070);
+
+    let state: Arc<RwLock<TrycpServer>> =
+        Arc::new(RwLock::new(TrycpServer::new(conductor_port_range)));
+    let state_setup = state.clone();
+    let state_player = state.clone();
+    let state_spawn = state.clone();
+    let state_kill = state.clone();
 
     let players_arc: Arc<RwLock<HashMap<String, Child>>> = Arc::new(RwLock::new(HashMap::new()));
     let players_arc_kill = players_arc.clone();
@@ -162,7 +191,7 @@ fn main() {
             }
         }
         players.clear();
-        let mut temp_path = temp_path_arc.write().expect("should_lock");
+        let mut temp_path = state.write().expect("should_lock");
         temp_path.reset();
 
         Ok(Value::String("reset".into()))
@@ -174,10 +203,13 @@ fn main() {
     io.add_method("setup", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let file_path = get_dir(temp_path_arc_setup.clone(), &id);
+        let mut state = state_setup.write().unwrap();
+        let file_path = get_dir(&state, &id);
+        let admin_port = state.acquire_port().map_err(|e| internal_error(e))?;
+        let zome_port = state.acquire_port().map_err(|e| internal_error(e))?;
         Ok(json!({
-            "adminPort": 1111,
-            "zomePort": 2222,
+            "adminPort": admin_port,
+            "zomePort": zome_port,
             "configDir": file_path.to_string_lossy(),
         }))
     });
@@ -192,7 +224,8 @@ fn main() {
                 message: format!("error decoding config: {:?}", e),
                 data: None,
             })?;
-        let dir_path = get_dir(temp_path_arc_player.clone(), &id);
+        let state = state_player.read().unwrap();
+        let dir_path = get_dir(&state, &id);
         std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
             jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
@@ -203,16 +236,14 @@ fn main() {
                 data: None,
             }
         })?;
-        let file_path = get_file(temp_path_arc_player.clone(), &id);
+        let file_path = get_file(&state, &id);
         File::create(file_path.clone())
-            .map_err(|e| jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!(
+            .map_err(|e| {
+                internal_error(format!(
                     "unable to create config file: {:?} {}",
                     e,
                     file_path.to_string_lossy()
-                ),
-                data: None,
+                ))
             })?
             .write_all(&content[..])
             .map_err(|e| jsonrpc_core::types::error::Error {
@@ -238,7 +269,8 @@ fn main() {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
 
-        check_player_config(temp_path_arc_spawn.clone(), &id)?;
+        let state = state_spawn.read().unwrap();
+        check_player_config(&state, &id)?;
         let mut players = players_arc_spawn.write().expect("should_lock");
         if players.contains_key(&id) {
             return Err(jsonrpc_core::types::error::Error {
@@ -248,10 +280,7 @@ fn main() {
             });
         };
 
-        let player_config = format!(
-            "{}",
-            get_file(temp_path_arc_spawn.clone(), &id).to_string_lossy()
-        );
+        let player_config = format!("{}", get_file(&state, &id).to_string_lossy());
         let mut conductor = Command::new("holochain")
             .stdout(Stdio::piped())
             .args(&["-c", &player_config])
@@ -290,7 +319,7 @@ fn main() {
         let id = get_as_string("id", &params_map)?;
         let signal = get_as_string("signal", &params_map)?; // TODO: make optional?
 
-        check_player_config(temp_path_arc_kill.clone(), &id)?;
+        check_player_config(&state_kill.read().unwrap(), &id)?;
         let mut players = players_arc_kill.write().unwrap();
         match players.remove(&id) {
             None => {
@@ -337,10 +366,10 @@ fn do_kill(
 }
 
 fn check_player_config(
-    temp_path_arc: Arc<RwLock<Store>>,
+    state: &TrycpServer,
     id: &String,
 ) -> Result<(), jsonrpc_core::types::error::Error> {
-    let file_path = get_file(temp_path_arc, id);
+    let file_path = get_file(state, id);
     if !file_path.is_file() {
         return Err(jsonrpc_core::types::error::Error {
             code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,

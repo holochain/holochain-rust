@@ -147,7 +147,7 @@ impl ConductorAdmin for Conductor {
     /// Removes the DNA given by id from the config.
     /// Also removes all instances and their mentions from all interfaces to not render the config
     /// invalid.
-    /// Then saves the config. 
+    /// Then saves the config.
     /// Removes the storage of the instances.
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
@@ -1237,71 +1237,81 @@ type = 'websocket'"#,
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
-        assert_eq!(config_contents, toml, "expected toml (right), got config_contents (left)");
+        assert_eq!(
+            config_contents, toml,
+            "expected toml (right), got config_contents (left)"
+        );
     }
 
-pub mod test {
-    use super::*;
-    extern crate tempfile;
-    use self::tempfile::tempdir;
+    pub mod test {
+        use super::*;
+        extern crate tempfile;
+        use self::tempfile::tempdir;
 
-    #[test]
-    /// Tests if the removed instance is gone from the config file
-    /// as well as the mentions of the removed instance are gone from the interfaces
-    /// (to not render the config invalid). If the clean argument is true, it tests that the storage of
-    /// the instance has been cleared,
-    fn test_remove_instance_clean_true() {
-        let test_name = "test_remove_instance_clean_true";
-        let tmpdir = tempdir().expect("Directory can not be created with tempdir()");
+        #[test]
+        /// Tests if the removed instance is gone from the config file
+        /// as well as the mentions of the removed instance are gone from the interfaces
+        /// (to not render the config invalid). If the clean argument is true, it tests that the storage of
+        /// the instance has been cleared,
+        fn test_remove_instance_clean_true() {
+            let test_name = "test_remove_instance_clean_true";
+            let tmpdir = tempdir().expect("Directory can not be created with tempdir()");
 
-        let tmp_dir_path = tmpdir.path();
-        
-        let tmpdirpathdisp = tmp_dir_path.display();
-        
-        let old_file_storage_conf = r#"id = 'test-instance-1'
+            let tmp_dir_path = tmpdir.path();
+
+            let tmpdirpathdisp = tmp_dir_path.display();
+
+            let old_file_storage_conf = r#"id = 'test-instance-1'
 
 [instances.storage]
 type = 'memory'"#;
-        
-        let new_file_storage_conf =  format!(r#"id = 'test-instance-1'
+
+            let new_file_storage_conf = format!(
+                r#"id = 'test-instance-1'
 
 [instances.storage]
 type = 'file'
-path = '{}'"#, tmpdirpathdisp);
+path = '{}'"#,
+                tmpdirpathdisp
+            );
 
-        let mut test_toml = test_toml(test_name, 3002);
-        test_toml = test_toml.replace(old_file_storage_conf, &new_file_storage_conf);
+            let mut test_toml = test_toml(test_name, 3002);
+            test_toml = test_toml.replace(old_file_storage_conf, &new_file_storage_conf);
 
-        let mut conductor = create_test_conductor_from_toml(&test_toml, test_name);
-        
-        // let no_sd_err = format!("The storage directory {} for the conductor doesn't exist after creating the test conductor!", tmpdirpathdisp);
+            let mut conductor = create_test_conductor_from_toml(&test_toml, test_name);
 
-        // TODO: maybe refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
-        // this is failing, e.g. in https://circleci.com/gh/holochain/holochain-rust/45590?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
-        // assert!(tmp_dir_path.exists(), no_sd_err);
-        notify(format!("tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}", tmpdirpathdisp, tmp_dir_path.exists()));
+            // let no_sd_err = format!("The storage directory {} for the conductor doesn't exist after creating the test conductor!", tmpdirpathdisp);
 
-        let start_toml = || {
-            let mut toml = header_block(test_name);
-            toml = add_block(toml, agent1());
-            toml = add_block(toml, agent2());
-            toml = add_block(toml, dna());
-            toml
-        };
+            // TODO: maybe refactor these tests making sure that storage is created as expected, or delete if they are tested elsewhere already.
+            // this is failing, e.g. in https://circleci.com/gh/holochain/holochain-rust/45590?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
+            // assert!(tmp_dir_path.exists(), no_sd_err);
+            notify(format!(
+                "tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}",
+                tmpdirpathdisp,
+                tmp_dir_path.exists()
+            ));
 
-        let mut toml = start_toml();
+            let start_toml = || {
+                let mut toml = header_block(test_name);
+                toml = add_block(toml, agent1());
+                toml = add_block(toml, agent2());
+                toml = add_block(toml, dna());
+                toml
+            };
 
-        toml = add_block(toml, instance1());
+            let mut toml = start_toml();
 
-        toml = toml.replace(old_file_storage_conf, &new_file_storage_conf);
+            toml = add_block(toml, instance1());
 
-        let finish_toml = |started_toml| {
-            let mut toml = started_toml;
-            toml = add_block(toml, instance2());
-            toml = add_block(
-                toml,
-                String::from(
-                r#"[[interfaces]]
+            toml = toml.replace(old_file_storage_conf, &new_file_storage_conf);
+
+            let finish_toml = |started_toml| {
+                let mut toml = started_toml;
+                toml = add_block(toml, instance2());
+                toml = add_block(
+                    toml,
+                    String::from(
+                        r#"[[interfaces]]
 admin = true
 id = 'websocket interface'
 
@@ -1314,43 +1324,51 @@ id = 'test-instance-2'
 [interfaces.driver]
 port = 3002
 type = 'websocket'"#,
-                ),
+                    ),
+                );
+                toml = add_block(toml, logger());
+                toml = add_block(toml, passphrase_service());
+                toml = add_block(toml, signals());
+                toml = format!("{}\n", toml);
+                toml
+            };
+
+            toml = finish_toml(toml);
+
+            assert_eq!(toml, test_toml, "toml not as expected (left) after creating a conductor with persistent file storage");
+
+            assert_eq!(
+                conductor.remove_instance(&String::from("test-instance-1"), true),
+                Ok(()),
+                "test-instance-1 not removed"
             );
-            toml = add_block(toml, logger());
-            toml = add_block(toml, passphrase_service());
-            toml = add_block(toml, signals());
-            toml = format!("{}\n", toml);
-            toml
-        };
 
-        toml = finish_toml(toml);
+            // let still_sd_err = format!("The storage directory {} still exists after trying to remove it!", tmpdirpathdisp);
 
-        assert_eq!(toml, test_toml, "toml not as expected (left) after creating a conductor with persistent file storage");
+            // assert!(!tmp_dir_path.exists(), still_sd_err);
+            notify(format!(
+                "tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}",
+                tmpdirpathdisp,
+                tmp_dir_path.exists()
+            ));
 
-        assert_eq!(
-            conductor.remove_instance(&String::from("test-instance-1"), true),
-            Ok(()), "test-instance-1 not removed"
-        );
-        
-        // let still_sd_err = format!("The storage directory {} still exists after trying to remove it!", tmpdirpathdisp);
+            let mut config_contents = String::new();
+            let mut file =
+                File::open(&conductor.config_path()).expect("Could not open temp config file");
+            file.read_to_string(&mut config_contents)
+                .expect("Could not read temp config file");
+            let mut toml2 = start_toml();
 
-        // assert!(!tmp_dir_path.exists(), still_sd_err);
-        notify(format!("tmp_dir_path for file storage: {}, tmp_dir_path.exists() value is {}", tmpdirpathdisp, tmp_dir_path.exists()));
+            toml2 = finish_toml(toml2);
 
-        let mut config_contents = String::new();
-        let mut file =
-            File::open(&conductor.config_path()).expect("Could not open temp config file");
-        file.read_to_string(&mut config_contents)
-            .expect("Could not read temp config file");
-        let mut toml2 = start_toml();
+            toml2 = toml2.replace("[[interfaces.instances]]\nid = \'test-instance-1\'\n\n", "");
 
-        toml2 = finish_toml(toml2);
-
-        toml2 = toml2.replace("[[interfaces.instances]]\nid = \'test-instance-1\'\n\n", "");
-
-        assert_eq!(config_contents, toml2, "expected toml2 (right), got config_contents (left) after removing instance");
+            assert_eq!(
+                config_contents, toml2,
+                "expected toml2 (right), got config_contents (left) after removing instance"
+            );
+        }
     }
-} 
 
     #[test]
     /// Tests if the uninstalled DNA is gone from the config file

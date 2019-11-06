@@ -215,7 +215,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             return Err(BbDhtError::MissingData(format!(
                 "message item missing content {:?}",
                 &item
-            )))
+            )));
         }
     };
 
@@ -225,7 +225,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             return Err(BbDhtError::MissingData(format!(
                 "message item missing from {:?}",
                 &item
-            )))
+            )));
         }
     };
 
@@ -235,7 +235,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             return Err(BbDhtError::MissingData(format!(
                 "message item missing to {:?}",
                 &item
-            )))
+            )));
         }
     };
 
@@ -245,7 +245,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             return Err(BbDhtError::MissingData(format!(
                 "message item missing space_address {:?}",
                 &item
-            )))
+            )));
         }
     };
 
@@ -255,7 +255,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             return Err(BbDhtError::MissingData(format!(
                 "message item missing request_id {:?}",
                 &item
-            )))
+            )));
         }
     };
 
@@ -265,7 +265,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             return Err(BbDhtError::MissingData(format!(
                 "message item missing response flag {:?}",
                 &item
-            )))
+            )));
         }
     };
 
@@ -317,7 +317,7 @@ pub fn request_ids_to_messages(
                 return Err(BbDhtError::MissingData(format!(
                     "missing message for request id: {:?}",
                     &request_id
-                )))
+                )));
             }
         }
     }

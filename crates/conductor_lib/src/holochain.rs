@@ -286,7 +286,6 @@ impl Holochain {
                 .expect("Context must be Some since we've checked it with check_instance()? above"),
         )?)
     }
-
 }
 
 #[cfg(test)]

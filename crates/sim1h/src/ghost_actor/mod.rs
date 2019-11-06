@@ -254,7 +254,7 @@ impl<'engine>
     /// process after the subconscious process items have run
     fn process_concrete(&mut self) -> GhostResult<WorkWasDone> {
         // always run the endpoint process loop
-        detach_run!(&mut self.lib3h_endpoint, |cs| { cs.process(self) })?;
+        detach_run!(&mut self.lib3h_endpoint, |cs| cs.process(self))?;
 
         let mut work_was_done = false;
         // process any messages from the client to us

@@ -188,7 +188,7 @@ fn run() -> HolochainResult<()> {
                     return Err(HolochainError::Default(format_err!(
                         "Failed to parse properties argument as JSON: {:?}",
                         e
-                    )))
+                    )));
                 }
             }
         }

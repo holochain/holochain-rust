@@ -33,7 +33,7 @@ use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     env,
-    fs::{File, remove_dir_all},
+    fs::{remove_dir_all, File},
     io::prelude::*,
     net::Ipv4Addr,
     path::PathBuf,
@@ -592,12 +592,13 @@ impl Configuration {
                 if let Some(storage_path) = instance_config.storage.path() {
                     let rmdirerr = format!(
                         "unable to remove_dir_all(storage_path). storage_path: {}",
-                        storage_path);
+                        storage_path
+                    );
                     remove_dir_all(storage_path).expect(&rmdirerr);
                 }
             }
         }
-        
+
         self.instances = self
             .instances
             .into_iter()

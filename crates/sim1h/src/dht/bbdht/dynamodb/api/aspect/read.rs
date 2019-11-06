@@ -40,7 +40,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
             return Err(BbDhtError::MissingData(format!(
                 "Missing aspect_hash: {:?}",
                 item
-            )))
+            )));
         }
     };
 
@@ -50,7 +50,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
             return Err(BbDhtError::MissingData(format!(
                 "Missing aspect: {:?}",
                 item
-            )))
+            )));
         }
     };
 
@@ -60,7 +60,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
             return Err(BbDhtError::MissingData(format!(
                 "Missing publish_ts: {:?}",
                 item
-            )))
+            )));
         }
     };
 
@@ -70,7 +70,7 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
             return Err(BbDhtError::MissingData(format!(
                 "Missing type_hint: {:?}",
                 item
-            )))
+            )));
         }
     };
 
@@ -89,7 +89,7 @@ pub fn try_aspect_list_from_item(item: Item) -> BbDhtResult<Vec<Address>> {
             return Err(BbDhtError::MissingData(format!(
                 "Missing aspect_list: {:?}",
                 item
-            )))
+            )));
         }
     };
 
@@ -132,7 +132,7 @@ pub fn get_entry_aspects(
                                 return Err(BbDhtError::MissingData(format!(
                                     "Missing entry aspect data: {:?}",
                                     &aspect_address
-                                )))
+                                )));
                             }
                             Err(err) => return Err(err),
                         },

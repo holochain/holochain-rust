@@ -76,6 +76,7 @@ impl Commute for DescriptiveStats {
     }
 }
 
+/// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
 pub struct Stats(HashMap<String, DescriptiveStats>);
 

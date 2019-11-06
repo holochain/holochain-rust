@@ -8,7 +8,7 @@ use log::*;
 
 use lib3h::transport::error::{TransportError, TransportResult};
 
-use holochain_locksmith::Mutex;
+use lib3h_zombie_actor::GhostMutex;
 use lib3h_protocol::{uri::Lib3hUri, DidWork};
 use std::{
     io::{Read, Write},
@@ -68,7 +68,7 @@ pub enum StreamEvent {
 pub type StreamFactory<T> = fn(uri: &str) -> TransportResult<T>;
 
 lazy_static! {
-    static ref TRANSPORT_COUNT: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
+    static ref TRANSPORT_COUNT: Arc<GhostMutex<u64>> = Arc::new(GhostMutex::new(0));
 }
 
 /// A function that produces accepted sockets of type R wrapped in a TransportInfo

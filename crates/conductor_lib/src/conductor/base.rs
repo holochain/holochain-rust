@@ -823,6 +823,10 @@ impl Conductor {
                     context_builder = context_builder.with_state_dump_logging();
                 }
 
+                if let Some(metric_publisher_config) = &self.config.metric_publisher {
+                    context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
+                };
+
                 // Spawn context
                 let context = context_builder.with_instance_name(&instance_name).spawn();
 

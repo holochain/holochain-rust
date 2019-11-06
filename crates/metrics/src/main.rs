@@ -24,4 +24,6 @@ fn main() {
 
     let stats = StatsByMetric::from_iter(vec.into_iter());
     println!("stats: {:?}", stats);
+
+    stats.print_csv().unwrap()
 }

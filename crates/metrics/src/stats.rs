@@ -1,10 +1,10 @@
 /// Provides statistical features over metric data.
 use crate::Metric;
+use num_traits::float::Float;
+use serde::{Deserialize, Serialize};
 /// Extends the metric api with statistical aggregation functions
 use stats::{Commute, OnlineStats};
 use std::{collections::HashMap, iter::FromIterator};
-
-use num_traits::float::Float;
 
 /// An extension of `OnlineStats` that also incrementally tracks
 /// max and min values.
@@ -13,6 +13,41 @@ pub struct DescriptiveStats {
     online_stats: OnlineStats,
     max: f64,
     min: f64,
+    cnt: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct StatsRecord {
+    pub name: Option<String>,
+    pub max: f64,
+    pub min: f64,
+    pub cnt: u64,
+    pub mean: f64,
+    pub variance: f64,
+    pub stddev: f64,
+}
+
+impl StatsRecord {
+    pub fn new<S: Into<String>>(metric_name: S, desc: DescriptiveStats) -> Self {
+        let metric_name = metric_name.into();
+        let mut record: Self = desc.into();
+        record.name = Some(metric_name);
+        record
+    }
+}
+
+impl From<DescriptiveStats> for StatsRecord {
+    fn from(desc_stats: DescriptiveStats) -> Self {
+        Self {
+            name: None,
+            max: desc_stats.max(),
+            min: desc_stats.min(),
+            stddev: desc_stats.stddev(),
+            mean: desc_stats.mean(),
+            variance: desc_stats.variance(),
+            cnt: desc_stats.count(),
+        }
+    }
 }
 
 // TODO is this necessary?
@@ -25,6 +60,7 @@ impl DescriptiveStats {
             online_stats: OnlineStats::new(),
             max: f64::min_value(),
             min: f64::max_value(),
+            cnt: 0,
         }
     }
 
@@ -37,6 +73,7 @@ impl DescriptiveStats {
         if value < self.min {
             self.min = value
         }
+        self.cnt += 1;
     }
 
     /// The mean value of the running statistic.
@@ -63,6 +100,11 @@ impl DescriptiveStats {
     pub fn min(&self) -> f64 {
         self.min
     }
+
+    /// The number of samples of the running statistic.
+    pub fn count(&self) -> u64 {
+        self.cnt
+    }
 }
 
 impl Commute for DescriptiveStats {
@@ -74,12 +116,33 @@ impl Commute for DescriptiveStats {
         if rhs.min < self.min {
             self.min = rhs.min
         }
+        self.cnt += rhs.cnt;
     }
 }
 
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
 pub struct StatsByMetric(HashMap<String, DescriptiveStats>);
+
+impl StatsByMetric {
+    pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {
+        let me = self.0.clone();
+        Box::new(
+            me.into_iter()
+                .map(|(name, stat)| StatsRecord::new(name, stat)),
+        )
+    }
+
+    pub fn print_csv(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut writer = csv::Writer::from_writer(std::io::stdout());
+        let records = self.to_records();
+        for record in records {
+            writer.serialize(record)?;
+        }
+        writer.flush()?;
+        Ok(())
+    }
+}
 
 impl FromIterator<Metric> for StatsByMetric {
     fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric {

@@ -49,6 +49,8 @@ where
     Ok(String::from_utf8_lossy(&res.stdout).trim().to_string())
 }*/
 
+const MAGIC_STRING: &str = "Done. All interfaces started.";
+
 #[derive(StructOpt)]
 struct Cli {
     #[structopt(
@@ -263,7 +265,7 @@ fn main() {
         match conductor.stdout.take() {
             Some(stdout) => {
                 for line in BufReader::new(stdout).lines() {
-                    if line.unwrap() == "Done. All interfaces started." {
+                    if line.unwrap() == MAGIC_STRING {
                         break;
                     }
                 }

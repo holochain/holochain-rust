@@ -70,7 +70,7 @@ pub fn get_interface_type_string(given_type: String) -> String {
 }
 
 pub fn hc_run_configuration(
-    dna_path: &PathBuf,
+    dna_path: PathBuf,
     port: u16,
     persist: bool,
     networked: bool,
@@ -79,7 +79,7 @@ pub fn hc_run_configuration(
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
         agents: vec![agent_configuration()],
-        dnas: vec![dna_configuration(&dna_path)],
+        dnas: vec![dna_configuration(dna_path)],
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
         network: networking_configuration(networked),
@@ -119,22 +119,19 @@ fn agent_configuration() -> AgentConfiguration {
 // DNA
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
-fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
-    let dna = Conductor::load_dna(dna_path).unwrap_or_else(|_| {
+fn dna_configuration(dna_path: PathBuf) -> DnaConfiguration {
+    let dna = Conductor::load_dna(&dna_path.clone().into()).unwrap_or_else(|_| {
         panic!(
             "Could not load DNA file {}",
             dna_path.to_str().expect("No DNA file path given")
         )
     });
-    DnaConfiguration {
-        id: DNA_CONFIG_ID.into(),
-        file: dna_path
-            .to_str()
-            .expect("Expected DNA path to be valid unicode")
-            .to_string(),
-        hash: dna.address().to_string(),
-        uuid: None,
-    }
+    DnaConfiguration::new(
+        DNA_CONFIG_ID.into(),
+        dna_path.into(),
+        dna.address().to_string(),
+        None,
+    )
 }
 
 // STORAGE
@@ -309,15 +306,15 @@ mod tests {
         let out_file = File::create(&temp_path).expect("Could not create temp file for test DNA");
         serde_json::to_writer_pretty(&out_file, &dna).expect("Could not write test DNA to file");
 
-        let dna_config = super::dna_configuration(&temp_path);
+        let dna_config = super::dna_configuration(temp_path.clone());
         assert_eq!(
             dna_config,
-            DnaConfiguration {
-                id: "hc-run-dna".to_string(),
-                file: temp_path.to_str().unwrap().to_string(),
-                hash: dna.address().to_string(),
-                uuid: Default::default(),
-            }
+            DnaConfiguration::new(
+                "hc-run-dna".to_string(),
+                temp_path.into(),
+                dna.address().to_string(),
+                Default::default(),
+            )
         )
     }
 

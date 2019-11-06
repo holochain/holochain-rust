@@ -1,5 +1,7 @@
+use holochain_locksmith::RwLock;
 /// Metric suppport for holochain. Provides metric representations to
 /// sample, publish, aggregate, and analyze metric data.
+use std::sync::Arc;
 
 /// Represents a single sample of a numerical metric determined by `name`.
 // TODO Consider renaming to Sample
@@ -44,6 +46,39 @@ macro_rules! with_latency_publishing {
         $publisher.write().unwrap().publish(&metric);
         ret
     }}
+}
+
+/// Composes a collection of publishers which are all called for one metric sample.
+pub struct MetricPublishers(Vec<Arc<RwLock<dyn MetricPublisher>>>);
+
+impl MetricPublisher for MetricPublishers {
+    fn publish(&mut self, metric: &Metric) {
+        for publisher in &self.0 {
+            publisher.write().unwrap().publish(&metric);
+        }
+    }
+}
+
+impl MetricPublishers {
+    pub fn new(publishers: Vec<Arc<RwLock<dyn MetricPublisher>>>) -> Self {
+        MetricPublishers(publishers)
+    }
+
+    /// No-op metric publisher since the publisher list is empty
+    pub fn empty() -> Self {
+        Self::new(vec![])
+    }
+}
+
+impl Default for MetricPublishers {
+    fn default() -> Self {
+        let publishers = vec![
+            crate::config::MetricPublisherConfig::default_logger().create_metric_publisher(),
+            crate::config::MetricPublisherConfig::default_cloudwatch_logs()
+                .create_metric_publisher(),
+        ];
+        Self(publishers)
+    }
 }
 
 #[cfg(test)]

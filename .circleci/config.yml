@@ -289,7 +289,7 @@ jobs:
   docker:
    - image: holochain/holonix:ubuntu
   steps:
-   - run: sudo apt-get install -y git ssh
+   - run: sudo apt-get update && sudo apt-get install -y git ssh
    - checkout
    - run:
       name: Deploy linux binaries

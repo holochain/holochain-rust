@@ -1,8 +1,9 @@
+/// Cloudwatch support for metric publising, aggregating, and analysis
 use crate::*;
 
 use crate::{
     logger::{LogLine, ParseError},
-    stats::Stats,
+    stats::StatsByMetric,
 };
 use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, MetricDatum, PutMetricDataInput};
 use rusoto_core::region::Region;
@@ -96,15 +97,24 @@ impl MetricPublisher for CloudWatchMetricPublisher {
     }
 }
 
+/// A cloud watch logger instance with some
+/// configuration and state as needed by
+/// various service calls.
 #[derive(Clone)]
 pub struct CloudWatchLogger {
+    /// The underlying cloudwatch logs client
     pub client: CloudWatchLogsClient,
     pub log_group_name: Option<String>,
     pub log_stream_name: Option<String>,
+    /// Set automatically when publishing log metrics
     pub sequence_token: Option<String>,
 }
 
 impl CloudWatchLogger {
+    /// Query the cloudwatch logger given a start and stop time interval.
+    /// Produces a raw vector of result field rows (each as a vector).
+    /// Use `CloudWatchLogger::query_metrics` or `CloudWatchLogger::query_and_aggregate`
+    /// to produce numerical data from this raw data.
     pub fn query(
         &self,
         start_time: &std::time::SystemTime,
@@ -152,6 +162,7 @@ impl CloudWatchLogger {
         log_records
     }
 
+    /// Converts raw result fields to in iterator over metric samples
     pub fn metrics_of_query<'a>(
         query: Vec<Vec<ResultField>>,
     ) -> Box<dyn Iterator<Item = Metric> + 'a> {
@@ -173,6 +184,8 @@ impl CloudWatchLogger {
         Box::new(iterator)
     }
 
+    /// Queries cloudwatch logs given a start and end time interval and produces
+    /// all metric samples observed during the interval
     pub fn query_metrics(
         &self,
         start_time: &std::time::SystemTime,
@@ -182,12 +195,14 @@ impl CloudWatchLogger {
         Self::metrics_of_query(query)
     }
 
+    /// Queries cloudwatch logs given a start and end time interval and produces
+    /// aggregate statistics of metrics from the results.
     pub fn query_and_aggregate(
         &self,
         start_time: &std::time::SystemTime,
         end_time: &std::time::SystemTime,
-    ) -> Stats {
-        Stats::from_iter(self.query_metrics(start_time, end_time))
+    ) -> StatsByMetric {
+        StatsByMetric::from_iter(self.query_metrics(start_time, end_time))
     }
 
     pub fn default_log_stream() -> String {

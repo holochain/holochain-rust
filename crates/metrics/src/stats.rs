@@ -1,3 +1,4 @@
+/// Provides statistical features over metric data.
 use crate::Metric;
 /// Extends the metric api with statistical aggregation functions
 use stats::{Commute, OnlineStats};
@@ -78,25 +79,24 @@ impl Commute for DescriptiveStats {
 
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
-pub struct Stats(HashMap<String, DescriptiveStats>);
+pub struct StatsByMetric(HashMap<String, DescriptiveStats>);
 
-impl FromIterator<Metric> for Stats {
-    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> Stats {
-        Stats(
-            source
-                .into_iter()
-                .fold(HashMap::new(), |mut stats_by_metric_name, metric| {
-                    let entry = stats_by_metric_name.entry(metric.name);
+impl FromIterator<Metric> for StatsByMetric {
+    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric {
+        StatsByMetric(source.into_iter().fold(
+            HashMap::new(),
+            |mut stats_by_metric_name, metric| {
+                let entry = stats_by_metric_name.entry(metric.name);
 
-                    let online_stats = entry.or_insert_with(DescriptiveStats::empty);
-                    online_stats.add(metric.value);
-                    stats_by_metric_name
-                }),
-        )
+                let online_stats = entry.or_insert_with(DescriptiveStats::empty);
+                online_stats.add(metric.value);
+                stats_by_metric_name
+            },
+        ))
     }
 }
 
-impl Commute for Stats {
+impl Commute for StatsByMetric {
     fn merge(&mut self, rhs: Self) {
         for (metric_name, online_stats_rhs) in rhs.iter() {
             let entry = self.0.entry(metric_name.to_string());
@@ -119,7 +119,7 @@ mod tests {
             .into_iter()
             .map(|x| Metric::new("size", x));
         let all_data = latency_data.chain(size_data);
-        let stats = Stats::from_iter(all_data);
+        let stats = StatsByMetric::from_iter(all_data);
 
         let latency_stats = stats.get("latency").expect("latency stats to be present");
 

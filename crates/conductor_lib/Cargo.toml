@@ -50,12 +50,3 @@ log = "=0.4.8"
 holochain_logging = "=0.0.4"
 nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
-
-[dev-dependencies]
-test_utils = { version = "=0.0.37-alpha9", path = "../../test_utils" }
-tempfile = "=3.0.7"
-holochain_wasm_utils = { version = "=0.0.37-alpha9", path = "../wasm_utils" }
-structopt = "=0.2.15"
-pretty_assertions = "=0.6.1"
-ws = "=0.8.0"
-parking_lot = "=0.7.1"

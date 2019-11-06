@@ -1,7 +1,6 @@
 /// Provides statistical features over metric data.
 use crate::Metric;
 use num_traits::float::Float;
-use serde::{Deserialize, Serialize};
 /// Extends the metric api with statistical aggregation functions
 use stats::{Commute, OnlineStats};
 use std::{collections::HashMap, iter::FromIterator};

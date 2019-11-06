@@ -4,7 +4,6 @@ use crate::{
     MetricPublisher,
 };
 use holochain_locksmith::RwLock;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 /// Unifies all possible metric publisher configurations

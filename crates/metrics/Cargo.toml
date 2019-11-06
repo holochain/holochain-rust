@@ -28,11 +28,9 @@ jsonrpc-core = "14.0.1"
 jsonrpc-lite = "=0.5.0"
 globset = "=0.4.2"
 pretty_assertions = "=0.6.1"
-pin-utils = "=0.1.0-alpha.4"
 crossbeam-channel = "=0.3.8"
 regex = "=1.1.2"
 env_logger = "=0.6.1"
-url = { version = "=2.1.0", features = ["serde"] }
 rand = "0.7.2"
 ## For cloudwatch
 rusoto_cloudwatch = "=0.41.0"

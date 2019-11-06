@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core_types"
-version = "0.0.35-alpha7"
+version = "0.0.37-alpha12"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 build = "build.rs"
 description = "core types needed for all holochain development"
@@ -36,7 +36,7 @@ objekt= "=0.1.2"
 holochain_persistence_api = "=0.0.10"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_locksmith = { path = "../locksmith" }
+holochain_locksmith = { version = "=0.0.37-alpha12", path = "../locksmith" }
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"
@@ -45,7 +45,3 @@ lib3h_crypto_api = "=0.0.21"
 parking_lot ="=0.9.0"
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
-
-[dev-dependencies]
-test_utils = { version = "=0.0.35-alpha7", path = "../../test_utils"}
-maplit = "=1.0.1"

@@ -56,13 +56,40 @@ struct Cli {
     #[structopt(
         long,
         short,
-        help = "The port to run the trycp server at",
+        help = "The port to run the trycp server on",
         default_value = "9000"
     )]
     port: u16,
+
+    #[structopt(
+        long = "port-range",
+        short = "r",
+        help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
+    )]
+    port_range_string: String,
 }
 
 type PortRange = (u16, u16);
+
+fn parse_port_range(s: String) -> Result<PortRange, String> {
+    let segments: Vec<u16> = s
+        .split("-")
+        .map(|seg| {
+            seg.parse()
+                .map_err(|e: std::num::ParseIntError| e.to_string())
+        })
+        .collect::<Result<Vec<u16>, String>>()?;
+    if segments.len() == 2 {
+        let (lo, hi) = (segments[0], segments[1]);
+        if hi <= lo {
+            Err("Port range must go from a lower port to a higher one.".into())
+        } else {
+            Ok((lo, hi))
+        }
+    } else {
+        Err("Port range must be in the format 'xxxx-yyyy'".into())
+    }
+}
 
 struct TrycpServer {
     dir: tempfile::TempDir,
@@ -84,7 +111,7 @@ impl TrycpServer {
         self.next_port += 1;
         if port >= self.port_range.1 {
             Err(format!(
-                "All available ports have been used up! Port range: {:?}",
+                "All available ports have been used up! Range: {:?}",
                 self.port_range
             ))
         } else {
@@ -159,7 +186,8 @@ fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
 
-    let conductor_port_range: PortRange = (5050, 5070);
+    let conductor_port_range: PortRange =
+        parse_port_range(args.port_range_string).expect("Invalid port range");
 
     let state: Arc<RwLock<TrycpServer>> =
         Arc::new(RwLock::new(TrycpServer::new(conductor_port_range)));

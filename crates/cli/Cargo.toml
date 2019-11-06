@@ -4,16 +4,16 @@ description = "holochain app scaffolding tools"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.37-alpha9"
+version = "0.0.37-alpha10"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.37-alpha9", path = "../core_types" }
-holochain_core = { version = "=0.0.37-alpha9", path = "../core" }
-holochain_common = { version = "=0.0.37-alpha9", path = "../common" }
-holochain_conductor_lib = { version = "=0.0.37-alpha9", path = "../conductor_lib" }
-holochain_dpki = { version = "=0.0.37-alpha9", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.37-alpha9", path = "../locksmith" }
+holochain_core_types = { version = "=0.0.37-alpha10", path = "../core_types" }
+holochain_core = { version = "=0.0.37-alpha10", path = "../core" }
+holochain_common = { version = "=0.0.37-alpha10", path = "../common" }
+holochain_conductor_lib = { version = "=0.0.37-alpha10", path = "../conductor_lib" }
+holochain_dpki = { version = "=0.0.37-alpha10", path = "../dpki" }
+holochain_locksmith = { version = "=0.0.37-alpha10", path = "../locksmith" }
 lib3h_sodium = "=0.0.21"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"

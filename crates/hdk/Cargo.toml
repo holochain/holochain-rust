@@ -1,7 +1,7 @@
 [package]
 name = "hdk"
 edition = "2018"
-version = "0.0.37-alpha9"
+version = "0.0.37-alpha10"
 description = "holochain hdk"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -14,8 +14,8 @@ serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 bitflags = "=1.0.4"
 lazy_static = "=1.2.0"
-holochain_wasm_utils = { version = "=0.0.37-alpha9", path = "../wasm_utils" }
-holochain_core_types = { version = "=0.0.37-alpha9", path = "../core_types" }
+holochain_wasm_utils = { version = "=0.0.37-alpha10", path = "../wasm_utils" }
+holochain_core_types = { version = "=0.0.37-alpha10", path = "../core_types" }
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
 holochain_persistence_api = "=0.0.10"

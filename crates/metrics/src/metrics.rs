@@ -17,7 +17,7 @@ pub trait MetricPublisher: Sync + Send {
     fn publish(&mut self, metric: &Metric);
 }
 
-pub type DefaultMetricPublisher = crate::CloudWatchLogger;
+pub type DefaultMetricPublisher = crate::logger::LoggerMetricPublisher;
 
 #[macro_export]
 macro_rules! with_latency_publishing {

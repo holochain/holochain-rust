@@ -19,6 +19,7 @@ pub struct Space {
     crypto: Box<dyn CryptoSystem>,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
+    missing_aspects: HashMap<AgentId, HashSet<AspectHash>>,
     /// sim2h currently uses the same radius for all connections
     rrdht_arc_radius: u32,
 }
@@ -29,9 +30,32 @@ impl Space {
             crypto,
             agents: HashMap::new(),
             all_aspects_hashes: AspectList::from(HashMap::new()),
+            missing_aspects: HashMap::new(),
             // default to max radius
             rrdht_arc_radius: ARC_RADIUS_MAX,
         }
+    }
+
+    pub fn add_missing_aspect(&mut self, agent: AgentId, aspect_hash: AspectHash) {
+        let set_for_agent = self
+            .missing_aspects
+            .entry(agent)
+            .or_insert_with(HashSet::new);
+        set_for_agent.insert(aspect_hash);
+    }
+
+    pub fn remove_missing_aspect(&mut self, agent: &AgentId, aspect_hash: &AspectHash) {
+        let maybe_set_for_agent = self.missing_aspects.get_mut(agent);
+        if let Some(set_for_agent) = maybe_set_for_agent {
+            set_for_agent.remove(aspect_hash);
+            if set_for_agent.len() == 0 {
+                self.missing_aspects.remove(agent);
+            }
+        }
+    }
+
+    pub fn agents_with_missing_aspects(&self) -> Vec<AgentId> {
+        self.missing_aspects.keys().cloned().collect()
     }
 
     pub(crate) fn recalc_rrdht_arc_radius(&mut self) {
@@ -127,6 +151,14 @@ impl AspectList {
 
     pub fn per_entry(&self, entry_address: &EntryHash) -> Option<&Vec<AspectHash>> {
         self.0.get(entry_address)
+    }
+
+    pub fn aspect_hashes(&self) -> Vec<AspectHash> {
+        let mut result = Vec::new();
+        for (_, aspects) in self.0.iter() {
+            result.append(&mut aspects.clone());
+        }
+        result
     }
 
     pub fn pretty_string(&self) -> String {

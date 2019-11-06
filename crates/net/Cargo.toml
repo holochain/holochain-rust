@@ -8,6 +8,9 @@ documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
+[dev-dependencies]
+tempfile = "=3.0.7"
+
 [dependencies]
 failure = "=0.1.5"
 sim1h = { version = "=0.0.37-alpha12", path = "../sim1h" }
@@ -22,9 +25,9 @@ holochain_common = { version = "=0.0.37-alpha12", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.37-alpha12", path = "../conductor_api" }
 holochain_core_types = { version = "=0.0.37-alpha12", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.37-alpha12", path = "../locksmith" }
+holochain_metrics = { version = "=0.0.37-alpha12", path = "../metrics" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_metrics = { version = "=0.0.37-alpha12", path = "../metrics" }
 holochain_persistence_api = "=0.0.10"
 lazy_static = "=1.2.0"
 libc = "=0.2.58"

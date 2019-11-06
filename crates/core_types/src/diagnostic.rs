@@ -50,18 +50,40 @@ impl <S : Into<String> + Clone +Eq + Hash+ Debug + Send + Sync + 'static> Future
         thread::spawn(move || {
             loop
             {
+                diagnostics.read().unwrap().diagnostic_iter().for_each(|(futures_key,value)|
+                {
+                    println!("FUTURE AT {:?} has polled {:?} and has been running for {:?} total",futures_key,value.poll_count,value.total_polling_time);
+                });
                 match diagnostics.read().unwrap().panic_configuration
                 {
-                    FuturesPanicConfiguration::NotPanic =>
+                    FuturesPanicConfiguration::Panic =>
                     {
-                        diagnostics.read().unwrap().diagnostic_iter().for_each(|(futures_key,value)|
-                        {
-                            println!("FUTURE AT {:?} has polled {:?} and has been running for {:?} total",futures_key,value.poll_count,value.total_polling_time);
-                        });
+                       diagnostics
+                       .read()
+                       .unwrap()
+                       .diagnostic_iter()
+                       .filter(|(f,s)|{
+                           s.total_polling_time > Duration::from_millis(6000)
+                       })
+                       .map(|(f,s)|{
+                           printn!("Future {:?} has been polling for over 1 minute",f);
+                           (f,s)
+                       })
+                       .filter(|(f,s)|{
+                           s.total_polling_time > Duration::from_millis(6000)
+                       })
+                       .map(|(f,s)|{
+                           printn!("ERROR : Future {:?} has been polling for over 5 minutes, will panic ",f);
+                           panic!("ERROR : PANIC INITIATED FOR FUTURE")
+                       })
+                       .collect::<HashMap<_,_>()
                     }
-                    _=>unimplemented!("This has not been implemented yet")
+                    _=>
+                    {
+                        
+                    }
                 }
-                thread::sleep(Duration::from_millis(1000))
+                thread::sleep(Duration]::from_millis(1000))
             }
             
         });

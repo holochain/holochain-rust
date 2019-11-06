@@ -37,7 +37,10 @@ impl Space {
     }
 
     pub fn add_missing_aspect(&mut self, agent: AgentId, aspect_hash: AspectHash) {
-        let set_for_agent = self.missing_aspects.entry(agent).or_insert(HashSet::new());
+        let set_for_agent = self
+            .missing_aspects
+            .entry(agent)
+            .or_insert_with(HashSet::new);
         set_for_agent.insert(aspect_hash);
     }
 

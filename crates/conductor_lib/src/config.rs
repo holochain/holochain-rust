@@ -590,7 +590,10 @@ impl Configuration {
         if clean {
             if let Some(instance_config) = self.instance_by_id(id) {
                 if let Some(storage_path) = instance_config.storage.path() {
-                    remove_dir_all(storage_path).expect(format!("unable to remove_dir_all() storage_path {}", storage_path.display()));
+                    let rmdirerr = format!(
+                        "unable to remove_dir_all(storage_path). storage_path: {}",
+                        storage_path);
+                    remove_dir_all(storage_path).expect(&rmdirerr);
                 }
             }
         }

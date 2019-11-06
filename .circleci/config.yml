@@ -289,10 +289,13 @@ jobs:
   docker:
    - image: holochain/holonix:ubuntu
   steps:
+   - run: sudo apt-get update && sudo apt-get install -y git ssh
    - checkout
    - run:
       name: Deploy linux binaries
-      command: nix-shell --run hc-release-github-binaries
+      command: |
+       . /home/docker/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
 
 workflows:
  version: 2

@@ -9,13 +9,6 @@ shrinkwraprs = "=0.2.1"
 serde = { version = "=1.0.89", features = ["rc"] }
 serde_derive = "=1.0.89"
 holochain_locksmith = { path = "../locksmith" }
-futures-preview = "=0.3.0-alpha.17"
-futures-core-preview = "=0.3.0-alpha.17"
-futures-channel-preview = "=0.3.0-alpha.17"
-futures-executor-preview = "=0.3.0-alpha.17"
-futures-io-preview = "=0.3.0-alpha.17"
-futures-sink-preview = "=0.3.0-alpha.17"
-futures-util-preview = "=0.3.0-alpha.17"
 lazy_static = "=1.2.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"

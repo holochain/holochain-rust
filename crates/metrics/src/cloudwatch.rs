@@ -158,22 +158,18 @@ impl CloudWatchLogger {
         let iterator = query
             .into_iter()
             .map(|result_vec| {
-                result_vec
-                    .into_iter()
-                    .filter(|result_field| {
-                        result_field
-                            .clone()
-                            .field
-                            .map(|x| x == "@message")
-                            .unwrap_or_else(|| false)
+                result_vec.into_iter().filter_map(|result_field| {
+                    result_field.clone().field.and_then(|field| {
+                        if field == "@message" {
+                            let metric: Metric = result_field.try_into().unwrap();
+                            Some(metric)
+                        } else {
+                            None
+                        }
                     })
-                    .map(|result_field| {
-                        let metric: Metric = result_field.try_into().unwrap();
-                        metric
-                    })
+                })
             })
             .flatten();
-
         Box::new(iterator)
     }
 

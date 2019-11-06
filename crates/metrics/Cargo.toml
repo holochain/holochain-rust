@@ -26,10 +26,9 @@ regex = "=1.1.2"
 env_logger = "=0.6.1"
 rand = "0.7.2"
 ## For cloudwatch
-rusoto_cloudwatch = "=0.41.0"
-rusoto_logs = "=0.41.0"
-rusoto_core = "=0.41.0"
-##rusoto = { version="0.41.0", features= ["cloudwatch", "logs", "core"] }
+rusoto_cloudwatch = "=0.40.0"
+rusoto_logs = "=0.40.0"
+rusoto_core = "=0.40.0"
 ## For descriptive statistics on metrics
 streaming-stats = "=0.2.2"
 csv = "=1.1"

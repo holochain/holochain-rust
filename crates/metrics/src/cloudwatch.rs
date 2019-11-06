@@ -126,8 +126,11 @@ impl CloudWatchLogger {
             query_string,
             start_time: start_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
             end_time: end_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
-            log_group_name: self.log_group_name.clone(),
-            log_group_names: None,
+            log_group_name: self
+                .log_group_name
+                .clone()
+                .unwrap_or_else(|| Self::default_log_group()), // This is optional for rusoto > 0.41.0
+                                                               // log_group_names: None, <-- Uncomment for rusoto >= 0.41.0
         };
 
         let query: StartQueryResponse =

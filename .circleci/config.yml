@@ -293,7 +293,9 @@ jobs:
    - checkout
    - run:
       name: Deploy linux binaries
-      command: nix-shell --run hc-release-github-binaries
+      command: |
+       . /home/docker/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
 
 workflows:
  version: 2

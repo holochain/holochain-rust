@@ -38,6 +38,22 @@ function edit_mod() {
 '/' ./src/websocket/mod.rs
 }
 
+function edit_mem_stream() {
+  sed -i'' 's/use lib3h_ghost_actor/use lib3h_zombie_actor/g' ./src/websocket/mem_stream.rs
+}
+
+function edit_mem() {
+  sed -z -i'' 's/'\
+'use crate::transport::{\n'\
+'    error::\*,\n'\
+'    websocket::{mem_stream::\*, streams::\*, tls::TlsConfig, wss_info::WssInfo},\n'\
+'};'\
+'/'\
+'use crate::websocket::{mem_stream::\*, streams::\*, tls::TlsConfig, wss_info::WssInfo};\n'\
+'use lib3h::transport::error::*;\n'\
+'/' ./src/websocket/mem.rs
+}
+
 function edit_streams() {
   sed -z -i'' 's/'\
 'use crate::transport::{\n'\
@@ -113,6 +129,8 @@ function main() {
   cp -a "${_l3h}" ./src/
   rm -f ./src/websocket/actor.rs
   edit_mod
+  edit_mem_stream
+  edit_mem
   edit_streams
   edit_tcp
   edit_tls

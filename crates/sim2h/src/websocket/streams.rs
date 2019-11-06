@@ -8,14 +8,15 @@ use log::*;
 
 use lib3h::transport::error::{TransportError, TransportResult};
 
-use lib3h_zombie_actor::GhostMutex;
 use lib3h_protocol::{uri::Lib3hUri, DidWork};
+use lib3h_zombie_actor::GhostMutex;
 use std::{
     io::{Read, Write},
     sync::Arc,
 };
 
 use url::Url;
+use url2::prelude::*;
 
 /// how often should we send a heartbeat if we have not received msgs
 pub const DEFAULT_HEARTBEAT_MS: usize = 2000;
@@ -75,7 +76,7 @@ lazy_static! {
 pub type Acceptor<T> = Box<dyn FnMut() -> TransportResult<WssInfo<T>>>;
 
 /// A function that binds to a url and produces sockt acceptors of type T
-pub type Bind<T> = Box<dyn FnMut(&Url) -> TransportResult<Acceptor<T>>>;
+pub type Bind<T> = Box<dyn FnMut(&Url) -> TransportResult<(Url2, Acceptor<T>)>>;
 
 /// A "Transport" implementation based off the websocket protocol
 /// any rust io Read/Write stream should be able to serve as the base
@@ -191,11 +192,9 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
     }
 
     pub fn bind(&mut self, url: &Url) -> TransportResult<Url> {
-        let acceptor = (self.bind)(&url.clone());
-        acceptor.map(|acceptor| {
-            self.acceptor = Ok(acceptor);
-            url.clone()
-        })
+        let (url, acceptor) = (self.bind)(&url.clone())?;
+        self.acceptor = Ok(acceptor);
+        Ok(url.into())
     }
 
     pub fn connection_status(&self, url: &Url) -> ConnectionStatus {

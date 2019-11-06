@@ -2,6 +2,7 @@ extern crate env_logger;
 extern crate lib3h_crypto_api;
 //#[macro_use]
 extern crate log;
+extern crate nanoid;
 #[macro_use]
 extern crate serde;
 #[macro_use]

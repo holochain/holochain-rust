@@ -24,9 +24,9 @@ env_logger = "=0.6.1"
 url = "=2.1.0"
 
 [dev-dependencies]
-test_utils = { version = "=0.0.37-alpha9", path = "../../test_utils" }
-holochain_conductor_lib = { version = "=0.0.37-alpha9", path = "../conductor_lib" }
-holochain_core = { version = "=0.0.37-alpha9", path = "../core" }
-holochain_core_types = { version = "=0.0.37-alpha9", path = "../core_types" }
+test_utils = { version = "=0.0.37-alpha12", path = "../../test_utils" }
+holochain_conductor_lib = { version = "=0.0.37-alpha12", path = "../conductor_lib" }
+holochain_core = { version = "=0.0.37-alpha12", path = "../core" }
+holochain_core_types = { version = "=0.0.37-alpha12", path = "../core_types" }
 tempfile = "=3.0.7"
 boolinator = "=2.4.0"

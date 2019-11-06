@@ -515,37 +515,7 @@ impl Sim2h {
                         .into_iter()
                         .filter(|a| a!=agent_id)
                         .collect::<Vec<_>>();
-
-                    let mut rng = rand::thread_rng();
-                    let random_agent_index = rng.gen_range(0, other_agents.len());
-                    let random_agent = other_agents
-                        .get(random_agent_index)
-                        .expect("Random generator must work as documented");
-
-                    debug!("FETCHING missing contents from RANDOM AGENT: {}", random_agent);
-
-                    let maybe_url = self.lookup_joined(space_address, random_agent);
-                    if maybe_url.is_none() {
-                        error!("Could not find URL for randomly selected agent. This should not happen!");
-                        return Ok(())
-                    }
-                    let random_url = maybe_url.unwrap();
-
-                    for entry_address in aspects_missing_at_node.entry_addresses() {
-                        if let Some(aspect_address_list) = aspects_missing_at_node.per_entry(entry_address) {
-                            let wire_message = WireMessage::Lib3hToClient(
-                                Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                    request_id: agent_id.clone().into(),
-                                    space_address: space_address.clone(),
-                                    provider_agent_id: random_agent.clone(),
-                                    entry_address: entry_address.clone(),
-                                    aspect_address_list: Some(aspect_address_list.clone())
-                                })
-                            );
-                            debug!("SENDING FeTCH with ReQUest ID: {:?}", wire_message);
-                            self.send(random_agent.clone(), random_url.clone(), &wire_message);
-                        }
-                    }
+                    self.fetch_aspects_from_random_agent(aspects_missing_at_node, agent_id.clone(), other_agents, space_address.clone());
                 }
                 Ok(())
             }
@@ -591,6 +561,47 @@ impl Sim2h {
             _ => {
                 warn!("Ignoring unimplemented message: {:?}", message );
                 Err(format!("Message not implemented: {:?}", message).into())
+            }
+        }
+    }
+
+    fn fetch_aspects_from_random_agent(
+        &mut self,
+        aspects_to_fetch: AspectList,
+        for_agent_id: AgentId,
+        agent_pool: Vec<AgentId>,
+        space_address: SpaceHash,
+    ) {
+        let mut rng = rand::thread_rng();
+        let random_agent_index = rng.gen_range(0, agent_pool.len());
+        let random_agent = agent_pool
+            .get(random_agent_index)
+            .expect("Random generator must work as documented");
+
+        debug!(
+            "FETCHING missing contents from RANDOM AGENT: {}",
+            random_agent
+        );
+
+        let maybe_url = self.lookup_joined(&space_address, random_agent);
+        if maybe_url.is_none() {
+            error!("Could not find URL for randomly selected agent. This should not happen!");
+            return;
+        }
+        let random_url = maybe_url.unwrap();
+
+        for entry_address in aspects_to_fetch.entry_addresses() {
+            if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: for_agent_id.clone().into(),
+                        space_address: space_address.clone(),
+                        provider_agent_id: random_agent.clone(),
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(aspect_address_list.clone()),
+                    }));
+                debug!("SENDING fetch with request ID: {:?}", wire_message);
+                self.send(random_agent.clone(), random_url.clone(), &wire_message);
             }
         }
     }

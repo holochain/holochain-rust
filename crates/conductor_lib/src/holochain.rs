@@ -431,6 +431,9 @@ mod tests {
         );
 
         let result = Holochain::load(context_load.clone());
+        if let Err(e) = result {
+            panic!("Error during Holochain::load: {:?}", e);
+        }
         assert!(result.is_ok());
         let hc = result.unwrap();
         let instance = hc.instance.as_ref().unwrap();
@@ -442,7 +445,7 @@ mod tests {
         assert_eq!(network_state.agent_id.is_some(), true);
         assert_eq!(network_state.dna_address.is_some(), true);
     }
-    
+
     #[test]
     fn fails_instantiate_if_init_fails() {
         let dna = create_test_dna_with_wat(

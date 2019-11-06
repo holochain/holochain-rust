@@ -22,6 +22,7 @@ _cli_deploy_template: &_cli_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
+
 # holochain-conductor deploy template
 _conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
@@ -52,20 +53,6 @@ jobs:
   include:
 
     # holochain-cli releases section
-    - name: "CLI DEPLOY - 64 bit Linux"
-      <<: *_cli_deploy_template
-      os: linux
-      env:
-        - TARGET=x86_64-unknown-linux-gnu
-        - CRATE_NAME=hc
-
-    - name: "CLI DEPLOY - 64 bit OSX"
-      <<: *_cli_deploy_template
-      os: osx
-      env:
-        - TARGET=x86_64-apple-darwin
-        - CRATE_NAME=hc
-
     - name: "CLI DEPLOY - 64 bit Windows MSVC"
       <<: *_cli_deploy_template
       os: windows

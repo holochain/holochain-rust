@@ -6,6 +6,7 @@ use holochain_core_types::dna::Dna;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use ignore::WalkBuilder;
+use json_patch::merge;
 use serde_json::{self, Map, Value};
 use std::{
     convert::TryFrom,
@@ -83,11 +84,14 @@ impl Packager {
         Packager::new(strip_meta).run(&output, properties)
     }
 
-    fn run(&self, output: &PathBuf, properties: Value) -> DefaultResult<()> {
+    fn run(&self, output: &PathBuf, mut properties: Value) -> DefaultResult<()> {
         let current_dir = std::env::current_dir()?;
         let dir_obj_bundle = Value::from(
             self.bundle_recurse(&current_dir)
                 .map(|mut val| {
+                    if let Some(props_from_dir) = val.get("properties") {
+                        merge(&mut properties, props_from_dir);
+                    }
                     val.insert("properties".to_string(), properties);
                     val
                 })

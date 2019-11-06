@@ -220,6 +220,40 @@ impl CloudWatchLogger {
         "holochain".to_string()
     }
 
+    pub fn with_log_group(log_group_name: String, region: &Region) -> Self {
+        let client = CloudWatchLogsClient::new(region.clone());
+
+        let log_group_request = CreateLogGroupRequest {
+            log_group_name: log_group_name.clone(),
+            ..Default::default()
+        };
+
+        // TODO Check if log group already exists or set them up a priori
+        client
+            .create_log_group(log_group_request)
+            .sync()
+            .unwrap_or_else(|e| {
+                debug!("Could not create log group- maybe already created: {:?}", e)
+            });
+
+        Self {
+            client,
+            log_stream_name: None,
+            log_group_name: Some(log_group_name),
+            sequence_token: None,
+        }
+    }
+
+    pub fn with_region(region: &Region) -> Self {
+        let client = CloudWatchLogsClient::new(region.clone());
+        Self {
+            client,
+            log_stream_name: None,
+            log_group_name: None,
+            sequence_token: None,
+        }
+    }
+
     pub fn with_log_stream(
         log_stream_name: String,
         log_group_name: String,

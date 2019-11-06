@@ -25,6 +25,7 @@ rusoto_core = "=0.40.0"
 ## For descriptive statistics on metrics
 streaming-stats = "=0.2.2"
 csv = "=1.1"
+structopt = "=0.3.3"
 
 [dev-dependencies]
 tempfile = "=3.0.7"

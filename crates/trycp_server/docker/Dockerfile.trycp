@@ -35,4 +35,4 @@ WORKDIR /holochain
 ENV CARGO_HOME /holochain
 ENV PATH "/holochain/bin:${PATH}"
 
-CMD trycp_server -p 80
+CMD trycp_server -p 9000

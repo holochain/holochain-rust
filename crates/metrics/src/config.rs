@@ -14,8 +14,8 @@ pub enum MetricPublisherConfig {
     CloudWatchMetrics(Option<rusoto_core::region::Region>),
     CloudWatchLogs {
         region: Option<rusoto_core::region::Region>,
-        log_group_name: String,
-        log_stream_name: String,
+        log_group_name: Option<String>,
+        log_stream_name: Option<String>,
     },
 }
 
@@ -41,8 +41,8 @@ impl MetricPublisherConfig {
             } => {
                 let region = region.clone().unwrap_or_default();
                 Arc::new(RwLock::new(CloudWatchLogger::with_log_stream(
-                    log_stream_name.clone(),
-                    log_group_name.clone(),
+                    log_stream_name.clone().unwrap_or_default(),
+                    log_group_name.clone().unwrap_or_default(),
                     &region,
                 )))
             }
@@ -59,8 +59,8 @@ impl MetricPublisherConfig {
     pub fn default_cloudwatch_logs() -> Self {
         Self::CloudWatchLogs {
             region: Default::default(),
-            log_group_name: crate::cloudwatch::CloudWatchLogger::default_log_group(),
-            log_stream_name: crate::cloudwatch::CloudWatchLogger::default_log_stream(),
+            log_group_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_group()),
+            log_stream_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_stream()),
         }
     }
 }

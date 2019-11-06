@@ -17,9 +17,9 @@ use serde_json::map::Map;
 use std::{
     collections::HashMap,
     fs::File,
-    io::Write,
+    io::{BufRead, BufReader, Write},
     path::PathBuf,
-    process::{Child, Command},
+    process::{Child, Command, Stdio},
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
@@ -253,7 +253,8 @@ fn main() {
             "{}",
             get_file(temp_path_arc_spawn.clone(), &id).to_string_lossy()
         );
-        let conductor = Command::new("holochain")
+        let mut conductor = Command::new("holochain")
+            .stdout(Stdio::piped())
             .args(&["-c", &player_config])
             .spawn()
             .map_err(|e| jsonrpc_core::types::error::Error {
@@ -261,9 +262,28 @@ fn main() {
                 message: format!("unable to spawn conductor: {:?}", e),
                 data: None,
             })?;
-        players.insert(id.clone(), conductor);
-        let response = format!("conductor spawned for {}", id);
-        Ok(Value::String(response))
+
+        match conductor.stdout.take() {
+            Some(stdout) => {
+                for line in BufReader::new(stdout).lines() {
+                    if line.unwrap() == "Done. All interfaces started." {
+                        break;
+                    }
+                }
+
+                players.insert(id.clone(), conductor);
+                let response = format!("conductor spawned for {}", id);
+                Ok(Value::String(response))
+            }
+            None => {
+                conductor.kill().unwrap();
+                return Err(jsonrpc_core::types::error::Error {
+                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
+                    message: format!("Conductor process not capturing stdout, bailing!"),
+                    data: None,
+                });
+            }
+        }
     });
 
     io.add_method("kill", move |params: Params| {
@@ -292,8 +312,8 @@ fn main() {
     let server = ServerBuilder::with_meta_extractor(io, |context: &RequestContext| {
         Arc::new(Session::new(context.sender().clone()))
     })
-        .start(&format!("0.0.0.0:{}", args.port).parse().unwrap())
-        .expect("server should start");
+    .start(&format!("0.0.0.0:{}", args.port).parse().unwrap())
+    .expect("server should start");
     println!("waiting for connections on port {}", args.port);
 
     server.wait().expect("server should wait");

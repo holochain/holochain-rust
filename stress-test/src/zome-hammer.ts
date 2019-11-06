@@ -16,11 +16,9 @@ module.exports = (scenario, hammerCount) => {
             calls.push(alice.call('app','main', 'commit_entry', { content: trace(`call-${i}`) }))
         }
 
-        Promise.all(calls).then(function(values) {
-            console.log(values);
-        });
+        const results = await Promise.all(calls)
 
-        await s.consistency()
+        t.equal(results.length, hammerCount)
 
     })
 }

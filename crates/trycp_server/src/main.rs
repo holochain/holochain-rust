@@ -73,7 +73,7 @@ type PortRange = (u16, u16);
 
 fn parse_port_range(s: String) -> Result<PortRange, String> {
     let segments: Vec<u16> = s
-        .split("-")
+        .split('-')
         .map(|seg| {
             seg.parse()
                 .map_err(|e: std::num::ParseIntError| e.to_string())
@@ -335,7 +335,7 @@ fn main() {
                 conductor.kill().unwrap();
                 return Err(jsonrpc_core::types::error::Error {
                     code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                    message: format!("Conductor process not capturing stdout, bailing!"),
+                    message: "Conductor process not capturing stdout, bailing!".to_string(),
                     data: None,
                 });
             }

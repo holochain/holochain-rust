@@ -2,13 +2,14 @@ extern crate structopt;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
+extern crate snowflake;
 
 //use log::error;
 //use std::process::exit;
 use self::tempfile::tempdir;
-use jsonrpc_core::{MetaIoHandler, Params, Value};
+use jsonrpc_core::{self, futures, MetaIoHandler, Params, Value};
+use jsonrpc_pubsub::{PubSubHandler, Session, Sink, Subscriber, SubscriptionId};
 use jsonrpc_ws_server::{RequestContext, ServerBuilder};
-use jsonrpc_pubsub::{PubSubHandler, Session};
 use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
@@ -144,6 +145,10 @@ fn main() {
     let players_arc_kill = players_arc.clone();
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc.clone();
+
+    let sinks: Arc<Mutex<HashMap<String, Vec<Sink>>>> = Arc::new(Mutex::new(HashMap::new()));
+    // let sinks_spawn = sinks.clone();
+    let sinks_subscribe = sinks.clone();
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
 
@@ -308,6 +313,32 @@ fn main() {
         let response = format!("killed conductor for {}", id);
         Ok(Value::String(response))
     });
+
+    io.add_subscription(
+        "conductor-state",
+        (
+            "subscribe/conductor-state",
+            move |params: Params, _, subscriber: Subscriber| match unwrap_params_map(params)
+                .and_then(|map| get_as_string("player_id", &map))
+            {
+                Ok(player_id) => {
+                    let id = SubscriptionId::String(snowflake::ProcessUniqueId::new().to_string());
+                    let sink = subscriber.assign_id(id).unwrap();
+                    let mut sinks_lock = sinks_subscribe.lock().unwrap();
+                    sinks_lock
+                        .entry(player_id)
+                        .and_modify(|ss| ss.push(sink.clone()))
+                        .or_insert_with(|| vec![sink.clone()]);
+                }
+                Err(err) => {
+                    subscriber.reject(err).unwrap();
+                }
+            },
+        ),
+        ("unsubscribe/conductor-state", |_id, _| {
+            futures::future::ok(Value::Bool(false))
+        }),
+    );
 
     let server = ServerBuilder::with_meta_extractor(io, |context: &RequestContext| {
         Arc::new(Session::new(context.sender().clone()))

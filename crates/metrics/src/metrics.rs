@@ -1,3 +1,8 @@
+/// Metric suppport for holochain. Provides metric representations to
+/// sample, publish, aggregate, and analyze metric data.
+
+/// Represents a single sample of a numerical metric determined by `name`.
+// TODO Consider renaming to Sample
 #[derive(Debug, Clone, PartialEq)]
 pub struct Metric {
     pub name: String,
@@ -13,12 +18,18 @@ impl Metric {
     }
 }
 
+/// An object capable of publishing metric data.
 pub trait MetricPublisher: Sync + Send {
+    /// Publish a single metric.
     fn publish(&mut self, metric: &Metric);
 }
 
+/// The default metric publisher trait implementation
 pub type DefaultMetricPublisher = crate::logger::LoggerMetricPublisher;
 
+/// Wraps a standard rust function with latency timing that is published to
+/// $publisher upon completion of $f($args,*). The latency metric name will
+/// be "$metric_prefix.latency".
 #[macro_export]
 macro_rules! with_latency_publishing {
     ($metric_prefix:expr, $publisher:expr, $f:expr, $($args:expr),* ) => {{

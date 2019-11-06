@@ -7,6 +7,7 @@ use holochain_locksmith::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+/// Unifies all possible metric publisher configurations
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MetricPublisherConfig {
     Logger,
@@ -25,6 +26,7 @@ impl Default for MetricPublisherConfig {
 }
 
 impl MetricPublisherConfig {
+    /// Instantiates a new metric publisher given this configuration instance.
     pub fn create_metric_publisher(&self) -> Arc<RwLock<dyn MetricPublisher>> {
         let publisher: Arc<RwLock<dyn MetricPublisher>> = match self {
             Self::Logger => Arc::new(RwLock::new(LoggerMetricPublisher::new())),
@@ -48,10 +50,12 @@ impl MetricPublisherConfig {
         publisher
     }
 
+    /// The default logger metric publisher configuration.
     pub fn default_logger() -> Self {
         Self::Logger
     }
 
+    /// The default cloudwatch logger publisher configuration.
     pub fn default_cloudwatch_logs() -> Self {
         Self::CloudWatchLogs {
             region: Default::default(),

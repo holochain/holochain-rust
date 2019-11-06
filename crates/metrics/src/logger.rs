@@ -2,6 +2,8 @@ use crate::{Metric, MetricPublisher};
 use regex::Regex;
 use std::convert::TryFrom;
 
+/// A metric publisher that just logs to the debug level logger
+/// a key value pair formatted according to the Into<String> trait of LogLine.
 #[derive(Debug, Clone)]
 pub struct LoggerMetricPublisher;
 
@@ -38,6 +40,8 @@ impl From<std::num::ParseFloatError> for ParseError {
     }
 }
 
+/// A metric as represented by a log line. Used to convert
+/// from a metric to log line and back.
 #[derive(Debug, Clone, Shrinkwrap)]
 pub struct LogLine(pub String);
 

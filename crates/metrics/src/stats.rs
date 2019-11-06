@@ -5,6 +5,8 @@ use std::{collections::HashMap, iter::FromIterator};
 
 use num_traits::float::Float;
 
+/// An extension of `OnlineStats` that also incrementally tracks
+/// max and min values.
 #[derive(Debug, Clone)]
 pub struct DescriptiveStats {
     online_stats: OnlineStats,
@@ -12,9 +14,11 @@ pub struct DescriptiveStats {
     min: f64,
 }
 
+// TODO is this necessary?
 impl Copy for DescriptiveStats {}
 
 impl DescriptiveStats {
+    /// An initial empty statistic.
     pub fn empty() -> Self {
         Self {
             online_stats: OnlineStats::new(),
@@ -23,6 +27,7 @@ impl DescriptiveStats {
         }
     }
 
+    /// Adds a value to the running statistic.
     pub fn add(&mut self, value: f64) {
         self.online_stats.add(value);
         if value > self.max {
@@ -33,22 +38,27 @@ impl DescriptiveStats {
         }
     }
 
+    /// The mean value of the running statistic.
     pub fn mean(&self) -> f64 {
         self.online_stats.mean()
     }
 
+    /// The standard deviation of the running statistic.
     pub fn stddev(&self) -> f64 {
         self.online_stats.stddev()
     }
 
+    /// The variance of the running statistic.
     pub fn variance(&self) -> f64 {
         self.online_stats.variance()
     }
 
+    /// The max of the running statistic.
     pub fn max(&self) -> f64 {
         self.max
     }
 
+    /// The min of the running statistic.
     pub fn min(&self) -> f64 {
         self.min
     }

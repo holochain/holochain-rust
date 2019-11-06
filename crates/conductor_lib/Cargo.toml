@@ -4,13 +4,13 @@ description = "holochain conductor library"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.37-alpha10"
+version = "0.0.37-alpha11"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core = { version = "=0.0.37-alpha10", path = "../core" }
-holochain_core_types = { version = "=0.0.37-alpha10", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.37-alpha10", path = "../locksmith" }
+holochain_core = { version = "=0.0.37-alpha11", path = "../core" }
+holochain_core_types = { version = "=0.0.37-alpha11", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.37-alpha11", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.10"
@@ -18,11 +18,11 @@ holochain_persistence_mem = "=0.0.10"
 holochain_persistence_file = "=0.0.10"
 holochain_persistence_pickle = "=0.0.10"
 holochain_persistence_lmdb = "=0.0.10"
-holochain_dpki = { version = "=0.0.37-alpha10", path = "../dpki" }
-holochain_net = { version = "=0.0.37-alpha10", path = "../net" }
+holochain_dpki = { version = "=0.0.37-alpha11", path = "../dpki" }
+holochain_net = { version = "=0.0.37-alpha11", path = "../net" }
 lib3h = "=0.0.21"
 lib3h_sodium = "=0.0.21"
-holochain_common = { version = "=0.0.37-alpha10", path = "../common" }
+holochain_common = { version = "=0.0.37-alpha11", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

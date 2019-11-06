@@ -1,6 +1,6 @@
 [package]
 name = "sim2h"
-version = "0.0.37-alpha10"
+version = "0.0.37-alpha11"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h"
@@ -22,8 +22,8 @@ lib3h_sodium = "=0.0.21"
 lib3h_protocol = "=0.0.21"
 lib3h_zombie_actor = "=0.0.21"
 holochain_tracing = "=0.0.1"
-holochain_core_types = { version = "=0.0.37-alpha10", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.37-alpha10", path = "../locksmith" }
+holochain_core_types = { version = "=0.0.37-alpha11", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.37-alpha11", path = "../locksmith" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "=0.4.8"
 env_logger = "=0.6.1"

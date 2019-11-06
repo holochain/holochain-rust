@@ -239,8 +239,9 @@ impl CloudWatchLogger {
 
 impl MetricPublisher for CloudWatchLogger {
     fn publish(&mut self, metric: &Metric) {
+        let log_line: LogLine = metric.into();
         let input_log_event = InputLogEvent {
-            message: format!("metrics.rs: {} {}", metric.name, metric.value),
+            message: format!("metrics.rs: {}", log_line.to_string()),
             timestamp: std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()

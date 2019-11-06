@@ -13,7 +13,8 @@ impl LoggerMetricPublisher {
 
 impl MetricPublisher for LoggerMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
-        debug!("{} {}", metric.name, metric.value);
+        let log_line: LogLine = metric.into();
+        debug!("{}", log_line.to_string());
     }
 }
 
@@ -39,6 +40,24 @@ impl From<std::num::ParseFloatError> for ParseError {
 
 #[derive(Debug, Clone, Shrinkwrap)]
 pub struct LogLine(pub String);
+
+impl From<Metric> for LogLine {
+    fn from(metric: Metric) -> Self {
+        LogLine(format!("{} {}", metric.name, metric.value))
+    }
+}
+
+impl From<&Metric> for LogLine {
+    fn from(metric: &Metric) -> Self {
+        metric.clone().into()
+    }
+}
+
+impl Into<String> for LogLine {
+    fn into(self) -> String {
+        self.0
+    }
+}
 
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;

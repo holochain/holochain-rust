@@ -1346,12 +1346,9 @@ type = 'websocket'"#,
 
         toml2 = finish_toml(toml2);
 
-        toml2 = toml2.replace(
-            r#"[[[interfaces.instances]]
-id = 'test-instance-1'
-"#, "");
+        toml2 = toml2.replace("[[interfaces.instances]]\nid = \'test-instance-1\'\n\n", "");
 
-        assert_eq!(config_contents, toml2, "expected toml (right), got config_contents (left) after removing instance");
+        assert_eq!(config_contents, toml2, "expected toml2 (right), got config_contents (left) after removing instance");
     }
 } 
 

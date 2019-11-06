@@ -8,6 +8,9 @@ documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
+[dev-dependencies]
+tempfile = "=3.0.7"
+
 [dependencies]
 failure = "=0.1.5"
 sim1h = { version = "=0.0.37-alpha12", path = "../sim1h" }

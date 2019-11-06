@@ -273,6 +273,27 @@ jobs:
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-test
 
+ deploy.mac:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: Deploy mac binaries
+      command: |
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
+
+ deploy.linux:
+  docker:
+   - image: holochain/holonix:ubuntu
+  steps:
+   - checkout
+   - run:
+      name: Deploy linux binaries
+      command: nix-shell --run hc-release-github-binaries
+
 workflows:
  version: 2
  tests:
@@ -329,3 +350,18 @@ workflows:
        branches:
         only:
          - develop
+
+ deploy:
+  jobs:
+   - deploy.mac:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.linux:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/

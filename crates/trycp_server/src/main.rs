@@ -271,13 +271,16 @@ fn main() {
                      )))?;
         let file_path = get_dna_path(&state, &url);
         save_file(file_path.clone(), &content.as_bytes())?;
+        let local_path = file_path.to_string_lossy();
         let response = format!(
             "wrote dna for {} to {}",
             &url_str,
-            file_path.to_string_lossy()
+            local_path,
         );
         println!("dna {}: {:?}", &url_str, response);
-        Ok(Value::String(response))
+        Ok(json!({
+            "path": local_path
+        }))
     });
 
     io.add_method("reset", move |params: Params| {

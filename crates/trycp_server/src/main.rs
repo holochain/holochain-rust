@@ -100,6 +100,7 @@ fn parse_port_range(s: String) -> Result<PortRange, String> {
 struct TrycpServer {
     // dir: tempfile::TempDir,
     dir: PathBuf,
+    dna_dir: PathBuf,
     next_port: u16,
     port_range: PortRange,
 }
@@ -108,6 +109,7 @@ impl TrycpServer {
     pub fn new(port_range: PortRange) -> Self {
         TrycpServer {
             dir: tempdir().expect("should create tmp dir").into_path(),
+            dna_dir: tempdir().expect("should create tmp dir").into_path(),
             next_port: port_range.0,
             port_range,
         }
@@ -175,16 +177,16 @@ fn get_dir(state: &TrycpServer, id: &String) -> PathBuf {
     state.dir.join(id)
 }
 
+fn get_config_path(state: &TrycpServer, id: &String) -> PathBuf {
+    get_dir(state, id).join(CONDUCTOR_CONFIG_FILENAME)
+}
+
 fn get_dna_dir(state: &TrycpServer) -> PathBuf {
-    state.dir.join(DNA_DIRNAME)
+    state.dna_dir.join(DNA_DIRNAME)
 }
 
 fn get_dna_path(state: &TrycpServer, url: &Url) -> PathBuf {
     get_dna_dir(state).join(url.path().to_string().replace("/","").replace("%","_"))
-}
-
-fn get_config_path(state: &TrycpServer, id: &String) -> PathBuf {
-    get_dir(state, id).join(CONDUCTOR_CONFIG_FILENAME)
 }
 
 fn get_stdout_log_path(state: &TrycpServer, id: &String) -> PathBuf {

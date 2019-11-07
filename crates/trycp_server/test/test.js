@@ -5,8 +5,8 @@ process.on('unhandledRejection', error => {
     console.error('got unhandledRejection:', error);
 });
 
-//doTest("wss://localhost:9000")
-doTest("wss://test1-eu-central-1.holochain-aws.org")
+doTest("ws://localhost:9000")
+//doTest("wss://test1-eu-central-1.holochain-aws.org")
 //magic_remote_machine_manager("3000")
 function magic_remote_machine_manager(port) {
     const { spawn } = require('child_process');

@@ -66,15 +66,18 @@ struct StressJobLog {
     pub value: f64,
 }
 
-pub trait StressSuite: 'static + Send + Sync {
+pub trait StressSuite: 'static {
     fn start(&mut self);
+    fn progress(&mut self, stats: &StressStats);
     fn stop(&mut self, stats: StressStats);
+    fn tick(&mut self) {}
 }
 
 pub struct StressRunConfig<S: StressSuite, J: StressJob> {
     pub thread_pool_size: usize,
     pub job_count: usize,
-    pub run_time: std::time::Duration,
+    pub run_time_ms: u64,
+    pub progress_interval_ms: u64,
     pub suite: S,
     pub job_factory: JobFactory<J>,
 }
@@ -87,6 +90,7 @@ struct StressJobInfo<J: StressJob> {
 struct StressRunner<S: StressSuite, J: StressJob> {
     config: StressRunConfig<S, J>,
     run_until: std::time::Instant,
+    next_progress: std::time::Instant,
     thread_pool: Vec<std::thread::JoinHandle<()>>,
     should_continue: Arc<Mutex<bool>>,
     job_count: Arc<Mutex<usize>>,
@@ -101,11 +105,17 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     pub fn new(config: StressRunConfig<S, J>) -> Self {
         let (log_send, log_recv) = crossbeam_channel::unbounded();
         let run_until = std::time::Instant::now()
-            .checked_add(config.run_time)
+            .checked_add(std::time::Duration::from_millis(config.run_time_ms))
+            .unwrap();
+        let next_progress = std::time::Instant::now()
+            .checked_add(std::time::Duration::from_millis(
+                config.progress_interval_ms,
+            ))
             .unwrap();
         let mut runner = StressRunner {
             config,
             run_until,
+            next_progress,
             thread_pool: Vec::new(),
             should_continue: Arc::new(Mutex::new(true)),
             job_count: Arc::new(Mutex::new(0)),
@@ -168,6 +178,15 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 }
             }
         }
+        if std::time::Instant::now() > self.next_progress {
+            self.next_progress = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    self.config.progress_interval_ms,
+                ))
+                .unwrap();
+            self.config.suite.progress(&self.stats);
+        }
+        self.config.suite.tick();
         self.stats.master_tick_count += 1;
         true
     }
@@ -248,6 +267,10 @@ mod tests {
                 println!("got start");
             }
 
+            fn progress(&mut self, stats: &StressStats) {
+                println!("got progress: {:#?}", stats);
+            }
+
             fn stop(&mut self, stats: StressStats) {
                 println!("got stop: {:#?}", stats);
             }
@@ -257,7 +280,8 @@ mod tests {
         stress_run(StressRunConfig {
             thread_pool_size: 10,
             job_count: 100,
-            run_time: std::time::Duration::from_millis(200),
+            run_time_ms: 200,
+            progress_interval_ms: 50,
             suite: Suite,
             job_factory: Box::new(move || Job {
                 job_tick_count: job_tick_count_clone.clone(),

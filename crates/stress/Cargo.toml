@@ -10,7 +10,12 @@ edition = "2018"
 
 [dependencies]
 crossbeam-channel = "=0.3.8"
+lib3h_protocol = "=0.0.21"
+lib3h_sodium = "=0.0.21"
 native-tls = "=0.2.2"
+sim2h = { version = "=0.0.37-alpha12", path = "../sim2h" }
+structopt = "=0.3.3"
+url2 = "=0.0.3"
 
 [features]
 vendored = ["native-tls/vendored"]

@@ -1,9 +1,19 @@
 extern crate structopt;
-
 use crate::structopt::StructOpt;
 use holochain_metrics::{cloudwatch::*, stats::StatsByMetric, *};
 use rusoto_core::Region;
 use std::{iter::FromIterator, time::*};
+
+fn enable_logging() {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "trace");
+    }
+    let _ = env_logger::builder()
+        .default_format_timestamp(false)
+        .default_format_module_path(false)
+        .is_test(true)
+        .try_init();
+}
 
 #[derive(StructOpt)]
 #[structopt(name = "metrics", about = "Holochain metric utilities")]
@@ -14,10 +24,10 @@ enum Command {
     )]
     CloudwatchTest,
     #[structopt(
-        name = "print-stats",
-        about = "Prints descriptive stats in csv form over a time range"
+        name = "print-cloudwatch-stats",
+        about = "Prints descriptive stats in csv form over a time range from a cloudwatch datasource"
     )]
-    PrintStats {
+    PrintCloudwatchStats {
         #[structopt(name = "region", short = "r")]
         region: Option<Region>,
         #[structopt(name = "log_group_name", short = "l")]
@@ -27,14 +37,24 @@ enum Command {
         #[structopt(name = "stop-time")]
         stop_time: u64,
     },
+
+    #[structopt(
+        name = "print-log-stats",
+        about = "Prints descriptive stats in csv form over a time range"
+    )]
+    PrintLogStats {
+        #[structopt(name = "log_file", short = "f")]
+        log_file: String,
+    },
 }
 
 fn main() {
+    enable_logging();
     let command = Command::from_args();
 
     match command {
         Command::CloudwatchTest => cloudwatch_test(),
-        Command::PrintStats {
+        Command::PrintCloudwatchStats {
             region,
             log_group_name,
             start_time,
@@ -48,8 +68,9 @@ fn main() {
             let stop_time = UNIX_EPOCH
                 .checked_add(Duration::from_secs(stop_time))
                 .unwrap();
-            print_stats(&start_time, &stop_time, log_group_name, &region)
+            print_cloudwatch_stats(&start_time, &stop_time, log_group_name, &region)
         }
+        Command::PrintLogStats { log_file } => print_log_stats(log_file),
     }
 }
 
@@ -81,7 +102,7 @@ fn cloudwatch_test() {
     stats.print_csv().unwrap()
 }
 
-fn print_stats(
+fn print_cloudwatch_stats(
     start_time: &SystemTime,
     stop_time: &SystemTime,
     log_group_name: String,
@@ -91,5 +112,11 @@ fn print_stats(
 
     let stats: StatsByMetric = cloudwatch.query_and_aggregate(start_time, stop_time);
 
+    stats.print_csv().unwrap()
+}
+
+fn print_log_stats(log_file: String) {
+    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
+    let stats = StatsByMetric::from_iter(metrics);
     stats.print_csv().unwrap()
 }

@@ -1,6 +1,9 @@
 use crate::{Metric, MetricPublisher};
 use regex::Regex;
-use std::convert::TryFrom;
+use std::{
+    convert::{TryFrom, TryInto},
+    io::{BufRead, BufReader},
+};
 
 /// A metric publisher that just logs to the debug level logger
 /// a key value pair formatted according to the Into<String> trait of LogLine.
@@ -25,10 +28,9 @@ impl Default for LoggerMetricPublisher {
         Self::new()
     }
 }
-
 lazy_static! {
     pub static ref PARSE_METRIC_REGEX: Regex =
-        Regex::new("metrics.rs:\\d* ([\\w\\d~\\-\\.]+) ([\\d\\.]+)").unwrap();
+        Regex::new("metrics.rs:\\d* ([\\w\\d~\\-\\._]+) ([\\d\\.]+)").unwrap();
 }
 
 #[derive(Debug, Clone)]
@@ -66,14 +68,16 @@ impl Into<String> for LogLine {
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;
     fn try_from(source: LogLine) -> Result<Metric, ParseError> {
+        let stripped = strip_ansi_escapes::strip(source.0).unwrap();
+        let stripped = std::str::from_utf8(stripped.as_slice()).unwrap();
         let cap = PARSE_METRIC_REGEX
-            .captures_iter(source.as_str())
+            .captures_iter(stripped)
             .next()
             .map(|cap| Ok(cap))
             .unwrap_or_else(|| {
                 Err(ParseError(format!(
                     "expected at least one capture group for a metric value: {:?}",
-                    source
+                    stripped
                 )))
             })?;
         let metric_name: String = cap[1].to_string();
@@ -82,6 +86,22 @@ impl TryFrom<LogLine> for Metric {
         let metric = Metric::new(&metric_name, metric_value);
         return Ok(metric);
     }
+}
+
+/// Produces an iterator of metric data given a log file name.
+pub fn metrics_from_file(log_file: String) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
+    let file = std::fs::File::open(log_file)?;
+    let reader = BufReader::new(file);
+    let metrics = reader.lines().filter_map(|line| {
+        let result: Result<Metric, _> = line
+            .map_err(|e| ParseError(format!("{}", e)))
+            .and_then(|line| LogLine(line).try_into());
+        result.map(|x| Some(x)).unwrap_or_else(|e| {
+            warn!("Unparsable log line: {:?}", e);
+            None
+        })
+    });
+    Ok(Box::new(metrics))
 }
 
 #[cfg(test)]

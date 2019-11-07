@@ -1342,6 +1342,7 @@ dependencies = [
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "streaming-stats 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "strip-ansi-escapes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3671,6 +3672,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "strip-ansi-escapes"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "vte 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4417,6 +4426,14 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "vte"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "utf8parse 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "wabt"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5015,6 +5032,7 @@ dependencies = [
 "checksum stable_deref_trait 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dba1a27d3efae4351c8051072d619e3ade2820635c3958d826bfea39d59b54c8"
 "checksum streaming-stats 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "fd8abbec7f4bc18e9e761572465226e63f88c1cb90ee8b3f403a81631ef9fd50"
 "checksum string 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d24114bfcceb867ca7f71a0d3fe45d45619ec47a6fbfa98cb14e14250bfa5d6d"
+"checksum strip-ansi-escapes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9d63676e2abafa709460982ddc02a3bb586b6d15a49b75c212e06edd3933acee"
 "checksum strsim 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 "checksum structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)" = "3d0760c312538987d363c36c42339b55f5ee176ea8808bbe4543d484a291c8d1"
 "checksum structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "6d4f66a4c0ddf7aee4677995697366de0749b0139057342eccbb609b12d0affc"
@@ -5093,6 +5111,7 @@ dependencies = [
 "checksum vec_map 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05c78687fb1a80548ae3250346c3db86a80a7cdd77bda190189f2d0a0987c81a"
 "checksum version_check 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "914b1a6776c4c929a602fafd8bc742e06365d4bcbe48c30f9cca5824f70dc9dd"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
+"checksum vte 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4f42f536e22f7fcbb407639765c8fd78707a33109301f834a594758bedd6e8cf"
 "checksum wabt 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)" = "74e463a508e390cc7447e70f640fbf44ad52e1bd095314ace1fdf99516d32add"
 "checksum wabt-sys 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a6265b25719e82598d104b3717375e37661d41753e2c84cde3f51050c7ed7e3c"
 "checksum walkdir 2.2.9 (registry+https://github.com/rust-lang/crates.io-index)" = "9658c94fa8b940eab2250bd5a457f9c48b748420d71293b165c8cdbe2f55f71e"

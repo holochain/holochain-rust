@@ -275,12 +275,9 @@ impl Dna {
                     )))
                 }
             })
-            .filter_map(|r| match r {
-                Ok(_) => None,
-                Err(e) => Some(e.to_owned()),
-            })
+            .filter_map(|r| r.err())
             .collect();
-        if errors.len() == 0 {
+        if errors.is_empty() {
             Ok(())
         } else {
             Err(HolochainError::ErrorGeneric(format!(

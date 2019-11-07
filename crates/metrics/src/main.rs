@@ -20,7 +20,7 @@ fn enable_logging() {
 enum Command {
     #[structopt(
         name = "cloudwatch-test",
-        about = "Runs a simple smoke test of cloudwatch publisig features"
+        about = "Runs a simple smoke test of cloudwatch publishing features"
     )]
     CloudwatchTest,
     #[structopt(

@@ -217,6 +217,7 @@ impl Instance {
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
     ) -> Vec<Observer> {
+        context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
             let new_state: StateWrapper;
@@ -232,6 +233,8 @@ impl Instance {
             // Change the state
             *state = new_state;
         }
+
+        context.redux_wants_write.store(false, Relaxed);
 
         if let Err(e) = self.save() {
             log_error!(

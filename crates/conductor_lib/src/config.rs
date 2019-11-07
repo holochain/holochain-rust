@@ -25,6 +25,7 @@ use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
+use holochain_metrics::MetricPublisherConfig;
 use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
@@ -39,7 +40,6 @@ use std::{
     sync::Arc,
 };
 use toml;
-use holochain_metrics::MetricPublisherConfig;
 /// Main conductor configuration struct
 /// This is the root of the configuration tree / aggregates
 /// all other configuration aspects.
@@ -116,7 +116,7 @@ pub struct Configuration {
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
 
-    pub metric_publisher: Option<MetricPublisherConfig>
+    pub metric_publisher: Option<MetricPublisherConfig>,
 }
 
 /// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.

@@ -392,7 +392,6 @@ mod tests {
         let temp_filestorage_dir = temp.path().to_str().unwrap();
         let agent = registered_test_agent("persister");
         let (signal_tx, _signal_rx) = signal_channel();
-        //let logger = test_logger();
         let mut dna = create_arbitrary_test_dna();
         dna.name = "TestApp".to_string();
 

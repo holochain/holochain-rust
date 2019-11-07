@@ -8,7 +8,6 @@ use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
-use log::error;
 use std::sync::Arc;
 
 pub async fn initialize(

@@ -48,10 +48,12 @@ pub async fn run_validation_callback(
                             String::from("JSON object does not match entry schema").into(),
                         ))
                     } else {
-                        Err(ValidationError::Error(error_string.into()))
+                        // an unknown error from the ribosome should panic rather than
+                        // silently failing validation
+                        panic!(error_string)
                     }
                 }
-                Err(error) => Err(ValidationError::Error(error.to_string().into())),
+                Err(error) => panic!(error.to_string()), // same here
             };
 
             lax_send_sync(

@@ -8,6 +8,7 @@ use crate::websocket::{
     wss_info::WssInfo,
 };
 use log::*;
+use url2::prelude::*;
 
 use std::net::{TcpListener, TcpStream};
 
@@ -15,7 +16,7 @@ impl StreamManager<std::net::TcpStream> {
     /// convenience constructor for creating a websocket "Transport"
     /// instance that is based of the rust std TcpStream
     pub fn with_std_tcp_stream(tls_config: TlsConfig) -> Self {
-        let bind: Bind<TcpStream> = Box::new(move |url| Self::tcp_bind(url));
+        let bind: Bind<TcpStream> = Box::new(|url| Self::tcp_bind(url));
         StreamManager::new(
             |uri| {
                 let socket = std::net::TcpStream::connect(uri)?;
@@ -27,7 +28,7 @@ impl StreamManager<std::net::TcpStream> {
         )
     }
 
-    fn tcp_bind(url: &url::Url) -> TransportResult<Acceptor<TcpStream>> {
+    fn tcp_bind(url: &url::Url) -> TransportResult<(Url2, Acceptor<TcpStream>)> {
         // TODO return transport result rather than expect()
         let host = url.host_str().expect("host name must be supplied");
         let port = url.port().unwrap_or(80); // TODO default or error here?
@@ -36,6 +37,13 @@ impl StreamManager<std::net::TcpStream> {
         TcpListener::bind(formatted_url)
             .map_err(|err| err.into())
             .and_then(move |listener: TcpListener| {
+                let new_url = listener.local_addr()?;
+                let new_url = Url2::parse(&format!(
+                    "{}://{}:{}",
+                    url.scheme(),
+                    new_url.ip(),
+                    new_url.port(),
+                ));
                 listener
                     .set_nonblocking(true)
                     .map_err(|err| {
@@ -81,7 +89,7 @@ impl StreamManager<std::net::TcpStream> {
                                         })
                                 })
                         });
-                        acceptor
+                        (new_url, acceptor)
                     })
             })
     }

@@ -7,6 +7,7 @@ extern crate holochain_json_api;
 extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
+extern crate json_patch;
 extern crate lib3h_sodium;
 extern crate structopt;
 #[macro_use]
@@ -40,7 +41,10 @@ enum Cli {
     ///  Builds DNA source files into a single .dna.json DNA file
     Package {
         #[structopt(long)]
-        /// Strips all __META__ sections off the target bundle. Makes unpacking of the bundle impossible
+        /// Adds __META__ fields in the dna.json which allow it to be unpacked
+        include_meta: bool,
+        #[structopt(long)]
+        /// Included for backward compatibility. Does nothing as stripping meta is now the default
         strip_meta: bool,
         #[structopt(long, short, parse(from_os_str))]
         output: Option<PathBuf>,
@@ -166,10 +170,12 @@ fn run() -> HolochainResult<()> {
     match args {
         // If using default path, we'll create if necessary; otherwise, target dir must exist
         Cli::Package {
-            strip_meta,
+            include_meta,
             output,
             properties: properties_string,
+            strip_meta,
         } => {
+            let _ = strip_meta;
             let output = if output.is_some() {
                 output.unwrap()
             } else {
@@ -181,9 +187,8 @@ fn run() -> HolochainResult<()> {
                 .unwrap_or_else(|| Ok(json!({})));
 
             match properties {
-                Ok(properties) => {
-                    cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?
-                }
+                Ok(properties) => cli::package(include_meta, output, properties)
+                    .map_err(HolochainError::Default)?,
                 Err(e) => {
                     return Err(HolochainError::Default(format_err!(
                         "Failed to parse properties argument as JSON: {:?}",

@@ -1,13 +1,4 @@
-#[macro_use]
-extern crate hdk;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-extern crate boolinator;
-use hdk::holochain_json_api::error::JsonError;
-use hdk::holochain_json_api::json::JsonString;
-use hdk::error::ZomeApiResult;
+use hdk::prelude::*;
 
 fn handle_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
     Ok(num1 + num2)
@@ -41,7 +32,7 @@ define_zome! {
 #[cfg(test)]
 mod tests {
 
-    use handle_sum;
+    use super::handle_sum;
 
     #[test]
     pub fn handle_sum_test() {

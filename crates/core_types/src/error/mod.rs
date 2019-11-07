@@ -4,15 +4,14 @@
 mod dna_error;
 mod ribosome_error;
 
-pub use self::{dna_error::*, ribosome_error::*};
-use sync::HcLockError;
-
 use self::HolochainError::*;
+pub use self::{dna_error::*, ribosome_error::*};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
+use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
 
@@ -242,9 +241,9 @@ impl<T> From<::std::sync::PoisonError<T>> for HolochainError {
     }
 }
 
-impl From<HcLockError> for HolochainError {
-    fn from(error: HcLockError) -> Self {
-        HolochainError::ErrorGeneric(format!("HcLockError: {:?}", error))
+impl From<LocksmithError> for HolochainError {
+    fn from(error: LocksmithError) -> Self {
+        HolochainError::ErrorGeneric(format!("LocksmithError: {:?}", error))
     }
 }
 

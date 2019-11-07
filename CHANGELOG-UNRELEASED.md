@@ -5,18 +5,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
-
-*  Adds the holochain_persistence_lmdb crate and makes this an option for the instance config. This is now the default store implementation. [#1758](https://github.com/holochain/holochain-rust/pull/1758)
+* The sim2h switch-board server is now caching if a node is missing data and periodically checks back in. This makes it more resilient against unforseen problems like connection drops which otherwise could only be recovered through an explicit reconnection of the node. [#1834](https://github.com/holochain/holochain-rust/pull/1834) 
 
 ### Changed
-
-* Custom signals that are emitted from DNA/zome code ("user" signals) are now send to all admin interfaces to enable UI switching logic in Holoscape [#1799](https://github.com/holochain/holochain-rust/pull/1799)
+* DNA is now checked for invalid zome artifacts. Validation callbacks that fail unexpectedly will now panic rather than fail validation. `hc package` `--strip-meta` flag is now `--include-meta`. [#1838](https://github.com/holochain/holochain-rust/pull/1838) 
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+* Loading of instances from storage was broken and ended up in partially loaded states. This got fixed with [#1836](https://github.com/holochain/holochain-rust/pull/1836).
 
 ### Security
 

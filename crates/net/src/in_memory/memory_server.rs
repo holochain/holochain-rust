@@ -17,7 +17,7 @@ use lib3h_protocol::{
     types::AgentPubKey,
 };
 
-use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
+use holochain_locksmith::{Mutex, RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::types::SpaceHash;
 use std::collections::{hash_map::Entry, HashMap, HashSet};

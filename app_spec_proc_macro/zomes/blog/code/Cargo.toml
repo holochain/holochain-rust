@@ -1,7 +1,8 @@
 [package]
 name = "blog"
-version = "0.0.33-alpha6"
+version = "0.0.37-alpha12"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
 
 [dependencies]
 serde = "=1.0.89"

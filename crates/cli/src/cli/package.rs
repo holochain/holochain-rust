@@ -6,6 +6,7 @@ use holochain_core_types::dna::Dna;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use ignore::WalkBuilder;
+use json_patch::merge;
 use serde_json::{self, Map, Value};
 use std::{
     convert::TryFrom,
@@ -15,11 +16,7 @@ use std::{
     sync::Arc,
 };
 
-use cli::scaffold::rust::CARGO_FILE_NAME;
-
 use holochain_core_types::hdk_version::{HDKVersion, HDK_VERSION};
-
-pub const CODE_DIR_NAME: &str = "code";
 
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
 
@@ -36,6 +33,8 @@ pub const META_BIN_ID: &str = "bin";
 pub const META_SECTION_NAME: &str = "__META__";
 pub const META_TREE_SECTION_NAME: &str = "tree";
 pub const META_CONFIG_SECTION_NAME: &str = "config_file";
+
+const CARGO_FILE_NAME: &str = "Cargo.toml";
 
 pub type Object = Map<String, Value>;
 
@@ -57,15 +56,15 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
 }
 
 struct Packager {
-    strip_meta: bool,
+    include_meta: bool,
 }
 
 impl Packager {
-    fn new(strip_meta: bool) -> Packager {
-        Packager { strip_meta }
+    fn new(include_meta: bool) -> Packager {
+        Packager { include_meta }
     }
 
-    pub fn package(strip_meta: bool, output: PathBuf, properties: Value) -> DefaultResult<()> {
+    pub fn package(include_meta: bool, output: PathBuf, properties: Value) -> DefaultResult<()> {
         // First, check whether they have `cargo` installed, since it will be needed for packaging
         // TODO: in the future, don't check for this here, since other build tools and languages
         // could be used
@@ -82,14 +81,17 @@ impl Packager {
             return Ok(());
         }
 
-        Packager::new(strip_meta).run(&output, properties)
+        Packager::new(include_meta).run(&output, properties)
     }
 
-    fn run(&self, output: &PathBuf, properties: Value) -> DefaultResult<()> {
+    fn run(&self, output: &PathBuf, mut properties: Value) -> DefaultResult<()> {
         let current_dir = std::env::current_dir()?;
         let dir_obj_bundle = Value::from(
             self.bundle_recurse(&current_dir)
                 .map(|mut val| {
+                    if let Some(props_from_dir) = val.get("properties") {
+                        merge(&mut properties, props_from_dir);
+                    }
                     val.insert("properties".to_string(), properties);
                     val
                 })
@@ -293,7 +295,7 @@ impl Packager {
             }
         }
 
-        if !self.strip_meta {
+        if self.include_meta {
             if !meta_tree.is_empty() {
                 meta_section.insert(META_TREE_SECTION_NAME.into(), meta_tree.into());
             }

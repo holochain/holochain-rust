@@ -1,6 +1,10 @@
 [package]
 name = "holochain_conductor_wasm"
-version = "0.0.33-alpha6"
+version = "0.0.37-alpha12"
+description = "holochain wasm"
+license = "GPL-3.0-only"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
 authors = ["neonphog <neonphog@gmail.com>"]
 edition = "2018"
 
@@ -9,5 +13,5 @@ name = "holochain_conductor_wasm"
 crate-type = ["cdylib"]
 
 [dependencies]
-holochain_core_types = { path = "../core_types" }
+holochain_core_types = { version = "=0.0.37-alpha12", path = "../core_types" }
 wasm-bindgen = "=0.2.32"

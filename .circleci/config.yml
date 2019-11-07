@@ -9,6 +9,13 @@ jobs:
   resource_class: large
   steps:
    - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run: nix-shell --run hc-rust-test
 
  fmt:
@@ -73,6 +80,9 @@ jobs:
        name: DynamoDB
        command: nix-shell --run dynamodb-memory
        background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h
@@ -158,6 +168,9 @@ jobs:
        name: DynamoDB
        command: nix-shell --run dynamodb-memory
        background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: stress tests
        command: nix-shell --run hc-stress-test-sim1h
@@ -260,6 +273,30 @@ jobs:
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-test
 
+ deploy.mac:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: Deploy mac binaries
+      command: |
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
+
+ deploy.linux:
+  docker:
+   - image: holochain/holonix:ubuntu
+  steps:
+   - run: sudo apt-get update && sudo apt-get install -y git ssh
+   - checkout
+   - run:
+      name: Deploy linux binaries
+      command: |
+       . /home/docker/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
+
 workflows:
  version: 2
  tests:
@@ -316,3 +353,18 @@ workflows:
        branches:
         only:
          - develop
+
+ deploy:
+  jobs:
+   - deploy.mac:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.linux:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/

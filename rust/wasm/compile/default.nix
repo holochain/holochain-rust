@@ -12,8 +12,9 @@ let
 
  compile = path:
  ''
+ set -euxo pipefail
  export WASM_PATH=${path}/
- cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$WASM_PATH"target;
+ cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "''${HC_TARGET_PREFIX:-.}"/"$WASM_PATH"target;
  '';
 
  script = pkgs.writeShellScriptBin name

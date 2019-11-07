@@ -41,7 +41,7 @@ with holonix.pkgs;
     holonix.shell.shellHook
     ];
 
-  buildInputs = [ ]
+  buildInputs = [ pkgs.libiconv ]
    ++ holonix.shell.buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec {
@@ -72,6 +72,7 @@ with holonix.pkgs;
 
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
+    holonix = holonix;
     pkgs = holonix.pkgs;
     config = config;
    }).buildInputs
@@ -97,7 +98,6 @@ with holonix.pkgs;
    ++ (holonix.pkgs.callPackage ./dynamodb {
     pkgs = holonix.pkgs;
    }).buildInputs
-
   ;
  });
 }

@@ -1,20 +1,69 @@
-use std::sync::{Arc, Mutex};
-use std::collections::VecDeque;
+extern crate crossbeam_channel;
+
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
+};
+
+pub struct StressJobMetricLogger {
+    pub job_index: usize,
+    logs: Vec<StressJobLog>,
+}
+
+impl StressJobMetricLogger {
+    fn new(job_index: usize) -> Self {
+        Self {
+            job_index,
+            logs: Vec::new(),
+        }
+    }
+
+    pub fn log(&mut self, name: &str, value: f64) {
+        self.logs.push(StressJobLog {
+            job_index: self.job_index,
+            name: name.to_string(),
+            value,
+        });
+    }
+}
 
 pub struct StressJobTickResult {
     pub should_continue: bool,
 }
 
+impl Default for StressJobTickResult {
+    fn default() -> Self {
+        Self {
+            should_continue: true,
+        }
+    }
+}
+
 pub trait StressJob: 'static + Send + Sync {
-    fn tick(&mut self) -> StressJobTickResult;
+    fn tick(&mut self, logger: &mut StressJobMetricLogger) -> StressJobTickResult;
 }
 
 pub type JobFactory<J> = Box<dyn FnMut() -> J + 'static + Send + Sync>;
 
 #[derive(Debug, Clone)]
+pub struct StressLogStats {
+    pub count: u64,
+    pub min: f64,
+    pub max: f64,
+    pub avg: f64,
+}
+
+#[derive(Debug, Clone)]
 pub struct StressStats {
-    master_tick_count: u64,
-    job_tick_count: u64,
+    pub master_tick_count: u64,
+    pub log_stats: HashMap<String, StressLogStats>,
+}
+
+#[derive(Debug, Clone)]
+struct StressJobLog {
+    pub job_index: usize,
+    pub name: String,
+    pub value: f64,
 }
 
 pub trait StressSuite: 'static + Send + Sync {
@@ -31,6 +80,7 @@ pub struct StressRunConfig<S: StressSuite, J: StressJob> {
 }
 
 struct StressJobInfo<J: StressJob> {
+    job_index: usize,
     job: J,
 }
 
@@ -41,11 +91,15 @@ struct StressRunner<S: StressSuite, J: StressJob> {
     should_continue: Arc<Mutex<bool>>,
     job_count: Arc<Mutex<usize>>,
     job_queue: Arc<Mutex<VecDeque<StressJobInfo<J>>>>,
-    stats: Arc<Mutex<StressStats>>,
+    job_last_index: usize,
+    log_recv: crossbeam_channel::Receiver<StressJobLog>,
+    log_send: crossbeam_channel::Sender<StressJobLog>,
+    stats: StressStats,
 }
 
 impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     pub fn new(config: StressRunConfig<S, J>) -> Self {
+        let (log_send, log_recv) = crossbeam_channel::unbounded();
         let run_until = std::time::Instant::now()
             .checked_add(config.run_time)
             .unwrap();
@@ -56,10 +110,13 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             should_continue: Arc::new(Mutex::new(true)),
             job_count: Arc::new(Mutex::new(0)),
             job_queue: Arc::new(Mutex::new(VecDeque::new())),
-            stats: Arc::new(Mutex::new(StressStats {
+            job_last_index: 0,
+            log_recv,
+            log_send,
+            stats: StressStats {
                 master_tick_count: 0,
-                job_tick_count: 0,
-            })),
+                log_stats: HashMap::new(),
+            },
         };
         for _ in 0..runner.config.thread_pool_size {
             runner.priv_create_thread();
@@ -77,12 +134,41 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             let mut cur_job_count = self.job_count.lock().unwrap();
             while *cur_job_count < self.config.job_count {
                 (*self.job_queue.lock().unwrap()).push_front(StressJobInfo {
+                    job_index: self.job_last_index,
                     job: (self.config.job_factory)(),
                 });
+                self.job_last_index += 1;
                 *cur_job_count += 1
             }
         }
-        (*self.stats.lock().unwrap()).master_tick_count += 1;
+        for _ in 0..1000 {
+            match self.log_recv.try_recv() {
+                Err(_) => break,
+                Ok(log) => {
+                    let r =
+                        self.stats
+                            .log_stats
+                            .entry(log.name)
+                            .or_insert_with(|| StressLogStats {
+                                count: 0,
+                                min: std::f64::MAX,
+                                max: std::f64::MIN,
+                                avg: 0.0,
+                            });
+                    r.avg = r.avg * r.count as f64;
+                    r.avg += log.value;
+                    r.count += 1;
+                    r.avg /= r.count as f64;
+                    if log.value < r.min {
+                        r.min = log.value;
+                    }
+                    if log.value > r.max {
+                        r.max = log.value;
+                    }
+                }
+            }
+        }
+        self.stats.master_tick_count += 1;
         true
     }
 
@@ -91,8 +177,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         for t in self.thread_pool.drain(..) {
             t.join().unwrap();
         }
-        let stats = Arc::try_unwrap(self.stats).unwrap().into_inner().unwrap();
-        self.config.suite.stop(stats);
+        self.config.suite.stop(self.stats);
     }
 
     // -- private -- //
@@ -101,23 +186,26 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         let should_continue = self.should_continue.clone();
         let job_count = self.job_count.clone();
         let job_queue = self.job_queue.clone();
-        let stats = self.stats.clone();
-        self.thread_pool.push(std::thread::spawn(move || {
-            loop {
-                if !*should_continue.lock().unwrap() {
-                    return;
-                }
-                let mut job = match (*job_queue.lock().unwrap()).pop_front() {
-                    Some(job) => job,
-                    None => continue,
-                };
-                let result = job.job.tick();
-                (*stats.lock().unwrap()).job_tick_count += 1;
-                if result.should_continue {
-                    (*job_queue.lock().unwrap()).push_back(job);
-                } else {
-                    *job_count.lock().unwrap() -= 1;
-                }
+        let log_send = self.log_send.clone();
+        self.thread_pool.push(std::thread::spawn(move || loop {
+            if !*should_continue.lock().unwrap() {
+                return;
+            }
+            let mut job = match (*job_queue.lock().unwrap()).pop_front() {
+                Some(job) => job,
+                None => continue,
+            };
+            let mut logger = StressJobMetricLogger::new(job.job_index);
+            let start = std::time::Instant::now();
+            let result = job.job.tick(&mut logger);
+            logger.log("tick_elapsed_ms", start.elapsed().as_millis() as f64);
+            for l in logger.logs.drain(..) {
+                log_send.send(l).unwrap();
+            }
+            if result.should_continue {
+                (*job_queue.lock().unwrap()).push_back(job);
+            } else {
+                *job_count.lock().unwrap() -= 1;
             }
         }));
     }
@@ -143,11 +231,14 @@ mod tests {
             job_tick_count: Arc<Mutex<u64>>,
         };
         impl StressJob for Job {
-            fn tick(&mut self) -> StressJobTickResult {
-                *self.job_tick_count.lock().unwrap() += 1;
-                StressJobTickResult {
-                    should_continue: true,
-                }
+            fn tick(&mut self, _logger: &mut StressJobMetricLogger) -> StressJobTickResult {
+                let tick_count = {
+                    let mut lock = self.job_tick_count.lock().unwrap();
+                    *lock += 1;
+                    *lock
+                };
+                std::thread::sleep(std::time::Duration::from_millis(tick_count % 4));
+                StressJobTickResult::default()
             }
         }
 
@@ -168,10 +259,8 @@ mod tests {
             job_count: 100,
             run_time: std::time::Duration::from_millis(200),
             suite: Suite,
-            job_factory: Box::new(move || {
-                Job {
-                    job_tick_count: job_tick_count_clone.clone(),
-                }
+            job_factory: Box::new(move || Job {
+                job_tick_count: job_tick_count_clone.clone(),
             }),
         });
 

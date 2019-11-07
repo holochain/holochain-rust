@@ -1435,6 +1435,7 @@ dependencies = [
 name = "holochain_stress"
 version = "0.0.37-alpha12"
 dependencies = [
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

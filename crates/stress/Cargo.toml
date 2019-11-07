@@ -9,6 +9,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
+crossbeam-channel = "=0.3.8"
 native-tls = "=0.2.2"
 
 [features]

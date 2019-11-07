@@ -29,11 +29,11 @@ impl <S : Into<String> + Clone +Eq + Hash+ Debug + Send + Sync + 'static> Future
     }
     pub fn end_capture(&mut self,futures_name:S)
     {
-        let old_diagnostic = self.futures_queue.get(&futures_name).unwrap_or_else(||  panic!("future {:?} not found should have called start_capture",futures_name.clone()));
-        self.futures_queue = self.futures_queue.update(futures_name,Diagnostic
+        let old_diagnostic = self.futures_queue.get(&futures_name.clone()).unwrap_or_else(||  panic!("future {:?} not found should have called start_capture",futures_name.clone()));
+        self.futures_queue = self.futures_queue.update(futures_name.clone(),Diagnostic
         {
             poll_count : old_diagnostic.poll_count + 1,
-            total_polling_time : Some(old_diagnostic.current_running_time.expect("Make sure too call capture() method before you record diagnostic").elapsed()),
+            total_polling_time : Some(old_diagnostic.current_running_time.unwrap_or_else(||panic!("Make sure too start_capture() method before you end capture on {:?}",futures_name.clone())).elapsed()),
             current_running_time : None
         });
     }
@@ -46,8 +46,14 @@ impl <S : Into<String> + Clone +Eq + Hash+ Debug + Send + Sync + 'static> Future
 
     pub fn start_capture(&mut self,futures_name:S)
     {
-         let new_diagnostic = Diagnostic{
-            poll_count : 1,
+        let new_diagnostic = Diagnostic{
+            poll_count : 0,
+            total_polling_time: None,
+            current_running_time : Some(Instant::now())
+        };
+        let prev_diagnostic = self.futures_queue.get(&futures_name.clone()).unwrap_or_else(||&new_diagnostic);
+        let new_diagnostic = Diagnostic{
+            poll_count : 1+ prev_diagnostic.poll_count,
             total_polling_time: None,
             current_running_time : Some(Instant::now())
         };

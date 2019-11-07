@@ -8,6 +8,8 @@
 extern crate env_logger;
 extern crate log;
 
+mod mem;
+mod mem_stream;
 pub mod streams;
 mod tcp;
 pub mod tls;

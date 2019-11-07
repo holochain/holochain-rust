@@ -37,7 +37,10 @@ pub async fn initialize(
         // No DNA provided as parameter.
         // This is the loading-case - we assume to find a DNA in the Nucleus state:
         context.get_dna().ok_or_else(|| {
-            log_error!(context, "No DNA provided during loading and none found in state");
+            log_error!(
+                context,
+                "No DNA provided during loading and none found in state"
+            );
             HolochainError::DnaMissing
         })?
     };

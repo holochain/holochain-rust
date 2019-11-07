@@ -1,4 +1,3 @@
-pub use crate::dna_location::DnaLocation;
 use crate::logger::LogRules;
 /// Conductor Configuration
 /// This module provides structs that represent the different aspects of how
@@ -23,8 +22,6 @@ use holochain_core_types::{
 };
 
 use holochain_json_api::json::JsonString;
-use holochain_metrics::MetricPublisherConfig;
-
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
@@ -35,12 +32,14 @@ use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     env,
+    fs::File,
+    io::prelude::*,
     net::Ipv4Addr,
     path::PathBuf,
     sync::Arc,
 };
 use toml;
-
+use holochain_metrics::MetricPublisherConfig;
 /// Main conductor configuration struct
 /// This is the root of the configuration tree / aggregates
 /// all other configuration aspects.
@@ -117,7 +116,7 @@ pub struct Configuration {
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
 
-    pub metric_publisher: Option<MetricPublisherConfig>,
+    pub metric_publisher: Option<MetricPublisherConfig>
 }
 
 /// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.
@@ -239,9 +238,9 @@ impl Configuration {
                 )
             })?;
             let dna_config = dna_config.unwrap();
-            let dna_location = dna_config.get_location();
-            let dna = Arc::get_mut(&mut dna_loader).unwrap()(&dna_location)
-                .map_err(|_| format!("Could not load DNA from \"{}\"", dna_location))?;
+            let dna =
+                Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone()))
+                    .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
 
             for zome in dna.zomes.values() {
                 for bridge in zome.bridges.iter() {
@@ -348,14 +347,15 @@ impl Configuration {
             )
         })?;
 
-        let caller_dna_location = caller_dna_config.get_location();
+        let caller_dna_file = caller_dna_config.file.clone();
         let caller_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&caller_dna_location).map_err(|err| {
-                format!(
-                    "Could not load DNA from \"{:?}\"; error was: {}",
-                    caller_dna_location, err
-                )
-            })?;
+            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
+                .map_err(|err| {
+                    format!(
+                        "Could not load DNA file \"{}\"; error was: {}",
+                        caller_dna_file, err
+                    )
+                })?;
 
         //
         // Get callee's config. DNA config, and DNA:
@@ -376,14 +376,15 @@ impl Configuration {
             )
         })?;
 
-        let callee_dna_location = callee_dna_config.get_location();
+        let callee_dna_file = callee_dna_config.file.clone();
         let callee_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&callee_dna_location).map_err(|err| {
-                format!(
-                    "Could not load DNA from \"{}\"; error was: {}",
-                    callee_dna_location, err
-                )
-            })?;
+            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
+                .map_err(|err| {
+                    format!(
+                        "Could not load DNA file \"{}\"; error was: {}",
+                        callee_dna_file, err
+                    )
+                })?;
 
         //
         // Get matching bridge definition from caller's DNA:
@@ -668,45 +669,18 @@ impl From<AgentConfiguration> for AgentId {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
-    // TODO: after deprecation period, remove file and make location non-Optional
-    /// DEPRECATED. `file` will be going away in favor of `location`, for the time being it is just an alias.
-    #[serde(default)]
-    pub(crate) file: Option<DnaLocation>,
-    #[serde(default)]
-    pub(crate) location: Option<DnaLocation>,
+    pub file: String,
     pub hash: String,
     #[serde(default)]
     pub uuid: Option<String>,
 }
 
-impl DnaConfiguration {
-    pub fn get_location(&self) -> &DnaLocation {
-        self.location
-            .as_ref()
-            .or_else(|| self.file.as_ref())
-            .unwrap()
-    }
-
-    pub fn new(id: String, location: DnaLocation, hash: String, uuid: Option<String>) -> Self {
-        Self {
-            id,
-            file: None,
-            location: Some(location),
-            hash,
-            uuid,
-        }
-    }
-}
-
 impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
     fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {
-        if dna_config.file.is_some() {
-            warn!("The 'file' field of DNA configuration is deprecated. Use 'location' instead.")
-        } else if dna_config.location.is_none() {
-            return Err(HolochainError::ErrorGeneric(format!("DNA config must specify either 'file' or 'location'. Neither was specified in this config: {:?}", dna_config)));
-        }
-        let contents = dna_config.get_location().get_content()?;
+        let mut f = File::open(dna_config.file)?;
+        let mut contents = String::new();
+        f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
     }
 }
@@ -1025,10 +999,7 @@ pub mod tests {
         let dnas = load_configuration::<Configuration>(toml).unwrap().dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(
-            *dna_config.get_location(),
-            PathBuf::from("app_spec.dna.json").into()
-        );
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
     }
 
@@ -1092,10 +1063,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(
-            *dna_config.get_location(),
-            PathBuf::from("app_spec.dna.json").into()
-        );
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
@@ -1191,10 +1159,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(
-            *dna_config.get_location(),
-            PathBuf::from("app_spec.dna.json").into()
-        );
+        assert_eq!(dna_config.file, "app_spec.dna.json");
         assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;

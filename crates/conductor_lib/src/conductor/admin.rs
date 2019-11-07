@@ -92,7 +92,7 @@ impl ConductorAdmin for Conductor {
             .to_str()
             .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
         let mut dna =
-            Arc::get_mut(&mut self.dna_loader).unwrap()(&path.clone().into()).map_err(|e| {
+            Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string.into()).map_err(|e| {
                 HolochainError::ConfigError(format!(
                     "Could not load DNA file \"{}\", Error: {}",
                     path_string,
@@ -124,11 +124,13 @@ impl ConductorAdmin for Conductor {
             true => self.save_dna(&dna)?,
             false => PathBuf::from(path_string),
         };
+        let config_path_str = config_path
+            .to_str()
+            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
 
         let new_dna = DnaConfiguration {
             id: id.clone(),
-            file: None,
-            location: Some(config_path.into()),
+            file: config_path_str.into(),
             hash: dna.address().to_string(),
             uuid,
         };
@@ -594,9 +596,7 @@ pub mod tests {
             tests::{example_dna_string, test_key_loader, test_keybundle},
             DnaLoader,
         },
-        config::{
-            load_configuration, Configuration, DnaLocation, InterfaceConfiguration, InterfaceDriver,
-        },
+        config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
         key_loaders::mock_passphrase_manager,
         keystore::test_hash_config,
     };
@@ -611,9 +611,11 @@ pub mod tests {
     };
 
     pub fn test_dna_loader() -> DnaLoader {
-        Arc::new(Box::new(|_: &DnaLocation| {
+        let loader = Box::new(|_: &PathBuf| {
             Ok(Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap())
-        }))
+        })
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+        Arc::new(loader)
     }
 
     pub fn empty_bridges() -> String {
@@ -668,9 +670,9 @@ public_address = '{}'"#,
 
     pub fn dna() -> String {
         r#"[[dnas]]
+file = 'app_spec.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'test-dna'
-location = 'app_spec.dna.json'"#
+id = 'test-dna'"#
             .to_string()
     }
 
@@ -808,10 +810,9 @@ type = 'cmd'"#
             )
             .is_ok());
 
-        let new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
-            &PathBuf::from("new-dna.dna.json").into(),
-        )
-        .unwrap();
+        let new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
@@ -820,15 +821,13 @@ type = 'cmd'"#
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: None,
-                    location: Some(PathBuf::from("app_spec.dna.json").into()),
+                    file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                     uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: None,
-                    location: Some(PathBuf::from("new-dna.dna.json").into()),
+                    file: String::from("new-dna.dna.json"),
                     hash: String::from(new_dna.address()),
                     uuid: Default::default(),
                 },
@@ -849,9 +848,9 @@ type = 'cmd'"#
             toml,
             String::from(
                 r#"[[dnas]]
+file = 'new-dna.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'new-dna'
-location = 'new-dna.dna.json'"#,
+id = 'new-dna'"#,
             ),
         );
         toml = add_block(toml, instance1());
@@ -884,10 +883,9 @@ location = 'new-dna.dna.json'"#,
             )
             .is_ok());
 
-        let new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
-            &PathBuf::from("new-dna.dna.json").into(),
-        )
-        .unwrap();
+        let new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
@@ -905,15 +903,13 @@ location = 'new-dna.dna.json'"#,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: None,
-                    location: Some(PathBuf::from("app_spec.dna.json").into()),
+                    file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                     uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: None,
-                    location: Some(output_dna_file.clone().into()),
+                    file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
                     uuid: Default::default(),
                 },
@@ -928,8 +924,7 @@ location = 'new-dna.dna.json'"#,
         let mut conductor = create_test_conductor(test_name, 3000);
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.dna.json");
-        let dna =
-            Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path.clone().into()).unwrap();
+        let dna = Arc::get_mut(&mut conductor.dna_loader).unwrap()(&new_dna_path).unwrap();
 
         assert!(conductor
             .install_dna_from_file(
@@ -992,10 +987,9 @@ location = 'new-dna.dna.json'"#,
             )
             .is_ok());
 
-        let mut new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
-            &PathBuf::from("new-dna.dna.json").into(),
-        )
-        .unwrap();
+        let mut new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
         let original_hash = new_dna.address();
         new_dna.properties = new_props;
         let new_hash = new_dna.address();
@@ -1016,15 +1010,13 @@ location = 'new-dna.dna.json'"#,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: None,
-                    location: Some(PathBuf::from("app_spec.dna.json").into()),
+                    file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                     uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
-                    file: None,
-                    location: Some(output_dna_file.clone().into()),
+                    file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
                     uuid: Default::default(),
                 },
@@ -1064,10 +1056,9 @@ location = 'new-dna.dna.json'"#,
             )
             .is_ok());
 
-        let mut new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(
-            &PathBuf::from("new-dna.dna.json").into(),
-        )
-        .unwrap();
+        let mut new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.dna.json"))
+                .unwrap();
         let original_hash = new_dna.address();
         new_dna.uuid = uuid.clone();
         let new_hash = new_dna.address();
@@ -1087,22 +1078,19 @@ location = 'new-dna.dna.json'"#,
             vec![
                 DnaConfiguration {
                     id: String::from("test-dna"),
-                    file: None,
-                    location: Some(PathBuf::from("app_spec.dna.json").into()),
+                    file: String::from("app_spec.dna.json"),
                     hash: String::from("QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq"),
                     uuid: Default::default(),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-1"),
-                    file: None,
-                    location: Some(new_dna_path.into()),
+                    file: new_dna_path.to_string_lossy().to_string(),
                     hash: String::from(new_dna.address()),
                     uuid: Some(uuid.clone()),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-uuid-2"),
-                    file: None,
-                    location: Some(output_dna_file.clone().into()),
+                    file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
                     uuid: Some(uuid.clone()),
                 },
@@ -1161,9 +1149,9 @@ location = 'new-dna.dna.json'"#,
             toml,
             String::from(
                 r#"[[dnas]]
+file = 'new-dna.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'new-dna'
-location = 'new-dna.dna.json'"#,
+id = 'new-dna'"#,
             ),
         );
         toml = add_block(toml, instance1());
@@ -1453,9 +1441,9 @@ type = 'http'"#,
             toml,
             String::from(
                 r#"[[dnas]]
+file = 'new-dna.dna.json'
 hash = 'QmaJiTs75zU7kMFYDkKgrCYaH8WtnYNkmYX3tPt7ycbtRq'
-id = 'new-dna'
-location = 'new-dna.dna.json'"#,
+id = 'new-dna'"#,
             ),
         );
         toml = add_block(toml, instance1());

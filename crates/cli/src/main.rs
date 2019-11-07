@@ -219,7 +219,7 @@ fn run() -> HolochainResult<()> {
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
             let interface_type = cli::get_interface_type_string(interface);
             let conductor_config = cli::hc_run_configuration(
-                dna_path.clone(),
+                &dna_path,
                 port,
                 persist,
                 networked,
@@ -276,7 +276,7 @@ fn run() -> HolochainResult<()> {
             let dna_path = path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
 
-            let dna_hash = cli::hash_dna(dna_path, property)
+            let dna_hash = cli::hash_dna(&dna_path, property)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
         }

@@ -661,7 +661,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
-        dna.zomes.insert("".to_string(), Zome::default());
+        dna.zomes.insert("".to_string(), Zome::empty());
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
         test_instance(dna, None).expect("Blank instance could not be initialized!")
     }

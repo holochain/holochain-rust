@@ -7,6 +7,7 @@ extern crate holochain_json_api;
 extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
+extern crate json_patch;
 extern crate lib3h_sodium;
 extern crate structopt;
 #[macro_use]
@@ -34,170 +35,120 @@ use std::{path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
-#[structopt(about = "A command line for Holochain")]
+/// A command line for Holochain
 enum Cli {
-    #[structopt(
-        name = "package",
-        alias = "p",
-        about = "Builds DNA source files into a single .dna.json DNA file"
-    )]
+    #[structopt(alias = "p")]
+    ///  Builds DNA source files into a single .dna.json DNA file
     Package {
-        #[structopt(
-            long = "strip-meta",
-            help = "Strips all __META__ sections off the target bundle. Makes unpacking of the bundle impossible"
-        )]
+        #[structopt(long)]
+        /// Adds __META__ fields in the dna.json which allow it to be unpacked
+        include_meta: bool,
+        #[structopt(long)]
+        /// Included for backward compatibility. Does nothing as stripping meta is now the default
         strip_meta: bool,
-        #[structopt(long = "output", short = "o", parse(from_os_str))]
+        #[structopt(long, short, parse(from_os_str))]
         output: Option<PathBuf>,
-        #[structopt(long = "properties", short = "p")]
+        #[structopt(long, short)]
         properties: Option<String>,
     },
-    #[structopt(
-        name = "unpack",
-        about = "Unpacks a Holochain bundle into it's original file system structure"
-    )]
+    /// Unpacks a Holochain bundle into it's original file system structure
     Unpack {
         #[structopt(parse(from_os_str))]
         path: PathBuf,
         #[structopt(parse(from_os_str))]
         to: PathBuf,
     },
-    #[structopt(
-        name = "init",
-        alias = "i",
-        about = "Initializes a new Holochain app at the given directory"
-    )]
+    #[structopt(alias = "i")]
+    /// Initializes a new Holochain app at the given directory
     Init {
         #[structopt(parse(from_os_str))]
         path: PathBuf,
     },
-    #[structopt(
-        name = "generate",
-        alias = "g",
-        about = "Generates a new zome from a template"
-    )]
+    #[structopt(alias = "g")]
+    /// Generates a new zome from a template
     Generate {
-        #[structopt(
-            help = "The path to the zome that should be generated (usually in ./zomes/)",
-            parse(from_os_str)
-        )]
+        #[structopt(parse(from_os_str))]
+        /// The path to the zome that should be generated (usually in ./zomes/)
         zome: PathBuf,
-        #[structopt(
-            help = "Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.",
-            default_value = "rust"
-        )]
+        #[structopt(default_value = "rust")]
+        /// Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.
         template: String,
     },
-    #[structopt(
-        name = "run",
-        alias = "r",
-        about = "Starts a development conductor with a websocket or http interface"
-    )]
+    #[structopt(alias = "r")]
+    /// Starts a development conductor with a websocket or http interface
     Run {
-        #[structopt(
-            long,
-            short,
-            help = "The port to run the websocket server at",
-            default_value = "8888"
-        )]
+        #[structopt(long, short, default_value = "8888")]
+        /// The port to run the websocket server at
         port: u16,
-        #[structopt(
-            long,
-            short = "b",
-            help = "Automatically package project before running"
-        )]
+        #[structopt(long, short = "b")]
+        /// Automatically package project before running
         package: bool,
-        #[structopt(
-            long = "dna",
-            short = "d",
-            help = "Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]"
-        )]
+        #[structopt(long = "dna", short = "d", parse(from_os_str))]
+        /// Absolute path to the .dna.json file to run. [default: ./dist/<dna-name>.dna.json]
         dna_path: Option<PathBuf>,
-        #[structopt(long, help = "Produce logging output")]
+        #[structopt(long)]
+        /// Produce logging output
         logging: bool,
-        #[structopt(long, help = "Save generated data to file system")]
+        #[structopt(long)]
+        /// Save generated data to file system
         persist: bool,
-        #[structopt(long, help = "Use real networking")]
+        #[structopt(long)]
+        /// Use real networking
         networked: bool,
-        #[structopt(
-            long,
-            short,
-            help = "Specify interface type to use: websocket/http",
-            default_value = "websocket"
-        )]
+        #[structopt(long, short, default_value = "websocket")]
+        /// Specify interface type to use: websocket/http
         interface: String,
     },
-    #[structopt(
-        name = "test",
-        alias = "t",
-        about = "Runs tests written in the test folder"
-    )]
+    #[structopt(alias = "t")]
+    /// Runs tests written in the test folder
     Test {
-        #[structopt(
-            long,
-            short,
-            default_value = "test",
-            help = "The folder containing the test files"
-        )]
+        #[structopt(long, short, default_value = "test")]
+        /// The folder containing the test files
         dir: String,
-        #[structopt(
-            long,
-            short,
-            default_value = "test/index.js",
-            help = "The path of the file to test"
-        )]
+        #[structopt(long, short, default_value = "test/index.js")]
+        /// The path of the file to test
         testfile: String,
-        #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
+        #[structopt(long = "skip-package", short = "s")]
+        /// Skip packaging DNA
         skip_build: bool,
-        #[structopt(
-            long = "show-npm-output",
-            short = "n",
-            help = "Show NPM output when installing test dependencies"
-        )]
+        #[structopt(long = "show-npm-output", short = "n")]
+        /// Show NPM output when installing test dependencies
         show_npm_output: bool,
     },
-    #[structopt(
-        name = "keygen",
-        alias = "k",
-        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
-    )]
+    #[structopt(name = "keygen", alias = "k")]
+    /// Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)
     KeyGen {
-        #[structopt(long, short, help = "Specify path of file")]
+        #[structopt(long, short, parse(from_os_str))]
+        /// Specify path of file
         path: Option<PathBuf>,
-        #[structopt(
-            long,
-            short,
-            help = "Only print machine-readable output; intended for use by programs and scripts"
-        )]
+        #[structopt(long, short)]
+        /// Only print machine-readable output; intended for use by programs and scripts
         quiet: bool,
-        #[structopt(long, short, help = "Don't ask for passphrase")]
+        #[structopt(long, short)]
+        /// Don't ask for passphrase
         nullpass: bool,
     },
-    #[structopt(name = "chain", about = "View the contents of a source chain")]
+    #[structopt(name = "chain")]
+    /// View the contents of a source chain
     ChainLog {
-        #[structopt(name = "INSTANCE", help = "Instance ID to view")]
+        #[structopt(name = "INSTANCE")]
+        /// Instance ID to view
         instance_id: Option<String>,
-        #[structopt(long, short, help = "Location of chain storage")]
+        #[structopt(long, short, parse(from_os_str))]
+        /// Location of chain storage
         path: Option<PathBuf>,
-        #[structopt(long, short, help = "List available instances")]
+        #[structopt(long, short)]
+        /// List available instances
         list: bool,
     },
-    #[structopt(
-        name = "hash",
-        about = "Parse and hash a DNA file to determine its unique network hash"
-    )]
+    #[structopt(name = "hash")]
+    /// Parse and hash a DNA file to determine its unique network hash
     HashDna {
-        #[structopt(
-            long,
-            short,
-            help = "Path to .dna.json file [default: dist/<dna-name>.dna.json]"
-        )]
+        #[structopt(long, short, parse(from_os_str))]
+        /// Path to .dna.json file [default: dist/<dna-name>.dna.json]
         path: Option<PathBuf>,
-        #[structopt(
-            long,
-            short = "x",
-            help = "Property (in the form 'name=value') that gets set/overwritten before calculating hash"
-        )]
+        #[structopt(long, short = "x")]
+        /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
     },
 }
@@ -219,10 +170,12 @@ fn run() -> HolochainResult<()> {
     match args {
         // If using default path, we'll create if necessary; otherwise, target dir must exist
         Cli::Package {
-            strip_meta,
+            include_meta,
             output,
             properties: properties_string,
+            strip_meta,
         } => {
+            let _ = strip_meta;
             let output = if output.is_some() {
                 output.unwrap()
             } else {
@@ -234,9 +187,8 @@ fn run() -> HolochainResult<()> {
                 .unwrap_or_else(|| Ok(json!({})));
 
             match properties {
-                Ok(properties) => {
-                    cli::package(strip_meta, output, properties).map_err(HolochainError::Default)?
-                }
+                Ok(properties) => cli::package(include_meta, output, properties)
+                    .map_err(HolochainError::Default)?,
                 Err(e) => {
                     return Err(HolochainError::Default(format_err!(
                         "Failed to parse properties argument as JSON: {:?}",

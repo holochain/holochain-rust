@@ -1208,7 +1208,9 @@ impl Conductor {
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
+        let dna: Dna = Dna::try_from(JsonString::from_json(&contents))?;
+        dna.verify()?;
+        Ok(dna)
     }
 
     /// Default KeyLoader that actually reads files from the filesystem

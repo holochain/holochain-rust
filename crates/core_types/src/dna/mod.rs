@@ -39,7 +39,7 @@ use crate::{
         fn_declarations::{FnDeclaration, TraitFns},
     },
     entry::entry_type::EntryType,
-    error::{DnaError, HolochainError},
+    error::{DnaError, HcResult, HolochainError},
 };
 
 use holochain_persistence_api::cas::content::{AddressableContent, Content};
@@ -256,6 +256,36 @@ impl Dna {
             .map(|zome| zome.get_required_bridges())
             .flatten()
             .collect()
+    }
+
+    // Check that all the zomes in the DNA have code with the required callbacks
+    pub fn verify(&self) -> HcResult<()> {
+        let errors: Vec<HolochainError> = self
+            .zomes
+            .iter()
+            .map(|(zome_name, zome)| {
+                if zome.code.code.len() > 0 {
+                    Ok(())
+                } else {
+                    Err(HolochainError::ErrorGeneric(format!(
+                        "Zome {} has no code!",
+                        zome_name
+                    )))
+                }
+            })
+            .filter_map(|r| match r {
+                Ok(_) => None,
+                Err(e) => Some(e.to_owned()),
+            })
+            .collect();
+        if errors.len() == 0 {
+            Ok(())
+        } else {
+            Err(HolochainError::ErrorGeneric(String::from(format!(
+                "invalid DNA: {:?}",
+                errors
+            ))))
+        }
     }
 }
 

@@ -89,13 +89,13 @@ impl Future for ValidationCallbackFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if self.running_time.elapsed() > Duration::from_secs(70)
         {
+            self.context.future_trace.write().expect("Could not get future trace").capture("ValidationCallbackFuture".to_string(),self.running_time.elapsed());
             panic!("future has been running for too long")
         }
         else
         {
             
         }
-        self.context.future_trace.write().expect("Could not get future trace").start_capture("ValidationCallbackFuture".to_string());
         if !self.context.is_action_channel_open() {
             return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(
                 "ValidationCallbackFuture".to_string(),
@@ -107,7 +107,6 @@ impl Future for ValidationCallbackFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-        self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("ValidationCallbackFuture"));
             match state.nucleus().validation_results.get(&self.key) {
                 Some(result) => Poll::Ready(result.clone()),
                 None => Poll::Pending,

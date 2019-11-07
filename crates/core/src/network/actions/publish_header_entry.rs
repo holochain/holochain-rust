@@ -36,13 +36,13 @@ impl Future for PublishHeaderEntryFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if self.running_time.elapsed() > Duration::from_secs(70)
         {
+            self.context.future_trace.write().expect("Could not get future trace").capture("PublishHeaderEntryFuture".to_string(),self.running_time.elapsed());
             panic!("future has been running for too long")
         }
         else
         {
             
         }
-        self.context.future_trace.write().expect("Could not get future trace").start_capture("PublishHeaderEntryFuture".to_string());
         if let Some(err) = self
             .context
             .action_channel_error("PublishHeaderEntryFuture")
@@ -59,7 +59,6 @@ impl Future for PublishHeaderEntryFuture {
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
             cx.waker().clone().wake();
-            self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("PublishHeaderEntryFuture"));
             match state.actions().get(&self.action) {
                 Some(ActionResponse::PublishHeaderEntry(result)) => match result {
                     Ok(address) => Poll::Ready(Ok(address.to_owned())),

@@ -39,7 +39,7 @@ use crate::{
         fn_declarations::{FnDeclaration, TraitFns},
     },
     entry::entry_type::EntryType,
-    error::{DnaError, HolochainError},
+    error::{DnaError, HcResult, HolochainError},
 };
 
 use holochain_persistence_api::cas::content::{AddressableContent, Content};
@@ -257,6 +257,35 @@ impl Dna {
             .flatten()
             .collect()
     }
+
+    // Check that all the zomes in the DNA have code with the required callbacks
+    // TODO: Add more advanced checks that actually try and call required functions
+    pub fn verify(&self) -> HcResult<()> {
+        let errors: Vec<HolochainError> = self
+            .zomes
+            .iter()
+            .map(|(zome_name, zome)| {
+                // currently just check the zome has some code
+                if zome.code.code.len() > 0 {
+                    Ok(())
+                } else {
+                    Err(HolochainError::ErrorGeneric(format!(
+                        "Zome {} has no code!",
+                        zome_name
+                    )))
+                }
+            })
+            .filter_map(|r| r.err())
+            .collect();
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(HolochainError::ErrorGeneric(format!(
+                "invalid DNA: {:?}",
+                errors
+            )))
+        }
+    }
 }
 
 impl Hash for Dna {
@@ -421,6 +450,28 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn test_dna_verify() {
+        let dna = test_dna();
+        assert!(dna.verify().is_ok())
+    }
+
+    #[test]
+    fn test_dna_verify_fail() {
+        // should error because code is empty
+        let dna = Dna::try_from(JsonString::from_json(
+            r#"{
+                "zomes": {
+                    "my_zome": {
+                        "code": {"code": ""}
+                    }
+                }
+            }"#,
+        ))
+        .unwrap();
+        assert!(dna.verify().is_err())
+    }
+
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
     fn test_empty_dna() -> Dna {
@@ -530,7 +581,7 @@ pub mod tests {
             uuid: String::from(UNIT_UUID),
             ..Default::default()
         };
-        let mut zome = zome::Zome::default();
+        let mut zome = zome::Zome::empty();
         zome.entry_types
             .insert("".into(), entry_types::EntryTypeDef::new());
         dna.zomes.insert("".to_string(), zome);
@@ -587,6 +638,9 @@ pub mod tests {
             r#"{
                 "zomes": {
                     "zome1": {
+                        "code": {
+                            "code": ""
+                        },
                         "entry_types": {
                             "type1": {}
                         }

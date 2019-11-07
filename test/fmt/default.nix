@@ -11,7 +11,7 @@ let
  script = pkgs.writeShellScriptBin name
  ''
  echo "checking rust formatting";
- local __fmtexit=0
+ __fmtexit=0
  for p in \
   cli \
   common \

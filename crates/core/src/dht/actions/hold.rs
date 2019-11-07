@@ -31,13 +31,13 @@ impl Future for HoldEntryFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if self.running_time.elapsed() > Duration::from_secs(70)
         {
+            self.context.future_trace.write().expect("Could not get future trace").capture("HoldEntryFuture".to_string(),self.running_time.elapsed());
             panic!("future has been running for too long")
         }
         else
         {
             
         }
-        self.context.future_trace.write().expect("Could not get future trace").start_capture("HoldEntryFuture".to_string());
         if let Some(err) = self.context.action_channel_error("HoldEntryFuture") {
             return Poll::Ready(Err(err));
         }
@@ -47,7 +47,6 @@ impl Future for HoldEntryFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-        self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("HoldEntryFuture"));
             if state
                 .dht()
                 .content_storage()

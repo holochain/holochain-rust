@@ -173,7 +173,9 @@ fn run() -> HolochainResult<()> {
             include_meta,
             output,
             properties: properties_string,
+            strip_meta,
         } => {
+            let _ = strip_meta;
             let output = if output.is_some() {
                 output.unwrap()
             } else {

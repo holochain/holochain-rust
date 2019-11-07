@@ -7,7 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
 use holochain_persistence_api::cas::content::Address;
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
 
 /// Publish Header Entry Action Creator
 /// Returns a future that resolves to an ActionResponse.
@@ -17,6 +17,7 @@ pub async fn publish_header_entry(address: Address, context: &Arc<Context>) -> H
     PublishHeaderEntryFuture {
         context: context.clone(),
         action: action_wrapper,
+        running_time:Instant::now()
     }
     .await
 }
@@ -26,12 +27,21 @@ pub async fn publish_header_entry(address: Address, context: &Arc<Context>) -> H
 pub struct PublishHeaderEntryFuture {
     context: Arc<Context>,
     action: ActionWrapper,
+    running_time:Instant
 }
 
 impl Future for PublishHeaderEntryFuture {
     type Output = HcResult<Address>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if self.running_time.elapsed() > Duration::from_secs(70)
+        {
+            panic!("future has been running for too long")
+        }
+        else
+        {
+            
+        }
         self.context.future_trace.write().expect("Could not get future trace").start_capture("PublishHeaderEntryFuture".to_string());
         if let Some(err) = self
             .context

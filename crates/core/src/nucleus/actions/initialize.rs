@@ -190,6 +190,14 @@ impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if self.created_at.elapsed() > Duration::from_secs(70)
+        {
+            panic!("future has been running for too long")
+        }
+        else
+        {
+            
+        }
         self.context.future_trace.write().expect("Could not get future trace").start_capture("InitializationFuture".to_string());
         if let Some(err) = self.context.action_channel_error("InitializationFuture") {
             return Poll::Ready(Err(err));

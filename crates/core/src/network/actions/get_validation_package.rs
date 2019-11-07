@@ -11,7 +11,7 @@ use holochain_core_types::{
     chain_header::ChainHeader, error::HcResult, validation::ValidationPackage,
 };
 
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
 
 /// GetValidationPackage Action Creator
 /// This triggers the network module to retrieve the validation package for the
@@ -29,6 +29,7 @@ pub async fn get_validation_package(
     GetValidationPackageFuture {
         context: context.clone(),
         address: entry_address,
+        running_time:Instant::now()
     }
     .await
 }
@@ -39,12 +40,21 @@ pub async fn get_validation_package(
 pub struct GetValidationPackageFuture {
     context: Arc<Context>,
     address: Address,
+    running_time:Instant
 }
 
 impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if self.running_time.elapsed() > Duration::from_secs(70)
+        {
+            panic!("future has been running for too long")
+        }
+        else
+        {
+            
+        }
         self.context.future_trace.write().expect("Could not get future trace").start_capture("GetValidationPackageFuture".to_string());
         if let Some(err) = self
             .context

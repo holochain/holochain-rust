@@ -28,7 +28,7 @@ use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread};
+use std::{pin::Pin, sync::Arc, thread,time::{Instant,Duration}};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -140,6 +140,7 @@ pub async fn call_zome_function(
     CallResultFuture {
         context: context.clone(),
         zome_call,
+        running_time:Instant::now()
     }
     .await
 }
@@ -318,12 +319,21 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
 pub struct CallResultFuture {
     context: Arc<Context>,
     zome_call: ZomeFnCall,
+    running_time : Instant  
 }
 
 impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if self.running_time.elapsed() > Duration::from_secs(70)
+        {
+            panic!("future has been running for too long")
+        }
+        else
+        {
+            
+        }
         self.context.future_trace.write().expect("Could not get future trace").start_capture("CallResultFuture".to_string());
         if let Some(err) = self.context.action_channel_error("CallResultFuture") {
             return Poll::Ready(Err(err));

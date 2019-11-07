@@ -11,7 +11,7 @@ use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, ugly::lax_send_sync};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use snowflake;
-use std::{pin::Pin, sync::Arc, thread};
+use std::{pin::Pin, sync::Arc, thread,time::{Instant,Duration}};
 
 /// Validation callback action creator.
 /// Spawns a thread in which a WASM Ribosome runs the custom validation function defined by
@@ -68,6 +68,7 @@ pub async fn run_validation_callback(
     ValidationCallbackFuture {
         context: context.clone(),
         key: (id, address),
+        running_time:Instant::now()
     }
     .await
 }
@@ -77,12 +78,21 @@ pub async fn run_validation_callback(
 pub struct ValidationCallbackFuture {
     context: Arc<Context>,
     key: (snowflake::ProcessUniqueId, HashString),
+    running_time : Instant
 }
 
 impl Future for ValidationCallbackFuture {
     type Output = ValidationResult;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if self.running_time.elapsed() > Duration::from_secs(70)
+        {
+            panic!("future has been running for too long")
+        }
+        else
+        {
+            
+        }
         self.context.future_trace.write().expect("Could not get future trace").start_capture("ValidationCallbackFuture".to_string());
         if !self.context.is_action_channel_open() {
             return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(

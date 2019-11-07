@@ -33,7 +33,7 @@ impl <S : Into<String> + Clone +Eq + Hash+ Debug + Send + Sync + 'static> Future
         self.futures_queue = self.futures_queue.update(futures_name.clone(),Diagnostic
         {
             poll_count : old_diagnostic.poll_count + 1,
-            total_polling_time : Some(old_diagnostic.current_running_time.unwrap_or_else(||panic!("Make sure too start_capture() method before you end capture on {:?}",futures_name.clone())).elapsed()),
+            total_polling_time : old_diagnostic.current_running_time.map(|s|Some(s.elapsed())).unwrap_or(None),
             current_running_time : None
         });
     }

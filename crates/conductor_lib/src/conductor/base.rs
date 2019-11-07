@@ -1206,11 +1206,15 @@ impl Conductor {
         Ok(())
     }
 
-    /// Default DnaLoader that properly obtains DNA files from their specified location
-    pub fn load_dna(location: &DnaLocation) -> HcResult<Dna> {
-        notify(format!("Reading DNA from {}", location));
-        let contents = location.get_content()?;
-        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
+    /// Default DnaLoader that actually reads files from the filesystem
+    pub fn load_dna(file: &PathBuf) -> HcResult<Dna> {
+        notify(format!("Reading DNA from {}", file.display()));
+        let mut f = File::open(file)?;
+        let mut contents = String::new();
+        f.read_to_string(&mut contents)?;
+        let dna: Dna = Dna::try_from(JsonString::from_json(&contents))?;
+        dna.verify()?;
+        Ok(dna)
     }
 
     /// Default KeyLoader that actually reads files from the filesystem

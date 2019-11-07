@@ -259,11 +259,13 @@ impl Dna {
     }
 
     // Check that all the zomes in the DNA have code with the required callbacks
+    // TODO: Add more advanced checks that actually try and call required functions
     pub fn verify(&self) -> HcResult<()> {
         let errors: Vec<HolochainError> = self
             .zomes
             .iter()
             .map(|(zome_name, zome)| {
+                // currently just check the zome has some code
                 if zome.code.code.len() > 0 {
                     Ok(())
                 } else {
@@ -281,10 +283,10 @@ impl Dna {
         if errors.len() == 0 {
             Ok(())
         } else {
-            Err(HolochainError::ErrorGeneric(String::from(format!(
+            Err(HolochainError::ErrorGeneric(format!(
                 "invalid DNA: {:?}",
                 errors
-            ))))
+            )))
         }
     }
 }

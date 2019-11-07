@@ -84,7 +84,8 @@ pub struct Context {
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
-    pub future_trace : Arc<RwLock<FuturesDiagnosticTrace<String>>>
+    pub future_trace : Arc<RwLock<FuturesDiagnosticTrace<String>>>,
+    pub redux_wants_write: Arc<AtomicBool>,
 }
 
 impl Context {
@@ -145,7 +146,8 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new()))
+            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new())),
+            redux_wants_write: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -177,7 +179,8 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new()))
+            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new())),
+            redux_wants_write: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -191,7 +194,12 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state.as_ref().map(|s| s.read().unwrap())
+        self.state.as_ref().map(|s| {
+            while self.redux_wants_write.load(Relaxed) {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            s.read().unwrap()
+        })
     }
 
     
@@ -201,7 +209,11 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
+        if self.redux_wants_write.load(Relaxed) {
+            None
+        } else {
+            self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
+        }
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {

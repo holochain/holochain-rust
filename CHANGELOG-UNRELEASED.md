@@ -16,5 +16,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+* Loading of instances from storage was broken and ended up in partially loaded states. This got fixed with [#1836](https://github.com/holochain/holochain-rust/pull/1836).
+
 ### Security
 

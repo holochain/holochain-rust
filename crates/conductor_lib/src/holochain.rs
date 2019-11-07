@@ -387,29 +387,62 @@ mod tests {
     }
 
     #[test]
-    // TODO: This test is not really testing if loading works. But we need a test for that.
-    // Persistence relies completely on the CAS, so the path would need to be used by
-    // creating a FileStorage CAS in the context that is passed to Holochain::load:
+    fn can_persistant_and_load() {
+        let temp = tempdir().unwrap();
+        let temp_filestorage_dir = temp.path().to_str().unwrap();
+        let agent = registered_test_agent("persister");
+        let (signal_tx, _signal_rx) = signal_channel();
+        let mut dna = create_arbitrary_test_dna();
+        dna.name = "TestApp".to_string();
 
-    //use std::{fs::File, io::prelude::*};
-    #[cfg(feature = "broken-tests")]
-    fn can_load() {
-        let tempdir = tempdir().unwrap();
-        let tempfile = tempdir.path().join("Agentstate.txt");
-        let mut file = File::create(&tempfile).unwrap();
-        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
-        //let path = tempdir.path().to_str().unwrap().to_string();
+        {
+            let context_new = Arc::new(
+                ContextBuilder::new()
+                    .with_agent(agent.clone())
+                    .with_signals(signal_tx.clone())
+                    .with_conductor_api(mock_conductor_api(agent.clone()))
+                    .with_file_storage(temp_filestorage_dir)
+                    .unwrap()
+                    .spawn(),
+            );
 
-        let (context, _, _) = test_context("bob");
-        let result = Holochain::load(context.clone());
+            let result = Holochain::new(dna.clone(), context_new.clone());
+            assert!(result.is_ok());
+            let hc = result.unwrap();
+            let instance = hc.instance.as_ref().unwrap();
+            let context = hc.context.as_ref().unwrap().clone();
+            assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
+            assert!(!hc.active);
+            assert_eq!(context.agent_id.nick, "persister".to_string());
+            let network_state = context.state().unwrap().network().clone();
+            assert_eq!(network_state.agent_id.is_some(), true);
+            assert_eq!(network_state.dna_address.is_some(), true);
+        }
+
+        let context_load = Arc::new(
+            ContextBuilder::new()
+                .with_agent(agent.clone())
+                .with_signals(signal_tx)
+                .with_conductor_api(mock_conductor_api(agent.clone()))
+                .with_file_storage(temp_filestorage_dir)
+                .unwrap()
+                .spawn(),
+        );
+
+        let result = Holochain::load(context_load.clone());
+        if let Err(e) = result {
+            panic!("Error during Holochain::load: {:?}", e);
+        }
         assert!(result.is_ok());
-        let loaded_holo = result.unwrap();
-        assert!(!loaded_holo.active);
-        assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
-        let network_state = loaded_holo.context.state().unwrap().network().clone();
-        assert!(network_state.agent_id.is_some());
-        assert!(network_state.dna_address.is_some());
-        assert!(loaded_holo.instance.state().nucleus().has_initialized());
+        let hc = result.unwrap();
+        let instance = hc.instance.as_ref().unwrap();
+        let context = hc.context.as_ref().unwrap().clone();
+        assert_eq!(instance.state().nucleus().dna(), Some(dna));
+        assert!(!hc.active);
+        assert_eq!(context.agent_id.nick, "persister".to_string());
+        let network_state = context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_address.is_some(), true);
     }
 
     #[test]

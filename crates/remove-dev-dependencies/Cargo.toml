@@ -1,0 +1,12 @@
+[package]
+name = "remove-dev-dependencies"
+description = "adapted from futures-rs to workaround a cargo bug"
+version = "0.0.37-alpha12"
+authors = ["Wim Looman <wim@nemo157.com>"]
+edition = "2018"
+publish = false
+
+[workspace]
+
+[dependencies]
+toml_edit = "0.1.3"

@@ -94,7 +94,7 @@ impl Future for QueryFuture {
     type Output = HcResult<NetworkQueryResult>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture();
+        self.context.future_trace.write().expect("Could not get future trace").start_capture("GetEntryFuture".to_string());
         
         if let Some(err) = self.context.action_channel_error("GetEntryFuture") {
             return Poll::Ready(Err(err));
@@ -109,7 +109,7 @@ impl Future for QueryFuture {
             // See: https://github.com/holochain/holochain-rust/issues/314
             //
             cx.waker().clone().wake();
-            self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("GetEntryFuture"));
+            self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("GetEntryFuture"));
             match state.network().get_query_results.get(&self.key) {
                 Some(Some(result)) => Poll::Ready(result.clone()),
                 _ => Poll::Pending,

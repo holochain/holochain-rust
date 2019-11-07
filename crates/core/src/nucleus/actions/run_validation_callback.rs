@@ -83,7 +83,7 @@ impl Future for ValidationCallbackFuture {
     type Output = ValidationResult;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture();
+        self.context.future_trace.write().expect("Could not get future trace").start_capture("ValidationCallbackFuture".to_string());
         if !self.context.is_action_channel_open() {
             return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(
                 "ValidationCallbackFuture".to_string(),
@@ -94,8 +94,8 @@ impl Future for ValidationCallbackFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("ValidationCallbackFuture"));
         if let Some(state) = self.context.try_state() {
+        self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("ValidationCallbackFuture"));
             match state.nucleus().validation_results.get(&self.key) {
                 Some(result) => Poll::Ready(result.clone()),
                 None => Poll::Pending,

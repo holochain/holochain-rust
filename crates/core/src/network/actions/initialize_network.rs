@@ -62,7 +62,7 @@ impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture();
+        self.context.future_trace.write().expect("Could not get future trace").start_capture("InitializeNetworkFuture".to_string());
         if let Some(err) = self.context.action_channel_error("InitializeNetworkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -72,8 +72,8 @@ impl Future for InitNetworkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("InitializeNetworkFuture"));
         if let Some(state) = self.context.try_state() {
+        self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("InitializeNetworkFuture"));
             if state.network().network.is_some()
                 && state.network().dna_address.is_some()
                 && state.network().agent_id.is_some()

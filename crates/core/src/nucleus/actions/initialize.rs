@@ -190,7 +190,7 @@ impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture();
+        self.context.future_trace.write().expect("Could not get future trace").start_capture("InitializationFuture".to_string());
         if let Some(err) = self.context.action_channel_error("InitializationFuture") {
             return Poll::Ready(Err(err));
         }
@@ -207,8 +207,8 @@ impl Future for InitializationFuture {
                 "Timeout while initializing".to_string(),
             )));
         }
-        self.context.future_trace.write().expect("Could not get future trace").record_diagnostic(String::from("InitializationFuture"));
         if let Some(state) = self.context.try_state() {
+        self.context.future_trace.write().expect("Could not get future trace").end_capture(String::from("InitializationFuture"));
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,

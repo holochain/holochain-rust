@@ -43,6 +43,9 @@ enum Cli {
         #[structopt(long)]
         /// Adds __META__ fields in the dna.json which allow it to be unpacked
         include_meta: bool,
+        #[structopt(long)]
+        /// Included for backward compatibility. Does nothing as stripping meta is now the default
+        strip_meta: bool,
         #[structopt(long, short, parse(from_os_str))]
         output: Option<PathBuf>,
         #[structopt(long, short)]

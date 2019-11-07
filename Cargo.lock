@@ -1432,6 +1432,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "holochain_stress"
+version = "0.0.37-alpha12"
+dependencies = [
+ "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "holochain_tracing"
 version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

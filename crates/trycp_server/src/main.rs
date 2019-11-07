@@ -51,6 +51,10 @@ where
 
 const MAGIC_STRING: &str = "Done. All interfaces started.";
 
+const CONDUCTOR_CONFIG_FILENAME: &str = "conductor-config.toml";
+const CONDUCTOR_STDOUT_LOG_FILENAME: &str = "stdout.txt";
+const CONDUCTOR_STDERR_LOG_FILENAME: &str = "stderr.txt";
+
 #[derive(StructOpt)]
 struct Cli {
     #[structopt(
@@ -92,7 +96,8 @@ fn parse_port_range(s: String) -> Result<PortRange, String> {
 }
 
 struct TrycpServer {
-    dir: tempfile::TempDir,
+    // dir: tempfile::TempDir,
+    dir: PathBuf,
     next_port: u16,
     port_range: PortRange,
 }
@@ -100,7 +105,7 @@ struct TrycpServer {
 impl TrycpServer {
     pub fn new(port_range: PortRange) -> Self {
         TrycpServer {
-            dir: tempdir().expect("should create tmp dir"),
+            dir: tempdir().expect("should create tmp dir").into_path(),
             next_port: port_range.0,
             port_range,
         }
@@ -120,7 +125,7 @@ impl TrycpServer {
     }
 
     pub fn reset(&mut self) {
-        self.dir = tempdir().expect("should create tmp dir");
+        self.dir = tempdir().expect("should create tmp dir").into_path();
         self.next_port = self.port_range.0;
     }
 }
@@ -164,14 +169,20 @@ fn get_as_bool<T: Into<String>>(
     }
 }
 
-const CONDUCTOR_CONFIG_FILE_NAME: &str = "conductor-config.toml";
-
 fn get_dir(state: &TrycpServer, id: &String) -> PathBuf {
-    state.dir.path().join(id).clone()
+    state.dir.join(id)
 }
 
-fn get_file(state: &TrycpServer, id: &String) -> PathBuf {
-    get_dir(state, id).join(CONDUCTOR_CONFIG_FILE_NAME).clone()
+fn get_config_path(state: &TrycpServer, id: &String) -> PathBuf {
+    get_dir(state, id).join(CONDUCTOR_CONFIG_FILENAME)
+}
+
+fn get_stdout_log_path(state: &TrycpServer, id: &String) -> PathBuf {
+    get_dir(state, id).join(CONDUCTOR_STDOUT_LOG_FILENAME)
+}
+
+fn get_stderr_log_path(state: &TrycpServer, id: &String) -> PathBuf {
+    get_dir(state, id).join(CONDUCTOR_STDERR_LOG_FILENAME)
 }
 
 fn internal_error(message: String) -> jsonrpc_core::types::error::Error {
@@ -264,7 +275,7 @@ fn main() {
                 data: None,
             }
         })?;
-        let file_path = get_file(&state, &id);
+        let file_path = get_config_path(&state, &id);
         File::create(file_path.clone())
             .map_err(|e| {
                 internal_error(format!(
@@ -308,10 +319,14 @@ fn main() {
             });
         };
 
-        let player_config = format!("{}", get_file(&state, &id).to_string_lossy());
+        let config_path = format!("{}", get_config_path(&state, &id).to_str().unwrap());
+        let stdout_log_path = format!("{}", get_stdout_log_path(&state, &id).to_str().unwrap());
+        let stderr_log_path = format!("{}", get_stderr_log_path(&state, &id).to_str().unwrap());
+
         let mut conductor = Command::new("holochain")
+            .args(&["-c", &config_path])
             .stdout(Stdio::piped())
-            .args(&["-c", &player_config])
+            .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| jsonrpc_core::types::error::Error {
                 code: jsonrpc_core::types::error::ErrorCode::InternalError,
@@ -319,10 +334,25 @@ fn main() {
                 data: None,
             })?;
 
-        match conductor.stdout.take() {
+        let mut log_stdout = Command::new("tee")
+            .arg(stdout_log_path)
+            .stdout(Stdio::piped())
+            .stdin(conductor.stdout.take().unwrap())
+            .spawn()
+            .unwrap();
+
+        let _log_stderr = Command::new("tee")
+            .arg(stderr_log_path)
+            .stdin(conductor.stderr.take().unwrap())
+            .spawn()
+            .unwrap();
+        
+        match log_stdout.stdout.take() {
             Some(stdout) => {
                 for line in BufReader::new(stdout).lines() {
-                    if line.unwrap() == MAGIC_STRING {
+                    let line = line.unwrap();
+                    if line == MAGIC_STRING {
+                        println!("Encountered magic string");
                         break;
                     }
                 }
@@ -397,7 +427,7 @@ fn check_player_config(
     state: &TrycpServer,
     id: &String,
 ) -> Result<(), jsonrpc_core::types::error::Error> {
-    let file_path = get_file(state, id);
+    let file_path = get_config_path(state, id);
     if !file_path.is_file() {
         return Err(jsonrpc_core::types::error::Error {
             code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,

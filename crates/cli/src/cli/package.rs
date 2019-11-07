@@ -56,15 +56,15 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
 }
 
 struct Packager {
-    strip_meta: bool,
+    include_meta: bool,
 }
 
 impl Packager {
-    fn new(strip_meta: bool) -> Packager {
-        Packager { strip_meta }
+    fn new(include_meta: bool) -> Packager {
+        Packager { include_meta }
     }
 
-    pub fn package(strip_meta: bool, output: PathBuf, properties: Value) -> DefaultResult<()> {
+    pub fn package(include_meta: bool, output: PathBuf, properties: Value) -> DefaultResult<()> {
         // First, check whether they have `cargo` installed, since it will be needed for packaging
         // TODO: in the future, don't check for this here, since other build tools and languages
         // could be used
@@ -81,7 +81,7 @@ impl Packager {
             return Ok(());
         }
 
-        Packager::new(strip_meta).run(&output, properties)
+        Packager::new(include_meta).run(&output, properties)
     }
 
     fn run(&self, output: &PathBuf, mut properties: Value) -> DefaultResult<()> {
@@ -295,7 +295,7 @@ impl Packager {
             }
         }
 
-        if !self.strip_meta {
+        if self.include_meta {
             if !meta_tree.is_empty() {
                 meta_section.insert(META_TREE_SECTION_NAME.into(), meta_tree.into());
             }

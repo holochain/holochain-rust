@@ -453,6 +453,28 @@ pub mod tests {
         );
     }
 
+    #[test]
+    fn test_dna_verify() {
+        let dna = test_dna();
+        assert!(dna.verify().is_ok())
+    }
+
+    #[test]
+    fn test_dna_verify_fail() {
+        // should error because code is empty
+        let dna = Dna::try_from(JsonString::from_json(
+            r#"{
+                "zomes": {
+                    "my_zome": {
+                        "code": {"code": ""}
+                    }
+                }
+            }"#,
+        ))
+        .unwrap();
+        assert!(dna.verify().is_err())
+    }
+
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
     fn test_empty_dna() -> Dna {

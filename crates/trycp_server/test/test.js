@@ -47,6 +47,11 @@ function  doTest(url) {
             console.log(result)
         })
 
+        // call again to test caching
+        await ws.call('dna', {"url": "https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json"}).then(function(result) {
+            console.log(result)
+        })
+
         const config_toml =`
 persistence_dir = "/tmp/somepath"
 

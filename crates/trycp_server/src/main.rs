@@ -257,25 +257,27 @@ fn main() {
         let params_map = unwrap_params_map(params)?;
         let url_str = get_as_string("url", &params_map)?;
         let url = Url::parse(&url_str).map_err(|e| invalid_request(format!("unable to parse url:{} got error: {}", url_str, e)))?;
-        println!("Downloading dna from {} ...", &url_str);
-        let content: String = reqwest::get::<Url>(url.clone())
-            .map_err(|e| internal_error(format!("error downloading dna: {:?} {:?}", e, url_str)))?
-            .text()
-            .map_err(|e| internal_error(format!("could not get text response: {}", e)))?;
-        println!("Finished downloading dna from {}", url_str);
         let state = state_dna.write().unwrap();
-        let dir_path = get_dna_dir(&state);
-        std::fs::create_dir_all(dir_path.clone())
-            .map_err(|e|
-                     internal_error(format!(
-                         "error making temporary directory for dna: {:?} {:?}",
-                         e, dir_path
-                     )))?;
         let file_path = get_dna_path(&state, &url);
-        save_file(file_path.clone(), &content.as_bytes())?;
+        if !file_path.exists() {
+            println!("Downloading dna from {} ...", &url_str);
+            let content: String = reqwest::get::<Url>(url.clone())
+                .map_err(|e| internal_error(format!("error downloading dna: {:?} {:?}", e, url_str)))?
+                .text()
+                .map_err(|e| internal_error(format!("could not get text response: {}", e)))?;
+            println!("Finished downloading dna from {}", url_str);
+            let dir_path = get_dna_dir(&state);
+            std::fs::create_dir_all(dir_path.clone())
+                .map_err(|e|
+                         internal_error(format!(
+                             "error making temporary directory for dna: {:?} {:?}",
+                             e, dir_path
+                         )))?;
+            save_file(file_path.clone(), &content.as_bytes())?;
+        }
         let local_path = file_path.to_string_lossy();
         let response = format!(
-            "wrote dna for {} to {}",
+            "dna for {} at {}",
             &url_str,
             local_path,
         );

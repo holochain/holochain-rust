@@ -4,54 +4,23 @@
 
 #![feature(try_trait, async_await)]
 #![warn(unused_extern_crates)]
-
 #[macro_use]
 extern crate holochain_core;
-
 #[macro_use]
 extern crate holochain_json_derive;
-
-
-
-
-
-
-
-
-
-
 #[macro_use]
 extern crate log;
-
-
-
-
-
 #[macro_use]
 extern crate serde_derive;
-
-
-
-
-
-
-
-
 #[macro_use]
 extern crate serde_json;
-
-
 #[macro_use]
 extern crate maplit;
 #[macro_use]
 extern crate lazy_static;
-
-
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
-
-
 #[macro_use]
 extern crate nickel;
 

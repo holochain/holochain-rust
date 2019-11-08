@@ -73,10 +73,10 @@ lazy_static! {
 }
 
 /// A function that produces accepted sockets of type R wrapped in a TransportInfo
-pub type Acceptor<T> = Box<dyn FnMut() -> TransportResult<WssInfo<T>>>;
+pub type Acceptor<T> = Box<dyn FnMut() -> TransportResult<WssInfo<T>> + 'static + Send + Sync>;
 
 /// A function that binds to a url and produces sockt acceptors of type T
-pub type Bind<T> = Box<dyn FnMut(&Url) -> TransportResult<(Url2, Acceptor<T>)>>;
+pub type Bind<T> = Box<dyn FnMut(&Url) -> TransportResult<(Url2, Acceptor<T>)> + 'static + Send + Sync>;
 
 /// A "Transport" implementation based off the websocket protocol
 /// any rust io Read/Write stream should be able to serve as the base

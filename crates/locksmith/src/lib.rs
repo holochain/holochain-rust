@@ -9,7 +9,6 @@ mod common;
 mod error;
 mod guard;
 mod mutex;
-mod sync;
 mod tracker;
 
 pub use error::LocksmithError;

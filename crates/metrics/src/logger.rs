@@ -30,7 +30,7 @@ impl Default for LoggerMetricPublisher {
 }
 lazy_static! {
     pub static ref PARSE_METRIC_REGEX: Regex =
-        Regex::new("metrics.rs:\\d* ([\\w\\d~\\-\\._]+) ([\\d\\.]+)").unwrap();
+        Regex::new("METRIC ([\\w\\d~\\-\\._]+) ([\\d\\.]+)").unwrap();
 }
 
 #[derive(Debug, Clone)]
@@ -49,7 +49,7 @@ pub struct LogLine(pub String);
 
 impl From<Metric> for LogLine {
     fn from(metric: Metric) -> Self {
-        LogLine(format!("{} {}", metric.name, metric.value))
+        LogLine(format!("METRIC {} {}", metric.name, metric.value))
     }
 }
 
@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn can_convert_log_line_to_metric() {
         let line =
-            "DEBUG 2019-10-30 10:34:44 [holochain_metrics::metrics] net_worker_thread/puid-4-2e crates/metrics/src/metrics.rs:33 sim2h_worker.tick.latency 123";
+            "DEBUG 2019-10-30 10:34:44 [holochain_metrics::metrics] net_worker_thread/puid-4-2e crates/metrics/src/logger.rs:33 METRIC sim2h_worker.tick.latency 123";
         let log_line = LogLine(line.to_string());
         let metric: Metric = log_line.try_into().unwrap();
         assert_eq!("sim2h_worker.tick.latency", metric.name);
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn can_convert_cloudwatch_log_line_to_metric() {
-        let line = "metrics.rs: sim2h_worker.tick.latency 123";
+        let line = "METRIC sim2h_worker.tick.latency 123";
         let log_line = LogLine(line.to_string());
         let metric: Metric = log_line.try_into().unwrap();
         assert_eq!("sim2h_worker.tick.latency", metric.name);

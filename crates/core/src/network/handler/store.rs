@@ -11,8 +11,7 @@ use holochain_core_types::entry::{deletion_entry::DeletionEntry, Entry};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::StoreEntryAspectData;
-use snowflake::ProcessUniqueId;
-use std::{convert::TryInto, sync::Arc, thread};
+use std::{convert::TryInto, sync::Arc};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
@@ -26,19 +25,13 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     "net/handle: handle_store: Got EntryAspect::Content. processing..."
                 );
                 let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_entry_content/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(err) = context
-                            .block_on(hold_entry_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", err);
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Content");
+                context.clone().spawn_thread(move || {
+                    if let Err(err) = context
+                        .block_on(hold_entry_workflow(&entry_with_header, context.clone()))
+                    {
+                        log_error!(context, "net/dht: {}", err);
+                    }
+                });
             }
             EntryAspect::Header(header) => {
                 panic!(format!("unimplemented store aspect Header: {:?}", header));
@@ -54,19 +47,13 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     return;
                 }
                 let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_link_entry/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_link_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error);
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::LinkAdd");
+                context.clone().spawn_thread(move || {
+                    if let Err(error) = context
+                        .block_on(hold_link_workflow(&entry_with_header, context.clone()))
+                    {
+                        log_error!(context, "net/dht: {}", error);
+                    }
+                });
             }
             EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
                 log_debug!(
@@ -75,19 +62,13 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 );
                 let entry = Entry::LinkRemove((link_data, links_to_remove));
                 let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_link_remove/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(remove_link_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::LinkRemove");
+                context.clone().spawn_thread(move || {
+                    if let Err(error) = context
+                        .block_on(remove_link_workflow(&entry_with_header, context.clone()))
+                    {
+                        log_error!(context, "net/dht: {}", error)
+                    }
+                });
             }
             EntryAspect::Update(entry, header) => {
                 log_debug!(
@@ -95,19 +76,13 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     "net/handle: handle_store: Got EntryAspect::Update. processing..."
                 );
                 let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_update/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_update_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Update");
+                context.clone().spawn_thread(move || {
+                    if let Err(error) = context
+                        .block_on(hold_update_workflow(&entry_with_header, context.clone()))
+                    {
+                        log_error!(context, "net/dht: {}", error)
+                    }
+                });
             }
             EntryAspect::Deletion(header) => {
                 log_debug!(
@@ -125,19 +100,13 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
 
                 let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
                 let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_deletion/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_remove_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/handle_store: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Deletion");
+                context.clone().spawn_thread(move || {
+                    if let Err(error) = context
+                        .block_on(hold_remove_workflow(&entry_with_header, context.clone()))
+                    {
+                        log_error!(context, "net/handle_store: {}", error)
+                    }
+                });
             }
         }
     } else {

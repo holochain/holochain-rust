@@ -69,8 +69,7 @@ cargo update
 
    # publish artifacts to the world
    publish = ''
-echo "go look at travis for binary building!"
-hc-release-hook-publish
+echo "go look at circle for binary building and crates publishing!"
 '';
   };
 

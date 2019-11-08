@@ -12,6 +12,7 @@ use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
 };
+use reqwest::{self, Url};
 use serde_json::map::Map;
 use std::{
     collections::HashMap,
@@ -22,7 +23,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
-use reqwest::{self, Url};
 
 /*type Error = String;
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
@@ -186,7 +186,7 @@ fn get_dna_dir(state: &TrycpServer) -> PathBuf {
 }
 
 fn get_dna_path(state: &TrycpServer, url: &Url) -> PathBuf {
-    get_dna_dir(state).join(url.path().to_string().replace("/","").replace("%","_"))
+    get_dna_dir(state).join(url.path().to_string().replace("/", "").replace("%", "_"))
 }
 
 fn get_stdout_log_path(state: &TrycpServer, id: &String) -> PathBuf {
@@ -213,7 +213,7 @@ fn invalid_request(message: String) -> jsonrpc_core::types::error::Error {
     }
 }
 
-fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(),jsonrpc_core::types::error::Error> {
+fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::types::error::Error> {
     File::create(file_path.clone())
         .map_err(|e| {
             internal_error(format!(
@@ -223,11 +223,13 @@ fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(),jsonrpc_core::type
             ))
         })?
         .write_all(&content[..])
-        .map_err(|e| internal_error(format!(
-            "unable to write file: {:?} {}",
-            e,
-            file_path.to_string_lossy()
-        )))?;
+        .map_err(|e| {
+            internal_error(format!(
+                "unable to write file: {:?} {}",
+                e,
+                file_path.to_string_lossy()
+            ))
+        })?;
     Ok(())
 }
 
@@ -256,35 +258,33 @@ fn main() {
     io.add_method("dna", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let url_str = get_as_string("url", &params_map)?;
-        let url = Url::parse(&url_str).map_err(|e| invalid_request(format!("unable to parse url:{} got error: {}", url_str, e)))?;
+        let url = Url::parse(&url_str).map_err(|e| {
+            invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
+        })?;
         let state = state_dna.write().unwrap();
         let file_path = get_dna_path(&state, &url);
         if !file_path.exists() {
             println!("Downloading dna from {} ...", &url_str);
             let content: String = reqwest::get::<Url>(url.clone())
-                .map_err(|e| internal_error(format!("error downloading dna: {:?} {:?}", e, url_str)))?
+                .map_err(|e| {
+                    internal_error(format!("error downloading dna: {:?} {:?}", e, url_str))
+                })?
                 .text()
                 .map_err(|e| internal_error(format!("could not get text response: {}", e)))?;
             println!("Finished downloading dna from {}", url_str);
             let dir_path = get_dna_dir(&state);
-            std::fs::create_dir_all(dir_path.clone())
-                .map_err(|e|
-                         internal_error(format!(
-                             "error making temporary directory for dna: {:?} {:?}",
-                             e, dir_path
-                         )))?;
+            std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
+                internal_error(format!(
+                    "error making temporary directory for dna: {:?} {:?}",
+                    e, dir_path
+                ))
+            })?;
             save_file(file_path.clone(), &content.as_bytes())?;
         }
         let local_path = file_path.to_string_lossy();
-        let response = format!(
-            "dna for {} at {}",
-            &url_str,
-            local_path,
-        );
+        let response = format!("dna for {} at {}", &url_str, local_path,);
         println!("dna {}: {:?}", &url_str, response);
-        Ok(json!({
-            "path": local_path
-        }))
+        Ok(json!({ "path": local_path }))
     });
 
     io.add_method("reset", move |params: Params| {
@@ -330,16 +330,16 @@ fn main() {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
         let config_base64 = get_as_string("config", &params_map)?;
-        let content =
-            base64::decode(&config_base64).map_err(|e| invalid_request(format!("error decoding config: {:?}", e)))?;
+        let content = base64::decode(&config_base64)
+            .map_err(|e| invalid_request(format!("error decoding config: {:?}", e)))?;
         let state = state_player.read().unwrap();
         let dir_path = get_dir(&state, &id);
-        std::fs::create_dir_all(dir_path.clone())
-            .map_err(|e|
-                     invalid_request(format!(
-                         "error making temporary directory for config: {:?} {:?}",
-                         e, dir_path
-                     )))?;
+        std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
+            invalid_request(format!(
+                "error making temporary directory for config: {:?} {:?}",
+                e, dir_path
+            ))
+        })?;
         let file_path = get_config_path(&state, &id);
         save_file(file_path.clone(), &content)?;
         let response = format!(
@@ -371,9 +371,7 @@ fn main() {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| internal_error(
-                format!("unable to spawn conductor: {:?}", e),
-            ))?;
+            .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?;
 
         let mut log_stdout = Command::new("tee")
             .arg(stdout_log_path)
@@ -404,8 +402,9 @@ fn main() {
             }
             None => {
                 conductor.kill().unwrap();
-                return Err(internal_error(format!("Conductor process not capturing stdout, bailing!"),
-                ));
+                return Err(internal_error(format!(
+                    "Conductor process not capturing stdout, bailing!"
+                )));
             }
         }
     });
@@ -448,9 +447,12 @@ fn do_kill(
         "SIGTERM" => Signal::SIGTERM,
         _ => Signal::SIGINT,
     };
-    signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e|
-                                                                internal_error(format!("unable to run kill conductor for {} script: {:?}", id, e)
-    ))
+    signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| {
+        internal_error(format!(
+            "unable to run kill conductor for {} script: {:?}",
+            id, e
+        ))
+    })
 }
 
 fn check_player_config(
@@ -459,7 +461,10 @@ fn check_player_config(
 ) -> Result<(), jsonrpc_core::types::error::Error> {
     let file_path = get_config_path(state, id);
     if !file_path.is_file() {
-        return Err(invalid_request(format!("player config for {} not setup", id)));
+        return Err(invalid_request(format!(
+            "player config for {} not setup",
+            id
+        )));
     }
     Ok(())
 }

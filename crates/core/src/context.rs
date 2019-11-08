@@ -340,8 +340,13 @@ impl Context {
     }
 
     pub fn spawn_thread<F>(&self, f: F)
-        where F: FnOnce() + Send + 'static {
-        self.thread_pool.lock().expect("Couldn't get lock on Context::thread_pool").execute(f);
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.thread_pool
+            .lock()
+            .expect("Couldn't get lock on Context::thread_pool")
+            .execute(f);
     }
 
     /// returns the public capability token (if any)

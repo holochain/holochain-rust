@@ -26,8 +26,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 );
                 let entry_with_header = EntryWithHeader { entry, header };
                 context.clone().spawn_thread(move || {
-                    if let Err(err) = context
-                        .block_on(hold_entry_workflow(&entry_with_header, context.clone()))
+                    if let Err(err) =
+                        context.block_on(hold_entry_workflow(&entry_with_header, context.clone()))
                     {
                         log_error!(context, "net/dht: {}", err);
                     }
@@ -48,8 +48,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 }
                 let entry_with_header = EntryWithHeader { entry, header };
                 context.clone().spawn_thread(move || {
-                    if let Err(error) = context
-                        .block_on(hold_link_workflow(&entry_with_header, context.clone()))
+                    if let Err(error) =
+                        context.block_on(hold_link_workflow(&entry_with_header, context.clone()))
                     {
                         log_error!(context, "net/dht: {}", error);
                     }
@@ -63,8 +63,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 let entry = Entry::LinkRemove((link_data, links_to_remove));
                 let entry_with_header = EntryWithHeader { entry, header };
                 context.clone().spawn_thread(move || {
-                    if let Err(error) = context
-                        .block_on(remove_link_workflow(&entry_with_header, context.clone()))
+                    if let Err(error) =
+                        context.block_on(remove_link_workflow(&entry_with_header, context.clone()))
                     {
                         log_error!(context, "net/dht: {}", error)
                     }
@@ -77,8 +77,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 );
                 let entry_with_header = EntryWithHeader { entry, header };
                 context.clone().spawn_thread(move || {
-                    if let Err(error) = context
-                        .block_on(hold_update_workflow(&entry_with_header, context.clone()))
+                    if let Err(error) =
+                        context.block_on(hold_update_workflow(&entry_with_header, context.clone()))
                     {
                         log_error!(context, "net/dht: {}", error)
                     }
@@ -101,8 +101,8 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
                 let entry_with_header = EntryWithHeader { entry, header };
                 context.clone().spawn_thread(move || {
-                    if let Err(error) = context
-                        .block_on(hold_remove_workflow(&entry_with_header, context.clone()))
+                    if let Err(error) =
+                        context.block_on(hold_remove_workflow(&entry_with_header, context.clone()))
                     {
                         log_error!(context, "net/handle_store: {}", error)
                     }

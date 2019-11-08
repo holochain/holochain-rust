@@ -107,8 +107,7 @@ pub async fn build_validation_package<'a>(
         };
 
         context.clone().spawn_thread(move || {
-            let maybe_callback_result =
-                get_validation_package_definition(&entry, context.clone());
+            let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {
                     CallbackResult::Fail(error_string) => {
@@ -129,31 +128,24 @@ pub async fn build_validation_package<'a>(
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries =
-                                Some(public_chain_entries_from_headers(
-                                    &context,
-                                    &all_chain_headers_before_header(
-                                        &context,
-                                        &package.chain_header,
-                                    ),
-                                ));
+                            package.source_chain_entries = Some(public_chain_entries_from_headers(
+                                &context,
+                                &all_chain_headers_before_header(&context, &package.chain_header),
+                            ));
                             package
                         }
                         ChainHeaders => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers =
-                                Some(all_chain_headers_before_header(
-                                    &context,
-                                    &package.chain_header,
-                                ));
+                            package.source_chain_headers = Some(all_chain_headers_before_header(
+                                &context,
+                                &package.chain_header,
+                            ));
                             package
                         }
                         ChainFull => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            let headers = all_chain_headers_before_header(
-                                &context,
-                                &package.chain_header,
-                            );
+                            let headers =
+                                all_chain_headers_before_header(&context, &package.chain_header);
                             package.source_chain_entries =
                                 Some(public_chain_entries_from_headers(&context, &headers));
                             package.source_chain_headers = Some(headers);

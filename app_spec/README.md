@@ -1,7 +1,6 @@
 # Holochain app specification in Rust
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
-[![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
 
 This directory contains a Holochain app that functions as a living specification of Holochain and its Rust [HDK](https://github.com/holochain/holochain-rust/tree/develop/hdk-rust) (Holochain Development Toolkit).

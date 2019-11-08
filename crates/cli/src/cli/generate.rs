@@ -7,6 +7,7 @@ use tempfile::Builder;
 use tera::{Context, Tera};
 use flate2::read::GzDecoder;
 use tar::Archive;
+// use std::path::Path;
 
 // const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
 // const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
@@ -58,8 +59,25 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
     let tar_gz = File::open(fname)?;
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
-    archive.unpack(".")?;
-
+    archive.entries()?
+    .filter_map(|e| e.ok())
+    .map(|mut entry| -> DefaultResult<PathBuf> {
+        let path = entry.path()?.strip_prefix(entry.path()?.components().nth(0).unwrap())?.to_owned();
+        entry.unpack(&path)?;
+        Ok(path)
+    })
+    .filter_map(|e| e.ok())
+    .for_each(|x| println!("> {}", x.display()));
+    // for e in archive.entries()? {
+    //     let mut entry = e?;
+    //     let path_cow = entry.path()?.to_owned();
+    //     let path_str = path_cow.to_str().unwrap();
+    //     let path = Path::new(path_str.clone());
+    //     let stripped_path = path.strip_prefix(path.components().nth(0).unwrap())?;
+    //     println!("{:?}", stripped_path);
+    //     entry.unpack(&stripped_path)?;
+    // }
+    // archive.unpack(zome_path)?;
 
     let mut context = Context::new();
     context.insert("name", &zome_name);

@@ -19,11 +19,13 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
-extern crate git2;
 extern crate glob;
 extern crate ignore;
 extern crate rpassword;
 extern crate tera;
+extern crate tempfile;
+extern crate flate2;
+extern crate tar;
 
 mod cli;
 mod config_files;

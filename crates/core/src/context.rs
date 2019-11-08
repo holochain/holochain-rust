@@ -5,12 +5,13 @@ use crate::{
     nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
+    state::StateWrapper,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use futures::{task::Poll, Future};
-
-use crate::state::StateWrapper;
-use futures::task::noop_waker_ref;
+use futures::{
+    task::{noop_waker_ref, Poll},
+    Future,
+};
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
     agent::AgentId,
@@ -24,6 +25,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
+use holochain_metrics::MetricPublisher;
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
     cas::{
@@ -41,6 +43,7 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 use threadpool::ThreadPool;
@@ -88,6 +91,7 @@ pub struct Context {
     pub state_dump_logging: bool,
     thread_pool: Arc<Mutex<ThreadPool>>,
     pub redux_wants_write: Arc<AtomicBool>,
+    pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
 }
 
 impl Context {
@@ -129,6 +133,7 @@ impl Context {
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
         state_dump_logging: bool,
+        metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
     ) -> Self {
         Context {
             instance_name: instance_name.to_owned(),
@@ -150,6 +155,7 @@ impl Context {
             state_dump_logging,
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
+            metric_publisher,
         }
     }
 
@@ -165,6 +171,7 @@ impl Context {
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         state_dump_logging: bool,
+        metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             instance_name: instance_name.to_owned(),
@@ -183,6 +190,7 @@ impl Context {
             state_dump_logging,
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
+            metric_publisher,
         })
     }
 
@@ -446,6 +454,9 @@ pub mod tests {
             None,
             None,
             false,
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
 
         // Somehow we need to build our own logging instance for this test to show logs
@@ -489,6 +500,9 @@ pub mod tests {
             None,
             None,
             false,
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

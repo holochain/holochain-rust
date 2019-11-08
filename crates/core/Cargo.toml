@@ -30,6 +30,7 @@ unwrap_to = "=0.1.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"
 toml = "=0.5.0"
+holochain_metrics = { version = "0.0.38-alpha2", path = "../metrics" }
 holochain_net = { version = "=0.0.38-alpha2", path = "../net" }
 holochain_wasm_utils = { version = "=0.0.38-alpha2", path = "../wasm_utils" }
 holochain_common = { version = "=0.0.38-alpha2", path = "../common" }

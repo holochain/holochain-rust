@@ -115,6 +115,9 @@ fn context_log_macro_test() {
         None,
         None,
         false,
+        Arc::new(RwLock::new(
+            holochain_metrics::DefaultMetricPublisher::default(),
+        )),
     );
 
     // Somehow we need to build our own logging instance for this test to show logs

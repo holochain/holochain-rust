@@ -21,6 +21,7 @@ lib3h = "=0.0.21"
 lib3h_zombie_actor = "=0.0.21"
 detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.1" }
+holochain_metrics = { version = "=0.0.38-alpha2", path = "../metrics" }
 holochain_common = { version = "=0.0.38-alpha2", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.38-alpha2", path = "../conductor_api" }
 holochain_core_types = { version = "=0.0.38-alpha2", path = "../core_types" }

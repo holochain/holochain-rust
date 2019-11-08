@@ -22,6 +22,7 @@ holochain_dpki = { version = "=0.0.38-alpha2", path = "../dpki" }
 holochain_net = { version = "=0.0.38-alpha2", path = "../net" }
 lib3h = "=0.0.21"
 lib3h_sodium = "=0.0.21"
+holochain_metrics = { version = "=0.0.38-alpha2", path = "../metrics" }
 holochain_common = { version = "=0.0.38-alpha2", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

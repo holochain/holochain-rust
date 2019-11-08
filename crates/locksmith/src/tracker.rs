@@ -87,6 +87,23 @@ Backtrace at the moment of guard creation follows:
             annotation=annotation,
             backtrace=self.backtrace
         );
+        println!(
+            r"
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!! IMMORTAL LOCK GUARD FOUND !!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+{type:?} guard {puid} lived for > {time} seconds.{annotation}
+Backtrace at the moment of guard creation follows:
+
+{backtrace:?}",
+            type=self.lock_type,
+            puid=self.puid,
+            time=IMMORTAL_TIMEOUT.as_secs(),
+            annotation=annotation,
+            backtrace=self.backtrace
+        );
     }
 }
 

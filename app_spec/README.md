@@ -7,6 +7,23 @@ This directory contains a Holochain app that functions as a living specification
 
 Please see the [Contribute section](https://github.com/holochain/holochain-rust/blob/develop/README.md#app-spec-driven-development) for our protocol on how we do this, and also see the [core dev setup guide](https://github.com/holochain/holochain-rust/blob/develop/doc/CoreDevSetup.md), which details how to set up a development environment (`nix-shell` is recommended), run tests (e.g. all tests with `hc test`), etc.
 
+### Dependencies
+
+The primary dependency is on the Holochain command line tools which should be installed automatically by the build script but can also be installed manually with `make install_cli`.
+
+Nodejs and NPM, for compiling Javascript tests, Version 8 or higher
+* https://nodejs.org/en/download/
+
+To verify it is all working, run each of the following two commands.
+
+`hc`
+
+If you see the available commands listed, they're successfully installed.
+
+`node -v`
+
+If you see `vA.B.C` where A, B, and C are numbers, you've got `node` installed.
+
 ### Run the tests
 
 Make sure that you fully completed the installation of dependencies. Then, within this directory run the following:

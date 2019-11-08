@@ -5,35 +5,9 @@
 
 This directory contains a Holochain app that functions as a living specification of Holochain and its Rust [HDK](https://github.com/holochain/holochain-rust/tree/develop/hdk-rust) (Holochain Development Toolkit).
 
-Please see the [Contribute section](https://github.com/holochain/holochain-rust/blob/develop/README.md#app-spec-driven-development) for our protocol on how we do this.
+Please see the [Contribute section](https://github.com/holochain/holochain-rust/blob/develop/README.md#app-spec-driven-development) for our protocol on how we do this, and also see the [core dev setup guide](https://github.com/holochain/holochain-rust/blob/develop/doc/CoreDevSetup.md), which details how to set up a development environment (`nix-shell` is recommended), run tests (e.g. all tests with `hc test`), etc.
 
-### Dependencies
-
-The primary dependency is on the Holochain command line tools which should be installed automatically by the build script but can also be installed manually with `make install_cli`.
-
-Nodejs and NPM, for compiling Javascript tests, Version 8 or higher
-* https://nodejs.org/en/download/
-
-To verify it is all working, run each of the following two commands.
-
-`hc`
-
-If you see the available commands listed, they're successfully installed.
-
-`node -v`
-
-If you see `vA.B.C` where A, B, and C are numbers, you've got `node` installed.
-
-
-### Run the tests
-
-Make sure that you fully completed the installation of dependencies. Then, within this directory run the following:
-
-`./build_and_test.sh`
-
-You should see the tests all passing successfully.
-
-### Detailed Description
+### Detailed Description of testing process
 
 In order to get from the source directory tree to a Holochain DNA package, and then test that, several steps need to be taken which are all automated.
 

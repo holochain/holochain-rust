@@ -297,6 +297,13 @@ jobs:
        . /home/docker/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
+ deploy.crates:
+  docker:
+   - image: holochain/holonix:latest
+  steps:
+   - checkout
+   - run: nix-shell --run hc-release-hook-publish
+
 workflows:
  version: 2
  tests:
@@ -363,6 +370,12 @@ workflows:
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
    - deploy.linux:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.crates:
       filters:
        branches:
         ignore: /.*/

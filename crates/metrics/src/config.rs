@@ -7,7 +7,9 @@ use holochain_locksmith::RwLock;
 use std::sync::Arc;
 
 /// Unifies all possible metric publisher configurations
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type")]
 pub enum MetricPublisherConfig {
     Logger,
     CloudWatchMetrics(Option<rusoto_core::region::Region>),

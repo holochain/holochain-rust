@@ -5,7 +5,7 @@ use crate::{
 use crossbeam_channel::Sender;
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::{HcResult, HolochainError};
-use holochain_locksmith::RwLock;
+use holochain_locksmith::RwLockRigged;
 
 use crate::state::StateWrapper;
 use std::{pin::Pin, sync::Arc};
@@ -14,7 +14,7 @@ use std::{pin::Pin, sync::Arc};
 /// This tells the network to untrack this instance and then stops the network thread
 /// and sets the P2pNetwork instance in the state to None.
 pub async fn shutdown(
-    state: Arc<RwLock<StateWrapper>>,
+    state: Arc<RwLockRigged<StateWrapper>>,
     action_channel: Sender<ActionWrapper>,
 ) -> HcResult<()> {
     if state.read().unwrap().network().initialized().is_ok() {
@@ -29,7 +29,7 @@ pub async fn shutdown(
 }
 
 pub struct ShutdownFuture {
-    state: Arc<RwLock<StateWrapper>>,
+    state: Arc<RwLockRigged<StateWrapper>>,
 }
 
 impl Future for ShutdownFuture {

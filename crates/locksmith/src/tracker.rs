@@ -101,8 +101,8 @@ pub fn spawn_locksmith_guard_watcher() {
             let mut inactive_for = Duration::from_millis(0);
             loop {
                 let mut reports: Vec<(i64, String)> = {
-                    GUARDS
-                        .lock()
+                    let mut guards = GUARDS.lock();
+                    guards
                         .values_mut()
                         .filter_map(|gt| gt.report_and_update())
                         .collect()

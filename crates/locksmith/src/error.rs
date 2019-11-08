@@ -10,11 +10,13 @@ pub enum LockType {
     Lock,
     Read,
     Write,
+    ReadRigged,
+    WriteRigged,
 }
 
 #[derive(Debug)]
 pub struct LocksmithError {
-    lock_type: LockType,
+    pub(crate) lock_type: LockType,
     kind: LocksmithErrorKind,
 }
 

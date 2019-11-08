@@ -63,3 +63,4 @@ rand = "0.7.2"
 wabt = "=0.7.4"
 test_utils = { version = "=0.0.37-alpha12", path = "../../test_utils" }
 tempfile = "=3.0.7"
+holochain_persistence_lmdb = "=0.0.10"

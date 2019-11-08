@@ -1,11 +1,19 @@
 use crate::error::DefaultResult;
-use git2::Repository;
+use flate2::read::GzDecoder;
 use glob::glob;
-use std::{fs, io::prelude::*, path::PathBuf};
+use std::{
+    fs::{self, File},
+    io::{copy, prelude::*},
+    path::PathBuf,
+};
+use tar::Archive;
+use tempfile::Builder;
 use tera::{Context, Tera};
 
-const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
-const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
+const RUST_TEMPLATE_TARBALL_URL: &str =
+    "https://github.com/holochain/rust-zome-template/archive/master.tar.gz";
+const RUST_PROC_TEMPLATE_TARBALL_URL: &str =
+    "https://github.com/holochain/rust-proc-zome-template/archive/master.tar.gz";
 
 const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -20,15 +28,47 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
 
     // match against all supported templates
     let url = match scaffold.as_ref() {
-        "rust" => RUST_TEMPLATE_REPO_URL,
-        "rust-proc" => RUST_PROC_TEMPLATE_REPO_URL,
+        "rust" => RUST_TEMPLATE_TARBALL_URL,
+        "rust-proc" => RUST_PROC_TEMPLATE_TARBALL_URL,
         _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
-    Repository::clone(url, zome_path)?;
+    println!("downloading and extracting tarball from: {}", url);
 
-    // delete the .git directory
-    fs::remove_dir_all(zome_path.join(".git"))?;
+    // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
+    let tmp_dir = Builder::new().prefix("hc-generate").tempdir()?;
+    let mut response = reqwest::get(url)?;
+
+    let fname = response
+        .url()
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .and_then(|name| if name.is_empty() { None } else { Some(name) })
+        .unwrap_or("tmp.bin");
+
+    let fname = tmp_dir.path().join(fname);
+    let mut dest = File::create(&fname)?;
+    copy(&mut response, &mut dest)?;
+
+    // https://rust-lang-nursery.github.io/rust-cookbook/compression/tar.html
+    let tar_gz = File::open(fname)?;
+    let tar = GzDecoder::new(tar_gz);
+    let mut archive = Archive::new(tar);
+    archive
+        .entries()?
+        .filter_map(|e| e.ok())
+        .map(|mut entry| -> DefaultResult<PathBuf> {
+            let path = zome_path.join(
+                entry
+                    .path()?
+                    .strip_prefix(entry.path()?.components().nth(0).unwrap())?
+                    .to_owned(),
+            );
+            entry.unpack(&path)?;
+            Ok(path)
+        })
+        .filter_map(|e| e.ok())
+        .for_each(|x| println!("> {}", x.display()));
 
     let mut context = Context::new();
     context.insert("name", &zome_name);

@@ -9,10 +9,7 @@ use std::{
 use tar::Archive;
 use tempfile::Builder;
 use tera::{Context, Tera};
-// use std::path::Path;
 
-// const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
-// const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
 const RUST_TEMPLATE_TARBALL_URL: &str =
     "https://github.com/holochain/rust-zome-template/archive/master.tar.gz";
 const RUST_PROC_TEMPLATE_TARBALL_URL: &str =

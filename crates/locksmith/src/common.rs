@@ -11,7 +11,7 @@ lazy_static! {
     /// this should be a bit longer than IMMORTAL_TIMEOUT, so that locks don't timeout
     /// before all long-running guards are detected, in the case of a deadlock.
     /// (But NOT longer than try-o-rama's conductor timeout)
-    pub(crate) static ref LOCK_TIMEOUT: Duration = Duration::from_millis(100);
+    pub(crate) static ref LOCK_TIMEOUT: Duration = Duration::from_secs(120);
 
     /// This is how often we check the elapsed time of guards
     pub(crate) static ref GUARD_WATCHER_POLL_INTERVAL: Duration = Duration::from_millis(1000);

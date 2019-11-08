@@ -1,21 +1,24 @@
 use crate::error::DefaultResult;
+use flate2::read::GzDecoder;
 use glob::glob;
-use std::{fs, io::prelude::*, path::PathBuf};
-use std::io::copy;
-use std::fs::File;
+use std::{
+    fs::{self, File},
+    io::{copy, prelude::*},
+    path::PathBuf,
+};
+use tar::Archive;
 use tempfile::Builder;
 use tera::{Context, Tera};
-use flate2::read::GzDecoder;
-use tar::Archive;
 // use std::path::Path;
 
 // const RUST_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-zome-template";
 // const RUST_PROC_TEMPLATE_REPO_URL: &str = "https://github.com/holochain/rust-proc-zome-template";
-const RUST_TEMPLATE_TARBALL_URL: &str = "https://github.com/holochain/rust-zome-template/archive/master.tar.gz";
-const RUST_PROC_TEMPLATE_TARBALL_URL: &str = "https://github.com/holochain/rust-proc-zome-template/archive/master.tar.gz";
+const RUST_TEMPLATE_TARBALL_URL: &str =
+    "https://github.com/holochain/rust-zome-template/archive/master.tar.gz";
+const RUST_PROC_TEMPLATE_TARBALL_URL: &str =
+    "https://github.com/holochain/rust-proc-zome-template/archive/master.tar.gz";
 
 const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
     let zome_name = zome_path
@@ -33,10 +36,10 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
         _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
-    println!("foo!");
+    println!("downloading and extracting tarball from: {}", url);
 
     // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
-    let tmp_dir = Builder::new().prefix("example").tempdir()?;
+    let tmp_dir = Builder::new().prefix("hc-generate").tempdir()?;
     let mut response = reqwest::get(url)?;
 
     let fname = response
@@ -46,38 +49,29 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
         .and_then(|name| if name.is_empty() { None } else { Some(name) })
         .unwrap_or("tmp.bin");
 
-    println!("file to download: '{}'", fname);
     let fname = tmp_dir.path().join(fname);
-    println!("will be located under: '{:?}'", fname);
     let mut dest = File::create(&fname)?;
     copy(&mut response, &mut dest)?;
 
-    println!("foo! {:?}", dest);
-
     // https://rust-lang-nursery.github.io/rust-cookbook/compression/tar.html
-
     let tar_gz = File::open(fname)?;
     let tar = GzDecoder::new(tar_gz);
     let mut archive = Archive::new(tar);
-    archive.entries()?
-    .filter_map(|e| e.ok())
-    .map(|mut entry| -> DefaultResult<PathBuf> {
-        let path = entry.path()?.strip_prefix(entry.path()?.components().nth(0).unwrap())?.to_owned();
-        entry.unpack(&path)?;
-        Ok(path)
-    })
-    .filter_map(|e| e.ok())
-    .for_each(|x| println!("> {}", x.display()));
-    // for e in archive.entries()? {
-    //     let mut entry = e?;
-    //     let path_cow = entry.path()?.to_owned();
-    //     let path_str = path_cow.to_str().unwrap();
-    //     let path = Path::new(path_str.clone());
-    //     let stripped_path = path.strip_prefix(path.components().nth(0).unwrap())?;
-    //     println!("{:?}", stripped_path);
-    //     entry.unpack(&stripped_path)?;
-    // }
-    // archive.unpack(zome_path)?;
+    archive
+        .entries()?
+        .filter_map(|e| e.ok())
+        .map(|mut entry| -> DefaultResult<PathBuf> {
+            let path = zome_path.join(
+                entry
+                    .path()?
+                    .strip_prefix(entry.path()?.components().nth(0).unwrap())?
+                    .to_owned(),
+            );
+            entry.unpack(&path)?;
+            Ok(path)
+        })
+        .filter_map(|e| e.ok())
+        .for_each(|x| println!("> {}", x.display()));
 
     let mut context = Context::new();
     context.insert("name", &zome_name);

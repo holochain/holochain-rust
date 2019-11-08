@@ -65,10 +65,6 @@ const orchestrator = new Orchestrator({
           },
           {
             exclude: true,
-            pattern: '.*::sync.*'
-          },
-          {
-            exclude: true,
             pattern: '.*rpc.*'
           }
         ]

@@ -24,7 +24,7 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
-use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
+use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockRigged, RwLockReadGuard};
 use holochain_metrics::MetricPublisher;
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_persistence_api::{
@@ -75,7 +75,7 @@ pub struct Context {
     pub(crate) instance_name: String,
     pub agent_id: AgentId,
     pub persister: Arc<RwLock<dyn Persister>>,
-    state: Option<Arc<RwLock<StateWrapper>>>,
+    state: Option<Arc<RwLockRigged<StateWrapper>>>,
     pub action_channel: Option<Sender<ActionWrapper>>,
     pub observer_channel: Option<Sender<Observer>>,
     pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -190,12 +190,14 @@ impl Context {
         self.instance_name.clone()
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
+    pub fn set_state(&mut self, state: Arc<RwLockRigged<StateWrapper>>) {
         self.state = Some(state);
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state.as_ref().map(|s| s.read().unwrap())
+        self.state
+            .as_ref()
+            .map(|s| s.read().unwrap().annotate("Context::state"))
     }
 
     /// Try to acquire read-lock on the state.
@@ -203,7 +205,10 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
+        self.state
+            .as_ref()
+            .and_then(|s| s.try_read())
+            .map(|lock| lock.annotate("Context::try_state"))
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
@@ -477,7 +482,7 @@ pub mod tests {
             )),
         );
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLockRigged::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
 
         {

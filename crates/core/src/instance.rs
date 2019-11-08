@@ -21,7 +21,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     ugly::lax_send_sync,
 };
-use holochain_locksmith::{RwLock, RwLockReadGuard};
+use holochain_locksmith::{RwLock, RwLockRigged, RwLockReadGuard};
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -41,7 +41,7 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 #[derive(Clone)]
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
-    state: Arc<RwLock<StateWrapper>>,
+    state: Arc<RwLockRigged<StateWrapper>>,
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
@@ -288,7 +288,9 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
+            state: Arc::new(RwLockRigged::new(StateWrapper::new(
+                context.clone(),
+            ))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -300,7 +302,7 @@ impl Instance {
 
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::from(state))),
+            state: Arc::new(RwLockRigged::new(StateWrapper::from(state))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -314,6 +316,7 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+            .annotate("Instance::state")
     }
 
     pub fn save(&self) -> HcResult<()> {
@@ -527,7 +530,7 @@ pub mod tests {
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
         );
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLockRigged::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }
@@ -564,7 +567,7 @@ pub mod tests {
             context.agent_id.address(),
         );
         let state = StateWrapper::new_with_agent(Arc::new(context.clone()), agent_state);
-        let global_state = Arc::new(RwLock::new(state));
+        let global_state = Arc::new(RwLockRigged::new(state));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

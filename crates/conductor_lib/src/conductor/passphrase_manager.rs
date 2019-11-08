@@ -180,28 +180,28 @@ impl PassphraseService for PassphraseServiceUnixSocket {
 
         // Request and read passphrase from socket
         let mut passphrase_string = {
-            self.stream.lock().expect(
+            let mut stream_option = self.stream.lock().expect(
                 "Could not lock mutex holding unix domain socket connection for passphrase service",
-            )
-            .as_mut().as_mut()
-            .ok_or_else(|| HolochainError::ErrorGeneric("This option can't possibly be None".into()))
-            .and_then(|result| result.as_mut().map(|stream| {
-                    log_debug!("Sending passphrase request via unix socket...");
-                    stream
-                        .get_mut()
-                        .write_all(b"request_passphrase")
-                        .expect("Could not write to passphrase socket");
-                    log_debug!("Passphrase request sent.");
-                    let mut passphrase_string = String::new();
-                    log_debug!("Reading passphrase from socket...");
-                    stream
-                        .read_line(&mut passphrase_string)
-                        .expect("Could not read from passphrase socket");
-                    log_debug!("Got passphrase. All fine.");
-                    passphrase_string
-                })
-                .map_err(|_e| HolochainError::ErrorGeneric("Error accepting unix socket connection for passphrase service".into()))
-            )?
+            );
+            let listen_result = stream_option.as_mut()
+                .expect("This option must be some at this point since we would be in above while loop otherwise.");
+            let stream = listen_result
+                .as_mut()
+                .expect("Error accepting unix socket connection for passphrase service");
+
+            log_debug!("Sending passphrase request via unix socket...");
+            stream
+                .get_mut()
+                .write_all(b"request_passphrase")
+                .expect("Could not write to passphrase socket");
+            log_debug!("Passphrase request sent.");
+            let mut passphrase_string = String::new();
+            log_debug!("Reading passphrase from socket...");
+            stream
+                .read_line(&mut passphrase_string)
+                .expect("Could not read from passphrase socket");
+            log_debug!("Got passphrase. All fine.");
+            passphrase_string
         };
 
         // Move passphrase in secure memory

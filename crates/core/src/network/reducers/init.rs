@@ -99,7 +99,7 @@ pub mod test {
         state::{test_store, StateWrapper},
     };
     use holochain_core_types::{agent::AgentId, dna::Dna};
-    use holochain_locksmith::RwLock;
+    use holochain_locksmith::{RwLock, RwLockRigged};
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -129,7 +129,7 @@ pub mod test {
             )),
         );
 
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
+        let global_state = Arc::new(RwLockRigged::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
     }

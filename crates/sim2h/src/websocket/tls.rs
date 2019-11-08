@@ -103,7 +103,12 @@ impl TlsConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::websocket::{
+        mem_stream::*,
+        streams::{StreamEvent, StreamManager},
+    };
     use std::io::{Read, Write};
+    use url2::prelude::*;
 
     #[derive(Debug)]
     struct MockStream {
@@ -379,5 +384,109 @@ mod tests {
     #[test]
     fn it_can_use_self_signed_ephemeral_tls() {
         test_enc_dec(TlsConfig::build_from_entropy());
+    }
+
+    use std::collections::HashMap;
+
+    struct StreamTester {
+        tls_config: TlsConfig,
+        managers: HashMap<Url2, StreamManager<MemStream>>,
+    }
+
+    impl StreamTester {
+        fn new(tls_config: TlsConfig) -> Self {
+            Self {
+                tls_config,
+                managers: HashMap::new(),
+            }
+        }
+
+        fn process(&mut self) -> Vec<StreamEvent> {
+            let mut out = Vec::new();
+
+            for _ in 0..10 {
+                for (_url, manager) in self.managers.iter_mut() {
+                    let (_, mut evs) = manager.process().unwrap();
+                    out.append(&mut evs);
+                }
+            }
+
+            out
+        }
+
+        fn bind(&mut self, url: Url2) -> Url2 {
+            let mut new_manager = StreamManager::with_mem_stream(self.tls_config.clone());
+            let url: Url2 = new_manager.bind(&url.into()).unwrap().into();
+            self.managers.insert(url.clone(), new_manager);
+            url
+        }
+
+        fn connect(&mut self, from_url: &Url2, to_url: &Url2) -> Url2 {
+            self.managers
+                .get_mut(from_url)
+                .unwrap()
+                .connect(&to_url)
+                .unwrap();
+            let mut got_in = None;
+            let mut got_out = false;
+            for ev in self.process() {
+                match ev {
+                    StreamEvent::IncomingConnectionEstablished(url) => {
+                        got_in = Some(url);
+                    }
+                    StreamEvent::ConnectResult(_url, _id) => {
+                        got_out = true;
+                    }
+                    e @ _ => panic!("unexpected {:?}", e),
+                }
+            }
+            if got_in.is_none() || !got_out {
+                panic!("could not connect");
+            }
+            got_in.unwrap().into()
+        }
+
+        fn send(&mut self, from_url: &Url2, to_url: &Url2, data: &[u8]) {
+            self.managers
+                .get_mut(from_url)
+                .unwrap()
+                .send(to_url, data)
+                .unwrap();
+            let mut got = false;
+            for ev in self.process() {
+                match ev {
+                    StreamEvent::ReceivedData(_url, rdata) => {
+                        assert_eq!(
+                            String::from_utf8_lossy(data),
+                            String::from_utf8_lossy(&rdata),
+                        );
+                        got = true
+                    }
+                    e @ _ => panic!("unexpected {:?}", e),
+                }
+            }
+            if !got {
+                panic!("could not send");
+            }
+        }
+
+        #[allow(dead_code)]
+        fn close(&mut self, from_url: &Url2, to_url: &Url2) {
+            self.managers
+                .get_mut(from_url)
+                .unwrap()
+                .close(to_url)
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn it_should_work_with_mem_stream() {
+        let mut t = StreamTester::new(TlsConfig::FakeServer);
+        let url1 = t.bind(Url2::parse("mem://test1"));
+        let url2 = t.bind(Url2::parse("mem://test2"));
+        let url_a = t.connect(&url1, &url2);
+        t.send(&url1, &url2, b"hello");
+        t.send(&url2, &url_a, b"hello2");
     }
 }

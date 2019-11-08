@@ -44,8 +44,9 @@ impl ConductorTestAdmin for Conductor {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::conductor::admin::tests::create_test_conductor;
     use super::*;
-    use conductor::admin::tests::*;
+    
 
     #[test]
     fn test_add_test_agent() {

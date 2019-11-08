@@ -1428,10 +1428,10 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use conductor::{passphrase_manager::PassphraseManager, test_admin::ConductorTestAdmin};
-    use key_loaders::mock_passphrase_manager;
-    use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
-    extern crate tempfile;
+    use crate::conductor::{passphrase_manager::PassphraseManager, test_admin::ConductorTestAdmin};
+    use crate::key_loaders::mock_passphrase_manager;
+    use crate::keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
+    use tempfile;
     use crate::config::load_configuration;
     use holochain_core::{
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,

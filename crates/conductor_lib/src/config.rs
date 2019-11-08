@@ -937,7 +937,7 @@ pub struct SignalConfig {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use conductor::tests::test_dna_loader;
+    use crate::conductor::tests::test_dna_loader;
     use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {

@@ -538,7 +538,7 @@ pub fn test_hash_config() -> Option<PwHashConfig> {
 pub mod tests {
     use super::*;
     use base64;
-    use conductor::passphrase_manager::PassphraseServiceMock;
+    use crate::conductor::passphrase_manager::PassphraseServiceMock;
     use holochain_dpki::utils;
     use holochain_persistence_api::cas::content::Address;
 

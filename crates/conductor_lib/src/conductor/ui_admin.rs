@@ -171,7 +171,7 @@ impl ConductorUiAdmin for Conductor {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use conductor::{admin::tests::*, base::UiDirCopier};
+    use crate::conductor::{admin::tests::*, base::UiDirCopier};
     use std::{fs::File, io::Read, net::Ipv4Addr};
 
     pub fn test_ui_copier() -> UiDirCopier {

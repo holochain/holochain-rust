@@ -291,9 +291,9 @@ impl Holochain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    extern crate tempfile;
+    use tempfile;
     use self::tempfile::tempdir;
-    use context_builder::ContextBuilder;
+    use crate::context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,

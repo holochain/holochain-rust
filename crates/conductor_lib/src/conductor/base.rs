@@ -46,7 +46,7 @@ use conductor::passphrase_manager::PassphraseServiceUnixSocket;
 use conductor::passphrase_manager::{
     PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
 };
-use config::{AgentConfiguration, DnaLocation, PassphraseServiceConfig};
+use config::{AgentConfiguration, PassphraseServiceConfig};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -149,7 +149,7 @@ pub type KeyLoader = Arc<
             + Sync,
     >,
 >;
-pub type DnaLoader = Arc<Box<dyn FnMut(&DnaLocation) -> Result<Dna, HolochainError> + Send + Sync>>;
+pub type DnaLoader = Arc<Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
@@ -823,6 +823,10 @@ impl Conductor {
                     context_builder = context_builder.with_state_dump_logging();
                 }
 
+                if let Some(metric_publisher_config) = &self.config.metric_publisher {
+                    context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
+                };
+
                 // Spawn context
                 let context = context_builder.with_instance_name(&instance_name).spawn();
 
@@ -833,11 +837,11 @@ impl Conductor {
 
                 // })
                 let dna_config = self.config.dna_by_id(&instance_config.dna).unwrap();
-                let dna_location = dna_config.get_location().clone();
-                let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_location).map_err(|_| {
+                let dna_file = PathBuf::from(&dna_config.file);
+                let mut dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
                     HolochainError::ConfigError(format!(
-                        "Could not load DNA from \"{}\"",
-                        dna_location
+                        "Could not load DNA file \"{}\"",
+                        dna_config.file
                     ))
                 })?;
 
@@ -857,7 +861,7 @@ impl Conductor {
                         let dna_hash_computed = &dna.address();
 
                         match Arc::get_mut(&mut self.dna_loader)
-                            .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_location) {
+                            .expect("Fail to get a mutable reference to 'dna loader'.")(&dna_file) {
                             // If the file is correctly loaded, meaning it exists in the file system,
                             // we can operate on its computed DNA hash
                             Ok(dna) => {
@@ -866,10 +870,10 @@ impl Conductor {
                                     &context,
                                     &dna_hash_from_conductor_config,
                                     &dna_hash_computed,
-                                    &dna_hash_computed_from_file, &dna_location)?;
+                                    &dna_hash_computed_from_file, &dna_file)?;
                             },
                             Err(_) => {
-                                let msg = format!("Conductor: Could not load DNA from {:?}.", &dna_location);
+                                let msg = format!("Conductor: Could not load DNA file {:?}.", &dna_file);
                                 log_error!(context, "{}", msg);
 
                                 // If something is wrong with the DNA file, we only
@@ -1048,7 +1052,7 @@ impl Conductor {
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
         dna_hash_computed_from_file: &HashString,
-        dna_location: &DnaLocation,
+        dna_file: &PathBuf,
     ) -> Result<(), HolochainError> {
         match Conductor::check_dna_consistency(&dna_hash_from_conductor_config, &dna_hash_computed)
         {
@@ -1075,7 +1079,7 @@ impl Conductor {
                 let msg = format!("\
                                 err/Conductor: DNA hashes mismatch: 'Conductor config' != 'Hash computed from the file {:?}': \
                                 '{}' != '{}'",
-                                &dna_location,
+                                &dna_file,
                                 &dna_hash_from_conductor_config,
                                 &dna_hash_computed_from_file);
 
@@ -1091,7 +1095,7 @@ impl Conductor {
                 let msg = format!("\
                                 err/Conductor: DNA hashes mismatch: 'Conductor instance' != 'Hash computed from the file {:?}': \
                                 '{}' != '{}'",
-                                &dna_location,
+                                &dna_file,
                                 &dna_hash_computed,
                                 &dna_hash_computed_from_file);
                 log_debug!(ctx, "{}", msg);
@@ -1202,10 +1206,12 @@ impl Conductor {
         Ok(())
     }
 
-    /// Default DnaLoader that properly obtains DNA files from their specified location
-    pub fn load_dna(location: &DnaLocation) -> HcResult<Dna> {
-        notify(format!("Reading DNA from {}", location));
-        let contents = location.get_content()?;
+    /// Default DnaLoader that actually reads files from the filesystem
+    pub fn load_dna(file: &PathBuf) -> HcResult<Dna> {
+        notify(format!("Reading DNA from {}", file.display()));
+        let mut f = File::open(file)?;
+        let mut contents = String::new();
+        f.read_to_string(&mut contents)?;
         let dna: Dna = Dna::try_from(JsonString::from_json(&contents))?;
         dna.verify()?;
         Ok(dna)
@@ -1460,20 +1466,18 @@ pub mod tests {
     //    extern crate parking_lot;
 
     pub fn test_dna_loader() -> DnaLoader {
-        Arc::new(Box::new(|location: &DnaLocation| {
-            if let DnaLocation::File(file) = location {
-                Ok(match file.to_str().unwrap().as_ref() {
-                    "bridge/callee.dna" => callee_dna(),
-                    "bridge/caller.dna" => caller_dna(),
-                    "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
-                    "bridge/caller_bogus_trait_ref.dna" => caller_dna_with_bogus_trait_reference(),
-                    "bridge/caller_without_required.dna" => caller_dna_without_required(),
-                    _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
-                })
-            } else {
-                unimplemented!()
-            }
-        }))
+        let loader = Box::new(|path: &PathBuf| {
+            Ok(match path.to_str().unwrap().as_ref() {
+                "bridge/callee.dna" => callee_dna(),
+                "bridge/caller.dna" => caller_dna(),
+                "bridge/caller_dna_ref.dna" => caller_dna_with_dna_reference(),
+                "bridge/caller_bogus_trait_ref.dna" => caller_dna_with_bogus_trait_reference(),
+                "bridge/caller_without_required.dna" => caller_dna_without_required(),
+                _ => Dna::try_from(JsonString::from_json(&example_dna_string())).unwrap(),
+            })
+        })
+            as Box<dyn FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+        Arc::new(loader)
     }
 
     pub fn test_key_loader() -> KeyLoader {
@@ -1716,7 +1720,7 @@ pub mod tests {
         let file_path = tempdir.path().join("test.dna.json");
         let mut tmp_file = File::create(file_path.clone()).unwrap();
         writeln!(tmp_file, "{}", example_dna_string()).unwrap();
-        match Conductor::load_dna(&file_path.into()) {
+        match Conductor::load_dna(&file_path) {
             Ok(dna) => {
                 assert_eq!(dna.name, "my dna");
             }

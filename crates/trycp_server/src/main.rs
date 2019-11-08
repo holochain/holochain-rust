@@ -12,6 +12,7 @@ use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
 };
+use reqwest::{self, Url};
 use serde_json::map::Map;
 use std::{
     collections::HashMap,
@@ -54,6 +55,7 @@ const MAGIC_STRING: &str = "Done. All interfaces started.";
 const CONDUCTOR_CONFIG_FILENAME: &str = "conductor-config.toml";
 const CONDUCTOR_STDOUT_LOG_FILENAME: &str = "stdout.txt";
 const CONDUCTOR_STDERR_LOG_FILENAME: &str = "stderr.txt";
+const DNA_DIRNAME: &str = "dnas";
 
 #[derive(StructOpt)]
 struct Cli {
@@ -98,6 +100,7 @@ fn parse_port_range(s: String) -> Result<PortRange, String> {
 struct TrycpServer {
     // dir: tempfile::TempDir,
     dir: PathBuf,
+    dna_dir: PathBuf,
     next_port: u16,
     port_range: PortRange,
 }
@@ -106,6 +109,7 @@ impl TrycpServer {
     pub fn new(port_range: PortRange) -> Self {
         TrycpServer {
             dir: tempdir().expect("should create tmp dir").into_path(),
+            dna_dir: tempdir().expect("should create tmp dir").into_path(),
             next_port: port_range.0,
             port_range,
         }
@@ -177,6 +181,14 @@ fn get_config_path(state: &TrycpServer, id: &String) -> PathBuf {
     get_dir(state, id).join(CONDUCTOR_CONFIG_FILENAME)
 }
 
+fn get_dna_dir(state: &TrycpServer) -> PathBuf {
+    state.dna_dir.join(DNA_DIRNAME)
+}
+
+fn get_dna_path(state: &TrycpServer, url: &Url) -> PathBuf {
+    get_dna_dir(state).join(url.path().to_string().replace("/", "").replace("%", "_"))
+}
+
 fn get_stdout_log_path(state: &TrycpServer, id: &String) -> PathBuf {
     get_dir(state, id).join(CONDUCTOR_STDOUT_LOG_FILENAME)
 }
@@ -193,6 +205,34 @@ fn internal_error(message: String) -> jsonrpc_core::types::error::Error {
     }
 }
 
+fn invalid_request(message: String) -> jsonrpc_core::types::error::Error {
+    jsonrpc_core::types::error::Error {
+        code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
+        message,
+        data: None,
+    }
+}
+
+fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::types::error::Error> {
+    File::create(file_path.clone())
+        .map_err(|e| {
+            internal_error(format!(
+                "unable to create file: {:?} {}",
+                e,
+                file_path.to_string_lossy()
+            ))
+        })?
+        .write_all(&content[..])
+        .map_err(|e| {
+            internal_error(format!(
+                "unable to write file: {:?} {}",
+                e,
+                file_path.to_string_lossy()
+            ))
+        })?;
+    Ok(())
+}
+
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
@@ -206,6 +246,7 @@ fn main() {
     let state_player = state.clone();
     let state_spawn = state.clone();
     let state_kill = state.clone();
+    let state_dna = state.clone();
 
     let players_arc: Arc<RwLock<HashMap<String, Child>>> = Arc::new(RwLock::new(HashMap::new()));
     let players_arc_kill = players_arc.clone();
@@ -213,6 +254,38 @@ fn main() {
     let players_arc_spawn = players_arc.clone();
 
     io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
+
+    io.add_method("dna", move |params: Params| {
+        let params_map = unwrap_params_map(params)?;
+        let url_str = get_as_string("url", &params_map)?;
+        let url = Url::parse(&url_str).map_err(|e| {
+            invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
+        })?;
+        let state = state_dna.write().unwrap();
+        let file_path = get_dna_path(&state, &url);
+        if !file_path.exists() {
+            println!("Downloading dna from {} ...", &url_str);
+            let content: String = reqwest::get::<Url>(url.clone())
+                .map_err(|e| {
+                    internal_error(format!("error downloading dna: {:?} {:?}", e, url_str))
+                })?
+                .text()
+                .map_err(|e| internal_error(format!("could not get text response: {}", e)))?;
+            println!("Finished downloading dna from {}", url_str);
+            let dir_path = get_dna_dir(&state);
+            std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
+                internal_error(format!(
+                    "error making temporary directory for dna: {:?} {:?}",
+                    e, dir_path
+                ))
+            })?;
+            save_file(file_path.clone(), &content.as_bytes())?;
+        }
+        let local_path = file_path.to_string_lossy();
+        let response = format!("dna for {} at {}", &url_str, local_path,);
+        println!("dna {}: {:?}", &url_str, response);
+        Ok(json!({ "path": local_path }))
+    });
 
     io.add_method("reset", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
@@ -257,44 +330,18 @@ fn main() {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
         let config_base64 = get_as_string("config", &params_map)?;
-        let content =
-            base64::decode(&config_base64).map_err(|e| jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-                message: format!("error decoding config: {:?}", e),
-                data: None,
-            })?;
+        let content = base64::decode(&config_base64)
+            .map_err(|e| invalid_request(format!("error decoding config: {:?}", e)))?;
         let state = state_player.read().unwrap();
         let dir_path = get_dir(&state, &id);
         std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
-            jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-                message: format!(
-                    "error making temporary directory for config: {:?} {:?}",
-                    e, dir_path
-                ),
-                data: None,
-            }
+            invalid_request(format!(
+                "error making temporary directory for config: {:?} {:?}",
+                e, dir_path
+            ))
         })?;
         let file_path = get_config_path(&state, &id);
-        File::create(file_path.clone())
-            .map_err(|e| {
-                internal_error(format!(
-                    "unable to create config file: {:?} {}",
-                    e,
-                    file_path.to_string_lossy()
-                ))
-            })?
-            .write_all(&content[..])
-            .map_err(|e| jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!(
-                    "unable to write config file: {:?} {}",
-                    e,
-                    file_path.to_string_lossy()
-                ),
-                data: None,
-            })?;
-
+        save_file(file_path.clone(), &content)?;
         let response = format!(
             "wrote config for player {} to {}",
             id,
@@ -312,11 +359,7 @@ fn main() {
         check_player_config(&state, &id)?;
         let mut players = players_arc_spawn.write().expect("should_lock");
         if players.contains_key(&id) {
-            return Err(jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-                message: format!("{} is already running", id),
-                data: None,
-            });
+            return Err(invalid_request(format!("{} is already running", id)));
         };
 
         let config_path = format!("{}", get_config_path(&state, &id).to_str().unwrap());
@@ -328,11 +371,7 @@ fn main() {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| jsonrpc_core::types::error::Error {
-                code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                message: format!("unable to spawn conductor: {:?}", e),
-                data: None,
-            })?;
+            .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?;
 
         let mut log_stdout = Command::new("tee")
             .arg(stdout_log_path)
@@ -346,7 +385,7 @@ fn main() {
             .stdin(conductor.stderr.take().unwrap())
             .spawn()
             .unwrap();
-        
+
         match log_stdout.stdout.take() {
             Some(stdout) => {
                 for line in BufReader::new(stdout).lines() {
@@ -363,11 +402,9 @@ fn main() {
             }
             None => {
                 conductor.kill().unwrap();
-                return Err(jsonrpc_core::types::error::Error {
-                    code: jsonrpc_core::types::error::ErrorCode::InternalError,
-                    message: format!("Conductor process not capturing stdout, bailing!"),
-                    data: None,
-                });
+                return Err(internal_error(format!(
+                    "Conductor process not capturing stdout, bailing!"
+                )));
             }
         }
     });
@@ -381,11 +418,7 @@ fn main() {
         let mut players = players_arc_kill.write().unwrap();
         match players.remove(&id) {
             None => {
-                return Err(jsonrpc_core::types::error::Error {
-                    code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-                    message: format!("no conductor spawned for {}", id),
-                    data: None,
-                });
+                return Err(invalid_request(format!("no conductor spawned for {}", id)));
             }
             Some(ref mut child) => {
                 do_kill(&id, child, signal.as_str())?;
@@ -415,11 +448,10 @@ fn do_kill(
         _ => Signal::SIGINT,
     };
     signal::kill(Pid::from_raw(child.id() as i32), sig).map_err(|e| {
-        jsonrpc_core::types::error::Error {
-            code: jsonrpc_core::types::error::ErrorCode::InternalError,
-            message: format!("unable to run kill conductor for {} script: {:?}", id, e),
-            data: None,
-        }
+        internal_error(format!(
+            "unable to run kill conductor for {} script: {:?}",
+            id, e
+        ))
     })
 }
 
@@ -429,11 +461,10 @@ fn check_player_config(
 ) -> Result<(), jsonrpc_core::types::error::Error> {
     let file_path = get_config_path(state, id);
     if !file_path.is_file() {
-        return Err(jsonrpc_core::types::error::Error {
-            code: jsonrpc_core::types::error::ErrorCode::InvalidRequest,
-            message: format!("player config for {} not setup", id),
-            data: None,
-        });
+        return Err(invalid_request(format!(
+            "player config for {} not setup",
+            id
+        )));
     }
     Ok(())
 }

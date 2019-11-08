@@ -1206,7 +1206,9 @@ impl Conductor {
     pub fn load_dna(location: &DnaLocation) -> HcResult<Dna> {
         notify(format!("Reading DNA from {}", location));
         let contents = location.get_content()?;
-        Dna::try_from(JsonString::from_json(&contents)).map_err(|err| err.into())
+        let dna: Dna = Dna::try_from(JsonString::from_json(&contents))?;
+        dna.verify()?;
+        Ok(dna)
     }
 
     /// Default KeyLoader that actually reads files from the filesystem

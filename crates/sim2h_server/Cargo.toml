@@ -1,6 +1,6 @@
 [package]
 name = "sim2h_server"
-version = "0.0.37-alpha12"
+version = "0.0.38-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h - server executable"
@@ -12,7 +12,7 @@ documentation = "https://github.com/holochain/sim2h"
 repository = "https://github.com/holochain/sim2h"
 
 [dependencies]
-sim2h = { version = "=0.0.37-alpha12", path = "../sim2h" }
+sim2h = { version = "=0.0.38-alpha2", path = "../sim2h" }
 detach = "=0.0.19"
 lib3h = "=0.0.21"
 lib3h_protocol = "=0.0.21"

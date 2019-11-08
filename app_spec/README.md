@@ -7,6 +7,14 @@ This directory contains a Holochain app that functions as a living specification
 
 Please see the [Contribute section](https://github.com/holochain/holochain-rust/blob/develop/README.md#app-spec-driven-development) for our protocol on how we do this, and also see the [core dev setup guide](https://github.com/holochain/holochain-rust/blob/develop/doc/CoreDevSetup.md), which details how to set up a development environment (`nix-shell` is recommended), run tests (e.g. all tests with `hc test`), etc.
 
+### Run the tests
+
+Make sure that you fully completed the installation of dependencies. Then, within this directory run the following:
+
+`./build_and_test.sh`
+
+You should see the tests all passing successfully.
+
 ### Detailed Description of testing process
 
 In order to get from the source directory tree to a Holochain DNA package, and then test that, several steps need to be taken which are all automated.

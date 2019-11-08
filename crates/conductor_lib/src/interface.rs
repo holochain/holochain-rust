@@ -1,6 +1,6 @@
 use crate::holo_signing_service::request_service;
 use base64;
-use conductor::broadcaster::Broadcaster;
+use crate::conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
@@ -12,18 +12,18 @@ use holochain_json_api::json::JsonString;
 use holochain_locksmith::{Mutex, RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
-use Holochain;
+use crate::Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
 
-use conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
-use config::{
+use crate::conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
+use crate::config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use holochain_dpki::utils::SeedContext;
-use keystore::{KeyType, Keystore, Secret};
+use crate::keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;

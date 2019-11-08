@@ -4,7 +4,7 @@ use crate::{
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
 };
-use error::HolochainInstanceError;
+use crate::error::HolochainInstanceError;
 use holochain_core_types::error::HolochainError;
 use std::{path::PathBuf, sync::Arc};
 

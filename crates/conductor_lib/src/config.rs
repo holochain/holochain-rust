@@ -11,7 +11,7 @@ use crate::logger::LogRules;
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
-use conductor::base::DnaLoader;
+use crate::conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::{

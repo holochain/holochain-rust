@@ -1,9 +1,9 @@
-use conductor::base::notify;
-use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
+use crate::conductor::base::notify;
+use crate::config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use crossbeam_channel::{self, Sender};
-use error::HolochainResult;
+use crate::error::HolochainResult;
 use holochain_core_types::error::HolochainError;
-use static_file_server::{dna_connections_response, ConductorStaticFileServer, DNA_CONFIG_ROUTE};
+use crate::static_file_server::{dna_connections_response, ConductorStaticFileServer, DNA_CONFIG_ROUTE};
 use std::{net::SocketAddr, thread};
 
 use nickel::{

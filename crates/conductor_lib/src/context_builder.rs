@@ -202,8 +202,8 @@ mod tests {
     use self::tempfile::tempdir;
     use holochain_net::p2p_config::P2pBackendKind;
     use test_utils::mock_signing::mock_conductor_api;
-    use holochain_core::agent::actions::commit::commit_entry;
-    use holochain_core_types::entry::Entry;
+    // use holochain_core::agent::actions::commit::commit_entry;
+    // use holochain_core_types::entry::Entry;
 
     #[test]
     fn vanilla() {
@@ -253,18 +253,18 @@ mod tests {
             .spawn();
     }
 
-    // try to replicate the issues found when hitting the inital MMAP limit
-    #[test]
-    fn lmdb_context_stress_test() {
-        let temp = tempdir().expect("test was supposed to create temp dir");
-        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
-        let context = ContextBuilder::new()
-            .with_lmdb_storage(temp_path, Some(1024*1024)).unwrap()
-            .spawn();
+    // // try to replicate the issues found when hitting the inital MMAP limit
+    // #[test]
+    // fn lmdb_context_stress_test() {
+    //     let temp = tempdir().expect("test was supposed to create temp dir");
+    //     let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+    //     let context = ContextBuilder::new()
+    //         .with_lmdb_storage(temp_path, Some(1024*1024)).unwrap()
+    //         .spawn();
 
-        let entry = Entry::App("e".into(), "data".into());
+    //     let entry = Entry::App("e".into(), "data".into());
 
-        // use the context to write to the CAS
-        commit_entry(entry, None, &Arc::new(context)).await;
-    }
+    //     // use the context to write to the CAS
+    //     commit_entry(entry, None, &Arc::new(context)).await;
+    // }
 }

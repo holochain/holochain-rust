@@ -1,6 +1,6 @@
-use conductor::broadcaster::Broadcaster;
+use crate::conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
-use interface::Interface;
+use crate::interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use std::thread;

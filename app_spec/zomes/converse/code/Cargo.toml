@@ -1,6 +1,6 @@
 [package]
 name = "converse"
-version = "0.0.37-alpha12"
+version = "0.0.38-alpha1"
 authors = ["Julian Laubstein <contact@julianlaubstein.de>"]
 edition = "2018"
 

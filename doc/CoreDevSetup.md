@@ -65,14 +65,7 @@ cd /vagrant
 nix-shell
 ```
 
-Once in a `nix-shell` the `hc-*` prefixed bash commands support tab completion.
-
-Note: The `hc-test` command builds and tests _everything_ in core.
-
-Note: The `hc-install-*` commands may write to the current user's home directory.
-Other commands that call `cargo` and `npm` may also write to the home directory.
-This is how `cargo` and `npm` work unfortunately.
-`hc-**-flush` commands delete relevant development artifacts.
+Once in a `nix-shell` you can run `hc -h` to see available subcommands.
 
 #### Troubleshooting
 

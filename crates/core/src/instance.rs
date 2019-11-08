@@ -921,9 +921,10 @@ pub mod tests {
     }
     
     #[test]
-    fn lmdb_stress_test() {
+    fn lmdb_large_entry_test() {
         let megabytes = 1024*1024;
-        let (context, _) = test_context_lmdb("alice", Some("lmdb_stress_test"), Some(1*megabytes));
+        let initial_mmap_size = 1*megabytes;
+        let (context, _) = test_context_lmdb("alice", Some("lmdb_stress_test"), Some(initial_mmap_size));
 
         // Set up instance
         let instance = Instance::new(context.clone());
@@ -935,28 +936,21 @@ pub mod tests {
             Entry::App("test-entry".into(), JsonString::from_json(&data))
         }
         
-        // commit a bunch of data
-        // assuming 1 byte chars (not actually the case) this will
-        // add at least 1MB of data for each entry and do this 10 times
-        for i in 0..10 {
-            let entry = test_entry(i, 1024*1024);
-            let commit_agent_action =
-                ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
+        // write an entry larger than the initial mmap
+        let entry = test_entry(0, 3*initial_mmap_size);
+        let commit_agent_action =
+            ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
 
-            let state_observers: Vec<Observer> = Vec::new();
-            instance.process_action(
-                &commit_agent_action,
-                state_observers,
-                &rx_observer,
-                &context,
-            );
+        let state_observers: Vec<Observer> = Vec::new();
+        instance.process_action(
+            &commit_agent_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
-            // ensure it was added
-            let dht = context.dht_storage.read().unwrap();
-            assert!(dht.contains(&entry.address()).unwrap());
-
-        }
-
-
+        // ensure it was added
+        let dht = context.dht_storage.read().unwrap();
+        assert!(dht.contains(&entry.address()).unwrap());
     }
 }

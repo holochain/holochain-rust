@@ -129,37 +129,6 @@ If your changes do not break the current environment, you can submit a separate 
 
 Otherwise, you will need to speak to an admin who can force merge your full changes after testing locally.
 
-The continuous integration (CI) suite executes the same `. docker/run-test` command that developers are encouraged to run.
-
-What happens if I need to change that environment? E.g. what if I need a new system library dependency installed?
-
-- Step 1 - Add the dependency to `docker/Dockerfile.ubuntu`
-
-```dockerfile
-RUN apt-get update && apt-get install --yes\
-  # ... snip ...
-  my-new-lib-here
-```
-
-- Step 2 - Build it
-
-```shell
-. docker/build-ubuntu
-```
-
-- Step 3 - Test it out
-
-```shell
-. docker/run-test
-```
-
-- Step 4 - Wait a minute! The CI environment is still using the old Dockerfile!
-
-If your changes do not break the current environment, you can submit a separate Pull Request first, and once it is merged, the CI environment should be up-to-date for your code change Pull Request.
-
-Otherwise, you will need to speak to an admin who can force merge your full changes after testing locally.
-
-
 ## Git Hygiene
 This section describes our practices and guidelines for using git and making changes to the repo.
 

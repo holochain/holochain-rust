@@ -69,7 +69,7 @@ macro_rules! mutex_impl {
 
             fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$HcGuard<T>> {
                 // Set a number twice the expected number of iterations, just to prevent an infinite loop
-                let max_iters = 2 * 120 * 1000;
+                let max_iters = 2 * 120 * 1000 / 10;
                 for _i in 0..max_iters {
                     match self.$try_lock_fn() {
                         Some(v) => {
@@ -87,7 +87,7 @@ macro_rules! mutex_impl {
                             }
                         }
                     }
-                    std::thread::sleep(Duration::from_millis(100));
+                    std::thread::sleep(Duration::from_millis(10));
                 }
                 error!(
                     "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"

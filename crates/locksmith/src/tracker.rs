@@ -1,16 +1,24 @@
 use crate::{
     common::{
-        ACTIVE_GUARD_MIN_ELAPSED, ACTIVE_GUARD_NO_ACTIVITY_INTERVAL, GUARDS,
+        ACTIVE_GUARD_MIN_ELAPSED, ACTIVE_GUARD_NO_ACTIVITY_INTERVAL,
         GUARD_WATCHER_POLL_INTERVAL, IMMORTAL_TIMEOUT,
     },
     error::LockType,
 };
+use parking_lot::Mutex;
 use backtrace::Backtrace;
 use snowflake::ProcessUniqueId;
 use std::{
     thread,
     time::{Duration, Instant},
+    collections::HashMap,
 };
+
+
+lazy_static! {
+    pub(crate) static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
+}
+
 
 pub(crate) struct GuardTracker {
     pub(crate) puid: ProcessUniqueId,

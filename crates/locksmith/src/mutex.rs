@@ -1,10 +1,9 @@
 use crate::{
-    common::LOCK_TIMEOUT,
     error::{LockType, LocksmithError, LocksmithErrorKind, LocksmithResult},
     guard::{HcMutexGuard, HcRwLockReadGuard, HcRwLockWriteGuard},
 };
-use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::time::{Duration, Instant};
+use parking_lot::{Mutex, RwLock};
+use std::time::{Instant, Duration};
 
 #[derive(Debug)]
 pub struct HcMutex<T: ?Sized> {
@@ -61,36 +60,45 @@ impl<T> HcRwLock<T> {
 }
 
 macro_rules! mutex_impl {
-    ($HcMutex: ident, $Mutex: ident, $HcGuard:ident, $Guard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_for_fn:ident, $try_lock_until_fn:ident, $new_guard_fn:ident) => {
+    ($HcMutex: ident, $HcGuard:ident, $lock_type:ident, $lock_fn:ident, $try_lock_fn:ident, $try_lock_until_fn:ident, $new_guard_fn:ident) => {
         impl<T: ?Sized> $HcMutex<T> {
             pub fn $lock_fn(&self) -> LocksmithResult<$HcGuard<T>> {
-                self.$try_lock_for_fn(*LOCK_TIMEOUT).ok_or_else(|| {
-                    LocksmithError::new(LockType::$lock_type, LocksmithErrorKind::LocksmithTimeout)
-                })
+                let deadline = Instant::now() + Duration::from_secs(120);
+                self.$try_lock_until_fn(deadline)
             }
 
-            pub fn $try_lock_for_fn(&self, duration: Duration) -> Option<$HcGuard<T>> {
-                self.inner
-                    .$try_lock_for_fn(duration)
-                    .map(|g| self.$new_guard_fn(g))
-            }
+            fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$HcGuard<T>> {
+                // Set a number twice the expected number of iterations, just to prevent an infinite loop
+                let max_iters = 2 * 120 * 1000;
+                for _i in 0..max_iters {
+                    match self.$try_lock_fn() {
+                        Some(v) => {
+                            return Ok(v);
+                        }
+                        None => {
 
-            pub fn $try_lock_until_fn(&self, instant: Instant) -> Option<$HcGuard<T>> {
-                self.inner
-                    .$try_lock_until_fn(instant)
-                    .map(|g| self.$new_guard_fn(g))
-            }
-
-            pub fn $try_lock_fn(&self) -> Option<$HcGuard<T>> {
-                (*self).inner.$try_lock_fn().map(|g| self.$new_guard_fn(g))
-            }
-
-            fn $new_guard_fn<'a>(&self, inner: $Guard<'a, T>) -> $HcGuard<'a, T> {
-                if self.fair_unlocking {
-                    $HcGuard::new(inner).use_fair_unlocking()
-                } else {
-                    $HcGuard::new(inner)
+                            // TIMEOUT
+                            if let None = deadline.checked_duration_since(Instant::now()) {
+                                // PENDING_LOCKS.lock().remove(&puid);
+                                return Err(LocksmithError::new(
+                                    LockType::$lock_type,
+                                    LocksmithErrorKind::LocksmithTimeout,
+                                ));
+                            }
+                        }
+                    }
+                    std::thread::sleep(Duration::from_millis(100));
                 }
+                error!(
+                    "$try_lock_until_inner_fn exceeded max_iters, this should not have happened!"
+                );
+                return Err(LocksmithError::new(
+                    LockType::$lock_type,
+                    LocksmithErrorKind::LocksmithTimeout,
+                ));
+            }
+            pub fn $try_lock_fn(&self) -> Option<$HcGuard<T>> {
+                (*self).inner.$try_lock_fn().map(|g| $HcGuard::new(g))
             }
         }
     };
@@ -98,37 +106,28 @@ macro_rules! mutex_impl {
 
 mutex_impl!(
     HcMutex,
-    Mutex,
     HcMutexGuard,
-    MutexGuard,
     Lock,
     lock,
     try_lock,
-    try_lock_for,
     try_lock_until,
     new_guard
 );
 mutex_impl!(
     HcRwLock,
-    RwLock,
     HcRwLockReadGuard,
-    RwLockReadGuard,
     Read,
     read,
     try_read,
-    try_read_for,
     try_read_until,
     new_guard_read
 );
 mutex_impl!(
     HcRwLock,
-    RwLock,
     HcRwLockWriteGuard,
-    RwLockWriteGuard,
     Write,
     write,
     try_write,
-    try_write_for,
     try_write_until,
     new_guard_write
 );

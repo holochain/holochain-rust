@@ -197,7 +197,7 @@ impl Context {
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state
             .as_ref()
-            .map(|s| s.read().unwrap().annotate("Context::state"))
+            .map(|s| s.read().unwrap())
     }
 
     /// Try to acquire read-lock on the state.
@@ -208,7 +208,6 @@ impl Context {
         self.state
             .as_ref()
             .and_then(|s| s.try_read())
-            .map(|lock| lock.annotate("Context::try_state"))
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {

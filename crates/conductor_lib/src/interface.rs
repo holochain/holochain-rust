@@ -151,8 +151,7 @@ impl ConductorApiBuilder {
         let hc_lock_inner = hc_lock.clone();
         let hc = hc_lock_inner
             .read()
-            .unwrap()
-            .annotate(format!("RPC method_call: {:?}", params_map));
+            .unwrap();
 
         let cap_request = {
             let context = hc.context()

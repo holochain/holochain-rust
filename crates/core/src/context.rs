@@ -195,9 +195,7 @@ impl Context {
     }
 
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state
-            .as_ref()
-            .map(|s| s.read().unwrap())
+        self.state.as_ref().map(|s| s.read().unwrap())
     }
 
     /// Try to acquire read-lock on the state.
@@ -205,9 +203,7 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state
-            .as_ref()
-            .and_then(|s| s.try_read())
+        self.state.as_ref().and_then(|s| s.try_read())
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {

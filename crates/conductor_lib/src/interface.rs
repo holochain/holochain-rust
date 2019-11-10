@@ -149,9 +149,7 @@ impl ConductorApiBuilder {
             .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
         let hc_lock = instance.clone();
         let hc_lock_inner = hc_lock.clone();
-        let hc = hc_lock_inner
-            .read()
-            .unwrap();
+        let hc = hc_lock_inner.read().unwrap();
 
         let cap_request = {
             let context = hc.context()

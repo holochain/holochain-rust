@@ -65,7 +65,6 @@ fn main() {
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
 
-
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(()) => {

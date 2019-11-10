@@ -8,7 +8,6 @@ pub struct HcMutex<T: ?Sized>(Mutex<T>);
 #[derive(Debug)]
 pub struct HcRwLock<T: ?Sized>(RwLock<T>);
 
-
 impl<T> HcMutex<T> {
     pub fn new(t: T) -> Self {
         HcMutex(Mutex::new(t))
@@ -40,7 +39,6 @@ macro_rules! mutex_impl {
                 ((*self).0).$try_lock_fn()
             }
         }
-
     };
 }
 

@@ -38,7 +38,7 @@
 
  };
 
- # configure the release processq
+ # configure the release process
  release = {
   hook = {
    # sanity checks before deploying

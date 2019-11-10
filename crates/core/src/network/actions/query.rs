@@ -66,13 +66,12 @@ pub async fn query(
 
     let key_inner = key.clone();
     let context_inner = context.clone();
-    context
-        .spawn_thread(move || {
-            thread::sleep(timeout.into());
-            let timeout_action = Action::QueryTimeout(key_inner);
-            let action_wrapper = ActionWrapper::new(timeout_action);
-            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-        });
+    context.spawn_thread(move || {
+        thread::sleep(timeout.into());
+        let timeout_action = Action::QueryTimeout(key_inner);
+        let action_wrapper = ActionWrapper::new(timeout_action);
+        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+    });
 
     QueryFuture {
         context: context.clone(),

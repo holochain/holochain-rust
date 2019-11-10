@@ -33,12 +33,11 @@ pub async fn custom_send(
     dispatch_action(context.action_channel(), action_wrapper);
     let context_inner = context.clone();
     let id_inner = id.clone();
-    context
-        .spawn_thread(move || {
-            thread::sleep(timeout.into());
-            let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
-            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-        });
+    context.spawn_thread(move || {
+        thread::sleep(timeout.into());
+        let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
+        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+    });
 
     SendResponseFuture {
         context: context.clone(),

@@ -24,4 +24,4 @@ impl LocksmithError {
     }
 }
 
-pub type LocksmithResult<T> = Result<T, LocksmithError>;
+// pub type LocksmithResult<T> = Result<T, LocksmithError>;

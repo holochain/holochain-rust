@@ -8,7 +8,7 @@
 // mod common;
 mod error;
 mod guard_std;
-mod mutex_std;
+mod mutex_std_raw;
 // mod tracker;
 
 pub use error::LocksmithError;
@@ -16,5 +16,5 @@ pub use guard_std::{
     HcMutexGuard as MutexGuard, HcRwLockReadGuard as RwLockReadGuard,
     HcRwLockWriteGuard as RwLockWriteGuard,
 };
-pub use mutex_std::{HcMutex as Mutex, HcRwLock as RwLock};
+pub use mutex_std_raw::{HcMutex as Mutex, HcRwLock as RwLock};
 // pub use tracker::spawn_locksmith_guard_watcher;

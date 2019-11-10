@@ -12,23 +12,14 @@ pub fn reduce_return_zome_function_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
+    let zome_fn_response = unwrap_to!(action => Action::ReturnZomeFunctionResult);
     // @TODO store the action and result directly
     // @see https://github.com/holochain/holochain-rust/issues/198
-    state.zome_calls.insert(fr.call(), Some(fr.result()));
-}
-
-/// Reduce SignalZomeFunctionCall Action.
-/// Adds the call with a None result so we represent in the state that
-/// a zome call is running
-pub fn reduce_signal_zome_function(
-    state: &mut NucleusState,
-    _root_state: &State,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let call = unwrap_to!(action => Action::SignalZomeFunctionCall);
-    state.zome_calls.insert(call.clone(), None);
+    state.zome_call_results.insert(zome_fn_response.call(), zome_fn_response.result());
+    state.running_zome_calls.remove(&zome_fn_response.call());
+    if let Some(next_call) = state.queued_zome_calls.pop_front() {
+        state.running_zome_calls.insert(next_call);
+    }
 }
 
 #[cfg(test)]
@@ -54,6 +45,6 @@ pub mod tests {
 
         reduce_return_zome_function_result(&mut state, &root_state, &action_wrapper);
 
-        assert!(state.zome_calls.contains_key(&fr.call()));
+        assert!(state.zome_call_results.contains_key(&fr.call()));
     }
 }

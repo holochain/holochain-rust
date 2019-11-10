@@ -15,6 +15,7 @@ pub struct PendingValidationDump {
 
 #[derive(Serialize)]
 pub struct StateDump {
+    pub queued_calls: Vec<ZomeFnCall>,
     pub running_calls: Vec<ZomeFnCall>,
     pub query_flows: Vec<QueryKey>,
     pub validation_package_flows: Vec<Address>,
@@ -39,11 +40,14 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
-        let running_calls: Vec<ZomeFnCall> = nucleus
-            .zome_calls
+        let queued_calls: Vec<ZomeFnCall> = nucleus
+            .queued_zome_calls
             .into_iter()
-            .filter(|(_, result)| result.is_none())
-            .map(|(call, _)| call)
+            .collect();
+
+        let running_calls: Vec<ZomeFnCall> = nucleus
+            .running_zome_calls
+            .into_iter()
             .collect();
 
         let query_flows: Vec<QueryKey> = network
@@ -83,6 +87,7 @@ impl From<Arc<Context>> for StateDump {
         let held_entries = dht.get_all_held_entry_addresses().clone();
 
         StateDump {
+            queued_calls,
             running_calls,
             query_flows,
             validation_package_flows,

@@ -213,7 +213,7 @@ pub enum Action {
     /// There is no reducer for this action so this does not change state
     /// (hence "Signal").
     /// Is received as signal in the nodejs waiter to attach wait conditions.
-    SignalZomeFunctionCall(ZomeFnCall),
+    QueueZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),

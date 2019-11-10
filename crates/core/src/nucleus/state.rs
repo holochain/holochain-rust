@@ -16,6 +16,7 @@ use serde::{
 };
 use snowflake;
 use std::{collections::HashMap, convert::TryFrom, fmt};
+use std::collections::{VecDeque, HashSet};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -102,11 +103,14 @@ pub struct NucleusState {
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
     //read from there when loading an instance/chain.
 
+    pub queued_zome_calls: VecDeque<ZomeFnCall>,
+    pub running_zome_calls: HashSet<ZomeFnCall>,
+
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
-    pub zome_calls: HashMap<ZomeFnCall, Option<Result<JsonString, HolochainError>>>,
+    pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
     pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
     pub validation_packages:
         HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
@@ -117,7 +121,9 @@ impl NucleusState {
         NucleusState {
             dna: None,
             status: NucleusStatus::New,
-            zome_calls: HashMap::new(),
+            queued_zome_calls: VecDeque::new(),
+            running_zome_calls: HashSet::new(),
+            zome_call_results: HashMap::new(),
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
             pending_validations: HashMap::new(),
@@ -128,9 +134,9 @@ impl NucleusState {
         &self,
         zome_call: &ZomeFnCall,
     ) -> Option<Result<JsonString, HolochainError>> {
-        self.zome_calls
+        self.zome_call_results
             .get(zome_call)
-            .and_then(|value| value.clone())
+            .cloned()
     }
 
     pub fn has_initialized(&self) -> bool {
@@ -183,7 +189,9 @@ impl From<NucleusStateSnapshot> for NucleusState {
         NucleusState {
             dna: None,
             status: snapshot.status,
-            zome_calls: HashMap::new(),
+            queued_zome_calls: VecDeque::new(),
+            running_zome_calls: HashSet::new(),
+            zome_call_results: HashMap::new(),
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
             pending_validations: snapshot.pending_validations,

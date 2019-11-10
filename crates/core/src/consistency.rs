@@ -189,7 +189,7 @@ impl ConsistencyModel {
                 RemovePendingValidation(address.clone()),
             )),
 
-            Action::SignalZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
+            Action::QueueZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
                 SignalZomeFunctionCall(display_zome_fn_call(call), call.id()),
                 Source,
                 vec![ReturnZomeFunctionResult(

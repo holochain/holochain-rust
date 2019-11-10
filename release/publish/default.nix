@@ -4,13 +4,13 @@ let
  binaries-target = if pkgs.stdenv.isDarwin then holonix.rust.generic-mac-target else holonix.rust.generic-linux-target;
  github-binaries = pkgs.writeShellScriptBin "hc-release-github-binaries" ''
  set -euox pipefail
- for name in cli holochain
+ for p in cli holochain
  do
-   nix-shell --run 'cargo rustc --manifest-path crates/$name/Cargo.toml --target ${binaries-target} --release -- -C lto'
-   mkdir $name-$CIRCLE_TAG-${binaries-target}
-   cp target/${binaries-target}/release/hc crates/$name/LICENSE crates/$name/README.md $name-$CIRCLE_TAG-${binaries-target}/
-   tar czf $name-$CIRCLE_TAG-${binaries-target}.tar.gz $name-$CIRCLE_TAG-${binaries-target}/
-   nix-shell --run "github-release upload --file ./$name-$CIRCLE_TAG-${binaries-target}.tar.gz --owner holochain --repo holochain-rust --tag $CIRCLE_TAG --name $name-$CIRCLE_TAG-${binaries-target}.tar.gz --token $GITHUB_DEPLOY_TOKEN"
+   nix-shell --run 'cargo rustc --manifest-path crates/$p/Cargo.toml --target ${binaries-target} --release -- -C lto'
+   mkdir $p-$CIRCLE_TAG-${binaries-target}
+   cp target/${binaries-target}/release/hc crates/$p/LICENSE crates/$p/README.md $p-$CIRCLE_TAG-${binaries-target}/
+   tar czf $p-$CIRCLE_TAG-${binaries-target}.tar.gz $p-$CIRCLE_TAG-${binaries-target}/
+   nix-shell --run "github-release upload --file ./$p-$CIRCLE_TAG-${binaries-target}.tar.gz --owner holochain --repo holochain-rust --tag $CIRCLE_TAG --name $p-$CIRCLE_TAG-${binaries-target}.tar.gz --token $GITHUB_DEPLOY_TOKEN"
  done
  '';
 

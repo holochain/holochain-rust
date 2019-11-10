@@ -1,6 +1,6 @@
 [package]
 name = "holochain_locksmith"
-version = "0.0.38-alpha4"
+version = "0.0.38-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "helpers for mutex deadlock diagnosis"

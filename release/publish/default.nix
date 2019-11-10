@@ -24,6 +24,7 @@ cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Ca
 for crate in \
  locksmith \
  common \
+ metrics \
  core_types \
  wasm_utils \
  conductor_api \

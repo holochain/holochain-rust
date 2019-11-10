@@ -120,7 +120,10 @@ impl CloudWatchLogger {
         start_time: &std::time::SystemTime,
         end_time: &std::time::SystemTime,
     ) -> Vec<Vec<ResultField>> {
-        let query_string = "fields @message | filter @message like 'metrics.rs'".to_string();
+        let query_string = format!(
+            "fields @message | filter @message like '{}'",
+            logger::METRIC_TAG
+        );
         let start_query_request = StartQueryRequest {
             limit: None,
             query_string,

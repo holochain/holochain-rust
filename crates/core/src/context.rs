@@ -38,7 +38,7 @@ use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering::Relaxed},
-        Arc,
+        Arc, TryLockError,
     },
     thread::sleep,
     time::Duration,
@@ -203,7 +203,13 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state.as_ref().and_then(|s| s.try_read().ok())
+        self.state.as_ref().and_then(|s| match s.try_read() {
+            Ok(v) => Some(v),
+            Err(TryLockError::Poisoned(_)) => {
+                panic!("try_state attempted read on poisoned lock, let's experimentally panic")
+            },
+            Err(_) => None,
+        })
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {

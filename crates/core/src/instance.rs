@@ -321,7 +321,12 @@ impl Instance {
             .as_ref()
             .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?
             .try_write()
-            .map_err(|e| HolochainError::new(&format!("Could not get lock on persister, error = {}", e.to_string())))?
+            .map_err(|e| {
+                HolochainError::new(&format!(
+                    "Could not get lock on persister, error = {}",
+                    e.to_string()
+                ))
+            })?
             .save(&self.state())
     }
 

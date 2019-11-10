@@ -7,14 +7,14 @@
 
 // mod common;
 mod error;
-mod guard_passthru;
-mod mutex_passthru;
+mod guard_pl;
+mod mutex_pl;
 // mod tracker;
 
 pub use error::LocksmithError;
-pub use guard_passthru::{
+pub use guard_pl::{
     HcMutexGuard as MutexGuard, HcRwLockReadGuard as RwLockReadGuard,
     HcRwLockWriteGuard as RwLockWriteGuard,
 };
-pub use mutex_passthru::{HcMutex as Mutex, HcRwLock as RwLock};
+pub use mutex_pl::{HcMutex as Mutex, HcRwLock as RwLock};
 // pub use tracker::spawn_locksmith_guard_watcher;

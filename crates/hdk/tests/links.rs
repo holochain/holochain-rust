@@ -244,12 +244,6 @@ pub fn test_bad_links() {
 pub fn test_links_with_immediate_timeout() {
     let (mut hc, _, _signal_receiver) =
         start_holochain_instance("test_links_with_immediate_timeout", "alice");
-    make_test_call(
-        &mut hc,
-        "create_and_link_tagged_entry",
-        r#"{"content": "message me","tag":"tag me"}"#,
-    )
-    .expect("Could not call make call method");
 
     let result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
     let expected_result: ZomeApiResult<GetLinksResult> =

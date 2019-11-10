@@ -30,6 +30,6 @@ FROM scratch
 COPY --from=build / /
 WORKDIR /holochain
 ENV CARGO_HOME /holochain
-ENV PATH "/holochain/bin:${PATH}"
+ENV PATH "/holochain/.cargo/bin:${PATH}"
 
 CMD sim2h_server -p 9000

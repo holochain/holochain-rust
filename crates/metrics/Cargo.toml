@@ -1,6 +1,8 @@
 [package]
 name = "holochain_metrics"
 version = "0.0.38-alpha8"
+description = "Holochain analytics from logs and other metrics"
+license = "GPL-3.0-only"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 

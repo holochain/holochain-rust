@@ -1,6 +1,6 @@
 [package]
 name = "summer"
-version = "0.0.38-alpha6"
+version = "0.0.38-alpha7"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 

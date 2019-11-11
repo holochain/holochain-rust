@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-use holochain_core_types::signature::Provenance;
+use holochain_core_types::{error::HolochainError, signature::Provenance};
 use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, vec::Vec};
 
@@ -18,7 +18,7 @@ pub async fn respond_validation_package_request(
     requested_entry_address: Address,
     context: Arc<Context>,
     provenances: &Vec<Provenance>,
-) {
+) -> Result<(), HolochainError> {
     let maybe_validation_package =
         match get_entry_from_agent_chain(&context, &requested_entry_address) {
             Ok(Some(entry)) => build_validation_package(&entry, context.clone(), provenances)
@@ -50,4 +50,5 @@ pub async fn respond_validation_package_request(
 
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
     dispatch_action(context.action_channel(), action_wrapper);
+    Ok(())
 }

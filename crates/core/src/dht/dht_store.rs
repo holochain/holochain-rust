@@ -25,6 +25,8 @@ use std::{
     convert::TryFrom,
     sync::Arc,
 };
+use std::collections::VecDeque;
+use crate::scheduled_jobs::pending_validations::PendingValidation;
 
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard
@@ -37,6 +39,8 @@ pub struct DhtStore {
 
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
+
+    pub(crate) queued_holding_workflows: VecDeque<PendingValidation>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -121,6 +125,7 @@ impl DhtStore {
             meta_storage,
             holding_list: Vec::new(),
             actions: HashMap::new(),
+            queued_holding_workflows: VecDeque::new(),
         }
     }
 
@@ -250,6 +255,10 @@ impl DhtStore {
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &mut self.actions
+    }
+
+    pub(crate) fn next_queued_holding_workflow(&self) -> Option<&PendingValidation> {
+        self.queued_holding_workflows.front()
     }
 }
 

@@ -3,7 +3,7 @@ use crate::{
     state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -15,6 +15,15 @@ pub struct EntryWithHeader {
 impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader { entry, header }
+    }
+
+    pub fn try_from_entry_and_header(entry: Entry, header: ChainHeader)
+        -> Result<EntryWithHeader, HolochainError> {
+        if entry.address() != *header.entry_address() {
+            Err(HolochainError::ValidationFailed(String::from("Entry/Header mismatch")))
+        } else {
+            Ok(EntryWithHeader::new(entry, header))
+        }
     }
 }
 

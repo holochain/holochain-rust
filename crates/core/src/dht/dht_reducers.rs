@@ -44,6 +44,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
         Action::RemoveLink(_) => Some(reduce_remove_link),
+        Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
+        Action::PopNextHoldingWorkflow => Some(reduce_pop_next_holding_workflow),
         _ => None,
     }
 }
@@ -153,6 +155,31 @@ pub(crate) fn reduce_get_links(
     // FIXME
     None
 }
+
+#[allow(unknown_lints)]
+#[allow(clippy::needless_pass_by_value)]
+pub fn reduce_queue_holding_workflow(
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    let action = action_wrapper.action();
+    let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
+    let mut new_store = (*old_store).clone();
+    new_store.queued_holding_workflows.push_back(pending.clone());
+    Some(new_store)
+}
+
+#[allow(unknown_lints)]
+#[allow(clippy::needless_pass_by_value)]
+pub fn reduce_pop_next_holding_workflow(
+    old_store: &DhtStore,
+    _action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    let mut new_store = (*old_store).clone();
+    let _ = new_store.queued_holding_workflows.pop_front();
+    Some(new_store)
+}
+
 
 #[cfg(test)]
 pub mod tests {

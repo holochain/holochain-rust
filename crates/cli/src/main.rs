@@ -42,23 +42,10 @@ enum Cli {
     #[structopt(alias = "p")]
     ///  Builds DNA source files into a single .dna.json DNA file
     Package {
-        #[structopt(long)]
-        /// Adds __META__ fields in the dna.json which allow it to be unpacked
-        include_meta: bool,
-        #[structopt(long)]
-        /// Included for backward compatibility. Does nothing as stripping meta is now the default
-        strip_meta: bool,
         #[structopt(long, short, parse(from_os_str))]
         output: Option<PathBuf>,
         #[structopt(long, short)]
         properties: Option<String>,
-    },
-    /// Unpacks a Holochain bundle into it's original file system structure
-    Unpack {
-        #[structopt(parse(from_os_str))]
-        path: PathBuf,
-        #[structopt(parse(from_os_str))]
-        to: PathBuf,
     },
     #[structopt(alias = "i")]
     /// Initializes a new Holochain app at the given directory
@@ -172,12 +159,9 @@ fn run() -> HolochainResult<()> {
     match args {
         // If using default path, we'll create if necessary; otherwise, target dir must exist
         Cli::Package {
-            include_meta,
             output,
             properties: properties_string,
-            strip_meta,
         } => {
-            let _ = strip_meta;
             let output = if output.is_some() {
                 output.unwrap()
             } else {
@@ -189,7 +173,7 @@ fn run() -> HolochainResult<()> {
                 .unwrap_or_else(|| Ok(json!({})));
 
             match properties {
-                Ok(properties) => cli::package(include_meta, output, properties)
+                Ok(properties) => cli::package(output, properties)
                     .map_err(HolochainError::Default)?,
                 Err(e) => {
                     return Err(HolochainError::Default(format_err!(
@@ -199,8 +183,6 @@ fn run() -> HolochainResult<()> {
                 }
             }
         }
-
-        Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
 
         Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
 

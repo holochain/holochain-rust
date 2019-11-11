@@ -3,7 +3,7 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
+        chain_pair::ChainPair,
         query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },
@@ -113,14 +113,14 @@ pub enum Action {
     // -------------
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
-    Hold(EntryWithHeader),
+    Hold(ChainPair),
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
     AddLink(LinkData),
 
     //action for updating crudstatus
-    CrudStatus((EntryWithHeader, CrudStatus)),
+    CrudStatus((ChainPair, CrudStatus)),
 
     //Removes a link for the local DHT
     RemoveLink(Entry),

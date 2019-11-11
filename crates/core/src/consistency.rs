@@ -1,6 +1,6 @@
 use crate::{
     action::Action, context::Context, entry::CanPublish,
-    network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
+    network::chain_pair::ChainPair, nucleus::ZomeFnCall,
 };
 use holochain_core_types::{agent::AgentId, entry::Entry, link::link_data::LinkData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -161,7 +161,7 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::Hold(EntryWithHeader { entry, .. }) => {
+            Action::Hold(ChainPair(.., header)) => {
                 Some(ConsistencySignal::new_terminal(Hold(entry.address())))
             }
             Action::UpdateEntry((old, new)) => Some(ConsistencySignal::new_terminal(

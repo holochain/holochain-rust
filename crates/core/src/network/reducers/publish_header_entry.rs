@@ -4,7 +4,7 @@ use crate::{
     network::{
         actions::ActionResponse,
         entry_aspect::EntryAspect,
-        entry_with_header::{fetch_entry_with_header, EntryWithHeader},
+        entry_with_header::{fetch_entry_with_header, ChainPair},
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
     },
@@ -26,7 +26,7 @@ fn publish_header(
     root_state: &State,
     chain_header: ChainHeader,
 ) -> Result<(), HolochainError> {
-    let EntryWithHeader { entry, header } =
+    let chain_pair =
         create_entry_with_header_for_header(&StateWrapper::from(root_state.clone()), chain_header)?;
     send(
         network_state,

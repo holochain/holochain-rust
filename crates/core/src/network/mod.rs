@@ -1,6 +1,6 @@
 pub mod actions;
 pub mod direct_message;
-pub mod entry_with_header;
+pub mod chain_pair;
 pub mod handler;
 pub mod reducers;
 pub mod state;

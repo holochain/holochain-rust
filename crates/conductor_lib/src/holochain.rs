@@ -116,6 +116,8 @@ use holochain_persistence_api::cas::content::Address;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
+use holochain_metrics::with_latency_publishing;
+
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: Option<Instance>,
@@ -230,6 +232,21 @@ impl Holochain {
         Ok(())
     }
 
+    fn call_inner(
+        me: &Holochain,
+        zome: &str,
+        cap: CapabilityRequest,
+        fn_name: &str,
+        params: &str,
+    ) -> HolochainResult<JsonString> {
+        me.check_instance()?;
+        me.check_active()?;
+
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
+        let context = me.context()?;
+        Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
+    }
+
     /// call a function in a zome
     pub fn call(
         &self,
@@ -238,12 +255,18 @@ impl Holochain {
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        self.check_instance()?;
-        self.check_active()?;
-
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
-        let context = self.context()?;
-        Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
+        let context = self.context.as_ref().unwrap();
+        let metric_name = format!("{}.{}", zome, fn_name);
+        with_latency_publishing!(
+            metric_name,
+            context.metric_publisher,
+            Self::call_inner,
+            self,
+            zome,
+            cap,
+            fn_name,
+            params
+        )
     }
 
     /// checks to see if an instance is active

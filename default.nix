@@ -59,9 +59,23 @@ with holonix.pkgs;
     config = config;
    }).buildInputs
 
+   ++ (holonix.pkgs.callPackage ./crates/trycp_server {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
    ++ (holonix.pkgs.callPackage ./crates/sim2h_server {
      pkgs = holonix.pkgs;
      config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/metrics {
+    pkgs = holonix.pkgs;
+    config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./docker {
+     pkgs = holonix.pkgs;
    }).buildInputs
 
    # release hooks

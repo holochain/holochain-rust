@@ -1,6 +1,6 @@
 [package]
 name = "test_utils"
-version = "0.0.37-alpha12"
+version = "0.0.38-alpha6"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 description = "holochain test utils"
 license = "GPL-3.0-only"
@@ -9,14 +9,14 @@ documentation = "https://github.com/holochain/holochain-rust"
 edition = "2018"
 
 [dependencies]
-hdk = { version = "=0.0.37-alpha12", path = "../crates/hdk" }
-holochain_net = { version = "=0.0.37-alpha12", path = "../crates/net" }
-holochain_core = { version = "=0.0.37-alpha12", path = "../crates/core" }
-holochain_conductor_lib = { version = "=0.0.37-alpha12", path = "../crates/conductor_lib" }
-holochain_core_types = { version = "=0.0.37-alpha12", path = "../crates/core_types" }
-holochain_dpki = { version = "=0.0.37-alpha12", path = "../crates/dpki" }
-holochain_wasm_utils = { version = "=0.0.37-alpha12", path = "../crates/wasm_utils" }
-holochain_locksmith = { version = "=0.0.37-alpha12", path = "../crates/locksmith" }
+hdk = { version = "=0.0.38-alpha6", path = "../crates/hdk" }
+holochain_net = { version = "=0.0.38-alpha6", path = "../crates/net" }
+holochain_core = { version = "=0.0.38-alpha6", path = "../crates/core" }
+holochain_conductor_lib = { version = "=0.0.38-alpha6", path = "../crates/conductor_lib" }
+holochain_core_types = { version = "=0.0.38-alpha6", path = "../crates/core_types" }
+holochain_dpki = { version = "=0.0.38-alpha6", path = "../crates/dpki" }
+holochain_wasm_utils = { version = "=0.0.38-alpha6", path = "../crates/wasm_utils" }
+holochain_locksmith = { version = "=0.0.38-alpha6", path = "../crates/locksmith" }
 holochain_persistence_api = "=0.0.10"
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"

@@ -89,7 +89,6 @@
 ///     Ok(load_configuration::<Configuration>(&contents)?)
 /// }
 /// ```
-
 #[macro_use]
 extern crate holochain_core;
 #[macro_use]
@@ -113,6 +112,7 @@ extern crate nickel;
 pub mod conductor;
 pub mod config;
 pub mod context_builder;
+pub mod dna_location;
 pub mod dpki_instance;
 pub mod error;
 pub mod holo_signing_service;

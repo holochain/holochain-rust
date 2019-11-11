@@ -68,7 +68,7 @@ impl Instance {
             .every(10.seconds())
             .run(scheduled_jobs::create_callback(context.clone()));
         scheduler
-            .every(1.seconds())
+            .every(1.second())
             .run(scheduled_jobs::create_validation_callback(context.clone()));
         self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 

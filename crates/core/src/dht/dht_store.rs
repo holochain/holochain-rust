@@ -255,8 +255,8 @@ impl DhtStore {
         &mut self.actions
     }
 
-    pub(crate) fn next_queued_holding_workflow(&self) -> Option<&PendingValidation> {
-        self.queued_holding_workflows.front()
+    pub(crate) fn next_queued_holding_workflow(&self) -> Option<PendingValidation> {
+        self.queued_holding_workflows.front().cloned()
     }
 }
 

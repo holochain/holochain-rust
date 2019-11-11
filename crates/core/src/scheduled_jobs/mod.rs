@@ -23,12 +23,14 @@ pub fn create_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync +
 
 pub fn create_validation_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
     move || {
-        if let Some(pending) = context
+        log_debug!(context, "Checking holding queue...");
+        let maybe_holding_workflow = context
             .state()
             .expect("Couldn't get state in run_pending_validations")
             .dht()
-            .next_queued_holding_workflow()
-        {
+            .next_queued_holding_workflow();
+        if let Some(pending) = maybe_holding_workflow {
+            log_debug!(context, "Found queued validation: {:?}", pending);
             pop_next_holding_workflow(context.clone());
 
             log_debug!(
@@ -38,12 +40,12 @@ pub fn create_validation_callback(context: Arc<Context>) -> impl 'static + FnMut
                 pending.entry_with_header.entry.address()
             );
 
-            let result = pending_validations::run_holding_workflow(pending, context.clone());
+            let result = pending_validations::run_holding_workflow(&pending, context.clone());
 
             // If we couldn't run the validation due to unresolved dependencies,
             // we have to re-add this entry at the end of the queue:
             if Err(HolochainError::ValidationPending) == result {
-                queue_holding_workflow(pending.clone(), context.clone());
+                queue_holding_workflow(pending, context.clone());
             }
         }
     }

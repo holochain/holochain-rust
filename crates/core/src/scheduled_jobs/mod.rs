@@ -38,19 +38,20 @@ pub fn create_validation_callback(context: Arc<Context>) -> impl 'static + FnMut
                 match result {
                     // If we couldn't run the validation due to unresolved dependencies,
                     // we have to re-add this entry at the end of the queue:
-                    Err(HolochainError::ValidationPending) => queue_holding_workflow(pending, context.clone()),
+                    Err(HolochainError::ValidationPending) => {
+                        queue_holding_workflow(pending, context.clone())
+                    }
                     Err(e) => log_error!(
-                    context,
-                    "Error running holding workflow for {:?}: {:?}",
-                    pending,
-                    e,
-                ),
+                        context,
+                        "Error running holding workflow for {:?}: {:?}",
+                        pending,
+                        e,
+                    ),
                     Ok(()) => log_info!(context, "Successfully processed: {:?}", pending),
                 }
             } else {
-                break
+                break;
             }
         }
-
     }
 }

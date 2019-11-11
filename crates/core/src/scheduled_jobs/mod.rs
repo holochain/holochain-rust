@@ -1,13 +1,16 @@
 pub mod pending_validations;
 pub mod state_dump;
 
-use crate::context::Context;
-use std::sync::Arc;
-use holochain_persistence_api::cas::content::AddressableContent;
-use crate::dht::actions::pop_next_holding_workflow::pop_next_holding_workflow;
-use crate::dht::actions::queue_holding_workflow::queue_holding_workflow;
+use crate::{
+    context::Context,
+    dht::actions::{
+        pop_next_holding_workflow::pop_next_holding_workflow,
+        queue_holding_workflow::queue_holding_workflow,
+    },
+};
 use holochain_core_types::error::HolochainError;
-
+use holochain_persistence_api::cas::content::AddressableContent;
+use std::sync::Arc;
 
 pub fn create_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
     move || {

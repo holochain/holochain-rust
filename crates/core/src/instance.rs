@@ -70,9 +70,7 @@ impl Instance {
         scheduler
             .every(1.seconds())
             .run(scheduled_jobs::create_validation_callback(context.clone()));
-        self.scheduler_handle = Some(Arc::new(
-            scheduler.watch_thread(Duration::from_millis(10)),
-        ));
+        self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
         self.persister = Some(context.persister.clone());
 

@@ -17,10 +17,14 @@ impl EntryWithHeader {
         EntryWithHeader { entry, header }
     }
 
-    pub fn try_from_entry_and_header(entry: Entry, header: ChainHeader)
-        -> Result<EntryWithHeader, HolochainError> {
+    pub fn try_from_entry_and_header(
+        entry: Entry,
+        header: ChainHeader,
+    ) -> Result<EntryWithHeader, HolochainError> {
         if entry.address() != *header.entry_address() {
-            Err(HolochainError::ValidationFailed(String::from("Entry/Header mismatch")))
+            Err(HolochainError::ValidationFailed(String::from(
+                "Entry/Header mismatch",
+            )))
         } else {
             Ok(EntryWithHeader::new(entry, header))
         }

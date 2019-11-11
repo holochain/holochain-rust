@@ -1,12 +1,14 @@
 use crate::{
-    context::Context,
+    context::Context, dht::actions::queue_holding_workflow::queue_holding_workflow,
+    scheduled_jobs::pending_validations::PendingValidationStruct,
 };
+use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::data_types::StoreEntryAspectData;
-use std::{convert::{TryFrom, TryInto}, sync::Arc};
-use crate::scheduled_jobs::pending_validations::{PendingValidationStruct};
-use crate::dht::actions::queue_holding_workflow::queue_holding_workflow;
-use holochain_core_types::network::entry_aspect::EntryAspect;
+use std::{
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {

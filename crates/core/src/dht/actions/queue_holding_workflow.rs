@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    scheduled_jobs::pending_validations::PendingValidation
+    scheduled_jobs::pending_validations::PendingValidation,
 };
 
 use std::sync::Arc;

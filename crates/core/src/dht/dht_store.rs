@@ -17,16 +17,14 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
-use crate::state::StateWrapper;
+use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::cas::content::Content;
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
 };
-use std::collections::VecDeque;
-use crate::scheduled_jobs::pending_validations::PendingValidation;
 
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard

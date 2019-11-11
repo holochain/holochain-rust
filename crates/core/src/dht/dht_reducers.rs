@@ -165,7 +165,9 @@ pub fn reduce_queue_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    new_store.queued_holding_workflows.push_back(pending.clone());
+    new_store
+        .queued_holding_workflows
+        .push_back(pending.clone());
     Some(new_store)
 }
 
@@ -179,7 +181,6 @@ pub fn reduce_pop_next_holding_workflow(
     let _ = new_store.queued_holding_workflows.pop_front();
     Some(new_store)
 }
-
 
 #[cfg(test)]
 pub mod tests {

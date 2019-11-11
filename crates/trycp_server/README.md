@@ -16,49 +16,13 @@ hc-trycp-server-install
 
 ## Usage
 
-Start RPC the server with:
+Start the server with:
 
-`trycp_server`
-or
-`trycp_server -p <port>`
+`trycp_server -p <port>  --port-range <port_range_string>`
 
+The --port-range option is required as it is what reports back to try-o-rama about which ports to use when generating config files.
 
-Example usage from a nodejs script:
-
-``` javascript
-var WebSocket = require('rpc-websockets').Client
-
-var ws = new WebSocket('ws://localhost:9000')
-console.log("starting")
-ws.on('open', function() {
-    console.log("making ping call")
-
-    ws.call('ping', {"id": "my-player"}).then(function(result) {
-        console.log(result)
-    })
-
-    const config_toml = "[config]"  // note that this is not a valid config so spawn will fail
-    const config = Buffer.from(config_toml).toString('base64')
-    console.log("making player call")
-    ws.call('player', {"id": "my-player", "config": config}).then(function(result) {
-        console.log(result)
-    })
-
-    console.log("making spawn call")
-    ws.call('spawn', {"id": "my-player"}).then(function(result) {
-        console.log(result)
-    })
-
-    console.log("making kill call")
-    ws.call('kill', {"id": "my-player"}).then(function(result) {
-        console.log(result)
-        ws.close()
-    })
-
-    // close a websocket connection
-    //ws.close()
-})
-```
+Example usage from a nodejs script see the [test/test.js](https://github.com/holochain/holochain-rust/blob/trycp/crates/trycp_server/test/test.js) file.
 
 ## Docker
 

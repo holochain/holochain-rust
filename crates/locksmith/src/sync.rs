@@ -18,10 +18,10 @@ const IMMORTAL_TIMEOUT_SECS: u64 = 60;
 const LOCK_TIMEOUT_SECS: u64 = 100;
 
 // This is how often we check the elapsed time of guards
-const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
+const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 5000;
 
 // We filter out any guards alive less than this long
-const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
+const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = GUARD_WATCHER_POLL_INTERVAL_MS as i64;
 
 // How often to retry getting a lock after receiving a WouldBlock error
 // during try_lock

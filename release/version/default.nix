@@ -4,6 +4,7 @@ let
 
  script = pkgs.writeShellScriptBin name ''
 for dep in \
+ holochain_metrics \
  holochain_core_types \
  holochain_core \
  holochain_wasm_utils \

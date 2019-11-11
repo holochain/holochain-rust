@@ -194,21 +194,15 @@ jobs:
    - image: holochain/holochain-rust:latest
   steps:
    - checkout
-
    - run:
       name: test cli
       command: nix-shell --run hc-cli-test
-
- cli-generate-tests:
-   docker:
-     - image: holochain/holochain-rust:latest
-   steps:
-     - run:
-         name: test hc generate rust template
-         command: nix-shell --run hc-cli-generate-rust-test
-     - run:
-         name: test hc generate rust proc template
-         command: nix-shell --run hc-cli-generate-rust-proc-test
+   - run:
+      name: test hc generate rust template
+      command: nix-shell --run hc-cli-generate-rust-test
+   - run:
+      name: test hc generate rust proc template
+      command: nix-shell --run hc-cli-generate-rust-proc-test
 
  wasm-conductor-tests:
   docker:

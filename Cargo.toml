@@ -2,6 +2,7 @@
 
 members = [
   "crates/cli",
+  "crates/metrics",
   "crates/common",
   "crates/holochain",
   "crates/conductor_lib",
@@ -14,9 +15,10 @@ members = [
   "crates/locksmith",
   "crates/net",
   "crates/stress",
+  "crates/trycp_server",
   "crates/sim1h",
   "crates/sim2h",
-  "crates/sim2h_server",
+  "crates/sim2h_server"
 ]
 exclude = [
   "test_utils",

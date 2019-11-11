@@ -27,7 +27,7 @@ const configBatchSimple = (numConductors, numInstances) => {
 // * postSpawn: after the next agent was spawned, this callback is called with the older one to have it create new
 //              entries/links while the new agent is there
 // * stepCheck:
-const telephoneGame = async (s, t, N, players, functions, timeout = 1000) => {
+const telephoneGame = async (s, t, N, players, functions, timeout = 2000) => {
     const STEP_TIMEOUT_MS = timeout
     let {init, preSpawn, postSpawn, stepCheck} = functions
     console.log("##################################")

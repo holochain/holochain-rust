@@ -9,7 +9,6 @@ use crate::{
     },
 };
 use holochain_core_types::error::HolochainError;
-use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 pub fn create_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
@@ -33,20 +32,22 @@ pub fn create_validation_callback(context: Arc<Context>) -> impl 'static + FnMut
             log_debug!(context, "Found queued validation: {:?}", pending);
             pop_next_holding_workflow(context.clone());
 
-            log_debug!(
-                context,
-                "scheduled_jobs/run_validations: found queued validation for {}: {}",
-                pending.entry_with_header.entry.entry_type(),
-                pending.entry_with_header.entry.address()
-            );
-
             let result = pending_validations::run_holding_workflow(&pending, context.clone());
 
-            // If we couldn't run the validation due to unresolved dependencies,
-            // we have to re-add this entry at the end of the queue:
-            if Err(HolochainError::ValidationPending) == result {
-                queue_holding_workflow(pending, context.clone());
+            match result {
+                // If we couldn't run the validation due to unresolved dependencies,
+                // we have to re-add this entry at the end of the queue:
+                Err(HolochainError::ValidationPending) => queue_holding_workflow(pending, context.clone()),
+                Err(e) => log_error!(
+                    context,
+                    "Error running holding workflow for {:?}: {:?}",
+                    pending,
+                    e,
+                ),
+                Ok(()) => log_info!(context, "Successfully processed: {:?}", pending),
             }
+
+
         }
     }
 }

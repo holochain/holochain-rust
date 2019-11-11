@@ -309,7 +309,10 @@ impl Context {
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
     /// This makes use of the redux action loop and the observers.
     /// The given future gets polled everytime the instance's state got changed.
-    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
+    pub fn block_on<T, F: Future<Output = Result<T, HolochainError>>>(
+        &self,
+        future: F,
+    ) -> <F as Future>::Output {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
@@ -321,10 +324,10 @@ impl Context {
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
             if !self.instance_still_alive() {
-                panic!("Context::block_on() waiting for future but instance is not alive anymore => we gotta let this thread panic!")
+                return Err(HolochainError::LifecycleError("fatal error: instance no longer alive (we hope this will only ever happen during shutdown)".into()));
             }
             if let Some(err) = self.action_channel_error("Context::block_on") {
-                panic!("Context::block_on() waiting for future but Redux loop got stopped => we gotta let this thread panic!\nError was: {:?}", err)
+                return Err(HolochainError::LifecycleError(format!("fatal error: action channel closed (we hope this will only ever happen during shutdown) original error: {:?}", err)));
             }
         }
     }

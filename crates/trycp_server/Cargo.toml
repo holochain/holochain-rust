@@ -7,7 +7,7 @@ description = "Conductor provisioner server for try-o-rama"
 keywords = ["holochain", "holo", "p2p", "network", "simulation"]
 categories = ["network-programming"]
 license = "Apache-2.0"
-readme = "readme.md"
+readme = "README.md"
 documentation = "https://github.com/holochain/holochain-rust"
 repository = "https://github.com/holochain/holochain-rust"
 
@@ -22,3 +22,4 @@ base64 = "=0.10.1"
 tempfile = "=3.0.7"
 lazy_static = "=1.2.0"
 nix = "=0.14.1"
+reqwest = "=0.9.11"

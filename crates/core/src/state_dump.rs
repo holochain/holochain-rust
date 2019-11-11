@@ -40,15 +40,9 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
-        let queued_calls: Vec<ZomeFnCall> = nucleus
-            .queued_zome_calls
-            .into_iter()
-            .collect();
+        let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
 
-        let running_calls: Vec<ZomeFnCall> = nucleus
-            .running_zome_calls
-            .into_iter()
-            .collect();
+        let running_calls: Vec<ZomeFnCall> = nucleus.running_zome_calls.into_iter().collect();
 
         let query_flows: Vec<QueryKey> = network
             .get_query_results

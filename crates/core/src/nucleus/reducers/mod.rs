@@ -22,7 +22,7 @@ use crate::{
         },
         state::NucleusState,
     },
-    state::State
+    state::State,
 };
 
 use std::sync::Arc;

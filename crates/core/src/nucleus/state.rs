@@ -15,8 +15,11 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use snowflake;
-use std::{collections::HashMap, convert::TryFrom, fmt};
-use std::collections::{VecDeque, HashSet};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    convert::TryFrom,
+    fmt,
+};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -102,7 +105,6 @@ pub struct NucleusState {
     // Transient fields:
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
     //read from there when loading an instance/chain.
-
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
 
@@ -134,9 +136,7 @@ impl NucleusState {
         &self,
         zome_call: &ZomeFnCall,
     ) -> Option<Result<JsonString, HolochainError>> {
-        self.zome_call_results
-            .get(zome_call)
-            .cloned()
+        self.zome_call_results.get(zome_call).cloned()
     }
 
     pub fn has_initialized(&self) -> bool {

@@ -9,7 +9,7 @@ pub mod runtime;
 pub use self::{run_dna::*, runtime::*};
 use std::str::FromStr;
 
-pub const MAX_ZOME_CALLS : usize = 10;
+pub const MAX_ZOME_CALLS: usize = 10;
 
 pub trait Defn: FromStr {
     /// return the canonical name of this function definition

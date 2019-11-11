@@ -295,7 +295,8 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
                 context,
                 "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
             );
-            lax_send_sync(context.action_channel().clone(),
+            lax_send_sync(
+                context.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
                 "call_zome_function",
             );

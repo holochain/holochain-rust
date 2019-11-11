@@ -82,6 +82,17 @@ pub struct StressRunConfig<S: StressSuite, J: StressJob> {
     pub job_factory: JobFactory<J>,
 }
 
+impl<S: StressSuite, J: StressJob> std::fmt::Debug for StressRunConfig<S, J> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StressRunConfig")
+            .field("thread_pool_size", &self.thread_pool_size)
+            .field("job_count", &self.job_count)
+            .field("run_time_ms", &self.run_time_ms)
+            .field("progress_interval_ms", &self.progress_interval_ms)
+            .finish()
+    }
+}
+
 struct StressJobInfo<J: StressJob> {
     job_index: usize,
     job: J,

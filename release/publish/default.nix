@@ -40,7 +40,7 @@ let
  mkdir -p $TMP/$artifact
  cp target/${args.target}/release/${args.binary} crates/${args.name}/LICENSE crates/${args.name}/README.md $TMP/$artifact/
  tar czf $TMP/$artifact.tar.gz -C $TMP/$artifact .
- # github-release upload --file $TMP/$artifact.tar.gz --owner holochain --repo holochain-rust --tag ${args.version} --name $artifact.tar.gz --token $GITHUB_DEPLOY_TOKEN
+ github-release upload --file $TMP/$artifact.tar.gz --owner holochain --repo holochain-rust --tag ${args.version} --name $artifact.tar.gz --token $GITHUB_DEPLOY_TOKEN
  '';
 
  github-binaries = pkgs.writeShellScriptBin "hc-release-github-binaries"

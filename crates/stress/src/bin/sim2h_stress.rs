@@ -1,3 +1,5 @@
+//! `cargo run --bin sim2h_stress -- --help`
+
 extern crate base64;
 extern crate env_logger;
 extern crate hcid;
@@ -30,6 +32,7 @@ use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
 use url2::prelude::*;
 
+/// give us some cli command line options
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(name = "sim2h_stress")]
 struct Opt {
@@ -59,6 +62,7 @@ struct Opt {
 }
 
 impl Opt {
+    /// private convert our cli options into a stress job config
     fn create_stress_run_config<S: StressSuite, J: StressJob>(
         &self,
         suite: S,
@@ -75,11 +79,13 @@ impl Opt {
     }
 }
 
+/// private wait for a websocket connection to connect && return it
 fn await_connection(port: u16) -> (Url2, StreamManager<std::net::TcpStream>) {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(1000))
         .unwrap();
 
+    // keep trying to connect
     loop {
         // StreamManager is dual sided, but we're only using the client side
         // this tls config is for the not used server side, it can be fake
@@ -94,6 +100,7 @@ fn await_connection(port: u16) -> (Url2, StreamManager<std::net::TcpStream>) {
 
         let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
 
+        // the actual connect request
         if let Err(e) = stream_manager.connect(&url) {
             error!("e1 {:?}", e);
 
@@ -105,6 +112,7 @@ fn await_connection(port: u16) -> (Url2, StreamManager<std::net::TcpStream>) {
             continue;
         }
 
+        // now loop to see if we can communicate
         loop {
             let (_, evs) = match stream_manager.process() {
                 Err(e) => {
@@ -144,6 +152,7 @@ thread_local! {
     pub static CRYPTO: Box<dyn CryptoSystem> = Box::new(SodiumCryptoSystem::new());
 }
 
+/// our job is a websocket connection to sim2h immitating a holochain-rust core
 struct Job {
     agent_id: String,
     #[allow(dead_code)]
@@ -154,6 +163,7 @@ struct Job {
 }
 
 impl Job {
+    /// create a new job - connected to sim2h
     pub fn new(port: u16) -> Self {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
@@ -178,6 +188,7 @@ impl Job {
         out
     }
 
+    /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
         let payload: Opaque = message.into();
         let payload_buf: Box<dyn lib3h_crypto_api::Buffer> = Box::new(payload.clone().as_bytes());
@@ -205,6 +216,7 @@ impl Job {
             .unwrap();
     }
 
+    /// join the space "abcd" : )
     pub fn join_space(&mut self) {
         self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
             SpaceData {
@@ -215,12 +227,14 @@ impl Job {
         )));
     }
 
+    /// send a ping message to sim2h
     pub fn ping(&mut self) {
         self.send_wire(WireMessage::Ping);
     }
 }
 
 impl StressJob for Job {
+    /// check for any messages from sim2h and also send a ping
     fn tick(&mut self, logger: &mut StressJobMetricLogger) -> StressJobTickResult {
         let (_, evs) = self.stream_manager.process().unwrap();
         for ev in evs {
@@ -245,12 +259,14 @@ impl StressJob for Job {
     }
 }
 
+/// our suite creates a thread for sim2h and gives the code processor time
 struct Suite {
     sim2h_cont: Arc<Mutex<bool>>,
     sim2h_join: Option<std::thread::JoinHandle<()>>,
 }
 
 impl Suite {
+    /// create a new sim2h server instance on given port
     pub fn new(port: u16) -> Self {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();
@@ -303,6 +319,7 @@ impl StressSuite for Suite {
     }
 }
 
+/// main function executes the stress suite given the cli arguments
 pub fn main() {
     env_logger::init();
     let opt = Opt::from_args();

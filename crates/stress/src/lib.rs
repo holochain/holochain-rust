@@ -5,19 +5,23 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+/// utitily for recording stress test metrics
 pub struct StressJobMetricLogger {
-    pub job_index: usize,
+    job_index: usize,
     logs: Vec<StressJobLog>,
 }
 
 impl StressJobMetricLogger {
-    fn new(job_index: usize) -> Self {
+    /// private constructor
+    fn priv_new(job_index: usize) -> Self {
         Self {
             job_index,
             logs: Vec::new(),
         }
     }
 
+    /// log a metric with a name, such as
+    /// `log("received_pong_count", 1.0)`
     pub fn log(&mut self, name: &str, value: f64) {
         self.logs.push(StressJobLog {
             job_index: self.job_index,
@@ -27,7 +31,9 @@ impl StressJobMetricLogger {
     }
 }
 
+/// respond if you want this job to continue or not
 pub struct StressJobTickResult {
+    /// true if this job should continue
     pub should_continue: bool,
 }
 
@@ -40,11 +46,14 @@ impl Default for StressJobTickResult {
 }
 
 pub trait StressJob: 'static + Send + Sync {
+    /// tick will be called periodically on your job by the stress suite
     fn tick(&mut self, logger: &mut StressJobMetricLogger) -> StressJobTickResult;
 }
 
+/// please provide a factory function for stress jobs
 pub type JobFactory<J> = Box<dyn FnMut() -> J + 'static + Send + Sync>;
 
+/// an individual stress metric
 #[derive(Debug, Clone)]
 pub struct StressLogStats {
     pub count: u64,
@@ -53,12 +62,14 @@ pub struct StressLogStats {
     pub avg: f64,
 }
 
+/// a collection of stress stats for a whole suite run
 #[derive(Debug, Clone)]
 pub struct StressStats {
     pub master_tick_count: u64,
     pub log_stats: HashMap<String, StressLogStats>,
 }
 
+/// internal job metric log struct
 #[derive(Debug, Clone)]
 struct StressJobLog {
     pub job_index: usize,
@@ -66,6 +77,7 @@ struct StressJobLog {
     pub value: f64,
 }
 
+/// a struct implementing this trait can serve as a stress suite for a test
 pub trait StressSuite: 'static {
     fn start(&mut self);
     fn progress(&mut self, stats: &StressStats);
@@ -73,12 +85,19 @@ pub trait StressSuite: 'static {
     fn tick(&mut self) {}
 }
 
+/// configure the stress suite runner with these parameters
 pub struct StressRunConfig<S: StressSuite, J: StressJob> {
+    /// how many threads should be spun up in the job management thread pool
     pub thread_pool_size: usize,
+    /// how many total jobs should we try to keep arount
     pub job_count: usize,
+    /// the total runtime of the stress test run
     pub run_time_ms: u64,
+    /// how often should we report progress statistics
     pub progress_interval_ms: u64,
+    /// the suite to execute
     pub suite: S,
+    /// the job factory for creating individual jobs
     pub job_factory: JobFactory<J>,
 }
 
@@ -93,11 +112,13 @@ impl<S: StressSuite, J: StressJob> std::fmt::Debug for StressRunConfig<S, J> {
     }
 }
 
+/// internal job tracking struct
 struct StressJobInfo<J: StressJob> {
     job_index: usize,
     job: J,
 }
 
+/// internal stress runner struct
 struct StressRunner<S: StressSuite, J: StressJob> {
     config: StressRunConfig<S, J>,
     run_until: std::time::Instant,
@@ -113,7 +134,8 @@ struct StressRunner<S: StressSuite, J: StressJob> {
 }
 
 impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
-    pub fn new(config: StressRunConfig<S, J>) -> Self {
+    /// private stress runner constructor
+    fn priv_new(config: StressRunConfig<S, J>) -> Self {
         let (log_send, log_recv) = crossbeam_channel::unbounded();
         let run_until = std::time::Instant::now()
             .checked_add(std::time::Duration::from_millis(config.run_time_ms))
@@ -140,13 +162,14 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             },
         };
         for _ in 0..runner.config.thread_pool_size {
-            runner.priv_create_thread();
+            runner.create_thread();
         }
         runner.config.suite.start();
         runner
     }
 
-    pub fn tick(&mut self) -> bool {
+    /// give the stress runner some processor time
+    fn tick(&mut self) -> bool {
         if std::time::Instant::now() > self.run_until {
             *self.should_continue.lock().unwrap() = false;
             return false;
@@ -202,7 +225,8 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         true
     }
 
-    pub fn cleanup(mut self) {
+    /// stress runner shutdown logic
+    fn cleanup(mut self) {
         *self.should_continue.lock().unwrap() = false;
         for t in self.thread_pool.drain(..) {
             t.join().unwrap();
@@ -210,9 +234,8 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         self.config.suite.stop(self.stats);
     }
 
-    // -- private -- //
-
-    fn priv_create_thread(&mut self) {
+    /// spawn a single thread-pool thread
+    fn create_thread(&mut self) {
         let should_continue = self.should_continue.clone();
         let job_count = self.job_count.clone();
         let job_queue = self.job_queue.clone();
@@ -225,7 +248,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 Some(job) => job,
                 None => continue,
             };
-            let mut logger = StressJobMetricLogger::new(job.job_index);
+            let mut logger = StressJobMetricLogger::priv_new(job.job_index);
             let start = std::time::Instant::now();
             let result = job.job.tick(&mut logger);
             logger.log("tick_elapsed_ms", start.elapsed().as_millis() as f64);
@@ -241,8 +264,9 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     }
 }
 
+/// execute a single run of a stress test suite, with given config parameters
 pub fn stress_run<S: StressSuite, J: StressJob>(config: StressRunConfig<S, J>) {
-    let mut runner = StressRunner::new(config);
+    let mut runner = StressRunner::priv_new(config);
     while runner.tick() {
         std::thread::sleep(std::time::Duration::from_millis(1));
     }

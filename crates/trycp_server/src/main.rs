@@ -362,9 +362,9 @@ fn main() {
             return Err(invalid_request(format!("{} is already running", id)));
         };
 
-        let config_path = format!("{}", get_config_path(&state, &id).to_str().unwrap());
-        let stdout_log_path = format!("{}", get_stdout_log_path(&state, &id).to_str().unwrap());
-        let stderr_log_path = format!("{}", get_stderr_log_path(&state, &id).to_str().unwrap());
+        let config_path = get_config_path(&state, &id).to_str().unwrap().to_string();
+        let stdout_log_path = get_stdout_log_path(&state, &id).to_str().unwrap().to_string();
+        let stderr_log_path = get_stderr_log_path(&state, &id).to_str().unwrap().to_string();
 
         let mut conductor = Command::new("holochain")
             .args(&["-c", &config_path])

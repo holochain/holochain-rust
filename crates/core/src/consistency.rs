@@ -128,15 +128,19 @@ impl ConsistencyModel {
                 if do_cache {
                     let address = entry.address();
                     let hold = Hold(address.clone());
-                    let meta = crud_link.clone().and_then(|crud| match entry {
-                        Entry::App(_, _) => Some(UpdateEntry(crud, address.clone())),
-                        Entry::Deletion(_) => Some(RemoveEntry(crud, address.clone())),
+                    let meta = match entry {
+                        Entry::App(_, _) => crud_link
+                            .clone()
+                            .and_then(|crud| Some(UpdateEntry(crud, address.clone()))),
+                        Entry::Deletion(_) => crud_link
+                            .clone()
+                            .and_then(|crud| Some(RemoveEntry(crud, address.clone()))),
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
                         Entry::LinkRemove(_) => Some(RemoveLink(entry.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
                         // as of now, link data contains more information than just the link
                         _ => None,
-                    });
+                    };
                     let mut pending = vec![hold];
                     if let Some(m) = meta {
                         pending.push(m)

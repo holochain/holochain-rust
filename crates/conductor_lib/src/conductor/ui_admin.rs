@@ -1,10 +1,10 @@
 use crate::{
     conductor::{base::notify, Conductor},
     config::{UiBundleConfiguration, UiInterfaceConfiguration},
+    error::HolochainInstanceError,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
 };
-use crate::error::HolochainInstanceError;
 use holochain_core_types::error::HolochainError;
 use std::{path::PathBuf, sync::Arc};
 

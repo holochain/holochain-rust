@@ -1,5 +1,7 @@
-use crate::config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
-use crate::error::HolochainResult;
+use crate::{
+    config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration},
+    error::HolochainResult,
+};
 use hyper::{http::uri, Request};
 
 pub const DNA_CONFIG_ROUTE: &str = "/_dna_connections.json";

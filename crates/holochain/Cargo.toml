@@ -1,6 +1,6 @@
 [package]
 name = "holochain"
-version = "0.0.38-alpha6"
+version = "0.0.38-alpha13"
 description = "holochain"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -8,11 +8,11 @@ documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.38-alpha6", path = "../core_types" }
-holochain_conductor_lib = { version = "=0.0.38-alpha6", path = "../conductor_lib" }
+holochain_core_types = { version = "=0.0.38-alpha13", path = "../core_types" }
+holochain_conductor_lib = { version = "=0.0.38-alpha13", path = "../conductor_lib" }
 lib3h_sodium = "=0.0.21"
-holochain_common = { version = "=0.0.38-alpha6", path = "../common" }
-holochain_locksmith = { version = "=0.0.38-alpha6", path = "../locksmith" }
+holochain_common = { version = "=0.0.38-alpha13", path = "../common" }
+holochain_locksmith = { version = "=0.0.38-alpha13", path = "../locksmith" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"

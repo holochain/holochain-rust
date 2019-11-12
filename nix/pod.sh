@@ -25,7 +25,7 @@
 # if a nix command is breaking on your machine but working elsewhere try
 # passing it to our "pod" script, e.g.:
 #
-# `./scripts/nix/pod.sh hc-rust-test`
+# `./nix/pod.sh hc-rust-test`
 #
 # if the pod works where a normal `nix-shell` does not, chances are that you
 # have some incompatible user config being sourced/executed by `nix-shell`

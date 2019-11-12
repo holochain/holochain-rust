@@ -116,6 +116,7 @@ pub struct Configuration {
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
 
+    #[serde(default)]
     pub metric_publisher: Option<MetricPublisherConfig>,
 }
 
@@ -1055,6 +1056,9 @@ pub mod tests {
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     n3h_log_level = "d"
+
+    [metric_publisher]
+    type = "logger"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -1072,6 +1076,7 @@ pub mod tests {
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
         assert_eq!(config.logger.logger_level, "debug");
+        assert_eq!(format!("{:?}", config.metric_publisher), "Some(Logger)");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {

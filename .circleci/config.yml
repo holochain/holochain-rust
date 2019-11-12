@@ -320,7 +320,8 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
-   - stress-tests-sim1h
+   # @todo this was flakey
+   # - stress-tests-sim1h
    - stress-tests-sim2h
 
  cold.ubuntu:

@@ -21,7 +21,7 @@ use lib3h_sodium::{
     secbuf::SecBuf,
 };
 
-use conductor::passphrase_manager::PassphraseManager;
+use crate::conductor::passphrase_manager::PassphraseManager;
 use holochain_dpki::{password_encryption::PwHashConfig, seed::SeedType};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -537,8 +537,8 @@ pub fn test_hash_config() -> Option<PwHashConfig> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::conductor::passphrase_manager::PassphraseServiceMock;
     use base64;
-    use conductor::passphrase_manager::PassphraseServiceMock;
     use holochain_dpki::utils;
     use holochain_persistence_api::cas::content::Address;
 

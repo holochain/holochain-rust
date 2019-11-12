@@ -313,10 +313,9 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::tempdir;
-    use context_builder::ContextBuilder;
+    use super::*;
+    use crate::context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
@@ -330,6 +329,7 @@ mod tests {
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{path::PathBuf, sync::Arc};
+    use tempfile;
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
         create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,

@@ -13,8 +13,8 @@ let
   echo "checking ${config.release.tag}"
   echo
 
-  core_binaries=( "cli" "conductor" )
-  core_platforms=( "apple-darwin" "pc-windows-gnu" "pc-windows-msvc" "unknown-linux-gnu" )
+  core_binaries=( "cli" "holochain" "sim2h_server" "trycp_server" )
+  core_platforms=( "apple-darwin" "generic-linux-gnu" )
 
   for binary in "''${core_binaries[@]}"; do for platform in "''${core_platforms[@]}"; do file="$binary-${config.release.tag}-x86_64-$platform.tar.gz"
     url="https://github.com/holochain/holochain-rust/releases/download/${config.release.tag}/$file"

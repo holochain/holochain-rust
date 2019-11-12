@@ -11,8 +11,11 @@ use rusoto_logs::*;
 use std::{
     convert::{TryFrom, TryInto},
     iter::FromIterator,
-    time::UNIX_EPOCH,
+    time::{SystemTime, UNIX_EPOCH},
 };
+
+use structopt::StructOpt;
+
 const DEFAULT_REGION: Region = Region::EuCentral1;
 
 #[derive(Clone)]
@@ -110,27 +113,52 @@ pub struct CloudWatchLogger {
     pub sequence_token: Option<String>,
 }
 
+#[derive(Clone, Debug, Default, StructOpt)]
+pub struct QueryArgs {
+    #[structopt(name = "start_time")]
+    pub start_time: Option<i64>,
+    #[structopt(name = "end_time")]
+    pub end_time: Option<i64>,
+    #[structopt(
+        name = "log_stream_pat",
+        short = "p",
+        about = "The log stream pattern to filter messages over"
+    )]
+    pub log_stream_pat: Option<String>,
+}
+
 impl CloudWatchLogger {
     /// Query the cloudwatch logger given a start and stop time interval.
     /// Produces a raw vector of result field rows (each as a vector).
     /// Use `CloudWatchLogger::query_metrics` or `CloudWatchLogger::query_and_aggregate`
     /// to produce numerical data from this raw data.
-    pub fn query(
-        &self,
-        start_time: &std::time::SystemTime,
-        end_time: &std::time::SystemTime,
-    ) -> Vec<Vec<ResultField>> {
-        let query_string = "fields @message | filter @message like 'metrics.rs'".to_string();
+    pub fn query(&self, query_args: &QueryArgs) -> Vec<Vec<ResultField>> {
+        let query_string;
+
+        if let Some(log_stream_pat) = &query_args.log_stream_pat {
+            query_string =
+                format!(
+                "fields @message, @logStream | filter @message like '{}' and @logStream like '{}'",
+                logger::METRIC_TAG, log_stream_pat);
+        } else {
+            query_string = format!(
+                "fields @message | filter @message like '{}'",
+                logger::METRIC_TAG
+            );
+        }
+
         let start_query_request = StartQueryRequest {
             limit: None,
             query_string,
-            start_time: start_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
-            end_time: end_time.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
+            start_time: query_args
+                .start_time
+                .unwrap_or_else(Self::default_start_time),
+            end_time: query_args.end_time.unwrap_or_else(Self::default_end_time),
             log_group_name: self
                 .log_group_name
                 .clone()
-                .unwrap_or_else(|| Self::default_log_group()), // This is optional for rusoto > 0.41.0
-                                                               // log_group_names: None, <-- Uncomment for rusoto >= 0.41.0
+                .unwrap_or_else(Self::default_log_group), // This is optional for rusoto > 0.41.0
+                                                          // log_group_names: None, <-- Uncomment for rusoto >= 0.41.0
         };
 
         let query: StartQueryResponse =
@@ -189,23 +217,15 @@ impl CloudWatchLogger {
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// all metric samples observed during the interval
-    pub fn query_metrics(
-        &self,
-        start_time: &std::time::SystemTime,
-        end_time: &std::time::SystemTime,
-    ) -> Box<dyn Iterator<Item = Metric>> {
-        let query = self.query(start_time, end_time);
+    pub fn query_metrics(&self, query_args: &QueryArgs) -> Box<dyn Iterator<Item = Metric>> {
+        let query = self.query(query_args);
         Self::metrics_of_query(query)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// aggregate statistics of metrics from the results.
-    pub fn query_and_aggregate(
-        &self,
-        start_time: &std::time::SystemTime,
-        end_time: &std::time::SystemTime,
-    ) -> StatsByMetric {
-        StatsByMetric::from_iter(self.query_metrics(start_time, end_time))
+    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric {
+        StatsByMetric::from_iter(self.query_metrics(query_args))
     }
 
     pub fn default_log_stream() -> String {
@@ -218,6 +238,17 @@ impl CloudWatchLogger {
 
     pub fn default_log_group() -> String {
         "holochain".to_string()
+    }
+
+    pub fn default_start_time() -> i64 {
+        UNIX_EPOCH.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64
+    }
+
+    pub fn default_end_time() -> i64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64
     }
 
     pub fn with_log_group(log_group_name: String, region: &Region) -> Self {

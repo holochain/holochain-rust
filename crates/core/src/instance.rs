@@ -19,9 +19,9 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
-    sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
     ugly::lax_send_sync,
 };
+use holochain_locksmith::{RwLock, RwLockReadGuard};
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -396,8 +396,8 @@ pub mod tests {
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
-        sync::{HcMutex as Mutex, HcRwLock as RwLock},
     };
+    use holochain_locksmith::{Mutex, RwLock};
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
@@ -443,6 +443,9 @@ pub mod tests {
                 None,
                 None,
                 false,
+                Arc::new(RwLock::new(
+                    holochain_metrics::DefaultMetricPublisher::default(),
+                )),
             )),
             logger,
         )
@@ -492,6 +495,9 @@ pub mod tests {
                 // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name),
                 false,
+                Arc::new(RwLock::new(
+                    holochain_metrics::DefaultMetricPublisher::default(),
+                )),
             )
             .unwrap(),
         )
@@ -517,6 +523,9 @@ pub mod tests {
             None,
             None,
             false,
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -543,6 +552,9 @@ pub mod tests {
             None,
             None,
             false,
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -658,7 +670,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
-        dna.zomes.insert("".to_string(), Zome::default());
+        dna.zomes.insert("".to_string(), Zome::empty());
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
         test_instance(dna, None).expect("Blank instance could not be initialized!")
     }

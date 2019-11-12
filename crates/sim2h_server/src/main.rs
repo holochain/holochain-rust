@@ -1,18 +1,16 @@
+extern crate lib3h_sodium;
 extern crate structopt;
 
-use lib3h::transport::{
-    protocol::DynTransportActor,
+use lib3h_protocol::uri::Builder;
+use lib3h_sodium::SodiumCryptoSystem;
+use log::error;
+use sim2h::{
     websocket::{
-        actor::GhostTransportWebsocket,
+        streams::*,
         tls::{TlsCertificate, TlsConfig},
     },
+    Sim2h, MESSAGE_LOGGER,
 };
-use lib3h_protocol::{
-    types::{NetworkHash, NodePubKey},
-    uri::Builder,
-};
-use log::error;
-use sim2h::{Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
 
@@ -33,17 +31,14 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
-fn create_websocket_transport() -> DynTransportActor {
-    Box::new(GhostTransportWebsocket::new(
-        NodePubKey::from("sim2h-worker-transport"),
-        TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
-        NetworkHash::from("sim2h-network"),
-    ))
+fn create_stream_manager() -> StreamManager<std::net::TcpStream> {
+    let tls_config = TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy());
+    StreamManager::with_std_tcp_stream(tls_config)
 }
 
 fn main() {
     env_logger::init();
-    let transport = create_websocket_transport();
+    let transport = create_stream_manager();
 
     let args = Cli::from_args();
 
@@ -57,7 +52,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(transport, uri);
+    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), transport, uri);
 
     loop {
         let result = sim2h.process();

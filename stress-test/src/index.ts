@@ -35,7 +35,42 @@ const orchestrator = new Orchestrator({
   middleware,
   globalConfig: {
     network,
-    logger: true
+    logger: {
+      type: 'debug',
+      rules: {
+        rules: [
+          {
+            exclude: true,
+            pattern: '.*parity.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*mio.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*tokio.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*hyper.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*rusoto_core.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*want.*'
+          },
+          {
+            exclude: true,
+            pattern: '.*rpc.*'
+          }
+        ]
+      },
+      state_dump: false
+    }
   }
 })
 
@@ -46,5 +81,11 @@ const M = parseInt(process.argv[3], 10) || 1
 console.log(`Running stress tests with N=${N}, M=${M}`)
 
 require('./all-on')(orchestrator.registerScenario, N, M)
+require('./telephone-games')(orchestrator.registerScenario, N, M)
+
+// the hammer count here is the largest number we think should be acceptable
+// for ci to pass
+require('./zome-hammer')(orchestrator.registerScenario, 100)
+
 
 orchestrator.run()

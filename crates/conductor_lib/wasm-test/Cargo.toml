@@ -1,6 +1,6 @@
 [package]
 name = "example_api_wasm"
-version = "0.0.33-alpha3"
+version = "0.0.38-alpha13"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -16,6 +16,6 @@ members = []
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-holochain_wasm_utils = { path = "../../wasm_utils"}
-holochain_core_types = { path = "../../core_types"}
+holochain_wasm_utils = { path = "../../wasm_utils" }
+holochain_core_types = { path = "../../core_types" }
 holochain_json_derive = "=0.0.17"

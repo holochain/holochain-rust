@@ -4,44 +4,33 @@ use crate::connection::{
     net_connection::{NetHandler, NetWorker},
     NetResult,
 };
-use detach::Detach;
-use failure::err_msg;
+use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{
     error::JsonError,
     json::{JsonString, RawString},
 };
-use holochain_tracing::Span;
-use lib3h::transport::{
-    protocol::{
-        RequestToChild, RequestToChildResponse, RequestToParent, TransportActorParentWrapper,
-    },
-    websocket::{
-        actor::GhostTransportWebsocket,
-        tls::{TlsCertificate, TlsConfig},
-    },
-};
+use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
-    types::{AgentPubKey, NetworkHash, NodePubKey, SpaceHash},
+    types::{AgentPubKey, SpaceHash},
     uri::Lib3hUri,
     Address,
 };
-use lib3h_zombie_actor::{GhostCallbackData, GhostCanTrack, GhostParentWrapper, WorkWasDone};
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
+    websocket::{
+        streams::{ConnectionStatus, StreamEvent, StreamManager},
+        tls::{TlsCertificate, TlsConfig},
+    },
     WireError, WireMessage,
 };
-use std::convert::TryFrom;
+use std::{convert::TryFrom, time::Instant};
 use url::Url;
-use std::time::Instant;
-use failure::_core::time::Duration;
-
-const PING_DURATION_SECS: u64 = 10;
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -52,14 +41,17 @@ pub struct Sim2hConfig {
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
     handler: NetHandler,
-    transport: Detach<TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket>>,
+    stream_manager: StreamManager<std::net::TcpStream>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
+    stream_events: Vec<StreamEvent>,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
     agent_id: Address,
     conductor_api: ConductorApi,
     time_of_last_sent: Instant,
+    connection_status: ConnectionStatus,
+    metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
 }
 
 fn wire_message_into_escaped_string(message: &WireMessage) -> String {
@@ -89,61 +81,26 @@ impl Sim2hWorker {
         agent_id: Address,
         conductor_api: ConductorApi,
     ) -> NetResult<Self> {
-        let transport_raw = GhostTransportWebsocket::new(
-            // not used currently inside GhostTransportWebsocket:
-            NodePubKey::from("sim2h-worker-transport"),
+        let mut stream_manager = StreamManager::with_std_tcp_stream(
             TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
-            // not used currently inside GhostTransportWebsocket:\
-            NetworkHash::from("sim2h-network"),
         );
-
-        let mut transport: TransportActorParentWrapper<Sim2hWorker, GhostTransportWebsocket> =
-            GhostParentWrapper::new(
-                transport_raw,
-                "t1_requests", // prefix for request ids in the tracker
-            );
 
         // bind to some port:
         // channel for making an async call sync
         debug!("Trying to bind to network...");
-        let (tx, rx) = crossbeam_channel::unbounded();
-        transport.request(
-            Span::todo("Find out how to use spans the right way"),
-            RequestToChild::Bind {
-                spec: Url::parse("wss://127.0.0.1:0")
-                    .expect("can parse url")
-                    .into(),
-            },
-            // callback just notifies channel so
-            Box::new(move |_owner, response| {
-                let result = match response {
-                    GhostCallbackData::Timeout(bt) => {
-                        Err(format!("Bind timed out. Backtrace: {:?}", bt))
-                    }
-                    GhostCallbackData::Response(r) => match r {
-                        Ok(response) => match response {
-                            RequestToChildResponse::Bind(bind_result_data) => {
-                                Ok(bind_result_data.bound_url)
-                            }
-                            _ => Err(String::from(
-                                "Got unexpected response from transport actor during bind",
-                            )),
-                        },
-                        Err(transport_error) => {
-                            Err(format!("Error during bind: {:?}", transport_error))
-                        }
-                    },
-                };
-                let _ = tx.send(result);
-                Ok(())
-            }),
-        )?;
+        let uri = lib3h_protocol::uri::Builder::with_raw_url("wss://127.0.0.1")
+            .unwrap()
+            .with_port(0)
+            .build();
+
+        let bound_url = stream_manager.bind(&uri)?;
 
         let mut instance = Self {
             handler,
-            transport: Detach::new(transport),
+            stream_manager,
             inbox: Vec::new(),
             to_core: Vec::new(),
+            stream_events: Vec::new(),
             server_url: Url::parse(&config.sim2h_url)
                 .expect("Sim2h URL can't be parsed")
                 .into(),
@@ -151,17 +108,52 @@ impl Sim2hWorker {
             agent_id,
             conductor_api,
             time_of_last_sent: Instant::now(),
+            connection_status: ConnectionStatus::None,
+            metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
+                DefaultMetricPublisher::default(),
+            )),
         };
 
-        detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
-        detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
-        detach_run!(&mut instance.transport, |t| t.process(&mut instance))?;
-
-        let result = rx.recv()?;
-        let bound_url = result.map_err(|bind_error| err_msg(bind_error))?;
         debug!("Successfully bound to {:?}", bound_url);
 
+        instance.connection_status = instance.try_connect(Duration::from_millis(5000))?;
+
+        match instance.connection_status {
+            ConnectionStatus::Ready => info!("Connected to sim2h server!"),
+            ConnectionStatus::None => error!("Could not connect to sim2h server!"),
+            ConnectionStatus::Initializing => {
+                warn!("Still initializing connection to sim2h after 5 seconds of waiting")
+            }
+        };
+
         Ok(instance)
+    }
+
+    fn try_connect(&mut self, timeout: Duration) -> NetResult<ConnectionStatus> {
+        let url: url::Url = self.server_url.clone().into();
+        let clock = std::time::SystemTime::now();
+        let mut status: NetResult<ConnectionStatus> = Ok(ConnectionStatus::None);
+        loop {
+            match self.stream_manager.connection_status(&url) {
+                ConnectionStatus::Ready => return Ok(ConnectionStatus::Ready),
+                ConnectionStatus::None => {
+                    let url = self.server_url.clone().into();
+                    if let Err(e) = self.stream_manager.connect(&url) {
+                        status = Err(e.into());
+                    }
+                }
+                s => {
+                    status = Ok(s);
+                    let (_did_work, mut events) = self.stream_manager.process()?;
+                    self.stream_events.append(&mut events);
+                    std::thread::sleep(std::time::Duration::from_millis(10))
+                }
+            };
+            if clock.elapsed().unwrap() > timeout {
+                error!("Timed out waiting for connection for url {:?}", url);
+                return status;
+            }
+        }
     }
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
@@ -169,40 +161,22 @@ impl Sim2hWorker {
         let payload = wire_message_into_escaped_string(&message);
         let signature = self
             .conductor_api
-            .execute(
-                payload.clone(),
-                CryptoMethod::Sign,
-            )
-            .expect(&format!("Couldn't sign wire message in sim2h worker: {}", payload));
+            .execute(payload.clone(), CryptoMethod::Sign)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
+                    payload, e
+                )
+            });
 
         let signed_wire_message = SignedWireMessage::new(
             message,
             Provenance::new(self.agent_id.clone(), signature.into()),
         );
-        self.transport.request(
-            Span::todo("Find out how to use spans the right way"),
-            RequestToChild::SendMessage {
-                uri: self.server_url.clone(),
-                payload: signed_wire_message.into(),
-            },
-            // callback just notifies channel so
-            Box::new(move |_owner, response| {
-                match response {
-                    GhostCallbackData::Response(Ok(RequestToChildResponse::SendMessageSuccess)) => {
-                        trace!("Success sending wire message")
-                    }
-                    GhostCallbackData::Response(Err(e)) => {
-                        error!("Error sending wire message: {:?}", e)
-                    }
-                    GhostCallbackData::Timeout(bt) => {
-                        error!("Timeout sending wire message: {:?}", bt)
-                    }
-                    _ => error!(
-                        "Got bad response type from transport actor when sending wire message"
-                    ),
-                };
-                Ok(())
-            }),
+        let to_send: Opaque = signed_wire_message.into();
+        self.stream_manager.send(
+            &self.server_url.clone().into(),
+            to_send.as_bytes().as_slice(),
         )?;
         Ok(())
     }
@@ -371,6 +345,7 @@ impl Sim2hWorker {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn send_ping(&mut self) {
         trace!("Ping");
         if let Err(e) = self.send_wire_message(WireMessage::Ping) {
@@ -389,24 +364,30 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
-        if Instant::now().duration_since(self.time_of_last_sent) > Duration::from_secs(PING_DURATION_SECS) {
-            self.send_ping();
-        }
-        if let Err(transport_error) = detach_run!(&mut self.transport, |t| t.process(self)) {
-            error!("Transport error: {:?}", transport_error);
-            // This most likely means we have connection issues.
-            // Send ping to reestablish a potentially lost connection.
-            self.send_ping();
-        }
-        let mut did_something = WorkWasDone::from(false);
+        let clock = std::time::SystemTime::now();
 
-        let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
-        for data in client_messages {
-            debug!("CORE >> Sim2h: {:?}", data);
-            if let Err(error) = self.handle_client_message(data) {
-                error!("Error handling client message in Sim2hWorker: {:?}", error);
+        let mut did_something = false;
+
+        match self
+            .stream_manager
+            .connection_status(&self.server_url.clone().into())
+        {
+            ConnectionStatus::None => {
+                warn!("No connection to sim2h server. Trying to reconnect...");
+                self.stream_manager
+                    .connect(&self.server_url.clone().into())?;
             }
-            did_something = WorkWasDone::from(true);
+            ConnectionStatus::Initializing => debug!("connecting..."),
+            ConnectionStatus::Ready => {
+                let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
+                for data in client_messages {
+                    debug!("CORE >> Sim2h: {:?}", data);
+                    if let Err(error) = self.handle_client_message(data) {
+                        error!("Error handling client message in Sim2hWorker: {:?}", error);
+                    }
+                    did_something = true;
+                }
+            }
         }
 
         let server_messages = self.to_core.drain(..).collect::<Vec<_>>();
@@ -418,15 +399,25 @@ impl NetWorker for Sim2hWorker {
                     error
                 );
             }
-            did_something = WorkWasDone::from(true);
+            did_something = true;
         }
 
-        for mut transport_message in self.transport.drain_messages() {
-            match transport_message.take_message().expect("GhostMessage must have a message") {
-                RequestToParent::ReceivedData {uri, payload} => {
+        let (_did_work, mut events) = match self.stream_manager.process() {
+            Ok((did_work, events)) => (did_work, events),
+            Err(e) => {
+                error!("Transport error: {:?}", e);
+                (false.into(), vec![])
+            }
+        };
+        self.stream_events.append(&mut events);
+        for transport_message in self.stream_events.drain(..).collect::<Vec<StreamEvent>>() {
+            match transport_message {
+                StreamEvent::ReceivedData(uri, payload) => {
+                    let uri : Lib3hUri = uri.into();
                     if uri != self.server_url {
                         warn!("Received data from unknown remote {:?} - ignoring", uri);
                     } else {
+                        let payload : Opaque = payload.into();
                         match WireMessage::try_from(&payload) {
                             Ok(wire_message) =>
                                 if let Err(error) = self.handle_server_message(wire_message) {
@@ -443,16 +434,30 @@ impl NetWorker for Sim2hWorker {
 
                     }
                 }
-                RequestToParent::IncomingConnection {uri} =>
+                StreamEvent::IncomingConnectionEstablished(uri) =>
                     warn!("Got incoming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
-                RequestToParent::ErrorOccured {uri, error} =>
+                StreamEvent::ErrorOccured(uri, error) =>
                     error!("Transport error occurred on connection to {:?}: {:?}", uri, error),
-                RequestToParent::Disconnect(_) => warn!("Got disconnected! Will try to reconnect."),
-                RequestToParent::Unbind(url) => error!("Got unbound form: {:?}", url),
+                StreamEvent::ConnectionClosed(uri) => {
+                    warn!("Got connection close! Will try to reconnect.");
+                    if let Err(error) = self.stream_manager.close(&uri) {
+                        error!("Error when trying to close dead stream: {:?}", error);
+                    }
+                },
+                StreamEvent::ConnectResult(url, net_id) => {
+                    info!("got connect result for url: {:?}, net_id: {:?}", url, net_id)
+                }
             }
-            did_something = WorkWasDone::from(true);
+            did_something = true;
         }
-        Ok(did_something.into())
+        if did_something {
+            let latency = clock.elapsed().unwrap().as_millis();
+            let metric_name = "sim2h_worker.tick.latency";
+            let metric = holochain_metrics::Metric::new(metric_name, latency as f64);
+            trace!("publishing: {}", latency);
+            self.metric_publisher.write().unwrap().publish(&metric);
+        }
+        Ok(did_something)
     }
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {

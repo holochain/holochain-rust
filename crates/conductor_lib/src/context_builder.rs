@@ -1,20 +1,23 @@
 use holochain_core::{context::Context, persister::SimplePersister, signal::SignalSender};
-use holochain_core_types::{
-    agent::AgentId, eav::Attribute, error::HolochainError, sync::HcRwLock as RwLock,
-};
+use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
+use holochain_locksmith::RwLock;
 use holochain_net::p2p_config::P2pConfig;
 use holochain_persistence_api::{
     cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
 };
 use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
 use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+
 use jsonrpc_core::IoHandler;
 use std::{
     fs,
     path::{Path, PathBuf},
     sync::Arc,
 };
+
+use holochain_metrics::{DefaultMetricPublisher, MetricPublisher, MetricPublisherConfig};
 
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
@@ -37,6 +40,7 @@ pub struct ContextBuilder {
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
     state_dump_logging: bool,
+    metric_publisher: Option<Arc<RwLock<dyn MetricPublisher>>>,
 }
 
 impl ContextBuilder {
@@ -51,6 +55,7 @@ impl ContextBuilder {
             conductor_api: None,
             signal_tx: None,
             state_dump_logging: false,
+            metric_publisher: None,
         }
     }
 
@@ -109,6 +114,31 @@ impl ContextBuilder {
         Ok(self)
     }
 
+    /// Sets all three storages, chain, DHT and EAV storage, to persistent lmdb based implementations.
+    /// Chain and DHT storages get set to the same pikcle CAS.
+    /// Returns an error if no lmdb storage could be spawned on the given path.
+    pub fn with_lmdb_storage<P: AsRef<Path>>(
+        mut self,
+        path: P,
+        initial_mmap_bytes: Option<usize>,
+    ) -> Result<Self, HolochainError> {
+        let base_path: PathBuf = path.as_ref().into();
+        let cas_path = base_path.join("cas");
+        let eav_path = base_path.join("eav");
+        fs::create_dir_all(&cas_path)?;
+        fs::create_dir_all(&eav_path)?;
+
+        let cas_storage = Arc::new(RwLock::new(LmdbStorage::new(&cas_path, initial_mmap_bytes)));
+        let eav_storage = Arc::new(RwLock::new(EavLmdbStorage::new(
+            eav_path,
+            initial_mmap_bytes,
+        )));
+        self.chain_storage = Some(cas_storage.clone());
+        self.dht_storage = Some(cas_storage);
+        self.eav_storage = Some(eav_storage);
+        Ok(self)
+    }
+
     /// Sets the network config.
     pub fn with_p2p_config(mut self, p2p_config: P2pConfig) -> Self {
         self.p2p_config = Some(p2p_config);
@@ -135,6 +165,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_metric_publisher(mut self, config: &MetricPublisherConfig) -> Self {
+        self.metric_publisher = Some(config.create_metric_publisher());
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
@@ -148,6 +183,9 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or_else(|| Arc::new(RwLock::new(EavMemoryStorage::new())));
+        let metric_publisher = self
+            .metric_publisher
+            .unwrap_or_else(|| Arc::new(RwLock::new(DefaultMetricPublisher::default())));
 
         Context::new(
             &self
@@ -165,16 +203,17 @@ impl ContextBuilder {
             self.conductor_api,
             self.signal_tx,
             self.state_dump_logging,
+            metric_publisher,
         )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::tempdir;
+    use super::*;
     use holochain_net::p2p_config::P2pBackendKind;
+    use tempfile;
     use test_utils::mock_signing::mock_conductor_api;
 
     #[test]

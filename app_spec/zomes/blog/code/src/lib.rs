@@ -1,29 +1,17 @@
-#![warn(unused_extern_crates)]
-#[macro_use]
-extern crate hdk;
-#[macro_use]
-extern crate serde_derive;
-extern crate boolinator;
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate holochain_json_derive;
-
-pub mod blog;
-pub mod memo;
-pub mod post;
-
-use blog::Env;
+use hdk::prelude::*;
 use hdk::{
-    error::ZomeApiResult,
-    holochain_core_types::{entry::Entry, signature::Provenance},
-    holochain_json_api::{error::JsonError, json::JsonString},
-    holochain_persistence_api::cas::content::Address,
+    holochain_core_types::{signature::Provenance},
     holochain_wasm_utils::api_serialization::{
         get_entry::{EntryHistory, GetEntryResult},
         get_links::GetLinksResult,
     },
 };
+
+mod blog;
+mod memo;
+mod post;
+
+use blog::Env;
 
 define_zome! {
 

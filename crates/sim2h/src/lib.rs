@@ -1,8 +1,8 @@
 extern crate env_logger;
+extern crate lib3h_crypto_api;
 //#[macro_use]
 extern crate log;
-#[macro_use]
-extern crate detach;
+extern crate nanoid;
 #[macro_use]
 extern crate serde;
 #[macro_use]
@@ -14,22 +14,23 @@ pub mod crypto;
 pub mod error;
 use lib3h_protocol::types::AgentPubKey;
 mod message_log;
+pub mod websocket;
 pub mod wire_message;
 
 pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-use detach::prelude::*;
-use holochain_tracing::Span;
-use lib3h::transport::protocol::*;
+//use lib3h::rrdht_util::*;
+use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
     types::SpaceHash,
     uri::Lib3hUri,
 };
-use lib3h_zombie_actor::prelude::*;
+
+use websocket::streams::{StreamEvent, StreamManager};
 pub use wire_message::{WireError, WireMessage};
 
 use log::*;
@@ -37,46 +38,57 @@ use parking_lot::RwLock;
 use rand::Rng;
 use std::{collections::HashMap, convert::TryFrom};
 
+const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+
 pub struct Sim2h {
+    crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
-    transport: Detach<TransportActorParentWrapperDyn<Self>>,
-    num_ticks: u32,
+    stream_manager: StreamManager<std::net::TcpStream>,
+    num_ticks: u64,
+    /// when should we recalculated the rrdht_arc_radius
+    rrdht_arc_radius_recalc: std::time::Instant,
+    /// when should we try to resync nodes that are still missing aspect data
+    missing_aspects_resync: std::time::Instant,
 }
 
 impl Sim2h {
-    pub fn new(transport: DynTransportActor, bind_spec: Lib3hUri) -> Self {
-        let t = Detach::new(TransportActorParentWrapperDyn::new(transport, "transport_"));
-
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        stream_manager: StreamManager<std::net::TcpStream>,
+        bind_spec: Lib3hUri,
+    ) -> Self {
         let mut sim2h = Sim2h {
+            crypto,
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
-            transport: t,
+            stream_manager,
             num_ticks: 0,
+            rrdht_arc_radius_recalc: std::time::Instant::now(),
+            missing_aspects_resync: std::time::Instant::now(),
         };
 
         debug!("Trying to bind to {}...", bind_spec);
-        let _ = sim2h.transport.request(
-            Span::fixme(),
-            RequestToChild::Bind { spec: bind_spec },
-            Box::new(|me, response| match response {
-                GhostCallbackData::Response(Ok(RequestToChildResponse::Bind(bind_result))) => {
-                    debug!("Bound as {}", &bind_result.bound_url);
-                    me.bound_uri = Some(bind_result.bound_url);
-                    Ok(())
-                }
-                GhostCallbackData::Response(Err(e)) => Err(format!("Bind error: {}", e).into()),
-                GhostCallbackData::Timeout(bt) => Err(format!("timeout: {:?}", bt).into()),
-                r => Err(format!(
-                    "Got unexpected response from transport actor during bind: {:?}",
-                    r
-                )
-                .into()),
-            }),
+        let url: url::Url = bind_spec.clone().into();
+        sim2h.bound_uri = Some(
+            sim2h
+                .stream_manager
+                .bind(&url)
+                .unwrap_or_else(|e| panic!("Error binding to url {}: {:?}", bind_spec, e))
+                .into(),
         );
+
         sim2h
+    }
+
+    /// recalculate arc radius for our connections
+    fn recalc_rrdht_arc_radius(&mut self) {
+        for (_, space) in self.spaces.iter_mut() {
+            space.write().recalc_rrdht_arc_radius();
+        }
     }
 
     fn request_authoring_list(
@@ -116,11 +128,13 @@ impl Sim2h {
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::Joined(data.space_address.clone(), data.agent_id.clone()),
+                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
                 );
                 if !self.spaces.contains_key(&data.space_address) {
-                    self.spaces
-                        .insert(data.space_address.clone(), RwLock::new(Space::new()));
+                    self.spaces.insert(
+                        data.space_address.clone(),
+                        RwLock::new(Space::new(self.crypto.box_clone())),
+                    );
                     info!(
                         "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                         data.space_address
@@ -130,7 +144,7 @@ impl Sim2h {
                     .get(&data.space_address)
                     .unwrap()
                     .write()
-                    .join_agent(data.agent_id.clone(), uri.clone());
+                    .join_agent(data.agent_id.clone(), uri.clone())?;
                 info!(
                     "Agent {:?} joined space {:?}",
                     data.agent_id, data.space_address
@@ -292,18 +306,41 @@ impl Sim2h {
             debug!(".");
             self.num_ticks = 0;
         }
+
+        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
+            self.rrdht_arc_radius_recalc = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
+                ))
+                .expect("can add interval ms");
+
+            self.recalc_rrdht_arc_radius();
+            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
+        }
+
+        if std::time::Instant::now() >= self.missing_aspects_resync {
+            self.missing_aspects_resync = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
+                ))
+                .expect("can add interval ms");
+
+            self.retry_sync_missing_aspects();
+        }
+
         trace!("process transport");
-        detach_run!(&mut self.transport, |t| t.process(self)).map_err(|e| format!("{:?}", e))?;
+        let (_did_work, messages) = self.stream_manager.process()?;
+
         trace!("process transport done");
-        for mut transport_message in self.transport.drain_messages() {
-            match transport_message
-                .take_message()
-                .expect("GhostMessage must have a message")
-            {
-                RequestToParent::ReceivedData { uri, payload } => {
+        for transport_message in messages {
+            match transport_message {
+                StreamEvent::ReceivedData(uri, payload) => {
+                    let payload: Opaque = payload.into();
                     match Sim2h::verify_payload(payload.clone()) {
                         Ok((source, wire_message)) => {
-                            if let Err(error) = self.handle_message(&uri, wire_message, &source) {
+                            if let Err(error) =
+                                self.handle_message(&uri.into(), wire_message, &source)
+                            {
                                 error!("Error handling message: {:?}", error);
                             }
                         }
@@ -313,19 +350,19 @@ impl Sim2h {
                         ),
                     }
                 }
-                RequestToParent::IncomingConnection { uri } => {
-                    if let Err(error) = self.handle_incoming_connect(uri) {
+                StreamEvent::IncomingConnectionEstablished(uri) => {
+                    if let Err(error) = self.handle_incoming_connect(uri.into()) {
                         error!("Error handling incomming connection: {:?}", error);
                     }
                 }
-                RequestToParent::Disconnect(uri) => {
+                StreamEvent::ConnectionClosed(uri) => {
                     debug!("Disconnecting {} after connection reset", uri);
-                    self.disconnect(&uri);
+                    self.disconnect(&uri.into());
                 }
-                RequestToParent::Unbind(uri) => {
-                    panic!("Got Unbind from {}", uri);
+                StreamEvent::ConnectResult(uri, net_id) => {
+                    debug!("Connected to {} (net_id = {})", uri, net_id);
                 }
-                RequestToParent::ErrorOccured { uri, error } => {
+                StreamEvent::ErrorOccured(uri, error) => {
                     error!(
                         "Transport error occurred on connection to {}: {:?}",
                         uri, error,
@@ -461,6 +498,17 @@ impl Sim2h {
                     (agents_in_space, aspects_missing_at_node)
                 };
 
+                let aspect_hashes = aspects_missing_at_node.aspect_hashes();
+                if aspect_hashes.len() > 0 {
+                    let mut space = self.spaces
+                        .get(space_address)
+                        .expect("This function should not get called if we don't have this space")
+                        .write();
+                    for aspect_hash in aspect_hashes.clone() {
+                        space.add_missing_aspect(agent_id.clone(), aspect_hash);
+                    }
+                }
+
                 if agents_in_space.len() == 1 {
                     error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
                 } else {
@@ -468,37 +516,7 @@ impl Sim2h {
                         .into_iter()
                         .filter(|a| a!=agent_id)
                         .collect::<Vec<_>>();
-
-                    let mut rng = rand::thread_rng();
-                    let random_agent_index = rng.gen_range(0, other_agents.len());
-                    let random_agent = other_agents
-                        .get(random_agent_index)
-                        .expect("Random generator must work as documented");
-
-                    debug!("FETCHING missing contents from RANDOM AGENT: {}", random_agent);
-
-                    let maybe_url = self.lookup_joined(space_address, random_agent);
-                    if maybe_url.is_none() {
-                        error!("Could not find URL for randomly selected agent. This should not happen!");
-                        return Ok(())
-                    }
-                    let random_url = maybe_url.unwrap();
-
-                    for entry_address in aspects_missing_at_node.entry_addresses() {
-                        if let Some(aspect_address_list) = aspects_missing_at_node.per_entry(entry_address) {
-                            let wire_message = WireMessage::Lib3hToClient(
-                                Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                    request_id: agent_id.clone().into(),
-                                    space_address: space_address.clone(),
-                                    provider_agent_id: random_agent.clone(),
-                                    entry_address: entry_address.clone(),
-                                    aspect_address_list: Some(aspect_address_list.clone())
-                                })
-                            );
-                            debug!("SENDING FeTCH with ReQUest ID: {:?}", wire_message);
-                            self.send(random_agent.clone(), random_url.clone(), &wire_message);
-                        }
-                    }
+                    self.fetch_aspects_from_random_agent(aspects_missing_at_node, agent_id.clone(), other_agents, space_address.clone());
                 }
                 Ok(())
             }
@@ -516,11 +534,16 @@ impl Sim2h {
                     let to_agent_id = AgentPubKey::from(fetch_result.request_id);
                     let maybe_url = self.lookup_joined(space_address, &to_agent_id);;
                     if maybe_url.is_none() {
-                        error!("Got FetchEntryResult with request id that is not a known agent id. My hack didn't work?");
+                        error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())
                     }
                     let url = maybe_url.unwrap();
                     for aspect in fetch_result.entry.aspect_list {
+                        self.spaces
+                            .get(space_address)
+                            .expect("This function should not get called if we don't have this space")
+                            .write()
+                            .remove_missing_aspect(&to_agent_id, &aspect.aspect_address);
                         let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
                                 request_id: "".into(),
@@ -539,6 +562,47 @@ impl Sim2h {
             _ => {
                 warn!("Ignoring unimplemented message: {:?}", message );
                 Err(format!("Message not implemented: {:?}", message).into())
+            }
+        }
+    }
+
+    fn fetch_aspects_from_random_agent(
+        &mut self,
+        aspects_to_fetch: AspectList,
+        for_agent_id: AgentId,
+        agent_pool: Vec<AgentId>,
+        space_address: SpaceHash,
+    ) {
+        let mut rng = rand::thread_rng();
+        let random_agent_index = rng.gen_range(0, agent_pool.len());
+        let random_agent = agent_pool
+            .get(random_agent_index)
+            .expect("Random generator must work as documented");
+
+        debug!(
+            "FETCHING missing contents from RANDOM AGENT: {}",
+            random_agent
+        );
+
+        let maybe_url = self.lookup_joined(&space_address, random_agent);
+        if maybe_url.is_none() {
+            error!("Could not find URL for randomly selected agent. This should not happen!");
+            return;
+        }
+        let random_url = maybe_url.unwrap();
+
+        for entry_address in aspects_to_fetch.entry_addresses() {
+            if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: for_agent_id.clone().into(),
+                        space_address: space_address.clone(),
+                        provider_agent_id: random_agent.clone(),
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(aspect_address_list.clone()),
+                    }));
+                debug!("SENDING fetch with request ID: {:?}", wire_message);
+                self.send(random_agent.clone(), random_url.clone(), &wire_message);
             }
         }
     }
@@ -618,10 +682,10 @@ impl Sim2h {
                     true
                 }
             })
-            .collect::<Vec<(AgentId, Lib3hUri)>>();
-        for (agent, uri) in all_agents {
-            debug!("Broadcast: Sending to {:?}", uri);
-            self.send(agent, uri, msg);
+            .collect::<Vec<(AgentId, AgentInfo)>>();
+        for (agent, info) in all_agents {
+            debug!("Broadcast: Sending to {:?}", info.uri);
+            self.send(agent, info.uri, msg);
         }
         Ok(())
     }
@@ -637,18 +701,10 @@ impl Sim2h {
             }
         }
         let payload: Opaque = msg.clone().into();
-        let send_result = self.transport.request(
-            Span::fixme(),
-            RequestToChild::SendMessage { uri, payload },
-            Box::new(|_me, response| match response {
-                GhostCallbackData::Response(Ok(RequestToChildResponse::SendMessageSuccess)) => {
-                    Ok(())
-                }
-                GhostCallbackData::Response(Err(e)) => Err(e.into()),
-                GhostCallbackData::Timeout(bt) => Err(format!("timeout: {:?}", bt).into()),
-                _ => Err("bad response type".into()),
-            }),
-        );
+        let url: url::Url = uri.into();
+        let send_result = self
+            .stream_manager
+            .send(&url, payload.as_bytes().as_slice());
 
         if let Err(e) = send_result {
             error!("GhostError during broadcast send: {:?}", e)
@@ -658,543 +714,42 @@ impl Sim2h {
             _ => debug!("sent."),
         }
     }
-}
 
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-    use crate::crypto::tests::make_test_agent_with_private_key;
-    use lib3h::transport::memory_mock::{
-        ghost_transport_memory::*, memory_server::get_memory_verse,
-    };
-    use lib3h_protocol::data_types::*;
-    use lib3h_sodium::secbuf::SecBuf;
-
-    // for this to actually show log entries you also have to run the tests like this:
-    // RUST_LOG=lib3h=debug cargo test -- --nocapture
-    pub fn enable_logging_for_test(enable: bool) {
-        // wait a bit because of non monotonic clock,
-        // otherwise we could get negative substraction panics
-        // TODO #211
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "debug");
-        }
-        let _ = env_logger::builder()
-            .default_format_timestamp(false)
-            .default_format_module_path(false)
-            .is_test(enable)
-            .try_init();
-    }
-
-    const TEST_AGENT_NAME: &str = "fake_agent_id";
-
-    fn make_test_agent() -> (SpaceData, SecBuf) {
-        make_test_agent_with_name(TEST_AGENT_NAME)
-    }
-
-    fn make_test_agent_with_name(name: &str) -> (SpaceData, SecBuf) {
-        make_test_space_data_with_agent(name)
-    }
-
-    fn make_test_space_data() -> SpaceData {
-        let (space_data, _secret_key) = make_test_space_data_with_key();
-        space_data
-    }
-
-    fn make_test_space_data_with_key() -> (SpaceData, SecBuf) {
-        let (agent_id, secret_key) = make_test_agent_with_private_key(TEST_AGENT_NAME);
-        (
-            SpaceData {
-                request_id: "".into(),
-                space_address: "fake_space_address".into(),
-                agent_id: agent_id,
-            },
-            secret_key,
-        )
-    }
-
-    fn make_test_space_data_with_agent(agent_name: &str) -> (SpaceData, SecBuf) {
-        let (agent_id, secret_key) = make_test_agent_with_private_key(agent_name);
-        (
-            SpaceData {
-                request_id: "".into(),
-                space_address: "fake_space_address".into(),
-                agent_id,
-            },
-            secret_key,
-        )
-    }
-
-    fn make_test_join_message() -> WireMessage {
-        make_test_join_message_with_space_data(make_test_space_data())
-    }
-
-    fn make_test_join_message_with_space_data(space_data: SpaceData) -> WireMessage {
-        WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(space_data))
-    }
-
-    fn make_test_leave_message() -> WireMessage {
-        WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(make_test_space_data()))
-    }
-
-    fn make_test_dm_data_with(from: AgentId, to: AgentId, content: &str) -> DirectMessageData {
-        DirectMessageData {
-            request_id: "".into(),
-            space_address: "fake_space_address".into(),
-            from_agent_id: from,
-            to_agent_id: to,
-            content: content.into(),
-        }
-    }
-
-    fn make_test_dm_data() -> DirectMessageData {
-        let from_space_data = make_test_space_data();
-        let (to_space_data, _) = make_test_space_data_with_agent("to_agent_id");
-        make_test_dm_data_with(from_space_data.agent_id, to_space_data.agent_id, "foo")
-    }
-
-    fn make_test_dm_message() -> WireMessage {
-        make_test_dm_message_with(make_test_dm_data())
-    }
-
-    fn make_test_dm_message_with(data: DirectMessageData) -> WireMessage {
-        WireMessage::ClientToLib3h(ClientToLib3h::SendDirectMessage(data))
-    }
-
-    fn make_test_dm_message_response_with(data: DirectMessageData) -> WireMessage {
-        WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleSendDirectMessageResult(
-            data,
-        ))
-    }
-
-    fn make_test_err_message() -> WireMessage {
-        WireMessage::Err("fake_error".into())
-    }
-
-    fn make_test_sim2h_nonet() -> Sim2h {
-        let transport = Box::new(GhostTransportMemory::new("null".into(), "nullnet".into()));
-        Sim2h::new(transport, Lib3hUri::with_undefined())
-    }
-
-    fn make_test_sim2h_memnet(netname: &str) -> Sim2h {
-        let transport_id = "test_transport".into();
-        let transport = Box::new(GhostTransportMemory::new(transport_id, netname));
-        Sim2h::new(transport, Lib3hUri::with_undefined())
-    }
-
-    fn make_signed(
-        secret_key: &mut SecBuf,
-        data: &SpaceData,
-        message: WireMessage,
-    ) -> SignedWireMessage {
-        SignedWireMessage::new_with_key(secret_key, data.clone().agent_id, message)
-            .expect("can make signed message")
-    }
-
-    #[test]
-    pub fn test_constructor() {
-        let mut sim2h = make_test_sim2h_nonet();
-        {
-            let reader = sim2h.connection_states.read();
-            assert_eq!(reader.len(), 0);
-        }
-        let result = sim2h.process();
-        assert_eq!(result, Ok(()));
-        assert_eq!(
-            "Some(Lib3hUri(\"mem://addr_1/\"))",
-            format!("{:?}", sim2h.bound_uri)
-        );
-    }
-
-    #[test]
-    pub fn test_incomming_connection() {
-        let sim2h = make_test_sim2h_nonet();
-
-        // incoming connections get added to the map in limbo
-        let uri = Lib3hUri::with_memory("addr_1");
-        let result = sim2h.handle_incoming_connect(uri.clone());
-        assert_eq!(result, Ok(true));
-
-        let result = sim2h.get_connection(&uri).clone();
-        assert_eq!("Some(Limbo([]))", format!("{:?}", result));
-
-        // pretend the agent has joined the space
-        let _ = sim2h.connection_states.write().insert(
-            uri.clone(),
-            ConnectionState::Joined("fake_agent".into(), "fake_space".into()),
-        );
-        // if we get a second incoming connection, the state should be reset.
-        let result = sim2h.handle_incoming_connect(uri.clone());
-        assert_eq!(result, Ok(true));
-        let result = sim2h.get_connection(&uri).clone();
-        assert_eq!("Some(Limbo([]))", format!("{:?}", result));
-    }
-
-    #[test]
-    pub fn test_join() {
-        let mut sim2h = make_test_sim2h_nonet();
-        let uri = Lib3hUri::with_memory("addr_1");
-
-        let data = make_test_space_data();
-        // you can't join if you aren't in limbo
-        let result = sim2h.join(&uri, &data);
-        assert_eq!(
-            result,
-            Err(format!("no agent found in limbo at {} ", &uri).into())
-        );
-
-        // but you can if you are  TODO: real membrane check
-        let _result = sim2h.handle_incoming_connect(uri.clone());
-        let result = sim2h.join(&uri, &data);
-        assert_eq!(result, Ok(()));
-        assert_eq!(
-            sim2h.lookup_joined(&data.space_address, &data.agent_id),
-            Some(uri.clone())
-        );
-        let result = sim2h.get_connection(&uri).clone();
-        assert_eq!(
-            format!(
-                "Some(Joined(SpaceHash(HashString(\"fake_space_address\")), AgentPubKey(HashString(\"{}\"))))",
-                data.agent_id
-            ),
-            format!("{:?}", result)
-        );
-    }
-
-    #[test]
-    pub fn test_leave() {
-        let mut sim2h = make_test_sim2h_nonet();
-        let uri = Lib3hUri::with_memory("addr_1");
-        let mut data = make_test_space_data();
-
-        // leaving a space not joined should produce an error
-        let result = sim2h.leave(&uri, &data);
-        assert_eq!(
-            result,
-            Err(format!("no joined agent found at {} ", &uri).into())
-        );
-        let _result = sim2h.handle_incoming_connect(uri.clone());
-        let result = sim2h.leave(&uri, &data);
-        assert_eq!(
-            result,
-            Err(format!("no joined agent found at {} ", &uri).into())
-        );
-
-        let _result = sim2h.join(&uri, &data);
-
-        let orig_agent = data.agent_id.clone();
-        // a leave on behalf of someone else should fail
-        data.agent_id = "someone_else_agent_id".into();
-        let result = sim2h.leave(&uri, &data);
-        assert_eq!(result, Err(SPACE_MISMATCH_ERR_STR.into()));
-
-        // a valid leave should work
-        data.agent_id = orig_agent;
-        let result = sim2h.leave(&uri, &data);
-        assert_eq!(result, Ok(()));
-        let result = sim2h.get_connection(&uri).clone();
-        assert_eq!(result, None);
-        assert_eq!(
-            sim2h.lookup_joined(&data.space_address, &data.agent_id),
-            None
-        );
-    }
-
-    #[test]
-    pub fn test_handle_joined() {
-        let mut sim2h = make_test_sim2h_nonet();
-
-        let uri = Lib3hUri::with_memory("addr_1");
-        let _ = sim2h.handle_incoming_connect(uri.clone());
-        let _ = sim2h.join(&uri, &make_test_space_data());
-        let message = make_test_join_message();
-        let data = make_test_space_data();
-
-        // you can't proxy a join message
-        let result = sim2h.handle_joined(&uri, &data.space_address, &data.agent_id, message);
-        assert!(result.is_err());
-
-        // you can't proxy for someone else, i.e. the message contents must match the
-        // space joined
-        let message = make_test_dm_message();
-        let result = sim2h.handle_joined(
-            &uri,
-            &data.space_address,
-            &"fake_other_agent".into(),
-            message,
-        );
-        assert_eq!(Err("space/agent id mismatch".into()), result);
-
-        // you can't proxy to someone not in the space
-        let message = make_test_dm_message();
-        let result =
-            sim2h.handle_joined(&uri, &data.space_address, &data.agent_id, message.clone());
-        assert_eq!(
-            Err("unvalidated proxy agent HcScixBBK8UOmkf4uvs4AI8974NEQtTzgtT7SstuVrvnizo6uWuPTpRVbiexarz".into()),
-            result,
-        );
-
-        // proxy a dm message
-        // first we have to setup the to agent in the space
-        let (to_agent_data, _key) = make_test_space_data_with_agent("to_agent_id");
-        let to_uri = Lib3hUri::with_memory("addr_2");
-        let _ = sim2h.handle_incoming_connect(to_uri.clone());
-        let _ = sim2h.join(&to_uri, &to_agent_data);
-
-        let result = sim2h.handle_joined(&uri, &data.space_address, &data.agent_id, message);
-        assert_eq!(Ok(()), result);
-
-        // proxy a dm message response
-        // for this test we just pretend the same agent set up above is making a response
-        let message = make_test_dm_message_response_with(make_test_dm_data());
-        let result = sim2h.handle_joined(&uri, &data.space_address, &data.agent_id, message);
-        assert_eq!(Ok(()), result);
-
-        // proxy a leave space message should remove the agent from the space
-        let message = make_test_leave_message();
-        let result = sim2h.handle_joined(&uri, &data.space_address, &data.agent_id, message);
-        assert_eq!(Ok(()), result);
-        let result = sim2h.get_connection(&uri).clone();
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    pub fn test_message() {
-        let netname = "test_message";
-        let mut sim2h = make_test_sim2h_memnet(netname);
-        let network = {
-            let mut verse = get_memory_verse();
-            verse.get_network(netname)
-        };
-        let uri = network.lock().unwrap().bind();
-        let (space_data, _key) = make_test_agent();
-        let test_agent = space_data.agent_id.clone();
-
-        // a message from an unconnected agent should return an error
-        let result = sim2h.handle_message(&uri, make_test_err_message(), &test_agent);
-        assert_eq!(result, Err(format!("no connection for {}", &uri).into()));
-
-        // a non-join message from an unvalidated but connected agent should queue the message
-        let _result = sim2h.handle_incoming_connect(uri.clone());
-        let result = sim2h.handle_message(&uri, make_test_err_message(), &test_agent);
-        assert_eq!(result, Ok(()));
-        assert_eq!(
-            "Some(Limbo([Err(Other(\"\\\"fake_error\\\"\"))]))",
-            format!("{:?}", sim2h.get_connection(&uri))
-        );
-
-        // a valid join message signed by the wrong agent should return an signer mismatch error
-        let (other_agent_space, _) = make_test_agent_with_name("other_agent");
-        let result =
-            sim2h.handle_message(&uri, make_test_join_message(), &other_agent_space.agent_id);
-        assert_eq!(result, Err(SIGNER_MISMATCH_ERR_STR.into()));
-
-        // a valid join message from a connected agent should update its connection status
-        let result = sim2h.handle_message(&uri, make_test_join_message(), &test_agent);
-        assert_eq!(result, Ok(()));
-        let result = sim2h.get_connection(&uri).clone();
-        assert_eq!(
-            format!(
-                "Some(Joined(SpaceHash(HashString(\"fake_space_address\")), AgentPubKey(HashString(\"{}\"))))",
-                space_data.agent_id
-            ),
-            format!("{:?}", result)
-        );
-
-        // dm
-        // first we have to setup the to agent on the in-memory-network and in the space
-        let to_uri = network.lock().unwrap().bind();
-        let _ = sim2h.handle_incoming_connect(to_uri.clone());
-        let (to_agent_data, _key) = make_test_space_data_with_agent("to_agent_id");
-        let _ = sim2h.join(&to_uri, &to_agent_data);
-
-        // then we can make a message and handle it.
-        let message = make_test_dm_message();
-        let result = sim2h.handle_message(&uri, message.clone(), &other_agent_space.agent_id);
-        assert_eq!(result, Err(SIGNER_MISMATCH_ERR_STR.into()));
-
-        let result = sim2h.handle_message(&uri, message, &test_agent);
-        assert_eq!(result, Ok(()));
-
-        // which should result in showing up in the to_uri's inbox in the in-memory netowrk
-        let result = sim2h.process();
-        assert_eq!(result, Ok(()));
-        let mut reader = network.lock().unwrap();
-        let server = reader
-            .get_server(&to_uri)
-            .expect("there should be a server for to_uri");
-        if let Ok((did_work, events)) = server.process() {
-            assert!(did_work);
-            let dm = &events[3];
-            assert_eq!(
-                "ReceivedData(Lib3hUri(\"mem://addr_3/\"), \"{\\\"Lib3hToClient\\\":{\\\"HandleSendDirectMessage\\\":{\\\"space_address\\\":\\\"fake_space_address\\\",\\\"request_id\\\":\\\"\\\",\\\"to_agent_id\\\":\\\"HcScixBBK8UOmkf4uvs4AI8974NEQtTzgtT7SstuVrvnizo6uWuPTpRVbiexarz\\\",\\\"from_agent_id\\\":\\\"HcSCinKU7Nqnf8n4ixOaaHzxdwg8x94t67rESVyCR9yo8csrQRcZGXT6q4ahmwr\\\",\\\"content\\\":\\\"Zm9v\\\"}}}\")",
-                format!("{:?}", dm))
-        } else {
-            assert!(false)
-        }
-    }
-
-    // creates an agent uri and sends a join request for it to sim2h
-    fn test_setup_agent(
-        netname: &str,
-        sim2h_uri: &Lib3hUri,
-        agent_name: &str,
-    ) -> (SecBuf, Lib3hUri, SpaceData) {
-        let network = {
-            let mut verse = get_memory_verse();
-            verse.get_network(netname)
-        };
-        let agent_uri = network.lock().unwrap().bind();
-
-        // connect to sim2h with join messages
-        let (space_data, mut secret_key) = make_test_space_data_with_agent(agent_name);
-        let join = make_test_join_message_with_space_data(space_data.clone());
-        let signed_join: Opaque = make_signed(&mut secret_key, &space_data, join).into();
-        {
-            let mut net = network.lock().unwrap();
-            let server = net
-                .get_server(sim2h_uri)
-                .expect("there should be a server for to_uri");
-            server.request_connect(&agent_uri).expect("can connect");
-            let result = server.post(&agent_uri, &signed_join.to_vec());
-            assert_eq!(result, Ok(()));
-        }
-        (secret_key, agent_uri, space_data)
-    }
-
-    #[test]
-    pub fn test_end_to_end() {
-        enable_logging_for_test(true);
-        let netname = "test_end_to_end";
-        let mut sim2h = make_test_sim2h_memnet(netname);
-        let _result = sim2h.process();
-        let sim2h_uri = sim2h.bound_uri.clone().expect("should have bound");
-
-        // set up two other agents on the memory-network
-        let (mut secret_key1, agent1_uri, space_data1) =
-            test_setup_agent(netname, &sim2h_uri, "agent1");
-        let (_, agent2_uri, space_data2) = test_setup_agent(netname, &sim2h_uri, "agent2");
-
-        let _result = sim2h.process();
-        assert_eq!(
-            sim2h.lookup_joined(&space_data1.space_address, &space_data1.agent_id),
-            Some(agent1_uri.clone())
-        );
-        assert_eq!(
-            sim2h.lookup_joined(&space_data2.space_address, &space_data2.agent_id),
-            Some(agent2_uri.clone())
-        );
-
-        // now send a direct message from agent1 through sim2h which should arrive at agent2
-        let dm_data = make_test_dm_data_with(
-            space_data1.agent_id.clone(),
-            space_data2.agent_id,
-            "come here watson",
-        );
-
-        let network = {
-            let mut verse = get_memory_verse();
-            verse.get_network(netname)
-        };
-
-        let message = make_test_dm_message_with(dm_data.clone());
-        let signed_message: Opaque = make_signed(&mut secret_key1, &space_data1, message).into();
-        {
-            let mut net = network.lock().unwrap();
-            let server = net
-                .get_server(&sim2h_uri)
-                .expect("there should be a server for to_uri");
-            let result = server.post(&agent1_uri, &signed_message.to_vec());
-            assert_eq!(result, Ok(()));
-        }
-        let _result = sim2h.process();
-        let _result = sim2h.process();
-        {
-            let mut net = network.lock().unwrap();
-            let server = net
-                .get_server(&agent2_uri)
-                .expect("there should be a server for to_uri");
-            if let Ok((did_work, events)) = server.process() {
-                assert!(did_work);
-                let dm = &events[3];
-                assert_eq!(
-                    "ReceivedData(Lib3hUri(\"mem://addr_1/\"), \"{\\\"Lib3hToClient\\\":{\\\"HandleSendDirectMessage\\\":{\\\"space_address\\\":\\\"fake_space_address\\\",\\\"request_id\\\":\\\"\\\",\\\"to_agent_id\\\":\\\"HcScIYA59KD3q734m3YThPPaB594afvuyvRyYzK86575g6Pe66GCA4AJF3EGroa\\\",\\\"from_agent_id\\\":\\\"HcSCI4uqnzxGv4bqbbBdaVrg5V4F7sxr7Fat7UaAYx9giwadHij6VeXHtjt6dsi\\\",\\\"content\\\":\\\"Y29tZSBoZXJlIHdhdHNvbg==\\\"}}}\")",
-                    format!("{:?}", dm))
-            } else {
-                assert!(false)
-            }
-        }
-    }
-
-    #[test]
-    pub fn test_disconnect_and_reconnect() {
-        enable_logging_for_test(true);
-        let netname = "test_disconnect_and_reconnect";
-        let mut sim2h = make_test_sim2h_memnet(netname);
-        let _result = sim2h.process();
-        let sim2h_uri = sim2h.bound_uri.clone().expect("should have bound");
-        let (mut secret_key, agent_uri, space_data) =
-            test_setup_agent(netname, &sim2h_uri, "agent");
-        let _result = sim2h.process();
-
-        assert_eq!(
-            sim2h.lookup_joined(&space_data.space_address, &space_data.agent_id),
-            Some(agent_uri.clone())
-        );
-
-        let network = {
-            let mut verse = get_memory_verse();
-            verse.get_network(netname)
-        };
-        {
-            let mut net = network.lock().unwrap();
-            let server = net
-                .get_server(&sim2h_uri)
-                .expect("there should be a server for sim2h_uri");
-            server.request_close(&agent_uri).expect("can disconnect");
-        }
-        let _result = sim2h.process();
-
-        assert_eq!(
-            sim2h.lookup_joined(&space_data.space_address, &space_data.agent_id),
-            None
-        );
-
-        // connect again and send a dm message
-        {
-            let mut net = network.lock().unwrap();
-            let server = net
-                .get_server(&sim2h_uri)
-                .expect("there should be a server for sim2h_uri");
-            server.request_connect(&agent_uri).expect("can connect");
-
-            let dm_data = make_test_dm_data_with(
-                space_data.agent_id.clone(),
-                space_data.agent_id.clone(),
-                "come here watson",
-            );
-
-            let message = make_test_dm_message_with(dm_data.clone());
-            let signed_message: Opaque = make_signed(&mut secret_key, &space_data, message).into();
-            let result = server.post(&agent_uri, &signed_message.to_vec());
-            assert_eq!(result, Ok(()));
-        }
-        let _result = sim2h.process();
-        let _result = sim2h.process();
-        {
-            let mut net = network.lock().unwrap();
-            let server = net
-                .get_server(&agent_uri)
-                .expect("there should be a server for agent_uri");
-            if let Ok((did_work, events)) = server.process() {
-                assert!(did_work);
-                let dm = &events[3];
-                assert_eq!(
-                    "ReceivedData(Lib3hUri(\"mem://addr_1/\"), \"{\\\"Err\\\":\\\"MessageWhileInLimbo\\\"}\")",
-                    format!("{:?}",dm))
-            } else {
-                assert!(false)
+    fn retry_sync_missing_aspects(&mut self) {
+        debug!("Checking for nodes with missing aspects to retry sync...");
+        // Extract all needed info for the call to self.request_gossiping_list() below
+        // as copies so we don't have to keep a reference to self.
+        let spaces_with_agents_and_uris = self
+            .spaces
+            .iter()
+            .filter_map(|(space_hash, space_lock)| {
+                let space = space_lock.read();
+                let agents = space.agents_with_missing_aspects();
+                // If this space doesn't have any agents with missing aspects,
+                // ignore it:
+                if agents.is_empty() {
+                    None
+                } else {
+                    // For spaces with agents with missing aspects,
+                    // annotate all agent IDs with their corresponding URI:
+                    let agent_ids_with_uris: Vec<(AgentId, Lib3hUri)> = agents
+                        .iter()
+                        .filter_map(|agent_id| {
+                            space
+                                .agent_id_to_uri(agent_id)
+                                .map(|uri| (agent_id.clone(), uri))
+                        })
+                        .collect();
+
+                    Some((space_hash.clone(), agent_ids_with_uris))
+                }
+            })
+            .collect::<HashMap<SpaceHash, Vec<_>>>();
+
+        for (space_hash, agents) in spaces_with_agents_and_uris {
+            for (agent_id, uri) in agents {
+                debug!("Re-requesting gossip list from {} at {}", agent_id, uri);
+                self.request_gossiping_list(uri, space_hash.clone(), agent_id);
             }
         }
     }

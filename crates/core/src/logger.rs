@@ -3,7 +3,7 @@
 //! gets emitted globaly from the conductor.
 use chrono::Local;
 use crossbeam_channel;
-use holochain_core_types::sync::HcMutex as Mutex;
+use holochain_locksmith::Mutex;
 use std::sync::Arc;
 
 /// trait that defines the logging functionality that holochain_core requires

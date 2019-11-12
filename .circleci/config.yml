@@ -9,6 +9,13 @@ jobs:
   resource_class: large
   steps:
    - checkout
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run: nix-shell --run hc-rust-test
 
  fmt:
@@ -73,6 +80,9 @@ jobs:
        name: DynamoDB
        command: nix-shell --run dynamodb-memory
        background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h
@@ -159,6 +169,9 @@ jobs:
        command: nix-shell --run dynamodb-memory
        background: true
    - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
+   - run:
        name: stress tests
        command: nix-shell --run hc-stress-test-sim1h
 
@@ -196,58 +209,6 @@ jobs:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
 
- cold.ubuntu.bionic.auto:
-  docker:
-   - image: ubuntu:bionic
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
-
- cold.ubuntu.xenial.auto:
-  docker:
-   - image: ubuntu:xenial
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
-
- cold.debian.stable.auto:
-  docker:
-   - image: debian:stable
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
-
- cold.mac.10.auto:
-  macos:
-   xcode: "10.2.0"
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path conductor/Cargo.toml --release -- -C lto
-
  cold.mac.10.nix:
   macos:
    xcode: "10.2.0"
@@ -259,6 +220,37 @@ jobs:
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-test
+
+ deploy.mac:
+  macos:
+   xcode: "10.2.0"
+  steps:
+   - checkout
+   - run:
+      name: Deploy mac binaries
+      command: |
+       curl https://nixos.org/nix/install | sh
+       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
+
+ deploy.linux:
+  docker:
+   - image: holochain/holonix:ubuntu
+  steps:
+   - run: sudo apt-get update && sudo apt-get install -y git ssh
+   - checkout
+   - run:
+      name: Deploy linux binaries
+      command: |
+       . /home/docker/.nix-profile/etc/profile.d/nix.sh
+       nix-shell --run hc-release-github-binaries
+
+ deploy.crates:
+  docker:
+   - image: holochain/holonix:latest
+  steps:
+   - checkout
+   - run: nix-shell --run hc-release-hook-publish
 
 workflows:
  version: 2
@@ -276,7 +268,8 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
-   - stress-tests-sim1h
+   # @todo this was flakey
+   # - stress-tests-sim1h
    - stress-tests-sim2h
 
  cold.ubuntu:
@@ -316,3 +309,24 @@ workflows:
        branches:
         only:
          - develop
+
+ deploy:
+  jobs:
+   - deploy.mac:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.linux:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.crates:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/

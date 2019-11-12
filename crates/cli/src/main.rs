@@ -173,8 +173,9 @@ fn run() -> HolochainResult<()> {
                 .unwrap_or_else(|| Ok(json!({})));
 
             match properties {
-                Ok(properties) => cli::package(output, properties)
-                    .map_err(HolochainError::Default)?,
+                Ok(properties) => {
+                    cli::package(output, properties).map_err(HolochainError::Default)?
+                }
                 Err(e) => {
                     return Err(HolochainError::Default(format_err!(
                         "Failed to parse properties argument as JSON: {:?}",

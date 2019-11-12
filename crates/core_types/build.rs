@@ -7,7 +7,10 @@ fn main() {
     let hdk_version: String = env::var("HDK_VERSION")
         .or_else( |_| env::var("CARGO_PKG_VERSION"))
         .expect("Cannot deduce HDK_VERSION; ensure HDK_VERSION or CARGO_PKG_VERSION (via Cargo.toml [package] version) is set");
-    assert!( hdk_version.len() > 0,
-             "Invalid HDK_VERSION: {:?}", &hdk_version );
+    assert!(
+        hdk_version.len() > 0,
+        "Invalid HDK_VERSION: {:?}",
+        &hdk_version
+    );
     println!("cargo:rustc-env=HDK_VERSION={}", &hdk_version);
 }

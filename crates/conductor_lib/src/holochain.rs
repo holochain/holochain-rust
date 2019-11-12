@@ -139,9 +139,14 @@ impl Holochain {
             );
 
             if let Ok(json_string) = maybe_json_string {
-                if json_string.to_string() != holochain_core_types::hdk_version::HDK_VERSION.to_string() {
+                if json_string.to_string()
+                    != holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                {
                     eprintln!("WARNING! The HDK Version of the runtime and the zome don't match.");
-                    eprintln!("Runtime HDK Version: {}", holochain_core_types::hdk_version::HDK_VERSION.to_string());
+                    eprintln!(
+                        "Runtime HDK Version: {}",
+                        holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                    );
                     eprintln!("Zome HDK Version: {}", json_string);
                 }
             }

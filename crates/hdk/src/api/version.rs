@@ -1,7 +1,4 @@
-use crate::{
-    error::ZomeApiResult,
-    Dispatch,
-};
+use crate::{error::ZomeApiResult, Dispatch};
 use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
 
 ///this method will return the current version of the HDK

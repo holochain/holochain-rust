@@ -4,14 +4,14 @@ description = "holochain conductor lib api"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.37-alpha12"
+version = "0.0.38-alpha13"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-holochain_core_types = { version = "=0.0.37-alpha12", path = "../core_types" }
-holochain_wasm_utils = { version = "=0.0.37-alpha12", path = "../wasm_utils" }
-holochain_locksmith = { version = "=0.0.37-alpha12", path = "../locksmith" }
+holochain_core_types = { version = "=0.0.38-alpha13", path = "../core_types" }
+holochain_wasm_utils = { version = "=0.0.38-alpha13", path = "../wasm_utils" }
+holochain_locksmith = { version = "=0.0.38-alpha13", path = "../locksmith" }
 jsonrpc-core = "=14.0.1"
 jsonrpc-lite = "=0.5.0"
 serde = { version = "=1.0.89", features = ["rc"] }

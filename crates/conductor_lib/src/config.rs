@@ -25,6 +25,7 @@ use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
+use holochain_metrics::MetricPublisherConfig;
 use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
@@ -39,7 +40,6 @@ use std::{
     sync::Arc,
 };
 use toml;
-
 /// Main conductor configuration struct
 /// This is the root of the configuration tree / aggregates
 /// all other configuration aspects.
@@ -115,6 +115,9 @@ pub struct Configuration {
     /// This config setting selects one of the available services (i.e. CLI prompt, IPC, mock)
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
+
+    #[serde(default)]
+    pub metric_publisher: Option<MetricPublisherConfig>,
 }
 
 /// The default passphrase service is `Cmd` which will ask for a passphrase via stdout stdin.
@@ -1053,6 +1056,9 @@ pub mod tests {
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     n3h_log_level = "d"
+
+    [metric_publisher]
+    type = "logger"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -1070,6 +1076,7 @@ pub mod tests {
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
         assert_eq!(config.logger.logger_level, "debug");
+        assert_eq!(format!("{:?}", config.metric_publisher), "Some(Logger)");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {

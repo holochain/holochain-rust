@@ -1,12 +1,12 @@
 let
- release-commit = "f9a55f95bd9e6843fb89ec0439989da4ca265c7c";
- current = "0.0.37-alpha12";
- previous = "0.0.37-alpha11";
+ release-commit = "5152cfce13043fbc780d73b7418b52db2c907a1a";
+ current = "0.0.38-alpha13";
+ previous = "0.0.38-alpha12";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";
- holonix-version = "v0.0.43";
- holonix-sha256 = "1zhqk4cqc40fb9vz4vwndz2a2q4z6kpfjmkj7npv16l1qkjk4fnh";
+ holonix-version = "v0.0.44";
+ holonix-sha256 = "0819439idwhdbavmlcy99c2ai5d9a0k7rbimbsk47p9vndw3s6cy";
 in
 rec {
 
@@ -69,8 +69,7 @@ cargo update
 
    # publish artifacts to the world
    publish = ''
-echo "go look at travis for binary building!"
-hc-release-hook-publish
+echo "go look at circle for binary building and crates publishing!"
 '';
   };
 

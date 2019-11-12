@@ -1,7 +1,6 @@
 # Holochain app specification in Rust
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
-[![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
 
 This directory contains a Holochain app that functions as a living specification of Holochain and its Rust [HDK](https://github.com/holochain/holochain-rust/tree/develop/hdk-rust) (Holochain Development Toolkit).
@@ -25,7 +24,6 @@ If you see the available commands listed, they're successfully installed.
 
 If you see `vA.B.C` where A, B, and C are numbers, you've got `node` installed.
 
-
 ### Run the tests
 
 Make sure that you fully completed the installation of dependencies. Then, within this directory run the following:
@@ -34,7 +32,7 @@ Make sure that you fully completed the installation of dependencies. Then, withi
 
 You should see the tests all passing successfully.
 
-### Detailed Description
+### Detailed Description of testing process
 
 In order to get from the source directory tree to a Holochain DNA package, and then test that, several steps need to be taken which are all automated.
 

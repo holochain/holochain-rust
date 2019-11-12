@@ -40,7 +40,7 @@ pub trait ConductorAdmin {
         dna_id: &String,
         agent_id: &String,
     ) -> Result<(), HolochainError>;
-    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration)
         -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -148,6 +148,7 @@ impl ConductorAdmin for Conductor {
     /// Also removes all instances and their mentions from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
+    /// Removes the storage of the instances.
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.dnas = new_config
@@ -164,7 +165,7 @@ impl ConductorAdmin for Conductor {
             .collect();
 
         for id in instance_ids.iter() {
-            new_config = new_config.save_remove_instance(id);
+            new_config = new_config.save_remove_instance(id, true);
         }
 
         new_config.check_consistency(&mut self.dna_loader)?;
@@ -224,11 +225,12 @@ impl ConductorAdmin for Conductor {
     /// Removes the instance given by id from the config.
     /// Also removes all mentions of that instance from all interfaces to not render the config
     /// invalid.
+    /// Optionally removes the storage of the instance.
     /// Then saves the config.
-    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_instance(&mut self, id: &String, clean: bool) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        new_config = new_config.save_remove_instance(id);
+        new_config = new_config.save_remove_instance(id, clean);
 
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
@@ -242,6 +244,7 @@ impl ConductorAdmin for Conductor {
                 result.err().unwrap()
             ));
         }
+
         if let Some(instance) = self.instances.remove(id) {
             instance.write().unwrap().kill();
         }
@@ -497,7 +500,7 @@ impl ConductorAdmin for Conductor {
             .collect();
 
         for id in instance_ids.iter() {
-            new_config = new_config.save_remove_instance(id);
+            new_config = new_config.save_remove_instance(id, true);
         }
 
         new_config.check_consistency(&mut self.dna_loader)?;
@@ -767,12 +770,16 @@ type = 'cmd'"#
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface(port));
         toml = add_block(toml, logger());
+        toml = add_block(toml, passphrase_service());
+        toml = add_block(toml, signals());
+        toml = format!("{}\n", toml);
         toml
     }
 
     pub fn barebones_test_toml(test_name: &str) -> String {
         let mut toml = header_block(test_name);
         toml = add_block(toml, agent1());
+        toml = format!("{}\n", toml);
         toml
     }
 
@@ -1187,12 +1194,12 @@ id = 'new-instance'"#,
     /// Tests if the removed instance is gone from the config file
     /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid).
-    fn test_remove_instance() {
-        let test_name = "test_remove_instance";
+    fn test_remove_instance_clean_false() {
+        let test_name = "test_remove_instance_clean_false";
         let mut conductor = create_test_conductor(test_name, 3002);
 
         assert_eq!(
-            conductor.remove_instance(&String::from("test-instance-1")),
+            conductor.remove_instance(&String::from("test-instance-1"), false),
             Ok(()),
         );
 
@@ -1229,7 +1236,131 @@ type = 'websocket'"#,
         toml = add_block(toml, signals());
         toml = format!("{}\n", toml);
 
-        assert_eq!(config_contents, toml,);
+        assert_eq!(
+            config_contents, toml,
+            "expected toml (right), got config_contents (left)"
+        );
+    }
+
+    pub mod test {
+        use super::*;
+        extern crate tempfile;
+        use self::tempfile::tempdir;
+
+        #[test]
+        /// Tests if the removed instance is gone from the config file
+        /// as well as the mentions of the removed instance are gone from the interfaces
+        /// (to not render the config invalid). If the clean argument is true, it tests that the storage of
+        /// the instance has been cleared,
+        fn test_remove_instance_clean_true() {
+            let test_name = "test_remove_instance_clean_true";
+            let tmpdir = tempdir().expect("Directory can not be created with tempdir()");
+
+            let tmp_dir_path = tmpdir.path();
+
+            let tmpdirpathdisp = tmp_dir_path.display();
+
+            let old_file_storage_conf = r#"id = 'test-instance-1'
+
+[instances.storage]
+type = 'memory'"#;
+
+            let new_file_storage_conf = format!(
+                r#"id = 'test-instance-1'
+
+[instances.storage]
+type = 'file'
+path = '{}'"#,
+                tmpdirpathdisp
+            );
+
+            let mut test_toml = test_toml(test_name, 3002);
+            test_toml = test_toml.replace(old_file_storage_conf, &new_file_storage_conf);
+
+            let mut conductor = create_test_conductor_from_toml(&test_toml, test_name);
+
+            let no_sd_err = format!(
+                "The storage directory {} for the conductor doesn't exist after creating the test conductor!",
+                tmpdirpathdisp
+            );
+
+            assert!(tmp_dir_path.exists(), no_sd_err);
+
+            let start_toml = || {
+                let mut toml = header_block(test_name);
+                toml = add_block(toml, agent1());
+                toml = add_block(toml, agent2());
+                toml = add_block(toml, dna());
+                toml
+            };
+
+            let mut toml = start_toml();
+
+            toml = add_block(toml, instance1());
+
+            toml = toml.replace(old_file_storage_conf, &new_file_storage_conf);
+
+            let finish_toml = |started_toml| {
+                let mut toml = started_toml;
+                toml = add_block(toml, instance2());
+                toml = add_block(
+                    toml,
+                    String::from(
+                        r#"[[interfaces]]
+admin = true
+id = 'websocket interface'
+
+[[interfaces.instances]]
+id = 'test-instance-1'
+
+[[interfaces.instances]]
+id = 'test-instance-2'
+
+[interfaces.driver]
+port = 3002
+type = 'websocket'"#,
+                    ),
+                );
+                toml = add_block(toml, logger());
+                toml = add_block(toml, passphrase_service());
+                toml = add_block(toml, signals());
+                toml = format!("{}\n", toml);
+                toml
+            };
+
+            toml = finish_toml(toml);
+
+            assert_eq!(toml, test_toml, "toml not as expected (left) after creating a conductor with persistent file storage");
+
+            assert_eq!(
+                conductor.remove_instance(&String::from("test-instance-1"), true),
+                Ok(()),
+                "test-instance-1 not removed"
+            );
+
+            let still_sd_err = format!(
+                "The storage directory {} still exists after trying to remove it!",
+                tmpdirpathdisp
+            );
+
+            assert!(!tmp_dir_path.exists(), still_sd_err);
+
+            let mut config_contents = String::new();
+            let mut file =
+                File::open(&conductor.config_path()).expect("Could not open temp config file");
+            file.read_to_string(&mut config_contents)
+                .expect("Could not read temp config file");
+            let mut toml2 = start_toml();
+
+            toml2 = finish_toml(toml2);
+
+            toml2 = toml2.replace("[[interfaces.instances]]\nid = \'test-instance-1\'\n\n", "");
+
+            assert_eq!(
+                config_contents, toml2,
+                "expected toml2 (right), got config_contents (left) after removing instance"
+            );
+        }
     }
 
     #[test]

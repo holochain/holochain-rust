@@ -177,8 +177,10 @@ pub mod tests {
 
         assert!(get_all_chain_header_entries(context.clone())
             .iter()
-            .all(|chain_header| {
-                get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
-            }));
+            .all(|chain_header| get_all_aspect_addresses(
+                &chain_header.address(),
+                context.clone()
+            )
+            .is_ok()));
     }
 }

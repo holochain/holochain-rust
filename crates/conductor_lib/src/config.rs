@@ -27,13 +27,14 @@ use lib3h::engine::EngineConfig;
 
 use holochain_metrics::MetricPublisherConfig;
 use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+use matches::matches;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     env,
-    fs::File,
+    fs::{remove_dir_all, File},
     io::prelude::*,
     net::Ipv4Addr,
     path::PathBuf,
@@ -587,7 +588,19 @@ impl Configuration {
 
     /// Removes the instance given by id and all mentions of it in other elements so
     /// that the config is guaranteed to be valid afterwards if it was before.
-    pub fn save_remove_instance(mut self, id: &String) -> Self {
+    pub fn save_remove_instance(mut self, id: &String, clean: bool) -> Self {
+        if clean {
+            if let Some(instance_config) = self.instance_by_id(id) {
+                if let Some(storage_path) = instance_config.storage.path() {
+                    let rmdirerr = format!(
+                        "unable to remove_dir_all(storage_path). storage_path: {}",
+                        storage_path
+                    );
+                    remove_dir_all(storage_path).expect(&rmdirerr);
+                }
+            }
+        }
+
         self.instances = self
             .instances
             .into_iter()
@@ -716,6 +729,33 @@ pub enum StorageConfiguration {
         path: String,
         initial_mmap_bytes: Option<usize>,
     },
+}
+
+impl StorageConfiguration {
+    pub fn is_memory(&self) -> bool {
+        self == &StorageConfiguration::Memory
+    }
+
+    pub fn is_file(&self) -> bool {
+        matches!(self, &StorageConfiguration::File { .. })
+    }
+
+    pub fn is_pickle(&self) -> bool {
+        matches!(self, StorageConfiguration::Pickle { .. })
+    }
+
+    pub fn is_lmdb(&self) -> bool {
+        matches!(self, StorageConfiguration::Lmdb { .. })
+    }
+
+    pub fn path(&self) -> Option<String> {
+        match self {
+            StorageConfiguration::Memory => return None,
+            StorageConfiguration::File { path } => return Some(path.to_string()),
+            StorageConfiguration::Pickle { path } => return Some(path.to_string()),
+            StorageConfiguration::Lmdb { path, .. } => return Some(path.to_string()),
+        }
+    }
 }
 
 /// Here, interfaces are user facing and make available zome functions to

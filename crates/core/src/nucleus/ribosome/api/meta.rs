@@ -1,5 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{hdk_version::HDK_VERSION, GIT_HASH};
+use holochain_core_types::{hdk_version::HDK_VERSION};
 use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -29,7 +29,6 @@ pub fn invoke_meta(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let method = match meta_args.method {
         MetaMethod::Version => MetaResult::Version(HDK_VERSION.to_string()),
-        MetaMethod::Hash => MetaResult::Hash(GIT_HASH.to_string()),
     };
 
     let result = Ok(method);

@@ -1,24 +1,13 @@
-use std::{path::Path, process::Command};
+use std::{env, path::Path, process::Command};
+/// Detect details about the HDK Version being built, to make available as hdk::HDK_VERSION variable
+/// - Use HDK_VERSION or CARGO_PKG_VERSION environment variables
+///   - Should match the nearest upstream Git "tag", eg. "v0.0.32-alpha2-3-g3f9f2f5e0", but
+///     since the source code may *not* be an actual Git repo, we can't really check this.
 fn main() {
-    if Path::new("../../.git/HEAD").exists() {
-        println!("cargo:rerun-if-changed=../../.git/HEAD");
-    }
-    let output = Command::new("git")
-        .args(&["rev-parse", "HEAD"])
-        .output()
-        .expect("unable to execute git command");
-
-    let git_hash = String::from_utf8(output.stdout).unwrap();
-
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
-
-    let output = Command::new("git")
-        .args(&["describe"])
-        .output()
-        .expect("unable to execute git command");
-
-    println!(
-        "cargo:rustc-env=HDK_VERSION={}",
-        String::from_utf8(output.stdout).expect("Could not get string from git output")
-    )
+    let hdk_version: String = env::var_os("HDK_VERSION")
+        .or_else( || env::var_os("CARGO_PKG_VERSION"))
+        .expect("Cannot deduce HDK_VERSION; ensure HDK_VERSION or CARGO_PKG_VERSION (via Cargo.toml [package] version) is set"));
+    assert!( hdk_version.len() > 0,
+             "Invalid HDK_VERSION: {:?}", &hdh_version );
+    println!("cargo:rustc-env=HDK_VERSION={}", &hdk_version);
 }

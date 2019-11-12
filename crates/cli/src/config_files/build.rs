@@ -30,7 +30,7 @@ impl Build {
     }
 
     /// Starts the build using the supplied build steps and returns the contents of the artifact
-    pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
+    pub fn run(&self, base_path: &Path) -> DefaultResult<String> {
         for build_step in &self.steps {
             let slice_vec: Vec<_> = build_step.arguments.iter().map(|e| e.as_str()).collect();
             util::run_cmd(
@@ -49,8 +49,8 @@ impl Build {
             Ok(base64::encode(&wasm_buf))
         } else {
             bail!(
-                "artifact path {} either doesn't point to a file or doesn't exist",
-                artifact_path.to_string_lossy()
+                "artifact path {:?} either doesn't point to a file or doesn't exist",
+                artifact_path
             )
         }
     }

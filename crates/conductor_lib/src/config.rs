@@ -35,7 +35,7 @@ use std::{
     fs::File,
     io::prelude::*,
     net::Ipv4Addr,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 use toml;
@@ -130,7 +130,7 @@ pub struct Configuration {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum PassphraseServiceConfig {
     Cmd,
-    UnixSocket { path: String },
+    UnixSocket { path: PathBuf },
     Mock { passphrase: String },
 }
 
@@ -238,9 +238,8 @@ impl Configuration {
                 )
             })?;
             let dna_config = dna_config.unwrap();
-            let dna =
-                Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(dna_config.file.clone()))
-                    .map_err(|_| format!("Could not load DNA file \"{}\"", dna_config.file))?;
+            let dna = Arc::get_mut(&mut dna_loader).unwrap()(&Path::new(&dna_config.file))
+                .map_err(|_| format!("Could not load DNA file {:?}", dna_config.file))?;
 
             for zome in dna.zomes.values() {
                 for bridge in zome.bridges.iter() {
@@ -348,14 +347,13 @@ impl Configuration {
         })?;
 
         let caller_dna_file = caller_dna_config.file.clone();
-        let caller_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
-                .map_err(|err| {
-                    format!(
-                        "Could not load DNA file \"{}\"; error was: {}",
-                        caller_dna_file, err
-                    )
-                })?;
+        let caller_dna = Arc::get_mut(&mut dna_loader).unwrap()(&Path::new(&caller_dna_file))
+            .map_err(|err| {
+                format!(
+                    "Could not load DNA file {:?}; error was: {}",
+                    caller_dna_file, err
+                )
+            })?;
 
         //
         // Get callee's config. DNA config, and DNA:
@@ -377,14 +375,13 @@ impl Configuration {
         })?;
 
         let callee_dna_file = callee_dna_config.file.clone();
-        let callee_dna =
-            Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
-                .map_err(|err| {
-                    format!(
-                        "Could not load DNA file \"{}\"; error was: {}",
-                        callee_dna_file, err
-                    )
-                })?;
+        let callee_dna = Arc::get_mut(&mut dna_loader).unwrap()(&Path::new(&callee_dna_file))
+            .map_err(|err| {
+                format!(
+                    "Could not load DNA file {:?}; error was: {}",
+                    callee_dna_file, err
+                )
+            })?;
 
         //
         // Get matching bridge definition from caller's DNA:
@@ -614,24 +611,23 @@ impl Configuration {
     /// TOML configuration file. For efficiency purposes, we short-circuit on the first encounter of a
     /// duplicated values.
     fn check_instances_storage(&self) -> Result<(), String> {
-        let storage_paths: Vec<&str> = self
+        let mut storage_paths = self
             .instances
             .iter()
             .filter_map(|stg_config| match stg_config.storage {
                 StorageConfiguration::File { ref path }
                 | StorageConfiguration::Lmdb { ref path, .. }
-                | StorageConfiguration::Pickle { ref path } => Some(path.as_str()),
+                | StorageConfiguration::Pickle { ref path } => Some(path),
                 _ => None,
-            })
-            .collect();
+            });
 
         // Here we don't use the already implemented 'detect_dupes' function because we don't need
         // to keep track of all the duplicated values of storage instances. But instead we use the
         // return value of 'HashSet.insert()' conbined with the short-circuiting propriety of
         // 'iter().all()' so we don't iterate on all the possible value once we found a duplicated
         // storage entry.
-        let mut path_set: HashSet<&str> = HashSet::new();
-        let has_uniq_values = storage_paths.iter().all(|&x| path_set.insert(x));
+        let mut path_set = HashSet::new();
+        let has_uniq_values = storage_paths.all(|x| path_set.insert(x));
 
         if !has_uniq_values {
             Err(String::from(
@@ -649,7 +645,7 @@ pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
     pub public_address: Base32,
-    pub keystore_file: String,
+    pub keystore_file: PathBuf,
     /// If set to true conductor will ignore keystore_file and instead use the remote signer
     /// accessible through signing_service_uri to request signatures.
     pub holo_remote_key: Option<bool>,
@@ -669,7 +665,7 @@ impl From<AgentConfiguration> for AgentId {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
-    pub file: String,
+    pub file: PathBuf,
     pub hash: String,
     #[serde(default)]
     pub uuid: Option<String>,
@@ -707,13 +703,13 @@ pub struct InstanceConfiguration {
 pub enum StorageConfiguration {
     Memory,
     File {
-        path: String,
+        path: PathBuf,
     },
     Pickle {
-        path: String,
+        path: PathBuf,
     },
     Lmdb {
-        path: String,
+        path: PathBuf,
         initial_mmap_bytes: Option<usize>,
     },
 }
@@ -792,7 +788,7 @@ pub struct Bridge {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct UiBundleConfiguration {
     pub id: String,
-    pub root_dir: String,
+    pub root_dir: PathBuf,
     #[serde(default)]
     pub hash: Option<String>,
 }
@@ -861,7 +857,7 @@ pub struct N3hConfig {
     pub n3h_mode: String,
     /// Absolute path to the directory that n3h uses to store persisted data.
     #[serde(default)]
-    pub n3h_persistence_path: String,
+    pub n3h_persistence_path: PathBuf,
     /// URI pointing to an n3h process that is already running and not managed by this
     /// conductor.
     /// If this is set the conductor does not spawn n3h itself and ignores the path
@@ -870,7 +866,7 @@ pub struct N3hConfig {
     pub n3h_ipc_uri: Option<String>,
     /// filepath to the json file holding the network settings for n3h
     #[serde(default)]
-    pub networking_config_file: Option<String>,
+    pub networking_config_file: Option<PathBuf>,
 }
 
 // note that this behaviour is documented within
@@ -890,8 +886,8 @@ pub fn default_n3h_log_level() -> String {
 // note that this behaviour is documented within
 // holochain_common::env_vars module and should be updated
 // if this logic changes
-pub fn default_n3h_persistence_path() -> String {
-    env::temp_dir().to_string_lossy().to_string()
+pub fn default_n3h_persistence_path() -> PathBuf {
+    env::temp_dir()
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -971,12 +967,12 @@ pub mod tests {
         let agents = load_configuration::<Configuration>(toml).unwrap().agents;
         assert_eq!(agents.get(0).expect("expected at least 2 agents").id, "bob");
         assert_eq!(
-            agents
+            &agents
                 .get(0)
                 .expect("expected at least 2 agents")
                 .clone()
                 .keystore_file,
-            "file/to/serialize"
+            &Path::new("file/to/serialize")
         );
         assert_eq!(
             agents.get(1).expect("expected at least 2 agents").id,
@@ -1001,7 +997,7 @@ pub mod tests {
         let dnas = load_configuration::<Configuration>(toml).unwrap().dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.dna.json");
+        assert_eq!(dna_config.file, Path::new("app_spec.dna.json"));
         assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
     }
 
@@ -1068,7 +1064,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.dna.json");
+        assert_eq!(dna_config.file, Path::new("app_spec.dna.json"));
         assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
@@ -1086,9 +1082,9 @@ pub mod tests {
                 )],
                 n3h_log_level: String::from("d"),
                 n3h_mode: String::from("REAL"),
-                n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
+                n3h_persistence_path: PathBuf::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
-                networking_config_file: Some(String::from(
+                networking_config_file: Some(PathBuf::from(
                     "/Users/cnorris/.holochain/network_config.json"
                 )),
             })
@@ -1165,7 +1161,7 @@ pub mod tests {
         let dnas = config.dnas;
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
-        assert_eq!(dna_config.file, "app_spec.dna.json");
+        assert_eq!(dna_config.file, Path::new("app_spec.dna.json"));
         assert_eq!(dna_config.hash, "Qm328wyq38924y".to_string());
 
         let instances = config.instances;
@@ -1384,7 +1380,9 @@ pub mod tests {
         path = "app3_spec_storage"
 
     {}
-    "#, bridges)
+    "#,
+            bridges
+        )
     }
 
     #[test]

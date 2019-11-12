@@ -3,10 +3,10 @@ use failure::err_msg;
 use holochain_conductor_lib::conductor::Conductor;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde_json::Map;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub fn hash_dna(
-    dna_file_path: &PathBuf,
+    dna_file_path: &Path,
     properties: Option<Vec<String>>,
 ) -> DefaultResult<Address> {
     let mut dna = Conductor::load_dna(dna_file_path)?;

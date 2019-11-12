@@ -3,8 +3,8 @@ use flate2::read::GzDecoder;
 use glob::glob;
 use std::{
     fs::{self, File},
+    path::{Path, PathBuf},
     io::{copy, prelude::*},
-    path::PathBuf,
 };
 use tar::Archive;
 use tempfile::Builder;
@@ -17,14 +17,10 @@ const RUST_PROC_TEMPLATE_TARBALL_URL: &str =
 
 const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
+pub fn generate(zome_path: &Path, scaffold: &String) -> DefaultResult<()> {
     let zome_name = zome_path
-        .components()
-        .last()
-        .ok_or_else(|| format_err!("New zome path must have a target directory"))?
-        .as_os_str()
-        .to_str()
-        .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
+        .file_name()
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?;
 
     // match against all supported templates
     let url = match scaffold.as_ref() {
@@ -80,12 +76,12 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
     Ok(())
 }
 
-fn apply_template_substitution(root_path: &PathBuf, context: Context) -> DefaultResult<()> {
+fn apply_template_substitution(root_path: &Path, context: Context) -> DefaultResult<()> {
     let zome_name_component = root_path
         .components()
         .last()
         .ok_or_else(|| format_err!("New zome path must have a target directory"))?;
-    let template_glob_path: PathBuf = [root_path, &PathBuf::from("**/*")].iter().collect();
+    let template_glob_path: PathBuf = [root_path, "**/*".as_ref()].iter().collect();
     let template_glob = template_glob_path
         .to_str()
         .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;

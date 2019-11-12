@@ -9,20 +9,20 @@ use holochain_core_types::error::HolochainError;
 use holochain_dpki::{password_encryption::PwHashConfig, SEED_SIZE};
 use holochain_locksmith::Mutex;
 use lib3h_sodium::{hash::sha256, secbuf::SecBuf};
-use std::{path::PathBuf, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 /// Key loader callback to use with conductor_api.
 /// This replaces filesystem access for getting keys mentioned in the config.
 /// Uses `test_keybundle` to create a deterministic key dependent on the (virtual) file name.
 pub fn test_keystore_loader() -> KeyLoader {
     let loader = Box::new(
-        |path: &PathBuf, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
+        |path: &Path, _pm: Arc<PassphraseManager>, _hash_config: Option<PwHashConfig>| {
             Ok(test_keystore(&path.to_str().unwrap().to_string()))
         },
     )
         as Box<
             dyn FnMut(
-                    &PathBuf,
+                    &Path,
                     Arc<PassphraseManager>,
                     Option<PwHashConfig>,
                 ) -> Result<Keystore, HolochainError>

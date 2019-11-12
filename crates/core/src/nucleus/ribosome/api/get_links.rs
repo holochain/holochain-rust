@@ -193,7 +193,7 @@ pub mod tests {
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[2], "test-tag", entry_addresses[1], "test-tag",
             ) + "\u{0}"),
         );
@@ -316,7 +316,7 @@ pub mod tests {
         );
         let expected_2 = JsonString::from_json(
             &(format!(
-               r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
+                r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
                 entry_addresses[2], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );

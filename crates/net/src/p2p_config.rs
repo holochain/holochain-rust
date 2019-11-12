@@ -3,7 +3,12 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
 use snowflake;
-use std::{fs::File, io::prelude::*, str::FromStr};
+use std::{
+    fs::File,
+    io::prelude::*,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use url::Url;
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -107,7 +112,7 @@ impl P2pConfig {
         }
     }
 
-    pub fn from_file(filepath: &str) -> Self {
+    pub fn from_file(filepath: &Path) -> Self {
         let config_file =
             File::open(filepath).expect("Failed to open filepath on P2pConfig creation.");
         serde_json::from_reader(config_file)
@@ -127,7 +132,7 @@ impl P2pConfig {
     pub fn new_ipc_uri(
         maybe_ipc_binding: Option<String>,
         bootstrap_nodes: &Vec<String>,
-        maybe_end_user_config_filepath: Option<String>,
+        maybe_end_user_config_filepath: Option<PathBuf>,
     ) -> Self {
         let backend_config = BackendConfig::Json(json!({
             "socketType": "ws",
@@ -268,9 +273,9 @@ impl P2pConfig {
     }
 
     pub fn load_end_user_config(
-        maybe_end_user_config_filepath: Option<String>,
+        maybe_end_user_config_filepath: Option<PathBuf>,
     ) -> serde_json::Value {
-        fn load_config_file(filepath: String) -> Result<serde_json::Value, std::io::Error> {
+        fn load_config_file(filepath: &Path) -> Result<serde_json::Value, std::io::Error> {
             let mut file = File::open(filepath)?;
             let mut contents = String::new();
             file.read_to_string(&mut contents)?;
@@ -280,7 +285,7 @@ impl P2pConfig {
 
         match maybe_end_user_config_filepath {
             None => P2pConfig::default_end_user_config(),
-            Some(filepath) => match load_config_file(filepath) {
+            Some(filepath) => match load_config_file(&filepath) {
                 Err(_) => return P2pConfig::default_end_user_config(),
                 Ok(json) => json,
             },

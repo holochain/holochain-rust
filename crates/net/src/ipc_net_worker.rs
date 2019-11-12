@@ -14,7 +14,7 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol, types::NetworkHash,
 };
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::tweetlog::TweetProxy;
 
@@ -69,16 +69,16 @@ impl IpcNetWorker {
         if !(spawn_config["workDir"].is_string() && spawn_config["env"].is_object()) {
             bail!("config.spawn requires 'workDir', and 'env'");
         }
-        let env: HashMap<String, String> = spawn_config["env"]
+        let env: HashMap<String, std::ffi::OsString> = spawn_config["env"]
             .as_object()
             .unwrap()
             .iter()
-            .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
+            .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string().into()))
             .collect();
         // create a new IpcNetWorker witch spawns the n3h process
         return IpcNetWorker::priv_new_with_spawn(
             handler,
-            spawn_config["workDir"].as_str().unwrap().to_string(),
+            spawn_config["workDir"].as_str().unwrap().to_string().into(),
             enduser_config,
             env,
             bootstrap_nodes,
@@ -88,9 +88,9 @@ impl IpcNetWorker {
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
     fn priv_new_with_spawn(
         handler: NetHandler,
-        work_dir: String,
+        work_dir: PathBuf,
         config: String,
-        env: HashMap<String, String>,
+        env: HashMap<String, std::ffi::OsString>,
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         // Spawn a process with given `cmd` that we will have an IPC connection with

@@ -1,4 +1,4 @@
-//! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
+//! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path()).unwrap()));
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
 
@@ -36,7 +36,7 @@
 ///     conductor::Conductor,
 /// };
 /// use holochain_core_types::error::HolochainError;
-/// use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
+/// use std::{fs::File, io::prelude::*, path::{Path, PathBuf}, sync::Arc};
 /// use structopt::StructOpt;
 ///
 /// #[derive(StructOpt, Debug)]
@@ -51,9 +51,8 @@
 ///     let opt = Opt::from_args();
 ///     let config_path = opt.config
 ///         .unwrap_or(PathBuf::from(r"~/.holochain/conductor/conductor_config.toml"));
-///     let config_path_str = config_path.to_str().unwrap();
-///     println!("Using config path: {}", config_path_str);
-///     match bootstrap_from_config(config_path_str) {
+///     println!("Using config path: {:?}", config_path);
+///     match bootstrap_from_config(&config_path) {
 ///         Ok(mut conductor) => {
 ///             if conductor.instances().len() > 0 {
 ///                 println!(
@@ -72,8 +71,8 @@
 ///     };
 /// }
 ///
-/// fn bootstrap_from_config(path: &str) -> Result<Conductor, HolochainError> {
-///     let config = load_config_file(&String::from(path))?;
+/// fn bootstrap_from_config(path: &Path) -> Result<Conductor, HolochainError> {
+///     let config = load_config_file(path)?;
 ///     config
 ///         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
@@ -82,7 +81,7 @@
 ///     Ok(conductor)
 /// }
 ///
-/// fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
+/// fn load_config_file(path: &Path) -> Result<Configuration, HolochainError> {
 ///     let mut f = File::open(path)?;
 ///     let mut contents = String::new();
 ///     f.read_to_string(&mut contents)?;

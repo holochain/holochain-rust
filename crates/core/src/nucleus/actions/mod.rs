@@ -48,7 +48,7 @@ pub mod tests {
         ]
         .iter()
         .collect();
-        let target_dir = wasm_target_dir(&String::from("core").into(), &target_path);
+        let target_dir = wasm_target_dir("core".as_ref(), &target_path);
         let mut wasm_path = PathBuf::new();
         let wasm_path_component: PathBuf = [
             "wasm32-unknown-unknown",

@@ -51,13 +51,9 @@ impl ConductorUiAdmin for Conductor {
             false => path,
         };
 
-        let path_string = path
-            .to_str()
-            .ok_or_else(|| HolochainError::ConfigError("invalid path".into()))?;
-
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
-            root_dir: path_string.into(),
+            root_dir: path.clone(),
             hash: None,
         };
 
@@ -68,7 +64,8 @@ impl ConductorUiAdmin for Conductor {
         self.save_config()?;
         notify(format!(
             "Installed UI bundle from {} as \"{}\"",
-            path_string, id
+            path.display(),
+            id
         ));
         Ok(())
     }
@@ -172,11 +169,11 @@ impl ConductorUiAdmin for Conductor {
 pub mod tests {
     use super::*;
     use crate::conductor::{admin::tests::*, base::UiDirCopier};
-    use std::{fs::File, io::Read, net::Ipv4Addr};
+    use std::{fs::File, io::Read, path::Path, net::Ipv4Addr};
 
     pub fn test_ui_copier() -> UiDirCopier {
-        let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| Ok(()))
-            as Box<dyn FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
+        let copier = Box::new(|_source: &Path, _dest: &Path| Ok(()))
+            as Box<dyn FnMut(&Path, &Path) -> Result<(), HolochainError> + Send + Sync>;
         Arc::new(copier)
     }
 

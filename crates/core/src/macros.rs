@@ -100,7 +100,7 @@ fn context_log_macro_test() {
     use tempfile::tempdir;
 
     let file_storage = Arc::new(RwLock::new(
-        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        FilesystemStorage::new(tempdir().unwrap().path()).unwrap(),
     ));
     let ctx = Context::new(
         "LOG-TEST-ID",
@@ -109,7 +109,7 @@ fn context_log_macro_test() {
         file_storage.clone(),
         file_storage.clone(),
         Arc::new(RwLock::new(
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+            EavFileStorage::new(tempdir().unwrap().path()).unwrap(),
         )),
         P2pConfig::new_with_unique_memory_backend(),
         None,

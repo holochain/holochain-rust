@@ -17,9 +17,9 @@ pub mod api_serialization;
 pub mod macros;
 pub mod memory;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn wasm_target_dir(test_path: &PathBuf, wasm_path: &PathBuf) -> PathBuf {
+pub fn wasm_target_dir(test_path: &Path, wasm_path: &Path) -> PathBuf {
     // this env var checker can't use holochain_common
     // crate because that uses `directories` crate which doesn't compile to WASM
     let mut target_dir = PathBuf::new();

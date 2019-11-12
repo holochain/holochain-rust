@@ -12,7 +12,7 @@ use std::{
     convert::TryFrom,
     fs::{self, File},
     io::Read,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
@@ -72,7 +72,7 @@ impl Packager {
         Packager::new().run(&output, properties)
     }
 
-    fn run(&self, output: &PathBuf, mut properties: Value) -> DefaultResult<()> {
+    fn run(&self, output: &Path, mut properties: Value) -> DefaultResult<()> {
         let current_dir = std::env::current_dir()?;
         let dir_obj_bundle = Value::from(
             self.bundle_recurse(&current_dir)
@@ -120,20 +120,18 @@ impl Packager {
         Ok(())
     }
 
-    fn bundle_recurse(&self, path: &PathBuf) -> DefaultResult<Object> {
+    fn bundle_recurse(&self, path: &Path) -> DefaultResult<Object> {
         let root_dir = WalkBuilder::new(path)
             .max_depth(Some(1))
             .add_custom_ignore_filename(IGNORE_FILE_NAME)
             .build()
             .skip(1);
 
-        let root: Vec<_> = root_dir
-            .filter_map(|e| e.ok())
-            .map(|e| e.path().to_path_buf())
-            .collect();
+        let root: Vec<_> = root_dir.filter_map(|e| e.ok()).collect();
 
-        let root_json_files: Vec<&PathBuf> = root
+        let root_json_files: Vec<&Path> = root
             .iter()
+            .map(|e| e.path())
             .filter(|e| e.is_file())
             .filter(|e| e.to_string_lossy().ends_with(".json"))
             .collect();
@@ -153,9 +151,9 @@ impl Packager {
         };
 
         // Scan files but discard found json file
-        let all_nodes = root.iter().filter(|node_path| {
+        let all_nodes = root.iter().map(|n| n.path()).filter(|&node_path| {
             maybe_json_file_path
-                .and_then(|path| Some(node_path != &path))
+                .and_then(|path| Some(node_path != path))
                 .unwrap_or(true)
         });
 
@@ -170,7 +168,7 @@ impl Packager {
         };
 
         for node in all_nodes {
-            let file_name = util::file_name_string(&node)?;
+            let file_name = util::file_name_string(node)?;
 
             if node.is_dir() {
                 // a folder within this folder has a .hcbuild in it, meaning this node
@@ -273,13 +271,13 @@ mod tests {
     fn package_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
-        fn package(shared_file_path: &PathBuf) {
+        fn package(shared_file_path: &Path) {
             let temp_space = gen_dir();
             let temp_dir_path = temp_space.path();
 
             Command::main_binary()
                 .unwrap()
-                .args(&["init", temp_dir_path.to_str().unwrap()])
+                .args(&["init", temp_dir_path.into()])
                 .assert()
                 .success();
 
@@ -287,7 +285,9 @@ mod tests {
 
             Command::main_binary()
                 .unwrap()
-                .args(&["package", "-o", bundle_file_path.to_str().unwrap()])
+                .arg("package")
+                .arg("-o")
+                .arg(&bundle_file_path)
                 .current_dir(&temp_dir_path)
                 .assert()
                 .success();
@@ -342,7 +342,8 @@ mod tests {
         // Initialize and package a project
         Command::main_binary()
             .unwrap()
-            .args(&["init", root_path.to_str().unwrap()])
+            .arg("init")
+            .arg(root_path)
             .assert()
             .success();
 
@@ -377,7 +378,8 @@ mod tests {
         // Initialize and package a project
         Command::main_binary()
             .unwrap()
-            .args(&["init", source_path.to_str().unwrap()])
+            .arg("init")
+            .arg(source_path)
             .assert()
             .success();
 
@@ -385,7 +387,9 @@ mod tests {
 
         Command::main_binary()
             .unwrap()
-            .args(&["package", "-o", bundle_file_path.to_str().unwrap()])
+            .arg("package")
+            .arg("-o")
+            .arg(bundle_file_path)
             .current_dir(&source_path)
             .assert()
             .success();
@@ -396,11 +400,9 @@ mod tests {
 
         Command::main_binary()
             .unwrap()
-            .args(&[
-                "unpack",
-                bundle_file_path.to_str().unwrap(),
-                dest_path.to_str().unwrap(),
-            ])
+            .arg("unpack")
+            .arg(bundle_file_path)
+            .arg(dest_path)
             .assert()
             .success();
 
@@ -422,7 +424,8 @@ mod tests {
         Command::main_binary()
             .unwrap()
             .current_dir(&root_path)
-            .args(&["init", root_path.to_str().unwrap()])
+            .arg("init")
+            .arg(root_path)
             .assert()
             .success();
 

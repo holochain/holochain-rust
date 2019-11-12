@@ -78,8 +78,8 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: &str, macro_style: HdkMacroStyle) -> RustScaffold {
-        let target_dir = PathBuf::from("../target");
-        let mut artifact_name = target_dir.clone();
+        let target_dir = Path::new("../target");
+        let mut artifact_name = target_dir.to_path_buf();
         let artifact_path_component: PathBuf = [
             String::from("wasm32-unknown-unknown"),
             String::from("release"),

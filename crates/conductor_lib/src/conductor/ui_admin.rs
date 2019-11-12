@@ -1,10 +1,10 @@
 use crate::{
     conductor::{base::notify, Conductor},
     config::{UiBundleConfiguration, UiInterfaceConfiguration},
+    error::HolochainInstanceError,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
 };
-use error::HolochainInstanceError;
 use holochain_core_types::error::HolochainError;
 use std::{path::PathBuf, sync::Arc};
 
@@ -168,8 +168,8 @@ impl ConductorUiAdmin for Conductor {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use conductor::{admin::tests::*, base::UiDirCopier};
-    use std::{fs::File, io::Read, net::Ipv4Addr, path::Path};
+    use crate::conductor::{admin::tests::*, base::UiDirCopier};
+    use std::{fs::File, io::Read, path::Path, net::Ipv4Addr};
 
     pub fn test_ui_copier() -> UiDirCopier {
         let copier = Box::new(|_source: &Path, _dest: &Path| Ok(()))

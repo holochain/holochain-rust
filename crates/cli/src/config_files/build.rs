@@ -29,14 +29,6 @@ impl Build {
         Ok(build)
     }
 
-    pub fn save_as<T: AsRef<Path>>(&self, path: T) -> DefaultResult<()> {
-        let file = File::create(path)?;
-
-        serde_json::to_writer_pretty(file, self)?;
-
-        Ok(())
-    }
-
     /// Starts the build using the supplied build steps and returns the contents of the artifact
     pub fn run(&self, base_path: &Path) -> DefaultResult<String> {
         for build_step in &self.steps {
@@ -61,29 +53,5 @@ impl Build {
                 artifact_path
             )
         }
-    }
-
-    pub fn with_artifact<P: Into<PathBuf>>(artifact: P) -> Build {
-        let path: PathBuf = artifact.into();
-
-        Build {
-            steps: Vec::new(),
-            artifact: path,
-        }
-    }
-
-    pub fn cmd(mut self, cmd: &str, args: &[&str]) -> Build {
-        let cmd: String = cmd.to_owned();
-        let args = args
-            .to_vec()
-            .iter()
-            .map(|raw_arg| raw_arg.to_string())
-            .collect();
-
-        self.steps.push(BuildStep {
-            command: cmd,
-            arguments: args,
-        });
-        self
     }
 }

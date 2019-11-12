@@ -2,7 +2,6 @@ use holochain_core_types::{
     agent::Base32,
     error::{HcResult, HolochainError},
     signature::Signature,
-    sync::HcMutex as Mutex,
 };
 use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
@@ -15,13 +14,14 @@ use holochain_dpki::{
     },
     SEED_SIZE,
 };
+use holochain_locksmith::Mutex;
 
 use lib3h_sodium::{
     pwhash::{ALG_ARGON2ID13, MEMLIMIT_INTERACTIVE, OPSLIMIT_INTERACTIVE},
     secbuf::SecBuf,
 };
 
-use conductor::passphrase_manager::PassphraseManager;
+use crate::conductor::passphrase_manager::PassphraseManager;
 use holochain_dpki::{password_encryption::PwHashConfig, seed::SeedType};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -537,8 +537,8 @@ pub fn test_hash_config() -> Option<PwHashConfig> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::conductor::passphrase_manager::PassphraseServiceMock;
     use base64;
-    use conductor::passphrase_manager::PassphraseServiceMock;
     use holochain_dpki::utils;
     use holochain_persistence_api::cas::content::Address;
 

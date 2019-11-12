@@ -1,6 +1,10 @@
 [package]
-name = "hdk-proc-macros"
-version = "0.0.34-alpha1"
+name = "hdk_proc_macros"
+version = "0.0.38-alpha13"
+description = "holochain hdk v2 (with proc macros)"
+license = "GPL-3.0-only"
+homepage = "https://github.com/holochain/holochain-rust"
+documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -11,4 +15,4 @@ proc-macro = true
 syn = { version = "=0.15.31", features = ["full", "extra-traits"]}
 quote = "=0.6.11"
 proc-macro2 = "=0.4.27"
-hdk = { path = "../hdk" }
+hdk = { version = "=0.0.38-alpha13", path = "../hdk" }

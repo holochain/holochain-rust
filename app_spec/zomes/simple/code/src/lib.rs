@@ -1,41 +1,10 @@
-#![warn(unused_extern_crates)]
-#[macro_use]
-extern crate hdk;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate holochain_json_derive;
-
-use hdk::{
-    entry_definition::ValidatingEntryType,
-    error::ZomeApiResult,
-};
-use hdk::holochain_core_types::{
-    dna::entry_types::Sharing,
-    entry::Entry,
-    link::LinkMatch,
-    agent::AgentId,
-    validation::EntryValidationData,
-};
-use hdk::holochain_persistence_api::{
-    cas::content::Address,
-    hash::HashString
-};
-use hdk::holochain_json_api::{
-    json::JsonString,
-    error::JsonError
-};
-
-
-use hdk::holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount};
-
-
+use hdk::prelude::*;
 // see https://developer.holochain.org/api/latest/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Simple {
     content: String,
 }
@@ -59,25 +28,25 @@ pub fn handle_create_anchor() -> ZomeApiResult<Address> {
 
 pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", "tag")?;
+    hdk::link_entries(&base, &Address::from(address), "authored_simple_posts", "tag")?;
     Ok(())
 }
 
 pub fn handle_create_my_link_with_tag(base: Address,target : String, tag : String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &HashString::from(address), "authored_simple_posts", &tag)?;
+    hdk::link_entries(&base, &Address::from(address), "authored_simple_posts", &tag)?;
     Ok(())
 }
 
 pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts","tag")?;
+    hdk::remove_link(&base, &Address::from(address), "authored_simple_posts","tag")?;
     Ok(())
 }
 
 pub fn handle_delete_my_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &HashString::from(address), "authored_simple_posts",&tag)?;
+    hdk::remove_link(&base, &Address::from(address), "authored_simple_posts",&tag)?;
     Ok(())
 }
 

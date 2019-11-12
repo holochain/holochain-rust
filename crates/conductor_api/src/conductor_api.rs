@@ -1,4 +1,5 @@
-use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
+use holochain_core_types::error::HolochainError;
+use holochain_locksmith::RwLock;
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use jsonrpc_core::IoHandler;
 use jsonrpc_lite::JsonRpc;

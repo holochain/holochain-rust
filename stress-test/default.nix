@@ -6,7 +6,7 @@ let
   hc-conductor-install &&
   (
     cd stress-test &&
-    wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.5/passthrough-dna.dna.json -O passthrough-dna.dna.json
+    wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json -O passthrough-dna.dna.json
     npm install &&
     APP_SPEC_NETWORK_TYPE=sim1h AWS_ACCESS_KEY_ID=bla AWS_SECRET_ACCESS_KEY=blup npm test -- "$@"
     )
@@ -18,7 +18,7 @@ let
   hc-conductor-install &&
   (
     cd stress-test &&
-    wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.5/passthrough-dna.dna.json -O passthrough-dna.dna.json
+    wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json -O passthrough-dna.dna.json
     npm install &&
     APP_SPEC_NETWORK_TYPE=sim2h npm test -- "$@"
   )

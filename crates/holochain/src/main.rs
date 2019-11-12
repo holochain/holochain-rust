@@ -16,6 +16,7 @@
 /// A custom config can be provided with the --config, -c flag.
 extern crate holochain_conductor_lib;
 extern crate holochain_core_types;
+extern crate holochain_locksmith;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
@@ -26,6 +27,8 @@ use holochain_conductor_lib::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
+use holochain_locksmith::spawn_locksmith_guard_watcher;
+#[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{
     fs::File,
@@ -58,6 +61,8 @@ impl Default for SignalConfiguration {
     }
 }
 
+const MAGIC_STRING: &str = "Done. All interfaces started.";
+
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
     lib3h_sodium::check_init();
@@ -65,6 +70,8 @@ fn main() {
     let config_path = opt
         .config
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
+
+    let _ = spawn_locksmith_guard_watcher();
 
     println!("Using config path: {:?}", config_path);
     match bootstrap_from_config(&config_path) {
@@ -82,7 +89,10 @@ fn main() {
                     .expect("Could not start instances!");
                 println!("Starting interfaces...");
                 conductor.start_all_interfaces();
-                println!("Done.");
+                // NB: the following println is very important!
+                // Others are using it as an easy way to know that the interfaces have started.
+                // Leave it as is!
+                println!("{}", MAGIC_STRING);
                 println!("Starting UI servers");
                 conductor
                     .start_all_static_servers()

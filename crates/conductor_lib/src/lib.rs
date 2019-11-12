@@ -88,61 +88,30 @@
 ///     Ok(load_configuration::<Configuration>(&contents)?)
 /// }
 /// ```
-extern crate holochain_common;
 #[macro_use]
 extern crate holochain_core;
-extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate holochain_dpki;
-extern crate holochain_json_api;
-extern crate holochain_net;
-extern crate holochain_persistence_api;
-extern crate holochain_persistence_file;
-extern crate holochain_persistence_lmdb;
-extern crate holochain_persistence_mem;
-extern crate holochain_persistence_pickle;
-extern crate lib3h_sodium;
 #[macro_use]
 extern crate log;
-extern crate holochain_logging;
-
-extern crate chrono;
-extern crate crossbeam_channel;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate boolinator;
-extern crate colored;
-#[cfg(test)]
-extern crate holochain_wasm_utils;
-extern crate jsonrpc_core;
-extern crate jsonrpc_http_server;
-extern crate jsonrpc_ws_server;
-extern crate petgraph;
-extern crate regex;
 #[macro_use]
 extern crate serde_json;
-#[cfg(test)]
-extern crate test_utils;
-extern crate toml;
 #[macro_use]
 extern crate maplit;
 #[macro_use]
 extern crate lazy_static;
-extern crate hyper;
-extern crate json_patch;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
-extern crate base64;
-extern crate lib3h;
 #[macro_use]
 extern crate nickel;
 
 pub mod conductor;
 pub mod config;
 pub mod context_builder;
+pub mod dna_location;
 pub mod dpki_instance;
 pub mod error;
 pub mod holo_signing_service;

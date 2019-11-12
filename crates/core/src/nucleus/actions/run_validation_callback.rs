@@ -13,6 +13,8 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use snowflake;
 use std::{pin::Pin, sync::Arc, thread};
 
+use holochain_metrics::Metric;
+
 /// Validation callback action creator.
 /// Spawns a thread in which a WASM Ribosome runs the custom validation function defined by
 /// `zome_call`.
@@ -27,12 +29,15 @@ pub async fn run_validation_callback(
     let clone_address = address.clone();
     let cloned_context = context.clone();
 
+    let clock = std::time::SystemTime::now();
+
+    let call2 = call.clone();
     thread::Builder::new()
         .name(format!("validation_callback/{}", id))
         .spawn(move || {
             let validation_result: ValidationResult = match ribosome::run_dna(
-                Some(call.clone().parameters.to_bytes()),
-                WasmCallData::new_callback_call(cloned_context.clone(), call),
+                Some(call2.clone().parameters.to_bytes()),
+                WasmCallData::new_callback_call(cloned_context.clone(), call2),
             ) {
                 Ok(call_result) => {
                     if call_result.is_null() {
@@ -48,10 +53,12 @@ pub async fn run_validation_callback(
                             String::from("JSON object does not match entry schema").into(),
                         ))
                     } else {
-                        Err(ValidationError::Error(error_string.into()))
+                        // an unknown error from the ribosome should panic rather than
+                        // silently failing validation
+                        panic!(error_string)
                     }
                 }
-                Err(error) => Err(ValidationError::Error(error.to_string().into())),
+                Err(error) => panic!(error.to_string()), // same here
             };
 
             lax_send_sync(
@@ -65,11 +72,17 @@ pub async fn run_validation_callback(
         })
         .expect("Could not spawn thread for validation callback");
 
-    ValidationCallbackFuture {
+    let awaited = ValidationCallbackFuture {
         context: context.clone(),
         key: (id, address),
     }
-    .await
+    .await;
+
+    let metric_name = format!("{}.{}.latency", call.zome_name, call.fn_name);
+    let latency = clock.elapsed().unwrap().as_millis();
+    let metric = Metric::new(metric_name.as_str(), latency as f64);
+    context.metric_publisher.write().unwrap().publish(&metric);
+    awaited
 }
 
 /// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).

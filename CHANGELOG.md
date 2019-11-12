@@ -2,6 +2,361 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.38-alpha13] - 2019-11-12
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+- Removes the `__META__` fields in a .dna.json that allowed it to be unpacked. Removes the `hc unpackage` CLI option. [#1864](https://github.com/holochain/holochain-rust/pull/1864)
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha12] - 2019-11-11
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha9] - 2019-11-11
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha8] - 2019-11-11
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha7] - 2019-11-11
+
+### Added
+* Adds try-o-rama remote server provisioning via trycp [#1780](https://github.com/holochain/holochain-rust/pull/1780)
+  This also adds nix-shell commands:
+  - `hc-trycp-server-install` which installs the trycp-server
+  - `hc-trycp-server` which runs the trycp-server
+* Adds instrumentation to measure and publish. performance. Introduces `hc-metrics` command to parse logs and generate statistics. [#1810](https://github.com/holochain/holochain-rust/pull/1810)
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha6] - 2019-11-10
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha5] - 2019-11-10
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha4] - 2019-11-10
+
+### Added
+* Adds instrumentation to measure and publish. performance. Introduces `hc-metrics` command to parse logs and generate statistics. [#1810](https://github.com/holochain/holochain-rust/pull/1810) 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha2] - 2019-11-08
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha1] - 2019-11-08
+
+### Added
+* The sim2h switch-board server is now caching if a node is missing data and periodically checks back in. This makes it more resilient against unforseen problems like connection drops which otherwise could only be recovered through an explicit reconnection of the node. [#1834](https://github.com/holochain/holochain-rust/pull/1834) 
+
+### Changed
+* DNA is now checked for invalid zome artifacts. Validation callbacks that fail unexpectedly will now panic rather than fail validation. `hc package` `--strip-meta` flag is now `--include-meta`. [#1838](https://github.com/holochain/holochain-rust/pull/1838) 
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+* Loading of instances from storage was broken and ended up in partially loaded states. This got fixed with [#1836](https://github.com/holochain/holochain-rust/pull/1836).
+
+### Security
+
+## [0.0.37-alpha12] - 2019-11-06
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha11] - 2019-11-06
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha10] - 2019-11-06
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha9] - 2019-11-06
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha8] - 2019-11-06
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha7] - 2019-11-06
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha6] - 2019-11-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha5] - 2019-11-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha4] - 2019-11-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha3] - 2019-11-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha2] - 2019-11-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.37-alpha1] - 2019-11-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.36-alpha1] - 2019-11-04
+
+### Added
+
+*  Allows the HC CLI to generate zomes from template repos. This will by default use the default holochain template repos (holochain/rust-zome-template and holochain/rust-proc-zome-template) but can also point to custom templates in remote repos or locally (e.g. `hc generate zomes/my_zome https://github.com/org/some-custom-zome-template`). [#1565](https://github.com/holochain/holochain-rust/pull/1565)
+* Adds option `--property` to `hc hash` that sets DNA properties for hash calculation. [#1807](https://github.com/holochain/holochain-rust/pull/1807)
+* Adds a prelude module to the HDK. Adding the statement `use hdk::prelude::*` should be enough for 90% of zome development [#1816](https://github.com/holochain/holochain-rust/pull/1816)
+* Adds a special DNA property sim2h_url that, if set, overrides the conductor wide setting for the network configuration variable sim2h_url. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+* Fixes handling if DNA properties during `hc package`. DNA properties mentioned in the DNA's JSON manifest are now included in the package. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)  
+
+### Security
+
+## [0.0.35-alpha7] - 2019-10-30
+
+### Added
+
+*  Allows the HC CLI to generate zomes from template repos. This will by default use the default holochain template repos (holochain/rust-zome-template and holochain/rust-proc-zome-template) but can also point to custom templates in remote repos or locally (e.g. `hc generate zomes/my_zome https://github.com/org/some-custom-zome-template`). [#1565](https://github.com/holochain/holochain-rust/pull/1565)
+* Adds option `--property` to `hc hash` that sets DNA properties for hash calculation. [#1807](https://github.com/holochain/holochain-rust/pull/1807)
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.34-alpha1] - 2019-10-25
 
 ### Added

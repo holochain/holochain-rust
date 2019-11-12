@@ -116,6 +116,8 @@ use holochain_persistence_api::cas::content::Address;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
+use holochain_metrics::with_latency_publishing;
+
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: Option<Instance>,
@@ -230,6 +232,21 @@ impl Holochain {
         Ok(())
     }
 
+    fn call_inner(
+        me: &Holochain,
+        zome: &str,
+        cap: CapabilityRequest,
+        fn_name: &str,
+        params: &str,
+    ) -> HolochainResult<JsonString> {
+        me.check_instance()?;
+        me.check_active()?;
+
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
+        let context = me.context()?;
+        Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
+    }
+
     /// call a function in a zome
     pub fn call(
         &self,
@@ -238,12 +255,18 @@ impl Holochain {
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        self.check_instance()?;
-        self.check_active()?;
-
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
-        let context = self.context()?;
-        Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
+        let context = self.context.as_ref().unwrap();
+        let metric_name = format!("{}.{}", zome, fn_name);
+        with_latency_publishing!(
+            metric_name,
+            context.metric_publisher,
+            Self::call_inner,
+            self,
+            zome,
+            cap,
+            fn_name,
+            params
+        )
     }
 
     /// checks to see if an instance is active
@@ -290,10 +313,9 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::tempdir;
-    use context_builder::ContextBuilder;
+    use super::*;
+    use crate::context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
@@ -301,11 +323,13 @@ mod tests {
         nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{dna::capabilities::CapabilityRequest, sync::HcMutex as Mutex};
+    use holochain_core_types::dna::capabilities::CapabilityRequest;
     use holochain_json_api::json::RawString;
+    use holochain_locksmith::Mutex;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{path::PathBuf, sync::Arc};
+    use tempfile;
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
         create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
@@ -332,7 +356,10 @@ mod tests {
     }
 
     fn example_api_wasm_path() -> PathBuf {
-        let mut path = wasm_target_dir("conductor_api".as_ref(), "wasm-test".as_ref());
+        let mut path = wasm_target_dir(
+            "conductor_lib".as_ref(),
+            "wasm-test".as_ref(),
+        );
         let wasm_path_component: PathBuf = [
             String::from("wasm32-unknown-unknown"),
             String::from("release"),
@@ -383,29 +410,62 @@ mod tests {
     }
 
     #[test]
-    // TODO: This test is not really testing if loading works. But we need a test for that.
-    // Persistence relies completely on the CAS, so the path would need to be used by
-    // creating a FileStorage CAS in the context that is passed to Holochain::load:
+    fn can_persistant_and_load() {
+        let temp = tempdir().unwrap();
+        let temp_filestorage_dir = temp.path().to_str().unwrap();
+        let agent = registered_test_agent("persister");
+        let (signal_tx, _signal_rx) = signal_channel();
+        let mut dna = create_arbitrary_test_dna();
+        dna.name = "TestApp".to_string();
 
-    //use std::{fs::File, io::prelude::*};
-    #[cfg(feature = "broken-tests")]
-    fn can_load() {
-        let tempdir = tempdir().unwrap();
-        let tempfile = tempdir.path().join("Agentstate.txt");
-        let mut file = File::create(&tempfile).unwrap();
-        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
-        //let path = tempdir.path().to_str().unwrap().to_string();
+        {
+            let context_new = Arc::new(
+                ContextBuilder::new()
+                    .with_agent(agent.clone())
+                    .with_signals(signal_tx.clone())
+                    .with_conductor_api(mock_conductor_api(agent.clone()))
+                    .with_file_storage(temp_filestorage_dir)
+                    .unwrap()
+                    .spawn(),
+            );
 
-        let (context, _, _) = test_context("bob");
-        let result = Holochain::load(context.clone());
+            let result = Holochain::new(dna.clone(), context_new.clone());
+            assert!(result.is_ok());
+            let hc = result.unwrap();
+            let instance = hc.instance.as_ref().unwrap();
+            let context = hc.context.as_ref().unwrap().clone();
+            assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
+            assert!(!hc.active);
+            assert_eq!(context.agent_id.nick, "persister".to_string());
+            let network_state = context.state().unwrap().network().clone();
+            assert_eq!(network_state.agent_id.is_some(), true);
+            assert_eq!(network_state.dna_address.is_some(), true);
+        }
+
+        let context_load = Arc::new(
+            ContextBuilder::new()
+                .with_agent(agent.clone())
+                .with_signals(signal_tx)
+                .with_conductor_api(mock_conductor_api(agent.clone()))
+                .with_file_storage(temp_filestorage_dir)
+                .unwrap()
+                .spawn(),
+        );
+
+        let result = Holochain::load(context_load.clone());
+        if let Err(e) = result {
+            panic!("Error during Holochain::load: {:?}", e);
+        }
         assert!(result.is_ok());
-        let loaded_holo = result.unwrap();
-        assert!(!loaded_holo.active);
-        assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
-        let network_state = loaded_holo.context.state().unwrap().network().clone();
-        assert!(network_state.agent_id.is_some());
-        assert!(network_state.dna_address.is_some());
-        assert!(loaded_holo.instance.state().nucleus().has_initialized());
+        let hc = result.unwrap();
+        let instance = hc.instance.as_ref().unwrap();
+        let context = hc.context.as_ref().unwrap().clone();
+        assert_eq!(instance.state().nucleus().dna(), Some(dna));
+        assert!(!hc.active);
+        assert_eq!(context.agent_id.nick, "persister".to_string());
+        let network_state = context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_address.is_some(), true);
     }
 
     #[test]
@@ -767,7 +827,7 @@ mod tests {
         let wasm = include_bytes!(format!(
             "{}{slash}wasm32-unknown-unknown{slash}release{slash}example_api_wasm.wasm",
             slash = std::path::MAIN_SEPARATOR,
-            wasm_target_dir("conductor_api", "wasm-test"),
+            wasm_target_dir("conductor_lib", "wasm-test"),
         ));
         let defs = test_utils::create_test_defs_with_fn_name("commit_test");
         let mut dna = test_utils::create_test_dna_with_defs("test_zome", defs, wasm);

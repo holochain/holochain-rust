@@ -3,8 +3,8 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
-    sync::HcRwLock as RwLock,
 };
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
@@ -305,10 +305,10 @@ pub mod tests {
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
-        sync::HcRwLock as RwLock,
         time::test_iso_8601,
     };
     use holochain_json_api::json::{JsonString, RawString};
+    use holochain_locksmith::RwLock;
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::cas::file::FilesystemStorage;
     use tempfile;

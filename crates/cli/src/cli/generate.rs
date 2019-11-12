@@ -1,78 +1,117 @@
-use crate::{
-    cli::{
-        package::CODE_DIR_NAME,
-        scaffold::{self, Scaffold},
-    },
-    error::DefaultResult,
-    util,
-};
-use serde_json;
+use crate::error::DefaultResult;
+use flate2::read::GzDecoder;
+use glob::glob;
 use std::{
     fs::{self, File},
     path::{Path, PathBuf},
+    io::{copy, prelude::*},
 };
+use tar::Archive;
+use tempfile::Builder;
+use tera::{Context, Tera};
 
-pub const ZOME_CONFIG_FILE_NAME: &str = "zome.json";
+const RUST_TEMPLATE_TARBALL_URL: &str =
+    "https://github.com/holochain/rust-zome-template/archive/master.tar.gz";
+const RUST_PROC_TEMPLATE_TARBALL_URL: &str =
+    "https://github.com/holochain/rust-proc-zome-template/archive/master.tar.gz";
 
-pub fn generate(zome_name: &Path, language: &str) -> DefaultResult<()> {
-    if !zome_name.exists() {
-        fs::create_dir_all(&zome_name)?;
-    }
+const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-    ensure!(
-        zome_name.is_dir(),
-        "argument \"zome_name\" doesn't point to a directory"
-    );
+pub fn generate(zome_path: &Path, scaffold: &String) -> DefaultResult<()> {
+    let zome_name = zome_path
+        .file_name()
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?;
 
-    let file_name = util::file_name_string(&zome_name)?;
-
-    let zome_config_json = json! {
-        {
-            "description": format!("The {} App", file_name)
-        }
+    // match against all supported templates
+    let url = match scaffold.as_ref() {
+        "rust" => RUST_TEMPLATE_TARBALL_URL,
+        "rust-proc" => RUST_PROC_TEMPLATE_TARBALL_URL,
+        _ => scaffold, // if not a known type assume that a repo url was passed
     };
 
-    let file = File::create(zome_name.join(ZOME_CONFIG_FILE_NAME))?;
-    serde_json::to_writer_pretty(file, &zome_config_json)?;
+    println!("downloading and extracting tarball from: {}", url);
 
-    let code_dir = zome_name.join(CODE_DIR_NAME);
-    fs::create_dir_all(&code_dir)?;
-    let zome_name_string = zome_name
-        .to_str()
-        .expect("Invalid zome path given")
-        .to_string()
-        .replace("/", "_")
-        .replace("zomes_", "");
+    // https://rust-lang-nursery.github.io/rust-cookbook/web/clients/download.html
+    let tmp_dir = Builder::new().prefix("hc-generate").tempdir()?;
+    let mut response = reqwest::get(url)?;
 
-    // match against all supported languages
-    match language {
-        "rust" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Declarative,
-            ),
-            code_dir,
-        )?,
-        "rust-proc" => scaffold(
-            &scaffold::rust::RustScaffold::new(
-                &zome_name_string,
-                scaffold::rust::HdkMacroStyle::Procedural,
-            ),
-            code_dir,
-        )?,
-        "assemblyscript" => scaffold(
-            &scaffold::assemblyscript::AssemblyScriptScaffold::new(),
-            code_dir,
-        )?,
-        // TODO: supply zome name for AssemblyScriptScaffold as well
-        _ => bail!("unsupported language: {}", language),
-    }
+    let fname = response
+        .url()
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .and_then(|name| if name.is_empty() { None } else { Some(name) })
+        .unwrap_or("tmp.bin");
+
+    let fname = tmp_dir.path().join(fname);
+    let mut dest = File::create(&fname)?;
+    copy(&mut response, &mut dest)?;
+
+    // https://rust-lang-nursery.github.io/rust-cookbook/compression/tar.html
+    let tar_gz = File::open(fname)?;
+    let tar = GzDecoder::new(tar_gz);
+    let mut archive = Archive::new(tar);
+    archive
+        .entries()?
+        .filter_map(|e| e.ok())
+        .map(|mut entry| -> DefaultResult<PathBuf> {
+            let path = zome_path.join(
+                entry
+                    .path()?
+                    .strip_prefix(entry.path()?.components().nth(0).unwrap())?
+                    .to_owned(),
+            );
+            entry.unpack(&path)?;
+            Ok(path)
+        })
+        .filter_map(|e| e.ok())
+        .for_each(|x| println!("> {}", x.display()));
+
+    let mut context = Context::new();
+    context.insert("name", &zome_name);
+    context.insert("author", &"hc-scaffold-framework");
+    context.insert("version", HOLOCHAIN_VERSION);
+
+    apply_template_substitution(zome_path, context)?;
 
     Ok(())
 }
 
-fn scaffold<S: Scaffold>(tooling: &S, base_path: PathBuf) -> DefaultResult<()> {
-    tooling.gen(base_path)
+fn apply_template_substitution(root_path: &Path, context: Context) -> DefaultResult<()> {
+    let zome_name_component = root_path
+        .components()
+        .last()
+        .ok_or_else(|| format_err!("New zome path must have a target directory"))?;
+    let template_glob_path: PathBuf = [root_path, "**/*".as_ref()].iter().collect();
+    let template_glob = template_glob_path
+        .to_str()
+        .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
+
+    let templater =
+        Tera::new(template_glob).map_err(|_| format_err!("Could not load repo for templating"))?;
+
+    for entry in glob(template_glob).map_err(|_| format_err!("Failed to read glob pattern"))? {
+        match entry {
+            Ok(path) => {
+                if path.is_file() {
+                    let template_id: PathBuf = path
+                        .components()
+                        .skip_while(|c| c != &zome_name_component)
+                        .skip(1)
+                        .collect();
+                    let result = templater
+                        .render(template_id.to_str().unwrap(), &context)
+                        .unwrap();
+                    let mut file = fs::OpenOptions::new()
+                        .write(true)
+                        .truncate(true)
+                        .open(path)?;
+                    file.write_all(result.as_bytes())?;
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

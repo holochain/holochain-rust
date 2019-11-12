@@ -6,20 +6,17 @@ use holochain_core_types::dna::Dna;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use ignore::WalkBuilder;
+use json_patch::merge;
 use serde_json::{self, Map, Value};
 use std::{
     convert::TryFrom,
     fs::{self, File},
-    io::{Read, Write},
+    io::Read,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use cli::scaffold::rust::CARGO_FILE_NAME;
-
 use holochain_core_types::hdk_version::{HDKVersion, HDK_VERSION};
-
-pub const CODE_DIR_NAME: &str = "code";
 
 pub const BUILD_CONFIG_FILE_NAME: &str = ".hcbuild";
 
@@ -27,15 +24,7 @@ pub const GITIGNORE_FILE_NAME: &str = ".gitignore";
 
 pub const IGNORE_FILE_NAME: &str = ".hcignore";
 
-pub const WASM_FILE_EXTENSION: &str = "wasm";
-
-pub const META_FILE_ID: &str = "file";
-pub const META_DIR_ID: &str = "dir";
-pub const META_BIN_ID: &str = "bin";
-
-pub const META_SECTION_NAME: &str = "__META__";
-pub const META_TREE_SECTION_NAME: &str = "tree";
-pub const META_CONFIG_SECTION_NAME: &str = "config_file";
+const CARGO_FILE_NAME: &str = "Cargo.toml";
 
 pub type Object = Map<String, Value>;
 
@@ -56,16 +45,14 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
     Ok(hdk_version == &hdk_version_from_toml)
 }
 
-struct Packager {
-    strip_meta: bool,
-}
+struct Packager {}
 
 impl Packager {
-    fn new(strip_meta: bool) -> Packager {
-        Packager { strip_meta }
+    fn new() -> Packager {
+        Packager {}
     }
 
-    pub fn package(strip_meta: bool, output: PathBuf, properties: Value) -> DefaultResult<()> {
+    pub fn package(output: PathBuf, properties: Value) -> DefaultResult<()> {
         // First, check whether they have `cargo` installed, since it will be needed for packaging
         // TODO: in the future, don't check for this here, since other build tools and languages
         // could be used
@@ -82,14 +69,17 @@ impl Packager {
             return Ok(());
         }
 
-        Packager::new(strip_meta).run(&output, properties)
+        Packager::new().run(&output, properties)
     }
 
-    fn run(&self, output: &Path, properties: Value) -> DefaultResult<()> {
+    fn run(&self, output: &Path, mut properties: Value) -> DefaultResult<()> {
         let current_dir = std::env::current_dir()?;
         let dir_obj_bundle = Value::from(
             self.bundle_recurse(&current_dir)
                 .map(|mut val| {
+                    if let Some(props_from_dir) = val.get("properties") {
+                        merge(&mut properties, props_from_dir);
+                    }
                     val.insert("properties".to_string(), properties);
                     val
                 })
@@ -146,8 +136,6 @@ impl Packager {
             .filter(|e| e.to_string_lossy().ends_with(".json"))
             .collect();
 
-        let mut meta_section = Object::new();
-
         let maybe_json_file_path = match root_json_files.len() {
             0 => {
                 // A root json file is optional so can still package the dna
@@ -171,13 +159,6 @@ impl Packager {
 
         // Obtain the config file
         let mut main_tree: Object = if let Some(json_file_path) = maybe_json_file_path {
-            let file_name = util::file_name_string(&json_file_path)?;
-
-            meta_section.insert(
-                META_CONFIG_SECTION_NAME.into(),
-                Value::String(file_name.clone()),
-            );
-
             let json_file = fs::read_to_string(json_file_path)?;
 
             // if the json file does not contain an Object at the top level, we can't parse it
@@ -186,22 +167,10 @@ impl Packager {
             Object::new()
         };
 
-        // Let's go meta. Way meta!
-        let mut meta_tree = Object::new();
-
         for node in all_nodes {
             let file_name = util::file_name_string(node)?;
 
-            // ignore empty main_tree, which results from an unparseable JSON file
-            if node.is_file() && !main_tree.is_empty() {
-                meta_tree.insert(file_name.clone(), META_FILE_ID.into());
-
-                let mut buf = Vec::new();
-                File::open(node)?.read_to_end(&mut buf)?;
-                let encoded_content = base64::encode(&buf);
-
-                main_tree.insert(file_name.clone(), encoded_content.into());
-            } else if node.is_dir() {
+            if node.is_dir() {
                 // a folder within this folder has a .hcbuild in it, meaning this node
                 // should build the json and insert it for this zome
                 if let Some(dir_with_code) = node
@@ -211,8 +180,6 @@ impl Packager {
                     .filter(|path| path.is_dir())
                     .find(|path| path.join(BUILD_CONFIG_FILE_NAME).exists())
                 {
-                    meta_tree.insert(file_name.clone(), META_DIR_ID.into());
-
                     let build = Build::from_file(dir_with_code.join(BUILD_CONFIG_FILE_NAME))?;
                     let wasm = build.run(&dir_with_code)?;
                     let wasm_binary = Arc::new(base64::decode(&wasm)?);
@@ -243,8 +210,6 @@ impl Packager {
                     .map(|e| e.path())
                     .find(|path| path.ends_with(BUILD_CONFIG_FILE_NAME))
                 {
-                    meta_tree.insert(file_name.clone(), META_BIN_ID.into());
-
                     let build = Build::from_file(build_config)?;
                     if build.steps.iter().any(|s| s.command == "cargo") {
                         let directories = node
@@ -282,22 +247,9 @@ impl Packager {
                     // here insert the wasm itself
                     main_tree.insert(file_name.clone(), json!({ "code": wasm }));
                 } else {
-                    meta_tree.insert(file_name.clone(), META_DIR_ID.into());
-
                     let sub_tree_content = self.bundle_recurse(&node)?;
-
                     main_tree.insert(file_name.clone(), sub_tree_content.into());
                 }
-            }
-        }
-
-        if !self.strip_meta {
-            if !meta_tree.is_empty() {
-                meta_section.insert(META_TREE_SECTION_NAME.into(), meta_tree.into());
-            }
-
-            if !meta_section.is_empty() {
-                main_tree.insert(META_SECTION_NAME.into(), meta_section.into());
             }
         }
 
@@ -305,89 +257,8 @@ impl Packager {
     }
 }
 
-pub fn package(
-    strip_meta: bool,
-    output: PathBuf,
-    properties: serde_json::Value,
-) -> DefaultResult<()> {
-    Packager::package(strip_meta, output, properties)
-}
-
-pub fn unpack(path: &Path, to: &Path) -> DefaultResult<()> {
-    ensure!(path.is_file(), "argument \"path\" doesn't point to a file");
-
-    if !to.exists() {
-        fs::create_dir_all(&to)?;
-    }
-
-    ensure!(to.is_dir(), "argument \"to\" doesn't point to a directory");
-
-    let raw_bundle_content = fs::read_to_string(&path)?;
-    let bundle_content: Object = serde_json::from_str(&raw_bundle_content)?;
-
-    unpack_recurse(bundle_content, &to)?;
-
-    Ok(())
-}
-
-fn unpack_recurse(mut obj: Object, to: &Path) -> DefaultResult<()> {
-    if let Some(Value::Object(mut main_meta_obj)) = obj.remove(META_SECTION_NAME) {
-        // unpack the tree
-        if let Some(Value::Object(tree_meta_obj)) = main_meta_obj.remove(META_TREE_SECTION_NAME) {
-            for (meta_entry, meta_value) in tree_meta_obj {
-                let entry = obj
-                    .remove(&meta_entry)
-                    .ok_or_else(|| format_err!("incompatible meta section"))?;
-
-                if let Value::String(node_type) = meta_value {
-                    match node_type.as_str() {
-                        META_FILE_ID if entry.is_string() => {
-                            let base64_content = entry.as_str().unwrap().to_string();
-                            let content = base64::decode(&base64_content)?;
-
-                            let file_path = to.join(meta_entry);
-
-                            File::create(file_path)?.write_all(&content[..])?;
-                        }
-                        META_BIN_ID if entry.is_object() => {
-                            let base64_content = entry[&meta_entry].to_string();
-                            let content = base64::decode(&base64_content)?;
-
-                            let file_path = to.join(meta_entry).with_extension(WASM_FILE_EXTENSION);
-
-                            File::create(file_path)?.write_all(&content[..])?;
-                        }
-                        META_DIR_ID if entry.is_object() => {
-                            let directory_obj = entry.as_object().unwrap();
-                            let dir_path = to.join(meta_entry);
-
-                            fs::create_dir(&dir_path)?;
-
-                            unpack_recurse(directory_obj.clone(), &dir_path)?;
-                        }
-                        _ => bail!("incompatible meta section"),
-                    }
-                } else {
-                    bail!("incompatible meta section");
-                }
-            }
-        }
-
-        // unpack the config file
-        if let Some(config_file_meta) = main_meta_obj.remove(META_CONFIG_SECTION_NAME) {
-            ensure!(
-                config_file_meta.is_string(),
-                "config file has to be a string"
-            );
-
-            if !obj.is_empty() {
-                let dna_file = File::create(to.join(config_file_meta.as_str().unwrap()))?;
-                serde_json::to_writer_pretty(dna_file, &obj)?;
-            }
-        }
-    }
-
-    Ok(())
+pub fn package(output: PathBuf, properties: serde_json::Value) -> DefaultResult<()> {
+    Packager::package(output, properties)
 }
 
 #[cfg(test)]
@@ -397,7 +268,7 @@ mod tests {
 
     #[test]
     #[cfg(feature = "broken-tests")]
-    fn package_and_unpack_isolated() {
+    fn package_isolated() {
         const TEST_DNA_FILE_NAME: &str = "test.dna.json";
 
         fn package(shared_file_path: &Path) {
@@ -422,25 +293,9 @@ mod tests {
                 .success();
         }
 
-        fn unpack(shared_file_path: &Path) {
-            let temp_space = gen_dir();
-            let temp_dir_path = temp_space.path();
-
-            Command::main_binary()
-                .unwrap()
-                .current_dir(&shared_file_path)
-                .arg("unpack")
-                .arg(TEST_DNA_FILE_NAME)
-                .arg(temp_dir_path)
-                .assert()
-                .success();
-        }
-
         let shared_space = gen_dir();
 
         package(&shared_space.path().to_path_buf());
-
-        unpack(&shared_space.path().to_path_buf());
 
         shared_space.close().unwrap();
     }

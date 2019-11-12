@@ -12,12 +12,12 @@ cargo test --manifest-path zomes/blog/code/Cargo.toml
 cargo test --manifest-path zomes/summer/code/Cargo.toml
 
 echo "===================================================================================="
-echo "BUILDING genome with 'hc package --output dist/app_spec.dna.json --strip-meta':"
+echo "BUILDING genome with 'hc package --output dist/app_spec.dna.json':"
 echo "------------------------------------------------------------------------------------"
 
 rm -rf dist
 mkdir dist
-hc package --output dist/app_spec.dna.json --strip-meta
+hc package --output dist/app_spec.dna.json
 
 echo "DONE."
 echo "===================================================================================="

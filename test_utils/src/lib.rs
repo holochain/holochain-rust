@@ -33,9 +33,9 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,
     },
-    sync::HcMutex as Mutex,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_locksmith::Mutex;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_net::p2p_config::P2pConfig;
@@ -373,7 +373,7 @@ pub fn start_holochain_instance<T: Into<String>>(
 
     let mut wasm_path = PathBuf::new();
     let wasm_dir_component: PathBuf = wasm_target_dir(
-        "hdk-rust".as_ref(),
+        "hdk".as_ref(),
         "wasm-test".as_ref(),
     );
     wasm_path.push(wasm_dir_component);

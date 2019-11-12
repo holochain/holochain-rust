@@ -135,6 +135,7 @@ struct StressRunner<S: StressSuite, J: StressJob> {
 
 impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     /// private stress runner constructor
+    #[allow(clippy::mutex_atomic)]
     fn priv_new(config: StressRunConfig<S, J>) -> Self {
         let (log_send, log_recv) = crossbeam_channel::unbounded();
         let run_until = std::time::Instant::now()

@@ -267,6 +267,7 @@ struct Suite {
 
 impl Suite {
     /// create a new sim2h server instance on given port
+    #[allow(clippy::mutex_atomic)]
     pub fn new(port: u16) -> Self {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();

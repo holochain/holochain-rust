@@ -11,7 +11,7 @@ use serde_json::{self, Map, Value};
 use std::{
     convert::TryFrom,
     fs::{self, File},
-    io::{Read},
+    io::Read,
     path::PathBuf,
     sync::Arc,
 };
@@ -259,10 +259,7 @@ impl Packager {
     }
 }
 
-pub fn package(
-    output: PathBuf,
-    properties: serde_json::Value,
-) -> DefaultResult<()> {
+pub fn package(output: PathBuf, properties: serde_json::Value) -> DefaultResult<()> {
     Packager::package(output, properties)
 }
 

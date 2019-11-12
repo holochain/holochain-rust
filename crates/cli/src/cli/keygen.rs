@@ -42,12 +42,13 @@ when unlocking the keybundle to use within a Holochain conductor."
     }
     let (keystore, pub_key) = Keystore::new_standalone(mock_passphrase_manager(passphrase), None)?;
 
-    let path = if None == path {
-        let p = keys_directory();
-        create_dir_all(p.clone())?;
-        p.join(pub_key.clone())
+    let path = if let Some(p) = path {
+        p
     } else {
-        path.unwrap()
+        let mut p = keys_directory();
+        create_dir_all(&p)?;
+        p.push(&pub_key);
+        p
     };
 
     keystore.save(path.clone())?;
@@ -79,7 +80,7 @@ pub mod test {
 
     #[test]
     fn keygen_roundtrip() {
-        let path = PathBuf::new().join("test.key");
+        let path = PathBuf::from("test.key");
         let passphrase = String::from("secret");
 
         keygen(Some(path.clone()), Some(passphrase.clone()), true).expect("Keygen should work");

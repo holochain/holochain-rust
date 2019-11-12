@@ -631,10 +631,9 @@ pub mod tests {
     }
 
     pub fn persistence_dir(test_name: &str) -> String {
-        let persist_dir = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name);
+        let mut persist_dir = current_dir().expect("Could not get current dir");
+        persist_dir.push("tmp-test");
+        persist_dir.push(test_name);
         format!("persistence_dir = \'{}\'", persist_dir.to_str().unwrap()).to_string()
     }
 
@@ -889,11 +888,11 @@ id = 'new-dna'"#,
 
         assert_eq!(conductor.config().dnas.len(), 2,);
 
-        let mut output_dna_file = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("dna");
+        let mut output_dna_file = current_dir().expect("Could not get current dir");
+
+        output_dna_file.push("tmp-test");
+        output_dna_file.push(test_name);
+        output_dna_file.push("dna");
 
         output_dna_file.push(new_dna.address().to_string());
         output_dna_file.set_extension(DNA_EXTENSION);
@@ -996,11 +995,11 @@ id = 'new-dna'"#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(conductor.config().dnas.len(), 2,);
 
-        let mut output_dna_file = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("dna");
+        let mut output_dna_file = current_dir().expect("Could not get current dir");
+
+        output_dna_file.push("tmp-test");
+        output_dna_file.push(test_name);
+        output_dna_file.push("dna");
 
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension(DNA_EXTENSION);
@@ -1064,12 +1063,11 @@ id = 'new-dna'"#,
         let new_hash = new_dna.address();
         assert_ne!(original_hash, new_hash);
 
-        let mut output_dna_file = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("dna");
+        let mut output_dna_file = current_dir().expect("Could not get current dir");
 
+        output_dna_file.push("tmp-test");
+        output_dna_file.push(test_name);
+        output_dna_file.push("dna");
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension(DNA_EXTENSION);
 
@@ -1104,12 +1102,14 @@ id = 'new-dna'"#,
         let test_name = "test_add_instance";
         let mut conductor = create_test_conductor(test_name, 3001);
 
-        let storage_path = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("storage")
-            .join("new-instance");
+        let storage_path = {
+            let mut p = current_dir().expect("Could not get current dir");
+            p.push("tmp-test");
+            p.push(test_name);
+            p.push("storage");
+            p.push("new-instance");
+            p
+        };
 
         // Make sure storage is clean
         let _ = remove_dir_all(storage_path.clone());
@@ -1380,12 +1380,14 @@ type = 'http'"#,
         let test_name = "test_add_instance_to_interface";
         let mut conductor = create_test_conductor(test_name, 3007);
 
-        let storage_path = current_dir()
-            .expect("Could not get current dir")
-            .join("tmp-test")
-            .join(test_name)
-            .join("storage")
-            .join("new-instance-2");
+        let storage_path = {
+            let mut p = current_dir().expect("Could not get current dir");
+            p.push("tmp-test");
+            p.push(test_name);
+            p.push("storage");
+            p.push("new-instance-2");
+            p
+        };
 
         // Make sure storage is clean
         let _ = remove_dir_all(storage_path.clone());

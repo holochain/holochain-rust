@@ -78,21 +78,17 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: &str, macro_style: HdkMacroStyle) -> RustScaffold {
-        let target_dir = PathBuf::from("../target");
-        let mut artifact_name = target_dir.clone();
-        let artifact_path_component: PathBuf = [
-            String::from("wasm32-unknown-unknown"),
-            String::from("release"),
-            format!("{}.wasm", &package_name),
-        ]
-        .iter()
-        .collect();
-        artifact_name.push(artifact_path_component);
+        let target_dir = "../target";
+        let mut artifact_name = PathBuf::from(target_dir);
+        artifact_name.push("wasm32-unknown-unknown");
+        artifact_name.push("release");
+        // TODO: if `package_name` can't contain `.`s then
+        // avoid allocation by using
+        // artifact_name.push(package_name);
+        // artifact_name.set_extension(".wasm");
+        artifact_name.push(format!("{}.wasm", &package_name));
 
-        let target_dir_flag = &match target_dir.to_str() {
-            Some(dir) => format!("--target-dir={}", dir),
-            None => String::new(),
-        };
+        let target_dir_flag = format!("--target-dir={}", target_dir);
 
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(
@@ -101,7 +97,7 @@ impl RustScaffold {
                     "build",
                     "--release",
                     "--target=wasm32-unknown-unknown",
-                    target_dir_flag,
+                    &target_dir_flag,
                 ],
             ),
             package_name: package_name.to_string(),

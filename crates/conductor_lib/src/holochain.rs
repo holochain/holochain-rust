@@ -360,14 +360,9 @@ mod tests {
             &String::from("conductor_lib").into(),
             &String::from("wasm-test").into(),
         );
-        let wasm_path_component: PathBuf = [
-            String::from("wasm32-unknown-unknown"),
-            String::from("release"),
-            String::from("example_api_wasm.wasm"),
-        ]
-        .iter()
-        .collect();
-        path.push(wasm_path_component);
+        path.push("wasm32-unknown-unknown");
+        path.push("release");
+        path.push("example_api_wasm.wasm");
 
         path
     }

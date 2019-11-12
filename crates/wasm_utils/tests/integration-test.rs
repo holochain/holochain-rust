@@ -32,22 +32,13 @@ fn call_zome_function_with_hc<J: Into<JsonString>>(
     params: J,
 ) -> HolochainResult<JsonString> {
     let mut wasm_path = PathBuf::new();
-    let wasm_path_component: PathBuf =
-        [String::from("wasm-test"), String::from("integration-test")]
-            .iter()
-            .collect();
     wasm_path.push(wasm_target_dir(
         &String::from("wasm_utils").into(),
-        &wasm_path_component,
+        &PathBuf::from("wasm-test/integration-test"),
     ));
-    let wasm_file_path: PathBuf = [
-        String::from("wasm32-unknown-unknown"),
-        String::from("release"),
-        String::from("wasm_integration_test.wasm"),
-    ]
-    .iter()
-    .collect();
-    wasm_path.push(wasm_file_path);
+    wasm_path.push("wasm32-unknown-unknown");
+    wasm_path.push("release");
+    wasm_path.push("wasm_integration_test.wasm");
     hc_setup_and_call_zome_fn(&wasm_path, fn_name, params)
 }
 

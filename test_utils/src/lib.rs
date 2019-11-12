@@ -378,14 +378,9 @@ pub fn start_holochain_instance<T: Into<String>>(
         &String::from("wasm-test").into(),
     );
     wasm_path.push(wasm_dir_component);
-    let wasm_path_component: PathBuf = [
-        String::from("wasm32-unknown-unknown"),
-        String::from("release"),
-        String::from("test_globals.wasm"),
-    ]
-    .iter()
-    .collect();
-    wasm_path.push(wasm_path_component);
+    wasm_path.push("wasm32-unknown-unknown");
+    wasm_path.push("release");
+    wasm_path.push("test_globals.wasm");
 
     let wasm = create_wasm_from_file(&wasm_path);
 
@@ -602,17 +597,7 @@ where
 }
 
 pub fn generate_zome_internal_error(error_kind: String) -> ZomeApiError {
-    let path = PathBuf::new()
-        .join("crates")
-        .join("core")
-        .join("src")
-        .join("nucleus")
-        .join("ribosome")
-        .join("runtime.rs");
-    let path_string = path
-        .as_path()
-        .to_str()
-        .expect("path should have been created");
+    let path_string = "crates/core/src/nucleus/ribosome/runtime.rs";
     let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\"].join(""));
     let error_string = format!(
         r#"{{"kind":{},"file":"{}","line":"225"}}"#,

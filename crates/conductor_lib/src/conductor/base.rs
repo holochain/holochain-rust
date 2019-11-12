@@ -2092,14 +2092,9 @@ pub mod tests {
             &String::from("conductor_lib").into(),
             &String::from("test-bridge-caller").into(),
         ));
-        let wasm_path_component: PathBuf = [
-            String::from("wasm32-unknown-unknown"),
-            String::from("release"),
-            String::from("test_bridge_caller.wasm"),
-        ]
-        .iter()
-        .collect();
-        path.push(wasm_path_component);
+        path.push("wasm32-unknown-unknown");
+        path.push("release");
+        path.push("test_bridge_caller.wasm");
 
         let wasm = create_wasm_from_file(&path);
         let defs = create_test_defs_with_fn_names(vec![

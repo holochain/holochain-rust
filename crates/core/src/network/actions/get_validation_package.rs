@@ -11,7 +11,7 @@ use holochain_core_types::{
     chain_header::ChainHeader, error::HcResult, validation::ValidationPackage,
 };
 
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 /// GetValidationPackage Action Creator
 /// This triggers the network module to retrieve the validation package for the

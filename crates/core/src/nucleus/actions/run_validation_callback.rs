@@ -11,7 +11,7 @@ use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, ugly::lax_send_sync};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use snowflake;
-use std::{pin::Pin, sync::Arc, thread,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc, thread,time::Instant};
 
 use holochain_metrics::Metric;
 

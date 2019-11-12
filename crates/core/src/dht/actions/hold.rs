@@ -7,7 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 pub async fn hold_entry(
     entry_wh: &EntryWithHeader,

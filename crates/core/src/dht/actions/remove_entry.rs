@@ -8,7 +8,7 @@ use holochain_persistence_api::cas::content::Address;
 
 use holochain_core_types::error::HolochainError;
 
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 /// Remove Entry Action Creator
 ///

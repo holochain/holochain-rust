@@ -18,7 +18,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec,time::{Instant,Duration}};
+use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec,time::Instant};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,

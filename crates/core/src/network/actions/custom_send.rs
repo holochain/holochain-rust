@@ -9,7 +9,7 @@ use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc, thread,time::Instant};
 
 /// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection

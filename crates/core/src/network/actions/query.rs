@@ -10,7 +10,7 @@ use holochain_persistence_api::cas::content::Address;
 
 use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 
-use std::{pin::Pin, sync::Arc, thread,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc, thread,time::Instant};
 
 use snowflake::ProcessUniqueId;
 

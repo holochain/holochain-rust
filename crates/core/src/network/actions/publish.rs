@@ -7,7 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
 use holochain_persistence_api::cas::content::Address;
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 /// Publish Action Creator
 /// This is the high-level publish function that wraps the whole publish process and is what should

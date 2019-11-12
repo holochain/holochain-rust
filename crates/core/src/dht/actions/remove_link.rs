@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{entry::Entry, error::HolochainError};
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 /// RemoveLink Action Creator
 /// This action creator dispatches an RemoveLink action which is consumed by the DHT reducer.

@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, link::link_data::LinkData};
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 /// AddLink Action Creator
 /// This action creator dispatches an AddLink action which is consumed by the DHT reducer.

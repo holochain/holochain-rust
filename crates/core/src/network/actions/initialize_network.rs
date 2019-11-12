@@ -8,7 +8,7 @@ use futures::{task::Poll, Future};
 use holochain_core_types::error::HcResult;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{pin::Pin, sync::Arc,time::Instant};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {

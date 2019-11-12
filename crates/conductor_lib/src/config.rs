@@ -1,4 +1,4 @@
-use crate::logger::LogRules;
+use crate::{conductor::base::DnaLoader, logger::LogRules};
 /// Conductor Configuration
 /// This module provides structs that represent the different aspects of how
 /// a conductor can be configured.
@@ -11,7 +11,6 @@ use crate::logger::LogRules;
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
-use conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::{
@@ -116,6 +115,7 @@ pub struct Configuration {
     #[serde(default)]
     pub passphrase_service: PassphraseServiceConfig,
 
+    #[serde(default)]
     pub metric_publisher: Option<MetricPublisherConfig>,
 }
 
@@ -938,8 +938,10 @@ pub struct SignalConfig {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use conductor::tests::test_dna_loader;
+    use crate::{
+        conductor::tests::test_dna_loader,
+        config::{load_configuration, Configuration, NetworkConfig},
+    };
     use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {
@@ -1055,6 +1057,9 @@ pub mod tests {
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     n3h_log_level = "d"
+
+    [metric_publisher]
+    type = "logger"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -1072,6 +1077,7 @@ pub mod tests {
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
         assert_eq!(config.logger.logger_level, "debug");
+        assert_eq!(format!("{:?}", config.metric_publisher), "Some(Logger)");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {

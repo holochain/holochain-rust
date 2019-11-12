@@ -38,7 +38,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
                 let header_entry_header = create_new_chain_header(
                     &chain_header_entry,
                     &state.agent(),
-                    &*state,
+                    &state,
                     &None,
                     &Vec::new(),
                 ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");

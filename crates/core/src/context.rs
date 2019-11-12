@@ -203,12 +203,12 @@ impl Context {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
+    pub fn state(&self) -> Option<StateWrapper> {
         self.state.as_ref().map(|s| {
             while self.redux_wants_write.load(Relaxed) {
                 std::thread::sleep(Duration::from_millis(1));
             }
-            s.read().unwrap()
+            (*s.read().unwrap()).clone()
         })
     }
 

@@ -284,6 +284,7 @@ fn get_content_aspect(
     let state = context.state().ok_or_else(|| {
         HolochainError::InitializationFailed(String::from("In get_content_aspect: no state found"))
     })?;
+    debug!("get_content_aspect 1");
 
     // Optimistically look for entry in chain...
     let maybe_chain_header = state
@@ -300,25 +301,31 @@ fn get_content_aspect(
                 .find(|ref chain_header| chain_header.entry_address() == entry_address)
                 .map(|h| (h, false))
         });
+    debug!("get_content_aspect 2");
 
     // If we have found a header for the requested entry in the chain...
     let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, header)?),
+        Some((header, true)) => Some(create_entry_with_header_for_header(&state, header)?),
         Some((header, false)) => {
+            debug!("get_content_aspect 3");
             // ... we can just get the content from the chain CAS
-            Some(EntryWithHeader {
+            let result = Some(EntryWithHeader {
                 entry: get_entry_from_cas(
                     &state.agent().chain_store().content_storage(),
                     header.entry_address(),
                 )?
                 .expect("Could not find entry in chain CAS, but header is chain"),
                 header,
-            })
+            });
+            debug!("get_content_aspect 4");
+            result
         }
         None => {
+            debug!("get_content_aspect 5");
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
             if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
             {
+                debug!("get_content_aspect 6");
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state.get_headers(entry_address.clone()).map_err(|error| {
@@ -349,6 +356,7 @@ fn get_content_aspect(
             }
         }
     };
+    debug!("get_content_aspect 7");
 
     let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
 

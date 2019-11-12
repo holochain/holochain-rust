@@ -209,58 +209,6 @@ jobs:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
 
- cold.ubuntu.bionic.auto:
-  docker:
-   - image: ubuntu:bionic
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
- cold.ubuntu.xenial.auto:
-  docker:
-   - image: ubuntu:xenial
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
- cold.debian.stable.auto:
-  docker:
-   - image: debian:stable
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
- cold.mac.10.auto:
-  macos:
-   xcode: "10.2.0"
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
  cold.mac.10.nix:
   macos:
    xcode: "10.2.0"
@@ -320,7 +268,8 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
-   - stress-tests-sim1h
+   # @todo this was flakey
+   # - stress-tests-sim1h
    - stress-tests-sim2h
 
  cold.ubuntu:

@@ -1,5 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::{hdk_version::HDK_VERSION};
+use holochain_core_types::hdk_version::HDK_VERSION;
 use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};

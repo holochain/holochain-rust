@@ -299,7 +299,14 @@ pub extern "C" fn __hdk_hdk_version(
         }
     };
 
-    return_code_for_allocation_result(mem_stack.write_string(holochain_core_types::HDK_VERSION)).into()
+    return_code_for_allocation_result(
+        mem_stack.write_string(
+            holochain_core_types::hdk_version::HDK_VERSION
+                .to_string()
+                .as_ref(),
+        ),
+    )
+    .into()
 }
 
 #[no_mangle]

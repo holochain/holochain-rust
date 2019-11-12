@@ -230,7 +230,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     fn cleanup(mut self) {
         *self.should_continue.lock().unwrap() = false;
         for t in self.thread_pool.drain(..) {
-            t.join().unwrap();
+            t.join().expect("failed to join thread, poisoned?");
         }
         self.config.suite.stop(self.stats);
     }

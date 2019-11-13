@@ -40,12 +40,12 @@ in
   holochain-cli = buildHolochain {
     name = "holochain-cli";
     src = gitignoreSource ./.;
-    cargoDir = "cli";
+    cargoDir = "crates/cli";
   };
 
   holochain-conductor = buildHolochain {
     name = "holochain-conductor";
     src = gitignoreSource ./.;
-    cargoDir = "conductor";
+    cargoDir = "crates/conductor";
   };
 }

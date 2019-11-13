@@ -21,7 +21,7 @@ holochain_persistence_lmdb = "=0.0.11"
 holochain_dpki = { version = "=0.0.37-alpha12", path = "../dpki" }
 holochain_net = { version = "=0.0.37-alpha12", path = "../net" }
 lib3h = "=0.0.21"
-lib3h_sodium = "=0.0.21"
+lib3h_sodium = "=0.0.22"
 holochain_common = { version = "=0.0.37-alpha12", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"

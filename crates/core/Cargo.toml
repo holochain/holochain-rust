@@ -34,8 +34,8 @@ holochain_net = { version = "=0.0.37-alpha12", path = "../net" }
 holochain_wasm_utils = { version = "=0.0.37-alpha12", path = "../wasm_utils" }
 holochain_common = { version = "=0.0.37-alpha12", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.37-alpha12", path = "../conductor_api" }
-lib3h_protocol = "=0.0.21"
-lib3h_sodium = "=0.0.21"
+lib3h_protocol = "=0.0.22"
+lib3h_sodium = "=0.0.22"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.11"

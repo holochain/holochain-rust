@@ -1,6 +1,6 @@
 [package]
 name = "holochain_stress"
-version = "0.0.38-alpha13"
+version = "0.0.38-alpha14"
 description = "holochain stress tests"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -20,7 +20,7 @@ log = "=0.4.8"
 native-tls = "=0.2.2"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-sim2h = { version = "=0.0.38-alpha13", path = "../sim2h" }
+sim2h = { version = "=0.0.38-alpha14", path = "../sim2h" }
 structopt = "=0.3.3"
 url2 = "=0.0.3"
 

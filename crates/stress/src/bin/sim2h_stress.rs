@@ -312,11 +312,7 @@ impl StressSuite for Suite {
 
     fn stop(&mut self, stats: StressStats) {
         *self.sim2h_cont.lock().unwrap() = false;
-        self.sim2h_join
-            .take()
-            .unwrap()
-            .join()
-            .unwrap();
+        self.sim2h_join.take().unwrap().join().unwrap();
         println!("FINAL STATS: {:#?}", stats);
     }
 }

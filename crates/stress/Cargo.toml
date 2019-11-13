@@ -22,7 +22,7 @@ serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 sim2h = { version = "=0.0.38-alpha14", path = "../sim2h" }
 structopt = "=0.3.3"
-url2 = "=0.0.3"
+url2 = "=0.0.4"
 
 [features]
 vendored = ["native-tls/vendored"]

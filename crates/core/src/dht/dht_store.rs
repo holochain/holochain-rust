@@ -17,11 +17,11 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
-use crate::state::StateWrapper;
+use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::cas::content::Content;
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
 };
@@ -37,6 +37,8 @@ pub struct DhtStore {
 
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
+
+    pub(crate) queued_holding_workflows: VecDeque<PendingValidation>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -121,6 +123,7 @@ impl DhtStore {
             meta_storage,
             holding_list: Vec::new(),
             actions: HashMap::new(),
+            queued_holding_workflows: VecDeque::new(),
         }
     }
 
@@ -250,6 +253,10 @@ impl DhtStore {
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &mut self.actions
+    }
+
+    pub(crate) fn next_queued_holding_workflow(&self) -> Option<PendingValidation> {
+        self.queued_holding_workflows.front().cloned()
     }
 }
 

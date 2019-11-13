@@ -5,15 +5,13 @@
 pub mod tests {
     use crate::{
         action::{Action, ActionWrapper},
-        instance::{tests::test_context, Instance, Observer},
+        instance::{tests::test_context, Instance},
     };
     use holochain_core_types::{
         entry::{entry_type::EntryType, Entry},
         link::{link_list::LinkList, Link},
     };
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-
-    use crossbeam_channel::unbounded;
 
     pub fn create_example_link() -> Link {
         Link::new(
@@ -59,10 +57,10 @@ pub mod tests {
             ActionWrapper::new(Action::Commit((link_list_entry.clone(), None, vec![])));
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
-        let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
+        instance
+            .process_action(&commit_action, &context)
+            .expect("process_action should run without error");
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history().iter().count());
         instance
@@ -95,10 +93,10 @@ pub mod tests {
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
-        let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
+        instance
+            .process_action(&commit_action, &context)
+            .expect("process_action should run without error");
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history().iter().count());
         instance

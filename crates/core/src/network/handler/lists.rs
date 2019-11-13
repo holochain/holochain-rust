@@ -15,16 +15,10 @@ use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
-use snowflake::ProcessUniqueId;
-use std::{collections::HashMap, sync::Arc, thread};
+use std::{collections::HashMap, sync::Arc};
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
-    thread::Builder::new()
-        .name(format!(
-            "handle_authoring_list/{}",
-            ProcessUniqueId::new().to_string()
-        ))
-        .spawn(move || {
+    context.clone().spawn_thread(move || {
             let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
             for entry_address in get_all_public_chain_entries(context.clone()) {
                 let content_aspect = get_content_aspect(&entry_address, context.clone())
@@ -44,7 +38,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
                 let header_entry_header = create_new_chain_header(
                     &chain_header_entry,
                     &state.agent(),
-                    &*state,
+                    &state,
                     &None,
                     &Vec::new(),
                 ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
@@ -62,8 +56,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
                 address_map,
             });
             dispatch_action(context.action_channel(), ActionWrapper::new(action));
-        })
-        .expect("Could not spawn thread for creating of authoring list");
+        });
 }
 
 fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
@@ -89,40 +82,34 @@ fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<
 }
 
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
-    thread::Builder::new()
-        .name(format!(
-            "handle_gossip_list/{}",
-            ProcessUniqueId::new().to_string()
-        ))
-        .spawn(move || {
-            let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
-            let holding_list = {
-                let state = context
-                    .state()
-                    .expect("No state present when trying to respond with gossip list");
-                state.dht().get_all_held_entry_addresses().clone()
-            };
+    context.clone().spawn_thread(move || {
+        let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
+        let holding_list = {
+            let state = context
+                .state()
+                .expect("No state present when trying to respond with gossip list");
+            state.dht().get_all_held_entry_addresses().clone()
+        };
 
-            for entry_address in holding_list {
-                address_map.insert(
-                    EntryHash::from(entry_address.clone()),
-                    get_all_aspect_addresses(&entry_address, context.clone())
-                        .expect("Error getting entry aspects of authoring list")
-                        .iter()
-                        .map(|a| AspectHash::from(a))
-                        .collect(),
-                );
-            }
+        for entry_address in holding_list {
+            address_map.insert(
+                EntryHash::from(entry_address.clone()),
+                get_all_aspect_addresses(&entry_address, context.clone())
+                    .expect("Error getting entry aspects of authoring list")
+                    .iter()
+                    .map(|a| AspectHash::from(a))
+                    .collect(),
+            );
+        }
 
-            let action = Action::RespondGossipList(EntryListData {
-                space_address: get_list_data.space_address,
-                provider_agent_id: get_list_data.provider_agent_id,
-                request_id: get_list_data.request_id,
-                address_map,
-            });
-            dispatch_action(context.action_channel(), ActionWrapper::new(action));
-        })
-        .expect("Could not spawn thread for creating of gossip list");
+        let action = Action::RespondGossipList(EntryListData {
+            space_address: get_list_data.space_address,
+            provider_agent_id: get_list_data.provider_agent_id,
+            request_id: get_list_data.request_id,
+            address_map,
+        });
+        dispatch_action(context.action_channel(), ActionWrapper::new(action));
+    });
 }
 
 #[cfg(test)]

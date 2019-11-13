@@ -1,7 +1,6 @@
 use crate::{
     context::Context,
     network::entry_with_header::EntryWithHeader,
-    nucleus::actions::remove_pending_validation::remove_pending_validation,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
 use holochain_core_types::error::HolochainError;
@@ -10,10 +9,13 @@ use crate::workflows::{
     hold_entry_remove::hold_remove_workflow, hold_entry_update::hold_update_workflow,
     remove_link::remove_link_workflow,
 };
+use holochain_core_types::{
+    entry::{deletion_entry::DeletionEntry, Entry},
+    network::entry_aspect::EntryAspect,
+};
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom, fmt, sync::Arc, thread};
+use holochain_persistence_api::cas::content::Address;
+use std::{convert::TryFrom, fmt, sync::Arc};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -73,61 +75,87 @@ pub struct PendingValidationStruct {
     pub workflow: ValidatingWorkflow,
 }
 
-fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
-    thread::Builder::new()
-        .name(format!(
-            "retry_validation/{}",
-            ProcessUniqueId::new().to_string()
-        ))
-        .spawn(move || {
-            let result = match pending.workflow {
-                ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-                    &pending.entry_with_header,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-                    &pending.entry_with_header,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-                    &pending.entry_with_header,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-                    &pending.entry_with_header,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-                    &pending.entry_with_header,
-                    context.clone(),
-                )),
-            };
-            if Err(HolochainError::ValidationPending) != result {
-                remove_pending_validation(
-                    pending.entry_with_header.entry.address(),
-                    pending.workflow.clone(),
-                    &context,
-                );
-            }
-        })
-        .expect("Could not spawn thread for retry_validation");
+impl PendingValidationStruct {
+    pub fn new(entry_with_header: EntryWithHeader, workflow: ValidatingWorkflow) -> Self {
+        Self {
+            entry_with_header,
+            dependencies: Vec::new(),
+            workflow,
+        }
+    }
 }
 
-pub fn run_pending_validations(context: Arc<Context>) {
-    let pending_validations = context
-        .state()
-        .expect("Couldn't get state in run_pending_validations")
-        .nucleus()
-        .pending_validations
-        .clone();
+impl TryFrom<EntryAspect> for PendingValidationStruct {
+    type Error = HolochainError;
+    fn try_from(aspect: EntryAspect) -> Result<PendingValidationStruct, HolochainError> {
+        match aspect {
+            EntryAspect::Content(entry, header) => Ok(PendingValidationStruct::new(
+                EntryWithHeader::try_from_entry_and_header(entry, header)?,
+                ValidatingWorkflow::HoldEntry,
+            )),
+            EntryAspect::Header(_header) => Err(HolochainError::NotImplemented(String::from(
+                "EntryAspect::Header",
+            ))),
+            EntryAspect::LinkAdd(link_data, header) => {
+                let entry = Entry::LinkAdd(link_data);
+                Ok(PendingValidationStruct::new(
+                    EntryWithHeader::try_from_entry_and_header(entry, header)?,
+                    ValidatingWorkflow::HoldLink,
+                ))
+            }
+            EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
+                let entry = Entry::LinkRemove((link_data, links_to_remove));
+                Ok(PendingValidationStruct::new(
+                    EntryWithHeader::try_from_entry_and_header(entry, header)?,
+                    ValidatingWorkflow::RemoveLink,
+                ))
+            }
+            EntryAspect::Update(entry, header) => Ok(PendingValidationStruct::new(
+                EntryWithHeader::try_from_entry_and_header(entry, header)?,
+                ValidatingWorkflow::UpdateEntry,
+            )),
+            EntryAspect::Deletion(header) => {
+                // reconstruct the deletion entry from the header.
+                let deleted_entry_address = header.link_update_delete().ok_or_else(|| {
+                    HolochainError::ValidationFailed(String::from(
+                        "Deletion header is missing deletion link",
+                    ))
+                })?;
+                let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
 
-    pending_validations.iter().for_each(|(_, pending)| {
-        log_debug!(
-            context,
-            "scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
-            pending.entry_with_header.entry.entry_type(),
-            pending.entry_with_header.entry.address()
-        );
-        retry_validation(pending.clone(), context.clone());
-    });
+                Ok(PendingValidationStruct::new(
+                    EntryWithHeader::try_from_entry_and_header(entry, header)?,
+                    ValidatingWorkflow::RemoveEntry,
+                ))
+            }
+        }
+    }
+}
+
+pub fn run_holding_workflow(
+    pending: &PendingValidation,
+    context: Arc<Context>,
+) -> Result<(), HolochainError> {
+    match pending.workflow {
+        ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+    }
 }

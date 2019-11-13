@@ -31,7 +31,7 @@ use std::{
         Arc,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
@@ -67,9 +67,10 @@ impl Instance {
         scheduler
             .every(10.seconds())
             .run(scheduled_jobs::create_callback(context.clone()));
-        self.scheduler_handle = Some(Arc::new(
-            scheduler.watch_thread(Duration::from_millis(1000)),
-        ));
+        scheduler
+            .every(1.second())
+            .run(scheduled_jobs::create_validation_callback(context.clone()));
+        self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
         self.persister = Some(context.persister.clone());
 
@@ -183,18 +184,33 @@ impl Instance {
             ))
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
+                let mut unprocessed_action: Option<ActionWrapper> = None;
                 while kill_receiver.try_recv().is_err() {
-                    if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
+                    if let Some(action_wrapper) = unprocessed_action.clone().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
+                        // Add new observers
+                        state_observers.extend(rx_observer.try_iter());
                         // Ping can happen often, and should be as lightweight as possible
                         let should_process = *action_wrapper.action() != Action::Ping;
                         if should_process {
-                            state_observers = sync_self.process_action(
-                                &action_wrapper,
-                                state_observers,
-                                &rx_observer,
-                                &sub_context,
-                            );
-                            sync_self.emit_signals(&sub_context, &action_wrapper);
+                            match sync_self.process_action(&action_wrapper, &sub_context) {
+                                Ok(()) => {
+                                    sync_self.emit_signals(&sub_context, &action_wrapper);
+                                    // Tick all observers and remove those that have lost their receiving part
+                                    state_observers= state_observers
+                                        .into_iter()
+                                        .filter(|observer| observer.ticker.send(()).is_ok())
+                                        .collect();
+                                },
+                                Err(HolochainError::Timeout) => {
+                                    warn!("Instance::process_action() couldn't get lock on state. Trying again next loop.");
+                                    unprocessed_action = Some(action_wrapper);
+                                },
+                                Err(e) => {
+                                    error!("Instance::process_action() returned unexpected error: {:?}", e);
+                                    unprocessed_action = Some(action_wrapper);
+                                }
+                            };
+
                         }
                     }
                 }
@@ -213,10 +229,9 @@ impl Instance {
     pub(crate) fn process_action(
         &self,
         action_wrapper: &ActionWrapper,
-        mut state_observers: Vec<Observer>,
-        rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
-    ) -> Vec<Observer> {
+    ) -> Result<(), HolochainError> {
+        context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
             let new_state: StateWrapper;
@@ -224,14 +239,16 @@ impl Instance {
             // Get write lock
             let mut state = self
                 .state
-                .write()
-                .expect("owners of the state RwLock shouldn't panic");
+                .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
+                .ok_or_else(|| HolochainError::Timeout)?;
 
             new_state = state.reduce(action_wrapper.clone());
 
             // Change the state
             *state = new_state;
         }
+
+        context.redux_wants_write.store(false, Relaxed);
 
         if let Err(e) = self.save() {
             log_error!(
@@ -247,13 +264,7 @@ impl Instance {
             );
         }
 
-        // Add new observers
-        state_observers.extend(rx_observer.try_iter());
-        // Tick all observers and remove those that have lost their receiving part
-        state_observers
-            .into_iter()
-            .filter(|observer| observer.ticker.send(()).is_ok())
-            .collect()
+        Ok(())
     }
 
     pub(crate) fn emit_signals(&mut self, context: &Context, action_wrapper: &ActionWrapper) {
@@ -691,15 +702,9 @@ pub mod tests {
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
-        let new_observers = instance.process_action(
-            &action_wrapper,
-            Vec::new(), // start with no observers
-            &rx_observer,
-            &context,
-        );
-
-        // test that the get action added no observers or actions
-        assert!(new_observers.is_empty());
+        instance
+            .process_action(&action_wrapper, &context)
+            .expect("process_action should run without error");
 
         let rx_action_is_empty = match rx_action.try_recv() {
             Err(crossbeam_channel::TryRecvError::Empty) => true,
@@ -843,9 +848,9 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
-        let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = unbounded::<Observer>();
-        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
+        instance
+            .process_action(&commit_action, &context)
+            .expect("process_action should run without error");
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history().iter().count());
@@ -875,15 +880,10 @@ pub mod tests {
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
-        let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(
-            &commit_agent_action,
-            state_observers,
-            &rx_observer,
-            &context,
-        );
+        instance
+            .process_action(&commit_agent_action, &context)
+            .expect("process_action should run without error");
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history().iter().count());

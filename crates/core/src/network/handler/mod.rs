@@ -303,7 +303,7 @@ fn get_content_aspect(
 
     // If we have found a header for the requested entry in the chain...
     let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, header)?),
+        Some((header, true)) => Some(create_entry_with_header_for_header(&state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
             Some(EntryWithHeader {

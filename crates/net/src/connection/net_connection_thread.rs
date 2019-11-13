@@ -18,6 +18,7 @@ use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 const TICK_SLEEP_MIN_US: u64 = 100;
 const TICK_SLEEP_MAX_US: u64 = 10_000;
+const TICK_SLEEP_STARTUP_RETRY_MS: u64 = 3_000;
 
 /// Struct for holding a network connection running on a separate thread.
 /// It is itself a NetSend, and spawns a NetWorker.
@@ -57,8 +58,22 @@ impl NetConnectionThread {
                 ProcessUniqueId::new().to_string()
             ))
             .spawn(move || {
-                // Create worker
-                let mut worker = worker_factory(handler).expect("able to create worker");
+                // Try to create a worker. Keep retrying if unsuccessful
+                let mut worker = loop {
+                    match worker_factory(handler.clone()) {
+                        Ok(worker) => {
+                            break worker;
+                        }
+                        Err(e) => {
+                            debug!("Error occured in p2p network module, on startup: {:?}", e);
+                            debug!(
+                                "Waiting {} milliseconds to retry",
+                                TICK_SLEEP_STARTUP_RETRY_MS
+                            );
+                        }
+                    }
+                    thread::sleep(time::Duration::from_millis(TICK_SLEEP_STARTUP_RETRY_MS));
+                };
                 // Get endpoint and send it to owner (NetConnectionThread)
                 send_endpoint
                     .send((worker.endpoint(), worker.p2p_endpoint()))

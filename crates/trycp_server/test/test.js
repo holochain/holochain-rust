@@ -5,8 +5,8 @@ process.on('unhandledRejection', error => {
     console.error('got unhandledRejection:', error);
 });
 
-//doTest("wss://localhost:9000")
-doTest("wss://test1-eu-central-1.holochain-aws.org")
+doTest("ws://localhost:9000")
+//doTest("wss://test1-eu-central-1.holochain-aws.org")
 //magic_remote_machine_manager("3000")
 function magic_remote_machine_manager(port) {
     const { spawn } = require('child_process');
@@ -43,6 +43,14 @@ function  doTest(url) {
             console.log(result)
         })
 
+        await ws.call('dna', {"url": "https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json"}).then(function(result) {
+            console.log(result)
+        })
+
+        // call again to test caching
+        await ws.call('dna', {"url": "https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json"}).then(function(result) {
+            console.log(result)
+        })
 
         const config_toml =`
 persistence_dir = "/tmp/somepath"

@@ -24,6 +24,7 @@ impl DnaLocation {
                 Ok(content)
             }
             DnaLocation::Url(url) => {
+                debug!("Downloading file from {} ...", url);
                 let content: String = reqwest::get::<Url>(url.clone())
                     .map_err(|e| HolochainError::ErrorGeneric(format!("request failed: {}", e)))?
                     .text()

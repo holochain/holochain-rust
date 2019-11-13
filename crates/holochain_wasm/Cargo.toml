@@ -1,6 +1,6 @@
 [package]
 name = "holochain_conductor_wasm"
-version = "0.0.38-alpha2"
+version = "0.0.38-alpha14"
 description = "holochain wasm"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -13,5 +13,5 @@ name = "holochain_conductor_wasm"
 crate-type = ["cdylib"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.38-alpha2", path = "../core_types" }
+holochain_core_types = { version = "=0.0.38-alpha14", path = "../core_types" }
 wasm-bindgen = "=0.2.32"

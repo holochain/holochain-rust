@@ -2,6 +2,139 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.38-alpha14] - 2019-11-13
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha13] - 2019-11-12
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+- Removes the `__META__` fields in a .dna.json that allowed it to be unpacked. Removes the `hc unpackage` CLI option. [#1864](https://github.com/holochain/holochain-rust/pull/1864)
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha12] - 2019-11-11
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha9] - 2019-11-11
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha8] - 2019-11-11
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha7] - 2019-11-11
+
+### Added
+* Adds try-o-rama remote server provisioning via trycp [#1780](https://github.com/holochain/holochain-rust/pull/1780)
+  This also adds nix-shell commands:
+  - `hc-trycp-server-install` which installs the trycp-server
+  - `hc-trycp-server` which runs the trycp-server
+* Adds instrumentation to measure and publish. performance. Introduces `hc-metrics` command to parse logs and generate statistics. [#1810](https://github.com/holochain/holochain-rust/pull/1810)
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha6] - 2019-11-10
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha5] - 2019-11-10
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.38-alpha4] - 2019-11-10
+
+### Added
+* Adds instrumentation to measure and publish. performance. Introduces `hc-metrics` command to parse logs and generate statistics. [#1810](https://github.com/holochain/holochain-rust/pull/1810) 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.38-alpha2] - 2019-11-08
 
 ### Added

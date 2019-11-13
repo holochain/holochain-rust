@@ -46,10 +46,6 @@ impl ChainStore {
         ChainStore { content_storage }
     }
 
-    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
-    }
-
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }

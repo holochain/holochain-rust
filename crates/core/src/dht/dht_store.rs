@@ -239,12 +239,6 @@ impl DhtStore {
         &self.holding_list
     }
 
-    // Getters (for reducers)
-    // =======
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
-        self.meta_storage.clone()
-    }
-
     pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
         self.content_storage.clone().read().unwrap().fetch(address)
     }

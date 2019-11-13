@@ -274,21 +274,6 @@ impl DhtStore {
         }
     }
 
-    /*pub(crate) fn lock_cas(&mut self) -> HcResult<()> {
-        unsafe {
-            self.content_storage.raw().lock_exclusive();
-        }
-
-        self.content_storage_write_lock.replace(self.content_storage.write()?);
-        self.meta_storage_write_lock.replace(self.meta_storage.write()?);
-        Ok(())
-    }
-
-    pub(crate) fn unlock_cas(&mut self) {
-        self.content_storage_write_lock.replace(None);
-        self.meta_storage_write_lock.replace(None);
-    }*/
-
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions
     }

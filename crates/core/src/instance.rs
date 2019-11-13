@@ -410,10 +410,9 @@ pub mod tests {
     use test_utils::mock_signing::registered_test_agent;
 
     use holochain_core_types::entry::Entry;
-    use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
-    use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
     use holochain_json_api::json::JsonString;
-
+    use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
+    use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
@@ -905,14 +904,17 @@ pub mod tests {
     fn test_context_lmdb(
         agent_name: &str,
         network_name: Option<&str>,
-        cas_initial_mmap: Option<usize>
+        cas_initial_mmap: Option<usize>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
 
         let cas_dir = tempdir().expect("Could not create a tempdir for CAS testing");
         let eav_dir = tempdir().expect("Could not create a tempdir for CAS testing");
 
-        let content_storage = Arc::new(RwLock::new(LmdbStorage::new(cas_dir.path(), cas_initial_mmap)));
+        let content_storage = Arc::new(RwLock::new(LmdbStorage::new(
+            cas_dir.path(),
+            cas_initial_mmap,
+        )));
         let meta_storage = Arc::new(RwLock::new(EavLmdbStorage::new(eav_dir.path(), None)));
         let logger = test_logger();
         (
@@ -931,12 +933,13 @@ pub mod tests {
             logger,
         )
     }
-    
+
     #[test]
     fn lmdb_large_entry_test() {
-        let megabytes = 1024*1024;
-        let initial_mmap_size = 1*megabytes;
-        let (context, _) = test_context_lmdb("alice", Some("lmdb_stress_test"), Some(initial_mmap_size));
+        let megabytes = 1024 * 1024;
+        let initial_mmap_size = 1 * megabytes;
+        let (context, _) =
+            test_context_lmdb("alice", Some("lmdb_stress_test"), Some(initial_mmap_size));
 
         // Set up instance
         let instance = Instance::new(context.clone());
@@ -947,11 +950,10 @@ pub mod tests {
             let data: String = std::iter::repeat(format!("{}", i)).take(reps).collect();
             Entry::App("test-entry".into(), JsonString::from_json(&data))
         }
-        
+
         // write an entry larger than the initial mmap
-        let entry = test_entry(0, 3*initial_mmap_size);
-        let commit_agent_action =
-            ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
+        let entry = test_entry(0, 3 * initial_mmap_size);
+        let commit_agent_action = ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
 
         let state_observers: Vec<Observer> = Vec::new();
         instance.process_action(

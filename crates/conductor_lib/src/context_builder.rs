@@ -17,6 +17,8 @@ use std::{
     sync::Arc,
 };
 
+use holochain_metrics::{DefaultMetricPublisher, MetricPublisher, MetricPublisherConfig};
+
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
 ///
@@ -38,6 +40,7 @@ pub struct ContextBuilder {
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
     state_dump_logging: bool,
+    metric_publisher: Option<Arc<RwLock<dyn MetricPublisher>>>,
 }
 
 impl ContextBuilder {
@@ -52,6 +55,7 @@ impl ContextBuilder {
             conductor_api: None,
             signal_tx: None,
             state_dump_logging: false,
+            metric_publisher: None,
         }
     }
 
@@ -161,6 +165,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_metric_publisher(mut self, config: &MetricPublisherConfig) -> Self {
+        self.metric_publisher = Some(config.create_metric_publisher());
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
@@ -174,6 +183,9 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or_else(|| Arc::new(RwLock::new(EavMemoryStorage::new())));
+        let metric_publisher = self
+            .metric_publisher
+            .unwrap_or_else(|| Arc::new(RwLock::new(DefaultMetricPublisher::default())));
 
         Context::new(
             &self
@@ -191,16 +203,17 @@ impl ContextBuilder {
             self.conductor_api,
             self.signal_tx,
             self.state_dump_logging,
+            metric_publisher,
         )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::tempdir;
+    use super::*;
     use holochain_net::p2p_config::P2pBackendKind;
+    use tempfile;
     use test_utils::mock_signing::mock_conductor_api;
 
     #[test]

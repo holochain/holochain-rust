@@ -1,7 +1,7 @@
 let
- release-commit = "f9a55f95bd9e6843fb89ec0439989da4ca265c7c";
- current = "0.0.37-alpha12";
- previous = "0.0.37-alpha11";
+ release-commit = "6e541d74cc475185b6f209fd39fc65d66e287f6c";
+ current = "0.0.38-alpha14";
+ previous = "0.0.38-alpha13";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";
@@ -69,8 +69,7 @@ cargo update
 
    # publish artifacts to the world
    publish = ''
-echo "go look at travis for binary building!"
-hc-release-hook-publish
+echo "go look at circle for binary building and crates publishing!"
 '';
   };
 

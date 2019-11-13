@@ -217,7 +217,7 @@ impl State {
             // don't include the chain header twice
             .filter(|a| !header_addresses.contains(a))
             // fetch the header content from CAS
-            .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
+            .map(|a| self.dht().cas_fetch(&a))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {

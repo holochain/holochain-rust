@@ -210,8 +210,6 @@ pub mod tests {
         let store = test_store(context);
 
         // test_entry is not sys so should do nothing
-        let storage = &store.dht().content_storage().clone();
-
         let sys_entry = test_sys_entry();
         let entry_wh = EntryWithHeader {
             entry: sys_entry.clone(),
@@ -224,17 +222,17 @@ pub mod tests {
 
         assert_eq!(
             Some(sys_entry.clone()),
-            (*storage.read().unwrap())
-                .fetch(&sys_entry.address())
+            store
+                .dht()
+                .cas_fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
                 .map(|s| Entry::try_from_content(&s).unwrap())
         );
 
-        let new_storage = &new_dht_store.content_storage().clone();
         assert_eq!(
             Some(sys_entry.clone()),
-            (*new_storage.read().unwrap())
-                .fetch(&sys_entry.address())
+            new_dht_store
+                .cas_fetch(&sys_entry.address())
                 .expect("could not fetch from cas")
                 .map(|s| Entry::try_from_content(&s).unwrap())
         );
@@ -246,8 +244,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let storage = store.dht().content_storage();
-        let _ = (storage.write().unwrap()).add(&entry);
+        let _ = (*store.dht()).clone().cas_add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -289,7 +286,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = store.dht().content_storage().write().unwrap().add(&entry);
+        let _ = (*store.dht()).clone().cas_add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(

@@ -30,7 +30,7 @@ pub(crate) enum LinkModification {
 
 /// Used as the inner function for both commit and hold reducers
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
-    match (*store.content_storage().write()?).add(entry) {
+    match store.cas_add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
             (*store.meta_storage().write()?)
                 .add_eavi(&status_eav)
@@ -49,7 +49,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    if (*store.content_storage().read()?).contains(link.base())? {
+    if store.cas_contains(link.base())? {
         let attr = match link_modification {
             LinkModification::Add => {
                 Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
@@ -89,11 +89,8 @@ pub(crate) fn reduce_remove_entry_inner(
     deletion_address: &Address,
 ) -> HcResult<Address> {
     // pre-condition: Must already have entry in local content_storage
-    let content_storage = &store.content_storage().clone();
-
-    let entry: Entry = content_storage
-        .read()?
-        .fetch(latest_deleted_address)?
+    let entry: Entry = store
+        .cas_fetch(latest_deleted_address)?
         .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?
         .try_into()
         .map_err(|_| {

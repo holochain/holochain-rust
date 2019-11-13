@@ -67,8 +67,7 @@ pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().dht().content_storage().clone();
-    get_entry_from_cas(&cas, address)
+    context.state().unwrap().dht().get_entry_from_cas(address)
 }
 
 pub(crate) fn get_entry_crud_meta_from_dht(
@@ -179,8 +178,10 @@ pub mod tests {
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(None), result);
-        let storage = &context.state().unwrap().dht().content_storage().clone();
-        (*storage.write().unwrap()).add(&entry).unwrap();
+        (*context.state().unwrap().dht())
+            .clone()
+            .cas_add(&entry)
+            .unwrap();
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }

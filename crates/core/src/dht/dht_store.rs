@@ -18,8 +18,9 @@ use holochain_persistence_api::{
 use regex::Regex;
 
 use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
+use holochain_core_types::error::HcResult;
 use holochain_json_api::error::JsonResult;
-use holochain_persistence_api::cas::content::Content;
+use holochain_persistence_api::{cas::content::Content, error::PersistenceResult};
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
@@ -46,7 +47,7 @@ pub struct DhtStore {
 impl PartialEq for DhtStore {
     fn eq(&self, other: &DhtStore) -> bool {
         let content = &self.content_storage.clone();
-        let other_content = &other.content_storage().clone();
+        let other_content = &other.content_storage.clone();
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
@@ -198,7 +199,7 @@ impl DhtStore {
             // get the header addresses
             .map(|eavi| eavi.value())
             // fetch the header content from CAS
-            .map(|a| self.content_storage().read().unwrap().fetch(&a))
+            .map(|a| self.cas_fetch(&a))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {
@@ -216,7 +217,7 @@ impl DhtStore {
 
     /// Add an entry and header to the CAS and EAV, respectively
     pub fn add_header_for_entry(
-        &self,
+        &mut self,
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
@@ -225,7 +226,7 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        self.content_storage().write().unwrap().add(header)?;
+        self.cas_add(header)?;
         self.meta_storage().write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }
@@ -240,12 +241,60 @@ impl DhtStore {
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
-    }
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }
+
+    pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
+        self.content_storage.clone().read().unwrap().fetch(address)
+    }
+
+    pub(crate) fn cas_contains(&self, address: &Address) -> PersistenceResult<bool> {
+        self.content_storage
+            .clone()
+            .read()
+            .unwrap()
+            .contains(address)
+    }
+
+    pub(crate) fn cas_add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
+        self.content_storage
+            .clone()
+            .write()
+            .unwrap()
+            .add(content)
+            .map_err(|persistence_error| {
+                HolochainError::ErrorGeneric(persistence_error.to_string())
+            })
+    }
+
+    pub(crate) fn get_entry_from_cas(
+        &self,
+        address: &Address,
+    ) -> Result<Option<Entry>, HolochainError> {
+        if let Some(json) = self.cas_fetch(&address)? {
+            let entry = Entry::try_from_content(&json)?;
+            Ok(Some(entry))
+        } else {
+            Ok(None) // no errors but entry is not in CAS
+        }
+    }
+
+    /*pub(crate) fn lock_cas(&mut self) -> HcResult<()> {
+        unsafe {
+            self.content_storage.raw().lock_exclusive();
+        }
+
+        self.content_storage_write_lock.replace(self.content_storage.write()?);
+        self.meta_storage_write_lock.replace(self.meta_storage.write()?);
+        Ok(())
+    }
+
+    pub(crate) fn unlock_cas(&mut self) {
+        self.content_storage_write_lock.replace(None);
+        self.meta_storage_write_lock.replace(None);
+    }*/
+
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions
     }
@@ -271,7 +320,7 @@ pub mod tests {
 
     #[test]
     fn get_headers_roundtrip() {
-        let store = DhtStore::new(
+        let mut store = DhtStore::new(
             Arc::new(RwLock::new(
                 ExampleContentAddressableStorage::new().unwrap(),
             )),

@@ -317,8 +317,7 @@ fn get_content_aspect(
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
-            {
+            if let Some(entry) = state.dht().get_entry_from_cas(entry_address)? {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state.get_headers(entry_address.clone()).map_err(|error| {

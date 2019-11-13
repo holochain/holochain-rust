@@ -27,6 +27,7 @@ let
   net \
   sim2h \
   sim2h_server \
+  stress \
   wasm_utils
  do
   echo "checking ''${p}"

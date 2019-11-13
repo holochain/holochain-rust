@@ -1489,7 +1489,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_stress"
-version = "0.0.38-alpha13"
+version = "0.0.38-alpha14"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1502,7 +1502,7 @@ dependencies = [
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "sim2h 0.0.38-alpha13",
+ "sim2h 0.0.38-alpha14",
  "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "url2 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

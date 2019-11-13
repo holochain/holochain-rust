@@ -59,3 +59,22 @@ pub mod ugly;
 pub mod validation;
 #[macro_use]
 extern crate holochain_logging;
+
+pub const HDK_HASH: &str = env!(
+    "HDK_HASH",
+    "failed to obtain HDK hash from build environment. Check build.rs"
+);
+
+#[cfg(test)]
+mod test_hash {
+    use super::*;
+
+    #[test]
+    fn test_hash() {
+        assert_eq!(HDK_HASH.chars().count(), 32); // Nix MD5 hash
+        assert!(
+            HDK_HASH.is_ascii(),
+            "HDK_HASH contains non-ascii characters"
+        );
+    }
+}

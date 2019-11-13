@@ -46,6 +46,6 @@ in
   holochain-conductor = buildHolochain {
     name = "holochain-conductor";
     src = gitignoreSource ./.;
-    cargoDir = "crates/conductor";
+    cargoDir = "crates/holochain";
   };
 }

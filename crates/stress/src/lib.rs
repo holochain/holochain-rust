@@ -178,6 +178,8 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         {
             let mut cur_job_count = self.job_count.lock().unwrap();
             while *cur_job_count < self.config.job_count {
+                // keep releasing the job_queue lock so work can progress
+                // while we're filling up the job_queue
                 (*self.job_queue.lock().unwrap()).push_front(StressJobInfo {
                     job_index: self.job_last_index,
                     job: (self.config.job_factory)(),
@@ -186,6 +188,8 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 *cur_job_count += 1
             }
         }
+        // just a guard incase logs are generated faster than pulled off here
+        // we want it to end at some point : )
         for _ in 0..1000 {
             match self.log_recv.try_recv() {
                 Err(_) => break,

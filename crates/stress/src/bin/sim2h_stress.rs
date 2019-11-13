@@ -312,7 +312,8 @@ impl StressSuite for Suite {
 
     fn stop(&mut self, stats: StressStats) {
         *self.sim2h_cont.lock().unwrap() = false;
-        std::mem::replace(&mut self.sim2h_join, None)
+        self.sim2h_join
+            .take()
             .unwrap()
             .join()
             .unwrap();

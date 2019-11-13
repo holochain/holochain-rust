@@ -244,16 +244,13 @@ pub fn test_bad_links() {
 pub fn test_links_with_immediate_timeout() {
     let (mut hc, _, _signal_receiver) =
         start_holochain_instance("test_links_with_immediate_timeout", "alice");
-    make_test_call(
-        &mut hc,
-        "create_and_link_tagged_entry",
-        r#"{"content": "message me","tag":"tag me"}"#,
-    )
-    .expect("Could not call make call method");
 
     let result = make_test_call(&mut hc, "my_entries_immediate_timeout", r#"{}"#);
-    let expected_result: ZomeApiResult<()> =
-        serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
+    let expected_result: ZomeApiResult<GetLinksResult> =
+        serde_json::from_str::<ZomeApiResult<GetLinksResult>>(
+            &result.clone().expect("err result").to_string(),
+        )
+        .expect("bad deserialize");
     let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));;
     assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error);
 }

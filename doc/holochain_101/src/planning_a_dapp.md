@@ -114,7 +114,7 @@ The version of Holochain in active development covers the following integrations
 ## Security - best practices
 A great way to begin offsetting the governance crises now typical of distributed systems (i.e. DAO hack) is to think in terms of protecting and enabling the community of user-participants in addition to cryptography.
 
-In essence, one must consider how to prevent undesired access to the DHT. If membranes are not properly built in the dApps' DNA, having access to the source code also means having access to the entire network's entries via the DHT. Developers must treat the code, or at least the DNA taken as a whole, as if it's a key to the data. Note, too, that one can easily fork a Holochain dApp without disrupting its activity, making it possible to retain the benefits of open-source code without some of the risks.
+In essence, one must consider how to prevent undesired access to the DHT (Distributed Hash Table). If membranes are not properly built in the dApps' DNA, having access to the source code also means having access to the entire network's entries via the DHT. Developers must treat the code, or at least the DNA taken as a whole, as if it's a key to the data. Note, too, that one can easily fork a Holochain dApp without disrupting its activity, making it possible to retain the benefits of open-source code without some of the risks.
 
 ### Membranes
 

@@ -1,33 +1,16 @@
+use hdk::prelude::*;
 use hdk::{
-    self,
-    error::{ZomeApiError, ZomeApiResult},
-    holochain_persistence_api::{
-        cas::content::Address,
-    },
-    holochain_json_api::{
-        json::JsonString,
-        error::JsonError
-    },
+    serde_json::json,
     holochain_core_types::{
         dna::capabilities::CapabilityRequest,
-        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
-        error::HolochainError,
+        entry::{cap_entries::CapabilityType},
         signature::{Provenance, Signature},
-        link::LinkMatch,
     },
-    holochain_wasm_utils::api_serialization::{
-        commit_entry::CommitEntryOptions,
-        get_entry::{
-            EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
-        },
-        get_links::{GetLinksOptions, GetLinksResult},
-        QueryArgsOptions, QueryResult,
-    },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN
 };
 
-use memo::Memo;
-use post::Post;
+use crate::memo::Memo;
+use crate::post::Post;
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
@@ -428,9 +411,13 @@ pub fn handle_get_memo(address: Address) -> ZomeApiResult<Option<Entry>> {
 }
 
 pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+    // use a link-type that doesn't exist so that it will timeout.
+    // Note that a 0 timeout doesn't no guarantee that you won't get things
+    // back in the in-memory-transport case because the redux loop action that runs
+    // the get-link may actually return before the one that checks the timeout.
     hdk::get_links_with_options(
         &AGENT_ADDRESS,
-        LinkMatch::Exactly("authored_posts"),
+        LinkMatch::Exactly("non-existent-link"),
         LinkMatch::Any,
         GetLinksOptions {
             timeout: 0.into(),
@@ -563,9 +550,9 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
 #[cfg(test)]
 pub mod tests {
 
-    use blog::{check_sum_args, post_entry, SumInput};
+    use crate::blog::{check_sum_args, post_entry, SumInput};
     use hdk::holochain_core_types::entry::{entry_type::AppEntryType, AppEntryValue, Entry};
-    use post::Post;
+    use crate::post::Post;
 
     #[test]
     fn check_sum_args_test() {

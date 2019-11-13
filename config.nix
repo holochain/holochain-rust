@@ -1,11 +1,12 @@
 let
- release-commit = "8c83b8554a9bc6fd7dcdb42e6dfe0f2c91c6baac";
- current = "0.0.28-alpha1";
- previous = "0.0.27-alpha1";
+ release-commit = "6e541d74cc475185b6f209fd39fc65d66e287f6c";
+ current = "0.0.38-alpha14";
+ previous = "0.0.38-alpha13";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
- tag = current;
- holonix-version = "0.0.20";
+ tag = "v${current}";
+ holonix-version = "v0.0.44";
+ holonix-sha256 = "0819439idwhdbavmlcy99c2ai5d9a0k7rbimbsk47p9vndw3s6cy";
 in
 rec {
 
@@ -28,7 +29,7 @@ rec {
    #       the sha here changes (the sha is the cache key for downloads)
    # note: to get a new sha, get nix to try and download a bad sha
    #       it will complain and tell you the right sha
-   sha256 = "0k8d66dl9cwhikwl8a24gxald12lvbl4zf0jxfak9snpnb5mnlnm";
+   sha256 = holonix-sha256;
 
    # the github owner of the holonix repo
    owner = "holochain";
@@ -60,13 +61,15 @@ hn-release-hook-preflight-manual
 hn-release-hook-version-rust
 hn-release-hook-version-readme
 hc-cli-release-hook-version
+hc-release-hook-version
 # refresh root Cargo.lock file
+echo "updating cargo"
 cargo update
 '';
 
    # publish artifacts to the world
    publish = ''
-echo "go look at travis for binary building!"
+echo "go look at circle for binary building and crates publishing!"
 '';
   };
 

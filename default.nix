@@ -24,7 +24,18 @@ with holonix.pkgs;
  dev-shell = stdenv.mkDerivation (holonix.shell // {
   name = "dev-shell";
 
-  buildInputs = [ ]
+    shellHook = holonix.pkgs.lib.concatStrings [''
+    # environment variables used by rust tests directly
+    export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+    export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    # config file used by aws cli tool
+    export AWS_CONFIG_FILE=`pwd`/.aws/config
+    RUST_LOG=sim1h=trace
+    ''
+    holonix.shell.shellHook
+    ];
+
+  buildInputs = [ pkgs.libiconv ]
    ++ holonix.shell.buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec {
@@ -35,32 +46,64 @@ with holonix.pkgs;
     pkgs = holonix.pkgs;
    }).buildInputs
 
-   ++ (holonix.pkgs.callPackage ./conductor_wasm {
+   ++ (holonix.pkgs.callPackage ./crates/holochain {
     pkgs = holonix.pkgs;
    }).buildInputs
 
-   ++ (holonix.pkgs.callPackage ./cli {
+   ++ (holonix.pkgs.callPackage ./crates/holochain_wasm {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/cli {
     pkgs = holonix.pkgs;
     config = config;
    }).buildInputs
 
-   # qt specific testing
-   ++ (holonix.pkgs.callPackage ./qt {
+   ++ (holonix.pkgs.callPackage ./crates/trycp_server {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/sim2h_server {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/metrics {
     pkgs = holonix.pkgs;
+    config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./docker {
+     pkgs = holonix.pkgs;
    }).buildInputs
 
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
+    holonix = holonix;
     pkgs = holonix.pkgs;
     config = config;
    }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./rust {
+    holonix = holonix;
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./stress-test {
     pkgs = holonix.pkgs;
    }).buildInputs
 
    # main test script
    ++ (holonix.pkgs.callPackage ./test {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./.aws {
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./dynamodb {
     pkgs = holonix.pkgs;
    }).buildInputs
   ;

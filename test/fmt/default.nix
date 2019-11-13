@@ -10,25 +10,29 @@ let
  # @see https://github.com/rust-lang/rustfmt/issues/3685
  script = pkgs.writeShellScriptBin name
  ''
- echo "checking rust formatting"
+ echo "checking rust formatting";
+ __fmtexit=0
  for p in \
-  hc \
-  holochain_common \
-  holochain \
-  holochain_conductor_api \
-  holochain_conductor_wasm \
-  holochain_core_api_c_binding \
-  holochain_dna_c_binding \
+  cli \
+  common \
+  conductor_api \
+  conductor_lib \
+  core \
+  core_types \
+  dpki \
   hdk \
-  hdk-proc-macros \
-  holochain_net \
-  holochain_dpki \
-  holochain_test_bin \
-  benchmarks
+  hdk_v2 \
+  holochain \
+  holochain_wasm \
+  net \
+  sim2h \
+  sim2h_server \
+  wasm_utils
  do
   echo "checking ''${p}"
-  cargo fmt -p $p -- --check
+  if ! ( cd "crates/$p" && cargo fmt -- --check ); then __fmtexit=1; fi
  done
+ exit ''${__fmtexit}
  '';
 in
 {

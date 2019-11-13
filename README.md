@@ -43,11 +43,11 @@ Setup a core development environment to work on Holochain itself:
 ## Documentation
 
 ### API Reference
-Auto generated documentation for all of the code written in Rust is published online, with different versions to match the releases here: [https://developer.holochain.org/api](https://developer.holochain.org/api).
+Auto generated documentation for all of the code written in Rust is published online, with different versions to match the releases here: [https://developer.holochain.org/docs/api](https://developer.holochain.org/docs/api).
 
 ### The Holochain Guidebook
 There is a guide for understanding and developing with Holochain. It is published online, with different versions to match the releases here: [https://developer.holochain.org/guide](https://developer.holochain.org/guide).
- 
+
  See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
 
 
@@ -62,7 +62,7 @@ Some helpful links:
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2018, Holochain Foundation
+Copyright (C) 2017 - 2019, Holochain Foundation
 
 This program is free software: you can redistribute it and/or modify it under the terms of the license p
 rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu

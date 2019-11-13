@@ -298,7 +298,7 @@ define_zome! {
 
 Use of this technique can help you write clean, modular code.
 
-    If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/release-0.0.26-alpha1/app_spec/zomes/blog/code/src/post.rs).
+If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.26-alpha1/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/release-0.0.26-alpha1/app_spec/zomes/blog/code/src/post.rs).
 
 #### Summary
 This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `init` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.

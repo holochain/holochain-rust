@@ -5,12 +5,7 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
-use holochain_persistence_api::{
-    cas::{
-        content::{Address},
-    },
-    eav::IndexFilter,
-};
+use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
 
 pub fn get_entry_from_agent_chain(

@@ -32,12 +32,9 @@ pub(crate) enum LinkModification {
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
     match store.cas_add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
-            store
-                .add_eavi(&status_eav)
-                .map(|_| ())
-                .map_err(|e| {
-                    format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()
-                })
+            store.add_eavi(&status_eav).map(|_| ()).map_err(|e| {
+                format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()
+            })
         })?,
         Err(e) => Err(format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()),
     }

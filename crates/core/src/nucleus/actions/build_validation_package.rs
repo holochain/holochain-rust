@@ -18,7 +18,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{ pin::Pin, sync::Arc, vec::Vec};
+use std::{pin::Pin, sync::Arc, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -193,8 +193,14 @@ fn public_chain_entries_from_headers(
                 .agent()
                 .chain_store()
                 .get_entry_from_cas(chain_header.entry_address())
-                .expect(&format!("Could not get entry {}", chain_header.entry_address()))
-                .expect(&format!("Get entry returned None for {}", chain_header.entry_address()))
+                .expect(&format!(
+                    "Could not get entry {}",
+                    chain_header.entry_address()
+                ))
+                .expect(&format!(
+                    "Get entry returned None for {}",
+                    chain_header.entry_address()
+                ))
         })
         .collect::<Vec<_>>()
 }

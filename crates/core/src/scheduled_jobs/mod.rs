@@ -11,7 +11,7 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use std::sync::Arc;
 
-pub fn create_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
+pub fn create_state_dump_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
     move || {
         //log_debug!(context, "scheduled_jobs: tick");
         if context.state_dump_logging {

@@ -66,7 +66,7 @@ impl Instance {
         let mut scheduler = Scheduler::new();
         scheduler
             .every(10.seconds())
-            .run(scheduled_jobs::create_callback(context.clone()));
+            .run(scheduled_jobs::create_state_dump_callback(context.clone()));
         scheduler
             .every(1.second())
             .run(scheduled_jobs::create_validation_callback(context.clone()));

@@ -4,8 +4,8 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
-    entry::Entry,
     error::HolochainError,
+    entry::Entry,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -52,13 +52,6 @@ impl PartialEq for DhtStore {
         self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
-    }
-}
-
-
-impl GetByAddress for DhtStore {
-    fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
     }
 }
 
@@ -255,6 +248,12 @@ impl DhtStore {
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &mut self.actions
+    }
+}
+
+impl GetByAddress for DhtStore {
+    fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
+        self.content_storage.clone()
     }
 }
 

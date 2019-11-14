@@ -4,7 +4,6 @@ use crate::{
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EntryWithHeader {

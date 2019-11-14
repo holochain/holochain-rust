@@ -8,7 +8,6 @@ pub mod store;
 
 use crate::{
     context::Context,
-    entry::CanPublish,
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
@@ -24,7 +23,6 @@ use crate::{
     nucleus::actions::get_entry::get_entry_from_cas,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
-use boolinator::*;
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;

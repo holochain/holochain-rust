@@ -21,12 +21,7 @@ use holochain_json_api::{
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
-use std::{
-    collections::HashMap,
-    convert::{TryFrom, TryInto},
-    sync::Arc,
-    time::SystemTime,
-};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.

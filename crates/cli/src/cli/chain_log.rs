@@ -1,14 +1,16 @@
 use crate::error::DefaultResult;
 use colored::*;
+use holochain_core::get_by_address::GetByAddress;
 use holochain_core::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
+
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_file::cas::file::FilesystemStorage;
-use std::{convert::TryFrom, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 // TODO: use system-agnostic default path
 const DEFAULT_CHAIN_PATH: &str = "TODO";
@@ -33,7 +35,7 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
         })
         .map(|snapshot| {
             let top_header = snapshot.top_chain_header().to_owned();
-            AgentState::new_with_top_chain_header(chain_store, top_header.cloned(), Address::new())
+            AgentState::new_with_top_chain_header(chain_store.clone(), top_header.cloned(), Address::new())
         })
         .map_err(|err| {
             format_err!(
@@ -48,8 +50,8 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
         cas_path.to_string_lossy()
     );
     for ref header in agent.iter_chain() {
-        let content = cas
-            .fetch(header.entry_address())
+        let entry = chain_store
+            .get(header.entry_address())
             .expect("Panic while fetching from CAS!")
             .ok_or_else(|| {
                 println!(
@@ -58,7 +60,6 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
                 )
             })
             .unwrap();
-        let entry = Entry::try_from(content).expect("Invalid content");
         display_header(&header, &entry);
     }
 

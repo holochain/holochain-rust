@@ -196,14 +196,19 @@ impl DhtStore {
             // get the header addresses
             .map(|eavi| eavi.value())
             // fetch the header content from CAS
-            .map(|a| self.content_storage().read().unwrap().fetch(&a))
+            .map(|address| self.get(&address))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|content| ChainHeader::try_from_content(&content))
+                    .map(|entry| {
+                        match entry {
+                            Entry::ChainHeader(chain_header) => Ok(chain_header),
+                            _ => Err(HolochainError::ErrorGeneric("Unexpected non-chain_header entry".to_string())),
+                        }
+                    })
                     .collect::<Result<Vec<_>, _>>()
             })?
             .map_err(|err| {

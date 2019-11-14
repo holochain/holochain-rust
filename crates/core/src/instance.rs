@@ -299,9 +299,7 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
-            state: Arc::new(RwLock::new(StateWrapper::new(
-                context.clone(),
-            ))),
+            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,

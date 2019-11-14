@@ -50,7 +50,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    if (*store.content_storage().read()?).contains(link.base())? {
+    if store.contains(link.base())? {
         let attr = match link_modification {
             LinkModification::Add => {
                 Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())

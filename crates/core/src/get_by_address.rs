@@ -17,4 +17,8 @@ pub trait GetByAddress {
             Ok(None) // no errors but entry is not in chain CAS
         }
     }
+
+    fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
+        Ok(self.get(address)?.is_some())
+    }
 }

@@ -18,7 +18,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
+use std::{pin::Pin, sync::Arc, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -106,79 +106,68 @@ pub async fn build_validation_package<'a>(
             maybe_entry_header.unwrap()
         };
 
-        thread::Builder::new()
-            .name(format!("build_validation_package/{}", id))
-            .spawn(move || {
-                let maybe_callback_result =
-                    get_validation_package_definition(&entry, context.clone());
-                let maybe_validation_package = maybe_callback_result
-                    .and_then(|callback_result| match callback_result {
-                        CallbackResult::Fail(error_string) => {
-                            Err(HolochainError::ErrorGeneric(error_string))
+        context.clone().spawn_task(move || {
+            let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
+            let maybe_validation_package = maybe_callback_result
+                .and_then(|callback_result| match callback_result {
+                    CallbackResult::Fail(error_string) => {
+                        Err(HolochainError::ErrorGeneric(error_string))
+                    }
+                    CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+                    CallbackResult::NotImplemented(reason) => {
+                        Err(HolochainError::ErrorGeneric(format!(
+                            "ValidationPackage callback not implemented for {:?} ({})",
+                            entry.entry_type().clone(),
+                            reason
+                        )))
+                    }
+                    _ => unreachable!(),
+                })
+                .and_then(|package_definition| {
+                    Ok(match package_definition {
+                        Entry => ValidationPackage::only_header(entry_header),
+                        ChainEntries => {
+                            let mut package = ValidationPackage::only_header(entry_header);
+                            package.source_chain_entries = Some(public_chain_entries_from_headers(
+                                &context,
+                                &all_chain_headers_before_header(&context, &package.chain_header),
+                            ));
+                            package
                         }
-                        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                        CallbackResult::NotImplemented(reason) => {
-                            Err(HolochainError::ErrorGeneric(format!(
-                                "ValidationPackage callback not implemented for {:?} ({})",
-                                entry.entry_type().clone(),
-                                reason
-                            )))
+                        ChainHeaders => {
+                            let mut package = ValidationPackage::only_header(entry_header);
+                            package.source_chain_headers = Some(all_chain_headers_before_header(
+                                &context,
+                                &package.chain_header,
+                            ));
+                            package
                         }
-                        _ => unreachable!(),
+                        ChainFull => {
+                            let mut package = ValidationPackage::only_header(entry_header);
+                            let headers =
+                                all_chain_headers_before_header(&context, &package.chain_header);
+                            package.source_chain_entries =
+                                Some(public_chain_entries_from_headers(&context, &headers));
+                            package.source_chain_headers = Some(headers);
+                            package
+                        }
+                        Custom(string) => {
+                            let mut package = ValidationPackage::only_header(entry_header);
+                            package.custom = Some(string);
+                            package
+                        }
                     })
-                    .and_then(|package_definition| {
-                        Ok(match package_definition {
-                            Entry => ValidationPackage::only_header(entry_header),
-                            ChainEntries => {
-                                let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_entries =
-                                    Some(public_chain_entries_from_headers(
-                                        &context,
-                                        &all_chain_headers_before_header(
-                                            &context,
-                                            &package.chain_header,
-                                        ),
-                                    ));
-                                package
-                            }
-                            ChainHeaders => {
-                                let mut package = ValidationPackage::only_header(entry_header);
-                                package.source_chain_headers =
-                                    Some(all_chain_headers_before_header(
-                                        &context,
-                                        &package.chain_header,
-                                    ));
-                                package
-                            }
-                            ChainFull => {
-                                let mut package = ValidationPackage::only_header(entry_header);
-                                let headers = all_chain_headers_before_header(
-                                    &context,
-                                    &package.chain_header,
-                                );
-                                package.source_chain_entries =
-                                    Some(public_chain_entries_from_headers(&context, &headers));
-                                package.source_chain_headers = Some(headers);
-                                package
-                            }
-                            Custom(string) => {
-                                let mut package = ValidationPackage::only_header(entry_header);
-                                package.custom = Some(string);
-                                package
-                            }
-                        })
-                    });
+                });
 
-                lax_send_sync(
-                    context.action_channel().clone(),
-                    ActionWrapper::new(Action::ReturnValidationPackage((
-                        id,
-                        maybe_validation_package,
-                    ))),
-                    "build_validation_package",
-                );
-            })
-            .expect("Could not spawn thread for build_validation_package");
+            lax_send_sync(
+                context.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnValidationPackage((
+                    id,
+                    maybe_validation_package,
+                ))),
+                "build_validation_package",
+            );
+        });
     }
 
     ValidationPackageFuture {
@@ -198,21 +187,19 @@ fn public_chain_entries_from_headers(
         .iter()
         .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .map(|chain_header| {
-            let storage = context
+            context
                 .state()
                 .expect("No state in public_chain_entries_from_headers")
                 .agent()
                 .chain_store()
-                .content_storage()
-                .clone();
-            let json = (*storage.read().expect(
-                "Couldn't get read lock on content storage in public_chain_entries_from_headers",
-            ))
-            .fetch(chain_header.entry_address())
-            .expect("Could not fetch from CAS");
-            json.expect("Could not find CAS for existing chain header")
-                .try_into()
-                .expect("Could not convert to serialized entry")
+                .get_entry_from_cas(chain_header.entry_address())
+                .unwrap_or_else(|_| panic!("Could not get entry {}", chain_header.entry_address()))
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Get entry returned None for {}",
+                        chain_header.entry_address()
+                    )
+                })
         })
         .collect::<Vec<_>>()
 }

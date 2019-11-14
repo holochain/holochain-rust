@@ -1,4 +1,5 @@
 use crate::action::ActionWrapper;
+use crate::get_by_address::GetByAddress;
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
@@ -51,6 +52,13 @@ impl PartialEq for DhtStore {
         self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
+    }
+}
+
+
+impl GetByAddress for DhtStore {
+    fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
+        self.content_storage.clone()
     }
 }
 
@@ -132,15 +140,6 @@ impl DhtStore {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
         new_dht_store.holding_list = holding_list;
         new_dht_store
-    }
-
-    pub fn get(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
-        if let Some(json) = (*self.content_storage.read().unwrap()).fetch(address)? {
-            let entry = Entry::try_from_content(&json)?;
-            Ok(Some(entry))
-        } else {
-            Ok(None) // no errors but entry is not in CAS
-        }
     }
     
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
@@ -246,9 +245,6 @@ impl DhtStore {
 
     // Getters (for reducers)
     // =======
-    pub(crate) fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
-    }
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
         self.meta_storage.clone()
     }

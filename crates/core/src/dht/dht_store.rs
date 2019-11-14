@@ -211,7 +211,7 @@ impl DhtStore {
                     .collect::<Result<Vec<_>, _>>()
             })?
             .map_err(|err| {
-                let hc_error: HolochainError = err.into();
+                let hc_error: HolochainError = err;
                 hc_error
             })
     }

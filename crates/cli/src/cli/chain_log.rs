@@ -24,11 +24,9 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
     let chain_store = ChainStore::new(std::sync::Arc::new(RwLock::new(
         FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),
     )));
-    let cas_lock = chain_store.content_storage();
-    let cas = cas_lock.read().unwrap();
 
-    let agent = cas
-        .fetch(&Address::from("AgentState"))?
+    let agent = chain_store
+        .get_raw(&Address::from("AgentState"))?
         .ok_or("Chain does not exist or has not been initialized")
         .and_then(|snapshot_json| {
             AgentStateSnapshot::from_json_str(&snapshot_json.to_string())

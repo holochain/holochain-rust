@@ -197,13 +197,11 @@ pub mod tests {
             store.dht().get(&sys_entry.address()).unwrap()
         );
 
-        let new_storage = &new_dht_store.content_storage().clone();
         assert_eq!(
             Some(sys_entry.clone()),
-            (*new_storage.read().unwrap())
-                .fetch(&sys_entry.address())
+            new_dht_store
+                .get(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
         );
     }
 
@@ -213,8 +211,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let storage = store.dht().content_storage();
-        let _ = (storage.write().unwrap()).add(&entry);
+        let _ = store.dht().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(

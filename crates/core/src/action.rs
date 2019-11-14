@@ -112,7 +112,7 @@ pub enum Action {
     // DHT actions:
     // -------------
     QueueHoldingWorkflow(PendingValidation),
-    PopNextHoldingWorkflow,
+    PopNextHoldingWorkflow(PendingValidation),
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
     Hold(EntryWithHeader),

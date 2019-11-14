@@ -45,7 +45,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::AddLink(_) => Some(reduce_add_link),
         Action::RemoveLink(_) => Some(reduce_remove_link),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
-        Action::PopNextHoldingWorkflow => Some(reduce_pop_next_holding_workflow),
+        Action::PopNextHoldingWorkflow(_) => Some(reduce_pop_next_holding_workflow),
         _ => None,
     }
 }
@@ -175,10 +175,23 @@ pub fn reduce_queue_holding_workflow(
 #[allow(clippy::needless_pass_by_value)]
 pub fn reduce_pop_next_holding_workflow(
     old_store: &DhtStore,
-    _action_wrapper: &ActionWrapper,
+    action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
+    let action = action_wrapper.action();
+    let pending = unwrap_to!(action => Action::PopNextHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    let _ = new_store.queued_holding_workflows.pop_front();
+    if let Some(popped) = new_store.queued_holding_workflows.pop_front() {
+        // Gotta make sure we are only popping the head that the creator
+        // of the action assumed to be the head.
+        // If the head changed in between because somebody else has popped
+        // the former item already, we need to put it back!
+        if popped != *pending {
+            new_store.queued_holding_workflows.push_front(popped);
+        }
+    } else {
+        error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
+    }
+
     Some(new_store)
 }
 

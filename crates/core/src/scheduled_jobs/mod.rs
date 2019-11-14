@@ -31,7 +31,7 @@ pub fn create_validation_callback(context: Arc<Context>) -> impl 'static + FnMut
                 .next_queued_holding_workflow();
             if let Some(pending) = maybe_holding_workflow {
                 log_debug!(context, "Found queued validation: {:?}", pending);
-                pop_next_holding_workflow(context.clone());
+                pop_next_holding_workflow(pending.clone(), context.clone());
 
                 let result = pending_validations::run_holding_workflow(&pending, context.clone());
 

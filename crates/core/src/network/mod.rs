@@ -128,13 +128,9 @@ pub mod tests {
             .block_on(commit_entry(entry.clone(), None, &context1))
             .unwrap();
         {
-            // Writing to the storage case now requires (as it should be) a mutable reference
-            // to the DhtStore
-            //let dht1 = context1.state().unwrap().dht();
-            //{
-            //    dht1.content_storage().write().unwrap().add(&entry).unwrap();
-            //    dht1.add_header_for_entry(&entry, &header2).unwrap();
-            //}
+            let mut dht1 = (*context1.state().unwrap().dht()).clone();
+            dht1.cas_add(&entry).unwrap();
+            dht1.add_header_for_entry(&entry, &header2).unwrap();
         }
 
         // Get it.

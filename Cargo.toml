@@ -14,6 +14,7 @@ members = [
   "crates/hdk",
   "crates/locksmith",
   "crates/net",
+  "crates/stress",
   "crates/trycp_server",
   "crates/sim1h",
   "crates/sim2h",
@@ -27,8 +28,8 @@ exclude = [
 ]
 
 [patch.crates-io]
-#lib3h = "=0.0.21"
-#lib3h_protocol = "=0.0.21"
-#lib3h_crypto_api = "=0.0.21"
-#lib3h_sodium = "=0.0.21"
-#lib3h_zombie_actor = "=0.0.21"
+#lib3h = "=0.0.22"
+#lib3h_protocol = "=0.0.22"
+#lib3h_crypto_api = "=0.0.22"
+#lib3h_sodium = "=0.0.22"
+#lib3h_zombie_actor = "=0.0.22"

@@ -1,7 +1,7 @@
 [package]
-name = "holochain_dpki"
+name = "holochain_stress"
 version = "0.0.38-alpha14"
-description = "holochain dpki"
+description = "holochain stress tests"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
@@ -9,13 +9,21 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-lazy_static = "=1.2.0"
 base64 = "=0.10.1"
-holochain_core_types = { version = "=0.0.38-alpha14", path = "../core_types" }
-lib3h_sodium = "=0.0.22"
-holochain_persistence_api = "=0.0.11"
-serde = "=1.0.89"
-serde_derive = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+crossbeam-channel = "=0.3.8"
+env_logger = "=0.6.1"
 hcid = "=0.0.6"
-bip39 = "=0.6.0-beta.1"
+lib3h_crypto_api = "=0.0.22"
+lib3h_protocol = "=0.0.22"
+lib3h_sodium = "=0.0.22"
+log = "=0.4.8"
+native-tls = "=0.2.2"
+serde = "=1.0.89"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+sim2h = { version = "=0.0.38-alpha14", path = "../sim2h" }
+structopt = "=0.3.3"
+url2 = "=0.0.3"
+
+[features]
+vendored = ["native-tls/vendored"]
+default = [ "vendored" ]

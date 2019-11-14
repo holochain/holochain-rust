@@ -14,15 +14,15 @@ holochain_core_types = { version = "=0.0.38-alpha14", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.38-alpha14", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.10"
-holochain_persistence_mem = "=0.0.10"
-holochain_persistence_file = "=0.0.10"
-holochain_persistence_pickle = "=0.0.10"
-holochain_persistence_lmdb = "=0.0.10"
+holochain_persistence_api = "=0.0.11"
+holochain_persistence_mem = "=0.0.11"
+holochain_persistence_file = "=0.0.11"
+holochain_persistence_pickle = "=0.0.11"
+holochain_persistence_lmdb = "=0.0.11"
 holochain_dpki = { version = "=0.0.38-alpha14", path = "../dpki" }
 holochain_net = { version = "=0.0.38-alpha14", path = "../net" }
-lib3h = "=0.0.21"
-lib3h_sodium = "=0.0.21"
+lib3h = "=0.0.22"
+lib3h_sodium = "=0.0.22"
 holochain_metrics = { version = "=0.0.38-alpha14", path = "../metrics" }
 holochain_common = { version = "=0.0.38-alpha14", path = "../common" }
 chrono = "=0.4.6"

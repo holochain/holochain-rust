@@ -14,10 +14,10 @@ holochain_common = { version = "=0.0.38-alpha14", path = "../common" }
 holochain_conductor_lib = { version = "=0.0.38-alpha14", path = "../conductor_lib" }
 holochain_dpki = { version = "=0.0.38-alpha14", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.38-alpha14", path = "../locksmith" }
-lib3h_sodium = "=0.0.21"
+lib3h_sodium = "=0.0.22"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.10"
-holochain_persistence_file = "=0.0.10"
+holochain_persistence_api = "=0.0.11"
+holochain_persistence_file = "=0.0.11"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.3.3"
 failure = "=0.1.5"

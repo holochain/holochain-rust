@@ -163,7 +163,7 @@ pub mod tests {
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::create_get_links_eavi_query,
         },
-        get_by_address::GetByAddress,
+        content_store::GetContent,
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,

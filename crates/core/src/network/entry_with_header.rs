@@ -1,6 +1,6 @@
 use crate::{
     agent::find_chain_header,
-    get_by_address::GetByAddress,
+    content_store::GetContent,
     state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};

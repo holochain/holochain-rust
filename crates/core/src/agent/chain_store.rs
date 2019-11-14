@@ -1,4 +1,4 @@
-use crate::get_by_address::GetByAddress;
+use crate::content_store::{ContentStore, GetContent, AddContent};
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -184,11 +184,15 @@ impl ChainStore {
     }
 }
 
-impl GetByAddress for ChainStore {
+impl ContentStore for ChainStore {
     fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
 }
+
+impl GetContent for ChainStore { }
+
+impl AddContent for ChainStore { }
 
 /// Access each Entry
 ///

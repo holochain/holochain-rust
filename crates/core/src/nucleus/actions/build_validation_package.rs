@@ -3,7 +3,7 @@ use crate::{
     agent::{self, find_chain_header},
     context::Context,
     entry::CanPublish,
-    get_by_address::GetByAddress,
+    content_store::GetContent,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },

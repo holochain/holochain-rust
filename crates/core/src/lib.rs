@@ -32,7 +32,7 @@ pub mod consistency;
 pub mod context;
 pub mod dht;
 pub mod entry;
-pub mod get_by_address;
+pub mod content_store;
 pub mod instance;
 #[cfg(test)]
 pub mod link_tests;

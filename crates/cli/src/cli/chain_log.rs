@@ -5,7 +5,7 @@ use holochain_core::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
-    get_by_address::GetByAddress,
+    content_store::GetContent,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 use holochain_locksmith::RwLock;

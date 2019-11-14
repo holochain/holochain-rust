@@ -6,7 +6,7 @@ use crate::{
     },
     context::Context,
     dht::dht_store::DhtStore,
-    get_by_address::GetByAddress,
+    content_store::GetContent,
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
 };

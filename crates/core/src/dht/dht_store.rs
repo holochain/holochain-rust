@@ -1,4 +1,4 @@
-use crate::{action::ActionWrapper, get_by_address::GetByAddress};
+use crate::{action::ActionWrapper, content_store::{ContentStore, GetContent, AddContent}};
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
@@ -255,11 +255,15 @@ impl DhtStore {
     }
 }
 
-impl GetByAddress for DhtStore {
+impl ContentStore for DhtStore {
     fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
         self.content_storage.clone()
     }
 }
+
+impl GetContent for DhtStore { }
+
+impl AddContent for DhtStore { }
 
 #[cfg(test)]
 pub mod tests {

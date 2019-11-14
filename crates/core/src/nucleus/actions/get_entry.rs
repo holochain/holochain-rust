@@ -1,4 +1,4 @@
-use crate::{context::Context, get_by_address::GetByAddress};
+use crate::{context::Context, content_store::{GetContent}};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
@@ -130,7 +130,7 @@ pub fn get_entry_with_meta(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{get_by_address::GetByAddress, instance::tests::test_context_with_state};
+    use crate::{content_store::GetContent, instance::tests::test_context_with_state};
     use holochain_core_types::entry::test_entry;
     use holochain_persistence_api::cas::content::AddressableContent;
 

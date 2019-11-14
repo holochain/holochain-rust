@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    get_by_address::GetByAddress,
+    content_store::GetContent,
     instance::Observer,
     network::state::NetworkState,
     persister::Persister,

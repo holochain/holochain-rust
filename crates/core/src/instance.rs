@@ -946,7 +946,6 @@ pub mod tests {
 
         // Set up instance
         let instance = Instance::new(context.clone());
-        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
 
         fn test_entry(i: u32, reps: usize) -> Entry {
@@ -958,13 +957,9 @@ pub mod tests {
         let entry = test_entry(0, 3 * initial_mmap_size);
         let commit_agent_action = ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
 
-        let state_observers: Vec<Observer> = Vec::new();
-        instance.process_action(
-            &commit_agent_action,
-            state_observers,
-            &rx_observer,
-            &context,
-        );
+        instance
+            .process_action(&commit_agent_action, &context)
+            .unwrap();
 
         // ensure it was added
         let dht = context.dht_storage.read().unwrap();

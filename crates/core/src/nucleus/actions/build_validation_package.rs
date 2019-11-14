@@ -193,14 +193,13 @@ fn public_chain_entries_from_headers(
                 .agent()
                 .chain_store()
                 .get_entry_from_cas(chain_header.entry_address())
-                .expect(&format!(
-                    "Could not get entry {}",
-                    chain_header.entry_address()
-                ))
-                .expect(&format!(
-                    "Get entry returned None for {}",
-                    chain_header.entry_address()
-                ))
+                .unwrap_or_else(|_| panic!("Could not get entry {}", chain_header.entry_address()))
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Get entry returned None for {}",
+                        chain_header.entry_address()
+                    )
+                })
         })
         .collect::<Vec<_>>()
 }

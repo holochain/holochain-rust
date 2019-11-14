@@ -1487,6 +1487,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "holochain_stress"
+version = "0.0.38-alpha14"
+dependencies = [
+ "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sim2h 0.0.38-alpha14",
+ "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url2 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "holochain_tracing"
 version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

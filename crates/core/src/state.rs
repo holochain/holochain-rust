@@ -218,14 +218,19 @@ impl State {
             // don't include the chain header twice
             .filter(|a| !header_addresses.contains(a))
             // fetch the header content from CAS
-            .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
+            .map(|address| self.dht().get(&address))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|content| ChainHeader::try_from_content(&content))
+                    .map(|entry| {
+                        match entry {
+                            Entry::ChainHeader(chain_header) => Ok(chain_header),
+                            _ => Err(HolochainError::ErrorGeneric("Non chain-header entry found".to_string())),
+                        }
+                    })
                     .collect::<Result<Vec<_>, _>>()
             })??;
         {

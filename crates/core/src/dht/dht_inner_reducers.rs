@@ -89,8 +89,8 @@ pub(crate) fn reduce_remove_entry_inner(
     latest_deleted_address: &Address,
     deletion_address: &Address,
 ) -> HcResult<Address> {
-
-    let entry = store.get(latest_deleted_address)?
+    let entry = store
+        .get(latest_deleted_address)?
         .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?;
 
     // pre-condition: entry_type must not be sys type, since they cannot be deleted

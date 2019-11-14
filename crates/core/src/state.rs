@@ -225,11 +225,11 @@ impl State {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|entry| {
-                        match entry {
-                            Entry::ChainHeader(chain_header) => Ok(chain_header),
-                            _ => Err(HolochainError::ErrorGeneric("Non chain-header entry found".to_string())),
-                        }
+                    .map(|entry| match entry {
+                        Entry::ChainHeader(chain_header) => Ok(chain_header),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "Non chain-header entry found".to_string(),
+                        )),
                     })
                     .collect::<Result<Vec<_>, _>>()
             })??;

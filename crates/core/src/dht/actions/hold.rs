@@ -38,11 +38,7 @@ impl Future for HoldEntryFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            if state
-                .dht()
-                .contains(&self.address)
-                .unwrap()
-            {
+            if state.dht().contains(&self.address).unwrap() {
                 Poll::Ready(Ok(self.address.clone()))
             } else {
                 Poll::Pending

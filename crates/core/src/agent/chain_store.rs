@@ -1,9 +1,8 @@
+use crate::get_by_address::GetByAddress;
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
-    entry::{
-        entry_type::EntryType,
-    },
+    entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
 };
 use holochain_locksmith::RwLock;
@@ -11,7 +10,6 @@ use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
 };
-use crate::get_by_address::GetByAddress;
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
@@ -51,7 +49,6 @@ impl ChainStore {
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }
-
 
     /// Scans the local chain for the first Entry of EntryType, and then creates a
     /// ChainStoreTypeIter to return the sequence of all Entrys with the same EntryType. Requires a

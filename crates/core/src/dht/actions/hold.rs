@@ -1,9 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
+    get_by_address::GetByAddress,
     instance::dispatch_action,
     network::entry_with_header::EntryWithHeader,
-    get_by_address::GetByAddress,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HolochainError;

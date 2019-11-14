@@ -1,11 +1,11 @@
 use crate::{
     action::{Action, ActionWrapper},
+    get_by_address::GetByAddress,
     instance::Observer,
     network::state::NetworkState,
     persister::Persister,
     signal::{Signal, SignalSender},
     state::StateWrapper,
-    get_by_address::GetByAddress,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{
@@ -345,8 +345,10 @@ impl Context {
 
         for grant in grants {
             let addr = grant.entry_address().to_owned();
-            let entry = state.agent().chain_store().get(&addr)?
-                .ok_or_else(|| HolochainError::from("Can't get CapTokenGrant entry from CAS"))?;
+            let entry =
+                state.agent().chain_store().get(&addr)?.ok_or_else(|| {
+                    HolochainError::from("Can't get CapTokenGrant entry from CAS")
+                })?;
             // if entry is the public grant return it
             if let Entry::CapTokenGrant(grant) = entry {
                 if grant.cap_type() == CapabilityType::Public

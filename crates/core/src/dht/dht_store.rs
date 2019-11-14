@@ -1,11 +1,10 @@
-use crate::action::ActionWrapper;
-use crate::get_by_address::GetByAddress;
+use crate::{action::ActionWrapper, get_by_address::GetByAddress};
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
-    error::HolochainError,
     entry::Entry,
+    error::HolochainError,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -134,7 +133,7 @@ impl DhtStore {
         new_dht_store.holding_list = holding_list;
         new_dht_store
     }
-    
+
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
@@ -203,11 +202,11 @@ impl DhtStore {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|entry| {
-                        match entry {
-                            Entry::ChainHeader(chain_header) => Ok(chain_header),
-                            _ => Err(HolochainError::ErrorGeneric("Unexpected non-chain_header entry".to_string())),
-                        }
+                    .map(|entry| match entry {
+                        Entry::ChainHeader(chain_header) => Ok(chain_header),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "Unexpected non-chain_header entry".to_string(),
+                        )),
                     })
                     .collect::<Result<Vec<_>, _>>()
             })?

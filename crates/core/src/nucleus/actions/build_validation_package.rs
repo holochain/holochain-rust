@@ -3,11 +3,11 @@ use crate::{
     agent::{self, find_chain_header},
     context::Context,
     entry::CanPublish,
+    get_by_address::GetByAddress,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
     state::{State, StateWrapper},
-    get_by_address::GetByAddress,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{

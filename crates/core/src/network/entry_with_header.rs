@@ -1,7 +1,7 @@
 use crate::{
     agent::find_chain_header,
-    state::{State, StateWrapper},
     get_by_address::GetByAddress,
+    state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::Address;

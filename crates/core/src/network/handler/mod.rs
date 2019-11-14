@@ -1,5 +1,4 @@
-use crate::agent::state::create_entry_with_header_for_header;
-use crate::get_by_address::GetByAddress;
+use crate::{agent::state::create_entry_with_header_for_header, get_by_address::GetByAddress};
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -24,6 +23,7 @@ use crate::{
     },
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
+use boolinator::Boolinator;
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -32,7 +32,6 @@ use lib3h_protocol::{
     data_types::{DirectMessageData, GenericResultData, StoreEntryAspectData},
     protocol_server::Lib3hServerProtocol,
 };
-use boolinator::Boolinator;
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -307,15 +306,17 @@ fn get_content_aspect(
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
             Some(EntryWithHeader {
-                entry: state.agent().chain_store().get(&header.entry_address())?
-                .expect("Could not find entry in chain CAS, but header is chain"),
+                entry: state
+                    .agent()
+                    .chain_store()
+                    .get(&header.entry_address())?
+                    .expect("Could not find entry in chain CAS, but header is chain"),
                 header,
             })
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = state.dht().get(entry_address)?
-            {
+            if let Some(entry) = state.dht().get(entry_address)? {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state.get_headers(entry_address.clone()).map_err(|error| {

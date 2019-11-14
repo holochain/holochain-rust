@@ -6,9 +6,9 @@ use crate::{
     },
     context::Context,
     dht::dht_store::DhtStore,
+    get_by_address::GetByAddress,
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
-    get_by_address::GetByAddress,
 };
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{

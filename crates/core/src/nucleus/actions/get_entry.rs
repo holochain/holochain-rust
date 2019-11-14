@@ -1,17 +1,11 @@
-use crate::context::Context;
-use crate::get_by_address::GetByAddress;
+use crate::{context::Context, get_by_address::GetByAddress};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
-use holochain_persistence_api::{
-    cas::{
-        content::Address,
-    },
-    eav::IndexFilter,
-};
+use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
 
 pub fn get_entry_from_agent_chain(
@@ -136,8 +130,7 @@ pub fn get_entry_with_meta(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::instance::tests::test_context_with_state;
-    use crate::get_by_address::GetByAddress;
+    use crate::{get_by_address::GetByAddress, instance::tests::test_context_with_state};
     use holochain_core_types::entry::test_entry;
     use holochain_persistence_api::cas::content::AddressableContent;
 

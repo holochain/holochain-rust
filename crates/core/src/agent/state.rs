@@ -237,9 +237,8 @@ fn reduce_commit_entry(
         provenances,
     )
     .and_then(|chain_header| {
-        let storage = &agent_state.chain_store.content_storage().clone();
-        storage.write().unwrap().add(entry)?;
-        storage.write().unwrap().add(&chain_header)?;
+        agent_state.chain_store.add(entry)?;
+        agent_state.chain_store.add(&chain_header)?;
         Ok((chain_header, entry.address()))
     })
     .and_then(|(chain_header, address)| {

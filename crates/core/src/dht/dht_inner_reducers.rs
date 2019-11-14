@@ -22,7 +22,7 @@ use holochain_persistence_api::{
     eav::IndexFilter,
 };
 
-use std::{collections::BTreeSet, convert::TryInto, str::FromStr};
+use std::{collections::BTreeSet, str::FromStr};
 
 pub(crate) enum LinkModification {
     Add,
@@ -89,17 +89,9 @@ pub(crate) fn reduce_remove_entry_inner(
     latest_deleted_address: &Address,
     deletion_address: &Address,
 ) -> HcResult<Address> {
-    // pre-condition: Must already have entry in local content_storage
-    let content_storage = &store.content_storage().clone();
 
-    let entry: Entry = content_storage
-        .read()?
-        .fetch(latest_deleted_address)?
-        .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?
-        .try_into()
-        .map_err(|_| {
-            HolochainError::ErrorGeneric("Stored content should be a valid entry".into())
-        })?;
+    let entry = store.get(latest_deleted_address)?
+        .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?;
 
     // pre-condition: entry_type must not be sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {

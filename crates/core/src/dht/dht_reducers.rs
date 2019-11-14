@@ -182,9 +182,6 @@ pub mod tests {
         let context = test_context("bob", None);
         let store = test_store(context);
 
-        // test_entry is not sys so should do nothing
-        let storage = &store.dht().content_storage().clone();
-
         let sys_entry = test_sys_entry();
         let entry_wh = EntryWithHeader {
             entry: sys_entry.clone(),
@@ -197,10 +194,7 @@ pub mod tests {
 
         assert_eq!(
             Some(sys_entry.clone()),
-            (*storage.read().unwrap())
-                .fetch(&sys_entry.address())
-                .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
+            store.dht().get(&sys_entry.address()).unwrap()
         );
 
         let new_storage = &new_dht_store.content_storage().clone();

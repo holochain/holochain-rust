@@ -19,7 +19,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec};
+use std::{pin::Pin, sync::Arc, thread, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -199,21 +199,14 @@ fn public_chain_entries_from_headers(
         .iter()
         .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
         .map(|chain_header| {
-            let storage = context
+            context
                 .state()
                 .expect("No state in public_chain_entries_from_headers")
                 .agent()
                 .chain_store()
-                .content_storage()
-                .clone();
-            let json = (*storage.read().expect(
-                "Couldn't get read lock on content storage in public_chain_entries_from_headers",
-            ))
-            .fetch(chain_header.entry_address())
-            .expect("Could not fetch from CAS");
-            json.expect("Could not find CAS for existing chain header")
-                .try_into()
-                .expect("Could not convert to serialized entry")
+                .get(chain_header.entry_address())
+                .expect("Could not read entry from CAS")
+                .expect("Entry does not exist")
         })
         .collect::<Vec<_>>()
 }

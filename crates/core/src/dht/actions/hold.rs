@@ -40,9 +40,6 @@ impl Future for HoldEntryFuture {
         if let Some(state) = self.context.try_state() {
             if state
                 .dht()
-                .content_storage()
-                .read()
-                .unwrap()
                 .contains(&self.address)
                 .unwrap()
             {

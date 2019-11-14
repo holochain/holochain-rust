@@ -13,14 +13,14 @@ repository = "https://github.com/holochain/sim2h"
 
 [dependencies]
 hcid = "=0.0.6"
-holochain_persistence_api = "=0.0.10"
+holochain_persistence_api = "=0.0.11"
 holochain_json_api = "=0.0.17"
 detach = "=0.0.19"
-lib3h = "=0.0.21"
-lib3h_crypto_api = "=0.0.21"
-lib3h_sodium = "=0.0.21"
-lib3h_protocol = "=0.0.21"
-lib3h_zombie_actor = "=0.0.21"
+lib3h = "=0.0.22"
+lib3h_crypto_api = "=0.0.22"
+lib3h_sodium = "=0.0.22"
+lib3h_protocol = "=0.0.22"
+lib3h_zombie_actor = "=0.0.22"
 holochain_tracing = "=0.0.1"
 holochain_core_types = { version = "=0.0.38-alpha14", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.38-alpha14", path = "../locksmith" }

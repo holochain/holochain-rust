@@ -264,10 +264,9 @@ pub mod tests {
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
-        let storage = new_dht_store.meta_storage();
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -322,11 +321,10 @@ pub mod tests {
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
-        let storage = new_dht_store.meta_storage();
         let get_links_query =
             create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
                 .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned
         assert!(fetched.is_ok());
@@ -346,11 +344,10 @@ pub mod tests {
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
-        let storage = new_dht_store.meta_storage();
         let get_links_query =
             create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
                 .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
         assert!(fetched.is_ok());
@@ -374,12 +371,12 @@ pub mod tests {
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
-        let _new_dht_store = reduce(store.dht(), &action_link_add);
+        let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store_2.fetch_eavi(&get_links_query);
 
         //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
         assert!(fetched.is_ok());
@@ -419,10 +416,9 @@ pub mod tests {
 
         let new_dht_store = reduce(store.dht(), &action);
 
-        let storage = new_dht_store.meta_storage();
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);

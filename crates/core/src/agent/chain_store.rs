@@ -71,7 +71,7 @@ impl ChainStore {
         )
     }
 
-    pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
+    pub fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
         self.content_storage.clone().read().unwrap().fetch(address)
     }
 

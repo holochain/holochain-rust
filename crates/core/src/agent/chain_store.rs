@@ -13,6 +13,7 @@ use holochain_persistence_api::cas::{
 use holochain_persistence_api::error::PersistenceResult;
 use holochain_persistence_api::cas::content::Content;
 use holochain_core_types::error::HcResult;
+use holochain_core_types::entry::Entry;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -90,6 +91,18 @@ impl ChainStore {
             .map_err(|persistence_error| {
                 HolochainError::ErrorGeneric(persistence_error.to_string())
             })
+    }
+
+    pub(crate) fn get_entry_from_cas(
+        &self,
+        address: &Address,
+    ) -> Result<Option<Entry>, HolochainError> {
+        if let Some(json) = self.cas_fetch(&address)? {
+            let entry = Entry::try_from_content(&json)?;
+            Ok(Some(entry))
+        } else {
+            Ok(None) // no errors but entry is not in CAS
+        }
     }
 
     // Supply a None for options to get defaults (all elements, no ChainHeaders just Addresses)

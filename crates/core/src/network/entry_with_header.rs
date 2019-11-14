@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EntryWithHeader {
@@ -34,9 +35,7 @@ fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, Holoc
     let json = state
         .agent()
         .chain_store()
-        .content_storage()
-        .read()?
-        .fetch(address)?
+        .cas_fetch(address)?
         .ok_or_else(|| HolochainError::from("Entry not found"))?;
     let s: Entry = json.try_into()?;
     Ok(s)

@@ -36,12 +36,8 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
-    let state_dht = context.state().unwrap().dht().clone();
-    let dht = state_dht.meta_storage().clone();
-
-    let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+    let status_eavs = context.state().unwrap().dht().fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
@@ -80,7 +76,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_link_update_delete = None;
-    let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+    let link_eavs = context.state().unwrap().dht().fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
         Some(Attribute::CrudLink).into(),
         None.into(),

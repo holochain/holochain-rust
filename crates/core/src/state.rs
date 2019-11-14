@@ -201,9 +201,6 @@ impl State {
         let header_addresses: Vec<Address> = headers.iter().map(|h| h.address()).collect();
         let mut dht_headers = self
             .dht()
-            .meta_storage()
-            .read()
-            .unwrap()
             // fetch all EAV references to chain headers for this entry
             .fetch_eavi(&EaviQuery::new(
                 Some(entry_address).into(),

@@ -1,9 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
+    content_store::GetContent,
     context::Context,
     entry::CanPublish,
-    content_store::GetContent,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },

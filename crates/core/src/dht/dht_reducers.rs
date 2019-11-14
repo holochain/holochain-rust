@@ -159,11 +159,11 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::create_get_links_eavi_query,
         },
-        content_store::{GetContent, AddContent},
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,

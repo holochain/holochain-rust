@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
     content_store::GetContent,
+    context::Context,
     instance::dispatch_action,
     network::entry_with_header::EntryWithHeader,
 };

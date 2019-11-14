@@ -1,4 +1,7 @@
-use crate::{action::ActionWrapper, content_store::{ContentStore, GetContent, AddContent}};
+use crate::{
+    action::ActionWrapper,
+    content_store::{AddContent, ContentStore, GetContent},
+};
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
@@ -261,9 +264,9 @@ impl ContentStore for DhtStore {
     }
 }
 
-impl GetContent for DhtStore { }
+impl GetContent for DhtStore {}
 
-impl AddContent for DhtStore { }
+impl AddContent for DhtStore {}
 
 #[cfg(test)]
 pub mod tests {

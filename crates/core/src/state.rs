@@ -4,9 +4,9 @@ use crate::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
+    content_store::GetContent,
     context::Context,
     dht::dht_store::DhtStore,
-    content_store::GetContent,
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
 };

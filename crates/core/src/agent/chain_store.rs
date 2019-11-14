@@ -1,4 +1,4 @@
-use crate::content_store::{ContentStore, GetContent, AddContent};
+use crate::content_store::{AddContent, ContentStore, GetContent};
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -190,9 +190,9 @@ impl ContentStore for ChainStore {
     }
 }
 
-impl GetContent for ChainStore { }
+impl GetContent for ChainStore {}
 
-impl AddContent for ChainStore { }
+impl AddContent for ChainStore {}
 
 /// Access each Entry
 ///

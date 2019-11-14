@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     instance::Observer,
     network::state::NetworkState,
-    nucleus::actions::get_entry::get_entry_from_cas,
     persister::Persister,
     signal::{Signal, SignalSender},
     state::StateWrapper,
@@ -46,6 +45,9 @@ use std::{
 
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
+use threadpool::ThreadPool;
+
+const NUM_WORKER_THREADS: usize = 20;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
@@ -86,6 +88,8 @@ pub struct Context {
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
+    thread_pool: Arc<Mutex<ThreadPool>>,
+    pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
 }
 
@@ -148,6 +152,8 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
+            thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
+            redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         }
     }
@@ -181,6 +187,8 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
+            thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
+            redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         })
     }
@@ -194,10 +202,13 @@ impl Context {
         self.state = Some(state);
     }
 
-    pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state
-            .as_ref()
-            .map(|s| s.read().unwrap().annotate("Context::state"))
+    pub fn state(&self) -> Option<StateWrapper> {
+        self.state.as_ref().map(|s| {
+            while self.redux_wants_write.load(Relaxed) {
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            (*s.read().unwrap().annotate("Context::state")).clone()
+        })
     }
 
     /// Try to acquire read-lock on the state.
@@ -205,10 +216,14 @@ impl Context {
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
-        self.state
-            .as_ref()
-            .and_then(|s| s.try_read())
-            .map(|lock| lock.annotate("Context::try_state"))
+        if self.redux_wants_write.load(Relaxed) {
+            None
+        } else {
+            self.state
+                .as_ref()
+                .and_then(|s| s.try_read())
+                .map(|lock| lock.annotate("Context::try_state"))
+        }
     }
 
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
@@ -334,6 +349,16 @@ impl Context {
         }
     }
 
+    pub fn spawn_task<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.thread_pool
+            .lock()
+            .expect("Couldn't get lock on Context::thread_pool")
+            .execute(f);
+    }
+
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
         let state = self.state().ok_or("State uninitialized!")?;
@@ -348,12 +373,12 @@ impl Context {
             .chain_store()
             .iter_type(&Some(top), &EntryType::CapTokenGrant);
 
-        // Get CAS
-        let cas = state.agent().chain_store().content_storage();
-
         for grant in grants {
             let addr = grant.entry_address().to_owned();
-            let entry = get_entry_from_cas(&cas, &addr)?
+            let entry = state
+                .agent()
+                .chain_store()
+                .get_entry_from_cas(&addr)?
                 .ok_or_else(|| HolochainError::from("Can't get CapTokenGrant entry from CAS"))?;
             // if entry is the public grant return it
             if let Entry::CapTokenGrant(grant) = entry {

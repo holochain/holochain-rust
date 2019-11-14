@@ -1,8 +1,12 @@
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
-    entry::entry_type::EntryType,
+    entry::{
+        Entry,
+        entry_type::EntryType,
+    },
     error::RibosomeErrorCode::{self, *},
+    error::HolochainError,
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
@@ -50,9 +54,19 @@ impl ChainStore {
         self.content_storage.clone()
     }
 
+    pub fn get(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        if let Some(json) = (*self.content_storage.read().unwrap()).fetch(address)? {
+            let entry = Entry::try_from_content(&json)?;
+            Ok(Some(entry))
+        } else {
+            Ok(None) // no errors but entry is not in CAS
+        }
+    }
+
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }
+
 
     /// Scans the local chain for the first Entry of EntryType, and then creates a
     /// ChainStoreTypeIter to return the sequence of all Entrys with the same EntryType. Requires a

@@ -134,6 +134,15 @@ impl DhtStore {
         new_dht_store
     }
 
+    pub fn get(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+        if let Some(json) = (*self.content_storage.read().unwrap()).fetch(address)? {
+            let entry = Entry::try_from_content(&json)?;
+            Ok(Some(entry))
+        } else {
+            Ok(None) // no errors but entry is not in CAS
+        }
+    }
+    
     ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.

@@ -18,7 +18,7 @@ use lib3h_protocol::{
 use std::{collections::HashMap, sync::Arc};
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
-    context.clone().spawn_thread(move || {
+    context.clone().spawn_task(move || {
             let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
             for entry_address in get_all_public_chain_entries(context.clone()) {
                 let content_aspect = get_content_aspect(&entry_address, context.clone())
@@ -82,7 +82,7 @@ fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<
 }
 
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
-    context.clone().spawn_thread(move || {
+    context.clone().spawn_task(move || {
         let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
         let holding_list = {
             let state = context

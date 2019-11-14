@@ -32,7 +32,7 @@ pub async fn run_validation_callback(
     let clock = std::time::SystemTime::now();
     let call2 = call.clone();
 
-    context.clone().spawn_thread(move || {
+    context.clone().spawn_task(move || {
         let validation_result: ValidationResult = match ribosome::run_dna(
             Some(call2.clone().parameters.to_bytes()),
             WasmCallData::new_callback_call(cloned_context.clone(), call2),

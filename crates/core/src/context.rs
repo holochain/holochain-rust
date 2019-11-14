@@ -346,7 +346,7 @@ impl Context {
         }
     }
 
-    pub fn spawn_thread<F>(&self, f: F)
+    pub fn spawn_task<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
     {

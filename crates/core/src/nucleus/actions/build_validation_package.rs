@@ -106,7 +106,7 @@ pub async fn build_validation_package<'a>(
             maybe_entry_header.unwrap()
         };
 
-        context.clone().spawn_thread(move || {
+        context.clone().spawn_task(move || {
             let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {

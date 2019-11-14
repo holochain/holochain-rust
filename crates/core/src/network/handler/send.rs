@@ -38,7 +38,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
-            context.clone().spawn_thread(move || {
+            context.clone().spawn_task(move || {
                 if let Err(error) = context.block_on(handle_custom_direct_message(
                     message_data.from_agent_id.into(),
                     message_data.request_id,
@@ -58,7 +58,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            context.clone().spawn_thread(move || {
+            context.clone().spawn_task(move || {
                 context.block_on(respond_validation_package_request(
                     message_data.from_agent_id.into(),
                     message_data.request_id,

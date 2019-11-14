@@ -66,7 +66,7 @@ pub async fn query(
 
     let key_inner = key.clone();
     let context_inner = context.clone();
-    context.spawn_thread(move || {
+    context.spawn_task(move || {
         thread::sleep(timeout.into());
         let timeout_action = Action::QueryTimeout(key_inner);
         let action_wrapper = ActionWrapper::new(timeout_action);

@@ -3,12 +3,16 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::RibosomeErrorCode::{self, *},
+    error::HolochainError,
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
 };
+use holochain_persistence_api::error::PersistenceResult;
+use holochain_persistence_api::cas::content::Content;
+use holochain_core_types::error::HcResult;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -63,6 +67,29 @@ impl ChainStore {
             self.iter(start_chain_header)
                 .find(|chain_header| chain_header.entry_type() == entry_type),
         )
+    }
+
+    pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
+        self.content_storage.clone().read().unwrap().fetch(address)
+    }
+
+    // pub(crate) fn cas_contains(&self, address: &Address) -> PersistenceResult<bool> {
+    //     self.content_storage
+    //         .clone()
+    //         .read()
+    //         .unwrap()
+    //         .contains(address)
+    // }
+
+    pub(crate) fn cas_add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
+        self.content_storage
+            .clone()
+            .write()
+            .unwrap()
+            .add(content)
+            .map_err(|persistence_error| {
+                HolochainError::ErrorGeneric(persistence_error.to_string())
+            })
     }
 
     // Supply a None for options to get defaults (all elements, no ChainHeaders just Addresses)

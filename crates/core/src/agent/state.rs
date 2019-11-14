@@ -22,6 +22,7 @@ use holochain_json_api::{
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
 use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
+use std::convert::TryInto;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -91,9 +92,7 @@ impl AgentState {
         let agent_entry_address = self.get_agent_address()?;
         let maybe_agent_entry_json = self
             .chain_store()
-            .content_storage()
-            .read()?
-            .fetch(&agent_entry_address)?;
+            .cas_fetch(&agent_entry_address)?;
         let agent_entry_json = maybe_agent_entry_json
             .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 
@@ -241,9 +240,8 @@ fn reduce_commit_entry(
         provenances,
     )
     .and_then(|chain_header| {
-        let storage = &agent_state.chain_store.content_storage().clone();
-        storage.write().unwrap().add(entry)?;
-        storage.write().unwrap().add(&chain_header)?;
+        agent_state.chain_store.cas_add(entry)?;
+        agent_state.chain_store.cas_add(&chain_header)?;
         Ok((chain_header, entry.address()))
     })
     .and_then(|(chain_header, address)| {

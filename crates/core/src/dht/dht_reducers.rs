@@ -130,7 +130,7 @@ pub(crate) fn reduce_update_entry(
 ) -> Option<DhtStore> {
     let (old_address, new_address) = unwrap_to!(action_wrapper.action() => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-    let res = reduce_update_entry_inner(&new_store, old_address, new_address);
+    let res = reduce_update_entry_inner(&mut new_store, old_address, new_address);
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
 }

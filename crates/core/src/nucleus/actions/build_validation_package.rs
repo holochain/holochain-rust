@@ -18,8 +18,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::convert::TryInto;
-use std::{pin::Pin, sync::Arc, vec::Vec};
+use std::{ pin::Pin, sync::Arc, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -193,11 +192,11 @@ fn public_chain_entries_from_headers(
                 .expect("No state in public_chain_entries_from_headers")
                 .agent()
                 .chain_store()
-                .cas_fetch(chain_header.entry_address())
-                .expect("Could not fetch from CAS")
-                .try_into()
+                .get_entry_from_cas(chain_header.entry_address())
+                .expect(&format!("Could not get entry {}", chain_header.entry_address()))
+                .expect(&format!("Get entry returned None for {}", chain_header.entry_address()))
         })
-        .collect::<Vec<Entry>>()
+        .collect::<Vec<_>>()
 }
 
 fn all_chain_headers_before_header(

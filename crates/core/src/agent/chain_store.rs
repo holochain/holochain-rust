@@ -1,19 +1,20 @@
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
-    entry::entry_type::EntryType,
-    error::RibosomeErrorCode::{self, *},
-    error::HolochainError,
+    entry::{entry_type::EntryType, Entry},
+    error::{
+        HcResult, HolochainError,
+        RibosomeErrorCode::{self, *},
+    },
 };
 use holochain_locksmith::RwLock;
-use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent},
-    storage::ContentAddressableStorage,
+use holochain_persistence_api::{
+    cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    },
+    error::PersistenceResult,
 };
-use holochain_persistence_api::error::PersistenceResult;
-use holochain_persistence_api::cas::content::Content;
-use holochain_core_types::error::HcResult;
-use holochain_core_types::entry::Entry;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -73,14 +74,6 @@ impl ChainStore {
     pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
         self.content_storage.clone().read().unwrap().fetch(address)
     }
-
-    // pub(crate) fn cas_contains(&self, address: &Address) -> PersistenceResult<bool> {
-    //     self.content_storage
-    //         .clone()
-    //         .read()
-    //         .unwrap()
-    //         .contains(address)
-    // }
 
     pub(crate) fn cas_add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
         self.content_storage

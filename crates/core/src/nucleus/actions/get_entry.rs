@@ -5,27 +5,13 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
-use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
+        content::{Address},
     },
     eav::IndexFilter,
 };
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
-
-pub(crate) fn get_entry_from_cas(
-    storage: &Arc<RwLock<dyn ContentAddressableStorage>>,
-    address: &Address,
-) -> Result<Option<Entry>, HolochainError> {
-    if let Some(json) = (*storage.read().unwrap()).fetch(&address)? {
-        let entry = Entry::try_from_content(&json)?;
-        Ok(Some(entry))
-    } else {
-        Ok(None) // no errors but entry is not in CAS
-    }
-}
 
 pub fn get_entry_from_agent_chain(
     context: &Arc<Context>,
@@ -41,14 +27,24 @@ pub fn get_entry_from_agent_chain(
     if maybe_header.is_none() {
         return Ok(None);
     }
-    context.state().unwrap().agent().chain_store().get_entry_from_cas(&address)
+    context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .get_entry_from_cas(&address)
 }
 
 pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    context.state().unwrap().agent().chain_store().get_entry_from_cas(&address)
+    context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .get_entry_from_cas(&address)
 }
 
 pub(crate) fn get_entry_from_dht(
@@ -62,12 +58,8 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
-    let state_dht = context.state().unwrap().dht().clone();
-    let dht = state_dht.meta_storage().clone();
-
-    let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+    let status_eavs = context.state().unwrap().dht().fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
@@ -106,7 +98,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_link_update_delete = None;
-    let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+    let link_eavs = context.state().unwrap().dht().fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
         Some(Attribute::CrudLink).into(),
         None.into(),

@@ -20,13 +20,14 @@ use crate::{
             store::*,
         },
     },
-    nucleus::actions::get_entry::get_entry_from_cas,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use crate::entry::CanPublish;
+use boolinator::Boolinator;
 use lib3h_protocol::{
     data_types::{DirectMessageData, GenericResultData, StoreEntryAspectData},
     protocol_server::Lib3hServerProtocol,
@@ -305,11 +306,12 @@ fn get_content_aspect(
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
             Some(EntryWithHeader {
-                entry: get_entry_from_cas(
-                    &state.agent().chain_store().content_storage(),
-                    header.entry_address(),
-                )?
-                .expect("Could not find entry in chain CAS, but header is chain"),
+                entry: state
+                    .agent()
+                    .chain_store()
+                    .get_entry_from_cas(&header.entry_address())?
+                    // this can't be a None
+                    .unwrap(),
                 header,
             })
         }

@@ -21,8 +21,12 @@ use holochain_json_api::{
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
-use std::convert::TryInto;
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+    time::SystemTime,
+};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -90,9 +94,7 @@ impl AgentState {
 
     pub fn get_agent(&self) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
-        let maybe_agent_entry_json = self
-            .chain_store()
-            .cas_fetch(&agent_entry_address)?;
+        let maybe_agent_entry_json = self.chain_store().cas_fetch(&agent_entry_address)?;
         let agent_entry_json = maybe_agent_entry_json
             .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 

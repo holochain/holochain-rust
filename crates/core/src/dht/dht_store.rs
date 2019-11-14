@@ -184,7 +184,7 @@ impl DhtStore {
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
-        self.meta_storage()
+        self.meta_storage
             .read()
             .unwrap()
             // fetch all EAV references to chain headers for this entry
@@ -227,7 +227,7 @@ impl DhtStore {
             &header.address(),
         )?;
         self.cas_add(header)?;
-        self.meta_storage().write().unwrap().add_eavi(&eavi)?;
+        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }
 
@@ -260,6 +260,20 @@ impl DhtStore {
             .map_err(|persistence_error| {
                 HolochainError::ErrorGeneric(persistence_error.to_string())
             })
+    }
+
+    pub(crate) fn fetch_eavi(
+        &self,
+        query: &EaviQuery,
+    ) -> PersistenceResult<BTreeSet<EntityAttributeValueIndex>> {
+        self.meta_storage.read().unwrap().fetch_eavi(query)
+    }
+
+    pub(crate) fn add_eavi(
+        &mut self,
+        eavi: &EntityAttributeValueIndex,
+    ) -> PersistenceResult<Option<EntityAttributeValueIndex>> {
+        self.meta_storage.write().unwrap().add_eavi(&eavi)
     }
 
     pub(crate) fn get_entry_from_cas(

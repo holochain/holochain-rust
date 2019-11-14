@@ -372,7 +372,10 @@ impl Context {
 
         for grant in grants {
             let addr = grant.entry_address().to_owned();
-            let entry = state.agent().chain_store().get_entry_from_cas(&addr)?
+            let entry = state
+                .agent()
+                .chain_store()
+                .get_entry_from_cas(&addr)?
                 .ok_or_else(|| HolochainError::from("Can't get CapTokenGrant entry from CAS"))?;
             // if entry is the public grant return it
             if let Entry::CapTokenGrant(grant) = entry {

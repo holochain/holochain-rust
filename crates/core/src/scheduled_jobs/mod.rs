@@ -22,7 +22,7 @@ pub fn create_state_dump_callback(context: Arc<Context>) -> impl 'static + FnMut
 
 pub fn create_validation_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
     move || {
-        log_debug!(context, "Checking holding queue...");
+        log_trace!(context, "Checking holding queue...");
         loop {
             let maybe_holding_workflow = context
                 .state()

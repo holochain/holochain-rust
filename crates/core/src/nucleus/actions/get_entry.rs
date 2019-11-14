@@ -30,18 +30,6 @@ pub fn get_entry_from_agent_chain(
     agent.chain_store().get(address)
 }
 
-pub(crate) fn get_entry_from_agent(
-    context: &Arc<Context>,
-    address: &Address,
-) -> Result<Option<Entry>, HolochainError> {
-    context
-    .state()
-    .unwrap()
-    .agent()
-    .chain_store()
-    .get(address)
-}
-
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,

@@ -2,18 +2,16 @@ use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{
-        Entry,
         entry_type::EntryType,
     },
     error::RibosomeErrorCode::{self, *},
-    error::HolochainError,
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent},
     storage::ContentAddressableStorage,
 };
-
+use crate::get_by_address::GetByAddress;
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
@@ -48,19 +46,6 @@ pub enum ChainStoreQueryResult {
 impl ChainStore {
     pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
-    }
-
-    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
-    }
-
-    pub fn get(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
-        if let Some(json) = (*self.content_storage.read().unwrap()).fetch(address)? {
-            let entry = Entry::try_from_content(&json)?;
-            Ok(Some(entry))
-        } else {
-            Ok(None) // no errors but entry is not in CAS
-        }
     }
 
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
@@ -199,6 +184,12 @@ impl ChainStore {
         };
 
         Ok(vector)
+    }
+}
+
+impl GetByAddress for ChainStore {
+    fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
+        self.content_storage.clone()
     }
 }
 

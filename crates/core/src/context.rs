@@ -5,6 +5,7 @@ use crate::{
     persister::Persister,
     signal::{Signal, SignalSender},
     state::StateWrapper,
+    get_by_address::GetByAddress,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{

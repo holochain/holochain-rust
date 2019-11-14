@@ -7,6 +7,7 @@ use crate::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
     state::{State, StateWrapper},
+    get_by_address::GetByAddress,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{

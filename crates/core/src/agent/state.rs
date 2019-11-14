@@ -7,6 +7,7 @@ use crate::{
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
 use crate::state::StateWrapper;
+use crate::get_by_address::GetByAddress;
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,

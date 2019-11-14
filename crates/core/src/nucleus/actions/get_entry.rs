@@ -1,4 +1,5 @@
 use crate::context::Context;
+use crate::get_by_address::GetByAddress;
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},

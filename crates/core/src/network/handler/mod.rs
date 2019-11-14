@@ -1,4 +1,5 @@
 use crate::agent::state::create_entry_with_header_for_header;
+use crate::get_by_address::GetByAddress;
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;

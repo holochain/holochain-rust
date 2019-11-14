@@ -1,4 +1,4 @@
-use crate::logger::LogRules;
+use crate::{conductor::base::DnaLoader, logger::LogRules};
 /// Conductor Configuration
 /// This module provides structs that represent the different aspects of how
 /// a conductor can be configured.
@@ -11,7 +11,6 @@ use crate::logger::LogRules;
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
-use conductor::base::DnaLoader;
 use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::{
@@ -939,8 +938,10 @@ pub struct SignalConfig {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use conductor::tests::test_dna_loader;
+    use crate::{
+        conductor::tests::test_dna_loader,
+        config::{load_configuration, Configuration, NetworkConfig},
+    };
     use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {

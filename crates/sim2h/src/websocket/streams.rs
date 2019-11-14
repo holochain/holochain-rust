@@ -73,10 +73,11 @@ lazy_static! {
 }
 
 /// A function that produces accepted sockets of type R wrapped in a TransportInfo
-pub type Acceptor<T> = Box<dyn FnMut() -> TransportResult<WssInfo<T>>>;
+pub type Acceptor<T> = Box<dyn FnMut() -> TransportResult<WssInfo<T>> + 'static + Send + Sync>;
 
 /// A function that binds to a url and produces sockt acceptors of type T
-pub type Bind<T> = Box<dyn FnMut(&Url) -> TransportResult<(Url2, Acceptor<T>)>>;
+pub type Bind<T> =
+    Box<dyn FnMut(&Url) -> TransportResult<(Url2, Acceptor<T>)> + 'static + Send + Sync>;
 
 /// A "Transport" implementation based off the websocket protocol
 /// any rust io Read/Write stream should be able to serve as the base
@@ -174,15 +175,24 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
         //println!("send() 2 {:?}", url);
         let mut ws_stream =
             std::mem::replace(&mut info.stateful_socket, WebsocketStreamState::None);
-        let send_result = match &mut ws_stream {
-            WebsocketStreamState::ReadyWs(socket) => socket
-                .write_message(tungstenite::Message::Binary(payload.to_vec()))
-                .map_err(|error| format!("{}", error)),
-            WebsocketStreamState::ReadyWss(socket) => socket
-                .write_message(tungstenite::Message::Binary(payload.to_vec()))
-                .map_err(|error| format!("{}", error)),
-            _ => Err(String::from("Websocket not in Ready state")),
+        let mut send_result = match &mut ws_stream {
+            WebsocketStreamState::ReadyWs(socket) => {
+                socket.write_message(tungstenite::Message::Binary(payload.to_vec()))
+            }
+            WebsocketStreamState::ReadyWss(socket) => {
+                socket.write_message(tungstenite::Message::Binary(payload.to_vec()))
+            }
+            _ => Err(tungstenite::Error::Io(std::io::Error::from(
+                std::io::ErrorKind::NotConnected,
+            ))),
         };
+        if let Err(tungstenite::Error::Io(ref e)) = send_result {
+            if let std::io::ErrorKind::WouldBlock = e.kind() {
+                // silently ignoring would block sends
+                // these are buffered in the tungstenite library
+                send_result = Ok(())
+            }
+        }
         info.stateful_socket = ws_stream;
         //println!("send() 3 {:?}", send_result);
         send_result.map_err(|error_string| {

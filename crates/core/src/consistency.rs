@@ -2,7 +2,7 @@ use crate::{
     action::Action, context::Context, entry::CanPublish,
     network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
 };
-use holochain_core_types::{agent::AgentId, entry::Entry, link::link_data::LinkData};
+use holochain_core_types::{entry::Entry, link::link_data::LinkData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
@@ -58,7 +58,9 @@ type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
 pub enum ConsistencyEvent {
     // CAUSES
     Publish(Address),                                           // -> Hold
-    AddPendingValidation(Address),                              // -> RemovePendingValidation
+    InitializeNetwork, // -> Hold (the AgentId if initialize chain happend)
+    InitializeChain,   // -> prepare to hold AgentId
+    AddPendingValidation(Address), // -> RemovePendingValidation
     SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
@@ -89,8 +91,8 @@ pub struct ConsistencyModel {
     // later, when the corresponding Publish has been processed
     commit_cache: HashMap<Address, ConsistencySignalE>,
 
-    // Stores the AgentId, once it has been committed
-    agent_id: Option<AgentId>,
+    // store whether we have initialized the chain
+    chain_initialized: bool,
 
     // Context needed to examine state and do logging
     context: Arc<Context>,
@@ -100,7 +102,7 @@ impl ConsistencyModel {
     pub fn new(context: Arc<Context>) -> Self {
         Self {
             commit_cache: HashMap::new(),
-            agent_id: None,
+            chain_initialized: false,
             context,
         }
     }
@@ -109,11 +111,6 @@ impl ConsistencyModel {
         use ConsistencyEvent::*;
         use ConsistencyGroup::*;
         match action {
-            Action::Commit((Entry::AgentId(agent_id), _, _)) => {
-                self.agent_id = Some(agent_id.clone());
-                None
-            }
-
             Action::Commit((entry, crud_link, _)) => {
                 // XXX: Since can_publish relies on a properly initialized Context, there are a few ways
                 // can_publish can fail. If we hit the possiblity of failure, just add the commit to the cache
@@ -204,6 +201,24 @@ impl ConsistencyModel {
             Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
                 ReturnZomeFunctionResult(display_zome_fn_call(&result.call()), result.call().id()),
             )),
+            Action::InitNetwork(settings) => {
+                // If the chain was initialized earlier than we also should have
+                // committed the agent and so we should be able to wait for the agent id
+                // to propagate
+                if self.chain_initialized {
+                    Some(ConsistencySignal::new_pending(
+                        InitializeChain,
+                        Validators,
+                        vec![Hold(Address::from(settings.agent_id.clone()))],
+                    ))
+                } else {
+                    None
+                }
+            }
+            Action::InitializeChain(_) => {
+                self.chain_initialized = true;
+                None
+            }
             _ => None,
         }
     }

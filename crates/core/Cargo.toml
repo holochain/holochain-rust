@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.38-alpha13"
+version = "0.0.38-alpha14"
 description = "holochain core"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -30,21 +30,23 @@ unwrap_to = "=0.1.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"
 toml = "=0.5.0"
-holochain_metrics = { version = "=0.0.38-alpha13", path = "../metrics" }
-holochain_net = { version = "=0.0.38-alpha13", path = "../net" }
-holochain_wasm_utils = { version = "=0.0.38-alpha13", path = "../wasm_utils" }
-holochain_common = { version = "=0.0.38-alpha13", path = "../common" }
-holochain_conductor_lib_api = { version = "=0.0.38-alpha13", path = "../conductor_api" }
-lib3h_protocol = "=0.0.21"
-lib3h_sodium = "=0.0.21"
+
+holochain_net = { version = "=0.0.38-alpha14", path = "../net" }
+holochain_wasm_utils = { version = "=0.0.38-alpha14", path = "../wasm_utils" }
+holochain_common = { version = "=0.0.38-alpha14", path = "../common" }
+holochain_conductor_lib_api = { version = "=0.0.38-alpha14", path = "../conductor_api" }
+lib3h_protocol = "=0.0.22"
+lib3h_sodium = "=0.0.22"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.10"
-holochain_persistence_file = "=0.0.10"
-holochain_persistence_mem = "=0.0.10"
-holochain_core_types = { version = "=0.0.38-alpha13", path = "../core_types" }
-holochain_dpki = { version = "=0.0.38-alpha13", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.38-alpha13", path = "../locksmith" }
+holochain_persistence_api = "=0.0.11"
+holochain_persistence_file = "=0.0.11"
+holochain_persistence_mem = "=0.0.11"
+holochain_core_types = { version = "=0.0.38-alpha14", path = "../core_types" }
+holochain_dpki = { version = "=0.0.38-alpha14", path = "../dpki" }
+holochain_locksmith = { version = "=0.0.38-alpha14", path = "../locksmith" }
+holochain_metrics = { version = "=0.0.38-alpha14", path = "../metrics" }
+
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
 boolinator = "=2.4.0"
@@ -63,5 +65,6 @@ threadpool = "=1.7.1"
 
 [dev-dependencies]
 wabt = "=0.7.4"
-test_utils = { version = "=0.0.38-alpha13", path = "../../test_utils" }
+test_utils = { version = "=0.0.38-alpha14", path = "../../test_utils" }
 tempfile = "=3.0.7"
+holochain_persistence_lmdb = "=0.0.11"

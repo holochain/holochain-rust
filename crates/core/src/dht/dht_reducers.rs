@@ -166,6 +166,7 @@ pub mod tests {
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,
+        get_by_address::GetByAddress,
     };
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},

@@ -137,6 +137,7 @@ pub fn get_entry_with_meta(
 #[cfg(test)]
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
+    use crate::get_by_address::GetByAddress;
     use holochain_core_types::entry::test_entry;
     use holochain_persistence_api::cas::content::AddressableContent;
 

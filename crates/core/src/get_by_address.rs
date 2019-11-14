@@ -9,7 +9,7 @@ use holochain_persistence_api::cas::{
 };
 use std::sync::Arc;
 
-pub(crate) trait GetByAddress {
+pub trait GetByAddress {
 	fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>>;
 
    	fn get(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {

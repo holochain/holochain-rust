@@ -24,7 +24,7 @@ use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
 use std::{
     collections::HashMap,
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     sync::Arc,
     time::SystemTime,
 };
@@ -95,15 +95,11 @@ impl AgentState {
 
     pub fn get_agent(&self) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
-        let maybe_agent_entry_json = self
+        let agent_entry = self
             .chain_store()
-            .content_storage()
-            .read()?
-            .fetch(&agent_entry_address)?;
-        let agent_entry_json = maybe_agent_entry_json
+            .get(&agent_entry_address)?
             .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
-
-        let agent_entry: Entry = agent_entry_json.try_into()?;
+        
         match agent_entry {
             Entry::AgentId(agent_id) => Ok(agent_id),
             _ => unreachable!(),

@@ -227,7 +227,7 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        self.content_storage().write().unwrap().add(header)?;
+        self.add(header)?;
         self.meta_storage().write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }

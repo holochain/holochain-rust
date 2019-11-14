@@ -31,7 +31,7 @@ pub(crate) enum LinkModification {
 
 /// Used as the inner function for both commit and hold reducers
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
-    match (*store.content_storage().write()?).add(entry) {
+    match store.add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
             (*store.meta_storage().write()?)
                 .add_eavi(&status_eav)

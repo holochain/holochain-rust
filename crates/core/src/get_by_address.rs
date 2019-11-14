@@ -21,4 +21,10 @@ pub trait GetByAddress {
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
         Ok(self.get(address)?.is_some())
     }
+
+    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
+        (*self.content_storage().write().unwrap())
+            .add(content)
+            .map_err(|e| e.into())
+    }
 }

@@ -27,8 +27,7 @@ use holochain_dpki::utils::Verify;
 use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
-use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread, time::Instant};
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {

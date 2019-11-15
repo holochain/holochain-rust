@@ -22,7 +22,7 @@ use regex::Regex;
 
 use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
-use holochain_persistence_api::{cas::content::Content};
+use holochain_persistence_api::{cas::content::Content, error::PersistenceResult};
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
@@ -244,6 +244,20 @@ impl DhtStore {
 
     pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
         &self.holding_list
+    }
+
+    pub(crate) fn fetch_eavi(
+        &self,
+        query: &EaviQuery,
+    ) -> PersistenceResult<BTreeSet<EntityAttributeValueIndex>> {
+        self.meta_storage.read().unwrap().fetch_eavi(query)
+    }
+
+    pub(crate) fn add_eavi(
+        &mut self,
+        eavi: &EntityAttributeValueIndex,
+    ) -> PersistenceResult<Option<EntityAttributeValueIndex>> {
+        self.meta_storage.write().unwrap().add_eavi(&eavi)
     }
 
     // Getters (for reducers)

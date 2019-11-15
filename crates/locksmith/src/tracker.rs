@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ACTIVE_GUARD_MIN_ELAPSED, ACTIVE_GUARD_NO_ACTIVITY_INTERVAL, GUARDS,
+        guards_guard, ACTIVE_GUARD_MIN_ELAPSED, ACTIVE_GUARD_NO_ACTIVITY_INTERVAL,
         GUARD_WATCHER_POLL_INTERVAL, IMMORTAL_TIMEOUT,
     },
     error::LockType,
@@ -101,8 +101,7 @@ pub fn spawn_locksmith_guard_watcher() {
             let mut inactive_for = Duration::from_millis(0);
             loop {
                 let mut reports: Vec<(i64, String)> = {
-                    GUARDS
-                        .lock()
+                    guards_guard()
                         .values_mut()
                         .filter_map(|gt| gt.report_and_update())
                         .collect()

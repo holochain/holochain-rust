@@ -1,5 +1,5 @@
 use crate::tracker::GuardTracker;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 use snowflake::ProcessUniqueId;
 use std::{collections::HashMap, time::Duration};
 
@@ -22,5 +22,13 @@ lazy_static! {
     /// Only report about no activity if this much time has passed
     pub(crate) static ref ACTIVE_GUARD_NO_ACTIVITY_INTERVAL: Duration = Duration::from_secs(10);
 
-    pub(crate) static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
+    static ref GUARDS: Mutex<GuardsMap> = Mutex::new(HashMap::new());
+}
+
+type GuardsMap = HashMap<ProcessUniqueId, GuardTracker>;
+
+pub(crate) fn guards_guard<'a>() -> MutexGuard<'a, GuardsMap> {
+    GUARDS
+        .try_lock_for(Duration::from_secs(20))
+        .expect("Guard-tracking mutex has been locked up for 20 seconds!")
 }

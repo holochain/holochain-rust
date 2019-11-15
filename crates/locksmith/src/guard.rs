@@ -1,4 +1,4 @@
-use crate::{common::GUARDS, error::LockType, tracker::GuardTracker};
+use crate::{common::guards_guard, error::LockType, tracker::GuardTracker};
 use parking_lot::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
 use snowflake::ProcessUniqueId;
 use std::{
@@ -17,9 +17,7 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                GUARDS
-                    .lock()
-                    .insert(puid, GuardTracker::new(puid, LockType::$lock_type));
+                guards_guard().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
                 Self {
                     puid,
                     inner: Some(inner),
@@ -30,8 +28,7 @@ macro_rules! guard_struct {
             /// Add some context which will output in the case that this guard
             /// lives to be an immortal
             pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
-                GUARDS
-                    .lock()
+                guards_guard()
                     .entry(self.puid)
                     .and_modify(|g| g.annotation = Some(annotation.into()));
                 self
@@ -51,7 +48,7 @@ macro_rules! guard_struct {
             }
 
             fn _unlock_fair(&mut self) {
-                if let Some(inner) = std::mem::replace(&mut self.inner, None) {
+                if let Some(inner) = self.inner.take() {
                     $Guard::unlock_fair(inner);
                 }
             }
@@ -59,7 +56,7 @@ macro_rules! guard_struct {
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                GUARDS.lock().remove(&self.puid);
+                guards_guard().remove(&self.puid);
                 if self.fair_unlocking {
                     self._unlock_fair();
                 }

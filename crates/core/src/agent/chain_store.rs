@@ -6,12 +6,9 @@ use holochain_core_types::{
     error::RibosomeErrorCode::{self, *},
 };
 use holochain_locksmith::RwLock;
-use holochain_persistence_api::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
-    error::PersistenceResult,
+use holochain_persistence_api::cas::{
+    content::{Address, AddressableContent},
+    storage::ContentAddressableStorage,
 };
 use std::{str::FromStr, sync::Arc};
 
@@ -66,10 +63,6 @@ impl ChainStore {
             self.iter(start_chain_header)
                 .find(|chain_header| chain_header.entry_type() == entry_type),
         )
-    }
-
-    pub fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
-        self.content_storage.clone().read().unwrap().fetch(address)
     }
 
     // Supply a None for options to get defaults (all elements, no ChainHeaders just Addresses)

@@ -1,4 +1,5 @@
 extern crate crossbeam_channel;
+extern crate num_cpus;
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -83,6 +84,7 @@ struct StressJobLog {
 /// a struct implementing this trait can serve as a stress suite for a test
 pub trait StressSuite: 'static {
     fn start(&mut self, logger: StressJobMetricLogger);
+    fn warmup_complete(&mut self) {}
     fn progress(&mut self, stats: &StressStats);
     fn stop(&mut self, stats: StressStats);
     fn tick(&mut self) {}
@@ -177,7 +179,12 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             },
         };
 
-        for _ in 0..runner.config.thread_pool_size {
+        let cpu_count = if runner.config.thread_pool_size == 0 {
+            num_cpus::get()
+        } else {
+            runner.config.thread_pool_size
+        };
+        for _ in 0..cpu_count {
             runner.create_thread();
         }
 
@@ -253,6 +260,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             self.is_warmup = false;
             self.stats.master_tick_count = 0;
             self.stats.log_stats = HashMap::new();
+            self.config.suite.warmup_complete();
         }
 
         self.stats.master_tick_count += 1;

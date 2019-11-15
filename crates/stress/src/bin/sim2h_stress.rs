@@ -10,9 +10,12 @@ extern crate lib3h_sodium;
 #[macro_use]
 extern crate log;
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 extern crate sim2h;
 extern crate structopt;
+extern crate toml;
 extern crate url2;
 
 use holochain_stress::*;
@@ -28,44 +31,133 @@ use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
 use url2::prelude::*;
 
-/// give us some cli command line options
-#[derive(StructOpt, Debug, Clone)]
-#[structopt(name = "sim2h_stress")]
-struct Opt {
-    #[structopt(short, long, default_value = "10")]
-    /// how many threads to spin up in the job executor pool
+/// options for configuring this specific stress run
+#[derive(StructOpt, Serialize, Deserialize, Debug, Clone)]
+struct OptStressRunConfig {
+    #[structopt(short, long, env = "STRESS_THREAD_COUNT", default_value = "0")]
+    /// how many threads to spin up in the job executor pool - 0 for cpu count
     thread_count: usize,
 
-    #[structopt(short, long, default_value = "100")]
+    #[structopt(short, long, env = "STRESS_JOB_COUNT", default_value = "100")]
     /// how many parallel jobs to execute
     job_count: usize,
 
-    #[structopt(short, long, default_value = "10000")]
+    #[structopt(short, long, env = "STRESS_RUN_TIME_MS", default_value = "10000")]
     /// total runtime for the test
     run_time_ms: u64,
 
-    #[structopt(short, long, default_value = "5000")]
+    #[structopt(
+        short,
+        long,
+        env = "STRESS_PROGRESS_INTERVAL_MS",
+        default_value = "5500"
+    )]
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
 
-    #[structopt(long, default_value = "0")]
-    /// port on which to spin up the sim2h server
-    sim2h_port: u16,
-
-    #[structopt(long)]
-    /// optional sim2h log file path
-    sim2h_message_log_file: Option<std::path::PathBuf>,
-
-    #[structopt(long, default_value = "100")]
+    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "100")]
     /// how often each job should send a ping to sim2h
     ping_freq_ms: u64,
 
-    #[structopt(long, default_value = "100")]
+    #[structopt(long, env = "STRESS_PUBLISH_FREQ_MS", default_value = "1000")]
     /// how often each job should publish a new entry
     publish_freq_ms: u64,
+
+    #[structopt(long, env = "STRESS_PUBLISH_BYTE_COUNT", default_value = "64")]
+    /// how many bytes should be published each time
+    publish_byte_count: usize,
+}
+
+impl Default for OptStressRunConfig {
+    fn default() -> Self {
+        OptStressRunConfig::from_iter(<Vec<&str>>::new().iter())
+    }
+}
+
+/// options for setting up the sim2h server
+#[derive(StructOpt, Serialize, Deserialize, Debug, Clone)]
+struct OptSim2hConfig {
+    #[structopt(long, env = "SIM2H_PORT", default_value = "0")]
+    /// port on which to spin up the sim2h server
+    sim2h_port: u16,
+
+    #[structopt(long, env = "SIM2H_MESSAGE_LOG_FILE")]
+    /// optional sim2h log file path
+    sim2h_message_log_file: Option<std::path::PathBuf>,
+}
+
+/// pulling the sim2h stress test commandline options together
+#[derive(StructOpt, Serialize, Deserialize, Debug, Clone)]
+#[structopt(name = "sim2h_stress")]
+struct Opt {
+    #[structopt(
+        short,
+        long,
+        env = "STRESS_CONFIG",
+        default_value = "sim2h_stress.toml"
+    )]
+    /// specify a config file to load stress options
+    config_file: std::path::PathBuf,
+
+    #[structopt(long)]
+    /// generate a demo stress config file and exit
+    gen_config: bool,
+
+    #[structopt(flatten)]
+    stress: OptStressRunConfig,
+
+    #[structopt(flatten)]
+    sim2h: OptSim2hConfig,
 }
 
 impl Opt {
+    /// do all the steps to resolve args
+    /// will pick CLI args first, fallback to ENV, then fall back to config
+    fn resolve() -> Self {
+        let mut args = Opt::from_args();
+
+        let def_stress = OptStressRunConfig::default();
+
+        if args.gen_config {
+            println!("{}", toml::to_string_pretty(&def_stress).unwrap());
+            std::process::exit(0);
+        }
+
+        if let Ok(config) = std::fs::read_to_string(&args.config_file) {
+            let cfg_stress: OptStressRunConfig = toml::from_str(&config).unwrap();
+            macro_rules! cfg_def {
+                ($i:ident) => {
+                    if *$i == def_stress.$i {
+                        *$i = cfg_stress.$i;
+                    }
+                };
+            }
+            match &mut args.stress {
+                // destructure so we get a compile error here if more
+                // fields are added to this struct
+                OptStressRunConfig {
+                    thread_count,
+                    job_count,
+                    run_time_ms,
+                    progress_interval_ms,
+                    ping_freq_ms,
+                    publish_freq_ms,
+                    publish_byte_count,
+                } => {
+                    cfg_def!(thread_count);
+                    cfg_def!(job_count);
+                    cfg_def!(run_time_ms);
+                    cfg_def!(progress_interval_ms);
+                    cfg_def!(ping_freq_ms);
+                    cfg_def!(publish_freq_ms);
+                    cfg_def!(publish_byte_count);
+                }
+            }
+        }
+
+        args
+    }
+
     /// private convert our cli options into a stress job config
     fn create_stress_run_config<S: StressSuite, J: StressJob>(
         &self,
@@ -73,10 +165,10 @@ impl Opt {
         job_factory: JobFactory<J>,
     ) -> StressRunConfig<S, J> {
         StressRunConfig {
-            thread_pool_size: self.thread_count,
-            job_count: self.job_count,
-            run_time_ms: self.run_time_ms,
-            progress_interval_ms: self.progress_interval_ms,
+            thread_pool_size: self.stress.thread_count,
+            job_count: self.stress.job_count,
+            run_time_ms: self.stress.run_time_ms,
+            progress_interval_ms: self.stress.progress_interval_ms,
             suite,
             job_factory,
         }
@@ -162,15 +254,14 @@ struct Job {
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     remote_url: Url2,
     stream_manager: StreamManager<std::net::TcpStream>,
-    ping_freq_ms: u64,
+    stress_config: OptStressRunConfig,
     next_ping: std::time::Instant,
-    publish_freq_ms: u64,
     next_publish: std::time::Instant,
 }
 
 impl Job {
     /// create a new job - connected to sim2h
-    pub fn new(connect_uri: &Lib3hUri, ping_freq_ms: u64, publish_freq_ms: u64) -> Self {
+    pub fn new(connect_uri: &Lib3hUri, stress_config: OptStressRunConfig) -> Self {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
             let mut sec_key = crypto.buf_new_secure(crypto.sign_secret_key_bytes());
@@ -187,9 +278,8 @@ impl Job {
             sec_key: Arc::new(Mutex::new(sec_key)),
             remote_url: Url2::parse(connect_uri.clone().to_string()),
             stream_manager,
-            ping_freq_ms,
+            stress_config,
             next_ping: std::time::Instant::now(),
-            publish_freq_ms,
             next_publish: std::time::Instant::now(),
         };
 
@@ -250,7 +340,7 @@ impl Job {
             crypto.randombytes_buf(&mut addr).unwrap();
             let addr = base64::encode(&*addr.read_lock());
 
-            let mut aspect_data = crypto.buf_new_insecure(32);
+            let mut aspect_data = crypto.buf_new_insecure(self.stress_config.publish_byte_count);
             crypto.randombytes_buf(&mut aspect_data).unwrap();
 
             let mut aspect_hash = crypto.buf_new_insecure(crypto.hash_sha256_bytes());
@@ -316,7 +406,9 @@ impl StressJob for Job {
 
         if now >= self.next_ping {
             self.next_ping = now
-                .checked_add(std::time::Duration::from_millis(self.ping_freq_ms))
+                .checked_add(std::time::Duration::from_millis(
+                    self.stress_config.ping_freq_ms,
+                ))
                 .unwrap();
 
             self.ping(logger);
@@ -324,7 +416,9 @@ impl StressJob for Job {
 
         if now >= self.next_publish {
             self.next_publish = now
-                .checked_add(std::time::Duration::from_millis(self.publish_freq_ms))
+                .checked_add(std::time::Duration::from_millis(
+                    self.stress_config.publish_freq_ms,
+                ))
                 .unwrap();
             self.publish(logger);
         }
@@ -408,6 +502,10 @@ impl StressSuite for Suite {
         self.snd_thread_logger.send(logger).unwrap();
     }
 
+    fn warmup_complete(&mut self) {
+        println!("WARMUP COMPLETE");
+    }
+
     fn progress(&mut self, stats: &StressStats) {
         println!("PROGRESS: {:#?}", stats);
     }
@@ -422,17 +520,24 @@ impl StressSuite for Suite {
 /// main function executes the stress suite given the cli arguments
 pub fn main() {
     env_logger::init();
-    let opt = Opt::from_args();
-    if opt.sim2h_message_log_file.is_some() {
+    let opt = Opt::resolve();
+    if opt.sim2h.sim2h_message_log_file.is_some() {
         unimplemented!();
     }
-    let suite = Suite::new(opt.sim2h_port);
+    let suite = Suite::new(opt.sim2h.sim2h_port);
     let bound_uri = suite.bound_uri.clone();
-    let config = opt.clone().create_stress_run_config(
-        suite,
-        Box::new(move |_| Job::new(&bound_uri, opt.ping_freq_ms, opt.publish_freq_ms)),
+    println!(
+        r#"== SIM2H STRESS CONFIG ==
+{}
+== SIM2H STRESS CONFIG =="#,
+        toml::to_string_pretty(&opt.stress).unwrap()
     );
-    println!("RUNNING WITH CONFIG: {:#?}", config);
+    let stress_config = opt.stress.clone();
+    let config = opt.create_stress_run_config(
+        suite,
+        Box::new(move |_| Job::new(&bound_uri, stress_config.clone())),
+    );
+    println!("WARMING UP...");
     stress_run(config);
 }
 
@@ -444,7 +549,9 @@ mod tests {
     fn it_should_start_sim2h_and_connect() {
         env_logger::init();
         let suite = Suite::new(0);
-        let mut job = Some(Job::new(&suite.bound_uri, 100, 100));
+        let mut stress_cfg = OptStressRunConfig::default();
+        stress_cfg.publish_freq_ms = 500;
+        let mut job = Some(Job::new(&suite.bound_uri, stress_cfg));
         std::thread::sleep(std::time::Duration::from_millis(500));
         stress_run(StressRunConfig {
             thread_pool_size: 1,

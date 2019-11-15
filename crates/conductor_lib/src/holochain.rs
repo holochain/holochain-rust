@@ -270,6 +270,17 @@ impl Holochain {
         )
     }
 
+    pub async fn call_async(
+        context: Arc<Context>,
+        zome: &str,
+        cap: CapabilityRequest,
+        fn_name: &str,
+        params: &str,
+    ) -> Result<JsonString, HolochainError> {
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
+        call_zome_function(zome_call, context.clone()).await
+    }
+
     /// checks to see if an instance is active
     pub fn active(&self) -> bool {
         self.active

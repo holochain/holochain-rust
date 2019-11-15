@@ -150,14 +150,16 @@ impl ConductorApiBuilder {
             .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
         let hc_lock = instance.clone();
         let hc_lock_inner = hc_lock.clone();
-        let hc = hc_lock_inner
-            .read()
-            .unwrap()
-            .annotate(format!("RPC method_call: {:?}", params_map));
+        let context = {
+            let hc = hc_lock_inner
+                .read()
+                .unwrap()
+                .annotate(format!("RPC method_call: {:?}", params_map));
+            hc.context()
+                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...")
+        };
 
         let cap_request = {
-            let context = hc.context()
-                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
             // Get the token from the parameters.  If not there assume public token.
             let maybe_token = Self::get_as_string("token", &params_map);
             let token = match maybe_token {
@@ -191,7 +193,14 @@ impl ConductorApiBuilder {
             }
         };
 
-        hc.call(&zome_name, cap_request, &func_name, &args_string)
+        context
+            .block_on(Holochain::call_async(
+                context.clone(),
+                &zome_name,
+                cap_request,
+                &func_name,
+                &args_string,
+            ))
             .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 

@@ -48,4 +48,10 @@ in
     src = gitignoreSource ./.;
     cargoDir = "crates/holochain";
   };
+
+  sim2h-server = buildHolochain {
+    name = "sim2h-server";
+    src = gitignoreSource ./.;
+    cargoDir = "crates/sim2h_server";
+  };
 }

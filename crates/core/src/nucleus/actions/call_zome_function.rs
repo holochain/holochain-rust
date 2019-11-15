@@ -27,7 +27,7 @@ use holochain_dpki::utils::Verify;
 use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -102,6 +102,7 @@ pub async fn call_zome_function(
         context: context.clone(),
         zome_call,
         call_spawned: false,
+        running_time: Instant::now(),
     }
     .await
 }
@@ -314,6 +315,7 @@ pub struct CallResultFuture {
     context: Arc<Context>,
     zome_call: ZomeFnCall,
     call_spawned: bool,
+    running_time: Instant,
 }
 
 impl Unpin for CallResultFuture {}
@@ -322,6 +324,12 @@ impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture("CallResultFuture".to_string(), self.running_time.elapsed());
+
         if let Some(err) = self.context.action_channel_error("CallResultFuture") {
             return Poll::Ready(Err(err));
         }

@@ -38,6 +38,7 @@ extern crate hcid;
 extern crate wasmi;
 #[macro_use]
 extern crate log;
+extern crate im;
 
 pub mod chain_header;
 pub mod crud_status;
@@ -49,6 +50,7 @@ extern crate objekt;
 pub mod agent;
 pub mod bits_n_pieces;
 pub mod chain_migrate;
+pub mod diagnostic;
 pub mod dna;
 pub mod hdk_version;
 pub mod link;

@@ -7,7 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 /// Update Entry Action Creator
 ///
@@ -22,6 +22,7 @@ pub fn update_entry(
     UpdateEntryFuture {
         context: context.clone(),
         action: action_wrapper,
+        running_time: Instant::now(),
     }
 }
 
@@ -30,12 +31,22 @@ pub fn update_entry(
 pub struct UpdateEntryFuture {
     context: Arc<Context>,
     action: ActionWrapper,
+    running_time: Instant,
 }
 
 impl Future for UpdateEntryFuture {
     type Output = Result<Address, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture(
+                String::from("UpdateEntryFuture"),
+                self.running_time.elapsed(),
+            );
+
         if let Some(err) = self.context.action_channel_error("UpdateEntryFuture") {
             return Poll::Ready(Err(err));
         }

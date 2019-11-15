@@ -7,6 +7,7 @@ use crate::{
     context_builder::ContextBuilder,
     dpki_instance::DpkiInstance,
     error::HolochainInstanceError,
+    key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     Holochain,
 };
@@ -19,7 +20,6 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 use holochain_locksmith::{Mutex, RwLock};
-use key_loaders::test_keystore;
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
@@ -40,13 +40,19 @@ use std::{
     time::Duration,
 };
 
-use boolinator::Boolinator;
 #[cfg(unix)]
-use conductor::passphrase_manager::PassphraseServiceUnixSocket;
-use conductor::passphrase_manager::{
-    PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+use crate::conductor::passphrase_manager::PassphraseServiceUnixSocket;
+use crate::{
+    conductor::passphrase_manager::{
+        PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
+    },
+    config::{AgentConfiguration, PassphraseServiceConfig},
+    interface::{ConductorApiBuilder, InstanceMap, Interface},
+    signal_wrapper::SignalWrapper,
+    static_file_server::ConductorStaticFileServer,
+    static_server_impls::NickelStaticServer as StaticServer,
 };
-use config::{AgentConfiguration, PassphraseServiceConfig};
+use boolinator::Boolinator;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -54,10 +60,6 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-use interface::{ConductorApiBuilder, InstanceMap, Interface};
-use signal_wrapper::SignalWrapper;
-use static_file_server::ConductorStaticFileServer;
-use static_server_impls::NickelStaticServer as StaticServer;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -1414,7 +1416,7 @@ impl Conductor {
 
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interface> {
-    use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
+    use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
         InterfaceDriver::Http { port } => Box::new(HttpInterface::new(port)),
@@ -1432,11 +1434,12 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use conductor::{passphrase_manager::PassphraseManager, test_admin::ConductorTestAdmin};
-    use key_loaders::mock_passphrase_manager;
-    use keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID};
-    extern crate tempfile;
-    use crate::config::load_configuration;
+    use crate::{
+        conductor::{passphrase_manager::PassphraseManager, test_admin::ConductorTestAdmin},
+        config::load_configuration,
+        key_loaders::mock_passphrase_manager,
+        keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
+    };
     use holochain_core::{
         action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
@@ -1451,6 +1454,7 @@ pub mod tests {
         io::Write,
         path::PathBuf,
     };
+    use tempfile;
 
     use self::tempfile::tempdir;
     use holochain_core_types::dna::{

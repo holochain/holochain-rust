@@ -272,38 +272,8 @@ workflows:
    # - stress-tests-sim1h
    - stress-tests-sim2h
 
- cold.ubuntu:
-  jobs:
-   - cold.ubuntu.bionic.auto:
-      filters:
-       branches:
-        only:
-         - develop
-   # - cold.ubuntu.bionic.nix
-
-   - cold.ubuntu.xenial.auto:
-      filters:
-       branches:
-        only:
-         - develop
-   # - cold.ubuntu.xenial.nix
-
- cold.debian:
-  jobs:
-   - cold.debian.stable.auto:
-      filters:
-       branches:
-        only:
-         - develop
-   # - cold.debian.stable.nix
-
  cold.mac:
   jobs:
-   - cold.mac.10.auto:
-      filters:
-       branches:
-        only:
-         - develop
    - cold.mac.10.nix:
       filters:
        branches:

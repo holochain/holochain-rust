@@ -30,47 +30,44 @@ pub async fn run_validation_callback(
     let cloned_context = context.clone();
 
     let clock = std::time::SystemTime::now();
-
     let call2 = call.clone();
-    thread::Builder::new()
-        .name(format!("validation_callback/{}", id))
-        .spawn(move || {
-            let validation_result: ValidationResult = match ribosome::run_dna(
-                Some(call2.clone().parameters.to_bytes()),
-                WasmCallData::new_callback_call(cloned_context.clone(), call2),
-            ) {
-                Ok(call_result) => {
-                    if call_result.is_null() {
-                        Ok(())
-                    } else {
-                        Err(ValidationError::Fail(call_result.to_string()))
-                    }
-                }
-                // TODO: have "not matching schema" be its own error
-                Err(HolochainError::RibosomeFailed(error_string)) => {
-                    if error_string == "Argument deserialization failed" {
-                        Err(ValidationError::Error(
-                            String::from("JSON object does not match entry schema").into(),
-                        ))
-                    } else {
-                        // an unknown error from the ribosome should panic rather than
-                        // silently failing validation
-                        panic!(error_string)
-                    }
-                }
-                Err(error) => panic!(error.to_string()), // same here
-            };
 
-            lax_send_sync(
-                cloned_context.action_channel().clone(),
-                ActionWrapper::new(Action::ReturnValidationResult((
-                    (id, clone_address),
-                    validation_result,
-                ))),
-                "run_validation_callback",
-            );
-        })
-        .expect("Could not spawn thread for validation callback");
+    context.clone().spawn_task(move || {
+        let validation_result: ValidationResult = match ribosome::run_dna(
+            Some(call2.clone().parameters.to_bytes()),
+            WasmCallData::new_callback_call(cloned_context.clone(), call2),
+        ) {
+            Ok(call_result) => {
+                if call_result.is_null() {
+                    Ok(())
+                } else {
+                    Err(ValidationError::Fail(call_result.to_string()))
+                }
+            }
+            // TODO: have "not matching schema" be its own error
+            Err(HolochainError::RibosomeFailed(error_string)) => {
+                if error_string == "Argument deserialization failed" {
+                    Err(ValidationError::Error(
+                        String::from("JSON object does not match entry schema").into(),
+                    ))
+                } else {
+                    // an unknown error from the ribosome should panic rather than
+                    // silently failing validation
+                    panic!(error_string)
+                }
+            }
+            Err(error) => panic!(error.to_string()), // same here
+        };
+
+        lax_send_sync(
+            cloned_context.action_channel().clone(),
+            ActionWrapper::new(Action::ReturnValidationResult((
+                (id, clone_address),
+                validation_result,
+            ))),
+            "run_validation_callback",
+        );
+    });
 
     let awaited = ValidationCallbackFuture {
         context: context.clone(),

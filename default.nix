@@ -13,9 +13,10 @@ let
       nativeBuildInputs = super.nativeBuildInputs ++ (with buildPackages; [
         nodejs-12_x
         perl
+        pkgconfig
       ]);
 
-      buildInputs = optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
+      buildInputs = [ openssl ] ++ optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [
         CoreServices
         Security
       ]);
@@ -29,9 +30,9 @@ let
 
       stripAllList = [ "bin" ];
 
-      OPENSSL_STATIC = "1";
       RUST_SODIUM_LIB_DIR = "${libsodium}/lib";
     } // optionalAttrs (!stdenv ? "static") {
+      OPENSSL_STATIC = "1";
       RUST_SODIUM_SHARED = "1";
     });
 in

@@ -16,6 +16,7 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
+    flamerwrapper::FlamerWrapper
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
@@ -106,6 +107,7 @@ impl State {
         agent_state: &AgentState,
         cas: Arc<RwLock<dyn ContentAddressableStorage>>,
     ) -> HcResult<Dna> {
+        FlamerWrapper::start("state_get_dna");
         let dna_entry_header = agent_state
             .chain_store()
             .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
@@ -122,6 +124,7 @@ impl State {
                 "No DNA entry found in storage while creating state from agent".to_string(),
             )
         })??;
+        FlamerWrapper::end("state_get_dna");
         match entry {
             Entry::Dna(dna) => Ok(*dna),
             _ => Err(HolochainError::SerializationError(
@@ -131,6 +134,7 @@ impl State {
     }
 
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
+        FlamerWrapper::start("state_reduce");
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
@@ -145,6 +149,7 @@ impl State {
         };
 
         new_state.history.insert(action_wrapper);
+        FlamerWrapper::end("state_reduce");
         new_state
     }
 
@@ -170,6 +175,7 @@ impl State {
         nucleus_snapshot: NucleusStateSnapshot,
         dht_store_snapshot: DhtStoreSnapshot,
     ) -> HcResult<State> {
+        FlamerWrapper::start("state_try_from_snapshots");
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.chain_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
@@ -181,6 +187,7 @@ impl State {
             context.eav_storage.clone(),
             dht_store_snapshot.holding_list,
         );
+        FlamerWrapper::end("state_try_from_snapshots");
         Ok(State::new_with_agent_nucleus_dht(
             context.clone(),
             agent_state,
@@ -192,6 +199,7 @@ impl State {
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
+        FlamerWrapper::start("state_get_headers");
         let headers: Vec<ChainHeader> = self
             .agent()
             .iter_chain()
@@ -230,6 +238,7 @@ impl State {
         {
             let mut all_headers = headers;
             all_headers.append(&mut dht_headers);
+            FlamerWrapper::end("state_get_headers");
             Ok(all_headers)
         }
     }

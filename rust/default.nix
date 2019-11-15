@@ -4,5 +4,6 @@
  buildInputs = []
  ++ (pkgs.callPackage ./test { holonix = holonix; }).buildInputs
  ++ (pkgs.callPackage ./wasm { }).buildInputs
+  ++ (pkgs.callPackage ./perf { }).buildInputs
  ;
 }

@@ -33,7 +33,7 @@ let
   set -euo pipefail
   hc-cli-install
   hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim2h" ./build_and_test.sh);
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim2h" COMPILE_WITH_FLAME="YES" FLAME_GRAPH_PATH="/flamegraph.html" ./build_and_test.sh);
   '';
 in
 {

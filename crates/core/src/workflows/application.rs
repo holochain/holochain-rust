@@ -7,6 +7,7 @@ use crate::{
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    flamerwrapper::FlamerWrapper
 };
 use std::sync::Arc;
 
@@ -15,6 +16,7 @@ pub async fn initialize(
     maybe_dna: Option<Dna>,
     context: Arc<Context>,
 ) -> HcResult<Arc<Context>> {
+    FlamerWrapper::start("application_initialize");
     let instance_context = instance.initialize_context(context.clone());
 
     // This function is called in two different cases:
@@ -68,6 +70,7 @@ pub async fn initialize(
     // 4. (first initialization only) Call the init callbacks in the zomes
     if first_initialization {
         call_init(dna, &instance_context).await?;
-    }
+    };
+    FlamerWrapper::end("application_initialize");
     Ok(instance_context)
 }

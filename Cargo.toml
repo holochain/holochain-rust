@@ -17,7 +17,8 @@ members = [
   "crates/trycp_server",
   "crates/sim1h",
   "crates/sim2h",
-  "crates/sim2h_server"
+  "crates/sim2h_server",
+  "crates/profiling"
 ]
 exclude = [
   "test_utils",

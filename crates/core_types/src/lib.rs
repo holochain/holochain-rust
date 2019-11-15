@@ -39,6 +39,7 @@ extern crate wasmi;
 #[macro_use]
 extern crate log;
 
+
 pub mod chain_header;
 pub mod crud_status;
 pub mod eav;
@@ -57,6 +58,7 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
+pub mod flamerwrapper;
 #[macro_use]
 extern crate holochain_logging;
 

@@ -1,0 +1,18 @@
+[package]
+name = "holochain-profiling"
+version = "0.0.1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+description = "A profiling wrapper of holochain"
+keywords = ["holochain", "holo", "p2p", "network", "simulation"]
+categories = ["profiling"]
+license = "GPL-3.0-only"
+readme = "../../README.md"
+documentation = "https://github.com/holochain/holochain-rust"
+repository = "https://github.com/holochain/holochain-rust"
+
+[dependencies]
+flame = "0.2.2"
+flamer = "0.3"
+
+

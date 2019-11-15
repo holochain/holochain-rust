@@ -1,3 +1,4 @@
+
 use crate::{
     action::{Action, ActionWrapper},
     instance::Observer,
@@ -23,6 +24,7 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
+    flamerwrapper::FlamerWrapper
 };
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_metrics::MetricPublisher;
@@ -193,7 +195,6 @@ impl Context {
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }
-
     pub fn state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         self.state.as_ref().map(|s| s.read().unwrap())
     }
@@ -211,6 +212,7 @@ impl Context {
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
+        FlamerWrapper::start("get_dna");
         // In the case of init we encounter race conditions with regards to setting the DNA.
         // Init gets called asynchronously right after dispatching an action that sets the DNA in
         // the state, which can result in this code being executed first.
@@ -238,14 +240,19 @@ impl Context {
                 }
             }
         }
+
+        FlamerWrapper::end("get_dna");
         dna
     }
 
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
+        FlamerWrapper::start("get_dna");
         let dna = self.get_dna().expect("Callback called without DNA set!");
-        dna.get_wasm_from_zome_name(zome)
+        let dna_wasm = dna.get_wasm_from_zome_name(zome)
             .cloned()
-            .filter(|wasm| !wasm.code.is_empty())
+            .filter(|wasm| !wasm.code.is_empty());
+        FlamerWrapper::end("get_dna");
+        dna_wasm
     }
 
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
@@ -331,6 +338,7 @@ impl Context {
 
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
+        FlamerWrapper::start("get_public_token");
         let state = self.state().ok_or("State uninitialized!")?;
         let top = state
             .agent()
@@ -355,11 +363,12 @@ impl Context {
                 if grant.cap_type() == CapabilityType::Public
                     && grant.id() == ReservedCapabilityId::Public.as_str()
                 {
+                    FlamerWrapper::end("get_public_token");
                     return Ok(addr);
                 }
             }
-        }
-
+        };
+        FlamerWrapper::end("get_public_token");
         Err(HolochainError::ErrorGeneric(
             "No public CapTokenGrant entry type in chain".into(),
         ))
@@ -367,6 +376,7 @@ impl Context {
 }
 
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
+    FlamerWrapper::start("get_dna_and_agent");
     let state = context
         .state()
         .ok_or_else(|| "Network::start() could not get application state".to_string())?;
@@ -378,6 +388,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .nucleus()
         .dna()
         .ok_or_else(|| "Network::start() called without DNA".to_string())?;
+    FlamerWrapper::end("get_dna_and_agent");
     Ok((dna.address(), agent_id))
 }
 

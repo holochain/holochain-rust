@@ -21,10 +21,9 @@ use crate::{
             store::*,
         },
     },
-    nucleus::actions::get_entry::get_entry_from_cas,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
-use boolinator::*;
+use boolinator::Boolinator;
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -303,22 +302,22 @@ fn get_content_aspect(
 
     // If we have found a header for the requested entry in the chain...
     let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, header)?),
+        Some((header, true)) => Some(create_entry_with_header_for_header(&state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
             Some(EntryWithHeader {
-                entry: get_entry_from_cas(
-                    &state.agent().chain_store().content_storage(),
-                    header.entry_address(),
-                )?
-                .expect("Could not find entry in chain CAS, but header is chain"),
+                entry: state
+                    .agent()
+                    .chain_store()
+                    .get_entry_from_cas(&header.entry_address())?
+                    // this can't be a None
+                    .unwrap(),
                 header,
             })
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
-            {
+            if let Some(entry) = state.dht().get_entry_from_cas(entry_address)? {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state.get_headers(entry_address.clone()).map_err(|error| {

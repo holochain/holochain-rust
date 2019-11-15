@@ -9,6 +9,7 @@
 //! extern crate holochain_conductor_lib;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
+//! extern crate holochain_locksmith;
 //! extern crate holochain_net;
 //! extern crate holochain_json_api;
 //! extern crate holochain_persistence_api;
@@ -21,9 +22,9 @@
 //! use holochain_core_types::{
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
-//!     signature::Signature,
-//!     sync::HcMutex
+//!     signature::Signature
 //! };
+//! use holochain_locksmith::Mutex;
 //! use holochain_persistence_api::{
 //!     cas::content::Address,
 //! };
@@ -57,7 +58,7 @@
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()
-//!     .with_agent_signature_callback(Arc::new(HcMutex::new(keybundle)))
+//!     .with_agent_signature_callback(Arc::new(Mutex::new(keybundle)))
 //!     .spawn();
 //!
 //! // The conductor API, together with the storage and the agent ID
@@ -315,10 +316,9 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::tempdir;
-    use context_builder::ContextBuilder;
+    use super::*;
+    use crate::context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
@@ -332,6 +332,7 @@ mod tests {
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{path::PathBuf, sync::Arc};
+    use tempfile;
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
         create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,

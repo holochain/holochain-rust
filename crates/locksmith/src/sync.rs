@@ -368,7 +368,7 @@ macro_rules! mutex_impl {
                 self.$try_lock_until_fn(deadline)
             }
 
-            fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$Guard<T>> {
+            pub fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$Guard<T>> {
                 // Set a number twice the expected number of iterations, just to prevent an infinite loop
                 let max_iters = 2 * LOCK_TIMEOUT_SECS * 1000 / LOCK_POLL_INTERVAL_MS;
                 let mut pending_puid = None;

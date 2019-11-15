@@ -14,6 +14,7 @@ use futures::{
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
     agent::AgentId,
+    diagnostic::FuturesDiagnosticTrace,
     dna::{wasm::DnaWasm, Dna},
     eav::Attribute,
     entry::{
@@ -22,7 +23,6 @@ use holochain_core_types::{
         Entry,
     },
     error::{HcResult, HolochainError},
-    diagnostic::FuturesDiagnosticTrace
 };
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_metrics::MetricPublisher;
@@ -92,7 +92,7 @@ pub struct Context {
     thread_pool: Arc<Mutex<ThreadPool>>,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
-    pub future_trace : Arc<RwLock<FuturesDiagnosticTrace<String>>>,
+    pub future_trace: Arc<RwLock<FuturesDiagnosticTrace<String>>>,
 }
 
 impl Context {
@@ -157,7 +157,7 @@ impl Context {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
-            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new())),
+            future_trace: Arc::new(RwLock::new(FuturesDiagnosticTrace::new())),
         }
     }
 
@@ -193,7 +193,7 @@ impl Context {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
-            future_trace : Arc::new(RwLock::new(FuturesDiagnosticTrace::new())),
+            future_trace: Arc::new(RwLock::new(FuturesDiagnosticTrace::new())),
         })
     }
 
@@ -214,8 +214,6 @@ impl Context {
             (*s.read().unwrap()).clone()
         })
     }
-
-    
 
     /// Try to acquire read-lock on the state.
     /// Returns immediately either with the lock or with None if the lock

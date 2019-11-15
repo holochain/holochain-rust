@@ -190,7 +190,10 @@ impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().unwrap().capture("InitializationFuture".to_string(),self.created_at.elapsed());
+        self.context.future_trace.write().unwrap().capture(
+            "InitializationFuture".to_string(),
+            self.created_at.elapsed(),
+        );
 
         if let Some(err) = self.context.action_channel_error("InitializationFuture") {
             return Poll::Ready(Err(err));

@@ -11,7 +11,7 @@ use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, ugly::lax_send_sync};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use snowflake;
-use std::{pin::Pin, sync::Arc, thread,time::Instant};
+use std::{pin::Pin, sync::Arc, thread, time::Instant};
 
 use holochain_metrics::Metric;
 
@@ -72,7 +72,7 @@ pub async fn run_validation_callback(
     let awaited = ValidationCallbackFuture {
         context: context.clone(),
         key: (id, address),
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
     .await;
 
@@ -88,14 +88,21 @@ pub async fn run_validation_callback(
 pub struct ValidationCallbackFuture {
     context: Arc<Context>,
     key: (snowflake::ProcessUniqueId, HashString),
-    running_time : Instant
+    running_time: Instant,
 }
 
 impl Future for ValidationCallbackFuture {
     type Output = ValidationResult;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture("ValidationCallbackFuture".to_string(),self.running_time.elapsed());
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture(
+                "ValidationCallbackFuture".to_string(),
+                self.running_time.elapsed(),
+            );
         if !self.context.is_action_channel_open() {
             return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(
                 "ValidationCallbackFuture".to_string(),

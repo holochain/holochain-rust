@@ -8,7 +8,11 @@ use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_locksmith::RwLock;
 
 use crate::state::StateWrapper;
-use std::{pin::Pin, sync::Arc,time::{Instant,Duration}};
+use std::{
+    pin::Pin,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 /// Shutdown the network
 /// This tells the network to untrack this instance and then stops the network thread
@@ -20,7 +24,11 @@ pub async fn shutdown(
     if state.read().unwrap().network().initialized().is_ok() {
         let action_wrapper = ActionWrapper::new(Action::ShutdownNetwork);
         dispatch_action(&action_channel, action_wrapper.clone());
-        ShutdownFuture { state,running_time:Instant::now() }.await
+        ShutdownFuture {
+            state,
+            running_time: Instant::now(),
+        }
+        .await
     } else {
         Err(HolochainError::ErrorGeneric(
             "Tried to shutdown network that was never initialized".to_string(),
@@ -30,20 +38,17 @@ pub async fn shutdown(
 
 pub struct ShutdownFuture {
     state: Arc<RwLock<StateWrapper>>,
-    running_time:Instant
+    running_time: Instant,
 }
 
 impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if self.running_time.elapsed() > Duration::from_secs(70)
-        {
+        if self.running_time.elapsed() > Duration::from_secs(70) {
             panic!("future has been running for too long")
-        }
-        else
-        {
-            
+        } else {
+
         }
         self.state
             .try_read()

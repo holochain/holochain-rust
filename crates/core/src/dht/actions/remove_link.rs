@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{entry::Entry, error::HolochainError};
-use std::{pin::Pin, sync::Arc,time::Instant};
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 /// RemoveLink Action Creator
 /// This action creator dispatches an RemoveLink action which is consumed by the DHT reducer.
@@ -22,14 +22,14 @@ pub fn remove_link(entry: &Entry, context: &Arc<Context>) -> RemoveLinkFuture {
     RemoveLinkFuture {
         context: context.clone(),
         action: action_wrapper,
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
 }
 
 pub struct RemoveLinkFuture {
     context: Arc<Context>,
     action: ActionWrapper,
-    running_time:Instant
+    running_time: Instant,
 }
 
 impl Unpin for RemoveLinkFuture {}
@@ -38,7 +38,14 @@ impl Future for RemoveLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture(String::from("RemoveLinkFuture"),self.running_time.elapsed());
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture(
+                String::from("RemoveLinkFuture"),
+                self.running_time.elapsed(),
+            );
         if let Some(err) = self.context.action_channel_error("RemoveLinkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -47,7 +54,7 @@ impl Future for RemoveLinkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
-        
+
         if let Some(state) = self.context.try_state() {
             match state.dht().actions().get(&self.action) {
                 Some(Ok(_)) => Poll::Ready(Ok(())),

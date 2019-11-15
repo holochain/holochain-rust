@@ -10,7 +10,7 @@ use holochain_persistence_api::cas::content::Address;
 
 use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 
-use std::{pin::Pin, sync::Arc, thread,time::Instant};
+use std::{pin::Pin, sync::Arc, thread, time::Instant};
 
 use snowflake::ProcessUniqueId;
 
@@ -76,7 +76,7 @@ pub async fn query(
     QueryFuture {
         context: context.clone(),
         key: key.clone(),
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
     .await
 }
@@ -86,14 +86,18 @@ pub async fn query(
 pub struct QueryFuture {
     context: Arc<Context>,
     key: QueryKey,
-    running_time:Instant
+    running_time: Instant,
 }
 
 impl Future for QueryFuture {
     type Output = HcResult<NetworkQueryResult>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture("GetEntryFuture".to_string(),self.running_time.elapsed());        
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture("GetEntryFuture".to_string(), self.running_time.elapsed());
         if let Some(err) = self.context.action_channel_error("GetEntryFuture") {
             return Poll::Ready(Err(err));
         }

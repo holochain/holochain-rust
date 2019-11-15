@@ -9,7 +9,7 @@ use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread,time::Instant};
+use std::{pin::Pin, sync::Arc, thread, time::Instant};
 
 /// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection
@@ -42,7 +42,7 @@ pub async fn custom_send(
     SendResponseFuture {
         context: context.clone(),
         id,
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
     .await
 }
@@ -51,18 +51,25 @@ pub async fn custom_send(
 pub struct SendResponseFuture {
     context: Arc<Context>,
     id: String,
-    running_time:Instant
+    running_time: Instant,
 }
 
 impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture("SendResponseFuture".to_string(),self.running_time.elapsed());
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture(
+                "SendResponseFuture".to_string(),
+                self.running_time.elapsed(),
+            );
         if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
             return Poll::Ready(Err(err));
         }
-        
+
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {

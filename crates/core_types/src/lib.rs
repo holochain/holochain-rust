@@ -50,6 +50,7 @@ extern crate objekt;
 pub mod agent;
 pub mod bits_n_pieces;
 pub mod chain_migrate;
+pub mod diagnostic;
 pub mod dna;
 pub mod hdk_version;
 pub mod link;
@@ -58,7 +59,6 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
-pub mod diagnostic;
 #[macro_use]
 extern crate holochain_logging;
 

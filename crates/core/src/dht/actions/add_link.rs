@@ -5,7 +5,7 @@ use crate::{
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, link::link_data::LinkData};
-use std::{pin::Pin, sync::Arc,time::Instant};
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 /// AddLink Action Creator
 /// This action creator dispatches an AddLink action which is consumed by the DHT reducer.
@@ -22,21 +22,25 @@ pub fn add_link(link: &LinkData, context: &Arc<Context>) -> AddLinkFuture {
     AddLinkFuture {
         context: context.clone(),
         action: action_wrapper,
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
 }
 
 pub struct AddLinkFuture {
     context: Arc<Context>,
     action: ActionWrapper,
-    running_time:Instant
+    running_time: Instant,
 }
 
 impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture("AddLinkFuture".to_string(),self.running_time.elapsed());
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture("AddLinkFuture".to_string(), self.running_time.elapsed());
         if let Some(err) = self.context.action_channel_error("AddLinkFuture") {
             return Poll::Ready(Err(err));
         }

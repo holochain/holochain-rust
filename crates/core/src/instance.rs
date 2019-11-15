@@ -17,10 +17,10 @@ use crate::{
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
+    diagnostic::FuturesDiagnosticTrace,
     dna::Dna,
     error::{HcResult, HolochainError},
     ugly::lax_send_sync,
-    diagnostic::FuturesDiagnosticTrace
 };
 use holochain_locksmith::{RwLock, RwLockReadGuard};
 #[cfg(test)]

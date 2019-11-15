@@ -18,7 +18,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{convert::TryInto, pin::Pin, sync::Arc, thread, vec::Vec,time::Instant};
+use std::{convert::TryInto, pin::Pin, sync::Arc, thread, time::Instant, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -174,7 +174,7 @@ pub async fn build_validation_package<'a>(
         context: context.clone(),
         key: id,
         error: None,
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
     .await
 }
@@ -222,15 +222,22 @@ pub struct ValidationPackageFuture {
     context: Arc<Context>,
     key: snowflake::ProcessUniqueId,
     error: Option<HolochainError>,
-    running_time : Instant
+    running_time: Instant,
 }
 
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture("ValidationPackageFuture".to_string(),self.running_time.elapsed());
-    
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture(
+                "ValidationPackageFuture".to_string(),
+                self.running_time.elapsed(),
+            );
+
         if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
             return Poll::Ready(Err(err));
         }

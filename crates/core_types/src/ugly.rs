@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use log::error;
+use std::fmt::Debug;
 
 pub fn lax_send<T: Clone + Debug>(
     tx: crossbeam_channel::Sender<T>,

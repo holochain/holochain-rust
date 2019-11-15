@@ -7,7 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
 use holochain_persistence_api::cas::content::Address;
-use std::{pin::Pin, sync::Arc,time::Instant};
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 /// Publish Action Creator
 /// This is the high-level publish function that wraps the whole publish process and is what should
@@ -20,7 +20,7 @@ pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Addre
     PublishFuture {
         context: context.clone(),
         action: action_wrapper,
-        running_time:Instant::now()
+        running_time: Instant::now(),
     }
     .await
 }
@@ -30,14 +30,18 @@ pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Addre
 pub struct PublishFuture {
     context: Arc<Context>,
     action: ActionWrapper,
-    running_time:Instant
+    running_time: Instant,
 }
 
 impl Future for PublishFuture {
     type Output = HcResult<Address>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.future_trace.write().expect("Could not get future trace").capture("PublishFuture".to_string(),self.running_time.elapsed());
+        self.context
+            .future_trace
+            .write()
+            .expect("Could not get future trace")
+            .capture("PublishFuture".to_string(), self.running_time.elapsed());
         if let Some(err) = self.context.action_channel_error("PublishFuture") {
             return Poll::Ready(Err(err));
         }

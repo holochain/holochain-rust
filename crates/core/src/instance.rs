@@ -21,7 +21,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     ugly::lax_send_sync,
 };
-use holochain_locksmith::{RwLock, RwLockReadGuard};
+use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -321,19 +321,21 @@ impl Instance {
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
+    pub fn state(&self) -> StateWrapper {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+            .clone()
     }
 
     pub fn save(&self) -> HcResult<()> {
+        let state = self.state();
         self.persister
             .as_ref()
             .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?
             .try_write()
             .ok_or_else(|| HolochainError::new("Could not get lock on persister"))?
-            .save(&self.state())
+            .save(&state)
     }
 
     #[allow(clippy::needless_lifetimes)]

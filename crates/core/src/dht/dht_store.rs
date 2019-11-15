@@ -21,9 +21,8 @@ use holochain_persistence_api::{
 use regex::Regex;
 
 use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
-use holochain_core_types::error::HcResult;
 use holochain_json_api::error::JsonResult;
-use holochain_persistence_api::{cas::content::Content, error::PersistenceResult};
+use holochain_persistence_api::{cas::content::Content};
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,

@@ -31,7 +31,7 @@ impl<S: Into<String> + Clone + Eq + Hash + Debug + Send + Sync + 'static>
         );
     }
 
-    pub fn diagnostic_iter<'a>(&'a self) -> Iter<'a, S, Diagnostic> {
+    pub fn diagnostic_iter(&self) -> Iter<S, Diagnostic> {
         self.futures_queue.iter()
     }
 
@@ -46,7 +46,7 @@ impl<S: Into<String> + Clone + Eq + Hash + Debug + Send + Sync + 'static>
                         debug!("Future {:?} last polled at {:?}", f, s.total_polling_time);
                         (f, s)
                     })
-                    .filter(|(_, s)| s.clone().total_polling_time > Duration::from_secs(60))
+                    .filter(|(_, s)| (*s).clone().total_polling_time > Duration::from_secs(60))
                     .map(|(f, s)| {
                         warn!(
                             "Future {:?} has been polling for over 1 minute at {:?}",
@@ -54,7 +54,7 @@ impl<S: Into<String> + Clone + Eq + Hash + Debug + Send + Sync + 'static>
                         );
                         (f, s)
                     })
-                    .filter(|(_, s)| s.clone().total_polling_time > duration)
+                    .filter(|(_, s)| (*s).clone().total_polling_time > duration)
                     .map(|(f, s)| {
                         error!(
                             "Future : {:?} has been polling for over {:?} seconds minute at {:?}",

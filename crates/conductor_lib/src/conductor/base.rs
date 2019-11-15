@@ -2199,7 +2199,10 @@ pub mod tests {
         let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
 
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
+        assert!(result
+            .unwrap()
+            .to_string()
+            .contains("Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
     }
 
     #[test]

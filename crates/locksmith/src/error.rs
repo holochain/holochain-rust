@@ -24,4 +24,12 @@ impl LocksmithError {
     }
 }
 
+impl std::fmt::Display for LocksmithError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl std::error::Error for LocksmithError {}
+
 pub type LocksmithResult<T> = Result<T, LocksmithError>;

@@ -25,9 +25,28 @@ impl Default for LogRules {
         let mut rules = LogRules::new();
         // Filtering out all the logs from our dependencies
         rules
-            .add_rule(".*", true, None)
+            .add_rule("^parity", true, None)
             .expect("Invalid logging rule.");
-        // Add back in our own logs
+        rules
+            .add_rule("^mio", true, None)
+            .expect("Invalid logging rule.");
+        rules
+            .add_rule("^tokio", true, None)
+            .expect("Invalid logging rule.");
+        rules
+            .add_rule("^hyper", true, None)
+            .expect("Invalid logging rule.");
+        rules
+            .add_rule("^rusoto_core", true, None)
+            .expect("Invalid logging rule.");
+        rules
+            .add_rule("^want", true, None)
+            .expect("Invalid logging rule.");
+        rules
+            .add_rule("^rpc", true, None)
+            .expect("Invalid logging rule.");
+
+        // Ensure our own logs are included.
         rules
             .add_rule("^holochain", false, None)
             .expect("Invalid logging rule.");

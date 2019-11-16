@@ -3,7 +3,7 @@
     "standard": "^14.3.1"
   },
   "dependencies": {
-    "@holochain/tryorama": "^0.2.0-rc.3",
+    "@holochain/tryorama": "^0.2.0-rc.4",
     "faucet": "0.0.1",
     "json3": "^3.3.3",
     "sleep": "^6.1.0",

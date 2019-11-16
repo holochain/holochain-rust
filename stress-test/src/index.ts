@@ -18,7 +18,13 @@ const middleware =
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()
 )
 
-const orchestrator = new Orchestrator({ middleware })
+const orchestrator = new Orchestrator({
+  middleware,
+  waiter: {
+    softTimeout: 10,
+    hardTimeout: 20,
+  },
+})
 
 // First two arguments are ts-node and the script name
 const N = parseInt(process.argv[2], 10) || 10

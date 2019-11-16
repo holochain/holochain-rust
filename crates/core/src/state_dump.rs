@@ -5,6 +5,8 @@ use crate::{
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{convert::TryInto, sync::Arc};
+use std::collections::HashMap;
+use holochain_json_api::json::JsonString;
 
 #[derive(Serialize)]
 pub struct PendingValidationDump {
@@ -17,6 +19,7 @@ pub struct PendingValidationDump {
 pub struct StateDump {
     pub queued_calls: Vec<ZomeFnCall>,
     pub running_calls: Vec<ZomeFnCall>,
+    pub call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
     pub query_flows: Vec<QueryKey>,
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
@@ -41,8 +44,8 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
-
         let running_calls: Vec<ZomeFnCall> = nucleus.running_zome_calls.into_iter().collect();
+        let call_results: HashMap<ZomeFnCall, Result<_,_>> = nucleus.zome_call_results.into_iter().collect();
 
         let query_flows: Vec<QueryKey> = network
             .get_query_results
@@ -83,6 +86,7 @@ impl From<Arc<Context>> for StateDump {
         StateDump {
             queued_calls,
             running_calls,
+            call_results,
             query_flows,
             validation_package_flows,
             direct_message_flows,

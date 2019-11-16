@@ -1,4 +1,4 @@
-import { Config } from '@holochain/try-o-rama'
+import { Config } from '@holochain/tryorama'
 import * as R from 'ramda'
 
 const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')

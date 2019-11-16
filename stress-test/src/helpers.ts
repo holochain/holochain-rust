@@ -1,7 +1,7 @@
 import * as R from 'ramda'
 
-import { Player } from '@holochain/try-o-rama/lib/player'
-import { Instance } from '@holochain/try-o-rama/lib/instance'
+import { Player } from '@holochain/tryorama/lib/player'
+import { Instance } from '@holochain/tryorama/lib/instance'
 
 /**
  * Takes an object whose keys correspond to array indices,

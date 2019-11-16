@@ -15,8 +15,8 @@
     "typescript": "^3.6.3"
   },
   "dependencies": {
-    "@holochain/try-o-rama": "^0.1.3-beta.5",
-    "@holochain/fidget-spinner": "0.0.2",
+    "@holochain/tryorama": "holochain/tryorama#simple-not-easy",
+    "@holochain/tryorama-stress-utils": "0.0.2",
     "ramda": "^0.26.1",
     "tape": "^4.11.0",
     "sleep": "^6.1.0"

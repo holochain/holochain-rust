@@ -1,8 +1,8 @@
-import { Config } from '@holochain/try-o-rama'
+import { Config } from '@holochain/tryorama'
 import * as R from 'ramda'
-import { ScenarioApi } from '@holochain/try-o-rama/lib/api'
-import { Player } from '@holochain/try-o-rama/lib/player'
-import { ConductorConfig } from '@holochain/try-o-rama/lib/types'
+import { ScenarioApi } from '@holochain/tryorama/lib/api'
+import { Player } from '@holochain/tryorama/lib/player'
+import { ConductorConfig } from '@holochain/tryorama/lib/types'
 
 const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
 const trace = R.tap(x => console.log('{T}', x))

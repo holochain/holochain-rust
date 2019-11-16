@@ -1,4 +1,4 @@
-const { Orchestrator, tapeExecutor, singleConductor, combine } = require('@holochain/try-o-rama')
+const { Orchestrator, tapeExecutor, singleConductor, combine } = require('@holochain/tryorama')
 
 process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);

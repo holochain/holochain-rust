@@ -1,15 +1,14 @@
 import { Config } from '@holochain/tryorama'
 import * as R from 'ramda'
-import { ScenarioApi } from '@holochain/tryorama/lib/api'
-import { Player } from '@holochain/tryorama/lib/player'
-import { ConductorConfig } from '@holochain/tryorama/lib/types'
 
 const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
 const trace = R.tap(x => console.log('{T}', x))
 
+const config = Config.gen({app: dna})
+
 module.exports = (scenario, hammerCount) => {
     scenario('hammer on a zome call', async (s, t) => {
-        const { alice } = await s.players({ alice: {instances: {app: dna}} }, true)
+        const { alice } = await s.players({ alice: config }, true)
 
         let calls = []
         for (let i = 0; i < hammerCount; i++) {

@@ -429,6 +429,7 @@ pub fn start_holochain_instance<T: Into<String>>(
         "link_tag_validation",
         "get_entry",
         "create_priv_entry",
+        "get_version",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();

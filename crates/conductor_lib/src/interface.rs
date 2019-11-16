@@ -763,7 +763,8 @@ impl ConductorApiBuilder {
 
             let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
 
-            Ok(serde_json::to_value(dump).map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?)
+            Ok(serde_json::to_value(dump)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?)
         });
 
         self.io.add_method("debug/fetch_cas", move |params| {

@@ -294,7 +294,10 @@ impl Instance {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             pop_next_holding_workflow(pending.clone(), context.clone());
 
-                            let result = scheduled_jobs::pending_validations::run_holding_workflow(&pending, context.clone());
+                            let result = scheduled_jobs::pending_validations::run_holding_workflow(
+                                &pending,
+                                context.clone(),
+                            );
 
                             match result {
                                 // If we couldn't run the validation due to unresolved dependencies,
@@ -308,7 +311,9 @@ impl Instance {
                                     pending,
                                     e,
                                 ),
-                                Ok(()) => log_info!(context, "Successfully processed: {:?}", pending),
+                                Ok(()) => {
+                                    log_info!(context, "Successfully processed: {:?}", pending)
+                                }
                             }
                         } else {
                             break;

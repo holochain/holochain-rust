@@ -3,9 +3,9 @@ use crate::{
     nucleus::ZomeFnCall, scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
+use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{convert::TryInto, sync::Arc};
-use holochain_json_api::json::JsonString;
 
 #[derive(Serialize)]
 pub struct PendingValidationDump {
@@ -44,7 +44,8 @@ impl From<Arc<Context>> for StateDump {
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
         let running_calls: Vec<ZomeFnCall> = nucleus.running_zome_calls.into_iter().collect();
-        let call_results: Vec<(ZomeFnCall, Result<_,_>)> = nucleus.zome_call_results.into_iter().collect();
+        let call_results: Vec<(ZomeFnCall, Result<_, _>)> =
+            nucleus.zome_call_results.into_iter().collect();
 
         let query_flows: Vec<QueryKey> = network
             .get_query_results

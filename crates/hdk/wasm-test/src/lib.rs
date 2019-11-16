@@ -691,6 +691,15 @@ pub fn handle_get_entry(address:Address) -> ZomeApiResult<Option<Entry>>
     hdk::get_entry(&address)
 }
 
+pub fn handle_get_version(hash: Option<bool>) -> ZomeApiResult<String>
+{
+    if hash == Some(true) {
+        hdk::version_hash()
+    } else {
+        hdk::version()
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -1114,6 +1123,11 @@ define_zome! {
             handler: handle_create_priv_entry
         }
 
+        get_version: {
+            inputs: |hash: Option<bool>|,
+            outputs: |version: ZomeApiResult<String>|,
+            handler: handle_get_version
+        }
     
     ]
 

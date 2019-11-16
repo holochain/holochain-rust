@@ -281,7 +281,7 @@ pub extern "C" fn __hdk_validate_link(
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_git_hash(
+pub extern "C" fn __hdk_hdk_version(
     encoded_allocation_of_input: RibosomeEncodingBits,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
@@ -299,7 +299,14 @@ pub extern "C" fn __hdk_git_hash(
         }
     };
 
-    return_code_for_allocation_result(mem_stack.write_string(holochain_core_types::GIT_HASH)).into()
+    return_code_for_allocation_result(
+        mem_stack.write_string(
+            holochain_core_types::hdk_version::HDK_VERSION
+                .to_string()
+                .as_ref(),
+        ),
+    )
+    .into()
 }
 
 #[no_mangle]

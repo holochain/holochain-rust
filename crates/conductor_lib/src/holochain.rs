@@ -128,21 +128,27 @@ pub struct Holochain {
 }
 
 impl Holochain {
-    /// create a new Holochain instance
+    /// create a new Holochain instance.  Ensure that they are built w/ the same
+    /// HDK Version, or log a warning.
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
 
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
                 Some("{}".as_bytes().to_vec()),
-                WasmCallData::DirectCall("__hdk_git_hash".to_string(), zome.code.code.clone()),
+                WasmCallData::DirectCall("__hdk_hdk_version".to_string(), zome.code.code.clone()),
             );
 
             if let Ok(json_string) = maybe_json_string {
-                if json_string != holochain_core_types::GIT_HASH.into() {
-                    eprintln!("WARNING! The git-hash of the runtime and the zome don't match.");
-                    eprintln!("Runtime hash: {}", holochain_core_types::GIT_HASH);
-                    eprintln!("Zome hash: {}", json_string);
+                if json_string.to_string()
+                    != holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                {
+                    eprintln!("WARNING! The HDK Version of the runtime and the zome don't match.");
+                    eprintln!(
+                        "Runtime HDK Version: {}",
+                        holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                    );
+                    eprintln!("Zome HDK Version: {}", json_string);
                 }
             }
         }

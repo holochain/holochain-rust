@@ -60,24 +60,21 @@ pub mod validation;
 #[macro_use]
 extern crate holochain_logging;
 
-pub const GIT_HASH: &str = env!(
-    "GIT_HASH",
-    "failed to obtain git hash from build environment. Check build.rs"
+pub const HDK_HASH: &str = env!(
+    "HDK_HASH",
+    "failed to obtain HDK hash from build environment. Check build.rs"
 );
 
-// not docker build friendly
-// https://circleci.com/gh/holochain/holochain-rust/10757
-#[cfg(feature = "broken-tests")]
 #[cfg(test)]
 mod test_hash {
     use super::*;
 
     #[test]
     fn test_hash() {
-        assert_eq!(GIT_HASH.chars().count(), 40);
+        assert_eq!(HDK_HASH.chars().count(), 32); // Nix MD5 hash
         assert!(
-            GIT_HASH.is_ascii(),
-            "GIT HASH contains non-ascii characters"
+            HDK_HASH.is_ascii(),
+            "HDK_HASH contains non-ascii characters"
         );
     }
 }

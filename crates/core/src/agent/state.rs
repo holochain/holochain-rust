@@ -30,7 +30,7 @@ use std::{
 
 /// The state-slice for the Agent.
 /// Hold's the agent's source chain and keys.
-#[derive(Clone, Debug, PartialEq)]q 
+#[derive(Clone, Debug, PartialEq)] 
 pub struct AgentState {
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
@@ -213,10 +213,10 @@ pub fn create_new_chain_header(
     ))
 }
 
-/// Create an entry-with-header for a header.
+/// Creates a `ChainPair` for a `ChainHeader`.
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
-pub fn create_entry_with_header_for_header(
+pub fn create_chain_pair_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
 ) -> Result<ChainPair, HolochainError> {

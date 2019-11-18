@@ -76,5 +76,4 @@ pub mod tests {
         //     get_item_by_address(&local_client, &table_name, &content.address())
         // );
     }
-
 }

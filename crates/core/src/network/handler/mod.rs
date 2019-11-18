@@ -1,4 +1,4 @@
-use crate::agent::state::create_entry_with_header_for_header;
+use crate::agent::state::create_chain_pair_for_header;
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -11,8 +11,8 @@ use crate::{
     entry::CanPublish,
     network::{
         direct_message::DirectMessage,
+        chain_pair::ChainPair,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
@@ -302,19 +302,34 @@ fn get_content_aspect(
         });
 
     // If we have found a header for the requested entry in the chain...
-    let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&*state, header)?),
+    let maybe_chain_pair = match maybe_chain_header {
+        Some((header, true)) => Some(create_chain_pair_for_header(&*state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
-            Some(EntryWithHeader {
-                entry: get_entry_from_cas(
-                    &state.agent().chain_store().content_storage(),
-                    header.entry_address(),
-                )?
-                .expect("Could not find entry in chain CAS, but header is chain"),
-                header,
-            })
-        }
+            match get_entry_from_cas(
+                &state.agent().chain_store().content_storage(),
+                header.entry_address(),
+            ) {
+                Ok(Some(entry)) => {Some(ChainPair::new(header, entry))},
+                Ok(None) => {
+                    let err_message = format!(
+                        "net/fetch/get_content_aspect: no entry associated with address {} could be
+                         found in the CAS, but the header {} is in the chain",
+                        entry, header
+                    );
+                    log_error!(context, "{}", err_message);
+                    return HolochainError::ErrorGeneric(err_message);
+                },
+                Err(err) => {
+                    let err_message = format!(
+                        "net/fetch/get_content_aspect: got an error while trying to get an entry associated with the address {}from the CAS. The header {} is in the chain. Error: {:?}",
+                        entry, header, err
+                    );
+                    log_error!(context, "{}", err_message);
+                    return HolochainError::ErrorGeneric(err_message);
+                },                
+            }
+        },
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
             if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
@@ -333,10 +348,10 @@ fn get_content_aspect(
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    Some(EntryWithHeader {
+                    Some(ChainPair::new(
+                        headers[0].clone(),
                         entry,
-                        header: headers[0].clone(),
-                    })
+                    ))
                 } else {
                     debug!(
                         "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"
@@ -350,17 +365,17 @@ fn get_content_aspect(
         }
     };
 
-    let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
+    let chain_pair = maybe_chain_pair.ok_or(HolochainError::EntryNotFoundLocally)?;
 
-    let _ = entry_with_header
-        .entry
+    let _ = chain_pair
+        .entry()
         .entry_type()
         .can_publish(&context)
         .ok_or(HolochainError::EntryIsPrivate)?;
 
     Ok(EntryAspect::Content(
-        entry_with_header.entry,
-        entry_with_header.header,
+        chain_pair.entry(),
+        chain_pair.header(),
     ))
 }
 

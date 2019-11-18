@@ -17,7 +17,7 @@ pub fn reduce_add_pending_validation(
 ) {
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::AddPendingValidation);
-    let address = pending.entry_with_header.entry.address();
+    let address = pending.chain_pair.entry().address();
     let workflow = pending.workflow.clone();
     state.pending_validations.insert(
         PendingValidationKey::new(address, workflow),
@@ -30,7 +30,7 @@ pub mod tests {
     use super::*;
     use crate::{
         instance::tests::test_context,
-        network::entry_with_header::EntryWithHeader,
+        network::chain_pair::ChainPair,
         nucleus::state::{tests::test_nucleus_state, PendingValidationKey},
         scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
         state::test_store,
@@ -46,14 +46,14 @@ pub mod tests {
         let root_state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
-        let entry_with_header = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
+        let chain_pair = ChainPair::new(
+            test_chain_header(),
+            entry.clone()
+        );
 
         let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new(
             PendingValidationStruct {
-                entry_with_header,
+                chain_pair,
                 dependencies: Vec::new(),
                 workflow: ValidatingWorkflow::HoldEntry,
             },

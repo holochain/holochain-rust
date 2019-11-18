@@ -178,7 +178,7 @@ impl ConsistencyModel {
             )),
 
             Action::AddPendingValidation(validation) => {
-                let address = validation.entry_with_header.entry.address();
+                let address = validation.chain_pair.entry.address();
                 Some(ConsistencySignal::new_pending(
                     AddPendingValidation(address.clone()),
                     Source,

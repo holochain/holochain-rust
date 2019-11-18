@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    network::entry_with_header::EntryWithHeader,
+    network::chain_pair::ChainPair,
     nucleus::actions::remove_pending_validation::remove_pending_validation,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
@@ -82,29 +82,29 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
         .spawn(move || {
             let result = match pending.workflow {
                 ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-                    &pending.entry_with_header,
+                    &pending.chain_pair,
                     context.clone(),
                 )),
                 ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-                    &pending.entry_with_header,
+                    &pending.chain_pair,
                     context.clone(),
                 )),
                 ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-                    &pending.entry_with_header,
+                    &pending.chain_pair,
                     context.clone(),
                 )),
                 ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-                    &pending.entry_with_header,
+                    &pending.chain_pair,
                     context.clone(),
                 )),
                 ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-                    &pending.entry_with_header,
+                    &pending.chain_pair,
                     context.clone(),
                 )),
             };
             if Err(HolochainError::ValidationPending) != result {
                 remove_pending_validation(
-                    pending.entry_with_header.entry.address(),
+                    pending.chain_pair.entry().address(),
                     pending.workflow.clone(),
                     &context,
                 );
@@ -125,8 +125,8 @@ pub fn run_pending_validations(context: Arc<Context>) {
         log_debug!(
             context,
             "scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
-            pending.entry_with_header.entry.entry_type(),
-            pending.entry_with_header.entry.address()
+            pending.chain_pair.entry().entry_type(),
+            pending.chain_pair.entry().address()
         );
         retry_validation(pending.clone(), context.clone());
     });

@@ -32,7 +32,7 @@ pub async fn hold_entry_workflow(
             log_debug!(context, "workflow/hold_entry: {}", message);
             log_debug!(context, "workflow/hold_entry: Error was: {:?}", err);
             add_pending_validation(
-                entry_with_header.to_owned(),
+                chain_pair.to_owned(),
                 Vec::new(),
                 ValidatingWorkflow::HoldEntry,
                 context.clone(),

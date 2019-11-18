@@ -217,17 +217,24 @@ impl DhtStore {
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
-        if let Ok(chain_pair) = ChainPair::new(header, entry) {
-            let eavi = EntityAttributeValueIndex::new(
-                &entry.address(),
-                &Attribute::EntryHeader,
-                &header.address(),
-            )?;
-            self.content_storage().write().unwrap().add(header)?;
-            self.meta_storage().write().unwrap().add_eavi(&eavi)?;
-            Ok(())
-        } else {
-            Err(_)
+        match ChainPair::new(header, entry) {
+            Ok(_chain_pair) => {
+                let eavi = EntityAttributeValueIndex::new(
+                    &entry.address(),
+                    &Attribute::EntryHeader,
+                    &header.address(),
+                )?;
+                self.content_storage().write().unwrap().add(header)?;
+                self.meta_storage().write().unwrap().add_eavi(&eavi)?;
+                Ok(())
+            Err(header_entry_mismatch as HeaderEntryMismatch(.., err_msg)) => {
+                let add_err_msg = format!(
+                    "Tried to add entry {} and header {} to the CAS and EAV, respectively",
+                    entry, header,
+                );
+                err_msg = concat!(err_msg, add_err_msg);
+                Err(HeaderEntryMismatch(.., err_msg)
+            }
         }
     }
 

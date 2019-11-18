@@ -14,7 +14,7 @@ pub mod respond_validation_package_request;
 use crate::{
     context::Context,
     network::{
-        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
+        actions::get_validation_package::get_validation_package, chain_pair::ChainPair,
     },
     nucleus::{
         actions::build_validation_package::build_validation_package,

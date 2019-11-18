@@ -164,7 +164,7 @@ pub mod tests {
             dht_store::create_get_links_eavi_query,
         },
         instance::tests::test_context,
-        network::entry_with_header::EntryWithHeader,
+        network::chain_pair::ChainPair,
         state::test_store,
     };
     use holochain_core_types::{
@@ -185,13 +185,10 @@ pub mod tests {
         let storage = &store.dht().content_storage().clone();
 
         let sys_entry = test_sys_entry();
-        let entry_wh = EntryWithHeader {
-            entry: sys_entry.clone(),
-            header: test_chain_header(),
-        };
+        let chain_pair = ChainPair::new(test_chain_header(), sys_entry.clone());
 
         let new_dht_store =
-            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(chain_pair)))
                 .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
@@ -416,11 +413,11 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let entry_wh = EntryWithHeader {
-            entry: entry.clone(),
+        let chain_pair = ChainPair::new(
             header: test_chain_header(),
-        };
-        let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
+            entry: entry.clone(),
+        );
+        let action_wrapper = ActionWrapper::new(Action::Hold(chain_pair.clone()));
 
         store.reduce(action_wrapper);
 

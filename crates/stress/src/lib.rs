@@ -1,4 +1,5 @@
 extern crate crossbeam_channel;
+extern crate num_cpus;
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -6,28 +7,31 @@ use std::{
 };
 
 /// utitily for recording stress test metrics
+#[derive(Clone)]
 pub struct StressJobMetricLogger {
     job_index: usize,
-    logs: Vec<StressJobLog>,
+    log_send: crossbeam_channel::Sender<StressJobLog>,
 }
 
 impl StressJobMetricLogger {
     /// private constructor
-    fn priv_new(job_index: usize) -> Self {
+    fn priv_new(job_index: usize, log_send: crossbeam_channel::Sender<StressJobLog>) -> Self {
         Self {
             job_index,
-            logs: Vec::new(),
+            log_send,
         }
     }
 
     /// log a metric with a name, such as
     /// `log("received_pong_count", 1.0)`
     pub fn log(&mut self, name: &str, value: f64) {
-        self.logs.push(StressJobLog {
-            job_index: self.job_index,
-            name: name.to_string(),
-            value,
-        });
+        self.log_send
+            .send(StressJobLog {
+                job_index: self.job_index,
+                name: name.to_string(),
+                value,
+            })
+            .unwrap();
     }
 }
 
@@ -51,7 +55,7 @@ pub trait StressJob: 'static + Send + Sync {
 }
 
 /// please provide a factory function for stress jobs
-pub type JobFactory<J> = Box<dyn FnMut() -> J + 'static + Send + Sync>;
+pub type JobFactory<J> = Box<dyn FnMut(StressJobMetricLogger) -> J + 'static + Send + Sync>;
 
 /// an individual stress metric
 #[derive(Debug, Clone)]
@@ -79,7 +83,8 @@ struct StressJobLog {
 
 /// a struct implementing this trait can serve as a stress suite for a test
 pub trait StressSuite: 'static {
-    fn start(&mut self);
+    fn start(&mut self, logger: StressJobMetricLogger);
+    fn warmup_complete(&mut self) {}
     fn progress(&mut self, stats: &StressStats);
     fn stop(&mut self, stats: StressStats);
     fn tick(&mut self) {}
@@ -114,13 +119,15 @@ impl<S: StressSuite, J: StressJob> std::fmt::Debug for StressRunConfig<S, J> {
 
 /// internal job tracking struct
 struct StressJobInfo<J: StressJob> {
-    job_index: usize,
     job: J,
+    logger: StressJobMetricLogger,
 }
 
 /// internal stress runner struct
 struct StressRunner<S: StressSuite, J: StressJob> {
     config: StressRunConfig<S, J>,
+    is_warmup: bool,
+    warmup_target: std::time::Instant,
     run_until: std::time::Instant,
     next_progress: std::time::Instant,
     thread_pool: Vec<std::thread::JoinHandle<()>>,
@@ -138,23 +145,32 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     #[allow(clippy::mutex_atomic)]
     fn priv_new(config: StressRunConfig<S, J>) -> Self {
         let (log_send, log_recv) = crossbeam_channel::unbounded();
-        let run_until = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(config.run_time_ms))
+
+        let warmup_target = std::time::Instant::now()
+            .checked_add(std::time::Duration::from_millis(5000))
             .unwrap();
+
+        let run_until = std::time::Instant::now()
+            .checked_add(std::time::Duration::from_millis(5000 + config.run_time_ms))
+            .unwrap();
+
         let next_progress = std::time::Instant::now()
             .checked_add(std::time::Duration::from_millis(
-                config.progress_interval_ms,
+                5000 + config.progress_interval_ms,
             ))
             .unwrap();
+
         let mut runner = StressRunner {
             config,
+            is_warmup: true,
+            warmup_target,
             run_until,
             next_progress,
             thread_pool: Vec::new(),
             should_continue: Arc::new(Mutex::new(true)),
             job_count: Arc::new(Mutex::new(0)),
             job_queue: Arc::new(Mutex::new(VecDeque::new())),
-            job_last_index: 0,
+            job_last_index: 1,
             log_recv,
             log_send,
             stats: StressStats {
@@ -162,10 +178,21 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 log_stats: HashMap::new(),
             },
         };
-        for _ in 0..runner.config.thread_pool_size {
+
+        let cpu_count = if runner.config.thread_pool_size == 0 {
+            num_cpus::get()
+        } else {
+            runner.config.thread_pool_size
+        };
+        for _ in 0..cpu_count {
             runner.create_thread();
         }
-        runner.config.suite.start();
+
+        runner
+            .config
+            .suite
+            .start(StressJobMetricLogger::priv_new(0, runner.log_send.clone()));
+
         runner
     }
 
@@ -177,17 +204,22 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         }
         {
             let mut cur_job_count = self.job_count.lock().unwrap();
+            let mut job_queue = self.job_queue.lock().unwrap();
             while *cur_job_count < self.config.job_count {
-                // keep releasing the job_queue lock so work can progress
-                // while we're filling up the job_queue
-                (*self.job_queue.lock().unwrap()).push_front(StressJobInfo {
-                    job_index: self.job_last_index,
-                    job: (self.config.job_factory)(),
-                });
+                let logger =
+                    StressJobMetricLogger::priv_new(self.job_last_index, self.log_send.clone());
+                let job = StressJobInfo {
+                    job: (self.config.job_factory)(logger.clone()),
+                    logger,
+                };
+                (*job_queue).push_front(job);
                 self.job_last_index += 1;
                 *cur_job_count += 1
             }
         }
+
+        self.config.suite.tick();
+
         // just a guard incase logs are generated faster than pulled off here
         // we want it to end at some point : )
         for _ in 0..1000 {
@@ -217,7 +249,23 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 }
             }
         }
-        if std::time::Instant::now() > self.next_progress {
+
+        if std::time::Instant::now() < self.warmup_target {
+            return true;
+        }
+
+        if self.is_warmup {
+            // we've completed our warmup period,
+            // let's reset our statistics
+            self.is_warmup = false;
+            self.stats.master_tick_count = 0;
+            self.stats.log_stats = HashMap::new();
+            self.config.suite.warmup_complete();
+        }
+
+        self.stats.master_tick_count += 1;
+
+        if std::time::Instant::now() >= self.next_progress {
             self.next_progress = std::time::Instant::now()
                 .checked_add(std::time::Duration::from_millis(
                     self.config.progress_interval_ms,
@@ -225,8 +273,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 .unwrap();
             self.config.suite.progress(&self.stats);
         }
-        self.config.suite.tick();
-        self.stats.master_tick_count += 1;
+
         true
     }
 
@@ -244,7 +291,6 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         let should_continue = self.should_continue.clone();
         let job_count = self.job_count.clone();
         let job_queue = self.job_queue.clone();
-        let log_send = self.log_send.clone();
         self.thread_pool.push(std::thread::spawn(move || loop {
             if !*should_continue.lock().unwrap() {
                 return;
@@ -253,13 +299,10 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                 Some(job) => job,
                 None => continue,
             };
-            let mut logger = StressJobMetricLogger::priv_new(job.job_index);
             let start = std::time::Instant::now();
-            let result = job.job.tick(&mut logger);
-            logger.log("tick_elapsed_ms", start.elapsed().as_millis() as f64);
-            for l in logger.logs.drain(..) {
-                log_send.send(l).unwrap();
-            }
+            let result = job.job.tick(&mut job.logger);
+            job.logger
+                .log("job_tick_elapsed_ms", start.elapsed().as_millis() as f64);
             if result.should_continue {
                 (*job_queue.lock().unwrap()).push_back(job);
             } else {
@@ -303,7 +346,7 @@ mod tests {
 
         struct Suite;
         impl StressSuite for Suite {
-            fn start(&mut self) {
+            fn start(&mut self, _: StressJobMetricLogger) {
                 println!("got start");
             }
 
@@ -323,7 +366,7 @@ mod tests {
             run_time_ms: 200,
             progress_interval_ms: 50,
             suite: Suite,
-            job_factory: Box::new(move || Job {
+            job_factory: Box::new(move |_| Job {
                 job_tick_count: job_tick_count_clone.clone(),
             }),
         });

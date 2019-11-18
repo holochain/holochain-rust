@@ -12,7 +12,6 @@ pub fn dispatch_queue_holding_workflow(pending: PendingValidation, context: Arc<
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 
-
 pub async fn queue_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
     if !context
         .state()

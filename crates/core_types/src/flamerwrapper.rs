@@ -16,6 +16,7 @@ impl FlamerWrapper
         {
             if setting =="YES"
             {
+                debug!("adding guard");
                 #[cfg(not(target_arch = "wasm32"))]
                 flame::start(guard_name);
                 #[cfg(target_arch = "wasm32")]
@@ -31,6 +32,7 @@ impl FlamerWrapper
         {
             if setting =="YES"
             {
+                debug!("ending guard");
                 #[cfg(not(target_arch = "wasm32"))]
                 flame::end(guard_name);
                 #[cfg(target_arch = "wasm32")]

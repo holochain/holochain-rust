@@ -53,7 +53,7 @@ use crate::{
     static_server_impls::NickelStaticServer as StaticServer,
 };
 use boolinator::Boolinator;
-use holochain_core_types::dna::bridges::BridgePresence;
+use holochain_core_types::{dna::bridges::BridgePresence,flamerwrapper::FlamerWrapper};
 use holochain_net::{
     connection::net_connection::NetHandler,
     ipc::spawn::{ipc_spawn, SpawnResult},
@@ -133,6 +133,7 @@ impl Drop for Conductor {
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
+        FlamerWrapper::dump_html();
         if let Some(mut network) = self.n3h_keepalive_network.take() {
             network.stop()
         }

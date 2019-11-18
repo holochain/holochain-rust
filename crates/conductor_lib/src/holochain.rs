@@ -104,8 +104,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
-    error::HolochainError,
-    flamerwrapper::FlamerWrapper
+    error::HolochainError
 };
 
 use holochain_json_api::json::JsonString;
@@ -231,7 +230,6 @@ impl Holochain {
         }
         self.instance.as_ref().unwrap().stop_action_loop();
         self.active = false;
-        FlamerWrapper::dump_html();
         Ok(())
     }
 

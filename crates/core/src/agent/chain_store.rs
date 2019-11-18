@@ -3,8 +3,10 @@ use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
-    error::HolochainError,
-    error::RibosomeErrorCode::{self, *},
+    error::{
+        HolochainError,
+        RibosomeErrorCode::{self, *},
+    },
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
@@ -194,8 +196,8 @@ impl GetContent for ChainStore {
 impl AddContent for ChainStore {
     fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
         (*self.content_storage.write().unwrap())
-                .add(content)
-                .map_err(|e| e.into())
+            .add(content)
+            .map_err(|e| e.into())
     }
 }
 

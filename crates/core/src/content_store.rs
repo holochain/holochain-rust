@@ -1,7 +1,5 @@
 use holochain_core_types::{entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent, Content},
-};
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
 pub trait GetContent {
     /// Return the content at this addres, do not attempt to convert to an entry

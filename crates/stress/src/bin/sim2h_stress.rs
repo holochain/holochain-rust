@@ -65,6 +65,10 @@ struct OptStressRunConfig {
     #[structopt(long, env = "STRESS_PUBLISH_BYTE_COUNT", default_value = "64")]
     /// how many bytes should be published each time
     publish_byte_count: usize,
+
+    #[structopt(long, env = "STRESS_DM_FREQ_MS", default_value = "1000")]
+    /// how often each job should send a direct message to another agent
+    dm_freq_ms: u64,
 }
 
 impl Default for OptStressRunConfig {
@@ -142,6 +146,7 @@ impl Opt {
                     ping_freq_ms,
                     publish_freq_ms,
                     publish_byte_count,
+                    dm_freq_ms,
                 } => {
                     cfg_def!(thread_count);
                     cfg_def!(job_count);
@@ -150,6 +155,7 @@ impl Opt {
                     cfg_def!(ping_freq_ms);
                     cfg_def!(publish_freq_ms);
                     cfg_def!(publish_byte_count);
+                    cfg_def!(dm_freq_ms);
                 }
             }
         }
@@ -241,6 +247,50 @@ fn await_connection(connect_uri: &Lib3hUri) -> StreamManager<std::net::TcpStream
     }
 }
 
+struct ActiveAgentIdsInner {
+    agent_id_list: [Option<String>; 5],
+    write_ptr: usize,
+    read_ptr: usize,
+}
+
+#[derive(Clone)]
+struct ActiveAgentIds {
+    inner: Arc<Mutex<ActiveAgentIdsInner>>,
+}
+
+impl ActiveAgentIds {
+    pub fn new() -> Self {
+        ActiveAgentIds {
+            inner: Arc::new(Mutex::new(ActiveAgentIdsInner {
+                agent_id_list: [None, None, None, None, None],
+                write_ptr: 0,
+                read_ptr: 0,
+            })),
+        }
+    }
+
+    pub fn write(&mut self, agent_id: &str) {
+        let mut inner = self.inner.lock().unwrap();
+        let idx = inner.write_ptr;
+        inner.agent_id_list[idx] = Some(agent_id.to_string());
+        inner.write_ptr += 1;
+        if inner.write_ptr >= 5 {
+            inner.write_ptr = 0;
+        }
+    }
+
+    pub fn read(&self) -> Option<String> {
+        let mut inner = self.inner.lock().unwrap();
+        let idx = inner.read_ptr;
+        let out = inner.agent_id_list[idx].clone();
+        inner.read_ptr += 1;
+        if inner.read_ptr >= 5 {
+            inner.read_ptr = 0;
+        }
+        out
+    }
+}
+
 thread_local! {
     pub static CRYPTO: Box<dyn CryptoSystem> = Box::new(SodiumCryptoSystem::new());
 }
@@ -248,6 +298,7 @@ thread_local! {
 /// our job is a websocket connection to sim2h immitating a holochain-rust core
 struct Job {
     agent_id: String,
+    agent_ids: ActiveAgentIds,
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
@@ -256,11 +307,12 @@ struct Job {
     stress_config: OptStressRunConfig,
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
+    next_dm: std::time::Instant,
 }
 
 impl Job {
     /// create a new job - connected to sim2h
-    pub fn new(connect_uri: &Lib3hUri, stress_config: OptStressRunConfig) -> Self {
+    pub fn new(connect_uri: &Lib3hUri, stress_config: OptStressRunConfig, agent_ids: ActiveAgentIds) -> Self {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
             let mut sec_key = crypto.buf_new_secure(crypto.sign_secret_key_bytes());
@@ -273,6 +325,7 @@ impl Job {
         let stream_manager = await_connection(connect_uri);
         let mut out = Self {
             agent_id,
+            agent_ids,
             pub_key: Arc::new(Mutex::new(pub_key)),
             sec_key: Arc::new(Mutex::new(sec_key)),
             remote_url: Url2::parse(connect_uri.clone().to_string()),
@@ -280,6 +333,7 @@ impl Job {
             stress_config,
             next_ping: std::time::Instant::now(),
             next_publish: std::time::Instant::now(),
+            next_dm: std::time::Instant::now(),
         };
 
         out.join_space();
@@ -330,6 +384,26 @@ impl Job {
     pub fn ping(&mut self, logger: &mut StressJobMetricLogger) {
         self.send_wire(WireMessage::Ping);
         logger.log("send_ping_count", 1.0);
+    }
+
+    pub fn dm(&mut self, logger: &mut StressJobMetricLogger) {
+        if let Some(to_agent_id) = self.agent_ids.read() {
+            println!("SEND DM TO {} FROM {}", to_agent_id, self.agent_id);
+
+            self.send_wire(WireMessage::ClientToLib3h(
+                ClientToLib3h::SendDirectMessage(
+                    DirectMessageData {
+                        space_address: "abcd".to_string().into(),
+                        request_id: "".to_string(),
+                        to_agent_id: to_agent_id.into(),
+                        from_agent_id: self.agent_id.clone().into(),
+                        content: b"".to_vec().into(),
+                    }
+                )
+            ));
+
+            logger.log("send_dm_count", 1.0);
+        }
     }
 
     /// send a ping message to sim2h
@@ -384,8 +458,8 @@ impl StressJob for Job {
                 StreamEvent::ErrorOccured(_, e) => panic!("{:?}", e),
                 StreamEvent::ConnectResult(_, _) => panic!("got ConnectResult"),
                 StreamEvent::IncomingConnectionEstablished(_) => unimplemented!(),
-                StreamEvent::ReceivedData(_, data) => {
-                    let data = String::from_utf8_lossy(&data).to_string();
+                StreamEvent::ReceivedData(_, raw_data) => {
+                    let data = String::from_utf8_lossy(&raw_data).to_string();
                     if &data == "\"Pong\"" {
                         logger.log("received_pong_count", 1.0);
                     } else if data.contains("HandleGetAuthoringEntryList")
@@ -393,6 +467,27 @@ impl StressJob for Job {
                     {
                     } else if data.contains("HandleStoreEntryAspect") {
                         logger.log("received_handle_store_aspect", 1.0);
+                    } else if data.contains("SendDirectMessageResult") {
+                        logger.log("received_dm_result", 1.0);
+                    } else if data.contains("HandleSendDirectMessage") {
+                        logger.log("received_handle_send_dm", 1.0);
+                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
+                        match parsed {
+                            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
+                                let to_agent_id: String = dm_data.to_agent_id.clone().into();
+                                assert_eq!(self.agent_id, to_agent_id);
+                                println!("GOT GOT GOT: {:#?}", dm_data);
+                                let mut out_dm = dm_data.clone();
+                                out_dm.to_agent_id = dm_data.from_agent_id;
+                                out_dm.from_agent_id = dm_data.to_agent_id;
+                                self.send_wire(WireMessage::Lib3hToClientResponse(
+                                    Lib3hToClientResponse::HandleSendDirectMessageResult(
+                                        out_dm,
+                                    )
+                                ));
+                            }
+                            e @ _ => panic!("unexpected: {:?}", e),
+                        }
                     } else {
                         panic!(data);
                     }
@@ -421,6 +516,17 @@ impl StressJob for Job {
                 .unwrap();
             self.publish(logger);
         }
+
+        if now >= self.next_dm {
+            self.next_dm = now
+                .checked_add(std::time::Duration::from_millis(
+                    self.stress_config.dm_freq_ms,
+                ))
+                .unwrap();
+            self.dm(logger);
+        }
+
+        self.agent_ids.write(&self.agent_id);
 
         StressJobTickResult::default()
     }
@@ -531,10 +637,11 @@ pub fn main() {
 == SIM2H STRESS CONFIG =="#,
         toml::to_string_pretty(&opt.stress).unwrap()
     );
+    let agent_ids = ActiveAgentIds::new();
     let stress_config = opt.stress.clone();
     let config = opt.create_stress_run_config(
         suite,
-        Box::new(move |_| Job::new(&bound_uri, stress_config.clone())),
+        Box::new(move |_| Job::new(&bound_uri, stress_config.clone(), agent_ids.clone())),
     );
     println!("WARMING UP...");
     stress_run(config);
@@ -550,7 +657,8 @@ mod tests {
         let suite = Suite::new(0);
         let mut stress_cfg = OptStressRunConfig::default();
         stress_cfg.publish_freq_ms = 500;
-        let mut job = Some(Job::new(&suite.bound_uri, stress_cfg));
+        let agent_ids = ActiveAgentIds::new();
+        let mut job = Some(Job::new(&suite.bound_uri, stress_cfg, agent_ids));
         std::thread::sleep(std::time::Duration::from_millis(500));
         stress_run(StressRunConfig {
             thread_pool_size: 1,

@@ -706,17 +706,22 @@ impl Sim2h {
             }
         }
         let payload: Opaque = msg.clone().into();
-        let url: url::Url = uri.into();
+        let url: url::Url = uri.clone().into();
         let send_result = self
             .stream_manager
             .send(&url, payload.as_bytes().as_slice());
 
         if let Err(e) = send_result {
-            error!("GhostError during broadcast send: {:?}", e)
-        }
-        match msg {
-            WireMessage::Ping | WireMessage::Pong => {}
-            _ => debug!("sent."),
+            error!("TransportError during send: {:?}\n Dropping connection.", e);
+            if let Err(e) = self.stream_manager.close(&url) {
+                error!("Error closing connection to {}: {:?}", url, e);
+            }
+            self.disconnect(&uri);
+        } else {
+            match msg {
+                WireMessage::Ping | WireMessage::Pong => {}
+                _ => debug!("sent."),
+            }
         }
     }
 

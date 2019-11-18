@@ -292,7 +292,10 @@ impl Instance {
                             .next_queued_holding_workflow();
                         if let Some(pending) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
-                            pop_next_holding_workflow(pending.clone(), context.clone());
+                            context.block_on(pop_next_holding_workflow(
+                                pending.clone(),
+                                context.clone(),
+                            ));
 
                             let result = scheduled_jobs::pending_validations::run_holding_workflow(
                                 &pending,
@@ -302,9 +305,8 @@ impl Instance {
                             match result {
                                 // If we couldn't run the validation due to unresolved dependencies,
                                 // we have to re-add this entry at the end of the queue:
-                                Err(HolochainError::ValidationPending) => {
-                                    queue_holding_workflow(pending, context.clone())
-                                }
+                                Err(HolochainError::ValidationPending) => context
+                                    .block_on(queue_holding_workflow(pending, context.clone())),
                                 Err(e) => log_error!(
                                     context,
                                     "Error running holding workflow for {:?}: {:?}",

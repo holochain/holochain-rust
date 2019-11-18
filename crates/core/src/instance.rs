@@ -292,6 +292,8 @@ impl Instance {
                         let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
                         if let Some(pending) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
+                            // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
+                            // we can run into a race condition. 
                             context.block_on(pop_next_holding_workflow(
                                 pending.clone(),
                                 context.clone(),

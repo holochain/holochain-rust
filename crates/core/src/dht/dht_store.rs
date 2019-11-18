@@ -287,7 +287,7 @@ impl GetContent for DhtStore {
 }
 
 impl AddContent for DhtStore {
-    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
+    fn add<T: AddressableContent>(&mut self, content: &T) -> Result<(), HolochainError> {
         (*self.content_storage.write().unwrap())
                 .add(content)
                 .map_err(|e| e.into())

@@ -23,5 +23,5 @@ pub trait GetContent {
 }
 
 pub trait AddContent {
-    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError>;
+    fn add<T: AddressableContent>(&mut self, content: &T) -> Result<(), HolochainError>;
 }

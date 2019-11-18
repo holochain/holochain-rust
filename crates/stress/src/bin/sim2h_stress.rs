@@ -15,7 +15,6 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate sim2h;
 extern crate structopt;
-extern crate toml;
 extern crate url2;
 
 use holochain_stress::*;

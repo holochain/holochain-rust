@@ -285,11 +285,11 @@ impl Instance {
                 while kill_receiver.try_recv().is_err() {
                     log_trace!(context, "Checking holding queue...");
                     loop {
-                        let maybe_holding_workflow = context
+                        let dht_store = context
                             .state()
                             .expect("Couldn't get state in run_pending_validations")
-                            .dht()
-                            .next_queued_holding_workflow();
+                            .dht();
+                        let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
                         if let Some(pending) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             context.block_on(pop_next_holding_workflow(
@@ -298,15 +298,16 @@ impl Instance {
                             ));
 
                             let result = scheduled_jobs::pending_validations::run_holding_workflow(
-                                &pending,
+                                pending,
                                 context.clone(),
                             );
 
                             match result {
                                 // If we couldn't run the validation due to unresolved dependencies,
                                 // we have to re-add this entry at the end of the queue:
-                                Err(HolochainError::ValidationPending) => context
-                                    .block_on(queue_holding_workflow(pending, context.clone())),
+                                Err(HolochainError::ValidationPending) => context.block_on(
+                                    queue_holding_workflow(pending.clone(), context.clone()),
+                                ),
                                 Err(e) => log_error!(
                                     context,
                                     "Error running holding workflow for {:?}: {:?}",

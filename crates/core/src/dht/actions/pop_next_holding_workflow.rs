@@ -31,7 +31,7 @@ impl Future for PopNextHoldingWorkflowFuture {
         if let Some(state) = self.context.try_state() {
             match state.dht().next_queued_holding_workflow() {
                 Some(head) => {
-                    if head == self.pending {
+                    if *head == self.pending {
                         Poll::Pending
                     } else {
                         Poll::Ready(())

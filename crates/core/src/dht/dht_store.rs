@@ -1,6 +1,6 @@
 use crate::{
     action::ActionWrapper,
-    content_store::{AddContent, ContentStore, GetContent},
+    content_store::{AddContent, GetContent},
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -13,7 +13,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
@@ -22,7 +22,7 @@ use regex::Regex;
 
 use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
-use holochain_persistence_api::{cas::content::Content, error::PersistenceResult};
+use holochain_persistence_api::{error::PersistenceResult};
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
@@ -280,15 +280,19 @@ impl DhtStore {
     }
 }
 
-impl ContentStore for DhtStore {
-    fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
+impl GetContent for DhtStore {
+    fn get_raw(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
+        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
     }
 }
 
-impl GetContent for DhtStore {}
-
-impl AddContent for DhtStore {}
+impl AddContent for DhtStore {
+    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
+        (*self.content_storage.write().unwrap())
+                .add(content)
+                .map_err(|e| e.into())
+    }
+}
 
 #[cfg(test)]
 pub mod tests {

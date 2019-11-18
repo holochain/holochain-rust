@@ -1,13 +1,14 @@
-use crate::content_store::{AddContent, ContentStore, GetContent};
+use crate::content_store::{AddContent, GetContent};
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
+    error::HolochainError,
     error::RibosomeErrorCode::{self, *},
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent},
+    content::{Address, AddressableContent, Content},
     storage::ContentAddressableStorage,
 };
 use std::{str::FromStr, sync::Arc};
@@ -184,15 +185,19 @@ impl ChainStore {
     }
 }
 
-impl ContentStore for ChainStore {
-    fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
+impl GetContent for ChainStore {
+    fn get_raw(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
+        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
     }
 }
 
-impl GetContent for ChainStore {}
-
-impl AddContent for ChainStore {}
+impl AddContent for ChainStore {
+    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
+        (*self.content_storage.write().unwrap())
+                .add(content)
+                .map_err(|e| e.into())
+    }
+}
 
 /// Access each Entry
 ///

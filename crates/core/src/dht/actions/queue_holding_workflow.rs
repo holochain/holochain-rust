@@ -7,6 +7,12 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use std::{pin::Pin, sync::Arc};
 
+pub fn dispatch_queue_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
+    let action_wrapper = ActionWrapper::new(Action::QueueHoldingWorkflow(pending));
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+}
+
+
 pub async fn queue_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
     if !context
         .state()
@@ -15,8 +21,7 @@ pub async fn queue_holding_workflow(pending: PendingValidation, context: Arc<Con
         .has_queued_holding_workflow(&pending)
     {
         log_trace!(context, "Queueing holding workflow: {:?}", pending);
-        let action_wrapper = ActionWrapper::new(Action::QueueHoldingWorkflow(pending.clone()));
-        dispatch_action(context.action_channel(), action_wrapper.clone());
+        dispatch_queue_holding_workflow(pending.clone(), context.clone());
         QueueHoldingWorkflowFuture { context, pending }.await
     } else {
         log_trace!(

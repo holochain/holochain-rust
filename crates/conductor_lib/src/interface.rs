@@ -155,6 +155,10 @@ impl ConductorApiBuilder {
                 .read()
                 .unwrap()
                 .annotate(format!("RPC method_call: {:?}", params_map));
+            hc.check_instance()
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            hc.check_active()
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
             hc.context()
                 .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...")
         };
@@ -193,15 +197,14 @@ impl ConductorApiBuilder {
             }
         };
 
-        context
-            .block_on(Holochain::call_async(
-                context.clone(),
-                &zome_name,
-                cap_request,
-                &func_name,
-                &args_string,
-            ))
-            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+        Holochain::call_zome_function(
+            context.clone(),
+            &zome_name,
+            cap_request,
+            &func_name,
+            &args_string,
+        )
+        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 
     /// Adds a "call" method for making zome function calls
@@ -1380,7 +1383,7 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","result":"Holo World","id":"0"}"#,
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
 
         let response_str = handler

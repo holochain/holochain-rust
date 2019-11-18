@@ -122,7 +122,6 @@ use holochain_metrics::with_latency_publishing;
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: Option<Instance>,
-    #[allow(dead_code)]
     context: Option<Arc<Context>>,
     active: bool,
 }

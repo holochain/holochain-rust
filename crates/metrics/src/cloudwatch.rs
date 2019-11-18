@@ -5,7 +5,6 @@ use crate::{
     logger::{LogLine, ParseError},
     stats::StatsByMetric,
 };
-use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, MetricDatum, PutMetricDataInput};
 use rusoto_core::region::Region;
 use rusoto_logs::*;
 use std::{
@@ -16,36 +15,13 @@ use std::{
 
 use structopt::StructOpt;
 
+use rusoto_core::{DefaultCredentialsProvider};
+
+use rusoto_sts::StsClient;
+use rusoto_sts::StsAssumeRoleSessionCredentialsProvider;
+
+
 const DEFAULT_REGION: Region = Region::EuCentral1;
-
-#[derive(Clone)]
-pub struct CloudWatchMetricPublisher {
-    client: CloudWatchClient,
-}
-
-impl From<Metric> for MetricDatum {
-    fn from(metric: Metric) -> Self {
-        let cloud_watch_metric = MetricDatum {
-            counts: None,
-            dimensions: None,
-            metric_name: metric.name.clone(),
-            statistic_values: None,
-            storage_resolution: None,
-            timestamp: None,
-            unit: None,
-            value: Some(metric.value),
-            values: None,
-        };
-        cloud_watch_metric
-    }
-}
-
-impl From<&Metric> for MetricDatum {
-    fn from(metric: &Metric) -> Self {
-        let m: Self = metric.clone().into();
-        m
-    }
-}
 
 // TODO Test this
 impl TryFrom<ResultField> for Metric {
@@ -72,31 +48,6 @@ impl TryFrom<&ResultField> for Metric {
     fn try_from(result_field: &ResultField) -> Result<Self, Self::Error> {
         let r: Result<Self, Self::Error> = result_field.clone().try_into();
         r
-    }
-}
-
-impl CloudWatchMetricPublisher {
-    pub fn new(region: &Region) -> Self {
-        let client = CloudWatchClient::new(region.clone());
-        Self { client }
-    }
-}
-
-impl Default for CloudWatchMetricPublisher {
-    fn default() -> Self {
-        CloudWatchMetricPublisher::new(&DEFAULT_REGION)
-    }
-}
-
-impl MetricPublisher for CloudWatchMetricPublisher {
-    fn publish(&mut self, metric: &Metric) {
-        let cloud_watch_metric: MetricDatum = metric.into();
-        let data_input = PutMetricDataInput {
-            metric_data: vec![cloud_watch_metric],
-            namespace: "".to_string(),
-        };
-        let _rusoto_future = self.client.put_metric_data(data_input);
-        trace!("published metric to cloudwatch: {:?}", metric);
     }
 }
 
@@ -357,4 +308,20 @@ impl Default for CloudWatchLogger {
         let default_log_group = Self::default_log_group();
         CloudWatchLogger::with_log_stream(default_log_stream, default_log_group, &DEFAULT_REGION)
     }
+}
+
+
+pub fn assume_role(region:&Region) {
+
+//    let credentials = DefaultCredentialsProvider::new().unwrap();
+    let sts = StsClient::new(region.clone());
+
+    let provider = StsAssumeRoleSessionCredentialsProvider::new(
+        sts,
+        "arn:aws:iam::something:role/something".to_owned(),
+        "default".to_owned(),
+        None, None, None, None
+    );
+
+    //println!("{:?}", x);
 }

@@ -20,8 +20,8 @@ holochain_logging = "=0.0.4"
 regex = "=1.1.2"
 env_logger = "=0.6.1"
 rand = "0.7.2"
-## For cloudwatch
-rusoto_cloudwatch = "=0.40.0"
+## For cloudwatch logs / sts
+rusoto_sts = "=0.40.0"
 rusoto_logs = "=0.40.0"
 rusoto_core = "=0.40.0"
 ## For descriptive statistics on metrics

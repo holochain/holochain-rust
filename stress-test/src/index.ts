@@ -21,8 +21,8 @@ const middleware =
 const orchestrator = new Orchestrator({
   middleware,
   waiter: {
-    softTimeout: 10,
-    hardTimeout: 20,
+    softTimeout: 10000,
+    hardTimeout: 20000,
   },
 })
 

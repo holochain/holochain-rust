@@ -234,7 +234,7 @@ impl DhtStore {
             &header.address(),
         )?;
         self.add(header)?;
-        self.meta_storage().write().unwrap().add_eavi(&eavi)?;
+        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }
 
@@ -260,15 +260,10 @@ impl DhtStore {
         self.meta_storage.write().unwrap().add_eavi(&eavi)
     }
 
-    // Getters (for reducers)
-    // =======
-    pub(crate) fn meta_storage(&self) -> Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> {
-        self.meta_storage.clone()
-    }
-
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions
     }
+
     pub(crate) fn actions_mut(
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
@@ -287,7 +282,7 @@ impl GetContent for DhtStore {
 }
 
 impl AddContent for DhtStore {
-    fn add<T: AddressableContent>(&mut self, content: &T) -> Result<(), HolochainError> {
+    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
         (*self.content_storage.write().unwrap())
                 .add(content)
                 .map_err(|e| e.into())

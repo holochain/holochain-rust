@@ -4,8 +4,8 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::{
-        HolochainError,
         RibosomeErrorCode::{self, *},
+        HcResult,
     },
 };
 use holochain_locksmith::RwLock;
@@ -188,13 +188,13 @@ impl ChainStore {
 }
 
 impl GetContent for ChainStore {
-    fn get_raw(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
         Ok((*self.content_storage.read().unwrap()).fetch(address)?)
     }
 }
 
 impl AddContent for ChainStore {
-    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
+    fn add<T: AddressableContent>(&self, content: &T) -> HcResult<()> {
         (*self.content_storage.write().unwrap())
             .add(content)
             .map_err(|e| e.into())

@@ -1,12 +1,12 @@
-use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_core_types::{entry::Entry, error::HcResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
 pub trait GetContent {
     /// Return the content at this addres, do not attempt to convert to an entry
-    fn get_raw(&self, address: &Address) -> Result<Option<Content>, HolochainError>;
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>>;
 
     /// Get an entry from this storage
-    fn get(&self, address: &Address) -> Result<Option<Entry>, HolochainError> {
+    fn get(&self, address: &Address) -> HcResult<Option<Entry>> {
         if let Some(json) = self.get_raw(address)? {
             let entry = Entry::try_from_content(&json)?;
             Ok(Some(entry))
@@ -15,11 +15,11 @@ pub trait GetContent {
         }
     }
 
-    fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
+    fn contains(&self, address: &Address) -> HcResult<bool> {
         Ok(self.get_raw(address)?.is_some())
     }
 }
 
 pub trait AddContent {
-    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError>;
+    fn add<T: AddressableContent>(&self, content: &T) -> HcResult<()>;
 }

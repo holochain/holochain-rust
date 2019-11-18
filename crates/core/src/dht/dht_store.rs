@@ -7,7 +7,7 @@ use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
-    error::HolochainError,
+    error::{HolochainError, HcResult},
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -276,13 +276,13 @@ impl DhtStore {
 }
 
 impl GetContent for DhtStore {
-    fn get_raw(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
         Ok((*self.content_storage.read().unwrap()).fetch(address)?)
     }
 }
 
 impl AddContent for DhtStore {
-    fn add<T: AddressableContent>(&self, content: &T) -> Result<(), HolochainError> {
+    fn add<T: AddressableContent>(&self, content: &T) -> HcResult<()> {
         (*self.content_storage.write().unwrap())
             .add(content)
             .map_err(|e| e.into())

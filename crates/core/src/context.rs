@@ -208,7 +208,7 @@ impl Context {
             while self.redux_wants_write.load(Relaxed) {
                 std::thread::sleep(Duration::from_millis(1));
             }
-            (*s.read().unwrap()).clone()
+            (*s.read().unwrap().annotate("Context::state")).clone()
         })
     }
 
@@ -220,7 +220,10 @@ impl Context {
         if self.redux_wants_write.load(Relaxed) {
             None
         } else {
-            self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
+            self.state
+                .as_ref()
+                .and_then(|s| s.try_read())
+                .map(|lock| lock.annotate("Context::try_state"))
         }
     }
 

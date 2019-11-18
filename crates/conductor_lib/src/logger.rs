@@ -27,14 +27,10 @@ impl Default for LogRules {
         rules
             .add_rule(".*", true, None)
             .expect("Invalid logging rule.");
-        // And logging back all our logs
-        rules
-            .add_rule("^lib3h", false, None)
-            .expect("Invalid logging rule.");
+        // Add back in our own logs
         rules
             .add_rule("^holochain", false, None)
             .expect("Invalid logging rule.");
-        // Add Lib3h logs
         rules
             .add_rule("^lib3h", false, None)
             .expect("Invalid logging rule.");

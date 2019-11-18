@@ -240,7 +240,7 @@ impl Instance {
             let mut state = self
                 .state
                 .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
-                .map_err(|_| HolochainError::Timeout)?;
+                .ok_or_else(|| HolochainError::Timeout)?;
 
             new_state = state.reduce(action_wrapper.clone());
 
@@ -325,6 +325,7 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+            .annotate("Instance::state")
     }
 
     pub fn save(&self) -> HcResult<()> {

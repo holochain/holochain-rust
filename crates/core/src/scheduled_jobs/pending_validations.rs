@@ -68,7 +68,7 @@ impl fmt::Display for ValidatingWorkflow {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub struct PendingValidationStruct {
-    pub entry_with_header: EntryWithHeader,
+    pub chain_pair: ChainPair,
     pub dependencies: Vec<Address>,
     pub workflow: ValidatingWorkflow,
 }

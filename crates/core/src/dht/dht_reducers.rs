@@ -3,7 +3,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     dht::dht_store::DhtStore,
-    network::entry_with_header::EntryWithHeader,
+    network::chain_pair::ChainPair,
 };
 use std::sync::Arc;
 
@@ -67,7 +67,7 @@ pub(crate) fn reduce_hold_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let EntryWithHeader { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
+    let chain_pair { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
     let mut new_store = (*old_store).clone();
     match reduce_store_entry_inner(&mut new_store, &entry) {
         Ok(()) => {

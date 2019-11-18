@@ -2,14 +2,14 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::entry_with_header::EntryWithHeader,
+    network::chain_pair::ChainPair,
     scheduled_jobs::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
 };
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 pub fn add_pending_validation(
-    entry_with_header: EntryWithHeader,
+    chain_pair: ChainPair,
     dependencies: Vec<Address>,
     workflow: ValidatingWorkflow,
     context: Arc<Context>,
@@ -18,7 +18,7 @@ pub fn add_pending_validation(
         context.action_channel(),
         ActionWrapper::new(Action::AddPendingValidation(Arc::new(
             PendingValidationStruct {
-                entry_with_header,
+                chain_pair,
                 dependencies,
                 workflow,
             },

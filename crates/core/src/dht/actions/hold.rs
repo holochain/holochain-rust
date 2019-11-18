@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::entry_with_header::EntryWithHeader,
+    network::chain_pair::ChainPair,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HolochainError;
@@ -10,11 +10,11 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry(
-    entry_wh: &EntryWithHeader,
+    chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let address = entry_wh.entry.address();
-    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.to_owned()));
+    let address = chain_pair.entry.address();
+    let action_wrapper = ActionWrapper::new(Action::Hold(chain_pair.to_owned()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     HoldEntryFuture { context, address }.await
 }

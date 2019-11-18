@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     dht::actions::hold::hold_entry,
-    network::entry_with_header::EntryWithHeader,
+    network::chain_pair::ChainPair,
     nucleus::{
         actions::add_pending_validation::add_pending_validation, validation::validate_entry,
     },
@@ -21,11 +21,11 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow(
-    entry_with_header: &EntryWithHeader,
+    chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(&chain_pair, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";

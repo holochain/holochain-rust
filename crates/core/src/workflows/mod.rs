@@ -36,11 +36,11 @@ use std::sync::Arc;
 /// Checks the DNA's validation package definition for the given entry type.
 /// Fails if this entry type needs more than just the header for validation.
 async fn try_make_local_validation_package(
-    entry_with_header: &EntryWithHeader,
+    chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
-    let entry = &entry_with_header.entry;
-    let entry_header = &entry_with_header.header;
+    let entry = &chain_pair.entry();
+    let entry_header = &chain_pair.header();
 
     let validation_package_definition = get_validation_package_definition(entry, context.clone())
         .and_then(|callback_result| match callback_result {
@@ -61,8 +61,8 @@ async fn try_make_local_validation_package(
         _ => {
             let agent = context.state()?.agent().get_agent()?;
 
-            let overlapping_provenance = entry_with_header
-                .header
+            let overlapping_provenance = chain_pair
+                .header()
                 .provenances()
                 .iter()
                 .find(|p| p.source() == agent.address());
@@ -70,9 +70,9 @@ async fn try_make_local_validation_package(
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
                 build_validation_package(
-                    &entry_with_header.entry,
+                    &chain_pair.entry(),
                     context.clone(),
-                    entry_with_header.header.provenances(),
+                    chain_pair.header().provenances(),
                 )
                 .await
             } else {
@@ -88,16 +88,16 @@ async fn try_make_local_validation_package(
 /// First tries to create it locally and if that fails will try to get the
 /// validation package from the source.
 async fn validation_package(
-    entry_with_header: &EntryWithHeader,
+    chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally:
     if let Ok(package) =
-        try_make_local_validation_package(&entry_with_header, context.clone()).await
+        try_make_local_validation_package(&chain_pair, context.clone()).await
     {
         Ok(Some(package))
     } else {
         // If that is not possible, get the validation package from source
-        get_validation_package(entry_with_header.header.clone(), &context).await
+        get_validation_package(chain_pair.header().clone(), &context).await
     }
 }

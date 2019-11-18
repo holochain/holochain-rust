@@ -217,14 +217,18 @@ impl DhtStore {
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
-        let eavi = EntityAttributeValueIndex::new(
-            &entry.address(),
-            &Attribute::EntryHeader,
-            &header.address(),
-        )?;
-        self.content_storage().write().unwrap().add(header)?;
-        self.meta_storage().write().unwrap().add_eavi(&eavi)?;
-        Ok(())
+        if let Ok(chain_pair) = ChainPair::new(header, entry) {
+            let eavi = EntityAttributeValueIndex::new(
+                &entry.address(),
+                &Attribute::EntryHeader,
+                &header.address(),
+            )?;
+            self.content_storage().write().unwrap().add(header)?;
+            self.meta_storage().write().unwrap().add_eavi(&eavi)?;
+            Ok(())
+        } else {
+            Err(_)
+        }
     }
 
     pub fn mark_entry_as_held(&mut self, entry: &Entry) {

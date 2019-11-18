@@ -293,7 +293,7 @@ impl Instance {
                         if let Some(pending) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
-                            // we can run into a race condition. 
+                            // we can run into a race condition.
                             context.block_on(pop_next_holding_workflow(
                                 pending.clone(),
                                 context.clone(),

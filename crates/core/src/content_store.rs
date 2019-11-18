@@ -2,7 +2,7 @@ use holochain_core_types::{entry::Entry, error::HcResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
 pub trait GetContent {
-    /// Return the content at this addres, do not attempt to convert to an entry
+    /// Return the content at this address, do not attempt to convert to an entry
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>>;
 
     /// Get an entry from this storage

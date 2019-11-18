@@ -2,6 +2,10 @@ use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
     context::Context,
+    dht::actions::{
+        pop_next_holding_workflow::pop_next_holding_workflow,
+        queue_holding_workflow::queue_holding_workflow,
+    },
     network,
     persister::Persister,
     scheduled_jobs,
@@ -21,7 +25,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     ugly::lax_send_sync,
 };
-use holochain_locksmith::{RwLock, RwLockReadGuard};
+use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -48,6 +52,7 @@ pub struct Instance {
     persister: Option<Arc<RwLock<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
+    kill_switch_holding: Option<Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -67,14 +72,12 @@ impl Instance {
         scheduler
             .every(10.seconds())
             .run(scheduled_jobs::create_state_dump_callback(context.clone()));
-        scheduler
-            .every(1.second())
-            .run(scheduled_jobs::create_validation_callback(context.clone()));
         self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
         self.persister = Some(context.persister.clone());
 
         self.start_action_loop(context.clone(), rx_action, rx_observer);
+        self.start_holding_loop(context.clone());
 
         context
     }
@@ -222,6 +225,9 @@ impl Instance {
         if let Some(ref kill_switch) = self.kill_switch {
             let _ = kill_switch.send(());
         }
+        if let Some(ref kill_switch) = self.kill_switch_holding {
+            let _ = kill_switch.send(());
+        }
     }
 
     /// Calls the reducers for an action and calls the observers with the new state
@@ -267,6 +273,63 @@ impl Instance {
         Ok(())
     }
 
+    fn start_holding_loop(&mut self, context: Arc<Context>) {
+        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
+        self.kill_switch_holding = Some(kill_sender);
+        thread::Builder::new()
+            .name(format!(
+                "holding_loop/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                while kill_receiver.try_recv().is_err() {
+                    log_trace!(context, "Checking holding queue...");
+                    loop {
+                        let dht_store = context
+                            .state()
+                            .expect("Couldn't get state in run_pending_validations")
+                            .dht();
+                        let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
+                        if let Some(pending) = maybe_holding_workflow {
+                            log_debug!(context, "Found queued validation: {:?}", pending);
+                            // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
+                            // we can run into a race condition.
+                            context.block_on(pop_next_holding_workflow(
+                                pending.clone(),
+                                context.clone(),
+                            ));
+
+                            let result = scheduled_jobs::pending_validations::run_holding_workflow(
+                                pending,
+                                context.clone(),
+                            );
+
+                            match result {
+                                // If we couldn't run the validation due to unresolved dependencies,
+                                // we have to re-add this entry at the end of the queue:
+                                Err(HolochainError::ValidationPending) => context.block_on(
+                                    queue_holding_workflow(pending.clone(), context.clone()),
+                                ),
+                                Err(e) => log_error!(
+                                    context,
+                                    "Error running holding workflow for {:?}: {:?}",
+                                    pending,
+                                    e,
+                                ),
+                                Ok(()) => {
+                                    log_info!(context, "Successfully processed: {:?}", pending)
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+            })
+            .expect("Could not spawn holding thread");
+    }
+
     pub(crate) fn emit_signals(&mut self, context: &Context, action_wrapper: &ActionWrapper) {
         if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
@@ -306,6 +369,7 @@ impl Instance {
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
             kill_switch: None,
+            kill_switch_holding: None,
         }
     }
 
@@ -318,23 +382,25 @@ impl Instance {
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
             kill_switch: None,
+            kill_switch_holding: None,
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
+    pub fn state(&self) -> StateWrapper {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
-            .annotate("Instance::state")
+            .clone()
     }
 
     pub fn save(&self) -> HcResult<()> {
+        let state = self.state();
         self.persister
             .as_ref()
             .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?
             .try_write()
             .ok_or_else(|| HolochainError::new("Could not get lock on persister"))?
-            .save(&self.state())
+            .save(&state)
     }
 
     #[allow(clippy::needless_lifetimes)]

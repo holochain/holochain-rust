@@ -19,7 +19,7 @@ use holochain_json_api::{
     json::JsonString,
 };
 
-use std::{convert::TryInto, fmt};
+use std::{convert::TryInto};
 
 
 /// ChainHeader of a source chain "Item"
@@ -48,11 +48,6 @@ pub struct ChainHeader {
     timestamp: Iso8601,
 }
 
-impl fmt::Display for ChainHeader {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
-    }
-}
 impl PartialEq for ChainHeader {
     fn eq(&self, other: &ChainHeader) -> bool {
         self.address() == other.address()

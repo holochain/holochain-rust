@@ -7,7 +7,6 @@ mod ribosome_error;
 use self::HolochainError::*;
 pub use self::{dna_error::*, ribosome_error::*};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
@@ -116,7 +115,7 @@ pub enum HolochainError {
     InitializationFailed(String),
     LifecycleError(String),
     DnaHashMismatch(HashString, HashString),
-    HeaderEntryMismatch(String, Address, Entry, ChainHeader, Address, Entry),
+    HeaderEntryMismatch(String, Address, Address),
     EntryNotFoundLocally,
     EntryIsPrivate,
     List(Vec<HolochainError>),
@@ -167,15 +166,12 @@ impl fmt::Display for HolochainError {
             HeaderEntryMismatch(
                 err_msg,
                 header_entry_address,
-                header_entry,
-                header,
                 entry_address,
-                entry,
             ) => write!(
                 f,
-                "Header/Entry mismatch. The address {} of the entry {} in the
-                 header {} does not match the address {} of the entry {}. {}",
-                header_entry_address, header_entry, header, entry_address, entry, err_msg
+                "Header/Entry mismatch. The address {} of the entry in the
+                 header does not match the address {} of the entry. {}",
+                header_entry_address, entry_address, err_msg
             ),
             EntryNotFoundLocally => write!(f, "The requested entry could not be found locally"),
             EntryIsPrivate => write!(

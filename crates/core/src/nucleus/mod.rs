@@ -5,7 +5,6 @@ pub mod reducers;
 pub mod ribosome;
 pub mod state;
 pub mod validation;
-
 pub use crate::{
     context::Context,
     nucleus::{
@@ -13,18 +12,25 @@ pub use crate::{
             call_zome_function, make_cap_request_for_call, ExecuteZomeFnResponse,
         },
         reducers::reduce,
+        ribosome::api::ZomeApiFunction,
     },
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
-
-use holochain_persistence_api::cas::content::Address;
-
 use holochain_json_api::json::JsonString;
-
+use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::sync::Arc;
 
-/// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
+/// Struct holding data for requesting the execution of a Zome function (QueueZomeFunctionCall Action)
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
+pub struct HdkFnCall {
+    pub function: ZomeApiFunction,
+    pub parameters: JsonString,
+}
+
+pub type HdkFnCallResult = Result<JsonString, String>;
+
+/// Struct holding data for requesting the execution of a Zome function (QueueZomeFunctionCall Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct ZomeFnCall {
     id: snowflake::ProcessUniqueId,

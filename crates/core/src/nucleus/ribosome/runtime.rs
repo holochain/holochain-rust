@@ -230,7 +230,7 @@ impl Externals for Runtime {
         match zf {
             ZomeApiFunction::MissingNo => panic!("unknown function index"),
             // convert the function to its callable form and call it with the given arguments
-            _ => zf.as_fn()(self, &args),
+            _ => zf.apply(self, &args),
         }
     }
 }

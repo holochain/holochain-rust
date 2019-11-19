@@ -10,7 +10,7 @@ macro_rules! link_zome_api {
         /// Enumeration of all the Zome Functions known and usable in Zomes.
         /// Enumeration can convert to str.
         #[repr(usize)]
-        #[derive(FromPrimitive, Debug, PartialEq, Eq)]
+        #[derive(FromPrimitive, Clone, Hash, Debug, PartialEq, Eq, Serialize)]
         pub enum ZomeApiFunction {
             /// Error index for unimplemented functions
             MissingNo = 0,
@@ -58,22 +58,21 @@ macro_rules! link_zome_api {
             }
         }
 
-        /// does nothing, escape hatch so the compiler can enforce exhaustive matching in as_fn
-        fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
-            ribosome_success!()
-        }
-
         impl ZomeApiFunction {
             // cannot test this because PartialEq is not implemented for fns
             #[cfg_attr(tarpaulin, skip)]
-            pub fn as_fn(&self) -> impl Fn(&mut Runtime, &RuntimeArgs) -> ZomeApiResult {
+            pub fn apply(&self, runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
                 // TODO Implement a proper "abort" function for handling assemblyscript aborts
                 // @see: https://github.com/holochain/holochain-rust/issues/324
 
                 match *self {
-                    ZomeApiFunction::MissingNo => noop,
-                    ZomeApiFunction::Abort => noop,
-                    $( ZomeApiFunction::$enum_variant => $function_name , )*
+                    ZomeApiFunction::MissingNo => ribosome_success!(),
+                    ZomeApiFunction::Abort => ribosome_success!(),
+                    $( ZomeApiFunction::$enum_variant => {
+                        let _context = runtime.context();
+                        let result = $function_name(runtime, args);
+                        result
+                    } , )*
                 }
             }
         }

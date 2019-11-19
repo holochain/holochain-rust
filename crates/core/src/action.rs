@@ -11,6 +11,8 @@ use crate::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
         validation::ValidationResult,
+        HdkFnCall,
+        HdkFnCallResult,
         ZomeFnCall,
     },
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
@@ -216,13 +218,14 @@ pub enum Action {
     ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.
-    /// There is no reducer for this action so this does not change state
-    /// (hence "Signal").
-    /// Is received as signal in the nodejs waiter to attach wait conditions.
     QueueZomeFunctionCall(ZomeFnCall),
-
+    
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+
+    InvokeHdkFunction((ZomeFnCall, HdkFnCall)),
+
+    ReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context

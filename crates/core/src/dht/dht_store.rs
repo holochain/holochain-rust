@@ -313,7 +313,7 @@ impl DhtStore {
                         continue;
                     }
                 }
-                return Some((pending, Some(delay.clone())));
+                return Some((pending, Some(*delay)));
             }
             return Some((pending, None));
         }

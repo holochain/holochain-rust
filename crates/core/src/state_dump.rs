@@ -46,7 +46,7 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
-        let invocations = nucleus.zome_call_api_invocations;
+        let invocations = nucleus.hdk_function_calls;
         let running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)> = nucleus
             .running_zome_calls
             .into_iter()

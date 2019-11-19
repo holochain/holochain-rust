@@ -110,7 +110,7 @@ pub struct NucleusState {
     //read from there when loading an instance/chain.
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
-    pub zome_call_api_invocations: HashMap<ZomeFnCall, ZomeFnCallState>,
+    pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -133,7 +133,7 @@ impl NucleusState {
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
             pending_validations: HashMap::new(),
-            zome_call_api_invocations: HashMap::new(),
+            hdk_function_calls: HashMap::new(),
         }
     }
 
@@ -200,7 +200,7 @@ impl From<NucleusStateSnapshot> for NucleusState {
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
             pending_validations: snapshot.pending_validations,
-            zome_call_api_invocations: HashMap::new(),
+            hdk_function_calls: HashMap::new(),
         }
     }
 }

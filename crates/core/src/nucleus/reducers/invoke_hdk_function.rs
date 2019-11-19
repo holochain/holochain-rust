@@ -14,8 +14,8 @@ pub fn reduce_invoke_hdk_function(
     let action = action_wrapper.action();
     let (zome_fn_call, hdk_fn_call) = unwrap_to!(action => Action::InvokeHdkFunction);
     state
-        .zome_call_api_invocations
+        .hdk_function_calls
         .entry(zome_fn_call.clone())
-        .and_modify(|zfcs| zfcs.begin_hdk_call(hdk_fn_call.clone()))
+        .and_modify(|zome_fn_call_state| zome_fn_call_state.begin_hdk_call(hdk_fn_call.clone()))
         .or_insert_with(|| ZomeFnCallState::default());
 }

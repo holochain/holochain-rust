@@ -15,11 +15,7 @@ use std::{
 
 use structopt::StructOpt;
 
-use rusoto_core::{DefaultCredentialsProvider};
-
-use rusoto_sts::StsClient;
-use rusoto_sts::StsAssumeRoleSessionCredentialsProvider;
-
+use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 
 const DEFAULT_REGION: Region = Region::EuCentral1;
 
@@ -310,18 +306,20 @@ impl Default for CloudWatchLogger {
     }
 }
 
+const DEFAULT_ASSUME_ROLE_ARN: &str =
+    "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
 
-pub fn assume_role(region:&Region) {
-
-//    let credentials = DefaultCredentialsProvider::new().unwrap();
+pub fn assume_role(region: &Region) -> StsAssumeRoleSessionCredentialsProvider {
     let sts = StsClient::new(region.clone());
 
     let provider = StsAssumeRoleSessionCredentialsProvider::new(
         sts,
-        "arn:aws:iam::something:role/something".to_owned(),
+        DEFAULT_ASSUME_ROLE_ARN.to_owned(),
         "default".to_owned(),
-        None, None, None, None
+        None,
+        None,
+        None,
+        None,
     );
-
-    //println!("{:?}", x);
+    provider
 }

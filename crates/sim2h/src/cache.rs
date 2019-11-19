@@ -19,7 +19,7 @@ pub struct Space {
     crypto: Box<dyn CryptoSystem>,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
-    missing_aspects: HashMap<AgentId, HashSet<AspectHash>>,
+    missing_aspects: HashMap<AgentId, HashMap<EntryHash, Vec<AspectHash>>>,
     /// sim2h currently uses the same radius for all connections
     rrdht_arc_radius: u32,
 }
@@ -36,19 +36,27 @@ impl Space {
         }
     }
 
-    pub fn add_missing_aspect(&mut self, agent: AgentId, aspect_hash: AspectHash) {
-        let set_for_agent = self
+    pub fn add_missing_aspect(&mut self, agent: AgentId, entry_hash: EntryHash, aspect_hash: AspectHash) {
+        let map_for_agent = self
             .missing_aspects
             .entry(agent)
-            .or_insert_with(HashSet::new);
-        set_for_agent.insert(aspect_hash);
+            .or_insert_with(HashMap::new);
+        let vec_for_entry= map_for_agent
+            .entry(entry_hash)
+            .or_insert_with(Vec::new);
+        vec_for_entry.push(aspect_hash);
     }
 
-    pub fn remove_missing_aspect(&mut self, agent: &AgentId, aspect_hash: &AspectHash) {
-        let maybe_set_for_agent = self.missing_aspects.get_mut(agent);
-        if let Some(set_for_agent) = maybe_set_for_agent {
-            set_for_agent.remove(aspect_hash);
-            if set_for_agent.len() == 0 {
+    pub fn remove_missing_aspect(&mut self, agent: &AgentId, entry_hash: &EntryHash, aspect_hash: &AspectHash) {
+        let maybe_map_for_agent = self.missing_aspects.get_mut(agent);
+        if let Some(map_for_agent) = maybe_map_for_agent {
+            if let Some(vec_for_entry) = map_for_agent.get_mut(entry_hash) {
+                vec_for_entry.remove_item(aspect_hash);
+                if vec_for_entry.len() == 0 {
+                    map_for_agent.remove(entry_hash);
+                }
+            }
+            if map_for_agent.len() == 0 {
                 self.missing_aspects.remove(agent);
             }
         }
@@ -56,6 +64,28 @@ impl Space {
 
     pub fn agents_with_missing_aspects(&self) -> Vec<AgentId> {
         self.missing_aspects.keys().cloned().collect()
+    }
+
+    /// Returns true if the given agent agent is missing all of the given aspects for the given entry.
+    /// That is: if all of the aspects are stored as missing for that agent.
+    /// If one of the given aspects is not in that vector of missing entries, the agent is supposed
+    /// to have it and this function returns fals.
+    pub fn agent_is_missing_all_aspects(&self, agent_id: &AgentId, entry_hash: &EntryHash, aspects: &Vec<AspectHash>) -> bool {
+        self.missing_aspects
+            .get(agent_id)
+            .and_then(|map_for_agent| map_for_agent.get(entry_hash))
+            .and_then(|vec_of_missing_aspects_for_entry| {
+                // We check that every of the given aspects is the missing list.
+                // If one is missing from the missing list this block returns some
+                // and the whole function returns false.
+                for aspect in aspects {
+                    if !vec_of_missing_aspects_for_entry.contains(aspect) {
+                        return Some(());
+                    }
+                }
+                None
+            })
+            .is_none()
     }
 
     pub(crate) fn recalc_rrdht_arc_radius(&mut self) {

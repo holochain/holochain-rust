@@ -17,7 +17,6 @@ use crate::{
     state::State,
 };
 
-use bitflags::_core::time::Duration;
 use holochain_core_types::{
     chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
     error::HolochainError, link::link_data::LinkData, signature::Provenance,
@@ -29,7 +28,7 @@ use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    time::SystemTime,
+    time::{Duration, SystemTime},
     vec::Vec,
 };
 

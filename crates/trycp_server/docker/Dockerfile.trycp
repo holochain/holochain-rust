@@ -22,8 +22,9 @@ ADD https://github.com/holochain/holochain-rust/archive/trycp-server-fix.tar.gz 
 RUN tar --strip-components=1 -zxvf develop.tar.gz
 # ADD . .
 
-RUN nix-env -f $shellfile -iA holochain.holochain
+#RUN nix-env -f $shellfile -iA holochain.holochain
 RUN nix-shell $shellfile --run hc-trycp-server-install
+RUN nix-shell default.nix --run hc-conductor-install
 RUN nix-shell $shellfile --run 'cargo clean'
 RUN nix-collect-garbage
 
@@ -34,5 +35,6 @@ COPY --from=build / /
 WORKDIR /holochain
 ENV CARGO_HOME /holochain
 ENV PATH "/holochain/bin:${PATH}"
+ENV PATH "/holochain/.cargo/bin:${PATH}"
 
 CMD trycp_server -p 9000 --port-range 5050-5070

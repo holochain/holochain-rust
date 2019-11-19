@@ -1,5 +1,7 @@
 use crate::link::Link;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use std::fmt;
+use dump_vec::DumpVec;
 
 //-------------------------------------------------------------------------------------------------
 // LinkList
@@ -19,5 +21,12 @@ impl LinkList {
 
     pub fn links(&self) -> &Vec<Link> {
         &self.links
+    }
+}
+
+impl fmt::Display for LinkList {
+    fn fmt(&self, f: &mut fmt::formatter) -> fmt::Result {
+        let dump_vec_links = DumpVec(*self.links);
+        write!(f, "Link list: {}", dump_vec_links)
     }
 }

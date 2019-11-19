@@ -19,7 +19,8 @@ use holochain_json_api::{
     json::JsonString,
 };
 
-use std::convert::TryInto;
+use std::{convert::TryInto, fmt};
+
 
 /// ChainHeader of a source chain "Item"
 /// The address of the ChainHeader is used as the Item's key in the source chain hash table
@@ -47,6 +48,11 @@ pub struct ChainHeader {
     timestamp: Iso8601,
 }
 
+impl fmt::Display for ChainHeader {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        
+    }
+}
 impl PartialEq for ChainHeader {
     fn eq(&self, other: &ChainHeader) -> bool {
         self.address() == other.address()

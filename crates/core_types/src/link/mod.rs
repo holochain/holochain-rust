@@ -17,6 +17,7 @@ use entry::Entry;
 use holochain_persistence_api::cas::content::AddressableContent;
 use link::link_data::LinkData;
 use regex::Regex;
+use std::fmt;
 
 type LinkType = String;
 type LinkTag = String;
@@ -27,6 +28,14 @@ pub struct Link {
     target: Address,
     link_type: LinkType,
     tag: LinkTag,
+}
+
+impl fmt::Display for Link {
+    fn fmt(&self, f: &mut fmt::formatter) -> fmt::Result {
+        write!(f, "Link: \nbase: {}\ntarget: {}\nlink_type: {}\ntag: {}",
+            self.0, self.1, self.2, self.3
+        )
+    }
 }
 
 impl Link {

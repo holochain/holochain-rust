@@ -290,21 +290,25 @@ fn main() {
     io.add_method("reset", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let killall = get_as_bool("killall", &params_map, Some(false))?;
-        let mut players = players_arc_reset.write().expect("should_lock");
-        if killall {
-            let output = Command::new("killall")
-                .args(&["holochain", "-s", "SIGKILL"])
-                .output()
-                .expect("failed to execute process");
-            println!("killall result: {:?}", output);
-        } else {
-            for (id, child) in &*players {
-                let _ = do_kill(id, child, "SIGKILL"); //ignore any errors
+        {
+            let mut players = players_arc_reset.write().expect("should_lock");
+            if killall {
+                let output = Command::new("killall")
+                    .args(&["holochain", "-s", "SIGKILL"])
+                    .output()
+                    .expect("failed to execute process");
+                println!("killall result: {:?}", output);
+            } else {
+                for (id, child) in &*players {
+                    let _ = do_kill(id, child, "SIGKILL"); //ignore any errors
+                }
             }
+            players.clear();
         }
-        players.clear();
-        let mut temp_path = state.write().expect("should_lock");
-        temp_path.reset();
+        {
+            let mut temp_path = state.write().expect("should_lock");
+            temp_path.reset();
+        }
 
         Ok(Value::String("reset".into()))
     });
@@ -332,15 +336,17 @@ fn main() {
         let config_base64 = get_as_string("config", &params_map)?;
         let content = base64::decode(&config_base64)
             .map_err(|e| invalid_request(format!("error decoding config: {:?}", e)))?;
-        let state = state_player.read().unwrap();
-        let dir_path = get_dir(&state, &id);
-        std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
-            invalid_request(format!(
-                "error making temporary directory for config: {:?} {:?}",
-                e, dir_path
-            ))
-        })?;
-        let file_path = get_config_path(&state, &id);
+        {
+            let state = state_player.read().unwrap();
+            let dir_path = get_dir(&state, &id);
+            std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
+                invalid_request(format!(
+                    "error making temporary directory for config: {:?} {:?}",
+                    e, dir_path
+                ))
+            })?;
+            let file_path = get_config_path(&state, &id);
+        }    
         save_file(file_path.clone(), &content)?;
         let response = format!(
             "wrote config for player {} to {}",

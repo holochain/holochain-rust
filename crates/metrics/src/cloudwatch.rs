@@ -232,12 +232,14 @@ impl CloudWatchLogger {
         }
     }
 
-    pub fn with_log_stream(
+    pub fn with_log_stream<P: rusoto_credential::ProvideAwsCredentials+Sync+Send+'static>(
         log_stream_name: String,
         log_group_name: String,
+        credentials_provider: P,
         region: &Region,
-    ) -> Self {
-        let client = CloudWatchLogsClient::new(region.clone());
+    ) -> Self where P::Future: Send {
+        let client = CloudWatchLogsClient::new_with(rusoto_core::request::HttpClient::new().unwrap(),
+             credentials_provider, region.clone());
 
         let log_group_request = CreateLogGroupRequest {
             log_group_name: log_group_name.clone(),
@@ -302,7 +304,8 @@ impl Default for CloudWatchLogger {
     fn default() -> Self {
         let default_log_stream = Self::default_log_stream();
         let default_log_group = Self::default_log_group();
-        CloudWatchLogger::with_log_stream(default_log_stream, default_log_group, &DEFAULT_REGION)
+        let provider = assume_role(&DEFAULT_REGION);
+        CloudWatchLogger::with_log_stream(default_log_stream, default_log_group, provider, &DEFAULT_REGION)
     }
 }
 

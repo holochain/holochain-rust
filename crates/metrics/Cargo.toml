@@ -24,6 +24,7 @@ rand = "0.7.2"
 rusoto_sts = "=0.40.0"
 rusoto_logs = "=0.40.0"
 rusoto_core = "=0.40.0"
+rusoto_credential = "=0.40.0"
 ## For descriptive statistics on metrics
 streaming-stats = "=0.2.2"
 csv = "=1.1"

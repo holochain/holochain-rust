@@ -214,7 +214,11 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
     let query_result_json = JsonString::from_json(
         std::str::from_utf8(&*query_result_data.clone().query_result).unwrap(),
     );
-    trace!("handle_query_entry_result: {:?}", query_result_data);
+    log_trace!(
+        context,
+        "handle_query_entry_result: {:?}",
+        query_result_data
+    );
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
             let payload = NetworkQueryResult::Entry(maybe_entry);

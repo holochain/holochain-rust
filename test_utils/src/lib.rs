@@ -326,7 +326,13 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", cap_request, fn_name, &params_string);
+    Holochain::call_zome_function(
+        hc.context().unwrap(),
+        "test_zome",
+        cap_request,
+        fn_name,
+        &params_string
+    )
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -516,7 +522,13 @@ pub fn make_test_call(
             JsonString::from_json(params),
         )
     };
-    hc.call("test_zome", cap_call, fn_name, params)
+    Holochain::call_zome_function(
+        hc.context().unwrap(),
+        "test_zome",
+        cap_call,
+        fn_name,
+        params
+    )
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson, Clone)]

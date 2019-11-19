@@ -150,14 +150,20 @@ impl ConductorApiBuilder {
             .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
         let hc_lock = instance.clone();
         let hc_lock_inner = hc_lock.clone();
-        let hc = hc_lock_inner
-            .read()
-            .unwrap()
-            .annotate(format!("RPC method_call: {:?}", params_map));
+        let context = {
+            let hc = hc_lock_inner
+                .read()
+                .unwrap()
+                .annotate(format!("RPC method_call: {:?}", params_map));
+            hc.check_instance()
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            hc.check_active()
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            hc.context()
+                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...")
+        };
 
         let cap_request = {
-            let context = hc.context()
-                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
             // Get the token from the parameters.  If not there assume public token.
             let maybe_token = Self::get_as_string("token", &params_map);
             let token = match maybe_token {
@@ -191,8 +197,14 @@ impl ConductorApiBuilder {
             }
         };
 
-        hc.call(&zome_name, cap_request, &func_name, &args_string)
-            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+        Holochain::call_zome_function(
+            context.clone(),
+            &zome_name,
+            cap_request,
+            &func_name,
+            &args_string,
+        )
+        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 
     /// Adds a "call" method for making zome function calls
@@ -754,7 +766,8 @@ impl ConductorApiBuilder {
 
             let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
 
-            Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
+            Ok(serde_json::to_value(dump)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?)
         });
 
         self.io.add_method("debug/fetch_cas", move |params| {
@@ -1405,7 +1418,7 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid provenance: invalid type: map, expected tuple struct Provenance"},"id":"0"}"#
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
 
         let response_str = handler

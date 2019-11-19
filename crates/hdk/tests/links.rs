@@ -240,6 +240,7 @@ pub fn test_bad_links() {
     assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error);
 }
 
+#[cfg(feature = "broken-tests")]
 #[test]
 pub fn test_links_with_immediate_timeout() {
     let (mut hc, _, _signal_receiver) =

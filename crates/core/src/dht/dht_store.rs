@@ -7,7 +7,7 @@ use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
-    error::{HolochainError, HcResult},
+    error::{HcResult, HolochainError},
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;

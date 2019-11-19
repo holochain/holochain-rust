@@ -4,8 +4,8 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
     error::{
-        RibosomeErrorCode::{self, *},
         HcResult,
+        RibosomeErrorCode::{self, *},
     },
 };
 use holochain_locksmith::RwLock;

@@ -380,7 +380,7 @@ fn main() {
 
         let mut conductor = Command::new("holochain")
             .args(&["-c", &config_path])
-            .env("RUST_BACKTRACE","1")
+            .env("RUST_BACKTRACE","full")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()

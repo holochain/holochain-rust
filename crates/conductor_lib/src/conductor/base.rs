@@ -133,7 +133,6 @@ impl Drop for Conductor {
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
 
-        FlamerWrapper::dump_html();
         if let Some(mut network) = self.n3h_keepalive_network.take() {
             network.stop()
         }
@@ -526,12 +525,15 @@ impl Conductor {
         // incoming RPCs while we are spinning down:
         self.stop_all_interfaces();
 
+        FlamerWrapper::dump_html();
+
         // 2. Really make sure nobody can use the conductor through the
         // static reference anymore.
         // Waiting for the conductor lock here also ensure that any
         // running RPC gets finished before we're trying to stop
         // instances (which could lead to a dead-lock)
         let mut conductor_guard = CONDUCTOR.lock().unwrap();
+        conductor_guard
         std::mem::replace(&mut *conductor_guard, None);
 
         // 3. Stop running instances:

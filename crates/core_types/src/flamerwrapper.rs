@@ -7,16 +7,17 @@ const FLAME_ENV : &str = "COMPILE_WITH_FLAME";
 const FLAME_PATH : &str = "FLAME_GRAPH_PATH" ;
 pub struct FlamerWrapper;
 
+
 impl FlamerWrapper
 {
     #[allow(unused_variables)]
-    pub fn start(guard_name:&'static str )
+    pub fn start(&self, guard_name:&'static str )
     {
         if let Ok(setting) = env::var(FLAME_ENV)
         {
             if setting =="YES"
             {
-                debug!("adding guard");
+                debug!("adding guard {:?}",guard_name.clone());
                 #[cfg(not(target_arch = "wasm32"))]
                 flame::start(guard_name);
                 #[cfg(target_arch = "wasm32")]
@@ -24,24 +25,23 @@ impl FlamerWrapper
             }
         }
     }
-    
+
     #[allow(unused_variables)]
-    pub fn end(guard_name:&'static str)
+    pub fn end(&self,guard_name:&'static str)
     {
         if let Ok(setting) = env::var(FLAME_ENV)
         {
             if setting =="YES"
             {
-                debug!("ending guard");
+                debug!("ending guard {:?}",guard_name.clone());
                 #[cfg(not(target_arch = "wasm32"))]
                 flame::end(guard_name);
                 #[cfg(target_arch = "wasm32")]
-                warn!("cannot compile flamer for wasm");
+                warn!("cannot compile flamer for wasm, will not start guard");
             }
         }
     }
-  
-
+    
     #[allow(unused_variables)]
     pub fn dump_html() 
     {
@@ -64,6 +64,10 @@ impl FlamerWrapper
                     warn!("flame graphs not enabled for wasm")
                    
                     
+                }
+                else 
+                {
+                    warn!("target not set for flame grap")
                 }
             }
         }

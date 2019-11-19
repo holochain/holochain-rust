@@ -20,6 +20,7 @@ pub async fn handle_custom_direct_message(
     custom_direct_message: CustomDirectMessage,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
+    context.add_flame_guard("handle_custom_direct_message"); 
     let zome = custom_direct_message.zome.clone();
     let payload = custom_direct_message
         .payload
@@ -33,6 +34,7 @@ pub async fn handle_custom_direct_message(
             payload,
         }),
     );
+    context.end_flame_guard("handle_custom_direct_message"); 
     let response = match result {
         CallbackResult::ReceiveResult(response) => Ok(response),
         err => Err(format!("Error calling receive callback: {:?}", err)),

@@ -15,7 +15,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
     signature::{Provenance, Signature},
-    ugly::lax_send_sync,
+    ugly::lax_send_sync
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -210,6 +210,7 @@ pub fn make_cap_request_for_call<J: Into<JsonString>>(
 
 /// verifies that this grant is valid for a given requester and token value
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
+    context.add_flame_guard("verify_grant");
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
     if maybe_zome_grants.is_none() {
@@ -219,6 +220,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
             fn_call.zome_name,
             cap_functions
         );
+        context.end_flame_guard("verify_grant");
         return false;
     }
     if !maybe_zome_grants.unwrap().contains(&fn_call.fn_name) {
@@ -228,6 +230,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
             fn_call.fn_name,
             maybe_zome_grants
         );
+        context.end_flame_guard("verify_grant");
         return false;
     }
 
@@ -238,6 +241,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
             grant.token(),
             fn_call.cap_token()
         );
+        context.end_flame_guard("verify_grant");
         return false;
     }
 
@@ -250,6 +254,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
             context,
             "actions/verify_grant: call signature did not match"
         );
+        context.end_flame_guard("verify_grant");
         return false;
     }
 
@@ -268,6 +273,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
                     context,
                     "actions/verify_grant: caller not one of the assignees"
                 );
+                context.end_flame_guard("verify_grant");
                 return false;
             }
             true
@@ -322,6 +328,7 @@ impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        
         if let Some(err) = self.context.action_channel_error("CallResultFuture") {
             return Poll::Ready(Err(err));
         }
@@ -332,6 +339,7 @@ impl Future for CallResultFuture {
         cx.waker().clone().wake();
 
         if let Some(state) = self.context.clone().try_state() {
+       
             if self.call_spawned {
                 match state.nucleus().zome_call_result(&self.zome_call) {
                     Some(result) => Poll::Ready(result),
@@ -345,6 +353,7 @@ impl Future for CallResultFuture {
                 Poll::Pending
             }
         } else {
+ 
             Poll::Pending
         }
     }

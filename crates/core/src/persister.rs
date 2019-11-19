@@ -4,7 +4,7 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::{error::HolochainError,flamerwrapper::FlamerWrapper};
+use holochain_core_types::error::HolochainError;
 use holochain_locksmith::RwLock;
 
 use holochain_persistence_api::cas::{
@@ -41,7 +41,6 @@ impl PartialEq for SimplePersister {
 
 impl Persister for SimplePersister {
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
-        FlamerWrapper::start("persister-save");
         let lock = &*self.storage.clone();
         let mut store = lock.write()?;
         let agent_snapshot = AgentStateSnapshot::from(state);
@@ -50,11 +49,10 @@ impl Persister for SimplePersister {
         store.add(&agent_snapshot)?;
         store.add(&nucleus_snapshot)?;
         store.add(&dht_store_snapshot)?;
-        FlamerWrapper::end("persister-save");
         Ok(())
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
-        FlamerWrapper::start("persister-load");
+        context.clone().add_flame_guard("persister-load");
         let lock = &*self.storage.clone();
         let store = lock.read().unwrap();
 
@@ -80,16 +78,17 @@ impl Persister for SimplePersister {
             });
 
         if agent_snapshot.is_none() || nucleus_snapshot.is_none() || dht_store_snapshot.is_none() {
+            context.end_flame_guard("persister-load");
             return Ok(None);
         }
 
         let state = State::try_from_snapshots(
-            context,
+            context.clone(),
             agent_snapshot.unwrap(),
             nucleus_snapshot.unwrap(),
             dht_store_snapshot.unwrap(),
         ).ok();
-        FlamerWrapper::end("persister-load");
+        context.end_flame_guard("persister-load");
         Ok(state)
     }
 }

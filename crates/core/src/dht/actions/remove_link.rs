@@ -36,6 +36,7 @@ impl Future for RemoveLinkFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        self.context.add_flame_guard("RemoveLinkFuture");
         if let Some(err) = self.context.action_channel_error("RemoveLinkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -45,12 +46,14 @@ impl Future for RemoveLinkFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
+            self.context.end_flame_guard("RemoveLinkFuture");
             match state.dht().actions().get(&self.action) {
                 Some(Ok(_)) => Poll::Ready(Ok(())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),
                 None => Poll::Pending,
             }
         } else {
+            self.context.end_flame_guard("RemovLinkFuture");
             Poll::Pending
         }
     }

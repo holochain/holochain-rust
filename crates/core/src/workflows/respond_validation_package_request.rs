@@ -19,6 +19,7 @@ pub async fn respond_validation_package_request(
     context: Arc<Context>,
     provenances: &Vec<Provenance>,
 ) {
+    context.add_flame_guard("respond_validation_package_request");
     let maybe_validation_package =
         match get_entry_from_agent_chain(&context, &requested_entry_address) {
             Ok(Some(entry)) => build_validation_package(&entry, context.clone(), provenances)
@@ -50,4 +51,5 @@ pub async fn respond_validation_package_request(
 
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
     dispatch_action(context.action_channel(), action_wrapper);
+    context.add_flame_guard("respond_validation_package_request");
 }

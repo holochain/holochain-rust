@@ -13,7 +13,7 @@ use crate::{
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData}
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
@@ -22,6 +22,7 @@ pub async fn hold_remove_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
+    context.add_flame_guard("handle_remove_workflow"); 
     // 1. Get hold of validation package
     let maybe_validation_package = validation_package(entry_with_header, context.clone())
         .await
@@ -82,5 +83,8 @@ pub async fn hold_remove_workflow(
         deleted_entry_address,
         entry_with_header.entry.address().clone(),
     )
-    .await
+    .await?;
+
+    context.end_flame_guard("handle_remove_workflow"); 
+    Ok(())
 }

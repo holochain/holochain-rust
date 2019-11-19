@@ -38,6 +38,7 @@ impl Future for RemoveEntryFuture {
     type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        self.context.add_flame_guard("RemoveEntryFuture");
         if let Some(err) = self.context.action_channel_error("RemoveEntryFuture") {
             return Poll::Ready(Err(err));
         }
@@ -53,6 +54,7 @@ impl Future for RemoveEntryFuture {
                 None => Poll::Pending,
             }
         } else {
+            self.context.end_flame_guard("RemoveEntryFuture");
             Poll::Pending
         }
     }

@@ -13,7 +13,7 @@ use crate::{
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData}
 };
 use std::sync::Arc;
 
@@ -21,6 +21,7 @@ pub async fn hold_link_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
+    context.add_flame_guard("hold_link_workflow");
     let link_add = match &entry_with_header.entry {
         Entry::LinkAdd(link_add) => link_add,
         _ => Err(HolochainError::ErrorGeneric(
@@ -105,7 +106,7 @@ pub async fn hold_link_workflow(
         "workflow/hold_entry: added! {:?}",
         entry_with_header
     );
-
+    context.end_flame_guard("hold_link_workflow");
     //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
 }

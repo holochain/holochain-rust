@@ -2,7 +2,7 @@ use crate::{
     action::QueryKey, context::Context, network::direct_message::DirectMessage,
     nucleus::ZomeFnCall, scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError,flamerwrapper::FlamerWrapper};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{convert::TryInto, sync::Arc};
 
@@ -27,7 +27,7 @@ pub struct StateDump {
 
 impl From<Arc<Context>> for StateDump {
     fn from(context: Arc<Context>) -> StateDump {
-        FlamerWrapper::start("statedump_from_context");
+        context.add_flame_guard("state_dump");
         let (agent, nucleus, network, dht) = {
             let state_lock = context.state().expect("No state?!");
             (
@@ -80,7 +80,7 @@ impl From<Arc<Context>> for StateDump {
             .collect::<Vec<PendingValidationDump>>();
 
         let held_entries = dht.get_all_held_entry_addresses().clone();
-        FlamerWrapper::end("statedump_from_context");
+        context.end_flame_guard("state_dump");
         StateDump {
             queued_calls,
             running_calls,
@@ -98,7 +98,7 @@ pub fn address_to_content_and_type(
     address: &Address,
     context: Arc<Context>,
 ) -> Result<(String, String), HolochainError> {
-    FlamerWrapper::start("address_to_content_and_type");
+    context.add_flame_guard("address_to_content_and_type");
     let raw_content = context
         .dht_storage
         .read()?
@@ -123,10 +123,10 @@ pub fn address_to_content_and_type(
             }
             _ => entry.content().to_string(),
         };
-        FlamerWrapper::end("address_to_content_and_type");
+        context.end_flame_guard("address_to_content_and_type");
         Ok((entry_type, content))
     } else {
-        FlamerWrapper::end("address_to_content_and_type");
+        context.end_flame_guard("address_to_content_and_type");
         Ok((String::from("UNKNOWN"), raw_content.to_string()))
     }
 }

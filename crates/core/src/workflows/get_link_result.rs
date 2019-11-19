@@ -19,6 +19,7 @@ pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
+    context.add_flame_guard("get_link_result");
     let config = GetLinksQueryConfiguration {
         headers: link_args.options.headers,
     };
@@ -32,6 +33,7 @@ pub async fn get_link_result_workflow<'a>(
         )),
     }?;
 
+    context.add_flame_guard("get_link_result");  
     match links_result {
         GetLinksNetworkResult::Links(links) => {
             let get_links_result = links
@@ -42,8 +44,7 @@ pub async fn get_link_result_workflow<'a>(
                     status: get_entry_crud.crud_status,
                     tag: get_entry_crud.tag.clone(),
                 })
-                .collect::<Vec<LinksResult>>();
-
+                .collect::<Vec<LinksResult>>();  
             Ok(GetLinksResult::new(get_links_result))
         }
         _ => Err(HolochainError::ErrorGeneric(

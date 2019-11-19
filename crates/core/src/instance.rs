@@ -19,7 +19,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
-    ugly::lax_send_sync,
+    ugly::lax_send_sync
 };
 use holochain_locksmith::{RwLock, RwLockReadGuard};
 #[cfg(test)]
@@ -61,6 +61,7 @@ impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
+        context.add_flame_guard("instance_inner_setup");
         let (rx_action, rx_observer) = self.initialize_channels();
         let context = self.initialize_context(context);
         let mut scheduler = Scheduler::new();
@@ -75,7 +76,7 @@ impl Instance {
         self.persister = Some(context.persister.clone());
 
         self.start_action_loop(context.clone(), rx_action, rx_observer);
-
+        context.add_flame_guard("instance_inner_setup");
         context
     }
 

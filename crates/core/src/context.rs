@@ -93,6 +93,7 @@ pub struct Context {
     thread_pool: Arc<Mutex<ThreadPool>>,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+    pub flame_wrapper : Arc<Mutex<FlamerWrapper>>
 }
 
 impl Context {
@@ -134,7 +135,7 @@ impl Context {
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
         state_dump_logging: bool,
-        metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+        metric_publisher: Arc<RwLock<dyn MetricPublisher>>
     ) -> Self {
         Context {
             instance_name: instance_name.to_owned(),
@@ -157,6 +158,7 @@ impl Context {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
+            flame_wrapper : Arc::new(Mutex::new(FlamerWrapper{}))
         }
     }
 
@@ -192,6 +194,7 @@ impl Context {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
+            flame_wrapper : Arc::new(Mutex::new(FlamerWrapper{}))
         })
     }
 
@@ -224,12 +227,26 @@ impl Context {
         }
     }
 
+    pub fn add_flame_guard(&self,guard: &'static str)
+    {
+        self.flame_wrapper.lock().unwrap().start(guard);
+    }
+
+    pub fn end_flame_guard(&self,guard: &'static str)
+    {
+        self.flame_wrapper.lock().unwrap().end(guard);
+    }
+
+    pub fn dump_html(&self)
+    {
+        self.flame_wrapper.lock().unwrap().dump_html()
+    }
+
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
         self.state().map(move |state| state.network())
     }
 
     pub fn get_dna(&self) -> Option<Dna> {
-        FlamerWrapper::start("get_dna");
         // In the case of init we encounter race conditions with regards to setting the DNA.
         // Init gets called asynchronously right after dispatching an action that sets the DNA in
         // the state, which can result in this code being executed first.
@@ -256,19 +273,17 @@ impl Context {
                     }
                 }
             }
-        }
-
-        FlamerWrapper::end("get_dna");
+        };
         dna
     }
 
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
-        FlamerWrapper::start("get_dna");
+        self.add_flame_guard("get_wasm");
         let dna = self.get_dna().expect("Callback called without DNA set!");
         let dna_wasm = dna.get_wasm_from_zome_name(zome)
             .cloned()
             .filter(|wasm| !wasm.code.is_empty());
-        FlamerWrapper::end("get_dna");
+        self.end_flame_guard("get_wasm");    
         dna_wasm
     }
 
@@ -365,7 +380,7 @@ impl Context {
 
     /// returns the public capability token (if any)
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
-        FlamerWrapper::start("get_public_token");
+        self.add_flame_guard("get_public_token");
         let state = self.state().ok_or("State uninitialized!")?;
         let top = state
             .agent()
@@ -390,12 +405,10 @@ impl Context {
                 if grant.cap_type() == CapabilityType::Public
                     && grant.id() == ReservedCapabilityId::Public.as_str()
                 {
-                    FlamerWrapper::end("get_public_token");
                     return Ok(addr);
                 }
-            }
-        };
-        FlamerWrapper::end("get_public_token");
+            }};
+        self.end_flame_guard("get_public_token");
         Err(HolochainError::ErrorGeneric(
             "No public CapTokenGrant entry type in chain".into(),
         ))
@@ -403,7 +416,7 @@ impl Context {
 }
 
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
-    FlamerWrapper::start("get_dna_and_agent");
+    context.add_flame_guard("get_public_token");
     let state = context
         .state()
         .ok_or_else(|| "Network::start() could not get application state".to_string())?;
@@ -415,7 +428,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .nucleus()
         .dna()
         .ok_or_else(|| "Network::start() called without DNA".to_string())?;
-    FlamerWrapper::end("get_dna_and_agent");
+        context.end_flame_guard("get_public_token");
     Ok((dna.address(), agent_id))
 }
 

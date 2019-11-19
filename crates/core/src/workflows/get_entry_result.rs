@@ -6,8 +6,7 @@ use crate::{
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
-    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
-    flamerwrapper::FlamerWrapper
+    crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError
 };
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
@@ -21,7 +20,6 @@ pub async fn get_entry_with_meta_workflow<'a>(
     address: &'a Address,
     timeout: &'a Timeout,
 ) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
-    FlamerWrapper::start("get_entry_with_meta");
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
@@ -47,7 +45,6 @@ pub async fn get_entry_with_meta_workflow<'a>(
             .get_headers(address.clone())
         {
             Ok(headers) => {
-                            FlamerWrapper::end("get_entry_with_meta");
                             Ok(Some(EntryWithMetaAndHeader {
                                 entry_with_meta: entry.clone(),
                                 headers,
@@ -60,7 +57,6 @@ pub async fn get_entry_with_meta_workflow<'a>(
                     timeout.clone(),
                 )
                 .await?;
-                FlamerWrapper::end("get_entry_with_meta");
                 match response {
                     NetworkQueryResult::Entry(maybe_entry) => Ok(maybe_entry),
                     _ => Err(HolochainError::ErrorGeneric(

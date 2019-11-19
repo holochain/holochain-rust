@@ -14,6 +14,7 @@ pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
+    context.add_flame_guard("get_link_result_count");  
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
     let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
 
@@ -24,12 +25,12 @@ pub async fn get_link_result_count_workflow<'a>(
         )),
     }?;
 
+    context.end_flame_guard("get_link_result_count"); 
     let links_count = match links_result {
         GetLinksNetworkResult::Count(count) => Ok(count),
         _ => Err(HolochainError::ErrorGeneric(
             "Getting wrong type of GetLinks".to_string(),
         )),
     }?;
-
     Ok(GetLinksResultCount { count: links_count })
 }

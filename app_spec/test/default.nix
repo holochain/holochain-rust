@@ -15,7 +15,7 @@ let
   set -euo pipefail
   hc-cli-install
   hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" ./build_and_test.sh);
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="memory" COMPILE_WITH_FLAME="YES" FLAME_GRAPH_PATH="/tmp/flame-graph.html" ./build_and_test.sh);
   '';
 
   name-sim1h = "hc-app-spec-test-sim1h";
@@ -24,7 +24,7 @@ let
   set -euo pipefail
   hc-cli-install
   hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim1h" ./build_and_test.sh);
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim1h" COMPILE_WITH_FLAME="YES" FLAME_GRAPH_PATH="/tmp/flame-graph.html" ./build_and_test.sh);
   '';
 
   name-sim2h = "hc-app-spec-test-sim2h";
@@ -33,7 +33,7 @@ let
   set -euo pipefail
   hc-cli-install
   hc-conductor-install
-  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim2h" COMPILE_WITH_FLAME="YES" FLAME_GRAPH_PATH="/flamegraph.html" ./build_and_test.sh);
+  (cd app_spec && APP_SPEC_NETWORK_TYPE="sim2h" COMPILE_WITH_FLAME="YES" FLAME_GRAPH_PATH="/tmp/flame-graph-sim2h.html" ./build_and_test.sh);
   '';
 in
 {

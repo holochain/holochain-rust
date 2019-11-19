@@ -13,7 +13,7 @@ use crate::{
 };
 use holochain_core_types::{
     error::HolochainError,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData}
 };
 use std::sync::Arc;
 
@@ -22,7 +22,7 @@ pub async fn hold_update_workflow(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } = entry_with_header;
-
+    context.add_flame_guard("hold_update_workflow");
     // 1. Get hold of validation package
     let maybe_validation_package = validation_package(&entry_with_header, context.clone())
         .await
@@ -81,6 +81,6 @@ pub async fn hold_update_workflow(
 
     // 3. If valid store the entry in the local DHT shard
     update_entry(&context.clone(), link, entry.address().clone()).await?;
-
+    context.end_flame_guard("hold_update_workflow");
     Ok(())
 }

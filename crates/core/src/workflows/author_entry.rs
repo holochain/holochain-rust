@@ -12,8 +12,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     signature::Provenance,
-    validation::{EntryLifecycle, ValidationData},
-    flamerwrapper::FlamerWrapper
+    validation::{EntryLifecycle, ValidationData}
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -29,7 +28,7 @@ pub async fn author_entry<'a>(
     context: &'a Arc<Context>,
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
-    FlamerWrapper::start("author_entry");
+    context.add_flame_guard("author_entry");
     let address = entry.address();
     log_debug!(
         context,
@@ -106,7 +105,7 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: header published!",
         address
     );
-    FlamerWrapper::end("author_entry");
+    context.end_flame_guard("author_entry");
     Ok(CommitEntryResult::new(addr))
 }
 // TODO: Bring the old in-memory network up to speed and turn on this test again!

@@ -5,7 +5,7 @@ use holochain_core_types::{
     error::{
         HcResult, HolochainError,
         RibosomeErrorCode::{self, *},
-    },
+    }
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
@@ -105,6 +105,7 @@ impl ChainStore {
         entry_type_names: &[&str],
         options: ChainStoreQueryOptions,
     ) -> Result<ChainStoreQueryResult, RibosomeErrorCode> {
+
         // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
@@ -212,7 +213,6 @@ impl ChainStore {
                 }
             }
         };
-
         Ok(vector)
     }
 }

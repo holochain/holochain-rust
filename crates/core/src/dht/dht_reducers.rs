@@ -185,7 +185,7 @@ pub fn reduce_pop_next_holding_workflow(
         // of the action assumed to be the head.
         // If the head changed in between because somebody else has popped
         // the former item already, we need to put it back!
-        if popped != *pending {
+        if popped.0 != *pending {
             new_store.queued_holding_workflows.push_front(popped);
         }
     } else {

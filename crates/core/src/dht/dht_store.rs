@@ -25,7 +25,7 @@ use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
-    time::{Duration, Instant},
+    time::{Duration, SystemTime},
 };
 
 /// The state-slice for the DHT.
@@ -40,7 +40,7 @@ pub struct DhtStore {
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
 
-    pub(crate) queued_holding_workflows: VecDeque<(PendingValidation, Option<(Instant, Duration)>)>,
+    pub(crate) queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -301,9 +301,13 @@ impl DhtStore {
     pub(crate) fn next_queued_holding_workflow(&self) -> Option<(&PendingValidation, Option<Duration>)> {
         for (pending, maybe_delay) in self.queued_holding_workflows.iter() {
             if let Some((time_of_dispatch, delay)) = maybe_delay {
-                if time_of_dispatch.elapsed() < delay {
-                    continue;
+                let maybe_time_elapsed = time_of_dispatch.elapsed();
+                if let Ok(time_elapsed) = maybe_time_elapsed {
+                    if  time_elapsed < *delay {
+                        continue;
+                    }
                 }
+
                 return Some((pending, Some(delay.clone())))
             }
             return Some((pending, None))

@@ -29,7 +29,9 @@ use snowflake;
 use std::{
     hash::{Hash, Hasher},
     vec::Vec,
+    time::Instant,
 };
+use bitflags::_core::time::Duration;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two
@@ -112,7 +114,9 @@ pub enum Action {
     // DHT actions:
     // -------------
     /// Adds a holding workflow to the queue.
-    QueueHoldingWorkflow(PendingValidation),
+    /// With optional delay where the Instant is the time of dispatching
+    /// and the Duration is the delay added ot that instant.
+    QueueHoldingWorkflow((PendingValidation, Option<(Instant, Duration)>)),
 
     /// Pops the head of the holding queue if the item at the head
     /// is equal to the one given in the action.

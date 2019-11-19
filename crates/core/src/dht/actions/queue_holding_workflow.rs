@@ -5,14 +5,15 @@ use crate::{
     scheduled_jobs::pending_validations::PendingValidation,
 };
 use futures::{future::Future, task::Poll};
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc, time::{Duration, Instant}};
 
-pub fn dispatch_queue_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
-    let action_wrapper = ActionWrapper::new(Action::QueueHoldingWorkflow(pending));
+pub fn dispatch_queue_holding_workflow(pending: PendingValidation, delay: Option<Duration>, context: Arc<Context>) {
+    let delay_with_now = delay.map(|d| (Instant::now(), d));
+    let action_wrapper = ActionWrapper::new(Action::QueueHoldingWorkflow((pending, delay_with_now)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 
-pub async fn queue_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
+pub async fn queue_holding_workflow(pending: PendingValidation, delay: Option<Duration>, context: Arc<Context>) {
     if !context
         .state()
         .expect("Can't queue holding workflow without state")
@@ -20,7 +21,7 @@ pub async fn queue_holding_workflow(pending: PendingValidation, context: Arc<Con
         .has_queued_holding_workflow(&pending)
     {
         log_trace!(context, "Queueing holding workflow: {:?}", pending);
-        dispatch_queue_holding_workflow(pending.clone(), context.clone());
+        dispatch_queue_holding_workflow(pending.clone(), delay, context.clone());
         QueueHoldingWorkflowFuture { context, pending }.await
     } else {
         log_trace!(

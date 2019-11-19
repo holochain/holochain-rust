@@ -25,6 +25,7 @@ use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
+    time::{Duration, Instant},
 };
 
 /// The state-slice for the DHT.
@@ -39,7 +40,7 @@ pub struct DhtStore {
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
 
-    pub(crate) queued_holding_workflows: VecDeque<PendingValidation>,
+    pub(crate) queued_holding_workflows: VecDeque<(PendingValidation, Option<(Instant, Duration)>)>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -297,12 +298,26 @@ impl DhtStore {
         &mut self.actions
     }
 
-    pub(crate) fn next_queued_holding_workflow(&self) -> Option<&PendingValidation> {
-        self.queued_holding_workflows.front()
+    pub(crate) fn next_queued_holding_workflow(&self) -> Option<(&PendingValidation, Option<Duration>)> {
+        for (pending, maybe_delay) in self.queued_holding_workflows.iter() {
+            if let Some((time_of_dispatch, delay)) = maybe_delay {
+                if time_of_dispatch.elapsed() < delay {
+                    continue;
+                }
+                return Some((pending, Some(delay.clone())))
+            }
+            return Some((pending, None))
+        }
+        None
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        self.queued_holding_workflows.contains(pending)
+        for (current, _) in self.queued_holding_workflows.iter() {
+            if current == pending {
+                return true
+            }
+        }
+        false
     }
 }
 

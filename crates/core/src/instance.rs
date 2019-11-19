@@ -290,7 +290,7 @@ impl Instance {
                             .expect("Couldn't get state in run_pending_validations")
                             .dht();
                         let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
-                        if let Some(pending) = maybe_holding_workflow {
+                        if let Some((pending, maybe_delay)) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
                             // we can run into a race condition.
@@ -307,9 +307,26 @@ impl Instance {
                             match result {
                                 // If we couldn't run the validation due to unresolved dependencies,
                                 // we have to re-add this entry at the end of the queue:
-                                Err(HolochainError::ValidationPending) => context.block_on(
-                                    queue_holding_workflow(pending.clone(), context.clone()),
-                                ),
+                                Err(HolochainError::ValidationPending) => {
+                                    // And with a delay so we are not trying to re-validate many times per second.
+                                    let mut delay = if let Some(old_delay) = maybe_delay {
+                                        // Exponential back-off:
+                                        // If this was delayed before we double the delay.
+                                        old_delay * 2
+                                    } else {
+                                        Duration::from_secs(10)
+                                    };
+
+                                    // But at least try once per hour:
+                                    let hour = Duration::from_secs(60*60);
+                                    if delay > hour {
+                                        delay = hour
+                                    }
+
+                                    context.block_on(
+                                        queue_holding_workflow(pending.clone(), Some(delay), context.clone()),
+                                    )
+                                },
                                 Err(e) => log_error!(
                                     context,
                                     "Error running holding workflow for {:?}: {:?}",

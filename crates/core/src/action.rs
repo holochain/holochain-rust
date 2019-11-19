@@ -13,7 +13,7 @@ use crate::{
         validation::ValidationResult,
         ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
+    scheduled_jobs::pending_validations::PendingValidation,
     state::State,
 };
 
@@ -240,13 +240,6 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
-
-    /// An entry could not be validated yet because dependencies are still missing.
-    /// This adds the entry to nucleus state's pending list.
-    AddPendingValidation(PendingValidation),
-
-    /// Clear an entry from the pending validation list
-    RemovePendingValidation((Address, ValidatingWorkflow)),
 
     /// No-op, used to check if an action channel is still open
     Ping,

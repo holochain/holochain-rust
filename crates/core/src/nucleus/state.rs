@@ -1,6 +1,6 @@
 use crate::{
     nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
-    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
+    scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 
@@ -100,7 +100,6 @@ impl PendingValidationKey {
 pub struct NucleusState {
     // Persisted fields:
     pub status: NucleusStatus,
-    pub pending_validations: HashMap<PendingValidationKey, PendingValidation>,
 
     // Transient fields:
     pub dna: Option<Dna>, //DNA is transient here because it is stored in the chain and gets
@@ -128,7 +127,6 @@ impl NucleusState {
             zome_call_results: HashMap::new(),
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
-            pending_validations: HashMap::new(),
         }
     }
 
@@ -172,14 +170,12 @@ impl NucleusState {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct NucleusStateSnapshot {
     pub status: NucleusStatus,
-    pub pending_validations: HashMap<PendingValidationKey, PendingValidation>,
 }
 
 impl From<&StateWrapper> for NucleusStateSnapshot {
     fn from(state: &StateWrapper) -> Self {
         NucleusStateSnapshot {
             status: state.nucleus().status(),
-            pending_validations: state.nucleus().pending_validations.clone(),
         }
     }
 }
@@ -194,7 +190,6 @@ impl From<NucleusStateSnapshot> for NucleusState {
             zome_call_results: HashMap::new(),
             validation_results: HashMap::new(),
             validation_packages: HashMap::new(),
-            pending_validations: snapshot.pending_validations,
         }
     }
 }

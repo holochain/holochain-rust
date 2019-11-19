@@ -2,13 +2,11 @@ use crate::{
     context::Context,
     dht::actions::hold::hold_entry,
     network::entry_with_header::EntryWithHeader,
-    nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::validate_entry,
-    },
+    nucleus::validation::validate_entry,
 };
 
 use crate::{
-    nucleus::validation::ValidationError, scheduled_jobs::pending_validations::ValidatingWorkflow,
+    nucleus::validation::ValidationError,
     workflows::validation_package,
 };
 use holochain_core_types::{
@@ -31,24 +29,12 @@ pub async fn hold_entry_workflow(
             let message = "Could not get validation package from source! -> Add to pending...";
             log_debug!(context, "workflow/hold_entry: {}", message);
             log_debug!(context, "workflow/hold_entry: Error was: {:?}", err);
-            add_pending_validation(
-                entry_with_header.to_owned(),
-                Vec::new(),
-                ValidatingWorkflow::HoldEntry,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         })?;
 
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         log_debug!(context, "workflow/hold_entry: {}", message);
-        add_pending_validation(
-            entry_with_header.to_owned(),
-            Vec::new(),
-            ValidatingWorkflow::HoldEntry,
-            context.clone(),
-        );
         HolochainError::ValidationPending
     })?;
     log_debug!(context, "workflow/hold_entry: got validation package");
@@ -71,12 +57,6 @@ pub async fn hold_entry_workflow(
             log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
                 entry_with_header.entry.address(),
                 dependencies,
-            );
-            add_pending_validation(
-                entry_with_header.to_owned(),
-                dependencies.clone(),
-                ValidatingWorkflow::HoldEntry,
-                context.clone(),
             );
             HolochainError::ValidationPending
         } else {

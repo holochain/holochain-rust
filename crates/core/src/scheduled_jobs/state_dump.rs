@@ -46,18 +46,19 @@ pub fn state_dump(context: Arc<Context>) {
     let dump = StateDump::from(context.clone());
 
     let pending_validation_strings = dump
-        .pending_validations
+        .queued_holding_workflows
         .iter()
-        .map(|pending_validation| {
+        .map(|(pending_validation, _maybe_delay)| {
+            let address = pending_validation.entry_with_header.entry.address();
             let maybe_content =
-                address_to_content_and_type(&pending_validation.address, context.clone());
+                address_to_content_and_type(&address, context.clone());
             maybe_content
                 .map(|(content_type, content)| {
                     format!(
                         "<{}> [{}] {}: {}",
                         pending_validation.workflow.to_string(),
                         content_type,
-                        pending_validation.address.to_string(),
+                        address.to_string(),
                         content
                     )
                 })
@@ -65,7 +66,7 @@ pub fn state_dump(context: Arc<Context>) {
                     format!(
                         "<{}> [UNKNOWN] {}: Error trying to get type/content: {}",
                         pending_validation.workflow.to_string(),
-                        pending_validation.address.to_string(),
+                        address.to_string(),
                         err
                     )
                 })

@@ -54,7 +54,7 @@ struct OptStressRunConfig {
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
 
-    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "100")]
+    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "1000")]
     /// how often each job should send a ping to sim2h
     ping_freq_ms: u64,
 
@@ -62,13 +62,17 @@ struct OptStressRunConfig {
     /// how often each job should publish a new entry
     publish_freq_ms: u64,
 
-    #[structopt(long, env = "STRESS_PUBLISH_BYTE_COUNT", default_value = "64")]
+    #[structopt(long, env = "STRESS_PUBLISH_BYTE_COUNT", default_value = "1024")]
     /// how many bytes should be published each time
     publish_byte_count: usize,
 
     #[structopt(long, env = "STRESS_DM_FREQ_MS", default_value = "1000")]
     /// how often each job should send a direct message to another agent
     dm_freq_ms: u64,
+
+    #[structopt(long, env = "STRESS_DM_BYTE_COUNT", default_value = "1024")]
+    /// how many bytes should be direct messaged each time
+    dm_byte_count: usize,
 }
 
 impl Default for OptStressRunConfig {
@@ -147,6 +151,7 @@ impl Opt {
                     publish_freq_ms,
                     publish_byte_count,
                     dm_freq_ms,
+                    dm_byte_count,
                 } => {
                     cfg_def!(thread_count);
                     cfg_def!(job_count);
@@ -156,6 +161,7 @@ impl Opt {
                     cfg_def!(publish_freq_ms);
                     cfg_def!(publish_byte_count);
                     cfg_def!(dm_freq_ms);
+                    cfg_def!(dm_byte_count);
                 }
             }
         }
@@ -247,18 +253,22 @@ fn await_connection(connect_uri: &Lib3hUri) -> StreamManager<std::net::TcpStream
     }
 }
 
+/// inner struct for ActiveAgentIds
 struct ActiveAgentIdsInner {
     agent_id_list: [Option<String>; 5],
     write_ptr: usize,
     read_ptr: usize,
 }
 
+/// small thread-safe ring buffer for tracking active agent ids
+/// jobs use this to send direct messages amongst themselves
 #[derive(Clone)]
 struct ActiveAgentIds {
     inner: Arc<Mutex<ActiveAgentIdsInner>>,
 }
 
 impl ActiveAgentIds {
+    /// create a new agent_id ring buffer
     pub fn new() -> Self {
         ActiveAgentIds {
             inner: Arc::new(Mutex::new(ActiveAgentIdsInner {
@@ -269,6 +279,7 @@ impl ActiveAgentIds {
         }
     }
 
+    /// write a new agent_id to the ring buffer
     pub fn write(&mut self, agent_id: &str) {
         let mut inner = self.inner.lock().unwrap();
         let idx = inner.write_ptr;
@@ -279,6 +290,7 @@ impl ActiveAgentIds {
         }
     }
 
+    /// read an agent_id from the ring buffer
     pub fn read(&self) -> Option<String> {
         let mut inner = self.inner.lock().unwrap();
         let idx = inner.read_ptr;
@@ -312,7 +324,11 @@ struct Job {
 
 impl Job {
     /// create a new job - connected to sim2h
-    pub fn new(connect_uri: &Lib3hUri, stress_config: OptStressRunConfig, agent_ids: ActiveAgentIds) -> Self {
+    pub fn new(
+        connect_uri: &Lib3hUri,
+        stress_config: OptStressRunConfig,
+        agent_ids: ActiveAgentIds,
+    ) -> Self {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
             let mut sec_key = crypto.buf_new_secure(crypto.sign_secret_key_bytes());
@@ -388,18 +404,21 @@ impl Job {
 
     pub fn dm(&mut self, logger: &mut StressJobMetricLogger) {
         if let Some(to_agent_id) = self.agent_ids.read() {
-            println!("SEND DM TO {} FROM {}", to_agent_id, self.agent_id);
+            let content = CRYPTO.with(|crypto| {
+                let mut content = crypto.buf_new_insecure(self.stress_config.dm_byte_count);
+                crypto.randombytes_buf(&mut content).unwrap();
+                let content: Opaque = (*content.read_lock()).to_vec().into();
+                content
+            });
 
             self.send_wire(WireMessage::ClientToLib3h(
-                ClientToLib3h::SendDirectMessage(
-                    DirectMessageData {
-                        space_address: "abcd".to_string().into(),
-                        request_id: "".to_string(),
-                        to_agent_id: to_agent_id.into(),
-                        from_agent_id: self.agent_id.clone().into(),
-                        content: b"".to_vec().into(),
-                    }
-                )
+                ClientToLib3h::SendDirectMessage(DirectMessageData {
+                    space_address: "abcd".to_string().into(),
+                    request_id: "".to_string(),
+                    to_agent_id: to_agent_id.into(),
+                    from_agent_id: self.agent_id.clone().into(),
+                    content,
+                }),
             ));
 
             logger.log("send_dm_count", 1.0);
@@ -473,17 +492,16 @@ impl StressJob for Job {
                         logger.log("received_handle_send_dm", 1.0);
                         let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
                         match parsed {
-                            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
+                            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(
+                                dm_data,
+                            )) => {
                                 let to_agent_id: String = dm_data.to_agent_id.clone().into();
                                 assert_eq!(self.agent_id, to_agent_id);
-                                println!("GOT GOT GOT: {:#?}", dm_data);
                                 let mut out_dm = dm_data.clone();
                                 out_dm.to_agent_id = dm_data.from_agent_id;
                                 out_dm.from_agent_id = dm_data.to_agent_id;
                                 self.send_wire(WireMessage::Lib3hToClientResponse(
-                                    Lib3hToClientResponse::HandleSendDirectMessageResult(
-                                        out_dm,
-                                    )
+                                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
                                 ));
                             }
                             e @ _ => panic!("unexpected: {:?}", e),

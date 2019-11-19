@@ -157,56 +157,16 @@ pub async fn build_validation_package<'a>(
                             package
                         }
                     })
-                    .and_then(|package_definition| {
-                        let mut package = ValidationPackage::only_header(entry_header);
-                        Ok(match package_definition {
-                            Entry => package,
-                            ChainEntries => {
-                                package.source_chain_entries =
-                                    Some(public_chain_entries_from_headers(
-                                        &context,
-                                        &all_chain_headers_before_header(
-                                            &context,
-                                            &package.chain_header,
-                                        ),
-                                    ));
-                                package
-                            }
-                            ChainHeaders => {
-                                package.source_chain_headers =
-                                    Some(all_chain_headers_before_header(
-                                        &context,
-                                        &package.chain_header,
-                                    ));
-                                package
-                            }
-                            ChainFull => {
-                                let headers = all_chain_headers_before_header(
-                                    &context,
-                                    &package.chain_header,
-                                );
-                                package.source_chain_entries =
-                                    Some(public_chain_entries_from_headers(&context, &headers));
-                                package.source_chain_headers = Some(headers);
-                                package
-                            }
-                            Custom(string) => {
-                                package.custom = Some(string);
-                                package
-                            }
-                        })
-                    });
-
-                lax_send_sync(
-                    context.action_channel().clone(),
-                    ActionWrapper::new(Action::ReturnValidationPackage((
-                        id,
-                        maybe_validation_package,
-                    ))),
-                    "build_validation_package",
-                );
-            })
-            .expect("Could not spawn thread for build_validation_package");
+                });
+            lax_send_sync(
+                context.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnValidationPackage((
+                    id,
+                    maybe_validation_package,
+                ))),
+                "build_validation_package",
+            );
+        });
     }
 
     ValidationPackageFuture {

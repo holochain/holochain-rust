@@ -12,11 +12,11 @@ use std::sync::Arc;
 
 mod agent_entry;
 mod app_entry;
+pub mod build_from_dht;
 mod header_address;
 mod link_entry;
 mod provenances;
 mod remove_entry;
-pub mod build_from_dht;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 /// A failed validation.

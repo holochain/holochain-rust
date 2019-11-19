@@ -304,8 +304,6 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
         let socket = std::mem::replace(&mut info.stateful_socket, WebsocketStreamState::None);
 
         trace!("transport_wss: socket={:?}", socket);
-        // TODO remove?
-        std::io::stdout().flush().ok().expect("flush stdout");
         match socket {
             WebsocketStreamState::None => {
                 // stream must have closed, do nothing

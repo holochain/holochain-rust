@@ -13,7 +13,7 @@ pub mod cache;
 pub mod connection_state;
 pub mod crypto;
 pub mod error;
-use lib3h_protocol::types::{AgentPubKey, EntryHash, AspectHash};
+use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash};
 mod message_log;
 pub mod websocket;
 pub mod wire_message;
@@ -37,8 +37,10 @@ pub use wire_message::{WireError, WireMessage};
 use log::*;
 use parking_lot::RwLock;
 use rand::Rng;
-use std::{collections::HashMap, convert::TryFrom};
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+};
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
@@ -582,7 +584,12 @@ impl Sim2h {
     ) {
         for entry_address in aspects_to_fetch.entry_addresses() {
             if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
-                if let Some(random_agent) = self.get_random_agent_not_missing_aspects(entry_address, aspect_address_list, &agent_pool, &space_address) {
+                if let Some(random_agent) = self.get_random_agent_not_missing_aspects(
+                    entry_address,
+                    aspect_address_list,
+                    &agent_pool,
+                    &space_address,
+                ) {
                     debug!(
                         "FETCHING missing contents from RANDOM AGENT: {}",
                         random_agent
@@ -595,14 +602,15 @@ impl Sim2h {
                     }
                     let random_url = maybe_url.unwrap();
 
-                    let wire_message =
-                        WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
+                        FetchEntryData {
                             request_id: for_agent_id.clone().into(),
                             space_address: space_address.clone(),
                             provider_agent_id: random_agent.clone(),
                             entry_address: entry_address.clone(),
                             aspect_address_list: Some(aspect_address_list.clone()),
-                        }));
+                        },
+                    ));
                     debug!("SENDING fetch with request ID: {:?}", wire_message);
                     self.send(random_agent.clone(), random_url.clone(), &wire_message);
                 } else {
@@ -632,10 +640,12 @@ impl Sim2h {
         if agents_not_missing_entry.len() > 0 {
             let mut rng = rand::thread_rng();
             let random_agent_index = rng.gen_range(0, agents_not_missing_entry.len());
-            Some(agent_pool
-                .get(random_agent_index)
-                .expect("Random generator must work as documented")
-                .clone())
+            Some(
+                agent_pool
+                    .get(random_agent_index)
+                    .expect("Random generator must work as documented")
+                    .clone(),
+            )
         } else {
             None
         }

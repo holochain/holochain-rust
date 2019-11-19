@@ -36,18 +36,26 @@ impl Space {
         }
     }
 
-    pub fn add_missing_aspect(&mut self, agent: AgentId, entry_hash: EntryHash, aspect_hash: AspectHash) {
+    pub fn add_missing_aspect(
+        &mut self,
+        agent: AgentId,
+        entry_hash: EntryHash,
+        aspect_hash: AspectHash,
+    ) {
         let map_for_agent = self
             .missing_aspects
             .entry(agent)
             .or_insert_with(HashMap::new);
-        let vec_for_entry= map_for_agent
-            .entry(entry_hash)
-            .or_insert_with(Vec::new);
+        let vec_for_entry = map_for_agent.entry(entry_hash).or_insert_with(Vec::new);
         vec_for_entry.push(aspect_hash);
     }
 
-    pub fn remove_missing_aspect(&mut self, agent: &AgentId, entry_hash: &EntryHash, aspect_hash: &AspectHash) {
+    pub fn remove_missing_aspect(
+        &mut self,
+        agent: &AgentId,
+        entry_hash: &EntryHash,
+        aspect_hash: &AspectHash,
+    ) {
         let maybe_map_for_agent = self.missing_aspects.get_mut(agent);
         if let Some(map_for_agent) = maybe_map_for_agent {
             if let Some(vec_for_entry) = map_for_agent.get_mut(entry_hash) {
@@ -70,7 +78,12 @@ impl Space {
     /// That is: if all of the aspects are stored as missing for that agent.
     /// If one of the given aspects is not in that vector of missing entries, the agent is supposed
     /// to have it and this function returns fals.
-    pub fn agent_is_missing_all_aspects(&self, agent_id: &AgentId, entry_hash: &EntryHash, aspects: &Vec<AspectHash>) -> bool {
+    pub fn agent_is_missing_all_aspects(
+        &self,
+        agent_id: &AgentId,
+        entry_hash: &EntryHash,
+        aspects: &Vec<AspectHash>,
+    ) -> bool {
         self.missing_aspects
             .get(agent_id)
             .and_then(|map_for_agent| map_for_agent.get(entry_hash))

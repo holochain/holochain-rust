@@ -24,7 +24,7 @@ fn reduce_query_inner(
             requester_agent_id: network_state.agent_id.clone().unwrap().into(),
             request_id: key_address.0,
             space_address: network_state.dna_address.clone().unwrap().into(),
-            entry_address: key_address.1,
+            entry_address: key_address.1.into(),
             query: query_json.to_string().into_bytes().into(),
         }),
     )

@@ -172,7 +172,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             let links = get_links(
                 &context,
-                query_data.entry_address.clone(),
+                query_data.entry_address.clone().into(),
                 link_type.clone(),
                 tag.clone(),
                 options,
@@ -191,7 +191,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
             ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
         }
         Ok(NetworkQuery::GetEntry) => {
-            let maybe_entry = get_entry(&context, query_data.entry_address.clone());
+            let maybe_entry = get_entry(&context, query_data.entry_address.clone().into());
             let respond_get = NetworkQueryResult::Entry(maybe_entry);
             ActionWrapper::new(Action::RespondQuery((query_data, respond_get)))
         }
@@ -214,14 +214,18 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
     let query_result_json = JsonString::from_json(
         std::str::from_utf8(&*query_result_data.clone().query_result).unwrap(),
     );
-    println!("handle_query_entry_result: {:?}", query_result_data);
+    log_trace!(
+        context,
+        "handle_query_entry_result: {:?}",
+        query_result_data
+    );
     let action_wrapper = match query_result_json.clone().try_into() {
         Ok(NetworkQueryResult::Entry(maybe_entry)) => {
             let payload = NetworkQueryResult::Entry(maybe_entry);
             ActionWrapper::new(Action::HandleQuery((
                 payload,
                 QueryKey::Entry(GetEntryKey {
-                    address: query_result_data.entry_address.clone(),
+                    address: query_result_data.entry_address.clone().into(),
                     id: query_result_data.request_id.clone(),
                 }),
             )))
@@ -231,7 +235,7 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             ActionWrapper::new(Action::HandleQuery((
                 payload,
                 QueryKey::Links(GetLinksKey {
-                    base_address: query_result_data.entry_address.clone(),
+                    base_address: query_result_data.entry_address.clone().into(),
                     link_type: link_type.clone(),
                     tag: tag.clone(),
                     id: query_result_data.request_id.clone(),

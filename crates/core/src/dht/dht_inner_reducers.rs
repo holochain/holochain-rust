@@ -30,14 +30,11 @@ pub(crate) enum LinkModification {
 
 /// Used as the inner function for both commit and hold reducers
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
-    match (*store.content_storage().write()?).add(entry) {
+    match store.cas_add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
-            (*store.meta_storage().write()?)
-                .add_eavi(&status_eav)
-                .map(|_| ())
-                .map_err(|e| {
-                    format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()
-                })
+            store.add_eavi(&status_eav).map(|_| ()).map_err(|e| {
+                format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()
+            })
         })?,
         Err(e) => Err(format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()),
     }
@@ -49,7 +46,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    if (*store.content_storage().read()?).contains(link.base())? {
+    if store.cas_contains(link.base())? {
         let attr = match link_modification {
             LinkModification::Add => {
                 Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
@@ -59,7 +56,7 @@ pub(crate) fn reduce_add_remove_link_inner(
             }
         };
         let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
-        store.meta_storage().write()?.add_eavi(&eav)?;
+        store.add_eavi(&eav)?;
         Ok(link.base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(String::from(
@@ -69,16 +66,16 @@ pub(crate) fn reduce_add_remove_link_inner(
 }
 
 pub(crate) fn reduce_update_entry_inner(
-    store: &DhtStore,
+    store: &mut DhtStore,
     old_address: &Address,
     new_address: &Address,
 ) -> HcResult<Address> {
     // Update crud-status
     let new_status_eav = create_crud_status_eav(old_address, CrudStatus::Modified)?;
-    (*store.meta_storage().write()?).add_eavi(&new_status_eav)?;
+    store.add_eavi(&new_status_eav)?;
     // add link from old to new
     let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
-    (*store.meta_storage().write()?).add_eavi(&crud_link_eav)?;
+    store.add_eavi(&crud_link_eav)?;
 
     Ok(new_address.clone())
 }
@@ -89,11 +86,8 @@ pub(crate) fn reduce_remove_entry_inner(
     deletion_address: &Address,
 ) -> HcResult<Address> {
     // pre-condition: Must already have entry in local content_storage
-    let content_storage = &store.content_storage().clone();
-
-    let entry: Entry = content_storage
-        .read()?
-        .fetch(latest_deleted_address)?
+    let entry: Entry = store
+        .cas_fetch(latest_deleted_address)?
         .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?
         .try_into()
         .map_err(|_| {
@@ -108,8 +102,7 @@ pub(crate) fn reduce_remove_entry_inner(
     }
     // pre-condition: Current status must be Live
     // get current status
-    let meta_storage = &store.meta_storage().clone();
-    let status_eavs = meta_storage.read()?.fetch_eavi(&EaviQuery::new(
+    let status_eavs = store.fetch_eavi(&EaviQuery::new(
         Some(latest_deleted_address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
@@ -133,14 +126,12 @@ pub(crate) fn reduce_remove_entry_inner(
     // Update crud-status
     let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted)
         .map_err(|_| HolochainError::ErrorGeneric("Could not create eav".into()))?;
-    let meta_storage = &store.meta_storage().clone();
-
-    (*meta_storage.write()?).add_eavi(&new_status_eav)?;
+    store.add_eavi(&new_status_eav)?;
 
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
         .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
-    (*meta_storage.write()?).add_eavi(&crud_link_eav)?;
+    store.add_eavi(&crud_link_eav)?;
 
     Ok(latest_deleted_address.clone())
 }

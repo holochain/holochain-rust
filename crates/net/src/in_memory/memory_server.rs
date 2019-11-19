@@ -14,9 +14,10 @@ use lib3h_protocol::{
     },
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
+    types::AgentPubKey,
 };
 
-use holochain_core_types::sync::{HcMutex as Mutex, HcRwLock as RwLock};
+use holochain_locksmith::{Mutex, RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::types::SpaceHash;
 use std::collections::{hash_map::Entry, HashMap, HashSet};
@@ -38,7 +39,7 @@ pub(crate) struct InMemoryServer {
     senders: HashMap<ChainId, crossbeam_channel::Sender<Lib3hServerProtocol>>,
     // keep track of agents by dna_address
     senders_by_dna:
-        HashMap<Address, HashMap<Address, crossbeam_channel::Sender<Lib3hServerProtocol>>>,
+        HashMap<Address, HashMap<AgentPubKey, crossbeam_channel::Sender<Lib3hServerProtocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
@@ -94,7 +95,7 @@ impl InMemoryServer {
     }
 
     /// Send all Get*Lists requests to agent
-    fn priv_request_all_lists(&mut self, dna_address: &Address, agent_id: &Address) {
+    fn priv_request_all_lists(&mut self, dna_address: &Address, agent_id: &AgentPubKey) {
         // Entry
         // Request this agent's published entries
         let request_id = self.priv_create_request(dna_address, agent_id);
@@ -167,7 +168,7 @@ impl InMemoryServer {
     pub fn register_chain(
         &mut self,
         dna_address: &Address,
-        agent_id: &Address,
+        agent_id: &AgentPubKey,
         sender: crossbeam_channel::Sender<Lib3hServerProtocol>,
     ) -> NetResult<()> {
         self.senders
@@ -350,8 +351,8 @@ impl InMemoryServer {
     fn priv_check_or_fail(
         &mut self,
         dna_address: &Address,
-        agent_id: &Address,
-        maybe_sender_info: Option<(Address, Option<String>)>,
+        agent_id: &AgentPubKey,
+        maybe_sender_info: Option<(AgentPubKey, Option<String>)>,
     ) -> NetResult<bool> {
         let chain_id = into_chain_id(dna_address, agent_id);
         if self.trackdna_book.contains(&chain_id) {
@@ -459,8 +460,8 @@ impl InMemoryServer {
     /// Fabricate that message and deliver it to the receiving agent
     fn priv_serve_SendMessage(&mut self, msg: &DirectMessageData) -> NetResult<()> {
         let dna_address = msg.space_address.clone();
-        let from_agent_id: Address = msg.from_agent_id.clone();
-        let to_agent_id: Address = msg.to_agent_id.clone();
+        let from_agent_id: AgentPubKey = msg.from_agent_id.clone();
+        let to_agent_id: AgentPubKey = msg.to_agent_id.clone();
 
         // Sender must be tracking
         let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
@@ -494,8 +495,8 @@ impl InMemoryServer {
     /// Fabricate that message and deliver it to the initial sender.
     fn priv_serve_HandleSendMessageResult(&mut self, msg: &DirectMessageData) -> NetResult<()> {
         let dna_address = msg.space_address.clone();
-        let from_agent_id: Address = msg.from_agent_id.clone();
-        let to_agent_id: Address = msg.to_agent_id.clone();
+        let from_agent_id: AgentPubKey = msg.from_agent_id.clone();
+        let to_agent_id: AgentPubKey = msg.to_agent_id.clone();
 
         // Sender must be tracking
         let sender_info = Some((from_agent_id.clone(), Some(msg.request_id.clone())));
@@ -527,7 +528,7 @@ impl InMemoryServer {
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_serve_PublishEntry(&mut self, msg: &ProvidedEntryData) -> NetResult<()> {
         let dna_address = msg.space_address.clone();
-        let provider_agent_id: Address = msg.provider_agent_id.clone();
+        let provider_agent_id: AgentPubKey = msg.provider_agent_id.clone();
         let entry_address = msg.entry.entry_address.clone();
 
         // Provider must be tracking
@@ -575,7 +576,7 @@ impl InMemoryServer {
     /// send back a response to a request for dht data
     fn priv_serve_HandleFetchEntryResult(&mut self, msg: &FetchEntryResultData) -> NetResult<()> {
         let dna_address = msg.space_address.clone();
-        let provider_agent_id: Address = msg.provider_agent_id.clone();
+        let provider_agent_id: AgentPubKey = msg.provider_agent_id.clone();
 
         // Provider must be tracking
         let sender_info = Some((msg.provider_agent_id.clone(), Some(msg.request_id.clone())));
@@ -658,8 +659,8 @@ impl InMemoryServer {
 
     fn priv_serve_HandleQueryEntryResult(&mut self, msg: &QueryEntryResultData) -> NetResult<()> {
         let dna_address = msg.space_address.clone();
-        let responder_agent_id: Address = msg.responder_agent_id.clone();
-        let requester_agent_id: Address = msg.requester_agent_id.clone();
+        let responder_agent_id: AgentPubKey = msg.responder_agent_id.clone();
+        let requester_agent_id: AgentPubKey = msg.requester_agent_id.clone();
 
         // Provider/Responder must be tracking
         let sender_info = Some((responder_agent_id.clone(), Some(msg.request_id.clone())));

@@ -1,13 +1,19 @@
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
-    entry::entry_type::EntryType,
-    error::RibosomeErrorCode::{self, *},
-    sync::HcRwLock as RwLock,
+    entry::{entry_type::EntryType, Entry},
+    error::{
+        HcResult, HolochainError,
+        RibosomeErrorCode::{self, *},
+    },
 };
-use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent},
-    storage::ContentAddressableStorage,
+use holochain_locksmith::RwLock;
+use holochain_persistence_api::{
+    cas::{
+        content::{Address, AddressableContent, Content},
+        storage::ContentAddressableStorage,
+    },
+    error::PersistenceResult,
 };
 
 use std::{str::FromStr, sync::Arc};
@@ -46,10 +52,6 @@ impl ChainStore {
         ChainStore { content_storage }
     }
 
-    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
-    }
-
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }
@@ -67,6 +69,33 @@ impl ChainStore {
             self.iter(start_chain_header)
                 .find(|chain_header| chain_header.entry_type() == entry_type),
         )
+    }
+
+    pub fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
+        self.content_storage.clone().read().unwrap().fetch(address)
+    }
+
+    pub(crate) fn cas_add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
+        self.content_storage
+            .clone()
+            .write()
+            .unwrap()
+            .add(content)
+            .map_err(|persistence_error| {
+                HolochainError::ErrorGeneric(persistence_error.to_string())
+            })
+    }
+
+    pub(crate) fn get_entry_from_cas(
+        &self,
+        address: &Address,
+    ) -> Result<Option<Entry>, HolochainError> {
+        if let Some(json) = self.cas_fetch(&address)? {
+            let entry = Entry::try_from_content(&json)?;
+            Ok(Some(entry))
+        } else {
+            Ok(None) // no errors but entry is not in CAS
+        }
     }
 
     // Supply a None for options to get defaults (all elements, no ChainHeaders just Addresses)
@@ -305,10 +334,10 @@ pub mod tests {
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
-        sync::HcRwLock as RwLock,
         time::test_iso_8601,
     };
     use holochain_json_api::json::{JsonString, RawString};
+    use holochain_locksmith::RwLock;
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::cas::file::FilesystemStorage;
     use tempfile;

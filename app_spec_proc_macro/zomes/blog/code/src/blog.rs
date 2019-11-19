@@ -1,33 +1,16 @@
+use hdk::prelude::*;
 use hdk::{
-    self,
-    error::{ZomeApiError, ZomeApiResult},
+    serde_json::json,
     holochain_core_types::{
         dna::capabilities::CapabilityRequest,
-        entry::{cap_entries::CapabilityType, entry_type::EntryType, Entry},
-        error::HolochainError,
+        entry::{cap_entries::CapabilityType},
         signature::{Provenance, Signature},
-        link::LinkMatch,
     },
-    holochain_persistence_api::{
-        cas::content::Address,
-    },
-    holochain_json_api::{
-        error::JsonError,
-        json::JsonString,
-    },
-    holochain_wasm_utils::api_serialization::{
-        commit_entry::CommitEntryOptions,
-        get_entry::{
-            EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
-        },
-        get_links::{GetLinksOptions, GetLinksResult},
-        QueryArgsOptions, QueryResult,
-    },
-    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN,
+    AGENT_ADDRESS, AGENT_ID_STR, CAPABILITY_REQ, DNA_ADDRESS, DNA_NAME, PROPERTIES, PUBLIC_TOKEN
 };
 
-use memo::Memo;
-use post::Post;
+use crate::memo::Memo;
+use crate::post::Post;
 use std::{
     collections::BTreeMap,
     convert::{TryFrom, TryInto},
@@ -63,10 +46,6 @@ pub fn handle_show_env() -> ZomeApiResult<Env> {
         cap_request: CAPABILITY_REQ.clone(),
         properties: PROPERTIES.clone(),
     })
-}
-
-pub fn handle_get_test_properties() -> ZomeApiResult<JsonString> {
-    hdk::property("test_property")
 }
 
 pub fn handle_get_sources(address: Address) -> ZomeApiResult<Vec<Address>> {
@@ -563,9 +542,9 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
 #[cfg(test)]
 pub mod tests {
 
-    use blog::{check_sum_args, post_entry, SumInput};
+    use crate::blog::{check_sum_args, post_entry, SumInput};
     use hdk::holochain_core_types::entry::{entry_type::AppEntryType, AppEntryValue, Entry};
-    use post::Post;
+    use crate::post::Post;
 
     #[test]
     fn check_sum_args_test() {

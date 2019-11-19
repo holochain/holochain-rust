@@ -25,7 +25,7 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 use test_utils::{
     example_valid_entry_address, example_valid_entry_params, make_test_call,
     start_holochain_instance, TestEntry,
@@ -460,12 +460,28 @@ fn show_env() {
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
-    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmSbEonVd9pmUxQqAS87a6CkdMPUsrjYLshW9eYz3wJkZ1","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,dna_address);
+    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmaT1nbEQn8KsMJ32nvBZUHHEtzrP32duzwPr5Es7H5zEW","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,dna_address);
     let json_result = Ok(JsonString::from_json(&format));
 
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);
 
-    assert_eq!(result, json_result)
+    assert_eq!(result, json_result);
+
+    // related to HDK "env" variables, are HDK "meta" data, such as HDK_VERSION, HDK_HASH.
+    let result = make_test_call(&mut hc, "get_version", r#"{"hash": null}"#);
+    assert_eq!(
+        result,
+        Ok(JsonString::from_json(&format!(
+            r#"{{"Ok":"{}"}}"#,
+            env::var("CARGO_PKG_VERSION").unwrap()
+        )))
+    );
+    let result = make_test_call(&mut hc, "get_version", r#"{"hash": true}"#);
+    println!("get_version( hash == Some(true) ) == {:?}", result);
+    let hash_result: ZomeApiResult<String> =
+        serde_json::from_str::<ZomeApiResult<String>>(&result.clone().unwrap().to_string())
+            .unwrap();
+    assert!(hash_result.is_ok() && hash_result.unwrap().len() == 32);
 }
 
 #[test]

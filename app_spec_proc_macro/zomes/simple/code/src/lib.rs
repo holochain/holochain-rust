@@ -1,37 +1,7 @@
-#![warn(unused_extern_crates)]
 #![feature(proc_macro_hygiene)]
 
+use hdk::prelude::*;
 use hdk_proc_macros::zome;
-
-
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate hdk;
-#[macro_use]
-extern crate holochain_json_derive;
-
-use hdk::{
-    error::ZomeApiResult,
-    entry_definition::ValidatingEntryType,
-    holochain_core_types::{
-        entry::Entry,
-        dna::entry_types::Sharing,
-        link::LinkMatch,
-        agent::AgentId,
-        validation::EntryValidationData,
-    },
-    holochain_persistence_api::{
-        cas::content::Address,
-    },
-    holochain_json_api::{
-       json::JsonString,
-       error::JsonError
-    },
-    holochain_wasm_utils::api_serialization::get_links::{GetLinksResult,LinksStatusRequestKind,GetLinksOptions,GetLinksResultCount}
-};
-
-
 
 #[zome]
 pub mod simple {

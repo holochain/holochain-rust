@@ -2,18 +2,23 @@
 
 members = [
   "crates/cli",
-  "common",
+  "crates/metrics",
+  "crates/common",
   "crates/holochain",
   "crates/conductor_lib",
   "crates/conductor_api",
   "crates/holochain_wasm",
   "crates/core",
   "crates/dpki",
-  "crates/hdk-v2",
+  "crates/hdk_v2",
   "crates/hdk",
+  "crates/locksmith",
   "crates/net",
-  "benchmarks",
-  "crates/logging"
+  "crates/stress",
+  "crates/trycp_server",
+  "crates/sim1h",
+  "crates/sim2h",
+  "crates/sim2h_server"
 ]
 exclude = [
   "test_utils",
@@ -21,3 +26,10 @@ exclude = [
   "app_spec_proc_macro",
   "nodejs_conductor/native",
 ]
+
+[patch.crates-io]
+#lib3h = "=0.0.22"
+#lib3h_protocol = "=0.0.22"
+#lib3h_crypto_api = "=0.0.22"
+#lib3h_sodium = "=0.0.22"
+#lib3h_zombie_actor = "=0.0.22"

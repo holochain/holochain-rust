@@ -7,8 +7,8 @@ use crate::{
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
-use holochain_core_types::{error::HolochainError, sync::HcRwLock as RwLock};
-
+use holochain_core_types::error::HolochainError;
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 
 use json_patch;
@@ -201,13 +201,14 @@ impl ConductorAdmin for Conductor {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::Pickle {
+            storage: StorageConfiguration::Lmdb {
                 path: storage_path
                     .to_str()
                     .ok_or_else(|| {
                         HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
                     })?
                     .into(),
+                initial_mmap_bytes: None,
             },
         };
         new_config.instances.push(new_instance_config);
@@ -1170,7 +1171,7 @@ id = 'new-instance'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
+                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
                 storage_path_string
             ),
         );
@@ -1462,7 +1463,7 @@ id = 'new-instance-2'"#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = '{}'\ntype = 'pickle'",
+                "[instances.storage]\npath = '{}'\ntype = 'lmdb'",
                 storage_path_string
             ),
         );

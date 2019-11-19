@@ -8,11 +8,10 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::data_types::DirectMessageData;
-use snowflake::ProcessUniqueId;
 use std::convert::TryFrom;
 
 fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
@@ -39,47 +38,35 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
-            thread::Builder::new()
-                .name(format!(
-                    "custom_direct_message/{}",
-                    ProcessUniqueId::new().to_string()
-                ))
-                .spawn(move || {
-                    if let Err(error) = context.block_on(handle_custom_direct_message(
-                        message_data.from_agent_id,
-                        message_data.request_id,
-                        custom_direct_message,
-                        context.clone(),
-                    )) {
-                        log_error!(
-                            context,
-                            "net: Error handling custom direct message: {:?}",
-                            error
-                        );
-                    }
-                })
-                .expect("Could not spawn thread for handling of custom direct message");
+            context.clone().spawn_task(move || {
+                if let Err(error) = context.block_on(handle_custom_direct_message(
+                    message_data.from_agent_id.into(),
+                    message_data.request_id,
+                    custom_direct_message,
+                    context.clone(),
+                )) {
+                    log_error!(
+                        context,
+                        "net: Error handling custom direct message: {:?}",
+                        error
+                    );
+                }
+            });
         }
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            thread::Builder::new()
-                .name(format!(
-                    "validation_package_request/{}",
-                    ProcessUniqueId::new().to_string()
-                ))
-                .spawn(move || {
-                    context.block_on(respond_validation_package_request(
-                        message_data.from_agent_id,
-                        message_data.request_id,
-                        address,
-                        context.clone(),
-                        &vec![],
-                    ));
-                })
-                .expect("Could not spawn thread for handling of validation package request");
+            context.clone().spawn_task(move || {
+                context.block_on(respond_validation_package_request(
+                    message_data.from_agent_id.into(),
+                    message_data.request_id,
+                    address,
+                    context.clone(),
+                    &vec![],
+                ));
+            });
         }
         DirectMessage::ValidationPackage(_) => {
             log_error!(context,

@@ -4,30 +4,9 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
-    sync::HcRwLock as RwLock,
 };
-
-use holochain_persistence_api::{
-    cas::{
-        content::{Address, AddressableContent},
-        storage::ContentAddressableStorage,
-    },
-    eav::IndexFilter,
-};
-
+use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
-
-pub(crate) fn get_entry_from_cas(
-    storage: &Arc<RwLock<dyn ContentAddressableStorage>>,
-    address: &Address,
-) -> Result<Option<Entry>, HolochainError> {
-    if let Some(json) = (*storage.read().unwrap()).fetch(&address)? {
-        let entry = Entry::try_from_content(&json)?;
-        Ok(Some(entry))
-    } else {
-        Ok(None) // no errors but entry is not in CAS
-    }
-}
 
 pub fn get_entry_from_agent_chain(
     context: &Arc<Context>,
@@ -43,46 +22,39 @@ pub fn get_entry_from_agent_chain(
     if maybe_header.is_none() {
         return Ok(None);
     }
-    let cas = context
+    context
         .state()
         .unwrap()
         .agent()
         .chain_store()
-        .content_storage();
-    get_entry_from_cas(&cas.clone(), address)
+        .get_entry_from_cas(&address)
 }
 
 pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context
+    context
         .state()
         .unwrap()
         .agent()
         .chain_store()
-        .content_storage();
-    get_entry_from_cas(&cas.clone(), address)
+        .get_entry_from_cas(&address)
 }
 
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().dht().content_storage().clone();
-    get_entry_from_cas(&cas, address)
+    context.state().unwrap().dht().get_entry_from_cas(address)
 }
 
 pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
-    let state_dht = context.state().unwrap().dht().clone();
-    let dht = state_dht.meta_storage().clone();
-
-    let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+    let status_eavs = context.state().unwrap().dht().fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
@@ -121,7 +93,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_link_update_delete = None;
-    let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+    let link_eavs = context.state().unwrap().dht().fetch_eavi(&EaviQuery::new(
         Some(address.clone()).into(),
         Some(Attribute::CrudLink).into(),
         None.into(),
@@ -181,8 +153,10 @@ pub mod tests {
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(None), result);
-        let storage = &context.state().unwrap().dht().content_storage().clone();
-        (*storage.write().unwrap()).add(&entry).unwrap();
+        (*context.state().unwrap().dht())
+            .clone()
+            .cas_add(&entry)
+            .unwrap();
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }

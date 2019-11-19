@@ -1,14 +1,9 @@
 #![feature(proc_macro_hygiene)]
 
-extern crate hdk_proc_macros;
+use hdk::prelude::*;
 use hdk_proc_macros::zome;
 
-extern crate hdk;
-#[macro_use]
-extern crate serde_derive;
-
 use hdk::{
-    error::ZomeApiResult,
     holochain_core_types::{
         signature::{Provenance, Signature},
     },

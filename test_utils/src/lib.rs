@@ -33,9 +33,9 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         Entry, EntryWithMeta,
     },
-    sync::HcMutex as Mutex,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_locksmith::Mutex;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_net::p2p_config::P2pConfig;
@@ -326,7 +326,13 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", cap_request, fn_name, &params_string);
+    Holochain::call_zome_function(
+        hc.context().unwrap(),
+        "test_zome",
+        cap_request,
+        fn_name,
+        &params_string
+    )
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -374,7 +380,7 @@ pub fn start_holochain_instance<T: Into<String>>(
 
     let mut wasm_path = PathBuf::new();
     let wasm_dir_component: PathBuf = wasm_target_dir(
-        &String::from("crates/hdk").into(),
+        &String::from("hdk").into(),
         &String::from("wasm-test").into(),
     );
     wasm_path.push(wasm_dir_component);
@@ -429,6 +435,7 @@ pub fn start_holochain_instance<T: Into<String>>(
         "link_tag_validation",
         "get_entry",
         "create_priv_entry",
+        "get_version",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -515,7 +522,13 @@ pub fn make_test_call(
             JsonString::from_json(params),
         )
     };
-    hc.call("test_zome", cap_call, fn_name, params)
+    Holochain::call_zome_function(
+        hc.context().unwrap(),
+        "test_zome",
+        cap_call,
+        fn_name,
+        params
+    )
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson, Clone)]

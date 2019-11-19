@@ -12,6 +12,7 @@ extern crate holochain_common;
 pub extern crate holochain_json_derive;
 
 extern crate holochain_json_api;
+extern crate holochain_metrics;
 extern crate holochain_persistence_api;
 
 #[macro_use]
@@ -37,8 +38,6 @@ extern crate env_logger;
 extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
-#[macro_use]
-extern crate detach;
 
 #[macro_use]
 pub mod tweetlog;

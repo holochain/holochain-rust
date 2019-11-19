@@ -1,11 +1,13 @@
 use crate::{
-    conductor::base::KeyLoader,
-    keystore::{Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
+    conductor::{
+        base::KeyLoader,
+        passphrase_manager::{PassphraseManager, PassphraseServiceMock},
+    },
+    keystore::{test_hash_config, Keystore, Secret, PRIMARY_KEYBUNDLE_ID},
 };
-use conductor::passphrase_manager::{PassphraseManager, PassphraseServiceMock};
-use holochain_core_types::{error::HolochainError, sync::HcMutex as Mutex};
+use holochain_core_types::error::HolochainError;
 use holochain_dpki::{password_encryption::PwHashConfig, SEED_SIZE};
-use keystore::test_hash_config;
+use holochain_locksmith::Mutex;
 use lib3h_sodium::{hash::sha256, secbuf::SecBuf};
 use std::{path::PathBuf, sync::Arc};
 

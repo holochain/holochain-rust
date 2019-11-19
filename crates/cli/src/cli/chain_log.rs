@@ -4,7 +4,8 @@ use holochain_core::agent::{
     chain_store::ChainStore,
     state::{AgentState, AgentStateSnapshot},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, sync::HcRwLock as RwLock};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_file::cas::file::FilesystemStorage;
 use std::{convert::TryFrom, fs, path::PathBuf};
@@ -20,11 +21,9 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
     let chain_store = ChainStore::new(std::sync::Arc::new(RwLock::new(
         FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),
     )));
-    let cas_lock = chain_store.content_storage();
-    let cas = cas_lock.read().unwrap();
 
-    let agent = cas
-        .fetch(&Address::from("AgentState"))?
+    let agent = chain_store
+        .cas_fetch(&Address::from("AgentState"))?
         .ok_or("Chain does not exist or has not been initialized")
         .and_then(|snapshot_json| {
             AgentStateSnapshot::from_json_str(&snapshot_json.to_string())
@@ -32,7 +31,11 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
         })
         .map(|snapshot| {
             let top_header = snapshot.top_chain_header().to_owned();
-            AgentState::new_with_top_chain_header(chain_store, top_header.cloned(), Address::new())
+            AgentState::new_with_top_chain_header(
+                chain_store.clone(),
+                top_header.cloned(),
+                Address::new(),
+            )
         })
         .map_err(|err| {
             format_err!(
@@ -47,8 +50,8 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
         cas_path.to_string_lossy()
     );
     for ref header in agent.iter_chain() {
-        let content = cas
-            .fetch(header.entry_address())
+        let content = chain_store
+            .cas_fetch(header.entry_address())
             .expect("Panic while fetching from CAS!")
             .ok_or_else(|| {
                 println!(

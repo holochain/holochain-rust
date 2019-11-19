@@ -3,7 +3,7 @@ use crate::{
     state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -16,15 +16,26 @@ impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader { entry, header }
     }
+
+    pub fn try_from_entry_and_header(
+        entry: Entry,
+        header: ChainHeader,
+    ) -> Result<EntryWithHeader, HolochainError> {
+        if entry.address() != *header.entry_address() {
+            Err(HolochainError::ValidationFailed(String::from(
+                "Entry/Header mismatch",
+            )))
+        } else {
+            Ok(EntryWithHeader::new(entry, header))
+        }
+    }
 }
 
 fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, HolochainError> {
     let json = state
         .agent()
         .chain_store()
-        .content_storage()
-        .read()?
-        .fetch(address)?
+        .cas_fetch(address)?
         .ok_or_else(|| HolochainError::from("Entry not found"))?;
     let s: Entry = json.try_into()?;
     Ok(s)

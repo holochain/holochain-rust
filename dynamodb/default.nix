@@ -5,8 +5,8 @@ let
   name = name;
 
   src = pkgs.fetchurl {
-   url = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_test_2018-03-23/dynamodb_local_latest.tar.gz";
-   sha256 = "0wzp07wdmay4kdc31fs14rbpwch0ncq6zsl7yl3vfa0rk9klgx9x";
+   url = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_2019-02-07.tar.gz";
+   sha256 = "0hrwxg4igyll40y7l1s0icg55g247fl8cjs4rrcpjf8d7m0bb09j";
   };
 
   nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -29,12 +29,12 @@ let
  ${pkgs.jdk}/bin/java -Djava.library.path=./DynamoDBLocal_lib/ -jar ./DynamoDBLocal.jar -dbPath "$TMP/dynamodb" "$@"
  '';
 
- inMemory = pkgs.writeShellScriptBin "dynamodb-memory"
+ memory = pkgs.writeShellScriptBin "dynamodb-memory"
  ''
-  cd ${dynamo-jar}
-  ${pkgs.jdk}/bin/java -Djava.library.path=./DynamoDBLocal_lib/ -jar ./DynamoDBLocal.jar -inMemory "$@"
-  '';
+ cd ${dynamo-jar}
+ ${pkgs.jdk}/bin/java -Djava.library.path=./DynamoDBLocal_lib/ -jar ./DynamoDBLocal.jar -inMemory "$@"
+ '';
 in
 {
- buildInputs = [ pkgs.jdk script inMemory ];
+ buildInputs = [ pkgs.jdk script memory ];
 }

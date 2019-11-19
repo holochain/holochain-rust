@@ -11,28 +11,29 @@ let
  script = pkgs.writeShellScriptBin name
  ''
  echo "checking rust formatting";
- cd crates;
- ls;
+ __fmtexit=0
  for p in \
   cli \
-  ../core \
-  ../core_types \
-  ../holochain \
-  ../conductor_lib \
-  ../holochain_wasm \
-  ../hdk \
-  ../hdk-v2 \
-  ../net \
-  ../dpki \
-  ../logging \
-  ../../common \
-  ../benchmarks \
-  ../test_utils \
-  
+  common \
+  conductor_api \
+  conductor_lib \
+  core \
+  core_types \
+  dpki \
+  hdk \
+  hdk_v2 \
+  holochain \
+  holochain_wasm \
+  net \
+  sim2h \
+  sim2h_server \
+  stress \
+  wasm_utils
  do
   echo "checking ''${p}"
-  cd $p && cargo fmt -- --check
+  if ! ( cd "crates/$p" && cargo fmt -- --check ); then __fmtexit=1; fi
  done
+ exit ''${__fmtexit}
  '';
 in
 {

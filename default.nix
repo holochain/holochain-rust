@@ -35,7 +35,7 @@ with holonix.pkgs;
     holonix.shell.shellHook
     ];
 
-  buildInputs = [ ]
+  buildInputs = [ pkgs.libiconv ]
    ++ holonix.shell.buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec {
@@ -59,19 +59,38 @@ with holonix.pkgs;
     config = config;
    }).buildInputs
 
-   # qt specific testing
-   ++ (holonix.pkgs.callPackage ./qt {
+   ++ (holonix.pkgs.callPackage ./crates/trycp_server {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/sim2h_server {
+     pkgs = holonix.pkgs;
+     config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./crates/metrics {
     pkgs = holonix.pkgs;
+    config = config;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./docker {
+     pkgs = holonix.pkgs;
    }).buildInputs
 
    # release hooks
    ++ (holonix.pkgs.callPackage ./release {
+    holonix = holonix;
     pkgs = holonix.pkgs;
     config = config;
    }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./rust {
     holonix = holonix;
+    pkgs = holonix.pkgs;
+   }).buildInputs
+
+   ++ (holonix.pkgs.callPackage ./stress-test {
     pkgs = holonix.pkgs;
    }).buildInputs
 
@@ -87,7 +106,6 @@ with holonix.pkgs;
    ++ (holonix.pkgs.callPackage ./dynamodb {
     pkgs = holonix.pkgs;
    }).buildInputs
-
   ;
  });
 }

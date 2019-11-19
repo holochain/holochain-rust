@@ -2,6 +2,10 @@ use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
     context::Context,
+    dht::actions::{
+        pop_next_holding_workflow::pop_next_holding_workflow,
+        queue_holding_workflow::queue_holding_workflow,
+    },
     network,
     persister::Persister,
     scheduled_jobs,
@@ -19,9 +23,9 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
-    sync::{HcRwLock as RwLock, HcRwLockReadGuard as RwLockReadGuard},
     ugly::lax_send_sync,
 };
+use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
@@ -31,7 +35,7 @@ use std::{
         Arc,
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
@@ -48,6 +52,7 @@ pub struct Instance {
     persister: Option<Arc<RwLock<dyn Persister>>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
+    kill_switch_holding: Option<Sender<()>>,
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -66,14 +71,13 @@ impl Instance {
         let mut scheduler = Scheduler::new();
         scheduler
             .every(10.seconds())
-            .run(scheduled_jobs::create_callback(context.clone()));
-        self.scheduler_handle = Some(Arc::new(
-            scheduler.watch_thread(Duration::from_millis(1000)),
-        ));
+            .run(scheduled_jobs::create_state_dump_callback(context.clone()));
+        self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
         self.persister = Some(context.persister.clone());
 
         self.start_action_loop(context.clone(), rx_action, rx_observer);
+        self.start_holding_loop(context.clone());
 
         context
     }
@@ -183,18 +187,33 @@ impl Instance {
             ))
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
+                let mut unprocessed_action: Option<ActionWrapper> = None;
                 while kill_receiver.try_recv().is_err() {
-                    if let Ok(action_wrapper) = rx_action.recv_timeout(Duration::from_secs(1)) {
+                    if let Some(action_wrapper) = unprocessed_action.clone().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
+                        // Add new observers
+                        state_observers.extend(rx_observer.try_iter());
                         // Ping can happen often, and should be as lightweight as possible
                         let should_process = *action_wrapper.action() != Action::Ping;
                         if should_process {
-                            state_observers = sync_self.process_action(
-                                &action_wrapper,
-                                state_observers,
-                                &rx_observer,
-                                &sub_context,
-                            );
-                            sync_self.emit_signals(&sub_context, &action_wrapper);
+                            match sync_self.process_action(&action_wrapper, &sub_context) {
+                                Ok(()) => {
+                                    sync_self.emit_signals(&sub_context, &action_wrapper);
+                                    // Tick all observers and remove those that have lost their receiving part
+                                    state_observers= state_observers
+                                        .into_iter()
+                                        .filter(|observer| observer.ticker.send(()).is_ok())
+                                        .collect();
+                                },
+                                Err(HolochainError::Timeout) => {
+                                    warn!("Instance::process_action() couldn't get lock on state. Trying again next loop.");
+                                    unprocessed_action = Some(action_wrapper);
+                                },
+                                Err(e) => {
+                                    error!("Instance::process_action() returned unexpected error: {:?}", e);
+                                    unprocessed_action = Some(action_wrapper);
+                                }
+                            };
+
                         }
                     }
                 }
@@ -206,6 +225,9 @@ impl Instance {
         if let Some(ref kill_switch) = self.kill_switch {
             let _ = kill_switch.send(());
         }
+        if let Some(ref kill_switch) = self.kill_switch_holding {
+            let _ = kill_switch.send(());
+        }
     }
 
     /// Calls the reducers for an action and calls the observers with the new state
@@ -213,10 +235,9 @@ impl Instance {
     pub(crate) fn process_action(
         &self,
         action_wrapper: &ActionWrapper,
-        mut state_observers: Vec<Observer>,
-        rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
-    ) -> Vec<Observer> {
+    ) -> Result<(), HolochainError> {
+        context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
             let new_state: StateWrapper;
@@ -224,14 +245,16 @@ impl Instance {
             // Get write lock
             let mut state = self
                 .state
-                .write()
-                .expect("owners of the state RwLock shouldn't panic");
+                .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
+                .ok_or_else(|| HolochainError::Timeout)?;
 
             new_state = state.reduce(action_wrapper.clone());
 
             // Change the state
             *state = new_state;
         }
+
+        context.redux_wants_write.store(false, Relaxed);
 
         if let Err(e) = self.save() {
             log_error!(
@@ -247,13 +270,64 @@ impl Instance {
             );
         }
 
-        // Add new observers
-        state_observers.extend(rx_observer.try_iter());
-        // Tick all observers and remove those that have lost their receiving part
-        state_observers
-            .into_iter()
-            .filter(|observer| observer.ticker.send(()).is_ok())
-            .collect()
+        Ok(())
+    }
+
+    fn start_holding_loop(&mut self, context: Arc<Context>) {
+        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
+        self.kill_switch_holding = Some(kill_sender);
+        thread::Builder::new()
+            .name(format!(
+                "holding_loop/{}",
+                ProcessUniqueId::new().to_string()
+            ))
+            .spawn(move || {
+                while kill_receiver.try_recv().is_err() {
+                    log_trace!(context, "Checking holding queue...");
+                    loop {
+                        let dht_store = context
+                            .state()
+                            .expect("Couldn't get state in run_pending_validations")
+                            .dht();
+                        let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
+                        if let Some(pending) = maybe_holding_workflow {
+                            log_debug!(context, "Found queued validation: {:?}", pending);
+                            // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
+                            // we can run into a race condition.
+                            context.block_on(pop_next_holding_workflow(
+                                pending.clone(),
+                                context.clone(),
+                            ));
+
+                            let result = scheduled_jobs::pending_validations::run_holding_workflow(
+                                pending,
+                                context.clone(),
+                            );
+
+                            match result {
+                                // If we couldn't run the validation due to unresolved dependencies,
+                                // we have to re-add this entry at the end of the queue:
+                                Err(HolochainError::ValidationPending) => context.block_on(
+                                    queue_holding_workflow(pending.clone(), context.clone()),
+                                ),
+                                Err(e) => log_error!(
+                                    context,
+                                    "Error running holding workflow for {:?}: {:?}",
+                                    pending,
+                                    e,
+                                ),
+                                Ok(()) => {
+                                    log_info!(context, "Successfully processed: {:?}", pending)
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+            })
+            .expect("Could not spawn holding thread");
     }
 
     pub(crate) fn emit_signals(&mut self, context: &Context, action_wrapper: &ActionWrapper) {
@@ -295,6 +369,7 @@ impl Instance {
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
             kill_switch: None,
+            kill_switch_holding: None,
         }
     }
 
@@ -307,22 +382,25 @@ impl Instance {
             persister: None,
             consistency_model: ConsistencyModel::new(context.clone()),
             kill_switch: None,
+            kill_switch_holding: None,
         }
     }
 
-    pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
+    pub fn state(&self) -> StateWrapper {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+            .clone()
     }
 
     pub fn save(&self) -> HcResult<()> {
+        let state = self.state();
         self.persister
             .as_ref()
             .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?
             .try_write()
             .ok_or_else(|| HolochainError::new("Could not get lock on persister"))?
-            .save(&self.state())
+            .save(&state)
     }
 
     #[allow(clippy::needless_lifetimes)]
@@ -396,8 +474,8 @@ pub mod tests {
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
         entry::{entry_type::EntryType, test_entry},
-        sync::{HcMutex as Mutex, HcRwLock as RwLock},
     };
+    use holochain_locksmith::{Mutex, RwLock};
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
@@ -410,6 +488,8 @@ pub mod tests {
     use test_utils::mock_signing::registered_test_agent;
 
     use holochain_core_types::entry::Entry;
+    use holochain_json_api::json::JsonString;
+    use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
     use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -443,6 +523,9 @@ pub mod tests {
                 None,
                 None,
                 false,
+                Arc::new(RwLock::new(
+                    holochain_metrics::DefaultMetricPublisher::default(),
+                )),
             )),
             logger,
         )
@@ -492,6 +575,9 @@ pub mod tests {
                 // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name),
                 false,
+                Arc::new(RwLock::new(
+                    holochain_metrics::DefaultMetricPublisher::default(),
+                )),
             )
             .unwrap(),
         )
@@ -517,6 +603,9 @@ pub mod tests {
             None,
             None,
             false,
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -543,6 +632,9 @@ pub mod tests {
             None,
             None,
             false,
+            Arc::new(RwLock::new(
+                holochain_metrics::DefaultMetricPublisher::default(),
+            )),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -658,7 +750,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
-        dna.zomes.insert("".to_string(), Zome::default());
+        dna.zomes.insert("".to_string(), Zome::empty());
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
         test_instance(dna, None).expect("Blank instance could not be initialized!")
     }
@@ -676,15 +768,9 @@ pub mod tests {
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
-        let new_observers = instance.process_action(
-            &action_wrapper,
-            Vec::new(), // start with no observers
-            &rx_observer,
-            &context,
-        );
-
-        // test that the get action added no observers or actions
-        assert!(new_observers.is_empty());
+        instance
+            .process_action(&action_wrapper, &context)
+            .expect("process_action should run without error");
 
         let rx_action_is_empty = match rx_action.try_recv() {
             Err(crossbeam_channel::TryRecvError::Empty) => true,
@@ -828,9 +914,9 @@ pub mod tests {
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
-        let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = unbounded::<Observer>();
-        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
+        instance
+            .process_action(&commit_action, &context)
+            .expect("process_action should run without error");
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history().iter().count());
@@ -860,15 +946,10 @@ pub mod tests {
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
-        let state_observers: Vec<Observer> = Vec::new();
-        let (_, rx_observer) = unbounded::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(
-            &commit_agent_action,
-            state_observers,
-            &rx_observer,
-            &context,
-        );
+        instance
+            .process_action(&commit_agent_action, &context)
+            .expect("process_action should run without error");
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history().iter().count());
@@ -884,5 +965,71 @@ pub mod tests {
                 }
                 _ => false,
             });
+    }
+
+    /// create a test context using LMDB storage
+    fn test_context_lmdb(
+        agent_name: &str,
+        network_name: Option<&str>,
+        cas_initial_mmap: Option<usize>,
+    ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+        let agent = registered_test_agent(agent_name);
+
+        let cas_dir = tempdir().expect("Could not create a tempdir for CAS testing");
+        let eav_dir = tempdir().expect("Could not create a tempdir for CAS testing");
+
+        let content_storage = Arc::new(RwLock::new(LmdbStorage::new(
+            cas_dir.path(),
+            cas_initial_mmap,
+        )));
+        let meta_storage = Arc::new(RwLock::new(EavLmdbStorage::new(eav_dir.path(), None)));
+        let logger = test_logger();
+        (
+            Arc::new(Context::new(
+                "Test-context-lmdb",
+                agent,
+                Arc::new(RwLock::new(SimplePersister::new(content_storage.clone()))),
+                content_storage.clone(),
+                content_storage.clone(),
+                meta_storage,
+                test_memory_network_config(network_name),
+                None,
+                None,
+                false,
+                Arc::new(RwLock::new(
+                    holochain_metrics::DefaultMetricPublisher::default(),
+                )),
+            )),
+            logger,
+        )
+    }
+
+    #[test]
+    fn lmdb_large_entry_test() {
+        let megabytes = 1024 * 1024;
+        let initial_mmap_size = 1 * megabytes;
+        let (context, _) =
+            test_context_lmdb("alice", Some("lmdb_stress_test"), Some(initial_mmap_size));
+
+        // Set up instance
+        let instance = Instance::new(context.clone());
+        let context = instance.initialize_context(context);
+
+        fn test_entry(i: u32, reps: usize) -> Entry {
+            let data: String = std::iter::repeat(format!("{}", i)).take(reps).collect();
+            Entry::App("test-entry".into(), JsonString::from_json(&data))
+        }
+
+        // write an entry larger than the initial mmap
+        let entry = test_entry(0, 3 * initial_mmap_size);
+        let commit_agent_action = ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
+
+        instance
+            .process_action(&commit_agent_action, &context)
+            .unwrap();
+
+        // ensure it was added
+        let dht = context.dht_storage.read().unwrap();
+        assert!(dht.contains(&entry.address()).unwrap());
     }
 }

@@ -16,8 +16,8 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
-    sync::HcRwLock as RwLock,
 };
+use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -200,9 +200,6 @@ impl State {
         let header_addresses: Vec<Address> = headers.iter().map(|h| h.address()).collect();
         let mut dht_headers = self
             .dht()
-            .meta_storage()
-            .read()
-            .unwrap()
             // fetch all EAV references to chain headers for this entry
             .fetch_eavi(&EaviQuery::new(
                 Some(entry_address).into(),
@@ -217,7 +214,7 @@ impl State {
             // don't include the chain header twice
             .filter(|a| !header_addresses.contains(a))
             // fetch the header content from CAS
-            .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
+            .map(|a| self.dht().cas_fetch(&a))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {

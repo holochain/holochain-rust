@@ -1,143 +1,34 @@
 use crate::{
-    context::Context,
-    network::{entry_aspect::EntryAspect, entry_with_header::EntryWithHeader},
-    workflows::{
-        hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
-        hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
-        remove_link::remove_link_workflow,
-    },
+    context::Context, dht::actions::queue_holding_workflow::dispatch_queue_holding_workflow,
+    scheduled_jobs::pending_validations::PendingValidationStruct,
 };
-use holochain_core_types::entry::{deletion_entry::DeletionEntry, Entry};
+use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::StoreEntryAspectData;
-use snowflake::ProcessUniqueId;
-use std::{convert::TryInto, sync::Arc, thread};
+use std::{
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+};
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     let aspect_json =
         JsonString::from_json(std::str::from_utf8(&*dht_data.entry_aspect.aspect).unwrap());
-    if let Ok(aspect) = aspect_json.clone().try_into() {
-        match aspect {
-            EntryAspect::Content(entry, header) => {
+    let maybe_aspect: Result<EntryAspect, _> = aspect_json.clone().try_into();
+    if let Ok(aspect) = maybe_aspect {
+        match PendingValidationStruct::try_from(aspect) {
+            Err(e) => log_error!(
+                context,
+                "net/handle: handle_store: received bad aspect: {:?}",
+                e,
+            ),
+            Ok(pending) => {
                 log_debug!(
                     context,
-                    "net/handle: handle_store: Got EntryAspect::Content. processing..."
+                    "net/handle: handle_store: Adding {} to holding queue...",
+                    pending.workflow,
                 );
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_entry_content/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(err) = context
-                            .block_on(hold_entry_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", err);
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Content");
-            }
-            EntryAspect::Header(header) => {
-                panic!(format!("unimplemented store aspect Header: {:?}", header));
-            }
-            EntryAspect::LinkAdd(link_data, header) => {
-                log_debug!(
-                    context,
-                    "net/handle: handle_store: Got EntryAspect::LinkAdd. processing..."
-                );
-                let entry = Entry::LinkAdd(link_data);
-                if entry.address() != *header.entry_address() {
-                    log_error!(context, "net/handle: handle_store: Got EntryAspect::LinkAdd with non-matching LinkData and ChainHeader! Hash of content in header does not match content! Ignoring.");
-                    return;
-                }
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_link_entry/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_link_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error);
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::LinkAdd");
-            }
-            EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
-                log_debug!(
-                    context,
-                    "net/handle: handle_store: Got EntryAspect::LinkRemove. processing...",
-                );
-                let entry = Entry::LinkRemove((link_data, links_to_remove));
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_link_remove/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(remove_link_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::LinkRemove");
-            }
-            EntryAspect::Update(entry, header) => {
-                log_debug!(
-                    context,
-                    "net/handle: handle_store: Got EntryAspect::Update. processing..."
-                );
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_update/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_update_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Update");
-            }
-            EntryAspect::Deletion(header) => {
-                log_debug!(
-                    context,
-                    "net/handle: handle_store: Got EntryAspect::Deletion. processing...",
-                );
-                // reconstruct the deletion entry from the header.
-                let deleted_entry_address = match header.link_update_delete() {
-                    None => {
-                        log_error!(context, "net/handle: handle_store: Got EntryAspect::Deletion with header that has no deletion link! Ignoring.");
-                        return;
-                    }
-                    Some(address) => address,
-                };
-
-                let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_deletion/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_remove_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/handle_store: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Deletion");
+                dispatch_queue_holding_workflow(Arc::new(pending), context.clone());
             }
         }
     } else {

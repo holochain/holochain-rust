@@ -62,12 +62,15 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_list: Vec<Address>,
+    pub queued_holding_workflows:
+        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
     fn from(state: &StateWrapper) -> Self {
         DhtStoreSnapshot {
             holding_list: state.dht().holding_list.clone(),
+            queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
         }
     }
 }
@@ -130,13 +133,14 @@ impl DhtStore {
         }
     }
 
-    pub fn new_with_holding_list(
+    pub fn new_from_snapshot(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-        holding_list: Vec<Address>,
+        snapshot: DhtStoreSnapshot,
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
-        new_dht_store.holding_list = holding_list;
+        new_dht_store.holding_list = snapshot.holding_list;
+        new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
     }
 

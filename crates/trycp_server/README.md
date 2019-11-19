@@ -20,7 +20,7 @@ Start the server with:
 
 `trycp_server -p <port>  --port-range <port_range_string>`
 
-The --port-range option is required as it is what reports back to try-o-rama about which ports to use when generating config files.
+The --port-range option is required as it is what reports back to the client (tryorama) about which ports to use when generating config files.
 
 Example usage from a nodejs script see the [test/test.js](https://github.com/holochain/holochain-rust/blob/trycp/crates/trycp_server/test/test.js) file.
 
@@ -42,9 +42,8 @@ The underlying box is `holochain/holochain-rust:latest`.
 
 Runs the docker box detached.
 
-`trycp_server` is run on port 443 internally.
-
-Maps the internal port 443 to the host port 443.
+`trycp_server` is run as: `trycp_server -p 9000 --port-range 5050-5070` so the docker
+run must map those ports for the client to make any incoming connections.
 
 `hc-trycp-docker-attach`
 

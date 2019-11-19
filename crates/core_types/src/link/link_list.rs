@@ -26,7 +26,7 @@ impl LinkList {
 
 impl fmt::Display for LinkList {
     fn fmt(&self, f: &mut fmt::formatter) -> fmt::Result {
-        let dump_vec_links = DumpVec(*self.links);
+        let dump_vec_links = DumpVec(self.links);
         write!(f, "Link list: {}", dump_vec_links)
     }
 }

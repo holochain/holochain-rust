@@ -13,6 +13,7 @@ pub use crate::{
         },
         reducers::reduce,
         ribosome::api::ZomeApiFunction,
+        state::ZomeFnCallState,
     },
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};

@@ -220,7 +220,7 @@ impl AddressableContent for NucleusStateSnapshot {
     }
 }
 
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize)]
 pub struct ZomeFnCallState {
     hdk_fn_invocations: Vec<(HdkFnCall, Option<HdkFnCallResult>)>,
 }

@@ -1,0 +1,23 @@
+FROM nixorg/nix:circleci
+
+RUN mkdir /holochain
+
+WORKDIR /holochain
+ENV CARGO_HOME /holochain
+ENV PATH "/holochain/bin:${PATH}"
+ENV DOCKER_BRANCH master
+
+# need $USER to be set for CI, cargo, etc.
+# it isn't set by default
+USER root
+ENV USER root
+
+ENV shellfile default.nix
+
+# keep this matching nix-shell!
+ENV NIX_PATH nixpkgs=https://github.com/NixOs/nixpkgs-channels/tarball/8634c3b619909db7fc747faf8c03592986626e21
+ENV HC_TARGET_PREFIX /tmp/holochain
+
+# get latest develop
+ADD https://github.com/holochain/holochain-rust/archive/$DOCKER_BRANCH.tar.gz $DOCKER_BRANCH.tar.gz
+RUN tar --strip-components=1 -zxvf $DOCKER_BRANCH.tar.gz

@@ -252,6 +252,30 @@ jobs:
    - checkout
    - run: nix-shell --run hc-release-hook-publish
 
+ docker.build.holochain-rust:
+  machine: true
+  steps:
+   - checkout
+   - run: echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
+   - run: docker build ./docker -f ./docker/Dockerfile.holochain-rust --no-cache -t holochain/holochain-rust:latest
+   - run: docker push holochain/holochain-rust:latest
+
+ docker.build.sim2h_server:
+  machine: true
+  steps:
+   - checkout
+   - run: echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
+   - run: docker build ./docker -f ./docker/Dockerfile.nix --no-cache -t holochain/holonix:latest
+   - run: docker push holochain/holonix:latest
+
+ docker.build.trycp_server:
+  machine: true
+  steps:
+   - checkout
+   - run: echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
+   - run: docker build ./docker -f ./docker/Dockerfile.nix --no-cache -t holochain/holonix:latest
+   - run: docker push holochain/holonix:latest
+
 workflows:
  version: 2
  tests:

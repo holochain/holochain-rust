@@ -2,23 +2,19 @@
 let
   docker-build = pkgs.writeShellScriptBin "hc-docker-build"
   ''
-  docker build . -f Dockerfile -t holochain/holochain-rust:latest
+  ./docker/build.sh ''${1}
   '';
 
-  docker-push = pkgs.writeShellScriptBin "hc-docker-pus"
+  docker-build = pkgs.writeShellScriptBin "hc-docker-build"
   ''
-  docker push -t holochain/holochain-rust:latest
+  ./docker/login.sh ''${1}
   '';
 
-  docker-update-all = pkgs.writeShellScriptBin "hc-docker-update-all"
+  docker-push = pkgs.writeShellScriptBin "hc-docker-push"
   ''
-  hc-docker-build
-  hc-docker-push
-
-  hc-trycp-docker-build
-  hc-trycp-docker-push
+  ./docker/push.sh ''${1}
   '';
 in
 {
-  buildInputs = [ docker-build docker-push docker-update-all ];
+  buildInputs = [ docker-build docker-push ];
 }

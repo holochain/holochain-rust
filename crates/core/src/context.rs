@@ -237,11 +237,6 @@ impl Context {
         self.flame_wrapper.lock().unwrap().end(guard);
     }
 
-    pub fn dump_html(&self)
-    {
-        self.flame_wrapper.lock().unwrap().dump_html()
-    }
-
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
         self.state().map(move |state| state.network())
     }

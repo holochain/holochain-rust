@@ -136,7 +136,7 @@ pub mod tests {
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(None), result);
-        context.state().unwrap().dht().add(&entry).unwrap();
+        let _ = (*context.state().unwrap().dht()).clone().add(&entry);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }

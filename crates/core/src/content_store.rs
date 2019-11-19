@@ -21,5 +21,5 @@ pub trait GetContent {
 }
 
 pub trait AddContent {
-    fn add<T: AddressableContent>(&self, content: &T) -> HcResult<()>;
+    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()>;
 }

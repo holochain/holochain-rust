@@ -253,7 +253,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = store.dht().add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -294,7 +294,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = store.dht().add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(

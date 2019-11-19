@@ -286,7 +286,7 @@ impl GetContent for DhtStore {
 }
 
 impl AddContent for DhtStore {
-    fn add<T: AddressableContent>(&self, content: &T) -> HcResult<()> {
+    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
         (*self.content_storage.write().unwrap())
             .add(content)
             .map_err(|e| e.into())

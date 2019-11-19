@@ -283,7 +283,9 @@ pub mod tests {
         state.end_hdk_call(call1, Ok("result".into())).unwrap();
 
         state.begin_hdk_call(call2.clone());
-        state.end_hdk_call(call2, Err("call failed for reasons".into())).unwrap();
+        state
+            .end_hdk_call(call2, Err("call failed for reasons".into()))
+            .unwrap();
 
         assert_eq!(state.hdk_fn_invocations.len(), 2);
     }

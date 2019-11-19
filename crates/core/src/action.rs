@@ -11,9 +11,7 @@ use crate::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
         validation::ValidationResult,
-        HdkFnCall,
-        HdkFnCallResult,
-        ZomeFnCall,
+        HdkFnCall, HdkFnCallResult, ZomeFnCall,
     },
     scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
@@ -219,7 +217,7 @@ pub enum Action {
 
     /// Gets dispatched when a zome function call starts.
     QueueZomeFunctionCall(ZomeFnCall),
-    
+
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 

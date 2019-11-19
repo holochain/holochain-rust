@@ -14,6 +14,10 @@ pub fn return_hdk_function(
 ) {
     dispatch_action(
         context.action_channel(),
-        ActionWrapper::new(Action::ReturnHdkFunction((zome_fn_call, hdk_fn_call, hdk_fn_call_result))),
+        ActionWrapper::new(Action::ReturnHdkFunction((
+            zome_fn_call,
+            hdk_fn_call,
+            hdk_fn_call_result,
+        ))),
     );
 }

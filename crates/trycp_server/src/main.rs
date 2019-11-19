@@ -336,7 +336,7 @@ fn main() {
         let config_base64 = get_as_string("config", &params_map)?;
         let content = base64::decode(&config_base64)
             .map_err(|e| invalid_request(format!("error decoding config: {:?}", e)))?;
-        {
+        let file_path = {
             let state = state_player.read().unwrap();
             let dir_path = get_dir(&state, &id);
             std::fs::create_dir_all(dir_path.clone()).map_err(|e| {
@@ -345,8 +345,8 @@ fn main() {
                     e, dir_path
                 ))
             })?;
-            let file_path = get_config_path(&state, &id);
-        }    
+            get_config_path(&state, &id)
+        };
         save_file(file_path.clone(), &content)?;
         let response = format!(
             "wrote config for player {} to {}",

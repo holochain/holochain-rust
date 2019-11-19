@@ -276,6 +276,14 @@ jobs:
    - run: docker build ./docker -f ./docker/Dockerfile.nix --no-cache -t holochain/holonix:latest
    - run: docker push holochain/holonix:latest
 
+ docker.build.minimal:
+  machine: true
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run: ./docker/build minimal
+   - run: ./docker/push minimal
+
 workflows:
  version: 2
  tests:
@@ -295,6 +303,8 @@ workflows:
    # @todo this was flakey
    # - stress-tests-sim1h
    - stress-tests-sim2h
+
+   - docker.build.minimal
 
  cold.mac:
   jobs:

@@ -1,10 +1,10 @@
-# Try-o-Rama Control Protocol tools (trycp)
+# trycp_server
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
 [![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.org)
 
-An implementation of the Try-o-rama Control Protocol using simple bash conductor manager with a JsonRPC server wrapper.
+A server for provisioning Holochain conductors on a node. Currently used by the [tryorama](https://github.com/holochain/tryorama) test orchestrator.
 
 ## Install
 

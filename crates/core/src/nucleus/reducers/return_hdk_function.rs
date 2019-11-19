@@ -4,11 +4,8 @@ use crate::{
     state::State,
 };
 
-/// Reduce AddPendingValidation Action.
-/// Inserts boxed EntryWithHeader and dependencies into state, referenced with
-/// the entry's address.
-#[allow(unknown_lints)]
-#[allow(clippy::needless_pass_by_value)]
+/// Reduce ReturnHdkFunction Action.
+/// Updates HDK call state with result of api call
 pub fn reduce_return_hdk_function(
     state: &mut NucleusState,
     _root_state: &State,

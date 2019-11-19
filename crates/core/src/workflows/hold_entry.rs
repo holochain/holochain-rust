@@ -1,14 +1,9 @@
 use crate::{
-    context::Context,
-    dht::actions::hold::hold_entry,
-    network::entry_with_header::EntryWithHeader,
+    context::Context, dht::actions::hold::hold_entry, network::entry_with_header::EntryWithHeader,
     nucleus::validation::validate_entry,
 };
 
-use crate::{
-    nucleus::validation::ValidationError,
-    workflows::validation_package,
-};
+use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},

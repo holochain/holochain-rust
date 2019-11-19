@@ -1,14 +1,16 @@
 use crate::{
     action::QueryKey, context::Context, network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall,
+    nucleus::ZomeFnCall, scheduled_jobs::pending_validations::PendingValidation,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::{convert::TryInto, sync::Arc, time::{Duration, SystemTime}};
-use std::collections::VecDeque;
-use crate::scheduled_jobs::pending_validations::PendingValidation;
-
+use std::{
+    collections::VecDeque,
+    convert::TryInto,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Serialize)]
 pub struct StateDump {
@@ -65,10 +67,7 @@ impl From<Arc<Context>> for StateDump {
             .map(|(s, dm)| (s.clone(), dm.clone()))
             .collect();
 
-        let queued_holding_workflows = dht
-            .queued_holding_workflows()
-            .clone();
-
+        let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
         let held_entries = dht.get_all_held_entry_addresses().clone();
 

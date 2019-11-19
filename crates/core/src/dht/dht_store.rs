@@ -326,7 +326,9 @@ impl DhtStore {
         false
     }
 
-    pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
+    pub(crate) fn queued_holding_workflows(
+        &self,
+    ) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
         &self.queued_holding_workflows
     }
 }

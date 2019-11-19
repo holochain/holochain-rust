@@ -3,10 +3,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
 
-use crate::{
-    nucleus::validation::ValidationError,
-    workflows::validation_package,
-};
+use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,

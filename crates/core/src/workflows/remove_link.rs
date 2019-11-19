@@ -4,10 +4,7 @@ use crate::{
     workflows::hold_entry::hold_entry_workflow,
 };
 
-use crate::{
-    nucleus::validation::ValidationError,
-    workflows::validation_package,
-};
+use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,

@@ -50,8 +50,7 @@ pub fn state_dump(context: Arc<Context>) {
         .iter()
         .map(|(pending_validation, _maybe_delay)| {
             let address = pending_validation.entry_with_header.entry.address();
-            let maybe_content =
-                address_to_content_and_type(&address, context.clone());
+            let maybe_content = address_to_content_and_type(&address, context.clone());
             maybe_content
                 .map(|(content_type, content)| {
                     format!(

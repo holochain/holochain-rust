@@ -67,7 +67,7 @@ pub enum ConsistencyEvent {
     UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
     AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry),                // <- Publish, entry_type=LinkRemove
+    RemoveLink(Entry), // <- Publish, entry_type=LinkRemove
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 

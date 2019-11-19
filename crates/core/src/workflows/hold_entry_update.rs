@@ -4,10 +4,7 @@ use crate::{
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 
-use crate::{
-    nucleus::validation::ValidationError,
-    workflows::validation_package,
-};
+use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},

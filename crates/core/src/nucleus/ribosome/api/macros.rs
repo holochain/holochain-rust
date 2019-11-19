@@ -7,6 +7,13 @@ macro_rules! link_zome_api {
         )*
     ) => {
 
+        use crate::nucleus::{
+            actions::{invoke_hdk_function::invoke_hdk_function, return_hdk_function::return_hdk_function},
+            ribosome::runtime::WasmCallData,
+            HdkFnCall,
+        };
+        use holochain_json_api::json::JsonString;
+
         /// Enumeration of all the Zome Functions known and usable in Zomes.
         /// Enumeration can convert to str.
         #[repr(usize)]
@@ -69,9 +76,25 @@ macro_rules! link_zome_api {
                     ZomeApiFunction::MissingNo => ribosome_success!(),
                     ZomeApiFunction::Abort => ribosome_success!(),
                     $( ZomeApiFunction::$enum_variant => {
-                        let _context = runtime.context();
-                        let result = $function_name(runtime, args);
-                        result
+                        if let Ok(context) = runtime.context() {
+                            if let WasmCallData::ZomeCall(zome_call_data) = runtime.data.clone() {
+                                let zome_api_call = zome_call_data.call;
+                                let parameters = runtime.load_json_string_from_args(&args);
+                                let hdk_fn_call = HdkFnCall { function: self.clone(), parameters };
+                                invoke_hdk_function(zome_api_call.clone(), hdk_fn_call.clone(), &context);
+                                let result = $function_name(runtime, args);
+                                // let hdk_fn_result = result.clone().map(|r| JsonString::from(format!("{:?} (TODO)", r).as_str())).map_err(|e| e.to_string());
+                                let hdk_fn_result = Ok(JsonString::from("TODO"));
+                                return_hdk_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
+                                result
+                            } else {
+                                error!("Can't record zome call hdk invocations for non zome call");
+                                $function_name(runtime, args)
+                            }
+                        } else {
+                            error!("Could not get context for runtime");
+                            $function_name(runtime, args)
+                        }
                     } , )*
                 }
             }

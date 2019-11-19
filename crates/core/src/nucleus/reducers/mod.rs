@@ -1,7 +1,9 @@
 mod add_pending_validation;
 pub mod init_application;
+pub mod invoke_hdk_function;
 pub mod queue_zome_function_call;
 mod remove_pending_validation;
+pub mod return_hdk_function;
 pub mod return_initialization_result;
 pub mod return_validation_package;
 pub mod return_validation_result;

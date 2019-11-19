@@ -4,7 +4,9 @@ pub mod call_init;
 pub mod call_zome_function;
 pub mod get_entry;
 pub mod initialize;
+pub mod invoke_hdk_function;
 pub mod remove_pending_validation;
+pub mod return_hdk_function;
 pub mod run_validation_callback;
 
 #[cfg(test)]

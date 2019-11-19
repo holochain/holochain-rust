@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    nucleus::{ribosome::MAX_ZOME_CALLS, state::NucleusState, HdkFnCall},
+    nucleus::state::{NucleusState, ZomeFnCallState},
     state::State,
 };
 
@@ -16,5 +16,9 @@ pub fn reduce_invoke_hdk_function(
 ) {
     let action = action_wrapper.action();
     let (zome_fn_call, hdk_fn_call) = unwrap_to!(action => Action::InvokeHdkFunction);
-    state.zome_call_api_invocations.insert(zome_fn_call, (hdk_fn_call, None));
+    state
+        .zome_call_api_invocations
+        .entry(zome_fn_call.clone())
+        .and_modify(|zfcs| zfcs.begin_hdk_call(hdk_fn_call.clone()))
+        .or_insert_with(|| ZomeFnCallState::default());
 }

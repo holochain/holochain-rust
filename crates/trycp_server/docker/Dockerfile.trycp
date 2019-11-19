@@ -18,7 +18,7 @@ ENV NIX_PATH nixpkgs=https://github.com/NixOs/nixpkgs-channels/tarball/8634c3b61
 ENV HC_TARGET_PREFIX /tmp/holochain
 
 # get latest develop
-ADD https://github.com/holochain/holochain-rust/archive/develop.tar.gz develop.tar.gz
+ADD https://github.com/holochain/holochain-rust/archive/trycp-server-fix.tar.gz develop.tar.gz
 RUN tar --strip-components=1 -zxvf develop.tar.gz
 # ADD . .
 

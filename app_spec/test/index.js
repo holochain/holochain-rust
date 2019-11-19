@@ -1,4 +1,4 @@
-const { Orchestrator, tapeExecutor, singleConductor, combine, callSync  } = require('@holochain/try-o-rama')
+const { Orchestrator, tapeExecutor, singleConductor, localOnly, combine, callSync  } = require('@holochain/tryorama')
 
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
@@ -9,97 +9,29 @@ process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
-let transport_config = 'memory';
-let middleware = combine(
-  // by default, combine conductors into a single conductor for in-memory networking
-  // NB: this middleware makes a really huge difference! and it's not very well tested,
-  // as of Oct 1 2019. So, keep an eye out.
-  singleConductor,
-  callSync,
-  tapeExecutor(require('tape')),
-);
 
-if (process.env.APP_SPEC_NETWORK_TYPE === 'websocket') {
-  transport_config = 'websocket'
+const networkType = process.env.APP_SPEC_NETWORK_TYPE
+const middleware = 
+  ( networkType === 'websocket'
+  ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
-  // omit singleConductor
-  middleware = combine(
-    callSync,
-    tapeExecutor(require('tape')),
-  );
-}
+  : networkType === 'sim1h'
+  ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
-if (process.env.APP_SPEC_NETWORK_TYPE === 'sim1h') {
-  transport_config = {
-    type: 'sim1h',
-    dynamo_url: 'http://localhost:8000'
-  }
+  : networkType === 'sim2h'
+  ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
-  // omit singleConductor
-  middleware = combine(
-    callSync,
-    tapeExecutor(require('tape')),
-  );
-}
+  : networkType === 'memory'
+  ? combine(tapeExecutor(require('tape')), localOnly, singleConductor, callSync)
 
-if (process.env.APP_SPEC_NETWORK_TYPE === 'sim2h') {
-  transport_config = {
-    type: 'sim2h',
-    sim2h_url: 'wss://localhost:9000'
-  }
-
-    // omit singleConductor
-    middleware = combine(
-        // dumbWaiter(1000),
-        callSync,
-        tapeExecutor(require('tape')),
-    );
-}
+  : (() => {throw new Error(`Unsupported memory type: ${networkType}`)})()
+)
 
 const orchestrator = new Orchestrator({
   middleware,
   waiter: {
     softTimeout: 5000,
     hardTimeout: 10000
-  },
-  globalConfig: {
-    logger: {
-      type: 'debug',
-      rules: {
-        rules: [
-          {
-            exclude: true,
-            pattern: '.*parity.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*mio.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*tokio.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*hyper.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*rusoto_core.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*want.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*rpc.*'
-          }
-        ]
-      },
-      state_dump: true
-    },
-    network: transport_config
   }
 })
 

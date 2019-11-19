@@ -5,15 +5,28 @@ use crate::{
     scheduled_jobs::pending_validations::PendingValidation,
 };
 use futures::{future::Future, task::Poll};
-use std::{pin::Pin, sync::Arc, time::{Duration, SystemTime}};
+use std::{
+    pin::Pin,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
-pub fn dispatch_queue_holding_workflow(pending: PendingValidation, delay: Option<Duration>, context: Arc<Context>) {
+pub fn dispatch_queue_holding_workflow(
+    pending: PendingValidation,
+    delay: Option<Duration>,
+    context: Arc<Context>,
+) {
     let delay_with_now = delay.map(|d| (SystemTime::now(), d));
-    let action_wrapper = ActionWrapper::new(Action::QueueHoldingWorkflow((pending, delay_with_now)));
+    let action_wrapper =
+        ActionWrapper::new(Action::QueueHoldingWorkflow((pending, delay_with_now)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 
-pub async fn queue_holding_workflow(pending: PendingValidation, delay: Option<Duration>, context: Arc<Context>) {
+pub async fn queue_holding_workflow(
+    pending: PendingValidation,
+    delay: Option<Duration>,
+    context: Arc<Context>,
+) {
     if !context
         .state()
         .expect("Can't queue holding workflow without state")

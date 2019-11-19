@@ -40,7 +40,8 @@ pub struct DhtStore {
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
 
-    pub(crate) queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    pub(crate) queued_holding_workflows:
+        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -298,19 +299,20 @@ impl DhtStore {
         &mut self.actions
     }
 
-    pub(crate) fn next_queued_holding_workflow(&self) -> Option<(&PendingValidation, Option<Duration>)> {
+    pub(crate) fn next_queued_holding_workflow(
+        &self,
+    ) -> Option<(&PendingValidation, Option<Duration>)> {
         for (pending, maybe_delay) in self.queued_holding_workflows.iter() {
             if let Some((time_of_dispatch, delay)) = maybe_delay {
                 let maybe_time_elapsed = time_of_dispatch.elapsed();
                 if let Ok(time_elapsed) = maybe_time_elapsed {
-                    if  time_elapsed < *delay {
+                    if time_elapsed < *delay {
                         continue;
                     }
                 }
-
-                return Some((pending, Some(delay.clone())))
+                return Some((pending, Some(delay.clone())));
             }
-            return Some((pending, None))
+            return Some((pending, None));
         }
         None
     }
@@ -318,7 +320,7 @@ impl DhtStore {
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
         for (current, _) in self.queued_holding_workflows.iter() {
             if current == pending {
-                return true
+                return true;
             }
         }
         false

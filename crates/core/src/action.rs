@@ -17,6 +17,7 @@ use crate::{
     state::State,
 };
 
+use bitflags::_core::time::Duration;
 use holochain_core_types::{
     chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
     error::HolochainError, link::link_data::LinkData, signature::Provenance,
@@ -28,10 +29,9 @@ use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
-    vec::Vec,
     time::SystemTime,
+    vec::Vec,
 };
-use bitflags::_core::time::Duration;
 
 /// Wrapper for actions that provides a unique ID
 /// The unique ID is needed for state tracking to ensure that we can differentiate between two

@@ -318,15 +318,17 @@ impl Instance {
                                     };
 
                                     // But at least try once per hour:
-                                    let hour = Duration::from_secs(60*60);
+                                    let hour = Duration::from_secs(60 * 60);
                                     if delay > hour {
                                         delay = hour
                                     }
 
-                                    context.block_on(
-                                        queue_holding_workflow(pending.clone(), Some(delay), context.clone()),
-                                    )
-                                },
+                                    context.block_on(queue_holding_workflow(
+                                        pending.clone(),
+                                        Some(delay),
+                                        context.clone(),
+                                    ))
+                                }
                                 Err(e) => log_error!(
                                     context,
                                     "Error running holding workflow for {:?}: {:?}",

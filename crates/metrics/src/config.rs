@@ -33,9 +33,9 @@ impl MetricPublisherConfig {
             } => {
                 let region = region.clone().unwrap_or_default();
                 let provider = crate::cloudwatch::assume_role(&region);
-                Arc::new(RwLock::new(CloudWatchLogger::with_log_stream(
-                    log_stream_name.clone().unwrap_or_default(),
-                    log_group_name.clone().unwrap_or_default(),
+                Arc::new(RwLock::new(CloudWatchLogger::new(
+                    log_stream_name.clone(),
+                    log_group_name.clone(),
                     provider,
                     &region,
                 )))

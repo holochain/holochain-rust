@@ -198,28 +198,15 @@ impl CloudWatchLogger {
             .as_secs() as i64
     }
 
-    pub fn with_log_group(log_group_name: String, region: &Region) -> Self {
-        let client = CloudWatchLogsClient::new(region.clone());
-
-        let log_group_request = CreateLogGroupRequest {
-            log_group_name: log_group_name.clone(),
-            ..Default::default()
-        };
-
-        // TODO Check if log group already exists or set them up a priori
-        client
-            .create_log_group(log_group_request)
-            .sync()
-            .unwrap_or_else(|e| {
-                debug!("Could not create log group- maybe already created: {:?}", e)
-            });
-
-        Self {
-            client,
-            log_stream_name: None,
-            log_group_name: Some(log_group_name),
-            sequence_token: None,
-        }
+    pub fn with_log_group<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
+        log_group_name: String,
+        credentials_provider: P,
+        region: &Region,
+    ) -> Self
+    where
+        P::Future: Send,
+    {
+        Self::new(None, Some(log_group_name), credentials_provider, region)
     }
 
     pub fn with_region(region: &Region) -> Self {
@@ -232,9 +219,9 @@ impl CloudWatchLogger {
         }
     }
 
-    pub fn with_log_stream<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
-        log_stream_name: String,
-        log_group_name: String,
+    pub fn new<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
+        log_stream_name: Option<String>,
+        log_group_name: Option<String>,
         credentials_provider: P,
         region: &Region,
     ) -> Self
@@ -247,29 +234,36 @@ impl CloudWatchLogger {
             region.clone(),
         );
 
-        let log_group_request = CreateLogGroupRequest {
-            log_group_name: log_group_name.clone(),
-            ..Default::default()
-        };
+        if let Some(log_group_name) = &log_group_name {
+            let log_group_request = CreateLogGroupRequest {
+                log_group_name: log_group_name.clone(),
+                ..Default::default()
+            };
+            // TODO Check if log group already exists or set them up a priori
+            client
+                .create_log_group(log_group_request)
+                .sync()
+                .unwrap_or_else(|e| {
+                    debug!("Could not create log group- maybe already created: {:?}", e)
+                });
+        }
 
-        // TODO Check if log group already exists or set them up a priori
-        client
-            .create_log_group(log_group_request)
-            .sync()
-            .unwrap_or_else(|e| {
-                debug!("Could not create log group- maybe already created: {:?}", e)
-            });
+        let mut log_group_name = log_group_name;
+        if let Some(log_stream_name) = &log_stream_name {
+            let log_group_name2 = log_group_name.unwrap_or_default();
+            let log_stream_request = CreateLogStreamRequest {
+                log_group_name: log_group_name2.clone(),
+                log_stream_name: log_stream_name.clone(),
+            };
 
-        let log_stream_request = CreateLogStreamRequest {
-            log_group_name: log_group_name.clone(),
-            log_stream_name: log_stream_name.clone(),
-        };
+            log_group_name = Some(log_group_name2);
+            client.create_log_stream(log_stream_request).sync().unwrap();
+        }
 
-        client.create_log_stream(log_stream_request).sync().unwrap();
         Self {
             client,
-            log_stream_name: Some(log_stream_name),
-            log_group_name: Some(log_group_name),
+            log_stream_name: log_stream_name,
+            log_group_name: log_group_name,
             sequence_token: None,
         }
     }
@@ -311,9 +305,9 @@ impl Default for CloudWatchLogger {
         let default_log_stream = Self::default_log_stream();
         let default_log_group = Self::default_log_group();
         let provider = assume_role(&DEFAULT_REGION);
-        CloudWatchLogger::with_log_stream(
-            default_log_stream,
-            default_log_group,
+        CloudWatchLogger::new(
+            Some(default_log_stream),
+            Some(default_log_group),
             provider,
             &DEFAULT_REGION,
         )

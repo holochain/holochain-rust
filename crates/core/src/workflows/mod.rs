@@ -13,9 +13,7 @@ pub mod respond_validation_package_request;
 
 use crate::{
     context::Context,
-    network::{
-        actions::get_validation_package::get_validation_package, chain_pair::ChainPair,
-    },
+    network::{actions::get_validation_package::get_validation_package, chain_pair::ChainPair},
     nucleus::{
         actions::build_validation_package::build_validation_package,
         ribosome::callback::{
@@ -92,9 +90,7 @@ async fn validation_package(
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally:
-    if let Ok(package) =
-        try_make_local_validation_package(&chain_pair, context.clone()).await
-    {
+    if let Ok(package) = try_make_local_validation_package(&chain_pair, context.clone()).await {
         Ok(Some(package))
     } else {
         // If that is not possible, get the validation package from source

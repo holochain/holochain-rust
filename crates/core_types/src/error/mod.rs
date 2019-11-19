@@ -8,13 +8,12 @@ use self::HolochainError::*;
 pub use self::{dna_error::*, ribosome_error::*};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
-use holochain_persistence_api::cas::content::Address;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
 use holochain_locksmith::LocksmithError;
-use holochain_persistence_api::{error::PersistenceError, hash::HashString};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
 
 use serde_json::Error as SerdeError;
@@ -166,17 +165,18 @@ impl fmt::Display for HolochainError {
                 hash1, hash2
             ),
             HeaderEntryMismatch(
+                err_msg,
                 header_entry_address,
                 header_entry,
                 header,
                 entry_address,
                 entry,
-                err_msg.
             ) => write!(
+                f,
                 "Header/Entry mismatch. The address {} of the entry {} in the
                  header {} does not match the address {} of the entry {}. {}",
                 header_entry_address, header_entry, header, entry_address, entry, err_msg
-            )
+            ),
             EntryNotFoundLocally => write!(f, "The requested entry could not be found locally"),
             EntryIsPrivate => write!(
                 f,

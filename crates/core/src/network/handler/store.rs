@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    network::{entry_aspect::EntryAspect, chain_pair::ChainPair},
+    network::{chain_pair::ChainPair, entry_aspect::EntryAspect},
     workflows::{
         hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
         hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
@@ -33,14 +33,13 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                             ProcessUniqueId::new().to_string()
                         ))
                         .spawn(move || {
-                            if let Err(err) = context
-                                .block_on(hold_entry_workflow(&chain_pair, context.clone()))
+                            if let Err(err) =
+                                context.block_on(hold_entry_workflow(&chain_pair, context.clone()))
                             {
                                 log_error!(context, "net/dht: {}", err);
                             }
                         })
                         .expect("Could not spawn thread for storing EntryAspect::Content");
-
                 } else if Err(err) {
                     log_error!(context, "net/handle: handle_store: Got EntryAspect::Content with non-matching entry and header", err)
                 } else {

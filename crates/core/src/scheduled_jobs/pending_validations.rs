@@ -81,26 +81,21 @@ fn retry_validation(pending: PendingValidation, context: Arc<Context>) {
         ))
         .spawn(move || {
             let result = match pending.workflow {
-                ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-                    &pending.chain_pair,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-                    &pending.chain_pair,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-                    &pending.chain_pair,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-                    &pending.chain_pair,
-                    context.clone(),
-                )),
-                ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-                    &pending.chain_pair,
-                    context.clone(),
-                )),
+                ValidatingWorkflow::HoldLink => {
+                    context.block_on(hold_link_workflow(&pending.chain_pair, context.clone()))
+                }
+                ValidatingWorkflow::HoldEntry => {
+                    context.block_on(hold_entry_workflow(&pending.chain_pair, context.clone()))
+                }
+                ValidatingWorkflow::RemoveLink => {
+                    context.block_on(remove_link_workflow(&pending.chain_pair, context.clone()))
+                }
+                ValidatingWorkflow::UpdateEntry => {
+                    context.block_on(hold_update_workflow(&pending.chain_pair, context.clone()))
+                }
+                ValidatingWorkflow::RemoveEntry => {
+                    context.block_on(hold_remove_workflow(&pending.chain_pair, context.clone()))
+                }
             };
             if Err(HolochainError::ValidationPending) != result {
                 remove_pending_validation(

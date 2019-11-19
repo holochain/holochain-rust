@@ -413,10 +413,7 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let chain_pair = ChainPair::new(
-            header: test_chain_header(),
-            entry: entry.clone(),
-        );
+        let chain_pair = ChainPair::new(test_chain_header(), entry.clone());
         let action_wrapper = ActionWrapper::new(Action::Hold(chain_pair.clone()));
 
         store.reduce(action_wrapper);

@@ -227,14 +227,18 @@ impl DhtStore {
                 self.content_storage().write().unwrap().add(header)?;
                 self.meta_storage().write().unwrap().add_eavi(&eavi)?;
                 Ok(())
-            Err(header_entry_mismatch as HeaderEntryMismatch(.., err_msg)) => {
-                let add_err_msg = format!(
-                    "Tried to add entry {} and header {} to the CAS and EAV, respectively",
-                    entry, header,
-                );
-                err_msg = concat!(err_msg, add_err_msg);
-                Err(HeaderEntryMismatch(.., err_msg)
             }
+            Err(err) => match err {
+                HolochainError::HeaderEntryMismatch(err_msg, ..) => {
+                    let add_err_msg = format!(
+                        "Tried to add entry {} and header {} to the CAS and EAV, respectively",
+                        entry, header,
+                    );
+                    err_msg = concat!(err_msg, add_err_msg);
+                    Err(HolochainError::HeaderEntryMismatch(err_msg, ..))
+                }
+                _ => unreachable!(),
+            },
         }
     }
 

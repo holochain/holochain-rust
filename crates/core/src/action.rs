@@ -1,9 +1,9 @@
 use crate::{
     agent::state::AgentState,
     network::{
+        chain_pair::ChainPair,
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        chain_pair::ChainPair,
         query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },

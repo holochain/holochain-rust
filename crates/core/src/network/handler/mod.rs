@@ -10,8 +10,8 @@ use crate::{
     context::Context,
     entry::CanPublish,
     network::{
-        direct_message::DirectMessage,
         chain_pair::ChainPair,
+        direct_message::DirectMessage,
         entry_aspect::EntryAspect,
         handler::{
             fetch::*,
@@ -310,7 +310,7 @@ fn get_content_aspect(
                 &state.agent().chain_store().content_storage(),
                 header.entry_address(),
             ) {
-                Ok(Some(entry)) => {Some(ChainPair::new(header, entry))},
+                Ok(Some(entry)) => Some(ChainPair::new(header, entry)),
                 Ok(None) => {
                     let err_message = format!(
                         "net/fetch/get_content_aspect: no entry associated with address {} could be
@@ -319,7 +319,7 @@ fn get_content_aspect(
                     );
                     log_error!(context, "{}", err_message);
                     return HolochainError::ErrorGeneric(err_message);
-                },
+                }
                 Err(err) => {
                     let err_message = format!(
                         "net/fetch/get_content_aspect: got an error while trying to get an entry associated with the address {}from the CAS. The header {} is in the chain. Error: {:?}",
@@ -327,9 +327,9 @@ fn get_content_aspect(
                     );
                     log_error!(context, "{}", err_message);
                     return HolochainError::ErrorGeneric(err_message);
-                },                
+                }
             }
-        },
+        }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
             if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
@@ -348,10 +348,7 @@ fn get_content_aspect(
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    Some(ChainPair::new(
-                        headers[0].clone(),
-                        entry,
-                    ))
+                    Some(ChainPair::new(headers[0].clone(), entry))
                 } else {
                     debug!(
                         "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"

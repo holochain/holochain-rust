@@ -30,7 +30,7 @@ use std::{
 
 /// The state-slice for the Agent.
 /// Hold's the agent's source chain and keys.
-#[derive(Clone, Debug, PartialEq)] 
+#[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?

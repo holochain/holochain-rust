@@ -21,3 +21,4 @@ ENV HC_TARGET_PREFIX /tmp/holochain
 # get latest develop
 ADD https://github.com/holochain/holochain-rust/archive/$DOCKER_BRANCH.tar.gz $DOCKER_BRANCH.tar.gz
 RUN tar --strip-components=1 -zxvf $DOCKER_BRANCH.tar.gz
+RUN rm $DOCKER_BRANCH.tar.gz

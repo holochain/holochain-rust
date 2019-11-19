@@ -2164,9 +2164,14 @@ pub mod tests {
                 JsonString::empty_object(),
             )
         };
-        let result = instance
-            .call("test_zome", cap_call, "call_bridge", "{}")
-            .unwrap();
+        let result = Holochain::call_zome_function(
+            instance.context().unwrap(),
+            "test_zome",
+            cap_call,
+            "call_bridge",
+            "{}",
+        )
+        .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from("Holo World"));
@@ -2196,10 +2201,19 @@ pub mod tests {
                 JsonString::empty_object(),
             )
         };
-        let result = instance.call("test_zome", cap_call, "call_bridge_error", "{}");
+        let result = Holochain::call_zome_function(
+            instance.context().unwrap(),
+            "test_zome",
+            cap_call,
+            "call_bridge_error",
+            "{}",
+        );
 
         assert!(result.is_ok());
-        assert!(result.unwrap().to_string().contains("Holochain Instance Error: Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
+        assert!(result
+            .unwrap()
+            .to_string()
+            .contains("Zome function \'non-existent-function\' not found in Zome \'greeter\'"));
     }
 
     #[test]

@@ -62,8 +62,7 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_list: Vec<Address>,
-    pub queued_holding_workflows:
-        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {

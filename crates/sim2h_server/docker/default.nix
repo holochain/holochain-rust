@@ -2,12 +2,12 @@
 let
   docker-build = pkgs.writeShellScriptBin "hc-sim2h-docker-build"
   ''
-  ./docker/build `git rev-parse --abbrev-ref HEAD` sim2h_server
+  ./docker/build sim2h_server `git rev-parse --abbrev-ref HEAD`
   '';
 
   docker-push = pkgs.writeShellScriptBin "hc-sim2h-docker-push"
   ''
-  ./docker/push `git rev-parse --abbrev-ref HEAD` sim2h_server
+  ./docker/push sim2h_server `git rev-parse --abbrev-ref HEAD`
   '';
 
   docker-run = pkgs.writeShellScriptBin "hc-sim2h-docker-run"

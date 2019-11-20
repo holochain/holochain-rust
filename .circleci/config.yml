@@ -257,32 +257,32 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build $CIRCLE_BRANCH latest
-   - run: ./docker/push $CIRCLE_BRANCH latest
+   - run: ./docker/build latest $CIRCLE_BRANCH
+   - run: ./docker/push latest $CIRCLE_BRANCH
 
  docker.build.sim2h_server:
   machine: true
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build $CIRCLE_BRANCH sim2h_server
-   - run: ./docker/push $CIRCLE_BRANCH sim2h_server
+   - run: ./docker/build sim2h_server $CIRCLE_BRANCH
+   - run: ./docker/push sim2h_server $CIRCLE_BRANCH
 
  docker.build.trycp_server:
   machine: true
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build $CIRCLE_BRANCH trycp_server
-   - run: ./docker/push $CIRCLE_BRANCH trycp_server
+   - run: ./docker/build trycp_server $CIRCLE_BRANCH
+   - run: ./docker/push trycp_server $CIRCLE_BRANCH
 
  docker.build.minimal:
   machine: true
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build $CIRCLE_BRANCH minimal
-   - run: ./docker/push $CIRCLE_BRANCH minimal
+   - run: ./docker/build minimal $CIRCLE_BRANCH
+   - run: ./docker/push minimal $CIRCLE_BRANCH
 
 workflows:
  version: 2

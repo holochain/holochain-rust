@@ -312,19 +312,27 @@ impl DhtStore {
                     let maybe_time_elapsed = time_of_dispatch.elapsed();
                     if let Ok(time_elapsed) = maybe_time_elapsed {
                         if time_elapsed < *delay {
-                            return true
+                            return true;
                         }
                     }
                 }
                 false
             })
-            .map(|(pending, maybe_delay)|
-                (pending, maybe_delay.map(|(_time, duration)| Some(duration)).unwrap_or(None)))
+            .map(|(pending, maybe_delay)| {
+                (
+                    pending,
+                    maybe_delay
+                        .map(|(_time, duration)| Some(duration))
+                        .unwrap_or(None),
+                )
+            })
             .next()
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        self.queued_holding_workflows.iter().any(|(current, _)| current == pending)
+        self.queued_holding_workflows
+            .iter()
+            .any(|(current, _)| current == pending)
     }
 
     pub(crate) fn queued_holding_workflows(

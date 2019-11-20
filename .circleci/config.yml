@@ -256,25 +256,25 @@ jobs:
   machine: true
   steps:
    - checkout
-   - run: echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
-   - run: docker build ./docker -f ./docker/Dockerfile.holochain-rust --no-cache -t holochain/holochain-rust:latest
-   - run: docker push holochain/holochain-rust:latest
+   - run: ./docker/login
+   - run: ./docker/build latest
+   - run: ./docker/push latest
 
  docker.build.sim2h_server:
   machine: true
   steps:
    - checkout
-   - run: echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
-   - run: docker build ./docker -f ./docker/Dockerfile.nix --no-cache -t holochain/holonix:latest
-   - run: docker push holochain/holonix:latest
+   - run: ./docker/login
+   - run: ./docker/build sim2h_server
+   - run: ./docker/push sim2h_server
 
  docker.build.trycp_server:
   machine: true
   steps:
    - checkout
-   - run: echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
-   - run: docker build ./docker -f ./docker/Dockerfile.nix --no-cache -t holochain/holonix:latest
-   - run: docker push holochain/holonix:latest
+   - run: ./docker/login
+   - run: ./docker/build trycp_server
+   - run: ./docker/push trycp_server
 
  docker.build.minimal:
   machine: true
@@ -305,6 +305,9 @@ workflows:
    - stress-tests-sim2h
 
    - docker.build.minimal
+   - docker.build.trycp_server
+   - docker.build.sim2h_server
+   - docker.build.latest
 
  cold.mac:
   jobs:

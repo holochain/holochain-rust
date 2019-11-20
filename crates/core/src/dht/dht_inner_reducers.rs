@@ -1,3 +1,4 @@
+use crate::content_store::{AddContent, GetContent};
 ///
 /// Inner DHT reducers are not pure functions but rather functions designed to make the required
 /// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
@@ -21,7 +22,7 @@ use holochain_persistence_api::{
     eav::IndexFilter,
 };
 
-use std::{collections::BTreeSet, convert::TryInto, str::FromStr};
+use std::{collections::BTreeSet, str::FromStr};
 
 pub(crate) enum LinkModification {
     Add,
@@ -30,7 +31,7 @@ pub(crate) enum LinkModification {
 
 /// Used as the inner function for both commit and hold reducers
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
-    match store.cas_add(entry) {
+    match store.add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
             store.add_eavi(&status_eav).map(|_| ()).map_err(|e| {
                 format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()
@@ -46,7 +47,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    if store.cas_contains(link.base())? {
+    if store.contains(link.base())? {
         let attr = match link_modification {
             LinkModification::Add => {
                 Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
@@ -85,14 +86,9 @@ pub(crate) fn reduce_remove_entry_inner(
     latest_deleted_address: &Address,
     deletion_address: &Address,
 ) -> HcResult<Address> {
-    // pre-condition: Must already have entry in local content_storage
-    let entry: Entry = store
-        .cas_fetch(latest_deleted_address)?
-        .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?
-        .try_into()
-        .map_err(|_| {
-            HolochainError::ErrorGeneric("Stored content should be a valid entry".into())
-        })?;
+    let entry = store
+        .get(latest_deleted_address)?
+        .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?;
 
     // pre-condition: entry_type must not be sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {

@@ -1,10 +1,10 @@
-# Try-o-Rama Control Protocol tools (trycp)
+# Tryorama Control Protocol tools (trycp)
 
 [![Project](https://img.shields.io/badge/project-holochain-blue.svg?style=flat-square)](http://holochain.org/)
 [![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.org)
 
-An implementation of the Try-o-rama Control Protocol using simple bash conductor manager with a JsonRPC server wrapper.
+An implementation of the Tryorama Control Protocol using simple bash conductor manager with a JsonRPC server wrapper.
 
 ## Install
 
@@ -20,7 +20,7 @@ Start the server with:
 
 `trycp_server -p <port>  --port-range <port_range_string>`
 
-The --port-range option is required as it is what reports back to try-o-rama about which ports to use when generating config files.
+The --port-range option is required as it is what reports back to tryorama about which ports to use when generating config files.
 
 Example usage from a nodejs script see the [test/test.js](https://github.com/holochain/holochain-rust/blob/trycp/crates/trycp_server/test/test.js) file.
 

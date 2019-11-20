@@ -3,8 +3,8 @@ use crate::{
     consistency::ConsistencyModel,
     context::Context,
     dht::actions::{
-        pop_next_holding_workflow::pop_next_holding_workflow,
         queue_holding_workflow::queue_holding_workflow,
+        remove_queued_holding_workflow::remove_queued_holding_workflow,
     },
     network,
     persister::Persister,
@@ -296,7 +296,7 @@ impl Instance {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
                             // we can run into a race condition.
-                            context.block_on(pop_next_holding_workflow(
+                            context.block_on(remove_queued_holding_workflow(
                                 pending.clone(),
                                 context.clone(),
                             ));

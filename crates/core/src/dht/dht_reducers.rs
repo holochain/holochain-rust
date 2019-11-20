@@ -45,7 +45,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::AddLink(_) => Some(reduce_add_link),
         Action::RemoveLink(_) => Some(reduce_remove_link),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
-        Action::PopNextHoldingWorkflow(_) => Some(reduce_pop_next_holding_workflow),
+        Action::RemoveQueuedHoldingWorkflow(_) => Some(reduce_remove_queued_holding_workflow),
         _ => None,
     }
 }
@@ -173,12 +173,12 @@ pub fn reduce_queue_holding_workflow(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn reduce_pop_next_holding_workflow(
+pub fn reduce_remove_queued_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let pending = unwrap_to!(action => Action::PopNextHoldingWorkflow);
+    let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
     if let Some((front, _)) = new_store.queued_holding_workflows.front() {
         if front == pending {
@@ -188,7 +188,9 @@ pub fn reduce_pop_next_holding_workflow(
             // in the holding thread seeing another item as the next one.
             // The holding thread will still try to pop that next item, so we need
             // this else case where we just remove an item from some position inside the queue:
-            new_store.queued_holding_workflows.retain(|(item, _)| item != pending);
+            new_store
+                .queued_holding_workflows
+                .retain(|(item, _)| item != pending);
         }
     } else {
         error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");

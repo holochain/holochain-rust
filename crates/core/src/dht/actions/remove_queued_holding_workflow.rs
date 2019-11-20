@@ -7,18 +7,18 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use std::{pin::Pin, sync::Arc};
 
-pub async fn pop_next_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
-    let action_wrapper = ActionWrapper::new(Action::PopNextHoldingWorkflow(pending.clone()));
+pub async fn remove_queued_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
+    let action_wrapper = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(pending.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    PopNextHoldingWorkflowFuture { context, pending }.await
+    RemoveQueuedHoldingWorkflowFuture { context, pending }.await
 }
 
-pub struct PopNextHoldingWorkflowFuture {
+pub struct RemoveQueuedHoldingWorkflowFuture {
     context: Arc<Context>,
     pending: PendingValidation,
 }
 
-impl Future for PopNextHoldingWorkflowFuture {
+impl Future for RemoveQueuedHoldingWorkflowFuture {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {

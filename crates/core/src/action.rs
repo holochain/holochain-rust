@@ -118,7 +118,7 @@ pub enum Action {
     QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),
 
     /// Removes the given item from the holding queue.
-    PopNextHoldingWorkflow(PendingValidation),
+    RemoveQueuedHoldingWorkflow(PendingValidation),
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
     Hold(EntryWithHeader),

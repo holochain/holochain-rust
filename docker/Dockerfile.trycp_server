@@ -2,7 +2,8 @@ FROM holochain/holochain-rust:minimal as build
 
 ENV shellfile ./docker/trycp_server.default.nix
 
-RUN nix-env -f $shellfile -iA holochain.holochain wget ps more killall gnugrep
+RUN nix-env -f $shellfile -iA holochain.holochain
+RUN nix-env -iA wget ps more killall gnugrep
 
 RUN nix-shell $shellfile --run hc-trycp-server-install
 RUN nix-shell $shellfile --run 'cargo clean'

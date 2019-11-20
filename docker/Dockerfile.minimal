@@ -20,8 +20,8 @@ ENV NIXPKGS_URL https://github.com/NixOs/nixpkgs-channels/archive/8634c3b619909d
 ENV NIX_PATH nixpkgs=$NIXPKGS_URL
 ENV HC_TARGET_PREFIX /tmp/holochain
 
-nix-channel --add $NIXPKGS_URL nixpkgs
-nix-channel --update
+RUN nix-channel --add $NIXPKGS_URL nixpkgs
+RUN nix-channel --update
 
 # get latest develop
 ADD https://github.com/holochain/holochain-rust/archive/$DOCKER_BRANCH.tar.gz $DOCKER_BRANCH.tar.gz

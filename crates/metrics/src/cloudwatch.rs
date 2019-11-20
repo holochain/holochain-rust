@@ -19,7 +19,6 @@ use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 
 const DEFAULT_REGION: Region = Region::EuCentral1;
 
-// TODO Test this
 impl TryFrom<ResultField> for Metric {
     type Error = ParseError;
     fn try_from(result_field: ResultField) -> Result<Self, Self::Error> {
@@ -318,12 +317,19 @@ const DEFAULT_ASSUME_ROLE_ARN: &str =
     "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
 
 pub fn assume_role(region: &Region) -> StsAssumeRoleSessionCredentialsProvider {
-    let sts = StsClient::new(region.clone());
+    let sts = StsClient::new_with(
+        rusoto_core::request::HttpClient::new().unwrap(),
+        rusoto_credential::InstanceMetadataProvider::new(),
+        region.clone(),
+    );
 
     let provider = StsAssumeRoleSessionCredentialsProvider::new(
         sts,
         DEFAULT_ASSUME_ROLE_ARN.to_owned(),
-        "default".to_owned(),
+        format!(
+            "hc-metrics-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ),
         None,
         None,
         None,

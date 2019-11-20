@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+
+docker run --rm -d -p 443:443/tcp --name ${1} -t "holochain/holochain-rust:${1}"

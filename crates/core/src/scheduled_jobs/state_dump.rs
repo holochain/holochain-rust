@@ -45,7 +45,7 @@ fn address_to_content_string(address: &Address, context: Arc<Context>) -> String
 pub fn state_dump(context: Arc<Context>) {
     let dump = StateDump::from(context.clone());
 
-    let pending_validation_strings = dump
+    let queued_holding_workflows_strings = dump
         .queued_holding_workflows
         .iter()
         .map(|(pending_validation, _maybe_delay)| {
@@ -103,9 +103,6 @@ Nucleus:
 Queued zome calls: {queued_calls:?}
 Running zome calls: {calls:?}
 Zome call results: {call_results:?}
--------------------
-Pending validations:
-{validations}
 --------------------
 
 Network:
@@ -118,6 +115,9 @@ Running DIRECT MESSAGES: {direct_messages:?}
 
 Dht:
 ====
+Queued validations:
+{queued_holding_workflows_strings}
+--------
 Holding:
 {holding_list}
 --------
@@ -126,7 +126,7 @@ Holding:
         queued_calls = dump.queued_calls,
         call_results = dump.call_results,
         calls = dump.running_calls,
-        validations = pending_validation_strings.join("\n"),
+        queued_holding_workflows_strings = queued_holding_workflows_strings.join("\n"),
         flows = dump.query_flows,
         validation_packages = dump.validation_package_flows,
         direct_messages = dump.direct_message_flows,

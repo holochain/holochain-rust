@@ -200,6 +200,7 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::create_get_links_eavi_query,
@@ -235,19 +236,14 @@ pub mod tests {
 
         assert_eq!(
             Some(sys_entry.clone()),
-            store
-                .dht()
-                .cas_fetch(&sys_entry.address())
-                .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
+            store.dht().get(&sys_entry.address()).unwrap()
         );
 
         assert_eq!(
             Some(sys_entry.clone()),
             new_dht_store
-                .cas_fetch(&sys_entry.address())
+                .get(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
         );
     }
 
@@ -257,7 +253,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = (*store.dht()).clone().cas_add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -298,7 +294,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = (*store.dht()).clone().cas_add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(

@@ -1,21 +1,6 @@
-import { Config } from '@holochain/try-o-rama'
 import * as R from 'ramda'
-import { ScenarioApi } from '@holochain/try-o-rama/lib/api'
-import { Player } from '@holochain/try-o-rama/lib/player'
-import { ConductorConfig } from '@holochain/try-o-rama/lib/types'
-import { Batch } from '@holochain/fidget-spinner'
-
-const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
-
-/** Generates a bunch of identical conductor configs with multiple identical instances */
-const configBatchSimple = (numConductors, numInstances) => {
-  const conductor = R.pipe(
-    R.map(n => [`${n}`, dna]),
-    R.fromPairs,
-    x => ({ instances: x }),
-  )(R.range(0, numInstances))
-  return R.repeat(conductor, numConductors)
-}
+import { Batch } from '@holochain/tryorama-stress-utils'
+import {configBatchSimple} from './config'
 
 const trace = R.tap(x => console.log('{T}', x))
 

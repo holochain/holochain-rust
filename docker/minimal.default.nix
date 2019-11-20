@@ -13,15 +13,10 @@ in
    holonix.pkgs.wget
   ]
   ++ holonix.rust.buildInputs
-  ++ (holonix.pkgs.callPackage ../default.nix {
-   config = config;
-   pkgs = holonix.pkgs;
-  }).buildInputs
   ;
  });
 
  holochain = {
-  hc = holonix.holochain.hc;
   holochain = holonix.holochain.holochain;
  };
 

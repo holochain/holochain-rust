@@ -2,7 +2,7 @@ FROM holochain/holonix:latest
 
 WORKDIR /holochain-rust/build
 
-ENV DOCKER_BRANCH master
+ENV DOCKER_BRANCH 2019-11-19-docker-builds
 
 ADD https://github.com/holochain/holochain-rust/archive/$DOCKER_BRANCH.tar.gz /holochain-rust/build/$DOCKER_BRANCH.tar.gz
 RUN tar --strip-components=1 -zxvf $DOCKER_BRANCH.tar.gz

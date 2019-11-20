@@ -1,11 +1,12 @@
 FROM nixorg/nix:circleci
 
+ENV DOCKER_BRANCH 2019-11-19-docker-builds
+
 RUN mkdir /holochain
 
 WORKDIR /holochain
 ENV CARGO_HOME /holochain
 ENV PATH "${CARGO_HOME}/bin:${PATH}"
-ENV DOCKER_BRANCH develop
 
 # need $USER to be set for CI, cargo, etc.
 # it isn't set by default

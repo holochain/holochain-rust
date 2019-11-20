@@ -2,12 +2,12 @@
 let
   docker-build = pkgs.writeShellScriptBin "hc-trycp-docker-build"
   ''
-  ./docker/build trycp_server
+  ./docker/build `git rev-parse --abbrev-ref HEAD` trycp_server
   '';
 
   docker-push = pkgs.writeShellScriptBin "hc-trycp-docker-push"
   ''
-  ./docker/push trycp_server
+  ./docker/push `git rev-parse --abbrev-ref HEAD` trycp_server
   '';
 
   docker-run = pkgs.writeShellScriptBin "hc-trycp-docker-run"

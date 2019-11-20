@@ -2,4 +2,4 @@
 
 set -euxo pipefail
 
-docker push "holochain/holochain-rust:${1}"
+docker push "holochain/holochain-rust:${1}.${2}"

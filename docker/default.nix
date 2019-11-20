@@ -2,7 +2,7 @@
 let
   docker-build = pkgs.writeShellScriptBin "hc-docker-build"
   ''
-  ./docker/build.sh ''${1}
+  ./docker/build.sh ''${1} ''${2}
   '';
 
   docker-login = pkgs.writeShellScriptBin "hc-docker-login"
@@ -12,7 +12,7 @@ let
 
   docker-push = pkgs.writeShellScriptBin "hc-docker-push"
   ''
-  ./docker/push.sh ''${1}
+  ./docker/push.sh ''${1} ''${2}
   '';
 in
 {

@@ -2,4 +2,4 @@
 
 set -euxo pipefail
 
-docker build ./docker --build-arg DOCKER_BRANCH=${1} -f ./docker/Dockerfile.${2} -t "holochain/holochain-rust:${2}" --no-cache
+docker build ./docker --build-arg DOCKER_BRANCH=${1} -f ./docker/Dockerfile.${2} -t "holochain/holochain-rust:${1}.${2}" --no-cache

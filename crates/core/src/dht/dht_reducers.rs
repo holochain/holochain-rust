@@ -180,13 +180,15 @@ pub fn reduce_pop_next_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::PopNextHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let Some(popped) = new_store.queued_holding_workflows.pop_front() {
-        // Gotta make sure we are only popping the head that the creator
-        // of the action assumed to be the head.
-        // If the head changed in between because somebody else has popped
-        // the former item already, we need to put it back!
-        if popped.0 != *pending {
-            new_store.queued_holding_workflows.push_front(popped);
+    if let Some((front, _)) = new_store.queued_holding_workflows.front() {
+        if front == pending {
+            let _ = new_store.queued_holding_workflows.pop_front();
+        } else {
+            // The first item in the queue could be a delayed one which will result
+            // in the holding thread seeing another item as the next one.
+            // The holding thread will still try to pop that next item, so we need
+            // this else case where we just remove an item from some position inside the queue:
+            new_store.queued_holding_workflows.retain(|(item, _)| item != pending);
         }
     } else {
         error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");

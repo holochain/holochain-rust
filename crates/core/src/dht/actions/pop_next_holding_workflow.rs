@@ -29,15 +29,10 @@ impl Future for PopNextHoldingWorkflowFuture {
         cx.waker().clone().wake();
 
         if let Some(state) = self.context.try_state() {
-            match state.dht().next_queued_holding_workflow() {
-                Some(head) => {
-                    if *head.0 == self.pending {
-                        Poll::Pending
-                    } else {
-                        Poll::Ready(())
-                    }
-                }
-                None => Poll::Ready(()),
+            if state.dht().has_queued_holding_workflow(&self.pending) {
+                Poll::Pending
+            } else {
+                Poll::Ready(())
             }
         } else {
             Poll::Pending

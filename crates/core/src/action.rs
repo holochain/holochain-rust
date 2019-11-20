@@ -117,8 +117,7 @@ pub enum Action {
     /// and the Duration is the delay added ot that time.
     QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),
 
-    /// Pops the head of the holding queue if the item at the head
-    /// is equal to the one given in the action.
+    /// Removes the given item from the holding queue.
     PopNextHoldingWorkflow(PendingValidation),
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.

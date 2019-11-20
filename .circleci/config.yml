@@ -252,6 +252,38 @@ jobs:
    - checkout
    - run: nix-shell --run hc-release-hook-publish
 
+ docker.build.latest:
+  machine: true
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run: ./docker/build latest $CIRCLE_BRANCH
+   - run: ./docker/push latest $CIRCLE_BRANCH
+
+ docker.build.sim2h_server:
+  machine: true
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run: ./docker/build sim2h_server $CIRCLE_BRANCH
+   - run: ./docker/push sim2h_server $CIRCLE_BRANCH
+
+ docker.build.trycp_server:
+  machine: true
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run: ./docker/build trycp_server $CIRCLE_BRANCH
+   - run: ./docker/push trycp_server $CIRCLE_BRANCH
+
+ docker.build.minimal:
+  machine: true
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run: ./docker/build minimal $CIRCLE_BRANCH
+   - run: ./docker/push minimal $CIRCLE_BRANCH
+
 workflows:
  version: 2
  tests:
@@ -271,6 +303,22 @@ workflows:
    # @todo this was flakey
    # - stress-tests-sim1h
    - stress-tests-sim2h
+
+   - docker.build.minimal:
+      filters:
+       branches:
+        only:
+         - 2019-11-19-docker-builds
+         - develop
+         - final-exam
+   - docker.build.trycp_server:
+      requires:
+       - docker.build.minimal
+   - docker.build.sim2h_server:
+      requires:
+       - docker.build.minimal
+   # @todo this fails because the tests don't pass without a git repo
+   # - docker.build.latest
 
  cold.mac:
   jobs:

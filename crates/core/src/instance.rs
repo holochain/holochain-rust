@@ -39,7 +39,7 @@ use std::{
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
-pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_secs(10);
+pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)

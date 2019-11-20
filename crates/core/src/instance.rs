@@ -39,6 +39,8 @@ use std::{
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
+pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_secs(10);
+pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
 /// Holds the Event loop and processes it with the redux pattern.
@@ -313,12 +315,11 @@ impl Instance {
                                         // Exponential back-off:
                                         // If this was delayed before we double the delay.
                                         old_delay * 2
-                                    }).unwrap_or_else(|| Duration::from_secs(10));
+                                    }).unwrap_or(RETRY_VALIDATION_DURATION_MIN);
 
-                                    // But at least try once per hour:
-                                    let hour = Duration::from_secs(60 * 60);
-                                    if delay > hour {
-                                        delay = hour
+                                    // Cap delay with max duration
+                                    if delay > RETRY_VALIDATION_DURATION_MAX {
+                                        delay = RETRY_VALIDATION_DURATION_MAX
                                     }
 
                                     context.block_on(queue_holding_workflow(

@@ -17,5 +17,6 @@ COPY --from=build / /
 WORKDIR /holochain
 ENV CARGO_HOME /holochain
 ENV PATH "${CARGO_HOME}/bin:${PATH}"
+ENV PATH "/holochain/.cargo/bin:{PATH}"
 
 CMD trycp_server -p 9000 --port-range 5050-5070

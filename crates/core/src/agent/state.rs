@@ -6,7 +6,10 @@ use crate::{
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 
-use crate::state::StateWrapper;
+use crate::{
+    content_store::{AddContent, GetContent},
+    state::StateWrapper,
+};
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -21,12 +24,7 @@ use holochain_json_api::{
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
-use std::{
-    collections::HashMap,
-    convert::{TryFrom, TryInto},
-    sync::Arc,
-    time::SystemTime,
-};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -94,11 +92,11 @@ impl AgentState {
 
     pub fn get_agent(&self) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
-        let maybe_agent_entry_json = self.chain_store().cas_fetch(&agent_entry_address)?;
-        let agent_entry_json = maybe_agent_entry_json
+        let agent_entry = self
+            .chain_store()
+            .get(&agent_entry_address)?
             .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))?;
 
-        let agent_entry: Entry = agent_entry_json.try_into()?;
         match agent_entry {
             Entry::AgentId(agent_id) => Ok(agent_id),
             _ => unreachable!(),
@@ -242,8 +240,8 @@ fn reduce_commit_entry(
         provenances,
     )
     .and_then(|chain_header| {
-        agent_state.chain_store.cas_add(entry)?;
-        agent_state.chain_store.cas_add(&chain_header)?;
+        agent_state.chain_store.add(entry)?;
+        agent_state.chain_store.add(&chain_header)?;
         Ok((chain_header, entry.address()))
     })
     .and_then(|(chain_header, address)| {

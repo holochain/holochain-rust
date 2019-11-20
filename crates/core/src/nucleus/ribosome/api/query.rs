@@ -2,7 +2,7 @@ use crate::{
     agent::chain_store::{ChainStoreQueryOptions, ChainStoreQueryResult},
     context::Context,
     nucleus::{
-        actions::get_entry::get_entry_from_agent,
+        actions::get_entry::get_entry_from_agent_chain,
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
@@ -158,7 +158,7 @@ fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Entry, HolochainError> {
-    get_entry_from_agent(context, address)?.ok_or_else(|| {
+    get_entry_from_agent_chain(context, address)?.ok_or_else(|| {
         HolochainError::ErrorGeneric(format!("Failed to obtain Entry for Address {}", address))
     })
 }

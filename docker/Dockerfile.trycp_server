@@ -5,9 +5,9 @@ ENV shellfile ./docker/trycp_server.default.nix
 RUN echo $NIX_PATH
 
 RUN nix-env -i wget ps more killall gnugrep vim nano which
-RUN nix-env -f $shellfile -iA holochain.holochain
 
 RUN nix-shell $shellfile --run hc-trycp-server-install
+RUN nix-shell default.nix --run hc-conductor-install
 RUN nix-shell $shellfile --run 'cargo clean'
 RUN nix-collect-garbage
 

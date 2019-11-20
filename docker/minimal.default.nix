@@ -1,8 +1,8 @@
 let
  config = { };
  holonix = import (fetchTarball {
-  url = https://github.com/holochain/holonix/archive/v0.0.44.tar.gz;
-  sha256 = "0819439idwhdbavmlcy99c2ai5d9a0k7rbimbsk47p9vndw3s6cy";
+  url = https://github.com/holochain/holonix/archive/v0.0.47.tar.gz;
+  sha256 = "0fyal8y02abp71y0l3szcbc9d0r89ph5yk3d6maw28as78mw7v23";
   }) { };
 in
 {

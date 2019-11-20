@@ -1,7 +1,7 @@
 FROM holochain/holochain-rust:minimal as build
 
-RUN nix-shell --run hc-sim2h-server-install
-RUN nix-shell --run 'cargo clean'
+RUN nix-shell $shellfile --run hc-sim2h-server-install
+RUN nix-shell $shellfile --run 'cargo clean'
 RUN nix-collect-garbage
 
 # https://stackoverflow.com/questions/22713551/how-to-flatten-a-docker-image#22714556
@@ -9,6 +9,6 @@ FROM scratch
 COPY --from=build / /
 WORKDIR /holochain
 ENV CARGO_HOME /holochain
-ENV PATH "/holochain/.cargo/bin:${PATH}"
+ENV PATH "${CARGO_HOME}/.cargo/bin:${PATH}"
 
 CMD sim2h_server -p 9000

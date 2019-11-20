@@ -261,6 +261,8 @@ jobs:
    - run: ./docker/push latest
 
  docker.build.sim2h_server:
+  requires:
+   - docker.build.minimal
   machine: true
   steps:
    - checkout
@@ -269,6 +271,8 @@ jobs:
    - run: ./docker/push sim2h_server
 
  docker.build.trycp_server:
+  requires:
+   - docker.build.minimal
   machine: true
   steps:
    - checkout

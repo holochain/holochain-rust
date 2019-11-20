@@ -281,7 +281,13 @@ impl DhtStore {
 
 impl GetContent for DhtStore {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
-        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+        if self.holding_list.contains(address) {
+            Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+        } else {
+            Err(HolochainError::ErrorGeneric(
+                "Tried to retrieve entry from DHT that is not in the holding list".to_string(),
+            ))
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::agent::state::create_entry_with_header_for_header;
+use crate::{agent::state::create_entry_with_header_for_header, content_store::GetContent};
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -309,15 +309,14 @@ fn get_content_aspect(
                 entry: state
                     .agent()
                     .chain_store()
-                    .get_entry_from_cas(&header.entry_address())?
-                    // this can't be a None
-                    .unwrap(),
+                    .get(&header.entry_address())?
+                    .expect("Could not find entry in chain CAS, but header is chain"),
                 header,
             })
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = state.dht().get_entry_from_cas(entry_address)? {
+            if let Some(entry) = state.dht().get(entry_address)? {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state.get_headers(entry_address.clone()).map_err(|error| {

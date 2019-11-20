@@ -1,16 +1,19 @@
-use crate::action::ActionWrapper;
+use crate::{
+    action::ActionWrapper,
+    content_store::{AddContent, GetContent},
+};
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
-    error::HolochainError,
+    error::{HcResult, HolochainError},
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
@@ -18,9 +21,8 @@ use holochain_persistence_api::{
 use regex::Regex;
 
 use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
-use holochain_core_types::error::HcResult;
 use holochain_json_api::error::JsonResult;
-use holochain_persistence_api::{cas::content::Content, error::PersistenceResult};
+use holochain_persistence_api::error::PersistenceResult;
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
@@ -199,18 +201,23 @@ impl DhtStore {
             // get the header addresses
             .map(|eavi| eavi.value())
             // fetch the header content from CAS
-            .map(|a| self.cas_fetch(&a))
+            .map(|address| self.get(&address))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|content| ChainHeader::try_from_content(&content))
+                    .map(|entry| match entry {
+                        Entry::ChainHeader(chain_header) => Ok(chain_header),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "Unexpected non-chain_header entry".to_string(),
+                        )),
+                    })
                     .collect::<Result<Vec<_>, _>>()
             })?
             .map_err(|err| {
-                let hc_error: HolochainError = err.into();
+                let hc_error: HolochainError = err;
                 hc_error
             })
     }
@@ -226,7 +233,7 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        self.cas_add(header)?;
+        self.add(header)?;
         self.meta_storage.write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }
@@ -237,29 +244,6 @@ impl DhtStore {
 
     pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
         &self.holding_list
-    }
-
-    pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
-        self.content_storage.clone().read().unwrap().fetch(address)
-    }
-
-    pub(crate) fn cas_contains(&self, address: &Address) -> PersistenceResult<bool> {
-        self.content_storage
-            .clone()
-            .read()
-            .unwrap()
-            .contains(address)
-    }
-
-    pub(crate) fn cas_add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        self.content_storage
-            .clone()
-            .write()
-            .unwrap()
-            .add(content)
-            .map_err(|persistence_error| {
-                HolochainError::ErrorGeneric(persistence_error.to_string())
-            })
     }
 
     pub(crate) fn fetch_eavi(
@@ -276,21 +260,10 @@ impl DhtStore {
         self.meta_storage.write().unwrap().add_eavi(&eavi)
     }
 
-    pub(crate) fn get_entry_from_cas(
-        &self,
-        address: &Address,
-    ) -> Result<Option<Entry>, HolochainError> {
-        if let Some(json) = self.cas_fetch(&address)? {
-            let entry = Entry::try_from_content(&json)?;
-            Ok(Some(entry))
-        } else {
-            Ok(None) // no errors but entry is not in CAS
-        }
-    }
-
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions
     }
+
     pub(crate) fn actions_mut(
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
@@ -303,6 +276,20 @@ impl DhtStore {
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
         self.queued_holding_workflows.contains(pending)
+    }
+}
+
+impl GetContent for DhtStore {
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
+        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+    }
+}
+
+impl AddContent for DhtStore {
+    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
+        (*self.content_storage.write().unwrap())
+            .add(content)
+            .map_err(|e| e.into())
     }
 }
 

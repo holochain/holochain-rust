@@ -257,7 +257,7 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build latest
+   - run: ./docker/build $CIRCLE_BRANCH latest
    - run: ./docker/push latest
 
  docker.build.sim2h_server:
@@ -265,7 +265,7 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build sim2h_server
+   - run: ./docker/build $CIRCLE_BRANCH sim2h_server
    - run: ./docker/push sim2h_server
 
  docker.build.trycp_server:
@@ -273,7 +273,7 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build trycp_server
+   - run: ./docker/build $CIRCLE_BRANCH trycp_server
    - run: ./docker/push trycp_server
 
  docker.build.minimal:
@@ -281,7 +281,7 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build minimal
+   - run: ./docker/build $CIRCLE_BRANCH minimal
    - run: ./docker/push minimal
 
 workflows:
@@ -309,6 +309,8 @@ workflows:
        branches:
         only:
          - 2019-11-19-docker-builds
+         - develop
+         - final-exam
    - docker.build.trycp_server:
       requires:
        - docker.build.minimal

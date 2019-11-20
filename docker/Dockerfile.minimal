@@ -1,6 +1,6 @@
 FROM nixorg/nix:circleci
 
-ENV DOCKER_BRANCH 2019-11-19-docker-builds
+ARG DOCKER_BRANCH=develop
 
 RUN mkdir /holochain
 

@@ -305,28 +305,26 @@ impl DhtStore {
     pub(crate) fn next_queued_holding_workflow(
         &self,
     ) -> Option<(&PendingValidation, Option<Duration>)> {
-        for (pending, maybe_delay) in self.queued_holding_workflows.iter() {
-            if let Some((time_of_dispatch, delay)) = maybe_delay {
-                let maybe_time_elapsed = time_of_dispatch.elapsed();
-                if let Ok(time_elapsed) = maybe_time_elapsed {
-                    if time_elapsed < *delay {
-                        continue;
+        self.queued_holding_workflows
+            .iter()
+            .skip_while(|(_pending, maybe_delay)| {
+                if let Some((time_of_dispatch, delay)) = maybe_delay {
+                    let maybe_time_elapsed = time_of_dispatch.elapsed();
+                    if let Ok(time_elapsed) = maybe_time_elapsed {
+                        if time_elapsed < *delay {
+                            return true
+                        }
                     }
                 }
-                return Some((pending, Some(*delay)));
-            }
-            return Some((pending, None));
-        }
-        None
+                false
+            })
+            .map(|(pending, maybe_delay)|
+                (pending, maybe_delay.map(|(_time, duration)| Some(duration)).unwrap_or(None)))
+            .next()
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        for (current, _) in self.queued_holding_workflows.iter() {
-            if current == pending {
-                return true;
-            }
-        }
-        false
+        self.queued_holding_workflows.iter().any(|(current, _)| current == pending)
     }
 
     pub(crate) fn queued_holding_workflows(

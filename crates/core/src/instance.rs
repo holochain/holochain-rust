@@ -309,13 +309,11 @@ impl Instance {
                                 // we have to re-add this entry at the end of the queue:
                                 Err(HolochainError::ValidationPending) => {
                                     // And with a delay so we are not trying to re-validate many times per second.
-                                    let mut delay = if let Some(old_delay) = maybe_delay {
+                                    let mut delay = maybe_delay.map(|old_delay| {
                                         // Exponential back-off:
                                         // If this was delayed before we double the delay.
                                         old_delay * 2
-                                    } else {
-                                        Duration::from_secs(10)
-                                    };
+                                    }).unwrap_or_else(|| Duration::from_secs(10));
 
                                     // But at least try once per hour:
                                     let hour = Duration::from_secs(60 * 60);

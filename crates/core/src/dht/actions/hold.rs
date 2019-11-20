@@ -1,5 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
+    content_store::GetContent,
     context::Context,
     instance::dispatch_action,
     network::entry_with_header::EntryWithHeader,
@@ -37,7 +38,7 @@ impl Future for HoldEntryFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            if state.dht().cas_contains(&self.address).unwrap() {
+            if state.dht().contains(&self.address).unwrap() {
                 Poll::Ready(Ok(self.address.clone()))
             } else {
                 Poll::Pending

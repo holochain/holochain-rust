@@ -1,4 +1,4 @@
-use crate::context::Context;
+use crate::{content_store::GetContent, context::Context};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
@@ -22,31 +22,14 @@ pub fn get_entry_from_agent_chain(
     if maybe_header.is_none() {
         return Ok(None);
     }
-    context
-        .state()
-        .unwrap()
-        .agent()
-        .chain_store()
-        .get_entry_from_cas(&address)
-}
-
-pub(crate) fn get_entry_from_agent(
-    context: &Arc<Context>,
-    address: &Address,
-) -> Result<Option<Entry>, HolochainError> {
-    context
-        .state()
-        .unwrap()
-        .agent()
-        .chain_store()
-        .get_entry_from_cas(&address)
+    agent.chain_store().get(address)
 }
 
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    context.state().unwrap().dht().get_entry_from_cas(address)
+    context.state().unwrap().dht().get(address)
 }
 
 pub(crate) fn get_entry_crud_meta_from_dht(
@@ -143,7 +126,7 @@ pub fn get_entry_with_meta(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::instance::tests::test_context_with_state;
+    use crate::{content_store::AddContent, instance::tests::test_context_with_state};
     use holochain_core_types::entry::test_entry;
     use holochain_persistence_api::cas::content::AddressableContent;
 
@@ -153,10 +136,7 @@ pub mod tests {
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(None), result);
-        (*context.state().unwrap().dht())
-            .clone()
-            .cas_add(&entry)
-            .unwrap();
+        let _ = (*context.state().unwrap().dht()).clone().add(&entry);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }

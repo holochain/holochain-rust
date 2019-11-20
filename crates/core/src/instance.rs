@@ -325,7 +325,7 @@ impl Instance {
                                     }
 
                                     context.block_on(queue_holding_workflow(
-                                        pending.clone(),
+                                        Arc::new(pending.same()),
                                         Some(delay),
                                         context.clone(),
                                     ))

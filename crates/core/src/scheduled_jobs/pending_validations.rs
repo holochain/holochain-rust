@@ -16,6 +16,7 @@ use holochain_core_types::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 use std::{convert::TryFrom, fmt, sync::Arc};
+use snowflake::ProcessUniqueId;
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -73,6 +74,7 @@ pub struct PendingValidationStruct {
     pub entry_with_header: EntryWithHeader,
     pub dependencies: Vec<Address>,
     pub workflow: ValidatingWorkflow,
+    uuid: ProcessUniqueId,
 }
 
 impl PendingValidationStruct {
@@ -81,7 +83,14 @@ impl PendingValidationStruct {
             entry_with_header,
             dependencies: Vec::new(),
             workflow,
+            uuid: ProcessUniqueId::new(),
         }
+    }
+
+    pub fn same(&self) -> Self {
+        let mut clone = self.clone();
+        clone.uuid = ProcessUniqueId::new();
+        clone
     }
 }
 

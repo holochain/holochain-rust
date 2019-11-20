@@ -306,16 +306,20 @@ fn get_content_aspect(
         Some((header, true)) => Some(create_chain_pair_for_header(&*state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
+            let header_entry_address = header.entry_address();
+            let 
             match get_entry_from_cas(
                 &state.agent().chain_store().content_storage(),
-                header.entry_address(),
+                header_entry_address,
             ) {
                 Ok(Some(entry)) => Some(ChainPair::new(header, entry)),
                 Ok(None) => {
                     let err_message = format!(
-                        "net/fetch/get_content_aspect: no entry associated with address {} could be
-                         found in the CAS, but the header {} is in the chain",
-                        entry, header
+                        "net/fetch/get_content_aspect: no entry associated
+                         with the entry address {} in the header {} could
+                         be found in the CAS, but the header is in the
+                         chain",
+                        header_entry_address, header
                     );
                     log_error!(context, "{}", err_message);
                     return HolochainError::ErrorGeneric(err_message);

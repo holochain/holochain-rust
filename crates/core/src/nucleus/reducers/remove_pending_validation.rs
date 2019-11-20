@@ -5,7 +5,7 @@ use crate::{
 };
 
 /// Reduce RemovePendingValidation Action.
-/// Removes boxed EntryWithHeader and dependencies from state, referenced with
+/// Removes boxed ChainPair and dependencies from state, referenced with
 /// the entry's address.
 /// Corresponds to a prior AddPendingValidation Action.
 #[allow(unknown_lints)]
@@ -27,7 +27,7 @@ pub mod tests {
     use super::*;
     use crate::{
         instance::tests::test_context,
-        network::entry_with_header::EntryWithHeader,
+        network::chain_pair::ChainPair,
         nucleus::{
             reducers::add_pending_validation::reduce_add_pending_validation,
             state::tests::test_nucleus_state,
@@ -47,14 +47,11 @@ pub mod tests {
         let state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
-        let entry_with_header = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
+        let chain_pair = ChainPair::new(test_chain_header(), entry.clone());
 
         let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new(
             PendingValidationStruct {
-                entry_with_header,
+                chain_pair,
                 dependencies: Vec::new(),
                 workflow: ValidatingWorkflow::HoldEntry,
             },

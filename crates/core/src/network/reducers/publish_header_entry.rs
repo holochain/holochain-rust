@@ -1,10 +1,10 @@
 use crate::{
     action::ActionWrapper,
-    agent::state::create_entry_with_header_for_header,
+    agent::state::create_chain_pair_for_header,
     network::{
         actions::ActionResponse,
         entry_aspect::EntryAspect,
-        entry_with_header::{fetch_entry_with_header, ChainPair},
+        chain_pair::fetch_chain_pair,
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
     },
@@ -27,7 +27,8 @@ fn publish_header(
     chain_header: ChainHeader,
 ) -> Result<(), HolochainError> {
     let chain_pair =
-        create_entry_with_header_for_header(&StateWrapper::from(root_state.clone()), chain_header)?;
+        create_chain_pair_for_header(&StateWrapper::from(root_state.clone()), chain_header)?;
+    let entry = chain_pair.entry();
     send(
         network_state,
         Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
@@ -37,7 +38,7 @@ fn publish_header(
                 entry_address: entry.address().clone().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
                     entry.clone(),
-                    header,
+                    chain_pair.header(),
                 ))],
             },
         }),
@@ -50,8 +51,8 @@ fn reduce_publish_header_entry_inner(
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
-    publish_header(network_state, root_state, entry_with_header.header)
+    let chain_pair = fetch_chain_pair(&address, root_state)?;
+    publish_header(network_state, root_state, chain_pair.header())
 }
 
 pub fn reduce_publish_header_entry(

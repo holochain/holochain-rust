@@ -13,7 +13,7 @@ pub async fn hold_entry(
     chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let address = chain_pair.entry.address();
+    let address = chain_pair.entry().address();
     let action_wrapper = ActionWrapper::new(Action::Hold(chain_pair.to_owned()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     HoldEntryFuture { context, address }.await

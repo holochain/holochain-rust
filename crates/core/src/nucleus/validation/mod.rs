@@ -135,12 +135,12 @@ pub fn entry_to_validation_data(
     match entry {
         Entry::App(_, _) => maybe_link_update_delete
             .map(|link_update| {
-                get_entry_with_header(context.clone(), &link_update)
-                    .map(|entry_with_header| {
+                get_chain_pair(context.clone(), &link_update)
+                    .map(|chain_pair| {
                         Ok(EntryValidationData::Modify {
-                            old_entry: entry_with_header.0.entry.clone(),
+                            old_entry: chain_pair.0.entry.clone(),
                             new_entry: entry.clone(),
-                            old_entry_header: entry_with_header.1.clone(),
+                            old_entry_header: chain_pair.1.clone(),
                             validation_data: validation_data.clone(),
                         })
                     })
@@ -158,11 +158,11 @@ pub fn entry_to_validation_data(
             }),
         Entry::Deletion(deletion_entry) => {
             let deletion_address = deletion_entry.clone().deleted_entry_address();
-            get_entry_with_header(context.clone(), &deletion_address)
-                .map(|entry_with_header| {
+            get_chain_pair(context.clone(), &deletion_address)
+                .map(|chain_pair| {
                     Ok(EntryValidationData::Delete {
-                        old_entry: entry_with_header.0.entry.clone(),
-                        old_entry_header: entry_with_header.1.clone(),
+                        old_entry: chain_pair.0.entry.clone(),
+                        old_entry_header: chain_pair.1.clone(),
                         validation_data: validation_data.clone(),
                     })
                 })
@@ -182,7 +182,7 @@ pub fn entry_to_validation_data(
     }
 }
 
-fn get_entry_with_header(
+fn get_chain_pair(
     context: Arc<Context>,
     address: &Address,
 ) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {

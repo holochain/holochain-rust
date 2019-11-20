@@ -44,7 +44,7 @@ pub async fn hold_entry_workflow(
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         log_debug!(context, "workflow/hold_entry: {}", message);
         add_pending_validation(
-            entry_with_header.to_owned(),
+            chain_pair.to_owned(),
             Vec::new(),
             ValidatingWorkflow::HoldEntry,
             context.clone(),
@@ -61,7 +61,7 @@ pub async fn hold_entry_workflow(
 
     // 3. Validate the entry
     validate_entry(
-        entry_with_header.entry.clone(),
+        chain_pair.entry().clone(),
         None,
         validation_data,
         &context
@@ -69,11 +69,11 @@ pub async fn hold_entry_workflow(
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
-                entry_with_header.entry.address(),
+                chain_pair.entry().address(),
                 dependencies,
             );
             add_pending_validation(
-                entry_with_header.to_owned(),
+                chain_pair.to_owned(),
                 dependencies.clone(),
                 ValidatingWorkflow::HoldEntry,
                 context.clone(),
@@ -81,7 +81,7 @@ pub async fn hold_entry_workflow(
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry.address(),
+                chain_pair.entry().address(),
                 err,
             );
             HolochainError::from(err)
@@ -91,16 +91,16 @@ pub async fn hold_entry_workflow(
     log_debug!(
         context,
         "workflow/hold_entry: is valid! {}",
-        entry_with_header.entry.address()
+        chain_pair.entry().address()
     );
 
     // 3. If valid store the entry in the local DHT shard
-    hold_entry(entry_with_header, context.clone()).await?;
+    hold_entry(chain_pair, context.clone()).await?;
 
     log_debug!(
         context,
         "workflow/hold_entry: HOLDING: {}",
-        entry_with_header.entry.address()
+        chain_pair.entry().address()
     );
 
     Ok(())
@@ -150,10 +150,10 @@ pub mod tests {
         let header = agent1_state
             .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
-        let entry_with_header = EntryWithHeader { entry, header };
+        let chain_pair = ChainPair::new(header, entry)?;
 
         // Call hold_entry_workflow on victim DHT node
-        let result = context2.block_on(hold_entry_workflow(&entry_with_header, &context2));
+        let result = context2.block_on(hold_entry_workflow(&chain_pair, &context2));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());

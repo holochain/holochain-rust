@@ -7,7 +7,7 @@ use crate::{
         remove_link::remove_link_workflow,
     },
 };
-use holochain_core_types::entry::{deletion_entry::DeletionEntry, Entry};
+use holochain_core_types::{entry::{deletion_entry::DeletionEntry, Entry}, error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::StoreEntryAspectData;
@@ -26,8 +26,9 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     "net/handle: handle_store: Got EntryAspect::Content. processing..."
                 );
 
-                if let Ok(chain_pair) = ChainPair::new(header, entry) {
-                    thread::Builder::new()
+                match ChainPair::new(header, entry) {
+                    Ok(chain_pair) => {
+                        thread::Builder::new()
                         .name(format!(
                             "store_entry_content/{}",
                             ProcessUniqueId::new().to_string()
@@ -40,10 +41,10 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                             }
                         })
                         .expect("Could not spawn thread for storing EntryAspect::Content");
-                } else if Err(err) {
-                    log_error!(context, "net/handle: handle_store: Got EntryAspect::Content with non-matching entry and header", err)
-                } else {
-                    unreachable!()
+                    },
+                    Err(err) => {
+                        log_error!(context, "net/handle: handle_store: Got EntryAspect::Content with non-matching entry {:#?} and header {:#?}", err, entry, header)
+                    }
                 }
             }
             EntryAspect::Header(header) => {
@@ -59,20 +60,27 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     log_error!(context, "net/handle: handle_store: Got EntryAspect::LinkAdd with non-matching LinkData and ChainHeader! Hash of content in header does not match content! Ignoring.");
                     return;
                 }
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_link_entry/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_link_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error);
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::LinkAdd");
+                match ChainPair::new(header, entry) {
+                    Ok(chain_pair) => {
+                        thread::Builder::new()
+                        .name(format!(
+                            "store_link_entry/{}",
+                            ProcessUniqueId::new().to_string()
+                        ))
+                        .spawn(move || {
+                            if let Err(error) = context
+                                .block_on(hold_link_workflow(&chain_pair, context.clone()))
+                            {
+                                log_error!(context, "net/dht: {}", error);
+                            }
+                        })
+                        .expect("Could not spawn thread for storing EntryAspect::LinkAdd");
+                    },
+                    Err(error) => {
+                        log_error!(context, "net/handle: handle_store: Could not create a ChainPair for EntryAspect::LinkAdd in order to store it. Error:\n{}\nEntry:\n{:#?}\nHeader:{:#?}", error, entry, header)
+                    }
+                }
+                
             }
             EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
                 log_debug!(
@@ -80,40 +88,59 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     "net/handle: handle_store: Got EntryAspect::LinkRemove. processing...",
                 );
                 let entry = Entry::LinkRemove((link_data, links_to_remove));
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_link_remove/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(remove_link_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::LinkRemove");
+                match ChainPair::new(header, entry) {
+                    Ok(chain_pair) => {
+                        thread::Builder::new()
+                        .name(format!(
+                            "store_link_remove/{}",
+                            ProcessUniqueId::new().to_string()
+                        ))
+                        .spawn(move || {
+                            if let Err(error) = context
+                                .block_on(remove_link_workflow(&chain_pair, context.clone()))
+                            {
+                                log_error!(context, "net/dht: {}", error)
+                            }
+                        })
+                        .expect("Could not spawn thread for storing EntryAspect::LinkRemove");
+                    },
+                    Err(error) => {
+                        log_error!(context, "net/handle: handle_store:
+                        Couldn't not create a ChainPair in order to store the
+                        entry and header for EntryAspect::LinkRemove. Error:\n
+                        {}\nEntry:\n{:#?}\nHeader:\n{:#?}", 
+                        error, entry, header)
+                    }
+                }
             }
             EntryAspect::Update(entry, header) => {
                 log_debug!(
                     context,
                     "net/handle: handle_store: Got EntryAspect::Update. processing..."
                 );
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_update/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_update_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/dht: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Update");
+                match ChainPair::new(header, entry) {
+                    Ok(chain_pair) => {
+                        thread::Builder::new()
+                        .name(format!(
+                            "store_update/{}",
+                            ProcessUniqueId::new().to_string()
+                        ))
+                        .spawn(move || {
+                            if let Err(error) = context
+                                .block_on(hold_update_workflow(&chain_pair, context.clone()))
+                            {
+                                log_error!(context, "net/dht: {}", error)
+                            }
+                        })
+                        .expect("Could not spawn thread for storing EntryAspect::Update");
+                    },
+                    Err(error) => {
+                        log_error!(context, "net/handle: handle_store: Could not create ChainPair in order to store EntryAspect::Update, header: {:#?}, entry: {:#?}. Error: {}. Error: {}", 
+                        header, entry, error)
+                    }
+                } else if Err(error) {
+                    log_error!(context, "net/handle: failed processing EntryAspect::Update while trying to create a chain pair, with error: {}. The entry is {}, and header is {}", error, entry, header)
+                };   
             }
             EntryAspect::Deletion(header) => {
                 log_debug!(
@@ -130,20 +157,30 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                 };
 
                 let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
-                let entry_with_header = EntryWithHeader { entry, header };
-                thread::Builder::new()
-                    .name(format!(
-                        "store_deletion/{}",
-                        ProcessUniqueId::new().to_string()
-                    ))
-                    .spawn(move || {
-                        if let Err(error) = context
-                            .block_on(hold_remove_workflow(&entry_with_header, context.clone()))
-                        {
-                            log_error!(context, "net/handle_store: {}", error)
-                        }
-                    })
-                    .expect("Could not spawn thread for storing EntryAspect::Deletion");
+                match ChainPair::new(header, entry) {
+                    Ok(chain_pair) => {
+                        thread::Builder::new()
+                        .name(format!(
+                            "store_deletion/{}",
+                            ProcessUniqueId::new().to_string()
+                        ))
+                        .spawn(move || {
+                            if let Err(error) = context
+                                .block_on(hold_remove_workflow(&chain_pair, context.clone()))
+                            {
+                                log_error!(context, "net/handle_store: {}", error)
+                            }
+                        })
+                        .expect("Could not spawn thread for storing EntryAspect::Deletion");
+                    },
+                    Err(err) => {
+                        log_error!(context, "net/handle: handle_store: Could
+                        not create ChainPair in order to store
+                        EntryAspect::Deletion. Entry:\n{:#?}\n. The entry in
+                        the attempted chain pair is a deletion entry, and the
+                        header is:\n{:#?}\nError: {}", entry, header, err)
+                    },
+                }
             }
         }
     } else {
@@ -156,6 +193,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
 }
 
 /*
+// If reintroducing this, update entry_with_header to chain_pair
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
 pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {

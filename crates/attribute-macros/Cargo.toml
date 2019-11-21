@@ -1,0 +1,13 @@
+[package]
+name = "attribute-macros"
+version = "0.1.0"
+authors = ["dymayday <dymayday@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.2"
+syn = { version = "1.0.8", features = ["full", "extra-traits"] }
+proc-macro2 = "1.0"

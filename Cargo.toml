@@ -3,6 +3,7 @@
 members = [
   "crates/cli",
   "crates/metrics",
+  "crates/attribute-macros",
   "crates/common",
   "crates/holochain",
   "crates/conductor_lib",

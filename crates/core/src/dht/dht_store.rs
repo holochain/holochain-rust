@@ -20,7 +20,7 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
-use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
+use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
 use std::{

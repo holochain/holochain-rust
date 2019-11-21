@@ -1,16 +1,7 @@
-use crate::{
-    context::Context,
-    network::entry_with_header::EntryWithHeader,
-    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
-};
-use holochain_core_types::error::HolochainError;
-
-use crate::workflows::{
-    hold_entry_remove::hold_remove_workflow, hold_entry_update::hold_update_workflow,
-    remove_link::remove_link_workflow,
-};
+use crate::network::entry_with_header::EntryWithHeader;
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
+    error::HolochainError,
     network::entry_aspect::EntryAspect,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -138,33 +129,5 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                 ))
             }
         }
-    }
-}
-
-pub fn run_holding_workflow(
-    pending: &PendingValidation,
-    context: Arc<Context>,
-) -> Result<(), HolochainError> {
-    match pending.workflow {
-        ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
     }
 }

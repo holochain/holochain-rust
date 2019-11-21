@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
+    dht::pending_validations::PendingValidation,
     instance::dispatch_action,
-    scheduled_jobs::pending_validations::PendingValidation,
 };
 use futures::{future::Future, task::Poll};
 use std::{pin::Pin, sync::Arc};

@@ -1,6 +1,6 @@
 use crate::{
-    action::QueryKey, context::Context, network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall, scheduled_jobs::pending_validations::PendingValidation,
+    action::QueryKey, context::Context, dht::pending_validations::PendingValidation,
+    network::direct_message::DirectMessage, nucleus::ZomeFnCall,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;

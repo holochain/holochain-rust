@@ -211,12 +211,10 @@ pub mod tests {
                 reduce_remove_queued_holding_workflow,
             },
             dht_store::{create_get_links_eavi_query, DhtStore},
+            pending_validations::{PendingValidation, PendingValidationStruct, ValidatingWorkflow},
         },
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
-        scheduled_jobs::pending_validations::{
-            PendingValidation, PendingValidationStruct, ValidatingWorkflow,
-        },
         state::test_store,
     };
     use bitflags::_core::time::Duration;

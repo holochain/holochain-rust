@@ -1,6 +1,6 @@
 use crate::{
+    dht::pending_validations::ValidatingWorkflow,
     nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
-    scheduled_jobs::pending_validations::ValidatingWorkflow,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
 

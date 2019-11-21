@@ -1,6 +1,9 @@
 use crate::{
-    context::Context, dht::actions::queue_holding_workflow::dispatch_queue_holding_workflow,
-    scheduled_jobs::pending_validations::PendingValidationStruct,
+    context::Context,
+    dht::{
+        actions::queue_holding_workflow::dispatch_queue_holding_workflow,
+        pending_validations::PendingValidationStruct,
+    },
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;

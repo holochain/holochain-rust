@@ -1,5 +1,6 @@
 use crate::{
     agent::state::AgentState,
+    dht::pending_validations::PendingValidation,
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
@@ -13,7 +14,6 @@ use crate::{
         validation::ValidationResult,
         ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::PendingValidation,
     state::State,
 };
 
@@ -112,7 +112,7 @@ pub enum Action {
     // -------------
     // DHT actions:
     // -------------
-    /// Adds a holding workflow to the queue.
+    /// Adds a holding workflow (=PendingValidation) to the queue.
     /// With optional delay where the SystemTime is the time when the action got dispatched
     /// and the Duration is the delay added to that time.
     QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),

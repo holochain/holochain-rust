@@ -11,7 +11,7 @@ use crate::{
     scheduled_jobs,
     signal::Signal,
     state::{State, StateWrapper},
-    workflows::application,
+    workflows::{application, run_holding_workflow},
 };
 #[cfg(test)]
 use crate::{
@@ -301,10 +301,7 @@ impl Instance {
                                 context.clone(),
                             ));
 
-                            let result = scheduled_jobs::pending_validations::run_holding_workflow(
-                                pending,
-                                context.clone(),
-                            );
+                            let result = run_holding_workflow(pending, context.clone());
 
                             match result {
                                 // If we couldn't run the validation due to unresolved dependencies,

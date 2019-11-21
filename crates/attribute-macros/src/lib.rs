@@ -1,3 +1,16 @@
+//! Attribute proc-macro are defined here for easy to use.
+//!
+//! It's intended to be used like this:
+//! ```
+//! use attribute-macros::latency;
+//! // Probably something related to the "metric" crate
+//!
+//! #[latency]
+//! pub fn invoke_attr_macro(_iam_arg1: u8, _iam_arg2: u8, _iam_arg3: u8) {
+//!     println!("Attribute Macro Invoked.");
+//!     let _x = 3 + 4;
+//! }
+
 extern crate proc_macro;
 
 use proc_macro::TokenStream;

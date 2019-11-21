@@ -11,6 +11,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- The DHT store now manages it holding list internally rather than requiring calls to `mark_entry_as_held`. Trying to retrieve an entry that is in the CAS but not in the holding list will return `None`. [#1893](https://github.com/holochain/holochain-rust/pull/1893)
+
 ### Deprecated
 
 ### Removed

@@ -40,17 +40,9 @@ pub fn latency(args: TokenStream, input_function: TokenStream) -> TokenStream {
                 arg_pat.push(quote!(#pat));
                 arg_val.push(quote!(#numbered));
                 *pat = parse_quote!(mut #numbered);
-            }
+            },
             FnArg::Receiver(_) => {
-                move_self = Some(quote! {
-                    if false {
-                        loop {}
-                        #[allow(unreachable_code)]
-                        {
-                            let __self = self;
-                        }
-                    }
-                });
+                move_self = Some(quote! {()});
             }
         }
     }

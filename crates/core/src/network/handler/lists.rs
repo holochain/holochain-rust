@@ -19,44 +19,47 @@ use std::{collections::HashMap, sync::Arc};
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
-            let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
-            for entry_address in get_all_public_chain_entries(context.clone()) {
-                let content_aspect = get_content_aspect(&entry_address, context.clone())
-                    .expect("Must be able to get content aspect of entry that is in our source chain");
-                address_map.insert(
-                    EntryHash::from(entry_address.clone()),
-                    vec![AspectHash::from(content_aspect.address())]
-                );
-            }
+        let address_map = create_authoring_map(context.clone());
 
-            // chain header entries also should be communicated on the authoring list
-            // In future make this depend if header publishing is enabled
-            let state = context.state()
-                .expect("There must be a state in context when we are responding to a HandleGetAuthoringEntryList");
-            for chain_header_entry in get_all_chain_header_entries(context.clone()) {
-                let entry_hash: EntryHash = chain_header_entry.address().into();
-                let header_entry_header = create_new_chain_header(
-                    &chain_header_entry,
-                    &state.agent(),
-                    &state,
-                    &None,
-                    &Vec::new(),
-                ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
-                let content_aspect = EntryAspect::Content(
-                    chain_header_entry,
-                    header_entry_header,
-                );
-                address_map.insert(entry_hash, vec![AspectHash::from(content_aspect.address())]);
-            }
-
-            let action = Action::RespondAuthoringList(EntryListData {
-                space_address: get_list_data.space_address,
-                provider_agent_id: get_list_data.provider_agent_id,
-                request_id: get_list_data.request_id,
-                address_map,
-            });
-            dispatch_action(context.action_channel(), ActionWrapper::new(action));
+        let action = Action::RespondAuthoringList(EntryListData {
+            space_address: get_list_data.space_address,
+            provider_agent_id: get_list_data.provider_agent_id,
+            request_id: get_list_data.request_id,
+            address_map,
         });
+        dispatch_action(context.action_channel(), ActionWrapper::new(action));
+    });
+}
+
+fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, Vec<AspectHash>> {
+    let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
+    for entry_address in get_all_public_chain_entries(context.clone()) {
+        let content_aspect = get_content_aspect(&entry_address, context.clone())
+            .expect("Must be able to get content aspect of entry that is in our source chain");
+        address_map.insert(
+            EntryHash::from(entry_address.clone()),
+            vec![AspectHash::from(content_aspect.address())],
+        );
+    }
+
+    // chain header entries also should be communicated on the authoring list
+    // In future make this depend if header publishing is enabled
+    let state = context.state().expect(
+        "There must be a state in context when we are responding to a HandleGetAuthoringEntryList",
+    );
+    for chain_header_entry in get_all_chain_header_entries(context.clone()) {
+        let entry_hash: EntryHash = chain_header_entry.address().into();
+        let header_entry_header = create_new_chain_header(
+            &chain_header_entry,
+            &state.agent(),
+            &state,
+            &None,
+            &Vec::new(),
+        ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
+        let content_aspect = EntryAspect::Content(chain_header_entry, header_entry_header);
+        address_map.insert(entry_hash, vec![AspectHash::from(content_aspect.address())]);
+    }
+    address_map
 }
 
 fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
@@ -81,26 +84,34 @@ fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<
     Ok(address_list)
 }
 
+fn create_holding_map(context: Arc<Context>) -> HashMap<EntryHash, Vec<AspectHash>> {
+    let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
+    let holding_list = {
+        let state = context
+            .state()
+            .expect("No state present when trying to respond with gossip list");
+        state.dht().get_all_held_entry_addresses().clone()
+    };
+
+    for entry_address in holding_list {
+        address_map.insert(
+            EntryHash::from(entry_address.clone()),
+            get_all_aspect_addresses(&entry_address, context.clone())
+                .expect("Error getting entry aspects of authoring list")
+                .iter()
+                .map(|a| AspectHash::from(a))
+                .collect(),
+        );
+    }
+    address_map
+}
+
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
-        let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
-        let holding_list = {
-            let state = context
-                .state()
-                .expect("No state present when trying to respond with gossip list");
-            state.dht().get_all_held_entry_addresses().clone()
-        };
+        let authoring_map = create_authoring_map(context.clone());
+        let holding_map = create_holding_map(context.clone());
 
-        for entry_address in holding_list {
-            address_map.insert(
-                EntryHash::from(entry_address.clone()),
-                get_all_aspect_addresses(&entry_address, context.clone())
-                    .expect("Error getting entry aspects of authoring list")
-                    .iter()
-                    .map(|a| AspectHash::from(a))
-                    .collect(),
-            );
-        }
+        let address_map = authoring_map.into_iter().chain(holding_map).collect();
 
         let action = Action::RespondGossipList(EntryListData {
             space_address: get_list_data.space_address,

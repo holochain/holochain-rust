@@ -36,7 +36,6 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 }
 
 /// Maps incoming action to the correct reducer
-#[autotrace]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),

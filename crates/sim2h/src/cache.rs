@@ -257,3 +257,54 @@ impl From<&HashSet<(EntryHash, AspectHash)>> for AspectList {
         AspectList::from(result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::AgentId;
+    use lib3h_sodium::SodiumCryptoSystem;
+
+    #[test]
+    fn space_can_add_and_remove_missing_aspects() {
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let agent = AgentId::from("test-agent");
+
+        assert!(space.agents_with_missing_aspects().is_empty());
+
+        // Adding and removing one aspect and checking if agents_with_missing_aspects()
+        // returns correct agent list:
+        let entry_hash_1 = EntryHash::from("entry_hash_1");
+        let aspect_hash_1 = AspectHash::from("aspect_hash_1");
+
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
+        assert!(space.agents_with_missing_aspects().is_empty());
+
+
+        // Adding two aspects, removing one first and then the other one and checking if
+        // agents_with_missing_aspects returns correct agent lists.
+        let aspect_hash_2 = AspectHash::from("aspect_hash_2");
+
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_2.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_2);
+        assert!(space.agents_with_missing_aspects().is_empty());
+
+
+        // Adding two aspects of different entries, removing one first and then the other one
+        // and checking if agents_with_missing_aspects returns correct agent lists.
+        let entry_hash_2 = EntryHash::from("entry_hash_2");
+
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        space.add_missing_aspect(agent.clone(), entry_hash_2.clone(), aspect_hash_2.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_2, &aspect_hash_2);
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
+        assert!(space.agents_with_missing_aspects().is_empty());
+    }
+}

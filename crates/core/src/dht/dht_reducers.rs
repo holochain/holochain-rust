@@ -73,7 +73,6 @@ pub(crate) fn reduce_hold_entry(
     let mut new_store = (*old_store).clone();
     match reduce_store_entry_inner(&mut new_store, &entry) {
         Ok(()) => {
-            new_store.mark_entry_as_held(&entry);
             new_store.add_header_for_entry(&entry, &header).ok()?;
             Some(new_store)
         }
@@ -234,8 +233,9 @@ pub mod tests {
             reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
                 .expect("there should be a new store for committing a sys entry");
 
+        // the old store does not have the entry in its holding list
         assert_eq!(
-            Some(sys_entry.clone()),
+            None,
             store.dht().get(&sys_entry.address()).unwrap()
         );
 

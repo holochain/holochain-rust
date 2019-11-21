@@ -15,8 +15,8 @@ use holochain_core_types::{
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
-use std::{convert::TryFrom, fmt, sync::Arc};
 use snowflake::ProcessUniqueId;
+use std::{convert::TryFrom, fmt, sync::Arc};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 

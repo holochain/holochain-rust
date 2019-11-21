@@ -228,6 +228,7 @@ pub mod tests {
         link::{link_data::LinkData, Link, LinkActionKind},
     };
     use holochain_persistence_api::cas::content::AddressableContent;
+    use snowflake::ProcessUniqueId;
     use std::{sync::Arc, time::SystemTime};
 
     #[test]
@@ -488,6 +489,7 @@ pub mod tests {
             entry_with_header,
             dependencies: Vec::new(),
             workflow,
+            uuid: ProcessUniqueId::new(),
         })
     }
 

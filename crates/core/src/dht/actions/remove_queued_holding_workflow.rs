@@ -1,24 +1,24 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
+    dht::pending_validations::PendingValidation,
     instance::dispatch_action,
-    scheduled_jobs::pending_validations::PendingValidation,
 };
 use futures::{future::Future, task::Poll};
 use std::{pin::Pin, sync::Arc};
 
-pub async fn pop_next_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
-    let action_wrapper = ActionWrapper::new(Action::PopNextHoldingWorkflow(pending.clone()));
+pub async fn remove_queued_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
+    let action_wrapper = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(pending.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    PopNextHoldingWorkflowFuture { context, pending }.await
+    RemoveQueuedHoldingWorkflowFuture { context, pending }.await
 }
 
-pub struct PopNextHoldingWorkflowFuture {
+pub struct RemoveQueuedHoldingWorkflowFuture {
     context: Arc<Context>,
     pending: PendingValidation,
 }
 
-impl Future for PopNextHoldingWorkflowFuture {
+impl Future for RemoveQueuedHoldingWorkflowFuture {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
@@ -29,15 +29,10 @@ impl Future for PopNextHoldingWorkflowFuture {
         cx.waker().clone().wake();
 
         if let Some(state) = self.context.try_state() {
-            match state.dht().next_queued_holding_workflow() {
-                Some(head) => {
-                    if *head == self.pending {
-                        Poll::Pending
-                    } else {
-                        Poll::Ready(())
-                    }
-                }
-                None => Poll::Ready(()),
+            if state.dht().has_queued_holding_workflow(&self.pending) {
+                Poll::Pending
+            } else {
+                Poll::Ready(())
             }
         } else {
             Poll::Pending

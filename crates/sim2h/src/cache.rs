@@ -289,7 +289,6 @@ mod tests {
         space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
         assert!(space.agents_with_missing_aspects().is_empty());
 
-
         // Adding two aspects, removing one first and then the other one and checking if
         // agents_with_missing_aspects returns correct agent lists.
         let aspect_hash_2 = AspectHash::from("aspect_hash_2");
@@ -301,7 +300,6 @@ mod tests {
         assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
         space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_2);
         assert!(space.agents_with_missing_aspects().is_empty());
-
 
         // Adding two aspects of different entries, removing one first and then the other one
         // and checking if agents_with_missing_aspects returns correct agent lists.
@@ -328,15 +326,35 @@ mod tests {
         //let aspect_hash_2_2 = AspectHash::from("aspect_hash_2_2");
         //let aspect_hash_2_3 = AspectHash::from("aspect_hash_2_3");
 
-        assert!(!space.agent_is_missing_all_aspects(&agent, &entry_hash_1, &vec![aspect_hash_1_1.clone()]));
+        assert!(!space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone()]
+        ));
         space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1_1.clone());
-        assert!(space.agent_is_missing_all_aspects(&agent, &entry_hash_1, &vec![aspect_hash_1_1.clone()]));
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone()]
+        ));
         space.add_missing_aspect(agent.clone(), entry_hash_2.clone(), aspect_hash_2_1.clone());
-        assert!(space.agent_is_missing_all_aspects(&agent, &entry_hash_1, &vec![aspect_hash_1_1.clone()]));
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone()]
+        ));
 
-        assert!(!space.agent_is_missing_all_aspects(&agent, &entry_hash_1, &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]));
+        assert!(!space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+        ));
         space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1_2.clone());
-        assert!(space.agent_is_missing_all_aspects(&agent, &entry_hash_1, &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]));
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+        ));
     }
 
 }

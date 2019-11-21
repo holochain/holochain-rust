@@ -84,21 +84,29 @@ impl Space {
         entry_hash: &EntryHash,
         aspects: &Vec<AspectHash>,
     ) -> bool {
-        self.missing_aspects
-            .get(agent_id)
-            .and_then(|map_for_agent| map_for_agent.get(entry_hash))
-            .and_then(|vec_of_missing_aspects_for_entry| {
-                // We check that every of the given aspects is the missing list.
-                // If one is missing from the missing list this block returns some
-                // and the whole function returns false.
-                for aspect in aspects {
-                    if !vec_of_missing_aspects_for_entry.contains(aspect) {
-                        return Some(());
-                    }
-                }
-                None
-            })
-            .is_none()
+        let maybe_agent_map = self.missing_aspects.get(agent_id);
+        if maybe_agent_map.is_none() {
+            return false;
+        }
+        let map_for_agent = maybe_agent_map.unwrap();
+
+        let maybe_vec_of_missing_aspects_for_entry = map_for_agent.get(entry_hash);
+        if maybe_vec_of_missing_aspects_for_entry.is_none() {
+            return false;
+        }
+
+        let vec_of_missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();
+
+        // We check that every of the given aspects is the missing list.
+        // If one is missing from the missing list this block returns some
+        // and the whole function returns false.
+        for aspect in aspects {
+            if !vec_of_missing_aspects_for_entry.contains(aspect) {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub(crate) fn recalc_rrdht_arc_radius(&mut self) {

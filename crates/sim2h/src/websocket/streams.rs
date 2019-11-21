@@ -223,8 +223,9 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
 
     fn priv_process_accept(&mut self) -> DidWork {
         match &mut self.acceptor {
-            Err(err) => {
-                warn!("acceptor in error state: {:?}", err);
+            Err(_err) => {
+                // TODO: turn back on
+                // warn!("acceptor in error state: {:?}", err);
                 false
             }
             Ok(acceptor) => (acceptor)()

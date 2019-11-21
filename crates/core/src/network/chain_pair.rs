@@ -1,5 +1,6 @@
 use crate::{
     agent::find_chain_header,
+    content_store::GetContent,
     state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
@@ -36,34 +37,23 @@ impl ChainPair {
         self.1.clone()
     }
 
-    pub fn fetch_chain_pair(address: &Address, state: &State) -> Result<ChainPair, HolochainError> {
-        let entry = fetch_entry_from_cas(address, state)?;
+    pub fn fetch_chain_pair(
+        address: &Address,
+        state: &State
+    ) -> Result<ChainPair, HolochainError> {
+        let entry = state
+            .agent()
+            .chain_store()
+            .get(address)?
+            .ok_or_else(|| HolochainError::from("Entry not found"))?;
 
         let header =
             find_chain_header(&entry, &StateWrapper::from(state.clone())).ok_or_else(|| {
                 HolochainError::from(
-                    "No header found for entry {}with address {}",
-                    entry,
-                    address,
+                    "No header found for the address {}. Entry:\n{:#?}\n",
+                    address, entry
                 )
             })?;
-
         ChainPair::new(entry, header)
     }
-}
-
-fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, HolochainError> {
-    let json = state
-        .agent()
-        .chain_store()
-        .content_storage()
-        .read()?
-        .fetch(address)?
-        .ok_or_else(|| {
-            HolochainError::from("Entry with address {} could not be found.", address)
-        })?;
-HeaderEntryMismatch(String, Address, Address),
-    HeaderEntryMismatch(String, Address, Address),
-        let s: Entry = json.try_into()?;
-    Ok(s)
 }

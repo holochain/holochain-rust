@@ -56,6 +56,8 @@ impl Default for SignalConfiguration {
     }
 }
 
+const MAGIC_STRING: &str = "Done. All interfaces started.";
+
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
     lib3h_sodium::check_init();
@@ -86,7 +88,7 @@ fn main() {
                 // NB: the following println is very important!
                 // Others are using it as an easy way to know that the interfaces have started.
                 // Leave it as is!
-                println!("Done. All interfaces started.");
+                println!("{}", MAGIC_STRING);
                 println!("Starting UI servers");
                 conductor
                     .start_all_static_servers()

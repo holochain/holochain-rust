@@ -4,6 +4,7 @@ use crate::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
+    content_store::GetContent,
     context::Context,
     dht::dht_store::DhtStore,
     network::state::NetworkState,
@@ -200,9 +201,6 @@ impl State {
         let header_addresses: Vec<Address> = headers.iter().map(|h| h.address()).collect();
         let mut dht_headers = self
             .dht()
-            .meta_storage()
-            .read()
-            .unwrap()
             // fetch all EAV references to chain headers for this entry
             .fetch_eavi(&EaviQuery::new(
                 Some(entry_address).into(),
@@ -217,14 +215,19 @@ impl State {
             // don't include the chain header twice
             .filter(|a| !header_addresses.contains(a))
             // fetch the header content from CAS
-            .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
+            .map(|address| self.dht().get(&address))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|content| ChainHeader::try_from_content(&content))
+                    .map(|entry| match entry {
+                        Entry::ChainHeader(chain_header) => Ok(chain_header),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "Non chain-header entry found".to_string(),
+                        )),
+                    })
                     .collect::<Result<Vec<_>, _>>()
             })??;
         {

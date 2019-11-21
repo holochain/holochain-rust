@@ -44,6 +44,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
         Action::RemoveLink(_) => Some(reduce_remove_link),
+        Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
+        Action::PopNextHoldingWorkflow(_) => Some(reduce_pop_next_holding_workflow),
         _ => None,
     }
 }
@@ -128,7 +130,7 @@ pub(crate) fn reduce_update_entry(
 ) -> Option<DhtStore> {
     let (old_address, new_address) = unwrap_to!(action_wrapper.action() => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-    let res = reduce_update_entry_inner(&new_store, old_address, new_address);
+    let res = reduce_update_entry_inner(&mut new_store, old_address, new_address);
     new_store.actions_mut().insert(action_wrapper.clone(), res);
     Some(new_store)
 }
@@ -154,11 +156,51 @@ pub(crate) fn reduce_get_links(
     None
 }
 
+#[allow(unknown_lints)]
+#[allow(clippy::needless_pass_by_value)]
+pub fn reduce_queue_holding_workflow(
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    let action = action_wrapper.action();
+    let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
+    let mut new_store = (*old_store).clone();
+    new_store
+        .queued_holding_workflows
+        .push_back(pending.clone());
+    Some(new_store)
+}
+
+#[allow(unknown_lints)]
+#[allow(clippy::needless_pass_by_value)]
+pub fn reduce_pop_next_holding_workflow(
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    let action = action_wrapper.action();
+    let pending = unwrap_to!(action => Action::PopNextHoldingWorkflow);
+    let mut new_store = (*old_store).clone();
+    if let Some(popped) = new_store.queued_holding_workflows.pop_front() {
+        // Gotta make sure we are only popping the head that the creator
+        // of the action assumed to be the head.
+        // If the head changed in between because somebody else has popped
+        // the former item already, we need to put it back!
+        if popped != *pending {
+            new_store.queued_holding_workflows.push_front(popped);
+        }
+    } else {
+        error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
+    }
+
+    Some(new_store)
+}
+
 #[cfg(test)]
 pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::create_get_links_eavi_query,
@@ -182,8 +224,6 @@ pub mod tests {
         let store = test_store(context);
 
         // test_entry is not sys so should do nothing
-        let storage = &store.dht().content_storage().clone();
-
         let sys_entry = test_sys_entry();
         let chain_pair = ChainPair::new(test_chain_header(), sys_entry.clone());
 
@@ -193,19 +233,14 @@ pub mod tests {
 
         assert_eq!(
             Some(sys_entry.clone()),
-            (*storage.read().unwrap())
-                .fetch(&sys_entry.address())
-                .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
+            store.dht().get(&sys_entry.address()).unwrap()
         );
 
-        let new_storage = &new_dht_store.content_storage().clone();
         assert_eq!(
             Some(sys_entry.clone()),
-            (*new_storage.read().unwrap())
-                .fetch(&sys_entry.address())
+            new_dht_store
+                .get(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
         );
     }
 
@@ -215,8 +250,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let storage = store.dht().content_storage();
-        let _ = (storage.write().unwrap()).add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -236,10 +270,9 @@ pub mod tests {
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
-        let storage = new_dht_store.meta_storage();
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -258,7 +291,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = store.dht().content_storage().write().unwrap().add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -294,11 +327,10 @@ pub mod tests {
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
-        let storage = new_dht_store.meta_storage();
         let get_links_query =
             create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
                 .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned
         assert!(fetched.is_ok());
@@ -318,11 +350,10 @@ pub mod tests {
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
-        let storage = new_dht_store.meta_storage();
         let get_links_query =
             create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
                 .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
         assert!(fetched.is_ok());
@@ -346,12 +377,12 @@ pub mod tests {
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
-        let _new_dht_store = reduce(store.dht(), &action_link_add);
+        let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store_2.fetch_eavi(&get_links_query);
 
         //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
         assert!(fetched.is_ok());
@@ -391,10 +422,9 @@ pub mod tests {
 
         let new_dht_store = reduce(store.dht(), &action);
 
-        let storage = new_dht_store.meta_storage();
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = storage.read().unwrap().fetch_eavi(&get_links_query);
+        let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);

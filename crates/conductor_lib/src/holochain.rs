@@ -9,6 +9,7 @@
 //! extern crate holochain_conductor_lib;
 //! extern crate holochain_core_types;
 //! extern crate holochain_core;
+//! extern crate holochain_locksmith;
 //! extern crate holochain_net;
 //! extern crate holochain_json_api;
 //! extern crate holochain_persistence_api;
@@ -21,9 +22,9 @@
 //! use holochain_core_types::{
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityRequest,},
-//!     signature::Signature,
-//!     sync::HcMutex
+//!     signature::Signature
 //! };
+//! use holochain_locksmith::Mutex;
 //! use holochain_persistence_api::{
 //!     cas::content::Address,
 //! };
@@ -57,7 +58,7 @@
 //!
 //! // The instance needs a conductor API with at least the signing callback:
 //! let conductor_api = interface::ConductorApiBuilder::new()
-//!     .with_agent_signature_callback(Arc::new(HcMutex::new(keybundle)))
+//!     .with_agent_signature_callback(Arc::new(Mutex::new(keybundle)))
 //!     .spawn();
 //!
 //! // The conductor API, together with the storage and the agent ID
@@ -116,30 +117,37 @@ use holochain_persistence_api::cas::content::Address;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
+use holochain_metrics::with_latency_publishing;
+
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: Option<Instance>,
-    #[allow(dead_code)]
     context: Option<Arc<Context>>,
     active: bool,
 }
 
 impl Holochain {
-    /// create a new Holochain instance
+    /// create a new Holochain instance.  Ensure that they are built w/ the same
+    /// HDK Version, or log a warning.
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
 
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
                 Some("{}".as_bytes().to_vec()),
-                WasmCallData::DirectCall("__hdk_git_hash".to_string(), zome.code.code.clone()),
+                WasmCallData::DirectCall("__hdk_hdk_version".to_string(), zome.code.code.clone()),
             );
 
             if let Ok(json_string) = maybe_json_string {
-                if json_string != holochain_core_types::GIT_HASH.into() {
-                    eprintln!("WARNING! The git-hash of the runtime and the zome don't match.");
-                    eprintln!("Runtime hash: {}", holochain_core_types::GIT_HASH);
-                    eprintln!("Zome hash: {}", json_string);
+                if json_string.to_string()
+                    != holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                {
+                    eprintln!("WARNING! The HDK Version of the runtime and the zome don't match.");
+                    eprintln!(
+                        "Runtime HDK Version: {}",
+                        holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                    );
+                    eprintln!("Zome HDK Version: {}", json_string);
                 }
             }
         }
@@ -183,7 +191,7 @@ impl Holochain {
         })
     }
 
-    fn check_instance(&self) -> Result<(), HolochainInstanceError> {
+    pub fn check_instance(&self) -> Result<(), HolochainInstanceError> {
         if self.instance.is_none() || self.context.is_none() {
             Err(HolochainInstanceError::InstanceNotInitialized)
         } else {
@@ -191,7 +199,7 @@ impl Holochain {
         }
     }
 
-    fn check_active(&self) -> Result<(), HolochainInstanceError> {
+    pub fn check_active(&self) -> Result<(), HolochainInstanceError> {
         if !self.active {
             Err(HolochainInstanceError::InstanceNotActiveYet)
         } else {
@@ -230,20 +238,36 @@ impl Holochain {
         Ok(())
     }
 
-    /// call a function in a zome
-    pub fn call(
-        &self,
+    fn call_inner(
+        context: Arc<Context>,
         zome: &str,
         cap: CapabilityRequest,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        self.check_instance()?;
-        self.check_active()?;
-
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
-        let context = self.context()?;
         Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
+    }
+
+    /// call a function in a zome
+    pub fn call_zome_function(
+        context: Arc<Context>,
+        zome: &str,
+        cap: CapabilityRequest,
+        fn_name: &str,
+        params: &str,
+    ) -> HolochainResult<JsonString> {
+        let metric_name = format!("{}.{}", zome, fn_name);
+        with_latency_publishing!(
+            metric_name,
+            context.metric_publisher,
+            Self::call_inner,
+            context.clone(),
+            zome,
+            cap,
+            fn_name,
+            params
+        )
     }
 
     /// checks to see if an instance is active
@@ -290,10 +314,9 @@ impl Holochain {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::tempdir;
-    use context_builder::ContextBuilder;
+    use super::*;
+    use crate::context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
@@ -307,6 +330,7 @@ mod tests {
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{path::PathBuf, sync::Arc};
+    use tempfile;
     use test_utils::{
         create_arbitrary_test_dna, create_test_defs_with_fn_name, create_test_dna_with_defs,
         create_test_dna_with_wat, create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
@@ -560,17 +584,16 @@ mod tests {
 
         let cap_call = cap_call(context.clone(), "public_test_fn", "");
 
-        let result = hc.call("test_zome", cap_call.clone(), "public_test_fn", "");
-        assert!(result.is_err());
-        assert_eq!(
-            result.err().unwrap(),
-            HolochainInstanceError::InstanceNotActiveYet
-        );
-
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", cap_call, "public_test_fn", "");
+        let result = Holochain::call_zome_function(
+            hc.context().unwrap(),
+            "test_zome",
+            cap_call,
+            "public_test_fn",
+            "",
+        );
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -601,7 +624,8 @@ mod tests {
 
         let params = r#"{"input_int_val":2,"input_str_val":"fish"}"#;
         // always returns not implemented error for now!
-        let result = hc.call(
+        let result = Holochain::call_zome_function(
+            hc.context().unwrap(),
             "test_zome",
             cap_call(context.clone(), "round_trip_test", params),
             "round_trip_test",
@@ -639,7 +663,8 @@ mod tests {
         .unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call(
+        let result = Holochain::call_zome_function(
+            hc.context().unwrap(),
             "test_zome",
             cap_call(context.clone(), "commit_test", r#"{}"#),
             "commit_test",
@@ -678,7 +703,8 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call(
+        let result = Holochain::call_zome_function(
+            hc.context().unwrap(),
             "test_zome",
             cap_call(context.clone(), "commit_fail_test", r#"{}"#),
             "commit_fail_test",
@@ -718,7 +744,8 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call(
+        let result = Holochain::call_zome_function(
+            hc.context().unwrap(),
             "test_zome",
             cap_call(context.clone(), "debug_hello", r#"{}"#),
             "debug_hello",
@@ -756,7 +783,8 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call(
+        let result = Holochain::call_zome_function(
+            hc.context().unwrap(),
             "test_zome",
             cap_call(context.clone(), "debug_multiple", r#"{}"#),
             "debug_multiple",
@@ -814,7 +842,8 @@ mod tests {
         let timeout = 1000;
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         hc.start().expect("couldn't start");
-        hc.call(
+        Holochain::call_zome_function(
+            hc.context().unwrap(),
             "test_zome",
             example_capability_request(),
             "commit_test",

@@ -1,15 +1,18 @@
+use crate::content_store::{AddContent, GetContent};
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
-    error::RibosomeErrorCode::{self, *},
+    error::{
+        HcResult,
+        RibosomeErrorCode::{self, *},
+    },
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent},
+    content::{Address, AddressableContent, Content},
     storage::ContentAddressableStorage,
 };
-
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
@@ -44,10 +47,6 @@ pub enum ChainStoreQueryResult {
 impl ChainStore {
     pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
-    }
-
-    pub fn content_storage(&self) -> Arc<RwLock<dyn ContentAddressableStorage>> {
-        self.content_storage.clone()
     }
 
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
@@ -185,6 +184,20 @@ impl ChainStore {
         };
 
         Ok(vector)
+    }
+}
+
+impl GetContent for ChainStore {
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
+        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+    }
+}
+
+impl AddContent for ChainStore {
+    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
+        (*self.content_storage.write().unwrap())
+            .add(content)
+            .map_err(|e| e.into())
     }
 }
 

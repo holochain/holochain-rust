@@ -367,6 +367,11 @@ impl Sim2h {
                         "Transport error occurred on connection to {}: {:?}",
                         uri, error,
                     );
+                    info!("Dropping connection to {} because of error", uri);
+                    if let Err(e) = self.stream_manager.close(&uri) {
+                        error!("Error closing connection to {}: {:?}", uri, e);
+                    }
+                    self.disconnect(&uri.into());
                 }
             }
         }

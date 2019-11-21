@@ -100,7 +100,9 @@ Agent's Source Chain:
 
 Nucleus:
 ========
+Queued zome calls: {queued_calls:?}
 Running zome calls: {calls:?}
+Zome call results: {call_results:?}
 -------------------
 Pending validations:
 {validations}
@@ -121,6 +123,8 @@ Holding:
 --------
     "#,
         source_chain = source_chain_strings.join("\n\n"),
+        queued_calls = dump.queued_calls,
+        call_results = dump.call_results,
         calls = dump.running_calls,
         validations = pending_validation_strings.join("\n"),
         flows = dump.query_flows,

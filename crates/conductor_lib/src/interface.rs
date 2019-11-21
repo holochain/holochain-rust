@@ -1,9 +1,9 @@
-use crate::holo_signing_service::request_service;
+use crate::{conductor::broadcaster::Broadcaster, holo_signing_service::request_service};
 use base64;
-use conductor::broadcaster::Broadcaster;
 use crossbeam_channel::Receiver;
 use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
 
+use crate::Holochain;
 use holochain_core_types::{
     agent::AgentId, dna::capabilities::CapabilityRequest, signature::Provenance,
 };
@@ -12,18 +12,19 @@ use holochain_json_api::json::JsonString;
 use holochain_locksmith::{Mutex, RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
-use Holochain;
 
 use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
 
-use conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR};
-use config::{
-    AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
+use crate::{
+    conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR},
+    config::{
+        AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
+        InterfaceConfiguration, InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
+    },
+    keystore::{KeyType, Keystore, Secret},
 };
 use holochain_dpki::utils::SeedContext;
-use keystore::{KeyType, Keystore, Secret};
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
@@ -149,14 +150,20 @@ impl ConductorApiBuilder {
             .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
         let hc_lock = instance.clone();
         let hc_lock_inner = hc_lock.clone();
-        let hc = hc_lock_inner
-            .read()
-            .unwrap()
-            .annotate(format!("RPC method_call: {:?}", params_map));
+        let context = {
+            let hc = hc_lock_inner
+                .read()
+                .unwrap()
+                .annotate(format!("RPC method_call: {:?}", params_map));
+            hc.check_instance()
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            hc.check_active()
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            hc.context()
+                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...")
+        };
 
         let cap_request = {
-            let context = hc.context()
-                .expect("Reference to dropped instance in interface handler. This should not happen since interfaces should be rebuilt when an instance gets removed...");
             // Get the token from the parameters.  If not there assume public token.
             let maybe_token = Self::get_as_string("token", &params_map);
             let token = match maybe_token {
@@ -190,8 +197,14 @@ impl ConductorApiBuilder {
             }
         };
 
-        hc.call(&zome_name, cap_request, &func_name, &args_string)
-            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+        Holochain::call_zome_function(
+            context.clone(),
+            &zome_name,
+            cap_request,
+            &func_name,
+            &args_string,
+        )
+        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 
     /// Adds a "call" method for making zome function calls
@@ -753,7 +766,8 @@ impl ConductorApiBuilder {
 
             let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
 
-            Ok(serde_json::to_value(dump).map_err(|_| jsonrpc_core::Error::internal_error())?)
+            Ok(serde_json::to_value(dump)
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?)
         });
 
         self.io.add_method("debug/fetch_cas", move |params| {
@@ -1404,7 +1418,7 @@ pub mod tests {
             .expect("Invalid call to handler");
         assert_eq!(
             response_str,
-            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"invalid provenance: invalid type: map, expected tuple struct Provenance"},"id":"0"}"#
+            r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Holochain Instance Error: Holochain instance is not active yet."},"id":"0"}"#
         );
 
         let response_str = handler

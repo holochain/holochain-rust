@@ -18,10 +18,10 @@ const IMMORTAL_TIMEOUT_SECS: u64 = 60;
 const LOCK_TIMEOUT_SECS: u64 = 100;
 
 // This is how often we check the elapsed time of guards
-const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 1000;
+const GUARD_WATCHER_POLL_INTERVAL_MS: u64 = 5000;
 
 // We filter out any guards alive less than this long
-const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = 500;
+const ACTIVE_GUARD_MIN_ELAPSED_MS: i64 = GUARD_WATCHER_POLL_INTERVAL_MS as i64;
 
 // How often to retry getting a lock after receiving a WouldBlock error
 // during try_lock
@@ -152,11 +152,10 @@ pub fn spawn_locksmith_guard_watcher() {
         ))
         .spawn(move || loop {
             let mut reports: Vec<(i64, String)> = {
-                GUARDS
-                    .lock()
-                    .values_mut()
-                    .filter_map(|gt| gt.report_and_update())
-                    .collect()
+                guards_guard()
+                        .values_mut()
+                        .filter_map(|gt| gt.report_and_update())
+                        .collect();
             };
             if reports.len() > 0 {
                 reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
@@ -207,24 +206,21 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                GUARDS
-                    .lock()
-                    .insert(puid, GuardTracker::new(puid, LockType::$lock_type));
+                guards_guard().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
                 Self { puid, inner }
             }
 
             pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
-                GUARDS
-                    .lock()
-                    .entry(self.puid)
-                    .and_modify(|g| g.annotation = Some(annotation.into()));
+                guards_guard()
+                        .entry(self.puid)
+                        .and_modify(|g| g.annotation = Some(annotation.into()));
                 self
             }
         }
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                GUARDS.lock().remove(&self.puid);
+                guards_guard().remove(&self.puid);
             }
         }
     };
@@ -368,7 +364,7 @@ macro_rules! mutex_impl {
                 self.$try_lock_until_fn(deadline)
             }
 
-            fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$Guard<T>> {
+            pub fn $try_lock_until_fn(&self, deadline: Instant) -> LocksmithResult<$Guard<T>> {
                 // Set a number twice the expected number of iterations, just to prevent an infinite loop
                 let max_iters = 2 * LOCK_TIMEOUT_SECS * 1000 / LOCK_POLL_INTERVAL_MS;
                 let mut pending_puid = None;

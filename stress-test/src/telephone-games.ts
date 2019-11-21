@@ -1,17 +1,7 @@
-import { Config } from '@holochain/try-o-rama'
 import * as R from 'ramda'
+import { Config } from '@holochain/tryorama'
+import { configBatchSimple } from './config'
 
-const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
-
-/** Generates a bunch of identical conductor configs with multiple identical instances */
-const configBatchSimple = (numConductors, numInstances) => {
-    const conductor = R.pipe(
-        R.map(n => [`${n}`, dna]),
-        R.fromPairs,
-        x => ({ instances: x }),
-    )(R.range(0, numInstances))
-    return R.repeat(conductor, numConductors)
-}
 
 // This is a customizable blue print for "telephone game" network/time topology setups.
 // It cycles through all N agents in a way that at any given point only two agents
@@ -27,7 +17,7 @@ const configBatchSimple = (numConductors, numInstances) => {
 // * postSpawn: after the next agent was spawned, this callback is called with the older one to have it create new
 //              entries/links while the new agent is there
 // * stepCheck:
-const telephoneGame = async (s, t, N, players, functions, timeout = 2000) => {
+const telephoneGame = async (s, t, N, players, functions, timeout = 5000) => {
     const STEP_TIMEOUT_MS = timeout
     let {init, preSpawn, postSpawn, stepCheck} = functions
     console.log("##################################")

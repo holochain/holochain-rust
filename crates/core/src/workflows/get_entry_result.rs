@@ -149,8 +149,7 @@ pub async fn get_entry_result_workflow<'a>(
 //        };
 //        let maybe_entry_history = block_on(super::get_entry_result_workflow(&context, &args));
 ////        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
-////        let content_storage = &context.state().unwrap().dht().content_storage().clone();
-////        (*content_storage.write().unwrap()).add(&entry).unwrap();
+////        context.state().unwrap().dht().add(&entry).unwrap();
 ////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
 ////        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
 ////        (*meta_storage.write().unwrap())

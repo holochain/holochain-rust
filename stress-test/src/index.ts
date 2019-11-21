@@ -1,81 +1,29 @@
-const { Orchestrator, tapeExecutor, singleConductor, combine } = require('@holochain/try-o-rama')
+const { Orchestrator, tapeExecutor, singleConductor, localOnly, combine } = require('@holochain/tryorama')
+import { networkType } from './config'
 
 process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
-const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim1h'
-let network = null
-let middleware = null
+const middleware = 
+  ( networkType === 'sim1h'
+  ? combine(tapeExecutor(require('tape')), localOnly)
 
-switch (networkType) {
-  case 'memory':
-    network = 'memory'
-    middleware = combine(singleConductor, tapeExecutor(require('tape')))
-    break
-  case 'sim1h':
-    network = {
-      type: 'sim1h',
-      dynamo_url: "http://localhost:8000",
-    }
-    middleware = tapeExecutor(require('tape'))
-    break
-  case 'sim2h':
-    network = {
-      type: 'sim2h',
-      sim2h_url: "wss://localhost:9002",
-    }
-    middleware = tapeExecutor(require('tape'))
-    break
-  default:
-    throw new Error(`Unsupported network type: ${networkType}`)
-}
+  : networkType === 'sim2h'
+  ? combine(tapeExecutor(require('tape')), localOnly)
+
+  : networkType === 'memory'
+  ? combine(tapeExecutor(require('tape')), localOnly, singleConductor)
+
+  : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()
+)
 
 const orchestrator = new Orchestrator({
   middleware,
-  globalConfig: {
-    network,
-    logger: {
-      type: 'debug',
-      rules: {
-        rules: [
-          {
-            exclude: true,
-            pattern: '.*parity.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*mio.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*tokio.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*hyper.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*rusoto_core.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*want.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*::sync.*'
-          },
-          {
-            exclude: true,
-            pattern: '.*rpc.*'
-          }
-        ]
-      },
-      state_dump: false
-    }
-  }
+  waiter: {
+    softTimeout: 10000,
+    hardTimeout: 20000,
+  },
 })
 
 // First two arguments are ts-node and the script name

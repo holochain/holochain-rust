@@ -209,58 +209,6 @@ jobs:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
 
- cold.ubuntu.bionic.auto:
-  docker:
-   - image: ubuntu:bionic
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
- cold.ubuntu.xenial.auto:
-  docker:
-   - image: ubuntu:xenial
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
- cold.debian.stable.auto:
-  docker:
-   - image: debian:stable
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
- cold.mac.10.auto:
-  macos:
-   xcode: "10.2.0"
-  steps:
-   - checkout
-   - run: ./scripts/install/auto.sh
-   - run:
-      name: smoke test release compilation
-      command: |
-        source $HOME/.cargo/env
-        cargo rustc --manifest-path crates/cli/Cargo.toml --release -- -C lto
-        cargo rustc --manifest-path crates/holochain/Cargo.toml --release -- -C lto
-
  cold.mac.10.nix:
   macos:
    xcode: "10.2.0"
@@ -297,6 +245,13 @@ jobs:
        . /home/docker/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
+ deploy.crates:
+  docker:
+   - image: holochain/holonix:latest
+  steps:
+   - checkout
+   - run: nix-shell --run hc-release-hook-publish
+
 workflows:
  version: 2
  tests:
@@ -313,41 +268,12 @@ workflows:
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
-   - stress-tests-sim1h
+   # @todo this was flakey
+   # - stress-tests-sim1h
    - stress-tests-sim2h
-
- cold.ubuntu:
-  jobs:
-   - cold.ubuntu.bionic.auto:
-      filters:
-       branches:
-        only:
-         - develop
-   # - cold.ubuntu.bionic.nix
-
-   - cold.ubuntu.xenial.auto:
-      filters:
-       branches:
-        only:
-         - develop
-   # - cold.ubuntu.xenial.nix
-
- cold.debian:
-  jobs:
-   - cold.debian.stable.auto:
-      filters:
-       branches:
-        only:
-         - develop
-   # - cold.debian.stable.nix
 
  cold.mac:
   jobs:
-   - cold.mac.10.auto:
-      filters:
-       branches:
-        only:
-         - develop
    - cold.mac.10.nix:
       filters:
        branches:
@@ -363,6 +289,12 @@ workflows:
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
    - deploy.linux:
+      filters:
+       branches:
+        ignore: /.*/
+       tags:
+        only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
+   - deploy.crates:
       filters:
        branches:
         ignore: /.*/

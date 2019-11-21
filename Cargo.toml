@@ -2,6 +2,7 @@
 
 members = [
   "crates/cli",
+  "crates/metrics",
   "crates/common",
   "crates/holochain",
   "crates/conductor_lib",
@@ -13,9 +14,11 @@ members = [
   "crates/hdk",
   "crates/locksmith",
   "crates/net",
+  "crates/stress",
+  "crates/trycp_server",
   "crates/sim1h",
   "crates/sim2h",
-  "crates/sim2h_server",
+  "crates/sim2h_server"
 ]
 exclude = [
   "test_utils",
@@ -25,8 +28,8 @@ exclude = [
 ]
 
 [patch.crates-io]
-#lib3h = "=0.0.21"
-#lib3h_protocol = "=0.0.21"
-#lib3h_crypto_api = "=0.0.21"
-#lib3h_sodium = "=0.0.21"
-#lib3h_zombie_actor = "=0.0.21"
+#lib3h = "=0.0.22"
+#lib3h_protocol = "=0.0.22"
+#lib3h_crypto_api = "=0.0.22"
+#lib3h_sodium = "=0.0.22"
+#lib3h_zombie_actor = "=0.0.22"

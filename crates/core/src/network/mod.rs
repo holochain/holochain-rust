@@ -130,7 +130,7 @@ pub mod tests {
         {
             let dht1 = context1.state().unwrap().dht();
             {
-                dht1.content_storage().write().unwrap().add(&entry).unwrap();
+                dht1.add(&entry).unwrap();
                 dht1.add_header_for_entry(&entry, &header2).unwrap();
             }
         }

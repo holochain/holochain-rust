@@ -10,6 +10,7 @@ use holochain_json_api::{
     error::JsonError,
     json::{JsonString, RawString},
 };
+use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -50,6 +51,7 @@ pub struct Sim2hWorker {
     conductor_api: ConductorApi,
     time_of_last_sent: Instant,
     connection_status: ConnectionStatus,
+    metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
 }
 
 fn wire_message_into_escaped_string(message: &WireMessage) -> String {
@@ -107,6 +109,9 @@ impl Sim2hWorker {
             conductor_api,
             time_of_last_sent: Instant::now(),
             connection_status: ConnectionStatus::None,
+            metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
+                DefaultMetricPublisher::default(),
+            )),
         };
 
         debug!("Successfully bound to {:?}", bound_url);
@@ -359,6 +364,8 @@ impl NetWorker for Sim2hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        let clock = std::time::SystemTime::now();
+
         let mut did_something = false;
 
         match self
@@ -442,6 +449,13 @@ impl NetWorker for Sim2hWorker {
                 }
             }
             did_something = true;
+        }
+        if did_something {
+            let latency = clock.elapsed().unwrap().as_millis();
+            let metric_name = "sim2h_worker.tick.latency";
+            let metric = holochain_metrics::Metric::new(metric_name, latency as f64);
+            trace!("publishing: {}", latency);
+            self.metric_publisher.write().unwrap().publish(&metric);
         }
         Ok(did_something)
     }

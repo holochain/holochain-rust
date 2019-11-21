@@ -5,10 +5,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
-* The sim2h switch-board server is now caching if a node is missing data and periodically checks back in. This makes it more resilient against unforseen problems like connection drops which otherwise could only be recovered through an explicit reconnection of the node. [#1834](https://github.com/holochain/holochain-rust/pull/1834) 
+
+- Adds a retry if a net worker cannot be spawned on startup [#1870](https://github.com/holochain/holochain-rust/pull/1870)
+- Add hdk::version_hash, returning MD5 hash of HDK build environment [#1869](https://github.com/holochain/holochain-rust/pull/1869)
 
 ### Changed
-* DNA is now checked for invalid zome artifacts. Validation callbacks that fail unexpectedly will now panic rather than fail validation. `hc package` `--strip-meta` flag is now `--include-meta`. [#1838](https://github.com/holochain/holochain-rust/pull/1838) 
 
 ### Deprecated
 
@@ -16,7 +17,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-* Loading of instances from storage was broken and ended up in partially loaded states. This got fixed with [#1836](https://github.com/holochain/holochain-rust/pull/1836).
-
+- Fix lots of deadlocks by managing threads and encapsulating locks [#1852](https://github.com/holochain/holochain-rust/pull/1852)
+- Have sim2h let go of nodes if the connection got lost because of an error [#1877](https://github.com/holochain/holochain-rust/pull/1877)
 ### Security
 

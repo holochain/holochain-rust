@@ -27,8 +27,7 @@ use holochain_dpki::utils::Verify;
 use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
-use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread};
+use std::{pin::Pin, sync::Arc};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -84,51 +83,13 @@ pub async fn call_zome_function(
         zome_call
     );
 
-    // Clone context and call data for the Ribosome thread
-    let context_clone = context.clone();
-    let zome_call_clone = zome_call.clone();
-
     // Signal (currently mainly to the nodejs_waiter) that we are about to start a zome function:
     context
         .action_channel()
-        .send(ActionWrapper::new(Action::SignalZomeFunctionCall(
+        .send(ActionWrapper::new(Action::QueueZomeFunctionCall(
             zome_call.clone(),
         )))
         .expect("action channel to be open");
-
-    thread::Builder::new()
-        .name(format!(
-            "call_zome_function/{}",
-            ProcessUniqueId::new().to_string()
-        ))
-        .spawn(move || {
-            // Have Ribosome spin up DNA and call the zome function
-            let call_result = ribosome::run_dna(
-                Some(zome_call_clone.clone().parameters.to_bytes()),
-                WasmCallData::new_zome_call(context_clone.clone(), zome_call_clone.clone()),
-            );
-            log_debug!(
-                context_clone,
-                "actions/call_zome_fn: got call_result from ribosome::run_dna."
-            );
-            // Construct response
-            let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);
-            // Send ReturnZomeFunctionResult Action
-            log_debug!(
-                context_clone,
-                "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
-            );
-            lax_send_sync(
-                context_clone.action_channel().clone(),
-                ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
-                "call_zome_function",
-            );
-            log_debug!(
-                context_clone,
-                "actions/call_zome_fn: sent ReturnZomeFunctionResult action."
-            );
-        })
-        .expect("Could not spawn thread for call_zome_function");
 
     log_debug!(
         context,
@@ -140,6 +101,7 @@ pub async fn call_zome_function(
     CallResultFuture {
         context: context.clone(),
         zome_call,
+        call_spawned: false,
     }
     .await
 }
@@ -313,17 +275,53 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     }
 }
 
+pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
+    std::thread::Builder::new()
+        .name(format!("{:?}", zome_call))
+        .spawn(move || {
+            // Have Ribosome spin up DNA and call the zome function
+            let call_result = ribosome::run_dna(
+                Some(zome_call.clone().parameters.to_bytes()),
+                WasmCallData::new_zome_call(context.clone(), zome_call.clone()),
+            );
+            log_debug!(
+                context,
+                "actions/call_zome_fn: got call_result from ribosome::run_dna."
+            );
+            // Construct response
+            let response = ExecuteZomeFnResponse::new(zome_call, call_result);
+            // Send ReturnZomeFunctionResult Action
+            log_debug!(
+                context,
+                "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
+            );
+            lax_send_sync(
+                context.action_channel().clone(),
+                ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
+                "call_zome_function",
+            );
+            log_debug!(
+                context,
+                "actions/call_zome_fn: sent ReturnZomeFunctionResult action."
+            );
+        })
+        .expect("Could not spawn thread for zome function call");
+}
+
 /// CallResultFuture resolves to an Result<JsonString, HolochainError>.
 /// Tracks the nucleus State, waiting for a result to the given zome function call to appear.
 pub struct CallResultFuture {
     context: Arc<Context>,
     zome_call: ZomeFnCall,
+    call_spawned: bool,
 }
+
+impl Unpin for CallResultFuture {}
 
 impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("CallResultFuture") {
             return Poll::Ready(Err(err));
         }
@@ -333,10 +331,18 @@ impl Future for CallResultFuture {
         // Leaving this in to be safe against running this future in another executor.
         cx.waker().clone().wake();
 
-        if let Some(state) = self.context.try_state() {
-            match state.nucleus().zome_call_result(&self.zome_call) {
-                Some(result) => Poll::Ready(result),
-                None => Poll::Pending,
+        if let Some(state) = self.context.clone().try_state() {
+            if self.call_spawned {
+                match state.nucleus().zome_call_result(&self.zome_call) {
+                    Some(result) => Poll::Ready(result),
+                    None => Poll::Pending,
+                }
+            } else {
+                if state.nucleus().running_zome_calls.contains(&self.zome_call) {
+                    spawn_zome_function(self.context.clone(), self.zome_call.clone());
+                    self.call_spawned = true;
+                }
+                Poll::Pending
             }
         } else {
             Poll::Pending

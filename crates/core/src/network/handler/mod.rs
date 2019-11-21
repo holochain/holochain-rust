@@ -1,4 +1,4 @@
-use crate::agent::state::create_chain_pair_for_header;
+use crate::agent::state::create_chain_pair_for_header, content_store::GetContent;
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -21,10 +21,9 @@ use crate::{
             store::*,
         },
     },
-    nucleus::actions::get_entry::get_entry_from_cas,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
-use boolinator::*;
+use boolinator::Boolinator;
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -303,41 +302,22 @@ fn get_content_aspect(
 
     // If we have found a header for the requested entry in the chain...
     let maybe_chain_pair = match maybe_chain_header {
-        Some((header, true)) => Some(create_chain_pair_for_header(&*state, header)?),
+        Some((header, true)) => Some(create_chain_pair_for_header(&state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
-            let header_entry_address = header.entry_address();
-            let 
-            match get_entry_from_cas(
-                &state.agent().chain_store().content_storage(),
-                header_entry_address,
-            ) {
-                Ok(Some(entry)) => Some(ChainPair::new(header, entry)),
-                Ok(None) => {
-                    let err_message = format!(
-                        "net/fetch/get_content_aspect: no entry associated
-                         with the entry address {} in the header {} could
-                         be found in the CAS, but the header is in the
-                         chain",
-                        header_entry_address, header
-                    );
-                    log_error!(context, "{}", err_message);
-                    return HolochainError::ErrorGeneric(err_message);
+            let entry = state
+	                    .agent()
+	                    .chain_store()
+	                    .get(&header.entry_address())?
+	                    .expect("Could not find entry in chain CAS, but header is chain");
+                match ChainPair::new(header, entry) {
+                    Ok(chain_pair) => Some(chain_pair),
+                    Err(error) => return Err(error)
                 }
-                Err(err) => {
-                    let err_message = format!(
-                        "net/fetch/get_content_aspect: got an error while trying to get an entry associated with the address {}from the CAS. The header {} is in the chain. Error: {:?}",
-                        entry, header, err
-                    );
-                    log_error!(context, "{}", err_message);
-                    return HolochainError::ErrorGeneric(err_message);
-                }
-            }
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = get_entry_from_cas(&state.dht().content_storage(), entry_address)?
-            {
+            if let Some(entry) = state.dht().get(entry_address)? {
                 // If we have it in the DHT cas that's good,
                 // but then we have to get the header like this:
                 let headers = state.get_headers(entry_address.clone()).map_err(|error| {
@@ -352,7 +332,13 @@ fn get_content_aspect(
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    Some(ChainPair::new(headers[0].clone(), entry))
+                    match ChainPair::new(headers[0].clone(), entry) {
+                        Ok(chain_pair) => Some(chain_pair),
+                        Err(error) => {
+                            log_error!(context, "{}", error);
+                            Err(error)
+                        },
+                    }
                 } else {
                     debug!(
                         "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"

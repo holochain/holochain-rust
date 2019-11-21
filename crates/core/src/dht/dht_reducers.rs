@@ -485,12 +485,7 @@ pub mod tests {
             header: test_chain_header(),
         };
 
-        Arc::new(PendingValidationStruct {
-            entry_with_header,
-            dependencies: Vec::new(),
-            workflow,
-            uuid: ProcessUniqueId::new(),
-        })
+        Arc::new(PendingValidationStruct::new(entry_with_header, workflow))
     }
 
     #[test]

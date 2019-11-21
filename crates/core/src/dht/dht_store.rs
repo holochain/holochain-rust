@@ -20,13 +20,14 @@ use holochain_persistence_api::{
 };
 use regex::Regex;
 
-use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
+use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
+    time::{Duration, SystemTime},
 };
 
 /// The state-slice for the DHT.
@@ -41,7 +42,8 @@ pub struct DhtStore {
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
 
-    pub(crate) queued_holding_workflows: VecDeque<PendingValidation>,
+    pub(crate) queued_holding_workflows:
+        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -62,12 +64,14 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_list: Vec<Address>,
+    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
     fn from(state: &StateWrapper) -> Self {
         DhtStoreSnapshot {
             holding_list: state.dht().holding_list.clone(),
+            queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
         }
     }
 }
@@ -130,13 +134,14 @@ impl DhtStore {
         }
     }
 
-    pub fn new_with_holding_list(
+    pub fn new_from_snapshot(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-        holding_list: Vec<Address>,
+        snapshot: DhtStoreSnapshot,
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
-        new_dht_store.holding_list = holding_list;
+        new_dht_store.holding_list = snapshot.holding_list;
+        new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
     }
 
@@ -270,12 +275,43 @@ impl DhtStore {
         &mut self.actions
     }
 
-    pub(crate) fn next_queued_holding_workflow(&self) -> Option<&PendingValidation> {
-        self.queued_holding_workflows.front()
+    pub(crate) fn next_queued_holding_workflow(
+        &self,
+    ) -> Option<(&PendingValidation, Option<Duration>)> {
+        self.queued_holding_workflows
+            .iter()
+            .skip_while(|(_pending, maybe_delay)| {
+                if let Some((time_of_dispatch, delay)) = maybe_delay {
+                    let maybe_time_elapsed = time_of_dispatch.elapsed();
+                    if let Ok(time_elapsed) = maybe_time_elapsed {
+                        if time_elapsed < *delay {
+                            return true;
+                        }
+                    }
+                }
+                false
+            })
+            .map(|(pending, maybe_delay)| {
+                (
+                    pending,
+                    maybe_delay
+                        .map(|(_time, duration)| Some(duration))
+                        .unwrap_or(None),
+                )
+            })
+            .next()
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        self.queued_holding_workflows.contains(pending)
+        self.queued_holding_workflows
+            .iter()
+            .any(|(current, _)| current == pending)
+    }
+
+    pub(crate) fn queued_holding_workflows(
+        &self,
+    ) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
+        &self.queued_holding_workflows
     }
 }
 

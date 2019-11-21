@@ -31,10 +31,10 @@ impl EntryWithHeader {
     }
 }
 
-pub fn fetch_entry_with_header(
+pub fn fetch_chain_pair(
     address: &Address,
     state: &State,
-) -> Result<EntryWithHeader, HolochainError> {
+) -> Result<ChainPair, HolochainError> {
     let entry = state
         .agent()
         .chain_store()

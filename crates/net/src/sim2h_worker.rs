@@ -25,7 +25,7 @@ use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     websocket::{
         streams::{ConnectionStatus, StreamEvent, StreamManager},
-        tls::{TlsCertificate, TlsConfig},
+        tls::TlsConfig,
     },
     WireError, WireMessage,
 };
@@ -81,19 +81,12 @@ impl Sim2hWorker {
         agent_id: Address,
         conductor_api: ConductorApi,
     ) -> NetResult<Self> {
-        let mut stream_manager = StreamManager::with_std_tcp_stream(
-            TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy()),
-        );
-
-        // bind to some port:
-        // channel for making an async call sync
-        debug!("Trying to bind to network...");
-        let uri = lib3h_protocol::uri::Builder::with_raw_url("wss://127.0.0.1")
-            .unwrap()
-            .with_port(0)
-            .build();
-
-        let bound_url = stream_manager.bind(&uri)?;
+        // NB: Switched to FakeServer for now as a quick fix, because the random port binding here is
+        // interfering with the conductor interface port which must be chosen explicitly as part of config.
+        // Since we don't need this now, let's disable that port binding for now.
+        // TODO: if needed, revert the commit containing this change to get back the real certificate
+        // and port binding.
+        let stream_manager = StreamManager::with_std_tcp_stream(TlsConfig::FakeServer);
 
         let mut instance = Self {
             handler,
@@ -113,8 +106,6 @@ impl Sim2hWorker {
                 DefaultMetricPublisher::default(),
             )),
         };
-
-        debug!("Successfully bound to {:?}", bound_url);
 
         instance.connection_status = instance.try_connect(Duration::from_millis(5000))?;
 

@@ -60,7 +60,6 @@ pub enum ConsistencyEvent {
     Publish(Address),                                           // -> Hold
     InitializeNetwork, // -> Hold (the AgentId if initialize chain happend)
     InitializeChain,   // -> prepare to hold AgentId
-    AddPendingValidation(Address), // -> RemovePendingValidation
     SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
@@ -68,8 +67,7 @@ pub enum ConsistencyEvent {
     UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
     AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry),                // <- Publish, entry_type=LinkRemove
-    RemovePendingValidation(Address), // <- AddPendingValidation
+    RemoveLink(Entry), // <- Publish, entry_type=LinkRemove
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
@@ -176,18 +174,6 @@ impl ConsistencyModel {
             )),
             Action::RemoveLink(entry) => Some(ConsistencySignal::new_terminal(
                 ConsistencyEvent::RemoveLink(entry.clone()),
-            )),
-
-            Action::AddPendingValidation(validation) => {
-                let address = validation.entry_with_header.entry.address();
-                Some(ConsistencySignal::new_pending(
-                    AddPendingValidation(address.clone()),
-                    Source,
-                    vec![RemovePendingValidation(address.clone())],
-                ))
-            }
-            Action::RemovePendingValidation((address, _)) => Some(ConsistencySignal::new_terminal(
-                RemovePendingValidation(address.clone()),
             )),
 
             Action::QueueZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(

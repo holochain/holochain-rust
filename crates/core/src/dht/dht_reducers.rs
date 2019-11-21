@@ -455,11 +455,9 @@ pub mod tests {
         let context = test_context("bill", None);
         let store = test_store(context.clone());
 
-        let entry = test_entry();
-        let entry_wh = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
+        let entry_wh = test_entry_with_header();
+        let entry = entry_wh.entry.clone();
+
         let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
 
         store.reduce(action_wrapper);
@@ -476,13 +474,8 @@ pub mod tests {
     }
 
     fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
-        let entry = test_entry();
-        let entry_with_header = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
-
-        Arc::new(PendingValidationStruct::new(entry_with_header, workflow))
+        let entry_wh = test_entry_with_header();
+        Arc::new(PendingValidationStruct::new(entry_wh, workflow))
     }
 
     #[test]

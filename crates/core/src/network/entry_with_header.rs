@@ -3,7 +3,11 @@ use crate::{
     content_store::GetContent,
     state::{State, StateWrapper},
 };
-use holochain_core_types::{chain_header::{ChainHeader, test_chain_header}, entry::{Entry, test_entry}, error::HolochainError};
+use holochain_core_types::{
+    chain_header::{test_chain_header, ChainHeader},
+    entry::{test_entry, Entry},
+    error::HolochainError,
+};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -47,13 +51,9 @@ pub fn fetch_entry_with_header(
     Ok(EntryWithHeader::new(entry, header))
 }
 
-
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_with_header() -> EntryWithHeader {
     let entry = test_entry();
     let header = test_chain_header();
-    EntryWithHeader {
-        entry,
-        header,
-    }
+    EntryWithHeader { entry, header }
 }

@@ -199,13 +199,13 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        content_store::{GetContent},
+        content_store::GetContent,
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::create_get_links_eavi_query,
         },
         instance::tests::test_context,
-        network::entry_with_header::{test_entry_with_header},
+        network::entry_with_header::test_entry_with_header,
         state::test_store,
     };
     use holochain_core_types::{
@@ -232,10 +232,7 @@ pub mod tests {
                 .expect("there should be a new store for committing a sys entry");
 
         // the old store does not have the entry in its holding list
-        assert_eq!(
-            None,
-            store.dht().get(&entry.address()).unwrap()
-        );
+        assert_eq!(None, store.dht().get(&entry.address()).unwrap());
 
         assert_eq!(
             Some(entry.clone()),
@@ -252,9 +249,8 @@ pub mod tests {
         let entry_wh = test_entry_with_header();
         let entry = entry_wh.entry.clone();
 
-        let store =
-            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
-                .expect("there should be a new store for committing a sys entry");
+        let store = reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+            .expect("there should be a new store for committing a sys entry");
 
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
@@ -297,9 +293,8 @@ pub mod tests {
         let entry_wh = test_entry_with_header();
         let entry = entry_wh.entry.clone();
 
-        let store =
-            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
-                .expect("there should be a new store for committing a sys entry");
+        let store = reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+            .expect("there should be a new store for committing a sys entry");
 
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");

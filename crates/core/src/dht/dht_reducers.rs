@@ -199,23 +199,24 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        content_store::{AddContent, GetContent},
+        content_store::{GetContent},
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::create_get_links_eavi_query,
         },
         instance::tests::test_context,
-        network::entry_with_header::EntryWithHeader,
+        network::entry_with_header::{test_entry_with_header},
         state::test_store,
     };
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
         chain_header::test_chain_header,
         eav::Attribute,
-        entry::{test_entry, test_sys_entry, Entry},
+        entry::{test_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
     };
     use holochain_persistence_api::cas::content::AddressableContent;
+    use std::sync::Arc;
 
     #[test]
     fn reduce_hold_entry_test() {
@@ -223,11 +224,8 @@ pub mod tests {
         let store = test_store(context);
 
         // test_entry is not sys so should do nothing
-        let sys_entry = test_sys_entry();
-        let entry_wh = EntryWithHeader {
-            entry: sys_entry.clone(),
-            header: test_chain_header(),
-        };
+        let entry_wh = test_entry_with_header();
+        let entry = entry_wh.entry.clone();
 
         let new_dht_store =
             reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
@@ -236,13 +234,13 @@ pub mod tests {
         // the old store does not have the entry in its holding list
         assert_eq!(
             None,
-            store.dht().get(&sys_entry.address()).unwrap()
+            store.dht().get(&entry.address()).unwrap()
         );
 
         assert_eq!(
-            Some(sys_entry.clone()),
+            Some(entry.clone()),
             new_dht_store
-                .get(&sys_entry.address())
+                .get(&entry.address())
                 .expect("could not fetch from cas")
         );
     }
@@ -251,9 +249,13 @@ pub mod tests {
     fn can_add_links() {
         let context = test_context("bob", None);
         let store = test_store(context.clone());
-        let entry = test_entry();
+        let entry_wh = test_entry_with_header();
+        let entry = entry_wh.entry.clone();
 
-        let _ = (*store.dht()).clone().add(&entry);
+        let store =
+            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+                .expect("there should be a new store for committing a sys entry");
+
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -271,11 +273,11 @@ pub mod tests {
         let action = ActionWrapper::new(Action::AddLink(link_data.clone()));
         let link_entry = Entry::LinkAdd(link_data.clone());
 
-        let new_dht_store = (*reduce(store.dht(), &action)).clone();
+        let store = (*reduce(Arc::new(store), &action)).clone();
 
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = new_dht_store.fetch_eavi(&get_links_query);
+        let fetched = store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -292,9 +294,13 @@ pub mod tests {
     fn can_remove_links() {
         let context = test_context("bob", None);
         let store = test_store(context.clone());
-        let entry = test_entry();
+        let entry_wh = test_entry_with_header();
+        let entry = entry_wh.entry.clone();
 
-        let _ = (*store.dht()).clone().add(&entry);
+        let store =
+            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
+                .expect("there should be a new store for committing a sys entry");
+
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -313,7 +319,7 @@ pub mod tests {
         //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data.clone()));
-        let new_dht_store = reduce(store.dht(), &action_link_add);
+        let store = reduce(Arc::new(store), &action_link_add);
 
         let link_remove_data = LinkData::from_link(
             &link.clone(),
@@ -327,13 +333,13 @@ pub mod tests {
 
         //remove added link from dht
         let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
-        let new_dht_store = reduce(new_dht_store, &action_link_remove);
+        let store = reduce(store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
         let get_links_query =
             create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
                 .expect("supposed to create link query");
-        let fetched = new_dht_store.fetch_eavi(&get_links_query);
+        let fetched = store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned
         assert!(fetched.is_ok());
@@ -350,13 +356,13 @@ pub mod tests {
 
         //add new link with same chain header
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
-        let new_dht_store = reduce(store.dht(), &action_link_add);
+        let store = reduce(store, &action_link_add);
 
         //fetch from dht after link with same chain header is added
         let get_links_query =
             create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
                 .expect("supposed to create link query");
-        let fetched = new_dht_store.fetch_eavi(&get_links_query);
+        let fetched = store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
         assert!(fetched.is_ok());
@@ -380,12 +386,12 @@ pub mod tests {
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
-        let new_dht_store_2 = reduce(store.dht(), &action_link_add);
+        let store = reduce(store, &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
         let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
             .expect("supposed to create link query");
-        let fetched = new_dht_store_2.fetch_eavi(&get_links_query);
+        let fetched = store.fetch_eavi(&get_links_query);
 
         //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
         assert!(fetched.is_ok());

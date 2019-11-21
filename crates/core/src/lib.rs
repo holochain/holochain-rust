@@ -24,6 +24,10 @@ extern crate log;
 #[macro_use]
 extern crate holochain_logging;
 
+#[allow(unused_variables)]
+extern crate flame;
+#[macro_use] extern crate flamer;
+
 
 
 #[macro_use]

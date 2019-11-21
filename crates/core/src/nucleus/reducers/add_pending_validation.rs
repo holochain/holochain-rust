@@ -10,6 +10,8 @@ use holochain_persistence_api::cas::content::AddressableContent;
 /// the entry's address.
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_add_pending_validation(
     state: &mut NucleusState,
     _root_state: &State,

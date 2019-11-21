@@ -20,11 +20,12 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn hold_entry_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    context.add_flame_guard("hold_entry_workflow"); 
     // 1. Get hold of validation package
     let maybe_validation_package = validation_package(&entry_with_header, context.clone())
         .await
@@ -103,8 +104,6 @@ pub async fn hold_entry_workflow(
         "workflow/hold_entry: HOLDING: {}",
         entry_with_header.entry.address()
     );
-
-    context.end_flame_guard("hold_entry_workflow");
     Ok(())
 }
 

@@ -8,6 +8,8 @@ use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDire
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn get_link_entries(
     link: &Link,
     context: &Arc<Context>,

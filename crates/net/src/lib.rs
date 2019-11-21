@@ -39,6 +39,11 @@ extern crate native_tls;
 extern crate tungstenite;
 extern crate url;
 
+
+#[allow(unused_variables)]
+extern crate flame;
+#[macro_use] extern crate flamer;
+
 #[macro_use]
 pub mod tweetlog;
 pub mod connection;

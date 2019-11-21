@@ -8,6 +8,9 @@ use holochain_core_types::{
 use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn get_entry_from_agent_chain(
     context: &Arc<Context>,
     address: &Address,
@@ -30,6 +33,9 @@ pub fn get_entry_from_agent_chain(
         .get_entry_from_cas(&address)
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
@@ -42,6 +48,9 @@ pub(crate) fn get_entry_from_agent(
         .get_entry_from_cas(&address)
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
@@ -49,6 +58,9 @@ pub(crate) fn get_entry_from_dht(
     context.state().unwrap().dht().get_entry_from_cas(address)
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
     address: &Address,
@@ -112,6 +124,9 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn get_entry_with_meta(
     context: &Arc<Context>,
     address: Address,

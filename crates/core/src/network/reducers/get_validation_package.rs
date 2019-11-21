@@ -5,6 +5,9 @@ use crate::{
 };
 use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
@@ -18,6 +21,8 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
     send_message(network_state, source_address, direct_message)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_get_validation_package(
     network_state: &mut NetworkState,
     _root_state: &State,

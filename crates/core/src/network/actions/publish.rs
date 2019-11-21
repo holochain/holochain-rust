@@ -14,6 +14,8 @@ use std::{pin::Pin, sync::Arc};
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -31,9 +33,12 @@ pub struct PublishFuture {
     action: ActionWrapper,
 }
 
+
 impl Future for PublishFuture {
     type Output = HcResult<Address>;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("PublishFuture") {
             return Poll::Ready(Err(err));

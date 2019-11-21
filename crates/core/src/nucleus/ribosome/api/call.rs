@@ -17,6 +17,8 @@ use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 impl ZomeFnCall {
     fn from_args(context: Arc<Context>, args: ZomeFnCallArgs) -> Self {
         // TODO we are currently signing the call ourself.  This signature
@@ -43,6 +45,8 @@ impl ZomeFnCall {
 /// Launch an Action::Call with newly formed ZomeFnCall-
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

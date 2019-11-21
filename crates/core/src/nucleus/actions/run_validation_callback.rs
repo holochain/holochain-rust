@@ -20,6 +20,9 @@ use holochain_metrics::Metric;
 /// `zome_call`.
 /// Dispatches an `Action::ReturnValidationResult` after completion of the WASM call.
 /// Returns a future that waits for the result to appear in the nucleus state.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn run_validation_callback(
     address: Address,
     call: CallbackFnCall,
@@ -89,9 +92,13 @@ pub struct ValidationCallbackFuture {
     key: (snowflake::ProcessUniqueId, HashString),
 }
 
+
 impl Future for ValidationCallbackFuture {
     type Output = ValidationResult;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if !self.context.is_action_channel_open() {
             return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(

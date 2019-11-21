@@ -10,6 +10,8 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
         Some(RuntimeValue::I64(
@@ -35,6 +37,8 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: entry_type_name and entry_value as JsonString
 /// Returns an HcApiReturnCode as I64
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

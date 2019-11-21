@@ -109,6 +109,10 @@ extern crate pretty_assertions;
 #[macro_use]
 extern crate nickel;
 
+#[allow(unused_variables)]
+extern crate flame;
+#[macro_use] extern crate flamer;
+
 pub mod conductor;
 pub mod config;
 pub mod context_builder;

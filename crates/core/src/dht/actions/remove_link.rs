@@ -15,6 +15,8 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn remove_link(entry: &Entry, context: &Arc<Context>) -> RemoveLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::RemoveLink(entry.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -35,8 +37,11 @@ impl Unpin for RemoveLinkFuture {}
 impl Future for RemoveLinkFuture {
     type Output = Result<(), HolochainError>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.add_flame_guard("RemoveLinkFuture");
+
         if let Some(err) = self.context.action_channel_error("RemoveLinkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -46,14 +51,12 @@ impl Future for RemoveLinkFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            self.context.end_flame_guard("RemoveLinkFuture");
             match state.dht().actions().get(&self.action) {
                 Some(Ok(_)) => Poll::Ready(Ok(())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),
                 None => Poll::Pending,
             }
         } else {
-            self.context.end_flame_guard("RemovLinkFuture");
             Poll::Pending
         }
     }

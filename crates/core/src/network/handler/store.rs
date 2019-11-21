@@ -11,6 +11,9 @@ use std::{
 };
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     let aspect_json =
         JsonString::from_json(std::str::from_utf8(&*dht_data.entry_aspect.aspect).unwrap());

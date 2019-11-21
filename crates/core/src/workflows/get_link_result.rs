@@ -15,11 +15,13 @@ use holochain_wasm_utils::api_serialization::get_links::{
 };
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
-    context.add_flame_guard("get_link_result");
+
     let config = GetLinksQueryConfiguration {
         headers: link_args.options.headers,
     };
@@ -32,8 +34,7 @@ pub async fn get_link_result_workflow<'a>(
             "Wrong type for response type Entry".to_string(),
         )),
     }?;
-
-    context.add_flame_guard("get_link_result");  
+ 
     match links_result {
         GetLinksNetworkResult::Links(links) => {
             let get_links_result = links

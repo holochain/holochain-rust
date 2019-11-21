@@ -8,6 +8,11 @@ extern crate serde;
 #[macro_use]
 extern crate lazy_static;
 
+
+#[allow(unused_variables)]
+extern crate flame;
+#[macro_use] extern crate flamer;
+
 pub mod cache;
 pub mod connection_state;
 pub mod crypto;
@@ -55,6 +60,8 @@ pub struct Sim2h {
 }
 
 impl Sim2h {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(
         crypto: Box<dyn CryptoSystem>,
         stream_manager: StreamManager<std::net::TcpStream>,
@@ -91,6 +98,8 @@ impl Sim2h {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn request_authoring_list(
         &mut self,
         uri: Lib3hUri,
@@ -106,6 +115,8 @@ impl Sim2h {
         self.send(provider_agent_id, uri, &wire_message);
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn request_gossiping_list(
         &mut self,
         uri: Lib3hUri,
@@ -122,6 +133,8 @@ impl Sim2h {
     }
 
     // adds an agent to a space
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         trace!("join entered");
         let result =
@@ -176,6 +189,8 @@ impl Sim2h {
     }
 
     // removes an agent from a space
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
@@ -190,6 +205,8 @@ impl Sim2h {
     }
 
     // removes a uri from connection and from spaces
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn disconnect(&self, uri: &Lib3hUri) {
         trace!("disconnect entered");
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
@@ -219,6 +236,8 @@ impl Sim2h {
     }
 
     // handler for incoming connections
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
         trace!("handle_incoming_connect entered");
         info!("New connection from {:?}", uri);
@@ -234,6 +253,8 @@ impl Sim2h {
     }
 
     // handler for messages sent to sim2h
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn handle_message(
         &mut self,
         uri: &Lib3hUri,
@@ -299,6 +320,8 @@ impl Sim2h {
     }
 
     // process transport and  incoming messages from it
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn process(&mut self) -> Sim2hResult<()> {
         trace!("process");
         self.num_ticks += 1;
@@ -380,6 +403,8 @@ impl Sim2h {
     }
 
     // given an incoming messages, prepare a proxy message and whether it's an publish or request
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn handle_joined(
         &mut self,
         uri: &Lib3hUri,
@@ -571,6 +596,8 @@ impl Sim2h {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn fetch_aspects_from_random_agent(
         &mut self,
         aspects_to_fetch: AspectList,

@@ -9,6 +9,9 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn call_init(dna: Dna, context: &Arc<Context>) -> HcResult<()> {
     // map init across every zome. Find which zomes init callback errored, if any
     let errors: Vec<(String, String)> = dna

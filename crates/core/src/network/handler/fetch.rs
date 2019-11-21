@@ -9,7 +9,10 @@ use std::sync::Arc;
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
+   
     let address = get_dht_data.entry_address.clone();
     let mut aspects = vec![];
 
@@ -38,5 +41,6 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     }
 
     let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, aspects)));
+
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }

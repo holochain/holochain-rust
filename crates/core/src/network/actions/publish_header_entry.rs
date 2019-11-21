@@ -11,6 +11,8 @@ use std::{pin::Pin, sync::Arc};
 
 /// Publish Header Entry Action Creator
 /// Returns a future that resolves to an ActionResponse.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn publish_header_entry(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::PublishHeaderEntry(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -28,9 +30,13 @@ pub struct PublishHeaderEntryFuture {
     action: ActionWrapper,
 }
 
+
 impl Future for PublishHeaderEntryFuture {
     type Output = HcResult<Address>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self
             .context

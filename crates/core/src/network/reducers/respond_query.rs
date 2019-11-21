@@ -12,6 +12,9 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn reduce_respond_query_inner(
     network_state: &mut NetworkState,
     network_query_result: &NetworkQueryResult,
@@ -33,6 +36,9 @@ fn reduce_respond_query_inner(
 }
 /// Send back to network a HandleQueryEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_respond_query(
     network_state: &mut NetworkState,
     _root_state: &State,

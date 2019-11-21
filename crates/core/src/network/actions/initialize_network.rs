@@ -11,6 +11,8 @@ use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let (dna_address, agent_id) = get_dna_and_agent(context).await?;
     let handler = create_handler(&context, dna_address.to_string());
@@ -61,6 +63,8 @@ pub struct InitNetworkFuture {
 impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("InitializeNetworkFuture") {
             return Poll::Ready(Err(err));

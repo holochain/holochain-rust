@@ -29,6 +29,8 @@ pub(crate) enum LinkModification {
 }
 
 /// Used as the inner function for both commit and hold reducers
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
     match store.cas_add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
@@ -40,6 +42,8 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_add_remove_link_inner(
     store: &mut DhtStore,
     link: &Link,
@@ -65,6 +69,8 @@ pub(crate) fn reduce_add_remove_link_inner(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_update_entry_inner(
     store: &mut DhtStore,
     old_address: &Address,
@@ -80,6 +86,8 @@ pub(crate) fn reduce_update_entry_inner(
     Ok(new_address.clone())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_remove_entry_inner(
     store: &mut DhtStore,
     latest_deleted_address: &Address,

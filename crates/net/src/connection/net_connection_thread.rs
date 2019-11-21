@@ -43,6 +43,8 @@ impl NetConnectionThread {
     /// NetSendThread Constructor.
     /// Spawns a thread that will create and run a NetWorker with the given factory, handler and
     /// shutdown closure.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
         // Create shared bool between self and spawned thread
         let can_keep_running = Arc::new(AtomicBool::new(true));

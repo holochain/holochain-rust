@@ -18,6 +18,8 @@ use futures::future;
 use futures_util::future::FutureExt;
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn validate_agent_entry(
     entry: Entry,
     validation_data: ValidationData,

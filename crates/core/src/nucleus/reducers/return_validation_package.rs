@@ -4,6 +4,8 @@ use crate::{
     state::State,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_return_validation_package(
     state: &mut NucleusState,
     _root_state: &State,

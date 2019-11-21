@@ -7,6 +7,9 @@ use crate::{
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn remove_pending_validation(
     address: Address,
     workflow: ValidatingWorkflow,

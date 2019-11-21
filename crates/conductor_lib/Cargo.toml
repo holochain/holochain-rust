@@ -52,6 +52,11 @@ log = "=0.4.8"
 holochain_logging = "=0.0.4"
 nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
+[target.'cfg(linux)'.dependencies]
+[target.'cfg(windows)'.dependencies]
+[target.'cfg(unix)'.dependencies]
+flame = "0.2.2"
+flamer = "0.3"
 
 [dev-dependencies]
 test_utils = { version = "=0.0.38-alpha14", path = "../../test_utils" }

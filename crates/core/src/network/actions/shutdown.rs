@@ -13,6 +13,8 @@ use std::{pin::Pin, sync::Arc};
 /// Shutdown the network
 /// This tells the network to untrack this instance and then stops the network thread
 /// and sets the P2pNetwork instance in the state to None.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn shutdown(
     state: Arc<RwLock<StateWrapper>>,
     action_channel: Sender<ActionWrapper>,
@@ -32,9 +34,13 @@ pub struct ShutdownFuture {
     state: Arc<RwLock<StateWrapper>>,
 }
 
+
 impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         self.state
             .try_read()

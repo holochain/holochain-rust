@@ -81,6 +81,8 @@ impl State {
         Self::new_with_agent_nucleus_dht(context, agent_state, nucleus_state, dht_store)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new_with_agent_nucleus_dht(
         context: Arc<Context>,
         agent_state: AgentState,
@@ -102,6 +104,8 @@ impl State {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn get_dna(
         agent_state: &AgentState,
         cas: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -130,6 +134,8 @@ impl State {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
@@ -163,13 +169,15 @@ impl State {
         Arc::clone(&self.network)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn try_from_snapshots(
         context: Arc<Context>,
         agent_snapshot: AgentStateSnapshot,
         nucleus_snapshot: NucleusStateSnapshot,
         dht_store_snapshot: DhtStoreSnapshot,
     ) -> HcResult<State> {
-        context.add_flame_guard("try_from_snapshots");
+
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.chain_storage.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
@@ -181,7 +189,7 @@ impl State {
             context.eav_storage.clone(),
             dht_store_snapshot.holding_list,
         );
-        context.end_flame_guard("try_from_snapshots");
+
         Ok(State::new_with_agent_nucleus_dht(
             context.clone(),
             agent_state,

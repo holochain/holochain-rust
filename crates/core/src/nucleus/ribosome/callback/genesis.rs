@@ -4,7 +4,8 @@ use crate::{
     nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},
 };
 use std::sync::Arc;
-
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn init(
     context: Arc<Context>,
     zome: &str,

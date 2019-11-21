@@ -13,6 +13,8 @@ use std::{pin::Pin, sync::Arc};
 /// Remove Entry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn remove_entry(
     context: &Arc<Context>,
     deleted_address: Address,
@@ -37,8 +39,11 @@ pub struct RemoveEntryFuture {
 impl Future for RemoveEntryFuture {
     type Output = Result<(), HolochainError>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.add_flame_guard("RemoveEntryFuture");
+
         if let Some(err) = self.context.action_channel_error("RemoveEntryFuture") {
             return Poll::Ready(Err(err));
         }
@@ -54,7 +59,6 @@ impl Future for RemoveEntryFuture {
                 None => Poll::Pending,
             }
         } else {
-            self.context.end_flame_guard("RemoveEntryFuture");
             Poll::Pending
         }
     }

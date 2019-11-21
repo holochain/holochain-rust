@@ -8,6 +8,9 @@ use crate::{
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn add_pending_validation(
     entry_with_header: EntryWithHeader,
     dependencies: Vec<Address>,

@@ -10,6 +10,8 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn initialize(
     instance: &Instance,
     maybe_dna: Option<Dna>,

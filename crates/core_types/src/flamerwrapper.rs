@@ -1,7 +1,11 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate flame;
 #[cfg(not(target_arch = "wasm32"))]
-use std::fs::File;
+extern crate uuid;
+#[cfg(not(target_arch = "wasm32"))]
+use std::{fs::File,time::SystemTime};
+#[cfg(not(target_arch = "wasm32"))]
+use self::uuid::Uuid;
 use std::env;
 const FLAME_ENV : &str = "COMPILE_WITH_FLAME";
 const FLAME_PATH : &str = "FLAME_GRAPH_PATH" ;
@@ -51,9 +55,14 @@ impl FlamerWrapper
             {
                 if let Ok(path) = env::var(FLAME_PATH)
                 {
+                
                     #[cfg(not(target_arch = "wasm32"))]
-                    File::create(path).map(|file_for_flame|{
-                        debug!("about to dump to flame graph");
+                    let elapsed_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("timestamp supposed to be created for flame-graph");
+                    #[cfg(not(target_arch = "wasm32"))]
+                    let new_path = [elapsed_time.as_millis().to_string(),Uuid::new_v4().to_string(),path].join("_");
+                    #[cfg(not(target_arch = "wasm32"))]
+                    File::create(new_path.clone()).map(|file_for_flame|{
+                        debug!("about to dump to flame graph to {}",new_path);
                         flame::dump_html(file_for_flame).unwrap_or_else(|_|{
                             warn!("Flame graph enabled but cannot print to path")
                         })

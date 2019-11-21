@@ -199,13 +199,23 @@ impl Context {
     }
 
     /// Returns the name of this context instance.
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_instance_name(&self) -> String {
         self.instance_name.clone()
     }
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn set_state(&mut self, state: Arc<RwLock<StateWrapper>>) {
         self.state = Some(state);
     }
+
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn state(&self) -> Option<StateWrapper> {
         self.state.as_ref().map(|s| {
             while self.redux_wants_write.load(Relaxed) {
@@ -219,28 +229,26 @@ impl Context {
     /// Returns immediately either with the lock or with None if the lock
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         if self.redux_wants_write.load(Relaxed) {
             None
         } else {
+
             self.state.as_ref().map(|s| s.try_read()).unwrap_or(None)
         }
     }
 
-    pub fn add_flame_guard(&self,guard: &'static str)
-    {
-        self.flame_wrapper.lock().unwrap().start(guard);
-    }
-
-    pub fn end_flame_guard(&self,guard: &'static str)
-    {
-        self.flame_wrapper.lock().unwrap().end(guard);
-    }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn network_state(&self) -> Option<Arc<NetworkState>> {
         self.state().map(move |state| state.network())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_dna(&self) -> Option<Dna> {
         // In the case of init we encounter race conditions with regards to setting the DNA.
         // Init gets called asynchronously right after dispatching an action that sets the DNA in
@@ -272,13 +280,13 @@ impl Context {
         dna
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
-        self.add_flame_guard("get_wasm");
         let dna = self.get_dna().expect("Callback called without DNA set!");
         let dna_wasm = dna.get_wasm_from_zome_name(zome)
             .cloned()
-            .filter(|wasm| !wasm.code.is_empty());
-        self.end_flame_guard("get_wasm");    
+            .filter(|wasm| !wasm.code.is_empty());   
         dna_wasm
     }
 
@@ -343,7 +351,10 @@ impl Context {
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
     /// This makes use of the redux action loop and the observers.
     /// The given future gets polled everytime the instance's state got changed.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
+    
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
@@ -351,31 +362,42 @@ impl Context {
 
         loop {
             let _ = match future.as_mut().poll(&mut cx) {
-                Poll::Ready(result) => return result,
+                Poll::Ready(result) => {return result},
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
             if !self.instance_still_alive() {
+              
                 panic!("Context::block_on() waiting for future but instance is not alive anymore => we gotta let this thread panic!")
             }
             if let Some(err) = self.action_channel_error("Context::block_on") {
+              
                 panic!("Context::block_on() waiting for future but Redux loop got stopped => we gotta let this thread panic!\nError was: {:?}", err)
             }
+            
         }
+        
     }
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn spawn_task<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
     {
+
         self.thread_pool
             .lock()
             .expect("Couldn't get lock on Context::thread_pool")
             .execute(f);
+
     }
 
     /// returns the public capability token (if any)
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
-        self.add_flame_guard("get_public_token");
+
         let state = self.state().ok_or("State uninitialized!")?;
         let top = state
             .agent()
@@ -403,15 +425,15 @@ impl Context {
                     return Ok(addr);
                 }
             }};
-        self.end_flame_guard("get_public_token");
         Err(HolochainError::ErrorGeneric(
             "No public CapTokenGrant entry type in chain".into(),
         ))
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
-    context.add_flame_guard("get_public_token");
     let state = context
         .state()
         .ok_or_else(|| "Network::start() could not get application state".to_string())?;
@@ -423,7 +445,6 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
         .nucleus()
         .dna()
         .ok_or_else(|| "Network::start() called without DNA".to_string())?;
-        context.end_flame_guard("get_public_token");
     Ok((dna.address(), agent_id))
 }
 

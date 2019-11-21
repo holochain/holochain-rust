@@ -31,6 +31,9 @@ impl EntryWithHeader {
     }
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, HolochainError> {
     let json = state
         .agent()
@@ -41,6 +44,9 @@ fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, Holoc
     Ok(s)
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn fetch_entry_with_header(
     address: &Address,
     state: &State,

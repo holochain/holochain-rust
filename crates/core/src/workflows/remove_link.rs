@@ -18,11 +18,12 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn remove_link_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    context.add_flame_guard("remove_link_workflow");
     let link_remove = match &entry_with_header.entry {
         Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(
@@ -103,7 +104,5 @@ pub async fn remove_link_workflow(
         "workflow/hold_entry: added! {:?}",
         entry_with_header
     );
-
-    context.end_flame_guard("remove_link_workflow");
     Ok(())
 }

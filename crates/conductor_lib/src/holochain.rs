@@ -150,6 +150,8 @@ impl Holochain {
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn from_dna_and_context_and_instance(
         dna: Dna,
         context: Arc<Context>,
@@ -172,6 +174,8 @@ impl Holochain {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister.load(context.clone())?.ok_or_else(|| {
@@ -209,6 +213,8 @@ impl Holochain {
     }
 
     /// activate the Holochain instance
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start(&mut self) -> Result<(), HolochainInstanceError> {
         self.check_instance()?;
         if self.active {
@@ -220,6 +226,8 @@ impl Holochain {
     }
 
     /// deactivate the Holochain instance
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn stop(&mut self) -> Result<(), HolochainInstanceError> {
         self.check_instance()?;
         self.check_active()?;
@@ -233,6 +241,8 @@ impl Holochain {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn call_inner(
         me: &Holochain,
         zome: &str,
@@ -249,6 +259,8 @@ impl Holochain {
     }
 
     /// call a function in a zome
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn call(
         &self,
         zome: &str,
@@ -298,6 +310,8 @@ impl Holochain {
         )))
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+   #[flame]
     pub fn get_type_and_content_from_cas(
         &self,
         address: &Address,

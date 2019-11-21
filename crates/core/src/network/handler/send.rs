@@ -23,6 +23,9 @@ fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context>) {
     let message = match parse_direct_message(&*message_data.content.clone()) {
         Ok(message) => message,
@@ -78,6 +81,9 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
 
 /// We got a Lib3hClientProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<Context>) {
     let response = match parse_direct_message(&message_data.content.clone()) {
         Ok(message) => message,

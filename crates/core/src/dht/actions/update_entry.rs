@@ -12,6 +12,8 @@ use std::{pin::Pin, sync::Arc};
 /// Update Entry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn update_entry(
     context: &Arc<Context>,
     old_address: Address,
@@ -32,11 +34,15 @@ pub struct UpdateEntryFuture {
     action: ActionWrapper,
 }
 
+
 impl Future for UpdateEntryFuture {
     type Output = Result<Address, HolochainError>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.add_flame_guard("UpdateEntryFuture");
+     
         
         if let Some(err) = self.context.action_channel_error("UpdateEntryFuture") {
             return Poll::Ready(Err(err));
@@ -47,14 +53,12 @@ impl Future for UpdateEntryFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            self.context.end_flame_guard("UpdateEntryFuture");
             match state.dht().actions().get(&self.action) {
                 Some(Ok(address)) => Poll::Ready(Ok(address.clone())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),
                 None => Poll::Pending,
             }
         } else {
-            self.context.add_flame_guard("UpdateEntryFuture");
             Poll::Pending
         }
     }

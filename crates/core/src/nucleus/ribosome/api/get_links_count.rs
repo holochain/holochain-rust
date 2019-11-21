@@ -6,6 +6,8 @@ use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn invoke_get_links_count(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

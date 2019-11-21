@@ -117,6 +117,8 @@ pub struct Conductor {
 }
 
 impl Drop for Conductor {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn drop(&mut self) {
         if let Some(ref mut network_spawn) = self.network_spawn {
             if let Some(mut kill) = network_spawn.kill.take() {
@@ -161,6 +163,8 @@ pub fn notify(msg: String) {
 }
 
 impl Conductor {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
         let _rules = config.logger.rules.clone();
@@ -228,7 +232,6 @@ impl Conductor {
             n3h_keepalive_network: None,
         }
     }
-
     pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
         self.agent_keys
             .insert(agent_id, Arc::new(Mutex::new(keystore)));
@@ -257,6 +260,8 @@ impl Conductor {
 
     /// Starts a new thread which monitors each instance's signal channel and pushes signals out
     /// all interfaces the according instance is part of.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_signal_multiplexer(&mut self) -> thread::JoinHandle<()> {
         self.stop_signal_multiplexer();
         let broadcasters = self.interface_broadcasters.clone();
@@ -355,7 +360,8 @@ impl Conductor {
             .as_ref()
             .map(|kill_switch| kill_switch.send(()));
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_all_interfaces(&mut self) {
         self.interface_threads = self
             .config
@@ -365,6 +371,8 @@ impl Conductor {
             .collect()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
@@ -374,7 +382,8 @@ impl Conductor {
             });
         }
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
         {
             let kill_switch = self.interface_threads.get(id).ok_or_else(|| {
@@ -390,7 +399,8 @@ impl Conductor {
         self.interface_threads.remove(id);
         Ok(())
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
         notify(format!("Start interface by id: {}", id));
         self.config
@@ -398,7 +408,8 @@ impl Conductor {
             .ok_or_else(|| format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_all_static_servers(&mut self) -> Result<(), String> {
         notify("Starting all servers".into());
         self.static_servers.iter_mut().for_each(|(id, server)| {
@@ -411,6 +422,8 @@ impl Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
         let mut instance = self.instances.get(id)?.write().unwrap();
         notify(format!("Starting instance \"{}\"...", id));
@@ -453,6 +466,8 @@ impl Conductor {
         instance.start()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
         let instance = self.instances.get(id)?;
         notify(format!("Stopping instance \"{}\"...", id));
@@ -460,6 +475,8 @@ impl Conductor {
     }
 
     /// Starts all instances
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
         notify("Start all instances".to_string());
         self.config
@@ -481,6 +498,8 @@ impl Conductor {
     }
 
     /// Starts dpki_happ instances
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_dpki_instance(&mut self) -> Result<(), HolochainInstanceError> {
         let dpki_instance_id = &self.dpki_instance_id().unwrap();
         let mut instance = self
@@ -497,7 +516,10 @@ impl Conductor {
     }
 
     /// Stops all instances
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn stop_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        FlamerWrapper::dump_html();
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
@@ -533,7 +555,6 @@ impl Conductor {
         // running RPC gets finished before we're trying to stop
         // instances (which could lead to a dead-lock)
         let mut conductor_guard = CONDUCTOR.lock().unwrap();
-        conductor_guard
         std::mem::replace(&mut *conductor_guard, None);
 
         // 3. Stop running instances:
@@ -547,7 +568,8 @@ impl Conductor {
         self.instances = HashMap::new();
         Ok(())
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
         let network_config = self.config.clone().network.ok_or_else(|| {
             HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string())
@@ -589,7 +611,8 @@ impl Conductor {
             )),
         }
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn get_p2p_config(&self) -> P2pConfig {
         self.p2p_config.clone().map(|p2p_config| {
 
@@ -627,7 +650,8 @@ impl Conductor {
             P2pConfig::new_with_unique_memory_backend()
         })
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn initialize_p2p_config(&mut self) -> P2pConfig {
         // if there's no NetworkConfig we won't spawn a network process
         // and instead configure instances to use a unique in-memory network
@@ -755,6 +779,8 @@ impl Conductor {
 
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn instantiate_from_config(&mut self, id: &String) -> Result<Holochain, String> {
         self.config.check_consistency(&mut self.dna_loader)?;
 
@@ -933,7 +959,8 @@ impl Conductor {
                     })
             })
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn build_conductor_api(
         &mut self,
         instance_id: String,
@@ -1052,6 +1079,8 @@ impl Conductor {
     /// - dna_hash_computed: from the hash computed based on the loaded DNA
     /// and
     /// - dna_hash_computed_from_file: from the hash computed from the loaded DNA of the file.dna
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn check_dna_consistency_from_all_sources(
         ctx: &holochain_core::context::Context,
         dna_hash_from_conductor_config: &HashString,
@@ -1130,6 +1159,8 @@ impl Conductor {
     /// Get reference to keystore for given agent ID.
     /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
     /// to do so.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_keystore_for_agent(
         &mut self,
         agent_id: &String,
@@ -1247,7 +1278,8 @@ impl Conductor {
             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
         Ok(())
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
         let mut conductor_api_builder = ConductorApiBuilder::new();
         for instance_ref_config in interface_config.instances.iter() {
@@ -1279,6 +1311,8 @@ impl Conductor {
         conductor_api_builder.spawn()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         // The "kill switch" is the channel which allows the interface to be stopped from outside its thread
@@ -1318,7 +1352,8 @@ impl Conductor {
     pub fn instance_storage_dir_path(&self) -> PathBuf {
         self.config.persistence_dir.join("storage")
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn save_config(&self) -> Result<(), HolochainError> {
         fs::create_dir_all(&self.config.persistence_dir).map_err(|_| {
             HolochainError::ErrorGeneric(format!(
@@ -1386,6 +1421,8 @@ impl Conductor {
     }
 
     /// bootstraps the dpki app if configured
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn dpki_bootstrap(&mut self) -> Result<(), HolochainError> {
         // Checking if there is a dpki instance
         if self.using_dpki() {

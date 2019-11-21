@@ -26,8 +26,10 @@ pub struct StateDump {
 }
 
 impl From<Arc<Context>> for StateDump {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn from(context: Arc<Context>) -> StateDump {
-        context.add_flame_guard("state_dump");
+
         let (agent, nucleus, network, dht) = {
             let state_lock = context.state().expect("No state?!");
             (
@@ -80,7 +82,7 @@ impl From<Arc<Context>> for StateDump {
             .collect::<Vec<PendingValidationDump>>();
 
         let held_entries = dht.get_all_held_entry_addresses().clone();
-        context.end_flame_guard("state_dump");
+
         StateDump {
             queued_calls,
             running_calls,
@@ -94,11 +96,12 @@ impl From<Arc<Context>> for StateDump {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn address_to_content_and_type(
     address: &Address,
     context: Arc<Context>,
 ) -> Result<(String, String), HolochainError> {
-    context.add_flame_guard("address_to_content_and_type");
     let raw_content = context
         .dht_storage
         .read()?
@@ -123,10 +126,8 @@ pub fn address_to_content_and_type(
             }
             _ => entry.content().to_string(),
         };
-        context.end_flame_guard("address_to_content_and_type");
         Ok((entry_type, content))
     } else {
-        context.end_flame_guard("address_to_content_and_type");
         Ok((String::from("UNKNOWN"), raw_content.to_string()))
     }
 }

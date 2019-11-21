@@ -15,6 +15,8 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 use std::sync::Arc;
 
 /// Get Entry workflow
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,

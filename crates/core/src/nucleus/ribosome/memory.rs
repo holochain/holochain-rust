@@ -32,6 +32,8 @@ pub struct WasmPageManager {
 /// In the future, to handle bigger memory needs, we could do same with an i64 instead
 /// and handle multiple memory Pages.
 impl WasmPageManager {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(wasm_instance: &ModuleRef) -> Self {
         // get wasm memory reference from module
         let wasm_memory = wasm_instance
@@ -48,6 +50,8 @@ impl WasmPageManager {
     }
 
     /// Allocate on stack without writing in it
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn allocate(&mut self, length: Length) -> AllocationResult {
         let allocation = self.stack.next_allocation(length)?;
         let top = self.stack.allocate(allocation)?;
@@ -55,6 +59,8 @@ impl WasmPageManager {
     }
 
     /// Write data on top of stack
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn write(&mut self, data: &[u8]) -> AllocationResult {
         if data.len() as MemoryBits > WasmAllocation::max() {
             return Err(AllocationError::OutOfBounds);
@@ -87,6 +93,8 @@ impl WasmPageManager {
     }
 
     /// Read data somewhere in stack
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn read(&self, allocation: WasmAllocation) -> Vec<u8> {
         self.wasm_memory
             .get(

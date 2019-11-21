@@ -20,6 +20,8 @@ use holochain_core_types::{
 use snowflake;
 use std::{pin::Pin, sync::Arc, vec::Vec};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
     context: Arc<Context>,
@@ -179,6 +181,8 @@ pub async fn build_validation_package<'a>(
 }
 
 // given a slice of headers return the entries for those marked public
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn public_chain_entries_from_headers(
     context: &Arc<Context>,
     headers: &[ChainHeader],
@@ -204,6 +208,8 @@ fn public_chain_entries_from_headers(
         .collect::<Vec<_>>()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn all_chain_headers_before_header(
     context: &Arc<Context>,
     header: &ChainHeader,
@@ -223,9 +229,11 @@ pub struct ValidationPackageFuture {
     error: Option<HolochainError>,
 }
 
+
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
             return Poll::Ready(Err(err));

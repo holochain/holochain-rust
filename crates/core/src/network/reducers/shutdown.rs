@@ -10,6 +10,9 @@ use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol
 use log::error;
 use std::{thread::sleep, time::Duration};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_shutdown(
     state: &mut NetworkState,
     _root_state: &State,

@@ -54,6 +54,8 @@ pub struct Sim2hWorker {
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn wire_message_into_escaped_string(message: &WireMessage) -> String {
     match message {
         WireMessage::Ping => String::from("\\\"Ping\\\""),
@@ -70,11 +72,15 @@ fn wire_message_into_escaped_string(message: &WireMessage) -> String {
 }
 
 impl Sim2hWorker {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
     }
 
     /// Create a new worker connected to the sim2h instance
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(
         handler: NetHandler,
         config: Sim2hConfig,
@@ -128,7 +134,8 @@ impl Sim2hWorker {
 
         Ok(instance)
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn try_connect(&mut self, timeout: Duration) -> NetResult<ConnectionStatus> {
         let url: url::Url = self.server_url.clone().into();
         let clock = std::time::SystemTime::now();
@@ -156,6 +163,8 @@ impl Sim2hWorker {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         self.time_of_last_sent = Instant::now();
         let payload = wire_message_into_escaped_string(&message);
@@ -182,6 +191,8 @@ impl Sim2hWorker {
     }
 
     #[allow(dead_code)]
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn handle_client_message(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         match data {
             // Success response to a request (any Command with an `request_id` field.)
@@ -313,6 +324,8 @@ impl Sim2hWorker {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {
         match message {
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
@@ -357,12 +370,16 @@ impl Sim2hWorker {
 impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.inbox.push(data);
         Ok(())
     }
 
     /// Check for messages from our NetworkEngine
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn tick(&mut self) -> NetResult<bool> {
         let clock = std::time::SystemTime::now();
 

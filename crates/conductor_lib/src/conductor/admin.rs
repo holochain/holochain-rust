@@ -79,6 +79,8 @@ impl ConductorAdmin for Conductor {
     /// and will be injected in the dna package prior to installation. Existing properties will also be kept and
     /// overriden by the passed properties in the case of collisions. This will change the dna hash!
     /// (Note injecting properties requires that copy=true)
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn install_dna_from_file(
         &mut self,
         path: PathBuf,
@@ -148,6 +150,8 @@ impl ConductorAdmin for Conductor {
     /// Also removes all instances and their mentions from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.dnas = new_config
@@ -188,6 +192,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn add_instance(
         &mut self,
         id: &String,
@@ -226,6 +232,8 @@ impl ConductorAdmin for Conductor {
     /// Also removes all mentions of that instance from all interfaces to not render the config
     /// invalid.
     /// Then saves the config.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -252,6 +260,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if new_config.interfaces.iter().any(|i| i.id == interface.id) {
@@ -269,6 +279,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -300,6 +312,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn add_instance_to_interface(
         &mut self,
         interface_id: &String,
@@ -352,6 +366,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn remove_instance_from_interface(
         &mut self,
         interface_id: &String,
@@ -404,6 +420,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+   #[flame]
     fn add_agent(
         &mut self,
         id: String,
@@ -475,6 +493,8 @@ impl ConductorAdmin for Conductor {
         Ok(public_address)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if !new_config.agents.iter().any(|i| i.id == *id) {
@@ -522,6 +542,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if new_config
@@ -553,6 +575,8 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn remove_bridge(
         &mut self,
         caller_id: &String,

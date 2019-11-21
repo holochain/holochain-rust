@@ -35,6 +35,8 @@ impl Lib3hWorker {
 /// Constructors
 impl Lib3hWorker {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn with_wss_transport(handler: NetHandler, real_config: EngineConfig) -> NetResult<Self> {
         Ok(Lib3hWorker {
             handler,
@@ -53,6 +55,8 @@ impl Lib3hWorker {
     }
 
     /// Create a new memory worker connected to the lib3h NetworkEngine
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn with_memory_transport(
         handler: NetHandler,
         real_config: EngineConfig,
@@ -78,6 +82,8 @@ impl Lib3hWorker {
 impl NetWorker for Lib3hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         self.net_engine.post(data.clone())?;
         // Done
@@ -85,6 +91,8 @@ impl NetWorker for Lib3hWorker {
     }
 
     /// Check for messages from our NetworkEngine
+    #[cfg(not(target_arch = "wasm32"))]
+   #[flame]
     fn tick(&mut self) -> NetResult<bool> {
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;

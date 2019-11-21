@@ -38,6 +38,8 @@ pub struct P2pNetwork {
 impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module `handler` is the closure for handling Protocol messages received from the network module.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(
         mut handler: NetHandler,
         p2p_config: P2pConfig,
@@ -168,6 +170,8 @@ impl P2pNetwork {
         Ok(P2pNetwork { connection })
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn should_wait_for_p2p_ready(p2p_config: &P2pConfig) -> bool {
         match p2p_config.backend_kind {
             P2pBackendKind::LIB3H
@@ -179,6 +183,8 @@ impl P2pNetwork {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn wait_p2p_ready(rx: &crossbeam_channel::Receiver<Lib3hServerProtocol>) {
         let maybe_message = rx.recv_timeout(Duration::from_millis(P2P_READY_TIMEOUT_MS));
         match maybe_message {

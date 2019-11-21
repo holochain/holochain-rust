@@ -7,6 +7,9 @@ use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn reduce_query_inner(
     network_state: &mut NetworkState,
     key: QueryKey,
@@ -29,6 +32,10 @@ fn reduce_query_inner(
         }),
     )
 }
+
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_query(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -57,6 +64,9 @@ pub fn reduce_query(
         .insert(key_type.clone(), result);
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_query_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,

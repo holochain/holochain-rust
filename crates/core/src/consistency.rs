@@ -98,6 +98,8 @@ pub struct ConsistencyModel {
     context: Arc<Context>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 impl ConsistencyModel {
     pub fn new(context: Arc<Context>) -> Self {
         Self {

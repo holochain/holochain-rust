@@ -84,7 +84,8 @@ impl AddressableContent for DhtStoreSnapshot {
         DHT_STORE_SNAPSHOT_ADDRESS.into()
     }
 }
-
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn create_get_links_eavi_query<'a>(
     address: Address,
     link_type: String,
@@ -142,6 +143,8 @@ impl DhtStore {
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_links(
         &self,
         address: Address,
@@ -161,6 +164,8 @@ impl DhtStore {
             .collect())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_all_metas(
         &self,
         address: &Address,
@@ -183,6 +188,8 @@ impl DhtStore {
 
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
         self.meta_storage
             .read()
@@ -216,6 +223,8 @@ impl DhtStore {
     }
 
     /// Add an entry and header to the CAS and EAV, respectively
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn add_header_for_entry(
         &mut self,
         entry: &Entry,

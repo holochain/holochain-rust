@@ -32,6 +32,8 @@ pub struct PassphraseManager {
 }
 
 impl PassphraseManager {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>) -> Self {
         let (kill_switch_tx, kill_switch_rx) = unbounded::<()>();
         let pm = PassphraseManager {
@@ -104,6 +106,8 @@ impl Drop for PassphraseManager {
 
 pub struct PassphraseServiceCmd {}
 impl PassphraseService for PassphraseServiceCmd {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
         // Prompt for passphrase
         print!("Passphrase: ");
@@ -142,6 +146,8 @@ pub struct PassphraseServiceUnixSocket {
 
 #[cfg(unix)]
 impl PassphraseServiceUnixSocket {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(path: String) -> Self {
         let stream = Arc::new(Mutex::new(None));
         let stream_clone = stream.clone();
@@ -169,6 +175,8 @@ impl Drop for PassphraseServiceUnixSocket {
 
 #[cfg(unix)]
 impl PassphraseService for PassphraseServiceUnixSocket {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn request_passphrase(&self) -> Result<SecBuf, HolochainError> {
         log_debug!("Passphrase needed. Using unix socket passphrase service...");
         while self.stream.lock().unwrap().is_none() {

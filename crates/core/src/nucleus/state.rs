@@ -52,6 +52,8 @@ impl Serialize for PendingValidationKey {
 }
 
 struct PendingValidationKeyStringVisitor;
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 impl<'de> Visitor<'de> for PendingValidationKeyStringVisitor {
     type Value = PendingValidationKey;
 

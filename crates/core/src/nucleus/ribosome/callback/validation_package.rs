@@ -20,6 +20,8 @@ use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use std::{convert::TryFrom, sync::Arc};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn get_validation_package_definition(
     entry: &Entry,
     context: Arc<Context>,

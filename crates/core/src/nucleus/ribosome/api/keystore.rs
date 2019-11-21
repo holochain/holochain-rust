@@ -13,6 +13,8 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn conductor_callback<S: Into<String>>(
     method: S,
     params: S,

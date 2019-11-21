@@ -28,6 +28,8 @@ pub enum QueryMethod {
     Link(GetLinksArgs, GetLinksNetworkQuery),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn query(
     context: Arc<Context>,
     method: QueryMethod,
@@ -90,6 +92,9 @@ pub struct QueryFuture {
 impl Future for QueryFuture {
     type Output = HcResult<NetworkQueryResult>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetEntryFuture") {
             return Poll::Ready(Err(err));

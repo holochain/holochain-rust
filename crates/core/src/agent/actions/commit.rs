@@ -14,6 +14,8 @@ use std::{pin::Pin, sync::Arc};
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn commit_entry(
     entry: Entry,
     maybe_link_update_delete: Option<Address>,
@@ -42,6 +44,8 @@ pub struct CommitFuture {
 impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("CommitFuture") {
             return Poll::Ready(Err(err));

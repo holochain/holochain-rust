@@ -7,6 +7,8 @@ use crate::{
 
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn queue_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
     let action_wrapper = ActionWrapper::new(Action::QueueHoldingWorkflow(pending));
     dispatch_action(context.action_channel(), action_wrapper.clone());

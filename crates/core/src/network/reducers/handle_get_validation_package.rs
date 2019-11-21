@@ -1,5 +1,8 @@
 use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_handle_get_validation_package(
     network_state: &mut NetworkState,
     _root_state: &State,

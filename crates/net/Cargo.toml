@@ -48,6 +48,11 @@ parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
 holochain_logging = "=0.0.4"
 log = "0.4.8"
+[target.'cfg(linux)'.dependencies]
+[target.'cfg(windows)'.dependencies]
+[target.'cfg(unix)'.dependencies]
+flame = "0.2.2"
+flamer = "0.3"
 
 [features]
 

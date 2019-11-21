@@ -117,6 +117,8 @@ impl ConductorApiBuilder {
 
     /// Internal function for 'call' api method. Having it in its own function makes it easier to see
     /// in backtraces
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn method_call(
         params: jsonrpc_core::Params,
         instances: InstanceMap,

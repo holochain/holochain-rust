@@ -5,6 +5,9 @@ use crate::{
 };
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_respond_authoring_list(
     network_state: &mut NetworkState,
     _root_state: &State,

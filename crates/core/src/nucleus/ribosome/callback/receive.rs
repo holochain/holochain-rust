@@ -17,6 +17,8 @@ use std::sync::Arc;
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct ReceiveReturnValue(Result<String, String>);
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn receive(
     context: Arc<Context>,
     zome: &str,

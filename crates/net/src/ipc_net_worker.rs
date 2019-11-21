@@ -42,6 +42,8 @@ pub struct IpcNetWorker {
 /// Constructors
 impl IpcNetWorker {
     /// Public Constructor with config as a json string
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(
         handler: NetHandler,
         config: &JsonString,
@@ -86,6 +88,8 @@ impl IpcNetWorker {
     }
 
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn priv_new_with_spawn(
         handler: NetHandler,
         work_dir: String,
@@ -110,6 +114,8 @@ impl IpcNetWorker {
     }
 
     /// Constructor without config
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn priv_new(
         handler: NetHandler,
         ipc_uri: String,
@@ -145,6 +151,8 @@ impl IpcNetWorker {
 
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn stop(mut self: Box<Self>) -> NetResult<()> {
         // Nothing to do if sub-process already terminated
         if self.last_known_state == "terminated" {
@@ -162,6 +170,8 @@ impl NetWorker for IpcNetWorker {
 
     /// we got a message from holochain core
     /// (just forwards to the internal worker relay)
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
         let data = serde_json::to_string_pretty(&data)?;
         self.wss_socket.send_all(data.as_bytes())?;
@@ -170,6 +180,8 @@ impl NetWorker for IpcNetWorker {
 
     /// do some upkeep on the internal worker
     /// IPC server state handling / magic
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn tick(&mut self) -> NetResult<bool> {
         let (did_work, evt_lst) = self.wss_socket.poll()?;
         if evt_lst.len() > 0 {

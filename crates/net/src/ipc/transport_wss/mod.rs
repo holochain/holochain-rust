@@ -82,6 +82,8 @@ pub struct TransportWss<T: Read + Write + std::fmt::Debug> {
 
 impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     /// connect to a remote websocket service
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn connect(&mut self, uri: &str) -> TransportResult<TransportId> {
         let uri = url::Url::parse(uri)?;
         let host_port = format!(
@@ -113,6 +115,8 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     }
 
     /// close all currently tracked connections
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn close_all(&mut self) -> TransportResult<()> {
         let mut errors: Vec<TransportError> = Vec::new();
 
@@ -182,6 +186,8 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
     }
 
     /// connect and wait for a Connect event response
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn wait_connect(&mut self, uri: &str) -> TransportResult<TransportId> {
         // Launch connection attempt
         let transport_id = self.connect(&uri)?;
@@ -219,6 +225,8 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
     }
 
     // see if any work needs to be done on our stream sockets
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn priv_process_stream_sockets(&mut self) -> TransportResult<bool> {
         let mut did_work = false;
 
@@ -250,6 +258,8 @@ impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
     }
 
     // process the state machine of an individual socket stream
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn priv_process_socket(
         &mut self,
         did_work: &mut bool,

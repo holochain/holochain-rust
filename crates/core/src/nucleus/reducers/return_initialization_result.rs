@@ -9,6 +9,8 @@ use crate::{
 /// otherwise set the failed message
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_return_initialization_result(
     state: &mut NucleusState,
     _root_state: &State,

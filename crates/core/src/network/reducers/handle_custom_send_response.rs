@@ -1,6 +1,9 @@
 use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 use holochain_core_types::error::HolochainError;
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_handle_custom_send_response(
     network_state: &mut NetworkState,
     _root_state: &State,

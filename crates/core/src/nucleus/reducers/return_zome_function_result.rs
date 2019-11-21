@@ -6,6 +6,8 @@ use crate::{
 
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_return_zome_function_result(
     state: &mut NucleusState,
     _root_state: &State,

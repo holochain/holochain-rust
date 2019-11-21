@@ -28,7 +28,6 @@ pub async fn author_entry<'a>(
     context: &'a Arc<Context>,
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
-    context.add_flame_guard("author_entry");
     let address = entry.address();
     log_debug!(
         context,
@@ -105,7 +104,6 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: header published!",
         address
     );
-    context.end_flame_guard("author_entry");
     Ok(CommitEntryResult::new(addr))
 }
 // TODO: Bring the old in-memory network up to speed and turn on this test again!

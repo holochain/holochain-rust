@@ -28,6 +28,8 @@ pub struct Initialization {
     payload: Option<String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 impl Initialization {
     pub fn new() -> Initialization {
         Initialization::default()
@@ -49,6 +51,9 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// the Dna error or errors from the init callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn initialize_chain(
     dna: Dna,
     context: &Arc<Context>,
@@ -186,9 +191,12 @@ pub struct InitializationFuture {
     created_at: Instant,
 }
 
+
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("InitializationFuture") {
             return Poll::Ready(Err(err));

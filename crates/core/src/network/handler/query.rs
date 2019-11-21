@@ -23,6 +23,9 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn get_links(
     context: &Arc<Context>,
     base: Address,
@@ -128,6 +131,9 @@ fn get_links(
     }
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
     nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
         .map(|entry_with_meta_opt| {
@@ -165,6 +171,9 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json =
         JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
@@ -210,6 +219,9 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 
 /// The network comes back with a result to our previous query with a result, so we
 /// examine the query result for its type and dispatch different actions according to variant
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
     let query_result_json = JsonString::from_json(
         std::str::from_utf8(&*query_result_data.clone().query_result).unwrap(),

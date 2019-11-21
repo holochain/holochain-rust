@@ -59,6 +59,8 @@ impl ChainStore {
     /// Scans the local chain for the first Entry of EntryType, and then creates a
     /// ChainStoreTypeIter to return the sequence of all Entrys with the same EntryType. Requires a
     /// single EntryType.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn iter_type(
         &self,
         start_chain_header: &Option<ChainHeader>,
@@ -99,6 +101,8 @@ impl ChainStore {
     }
 
     // Supply a None for options to get defaults (all elements, no ChainHeaders just Addresses)
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn query(
         &self,
         start_chain_header: &Option<ChainHeader>,
@@ -245,6 +249,8 @@ impl Iterator for ChainStoreIterator {
     type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
         let storage = &self.content_storage.clone();
@@ -300,6 +306,8 @@ impl Iterator for ChainStoreTypeIterator {
     type Item = ChainHeader;
 
     /// May panic if there is an underlying error in the table
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
         let storage = &self.content_storage.clone();

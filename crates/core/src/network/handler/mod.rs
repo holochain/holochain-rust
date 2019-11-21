@@ -276,6 +276,9 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 /// NB: this can be optimized by starting with a CAS lookup for the entry directly,
 /// to avoid traversing the chain unnecessarily in the case of a miss
 /// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,

@@ -23,6 +23,8 @@ use lib3h_protocol::{
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
     let type_hint = ea.type_hint();
     let aspect_address = ea.address();
@@ -37,6 +39,9 @@ pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
 }
 
 /// Send to network a PublishDhtData message
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn publish_entry(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,

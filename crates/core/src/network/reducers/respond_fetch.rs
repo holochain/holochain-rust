@@ -17,6 +17,9 @@ use lib3h_protocol::{
 
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn reduce_respond_fetch_data_inner(
     network_state: &mut NetworkState,
     fetch_data: &FetchEntryData,

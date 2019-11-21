@@ -107,6 +107,8 @@ pub struct Runtime {
 }
 
 impl Runtime {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
@@ -117,6 +119,8 @@ impl Runtime {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn callback_call_data(&self) -> Result<CallbackCallData, Trap> {
         match &self.data {
             WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
@@ -127,6 +131,8 @@ impl Runtime {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn call_data(&self) -> Result<CallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(CallData {
@@ -148,6 +154,8 @@ impl Runtime {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn context(&self) -> Result<Arc<Context>, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
@@ -163,6 +171,8 @@ impl Runtime {
     /// Input RuntimeArgs should only have one input which is the encoded allocation holding
     /// the complex data as an utf8 string.
     /// Returns the utf8 string.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn load_json_string_from_args(&self, args: &RuntimeArgs) -> JsonString {
         // @TODO don't panic in WASM
         // @see https://github.com/holochain/holochain-rust/issues/159
@@ -196,6 +206,8 @@ impl Runtime {
     /// Note that From<T> for JsonString automatically implements Into
     /// Input should be a a json string.
     /// Returns a Result suitable to return directly from a zome API function, i.e. an encoded allocation
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn store_as_json_string<J: Into<JsonString>>(&mut self, jsonable: J) -> ZomeApiResult {
         let j: JsonString = jsonable.into();
         // write str to runtime memory
@@ -211,6 +223,8 @@ impl Runtime {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn store_result<J: Into<JsonString>>(
         &mut self,
         result: Result<J, HolochainError>,

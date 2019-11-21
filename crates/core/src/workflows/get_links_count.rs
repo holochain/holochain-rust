@@ -10,11 +10,13 @@ use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResultCount};
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn get_link_result_count_workflow<'a>(
     context: Arc<Context>,
     link_args: &'a GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
-    context.add_flame_guard("get_link_result_count");  
+ 
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
     let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
 
@@ -25,7 +27,6 @@ pub async fn get_link_result_count_workflow<'a>(
         )),
     }?;
 
-    context.end_flame_guard("get_link_result_count"); 
     let links_count = match links_result {
         GetLinksNetworkResult::Count(count) => Ok(count),
         _ => Err(HolochainError::ErrorGeneric(

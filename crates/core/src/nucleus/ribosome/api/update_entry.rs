@@ -14,6 +14,8 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: UpdateEntryArgs
 /// Returns an HcApiReturnCode as I64
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

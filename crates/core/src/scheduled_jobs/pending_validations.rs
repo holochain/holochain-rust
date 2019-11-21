@@ -87,6 +87,8 @@ impl PendingValidationStruct {
 
 impl TryFrom<EntryAspect> for PendingValidationStruct {
     type Error = HolochainError;
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn try_from(aspect: EntryAspect) -> Result<PendingValidationStruct, HolochainError> {
         match aspect {
             EntryAspect::Content(entry, header) => Ok(PendingValidationStruct::new(
@@ -132,6 +134,8 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn run_holding_workflow(
     pending: &PendingValidation,
     context: Arc<Context>,

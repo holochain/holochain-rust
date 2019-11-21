@@ -21,6 +21,8 @@ impl std::fmt::Debug for Broadcaster {
 
 impl Broadcaster {
     /// Implements the actual method of sending for whichever variant of Broadcaster we have
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn send<J>(&self, msg: J) -> Result<(), HolochainError>
     where
         J: Into<JsonString>,

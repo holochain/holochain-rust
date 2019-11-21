@@ -17,6 +17,8 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation
 /// Expected Address argument
 /// Stores/returns a RibosomeEncodedValue
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
 

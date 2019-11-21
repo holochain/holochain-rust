@@ -13,6 +13,8 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn validate_remove_entry(
     entry: Entry,
     validation_data: ValidationData,

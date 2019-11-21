@@ -83,6 +83,8 @@ impl AgentState {
         self.chain_store.iter(&self.top_chain_header)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_agent_address(&self) -> HcResult<Address> {
         self.chain_store()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
@@ -92,6 +94,8 @@ impl AgentState {
             .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_agent(&self) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
         let maybe_agent_entry_json = self.chain_store().cas_fetch(&agent_entry_address)?;
@@ -105,6 +109,8 @@ impl AgentState {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn get_most_recent_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
         self.chain_store()
             .iter_type(&self.top_chain_header(), &entry.entry_type())
@@ -168,6 +174,8 @@ pub enum ActionResponse {
     LinkEntries(Result<Entry, HolochainError>),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
@@ -212,6 +220,8 @@ pub fn create_new_chain_header(
 /// Create an entry-with-header for a header.
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
@@ -226,6 +236,8 @@ pub fn create_entry_with_header_for_header(
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn reduce_commit_entry(
     agent_state: &mut AgentState,
     root_state: &State,
@@ -257,6 +269,8 @@ fn reduce_commit_entry(
 }
 
 /// maps incoming action to the correct handler
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -265,6 +279,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 }
 
 /// Reduce Agent's state according to provided Action
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce(
     old_state: Arc<AgentState>,
     root_state: &State,

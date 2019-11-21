@@ -15,6 +15,8 @@ use std::{pin::Pin, sync::Arc};
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn add_link(link: &LinkData, context: &Arc<Context>) -> AddLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -30,11 +32,13 @@ pub struct AddLinkFuture {
     action: ActionWrapper,
 }
 
+
 impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.add_flame_guard("AddLinkFuture");
         if let Some(err) = self.context.action_channel_error("AddLinkFuture") {
             return Poll::Ready(Err(err));
         }
@@ -44,14 +48,12 @@ impl Future for AddLinkFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            self.context.end_flame_guard("AddLinkFuture");
             match state.dht().actions().get(&self.action) {
                 Some(Ok(_)) => Poll::Ready(Ok(())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),
                 None => Poll::Pending,
             }
         } else {
-            self.context.end_flame_guard("AddLinkFuture");
             Poll::Pending
         }
     }

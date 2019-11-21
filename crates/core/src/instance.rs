@@ -1,3 +1,5 @@
+
+
 use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
@@ -61,7 +63,7 @@ impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
-        context.add_flame_guard("instance_inner_setup");
+
         let (rx_action, rx_observer) = self.initialize_channels();
         let context = self.initialize_context(context);
         let mut scheduler = Scheduler::new();
@@ -76,20 +78,24 @@ impl Instance {
         self.persister = Some(context.persister.clone());
 
         self.start_action_loop(context.clone(), rx_action, rx_observer);
-        context.add_flame_guard("instance_inner_setup");
         context
     }
 
     /// This is calling inner_setup and running the initialization workflow which makes sure that
     /// the chain gets initialized if dna is Some.
     /// If dna is None it is assumed the chain is already initialized, i.e. we are loading a chain.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn initialize(
         &mut self,
         dna: Option<Dna>,
         context: Arc<Context>,
     ) -> HcResult<Arc<Context>> {
-        let context = self.inner_setup(context);
-        context.block_on(application::initialize(self, dna, context.clone()))
+
+        let context = self.inner_setup(context.clone());
+        let result = context.block_on(application::initialize(self, dna, context.clone()));
+
+        result
     }
 
     /// This function is only needed in tests to create integration tests in which an instance
@@ -140,11 +146,15 @@ impl Instance {
     /// # Panics
     ///
     /// Panics if called before `start_action_loop`.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
         dispatch_action(self.action_channel(), action_wrapper)
     }
 
     /// Returns recievers for actions and observers that get added to this instance
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
         let (tx_action, rx_action) = unbounded::<ActionWrapper>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
@@ -153,7 +163,8 @@ impl Instance {
 
         (rx_action, rx_observer)
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
         let mut sub_context = (*context).clone();
         sub_context.set_state(self.state.clone());
@@ -163,16 +174,19 @@ impl Instance {
     }
 
     /// Start the Event Loop on a separate thread
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn start_action_loop(
         &mut self,
         context: Arc<Context>,
         rx_action: Receiver<ActionWrapper>,
         rx_observer: Receiver<Observer>,
     ) {
+
         self.stop_action_loop();
 
         let mut sync_self = self.clone();
-        let sub_context = self.initialize_context(context);
+        let sub_context = self.initialize_context(context.clone());
 
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
@@ -227,6 +241,8 @@ impl Instance {
 
     /// Calls the reducers for an action and calls the observers with the new state
     /// returns the new vector of observers
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub(crate) fn process_action(
         &self,
         action_wrapper: &ActionWrapper,
@@ -268,6 +284,8 @@ impl Instance {
         Ok(())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub(crate) fn emit_signals(&mut self, context: &Context, action_wrapper: &ActionWrapper) {
         if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
@@ -298,6 +316,8 @@ impl Instance {
     }
 
     /// Creates a new Instance with no channels set up.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
@@ -309,7 +329,8 @@ impl Instance {
             kill_switch: None,
         }
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(StateWrapper::from(state))),
@@ -321,7 +342,6 @@ impl Instance {
             kill_switch: None,
         }
     }
-
     pub fn state(&self) -> RwLockReadGuard<StateWrapper> {
         self.state
             .read()

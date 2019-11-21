@@ -9,6 +9,8 @@ use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn hold_entry(
     entry_wh: &EntryWithHeader,
     context: Arc<Context>,
@@ -24,11 +26,15 @@ pub struct HoldEntryFuture {
     address: Address,
 }
 
+
 impl Future for HoldEntryFuture {
     type Output = Result<Address, HolochainError>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        self.context.add_flame_guard("HoldLinkFuture");
+
         if let Some(err) = self.context.action_channel_error("HoldEntryFuture") {
             return Poll::Ready(Err(err));
         }
@@ -38,14 +44,12 @@ impl Future for HoldEntryFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            self.context.end_flame_guard("HoldLinkFuture");
             if state.dht().cas_contains(&self.address).unwrap() {
                 Poll::Ready(Ok(self.address.clone()))
             } else {
                 Poll::Pending
             }
         } else {
-            self.context.end_flame_guard("HoldLinkFuture");
             Poll::Pending
         }
     }

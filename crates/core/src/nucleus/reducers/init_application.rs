@@ -9,6 +9,8 @@ use crate::{
 /// already initialized, or initializing instance.
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_initialize_chain(
     state: &mut NucleusState,
     _root_state: &State,

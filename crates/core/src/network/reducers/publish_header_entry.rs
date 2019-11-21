@@ -21,6 +21,9 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a request to publish a header entry alone
 /// This is similar to publishing a regular entry but it has its own special dummy header.
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn publish_header(
     network_state: &mut NetworkState,
     root_state: &State,

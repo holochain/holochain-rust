@@ -43,3 +43,8 @@ chrono = "=0.4.6"
 native-tls = "=0.2.2"
 openssl = "=0.10.25"
 tungstenite = "=0.9.1"
+[target.'cfg(linux)'.dependencies]
+[target.'cfg(windows)'.dependencies]
+[target.'cfg(unix)'.dependencies]
+flame = "0.2.2"
+flamer = "0.3"

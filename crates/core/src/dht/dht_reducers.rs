@@ -20,6 +20,8 @@ type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<DhtStore> {
     // Get reducer
     let reducer = match resolve_reducer(action_wrapper) {
@@ -36,6 +38,8 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 }
 
 /// Maps incoming action to the correct reducer
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -50,6 +54,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_commit_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -65,6 +71,8 @@ pub(crate) fn reduce_commit_entry(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_hold_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -84,6 +92,8 @@ pub(crate) fn reduce_hold_entry(
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_add_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -101,6 +111,8 @@ pub(crate) fn reduce_add_link(
     Some(new_store)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_remove_link(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -124,6 +136,8 @@ pub(crate) fn reduce_remove_link(
     Some(store)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_update_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -135,6 +149,8 @@ pub(crate) fn reduce_update_entry(
     Some(new_store)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_remove_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -148,6 +164,8 @@ pub(crate) fn reduce_remove_entry(
 }
 
 #[allow(dead_code)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub(crate) fn reduce_get_links(
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
@@ -158,6 +176,8 @@ pub(crate) fn reduce_get_links(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_queue_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -173,6 +193,8 @@ pub fn reduce_queue_holding_workflow(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_pop_next_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,

@@ -14,6 +14,8 @@ use std::{pin::Pin, sync::Arc, thread};
 /// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection
 /// by sending the given CustomDirectMessage and preparing to receive a response.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn custom_send(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
@@ -55,6 +57,9 @@ pub struct SendResponseFuture {
 impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
             return Poll::Ready(Err(err));

@@ -9,6 +9,9 @@ use lib3h_protocol::{
     data_types::DirectMessageData as Lib3hDirectMessageData, protocol_client::Lib3hClientProtocol,
 };
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,

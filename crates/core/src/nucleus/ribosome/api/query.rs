@@ -61,6 +61,8 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// `*`         Zero or more of any character
 /// `**/`       Zero or more of any namespace component
 ///
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args.
@@ -154,6 +156,8 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 }
 
 /// Get an local-chain Entry via the provided context, returning Entry or HolochainError on failure
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,

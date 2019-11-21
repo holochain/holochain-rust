@@ -6,6 +6,8 @@ use holochain_core_types::chain_header::ChainHeader;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 fn header_to_string(h: &ChainHeader) -> String {
     format!(
         r#"===========Header===========
@@ -42,6 +44,8 @@ fn address_to_content_string(address: &Address, context: Arc<Context>) -> String
         })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn state_dump(context: Arc<Context>) {
     let dump = StateDump::from(context.clone());
 

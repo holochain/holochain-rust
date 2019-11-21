@@ -40,6 +40,8 @@ impl PartialEq for SimplePersister {
 }
 
 impl Persister for SimplePersister {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write()?;
@@ -51,8 +53,11 @@ impl Persister for SimplePersister {
         store.add(&dht_store_snapshot)?;
         Ok(())
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
-        context.clone().add_flame_guard("persister-load");
+
         let lock = &*self.storage.clone();
         let store = lock.read().unwrap();
 
@@ -78,7 +83,6 @@ impl Persister for SimplePersister {
             });
 
         if agent_snapshot.is_none() || nucleus_snapshot.is_none() || dht_store_snapshot.is_none() {
-            context.end_flame_guard("persister-load");
             return Ok(None);
         }
 
@@ -88,7 +92,6 @@ impl Persister for SimplePersister {
             nucleus_snapshot.unwrap(),
             dht_store_snapshot.unwrap(),
         ).ok();
-        context.end_flame_guard("persister-load");
         Ok(state)
     }
 }

@@ -8,6 +8,8 @@ pub trait CanPublish {
 }
 
 impl CanPublish for EntryType {
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn can_publish(&self, context: &Context) -> bool {
         match self {
             EntryType::Dna | EntryType::CapTokenGrant | EntryType::CapTokenClaim => return false,

@@ -17,6 +17,9 @@ use lib3h_protocol::{
 };
 use std::{collections::HashMap, sync::Arc};
 
+
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
             let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();

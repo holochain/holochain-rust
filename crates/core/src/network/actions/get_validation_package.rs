@@ -19,6 +19,8 @@ use std::{pin::Pin, sync::Arc};
 ///
 /// Returns a future that resolves to Option<ValidationPackage> (or HolochainError).
 /// If that is None this means that we couldn't get a validation package from the source.
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn get_validation_package(
     header: ChainHeader,
     context: &Arc<Context>,
@@ -44,6 +46,8 @@ pub struct GetValidationPackageFuture {
 impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    #[flame]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self
             .context

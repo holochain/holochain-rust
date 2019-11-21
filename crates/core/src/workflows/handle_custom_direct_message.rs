@@ -14,13 +14,14 @@ use std::sync::Arc;
 /// handles receiving a message from an api send call
 /// call the receive call back, and sends the result back to the
 /// source of the send message which is in the from_agent_id param
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub async fn handle_custom_direct_message(
     from_agent_id: Address,
     msg_id: String,
     custom_direct_message: CustomDirectMessage,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    context.add_flame_guard("handle_custom_direct_message"); 
     let zome = custom_direct_message.zome.clone();
     let payload = custom_direct_message
         .payload
@@ -34,7 +35,6 @@ pub async fn handle_custom_direct_message(
             payload,
         }),
     );
-    context.end_flame_guard("handle_custom_direct_message"); 
     let response = match result {
         CallbackResult::ReceiveResult(response) => Ok(response),
         err => Err(format!("Error calling receive callback: {:?}", err)),

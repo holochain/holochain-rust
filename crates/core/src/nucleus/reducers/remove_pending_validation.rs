@@ -10,6 +10,8 @@ use crate::{
 /// Corresponds to a prior AddPendingValidation Action.
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[cfg(not(target_arch = "wasm32"))]
+#[flame]
 pub fn reduce_remove_pending_validation(
     state: &mut NucleusState,
     _root_state: &State,

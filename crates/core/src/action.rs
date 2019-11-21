@@ -114,7 +114,7 @@ pub enum Action {
     // -------------
     /// Adds a holding workflow to the queue.
     /// With optional delay where the SystemTime is the time when the action got dispatched
-    /// and the Duration is the delay added ot that time.
+    /// and the Duration is the delay added to that time.
     QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),
 
     /// Removes the given item from the holding queue.

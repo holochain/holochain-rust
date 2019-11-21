@@ -23,6 +23,8 @@ extern crate pretty_assertions;
 extern crate log;
 #[macro_use]
 extern crate holochain_logging;
+#[macro_use]
+extern crate holochain_tracing_macros;
 
 #[macro_use]
 pub mod macros;

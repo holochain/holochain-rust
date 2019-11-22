@@ -166,16 +166,27 @@ fn create_holding_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Aspec
     address_map
 }
 
+pub fn merge_address_maps(map1: &AddressSetMap, map2: &AddressSetMap) -> AddressSetMap {
+    map1.keys()
+        .chain(map2.keys())
+        .into_iter()
+        .map(|entry| {
+            let merged = map1
+                .get(entry)
+                .unwrap_or(&HashSet::new())
+                .union(map2.get(entry).unwrap_or(&HashSet::new()))
+                .cloned()
+                .collect();
+            (entry.clone(), merged)
+        })
+        .collect()
+}
+
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
-        let mut address_map = create_authoring_map(context.clone());
+        let authoring_map = create_authoring_map(context.clone());
         let holding_map = create_holding_map(context.clone());
-        holding_map.into_iter().for_each(|(entry, set)| {
-            address_map
-                .entry(entry)
-                .or_insert_with(|| set.clone())
-                .union(&set);
-        });
+        let address_map = merge_address_maps(&authoring_map, &holding_map);
 
         let action = Action::RespondGossipList(EntryListData {
             space_address: get_list_data.space_address,
@@ -254,7 +265,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_can_holding_list() {
+    fn test_can_get_holding_list() {
         let mut dna = test_dna();
         dna.uuid = "test_can_get_holding_list".to_string();
         let (_instance, context) = instance_by_name("jill", dna, None);
@@ -262,4 +273,67 @@ pub mod tests {
         // to start with holding = authoring
         assert_eq!(authoring_map.len(), 3);
     }
+
+    #[test]
+    fn test_merge_address_maps_merges_entries() {
+        let mut map1: AddressSetMap = HashMap::new();
+        let mut map2: AddressSetMap = HashMap::new();
+        map1.insert("a".into(), vec!["x".into()].into_iter().collect());
+        map2.insert("b".into(), vec!["y".into()].into_iter().collect());
+        let merged = merge_address_maps(&map1, &map2);
+        let merged2 = merge_address_maps(&map2, &map1);
+        assert_eq!(merged, merged2);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(merged.get(&EntryHash::from("a")).unwrap().len(), 1);
+        assert_eq!(merged.get(&EntryHash::from("b")).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_merge_address_maps_merges_aspects_1() {
+        let mut map1: AddressSetMap = HashMap::new();
+        let mut map2: AddressSetMap = HashMap::new();
+        map1.insert("a".into(), vec!["x".into()].into_iter().collect());
+        map2.insert(
+            "a".into(),
+            vec!["x".into(), "y".into()].into_iter().collect(),
+        );
+        let merged = merge_address_maps(&map1, &map2);
+        let merged2 = merge_address_maps(&map1, &map2);
+        assert_eq!(merged, merged2);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged.get(&EntryHash::from("a")).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_merge_address_maps_merges_aspects_2() {
+        // Full merged outcome should be:
+        // a => x, y, z
+        // b => u, v, w
+        let mut map1: AddressSetMap = HashMap::new();
+        let mut map2: AddressSetMap = HashMap::new();
+        map1.insert(
+            "a".into(),
+            vec!["x".into(), "y".into()].into_iter().collect(),
+        );
+        map1.insert(
+            "b".into(),
+            vec!["u".into(), "v".into()].into_iter().collect(),
+        );
+
+        map2.insert(
+            "a".into(),
+            vec!["y".into(), "z".into()].into_iter().collect(),
+        );
+        map2.insert(
+            "b".into(),
+            vec!["v".into(), "w".into()].into_iter().collect(),
+        );
+        let merged = merge_address_maps(&map1, &map2);
+        let merged2 = merge_address_maps(&map2, &map1);
+        assert_eq!(merged, merged2);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(merged.get(&EntryHash::from("a")).unwrap().len(), 3);
+        assert_eq!(merged.get(&EntryHash::from("b")).unwrap().len(), 3);
+    }
+
 }

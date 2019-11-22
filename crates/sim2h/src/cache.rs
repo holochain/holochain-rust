@@ -74,7 +74,7 @@ impl Space {
         self.missing_aspects.keys().cloned().collect()
     }
 
-    /// Returns true if the given agent agent is missing all of the given aspects for the given entry.
+    /// Returns true if the given agent is missing all of the given aspects for the given entry.
     /// That is: if all of the aspects are stored as missing for that agent.
     /// If one of the given aspects is not in that vector of missing entries, the agent is supposed
     /// to have it and this function returns fals.

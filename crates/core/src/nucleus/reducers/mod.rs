@@ -1,11 +1,11 @@
 pub mod init_application;
-pub mod invoke_hdk_function;
 pub mod queue_zome_function_call;
-pub mod return_hdk_function;
 pub mod return_initialization_result;
 pub mod return_validation_package;
 pub mod return_validation_result;
 pub mod return_zome_function_result;
+pub mod trace_invoke_hdk_function;
+pub mod trace_return_hdk_function;
 
 use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},

@@ -223,9 +223,11 @@ pub enum Action {
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
-    InvokeHdkFunction((ZomeFnCall, HdkFnCall)),
+    /// Let the State track that a zome call has called an HDK function
+    TraceInvokeHdkFunction((ZomeFnCall, HdkFnCall)),
 
-    ReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
+    /// Let the State track that an HDK function called by a zome call has returned
+    TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context

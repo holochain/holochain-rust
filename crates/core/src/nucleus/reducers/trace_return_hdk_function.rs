@@ -6,14 +6,14 @@ use crate::{
 
 /// Reduce ReturnHdkFunction Action.
 /// Updates HDK call state with result of api call
-pub fn reduce_return_hdk_function(
+pub fn reduce_trace_return_hdk_function(
     state: &mut NucleusState,
     _root_state: &State,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (zome_fn_call, hdk_fn_call, hdk_fn_call_result) =
-        unwrap_to!(action => Action::ReturnHdkFunction);
+        unwrap_to!(action => Action::TraceReturnHdkFunction);
     state
         .hdk_function_calls
         .get_mut(zome_fn_call)

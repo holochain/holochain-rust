@@ -8,7 +8,7 @@ macro_rules! link_zome_api {
     ) => {
 
         use crate::nucleus::{
-            actions::{invoke_hdk_function::invoke_hdk_function, return_hdk_function::return_hdk_function},
+            actions::{trace_invoke_hdk_function::trace_invoke_hdk_function, trace_return_hdk_function::trace_return_hdk_function},
             ribosome::runtime::WasmCallData,
             HdkFnCall,
         };
@@ -81,11 +81,11 @@ macro_rules! link_zome_api {
                                 let zome_api_call = zome_call_data.call;
                                 let parameters = runtime.load_json_string_from_args(&args);
                                 let hdk_fn_call = HdkFnCall { function: self.clone(), parameters };
-                                invoke_hdk_function(zome_api_call.clone(), hdk_fn_call.clone(), &context);
+                                trace_invoke_hdk_function(zome_api_call.clone(), hdk_fn_call.clone(), &context);
                                 let result = $function_name(runtime, args);
                                 // let hdk_fn_result = result.clone().map(|r| JsonString::from(format!("{:?} (TODO)", r).as_str())).map_err(|e| e.to_string());
                                 let hdk_fn_result = Ok(JsonString::from("TODO"));
-                                return_hdk_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
+                                trace_return_hdk_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
                                 result
                             } else {
                                 error!("Can't record zome call hdk invocations for non zome call");

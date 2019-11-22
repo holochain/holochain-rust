@@ -6,7 +6,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-pub fn return_hdk_function(
+pub fn trace_return_hdk_function(
     zome_fn_call: ZomeFnCall,
     hdk_fn_call: HdkFnCall,
     hdk_fn_call_result: HdkFnCallResult,
@@ -14,7 +14,7 @@ pub fn return_hdk_function(
 ) {
     dispatch_action(
         context.action_channel(),
-        ActionWrapper::new(Action::ReturnHdkFunction((
+        ActionWrapper::new(Action::TraceReturnHdkFunction((
             zome_fn_call,
             hdk_fn_call,
             hdk_fn_call_result,

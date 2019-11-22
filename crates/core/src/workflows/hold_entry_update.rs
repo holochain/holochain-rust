@@ -4,13 +4,7 @@ use crate::{
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 
-use crate::{
-    nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::ValidationError,
-    },
-    scheduled_jobs::pending_validations::ValidatingWorkflow,
-    workflows::validation_package,
-};
+use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     validation::{EntryLifecycle, ValidationData},
@@ -30,12 +24,6 @@ pub async fn hold_update_workflow(
             let message = "Could not get validation package from source! -> Add to pending...";
             log_debug!(context, "workflow/hold_update: {}", message);
             log_debug!(context, "workflow/hold_update: Error was: {:?}", err);
-            add_pending_validation(
-                entry_with_header.to_owned(),
-                Vec::new(),
-                ValidatingWorkflow::UpdateEntry,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package
@@ -62,12 +50,6 @@ pub async fn hold_update_workflow(
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_update: Entry update could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            add_pending_validation(
-                entry_with_header.to_owned(),
-                dependencies.clone(),
-                ValidatingWorkflow::UpdateEntry,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_update: Entry update {:?} is NOT valid! Validation error: {:?}",

@@ -45,7 +45,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::AddLink(_) => Some(reduce_add_link),
         Action::RemoveLink(_) => Some(reduce_remove_link),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
-        Action::PopNextHoldingWorkflow(_) => Some(reduce_pop_next_holding_workflow),
+        Action::RemoveQueuedHoldingWorkflow(_) => Some(reduce_remove_queued_holding_workflow),
         _ => None,
     }
 }
@@ -173,20 +173,24 @@ pub fn reduce_queue_holding_workflow(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
-pub fn reduce_pop_next_holding_workflow(
+pub fn reduce_remove_queued_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let pending = unwrap_to!(action => Action::PopNextHoldingWorkflow);
+    let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let Some(popped) = new_store.queued_holding_workflows.pop_front() {
-        // Gotta make sure we are only popping the head that the creator
-        // of the action assumed to be the head.
-        // If the head changed in between because somebody else has popped
-        // the former item already, we need to put it back!
-        if popped != *pending {
-            new_store.queued_holding_workflows.push_front(popped);
+    if let Some((front, _)) = new_store.queued_holding_workflows.front() {
+        if front == pending {
+            let _ = new_store.queued_holding_workflows.pop_front();
+        } else {
+            // The first item in the queue could be a delayed one which will result
+            // in the holding thread seeing another item as the next one.
+            // The holding thread will still try to pop that next item, so we need
+            // this else case where we just remove an item from some position inside the queue:
+            new_store
+                .queued_holding_workflows
+                .retain(|(item, _)| item != pending);
         }
     } else {
         error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
@@ -200,14 +204,20 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        content_store::{AddContent, GetContent},
         dht::{
-            dht_reducers::{reduce, reduce_hold_entry},
-            dht_store::create_get_links_eavi_query,
+            dht_reducers::{
+                reduce, reduce_hold_entry, reduce_queue_holding_workflow,
+                reduce_remove_queued_holding_workflow,
+            },
+            dht_store::{create_get_links_eavi_query, DhtStore},
+            pending_validations::{PendingValidation, PendingValidationStruct, ValidatingWorkflow},
         },
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
         state::test_store,
     };
+    use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
         chain_header::test_chain_header,
@@ -216,6 +226,7 @@ pub mod tests {
         link::{link_data::LinkData, Link, LinkActionKind},
     };
     use holochain_persistence_api::cas::content::AddressableContent;
+    use std::{sync::Arc, time::SystemTime};
 
     #[test]
     fn reduce_hold_entry_test() {
@@ -235,19 +246,14 @@ pub mod tests {
 
         assert_eq!(
             Some(sys_entry.clone()),
-            store
-                .dht()
-                .cas_fetch(&sys_entry.address())
-                .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
+            store.dht().get(&sys_entry.address()).unwrap()
         );
 
         assert_eq!(
             Some(sys_entry.clone()),
             new_dht_store
-                .cas_fetch(&sys_entry.address())
+                .get(&sys_entry.address())
                 .expect("could not fetch from cas")
-                .map(|s| Entry::try_from_content(&s).unwrap())
         );
     }
 
@@ -257,7 +263,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = (*store.dht()).clone().cas_add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -298,7 +304,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = (*store.dht()).clone().cas_add(&entry);
+        let _ = (*store.dht()).clone().add(&entry);
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -467,5 +473,71 @@ pub mod tests {
         };
 
         assert_eq!(&entry, &result_entry,);
+    }
+
+    fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
+        let entry = test_entry();
+        let entry_with_header = EntryWithHeader {
+            entry: entry.clone(),
+            header: test_chain_header(),
+        };
+
+        Arc::new(PendingValidationStruct::new(entry_with_header, workflow))
+    }
+
+    #[test]
+    pub fn test_holding_queue() {
+        let context = test_context("test", None);
+        let store = DhtStore::new(context.dht_storage.clone(), context.eav_storage.clone());
+        assert_eq!(store.queued_holding_workflows().len(), 0);
+
+        let hold = create_pending_validation(ValidatingWorkflow::HoldEntry);
+        let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
+            hold.clone(),
+            Some((SystemTime::now(), Duration::from_secs(10000))),
+        )));
+        let store = reduce_queue_holding_workflow(&store, &action).unwrap();
+
+        assert_eq!(store.queued_holding_workflows().len(), 1);
+        assert!(store.has_queued_holding_workflow(&hold));
+
+        let hold_link = create_pending_validation(ValidatingWorkflow::HoldLink);
+        let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
+        let store = reduce_queue_holding_workflow(&store, &action).unwrap();
+
+        assert_eq!(store.queued_holding_workflows().len(), 2);
+        assert!(store.has_queued_holding_workflow(&hold_link));
+
+        let update = create_pending_validation(ValidatingWorkflow::UpdateEntry);
+        let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
+        let store = reduce_queue_holding_workflow(&store, &action).unwrap();
+
+        assert_eq!(store.queued_holding_workflows().len(), 3);
+        assert!(store.has_queued_holding_workflow(&update));
+
+        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
+        assert_eq!(hold_link, *next_pending);
+
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+
+        assert_eq!(store.queued_holding_workflows().len(), 2);
+        assert!(!store.has_queued_holding_workflow(&hold_link));
+
+        assert!(store.has_queued_holding_workflow(&hold));
+        assert!(store.has_queued_holding_workflow(&update));
+
+        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
+        assert_eq!(update, *next_pending);
+
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+
+        assert_eq!(store.queued_holding_workflows().len(), 1);
+        assert!(!store.has_queued_holding_workflow(&hold));
+        assert!(store.has_queued_holding_workflow(&update));
+
+        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
+        assert_eq!(update, *next_pending);
     }
 }

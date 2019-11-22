@@ -15,7 +15,10 @@ use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
@@ -25,21 +28,34 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
             space_address: get_list_data.space_address,
             provider_agent_id: get_list_data.provider_agent_id,
             request_id: get_list_data.request_id,
-            address_map,
+            address_map: convert_address_set_map(address_map),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
     });
 }
 
-fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, Vec<AspectHash>> {
-    let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
+type AddressSetMap = HashMap<EntryHash, HashSet<AspectHash>>;
+type AddressVecMap = HashMap<EntryHash, Vec<AspectHash>>;
+fn convert_address_set_map(map: AddressSetMap) -> AddressVecMap {
+    let mut new_map = HashMap::new();
+    map.into_iter().for_each(|(entry, set)| {
+        let vec = set.into_iter().collect();
+        new_map.insert(entry, vec);
+    });
+    new_map
+}
+
+fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<AspectHash>> {
+    let mut address_map: HashMap<EntryHash, HashSet<AspectHash>> = HashMap::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
         let content_aspect = get_content_aspect(&entry_address, context.clone())
             .expect("Must be able to get content aspect of entry that is in our source chain");
-        address_map.insert(
-            EntryHash::from(entry_address.clone()),
-            vec![AspectHash::from(content_aspect.address())],
-        );
+        let mut set = HashSet::new();
+        set.insert(AspectHash::from(content_aspect.address()));
+
+        // now look up other aspects that may be associated with this entry
+        //TODO
+        address_map.insert(EntryHash::from(entry_address.clone()), set);
     }
 
     // chain header entries also should be communicated on the authoring list
@@ -57,7 +73,9 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, Vec<AspectH
             &Vec::new(),
         ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
         let content_aspect = EntryAspect::Content(chain_header_entry, header_entry_header);
-        address_map.insert(entry_hash, vec![AspectHash::from(content_aspect.address())]);
+        let mut set = HashSet::new();
+        set.insert(AspectHash::from(content_aspect.address()));
+        address_map.insert(entry_hash, set);
     }
     address_map
 }
@@ -84,8 +102,8 @@ fn get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<
     Ok(address_list)
 }
 
-fn create_holding_map(context: Arc<Context>) -> HashMap<EntryHash, Vec<AspectHash>> {
-    let mut address_map: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
+fn create_holding_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<AspectHash>> {
+    let mut address_map: HashMap<EntryHash, HashSet<AspectHash>> = HashMap::new();
     let holding_list = {
         let state = context
             .state()
@@ -108,16 +126,20 @@ fn create_holding_map(context: Arc<Context>) -> HashMap<EntryHash, Vec<AspectHas
 
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
-        let authoring_map = create_authoring_map(context.clone());
+        let mut address_map = create_authoring_map(context.clone());
         let holding_map = create_holding_map(context.clone());
-
-        let address_map = authoring_map.into_iter().chain(holding_map).collect();
+        holding_map.into_iter().for_each(|(entry, set)| {
+            address_map
+                .entry(entry)
+                .or_insert_with(|| set.clone())
+                .union(&set);
+        });
 
         let action = Action::RespondGossipList(EntryListData {
             space_address: get_list_data.space_address,
             provider_agent_id: get_list_data.provider_agent_id,
             request_id: get_list_data.request_id,
-            address_map,
+            address_map: convert_address_set_map(address_map),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
     });
@@ -158,7 +180,7 @@ pub mod tests {
     #[test]
     fn test_can_get_all_aspect_addr_for_headers() {
         let mut dna = test_dna();
-        dna.uuid = "test_can_get_chain_header_list".to_string();
+        dna.uuid = "test_can_get_all_aspect_addr_for_headers".to_string();
         let (_instance, context) = instance_by_name("jill", dna, None);
 
         context
@@ -178,5 +200,24 @@ pub mod tests {
             .all(|chain_header| {
                 get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
             }));
+    }
+
+    #[test]
+    fn test_can_get_authoring_list() {
+        let mut dna = test_dna();
+        dna.uuid = "test_can_get_authoring_list".to_string();
+        let (_instance, context) = instance_by_name("jill", dna, None);
+        let authoring_map = create_authoring_map(context);
+        assert_eq!(authoring_map.len(), 3);
+    }
+
+    #[test]
+    fn test_can_holding_list() {
+        let mut dna = test_dna();
+        dna.uuid = "test_can_get_holding_list".to_string();
+        let (_instance, context) = instance_by_name("jill", dna, None);
+        let authoring_map = create_authoring_map(context);
+        // to start with holding = authoring
+        assert_eq!(authoring_map.len(), 3);
     }
 }

@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Adds a retry if a net worker cannot be spawned on startup [#1870](https://github.com/holochain/holochain-rust/pull/1870)
 - Add hdk::version_hash, returning MD5 hash of HDK build environment [#1869](https://github.com/holochain/holochain-rust/pull/1869)
 - Add --info option to conductor to return info on the version including HDK_VERSION & HASH as well as GIT_HASH if the binary was compiled from a git repo [1902](https://github.com/holochain/holochain-rust/pull/1902)
+- Ability to set storage backend for new instances over RPC [#1900](https://github.com/holochain/holochain-rust/pull/1900)
 
 ### Changed
 

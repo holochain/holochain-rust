@@ -15,6 +15,7 @@ use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
+use maplit::hashset;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -50,12 +51,46 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Asp
     for entry_address in get_all_public_chain_entries(context.clone()) {
         let content_aspect = get_content_aspect(&entry_address, context.clone())
             .expect("Must be able to get content aspect of entry that is in our source chain");
-        let mut set = HashSet::new();
-        set.insert(AspectHash::from(content_aspect.address()));
 
-        // now look up other aspects that may be associated with this entry
-        //TODO
-        address_map.insert(EntryHash::from(entry_address.clone()), set);
+        address_map.insert(
+            EntryHash::from(entry_address.clone()),
+            hashset![AspectHash::from(content_aspect.address())],
+        );
+
+        let (entry, header) = match content_aspect {
+            EntryAspect::Content(entry, header) => (entry, header),
+            _ => panic!("get_content_aspect must return only EntryAspect::Content"),
+        };
+
+        let maybe_meta_aspect = match entry {
+            Entry::App(app_type, app_value) => {
+                header.link_update_delete().and_then(|updated_entry| {
+                    Some((
+                        updated_entry,
+                        EntryAspect::Update(Entry::App(app_type, app_value), header),
+                    ))
+                })
+            }
+            Entry::LinkAdd(link_data) => Some((
+                link_data.link.base().clone(),
+                EntryAspect::LinkAdd(link_data, header),
+            )),
+            Entry::LinkRemove((link_data, addresses)) => Some((
+                link_data.link.base().clone(),
+                EntryAspect::LinkRemove((link_data, addresses), header),
+            )),
+            Entry::Deletion(_) => Some((
+                header.link_update_delete().expect(""),
+                EntryAspect::Deletion(header),
+            )),
+            _ => None,
+        };
+        if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
+            address_map.insert(
+                EntryHash::from(base_address.to_owned()),
+                hashset![AspectHash::from(meta_aspect.address())],
+            );
+        }
     }
 
     // chain header entries also should be communicated on the authoring list

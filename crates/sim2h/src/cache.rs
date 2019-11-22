@@ -19,7 +19,7 @@ pub struct Space {
     crypto: Box<dyn CryptoSystem>,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
-    missing_aspects: HashMap<AgentId, HashMap<EntryHash, Vec<AspectHash>>>,
+    missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
     /// sim2h currently uses the same radius for all connections
     rrdht_arc_radius: u32,
 }
@@ -46,8 +46,8 @@ impl Space {
             .missing_aspects
             .entry(agent)
             .or_insert_with(HashMap::new);
-        let vec_for_entry = map_for_agent.entry(entry_hash).or_insert_with(Vec::new);
-        vec_for_entry.push(aspect_hash);
+        let hash_set_for_entry = map_for_agent.entry(entry_hash).or_insert_with(HashSet::new);
+        hash_set_for_entry.insert(aspect_hash);
     }
 
     pub fn remove_missing_aspect(
@@ -58,9 +58,9 @@ impl Space {
     ) {
         let maybe_map_for_agent = self.missing_aspects.get_mut(agent);
         if let Some(map_for_agent) = maybe_map_for_agent {
-            if let Some(vec_for_entry) = map_for_agent.get_mut(entry_hash) {
-                vec_for_entry.remove_item(aspect_hash);
-                if vec_for_entry.len() == 0 {
+            if let Some(hash_set_for_entry) = map_for_agent.get_mut(entry_hash) {
+                hash_set_for_entry.remove(aspect_hash);
+                if hash_set_for_entry.len() == 0 {
                     map_for_agent.remove(entry_hash);
                 }
             }

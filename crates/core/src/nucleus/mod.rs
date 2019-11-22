@@ -22,7 +22,7 @@ use holochain_persistence_api::cas::content::Address;
 use snowflake;
 use std::sync::Arc;
 
-/// Struct holding data for requesting the execution of a Zome function (QueueZomeFunctionCall Action)
+/// Struct holding data for tracing the call of an HDK function from a zome function
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct HdkFnCall {
     pub function: ZomeApiFunction,

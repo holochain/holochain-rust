@@ -176,7 +176,6 @@ fn create_holding_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Aspec
 pub fn merge_address_maps(map1: &AddressSetMap, map2: &AddressSetMap) -> AddressSetMap {
     map1.keys()
         .chain(map2.keys())
-        .into_iter()
         .map(|entry| {
             let merged = map1
                 .get(entry)

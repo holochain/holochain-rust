@@ -39,6 +39,7 @@ pub trait ConductorAdmin {
         id: &String,
         dna_id: &String,
         agent_id: &String,
+        storage: Option<&str>,
     ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration)
@@ -193,23 +194,46 @@ impl ConductorAdmin for Conductor {
         id: &String,
         dna_id: &String,
         agent_id: &String,
+        storage: Option<&str>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        let storage_path = self.instance_storage_dir_path().join(id.clone());
+        let storage_path = self.instance_storage_dir_path().join(id.clone()).to_str()
+            .ok_or_else(|| {
+                HolochainError::ConfigError(
+                    format!("invalid path {:?}", self.instance_storage_dir_path().join(id.clone()))
+                )
+            })?
+            .into();
+
         fs::create_dir_all(&storage_path)?;
+        let storage_config = match storage {
+            Some("memory") => StorageConfiguration::Memory,
+            Some("file") => {
+                StorageConfiguration::File{
+                    path: storage_path
+                }
+            }
+            Some("pickle") => {
+                StorageConfiguration::Pickle {
+                    path: storage_path,
+                }
+            }
+            None | Some("lmdb") => {
+                StorageConfiguration::Lmdb {
+                    path: storage_path,
+                    initial_mmap_bytes: None,
+                } 
+            }
+            Some(s) => {
+                return Err(HolochainError::ConfigError(format!("Invalid storage option: {}", s)))
+            }
+        };
+
         let new_instance_config = InstanceConfiguration {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::Lmdb {
-                path: storage_path
-                    .to_str()
-                    .ok_or_else(|| {
-                        HolochainError::ConfigError(format!("invalid path {:?}", storage_path))
-                    })?
-                    .into(),
-                initial_mmap_bytes: None,
-            },
+            storage: storage_config,
         };
         new_config.instances.push(new_instance_config);
         new_config.check_consistency(&mut self.dna_loader)?;
@@ -1132,6 +1156,7 @@ id = 'new-dna'"#,
             &String::from("new-instance"),
             &String::from("new-dna"),
             &String::from("test-agent-1"),
+            None,
         );
 
         assert_eq!(add_result, Ok(()));
@@ -1414,7 +1439,8 @@ type = 'http'"#,
             conductor.add_instance(
                 &String::from("new-instance-2"),
                 &String::from("new-dna"),
-                &String::from("test-agent-1")
+                &String::from("test-agent-1"),
+                None,
             ),
             Ok(())
         );

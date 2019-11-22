@@ -519,8 +519,8 @@ impl Sim2h {
                         .get(space_address)
                         .expect("This function should not get called if we don't have this space")
                         .write();
-                    for pair in missing_hashes {
-                        space.add_missing_aspect(agent_id.clone(), pair.0, pair.1);
+                    for (entry_hash, aspect_hash) in missing_hashes {
+                        space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
                     }
                 }
 

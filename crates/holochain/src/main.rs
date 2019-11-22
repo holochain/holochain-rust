@@ -39,6 +39,8 @@ struct Opt {
     /// Path to the toml configuration file for the conductor
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     config: Option<PathBuf>,
+    #[structopt(short = "i", long = "info")]
+    info: bool
 }
 
 pub enum SignalConfiguration {
@@ -62,6 +64,12 @@ const MAGIC_STRING: &str = "Done. All interfaces started.";
 fn main() {
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
+
+    if opt.info {
+        println!("Some Info!");
+        return
+    }
+
     let config_path = opt
         .config
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));

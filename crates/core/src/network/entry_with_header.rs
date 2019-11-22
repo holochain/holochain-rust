@@ -1,10 +1,10 @@
 use crate::{
     agent::find_chain_header,
+    content_store::GetContent,
     state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EntryWithHeader {
@@ -31,21 +31,15 @@ impl EntryWithHeader {
     }
 }
 
-fn fetch_entry_from_cas(address: &Address, state: &State) -> Result<Entry, HolochainError> {
-    let json = state
-        .agent()
-        .chain_store()
-        .cas_fetch(address)?
-        .ok_or_else(|| HolochainError::from("Entry not found"))?;
-    let s: Entry = json.try_into()?;
-    Ok(s)
-}
-
 pub fn fetch_entry_with_header(
     address: &Address,
     state: &State,
 ) -> Result<EntryWithHeader, HolochainError> {
-    let entry = fetch_entry_from_cas(address, state)?;
+    let entry = state
+        .agent()
+        .chain_store()
+        .get(address)?
+        .ok_or_else(|| HolochainError::from("Entry not found"))?;
 
     let header = find_chain_header(&entry, &StateWrapper::from(state.clone()))
         .ok_or_else(|| HolochainError::from("No header found for entry"))?;

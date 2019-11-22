@@ -95,13 +95,13 @@ impl Space {
             return false;
         }
 
-        let vec_of_missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();
+        let missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();
 
         // We check that every of the given aspects is the missing list.
         // If one is missing from the missing list this block returns some
         // and the whole function returns false.
         for aspect in aspects {
-            if !vec_of_missing_aspects_for_entry.contains(aspect) {
+            if !missing_aspects_for_entry.contains(aspect) {
                 return false;
             }
         }

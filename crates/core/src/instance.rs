@@ -3,15 +3,15 @@ use crate::{
     consistency::ConsistencyModel,
     context::Context,
     dht::actions::{
-        pop_next_holding_workflow::pop_next_holding_workflow,
         queue_holding_workflow::queue_holding_workflow,
+        remove_queued_holding_workflow::remove_queued_holding_workflow,
     },
     network,
     persister::Persister,
     scheduled_jobs,
     signal::Signal,
     state::{State, StateWrapper},
-    workflows::application,
+    workflows::{application, run_holding_workflow},
 };
 #[cfg(test)]
 use crate::{
@@ -39,6 +39,8 @@ use std::{
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
+pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
+pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
 /// Holds the Event loop and processes it with the redux pattern.
@@ -290,26 +292,41 @@ impl Instance {
                             .expect("Couldn't get state in run_pending_validations")
                             .dht();
                         let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
-                        if let Some(pending) = maybe_holding_workflow {
+                        if let Some((pending, maybe_delay)) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
                             // we can run into a race condition.
-                            context.block_on(pop_next_holding_workflow(
+                            context.block_on(remove_queued_holding_workflow(
                                 pending.clone(),
                                 context.clone(),
                             ));
 
-                            let result = scheduled_jobs::pending_validations::run_holding_workflow(
-                                pending,
-                                context.clone(),
-                            );
+                            let result = run_holding_workflow(pending, context.clone());
 
                             match result {
                                 // If we couldn't run the validation due to unresolved dependencies,
                                 // we have to re-add this entry at the end of the queue:
-                                Err(HolochainError::ValidationPending) => context.block_on(
-                                    queue_holding_workflow(pending.clone(), context.clone()),
-                                ),
+                                Err(HolochainError::ValidationPending) => {
+                                    // And with a delay so we are not trying to re-validate many times per second.
+                                    let mut delay = maybe_delay
+                                        .map(|old_delay| {
+                                            // Exponential back-off:
+                                            // If this was delayed before we double the delay.
+                                            old_delay * 2
+                                        })
+                                        .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
+
+                                    // Cap delay with max duration
+                                    if delay > RETRY_VALIDATION_DURATION_MAX {
+                                        delay = RETRY_VALIDATION_DURATION_MAX
+                                    }
+
+                                    context.block_on(queue_holding_workflow(
+                                        Arc::new(pending.same()),
+                                        Some(delay),
+                                        context.clone(),
+                                    ))
+                                }
                                 Err(e) => log_error!(
                                     context,
                                     "Error running holding workflow for {:?}: {:?}",

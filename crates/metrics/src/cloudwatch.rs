@@ -5,7 +5,6 @@ use crate::{
     logger::{LogLine, ParseError},
     stats::StatsByMetric,
 };
-use rusoto_cloudwatch::{CloudWatch, CloudWatchClient, MetricDatum, PutMetricDataInput};
 use rusoto_core::region::Region;
 use rusoto_logs::*;
 use std::{
@@ -16,38 +15,10 @@ use std::{
 
 use structopt::StructOpt;
 
+use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
+
 const DEFAULT_REGION: Region = Region::EuCentral1;
 
-#[derive(Clone)]
-pub struct CloudWatchMetricPublisher {
-    client: CloudWatchClient,
-}
-
-impl From<Metric> for MetricDatum {
-    fn from(metric: Metric) -> Self {
-        let cloud_watch_metric = MetricDatum {
-            counts: None,
-            dimensions: None,
-            metric_name: metric.name.clone(),
-            statistic_values: None,
-            storage_resolution: None,
-            timestamp: None,
-            unit: None,
-            value: Some(metric.value),
-            values: None,
-        };
-        cloud_watch_metric
-    }
-}
-
-impl From<&Metric> for MetricDatum {
-    fn from(metric: &Metric) -> Self {
-        let m: Self = metric.clone().into();
-        m
-    }
-}
-
-// TODO Test this
 impl TryFrom<ResultField> for Metric {
     type Error = ParseError;
     fn try_from(result_field: ResultField) -> Result<Self, Self::Error> {
@@ -72,31 +43,6 @@ impl TryFrom<&ResultField> for Metric {
     fn try_from(result_field: &ResultField) -> Result<Self, Self::Error> {
         let r: Result<Self, Self::Error> = result_field.clone().try_into();
         r
-    }
-}
-
-impl CloudWatchMetricPublisher {
-    pub fn new(region: &Region) -> Self {
-        let client = CloudWatchClient::new(region.clone());
-        Self { client }
-    }
-}
-
-impl Default for CloudWatchMetricPublisher {
-    fn default() -> Self {
-        CloudWatchMetricPublisher::new(&DEFAULT_REGION)
-    }
-}
-
-impl MetricPublisher for CloudWatchMetricPublisher {
-    fn publish(&mut self, metric: &Metric) {
-        let cloud_watch_metric: MetricDatum = metric.into();
-        let data_input = PutMetricDataInput {
-            metric_data: vec![cloud_watch_metric],
-            namespace: "".to_string(),
-        };
-        let _rusoto_future = self.client.put_metric_data(data_input);
-        trace!("published metric to cloudwatch: {:?}", metric);
     }
 }
 
@@ -251,28 +197,15 @@ impl CloudWatchLogger {
             .as_secs() as i64
     }
 
-    pub fn with_log_group(log_group_name: String, region: &Region) -> Self {
-        let client = CloudWatchLogsClient::new(region.clone());
-
-        let log_group_request = CreateLogGroupRequest {
-            log_group_name: log_group_name.clone(),
-            ..Default::default()
-        };
-
-        // TODO Check if log group already exists or set them up a priori
-        client
-            .create_log_group(log_group_request)
-            .sync()
-            .unwrap_or_else(|e| {
-                debug!("Could not create log group- maybe already created: {:?}", e)
-            });
-
-        Self {
-            client,
-            log_stream_name: None,
-            log_group_name: Some(log_group_name),
-            sequence_token: None,
-        }
+    pub fn with_log_group<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
+        log_group_name: String,
+        credentials_provider: P,
+        region: &Region,
+    ) -> Self
+    where
+        P::Future: Send,
+    {
+        Self::new(None, Some(log_group_name), credentials_provider, region)
     }
 
     pub fn with_region(region: &Region) -> Self {
@@ -285,36 +218,51 @@ impl CloudWatchLogger {
         }
     }
 
-    pub fn with_log_stream(
-        log_stream_name: String,
-        log_group_name: String,
+    pub fn new<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
+        log_stream_name: Option<String>,
+        log_group_name: Option<String>,
+        credentials_provider: P,
         region: &Region,
-    ) -> Self {
-        let client = CloudWatchLogsClient::new(region.clone());
+    ) -> Self
+    where
+        P::Future: Send,
+    {
+        let client = CloudWatchLogsClient::new_with(
+            rusoto_core::request::HttpClient::new().unwrap(),
+            credentials_provider,
+            region.clone(),
+        );
 
-        let log_group_request = CreateLogGroupRequest {
-            log_group_name: log_group_name.clone(),
-            ..Default::default()
-        };
+        if let Some(log_group_name) = &log_group_name {
+            let log_group_request = CreateLogGroupRequest {
+                log_group_name: log_group_name.clone(),
+                ..Default::default()
+            };
+            // TODO Check if log group already exists or set them up a priori
+            client
+                .create_log_group(log_group_request)
+                .sync()
+                .unwrap_or_else(|e| {
+                    debug!("Could not create log group- maybe already created: {:?}", e)
+                });
+        }
 
-        // TODO Check if log group already exists or set them up a priori
-        client
-            .create_log_group(log_group_request)
-            .sync()
-            .unwrap_or_else(|e| {
-                debug!("Could not create log group- maybe already created: {:?}", e)
-            });
+        let mut log_group_name = log_group_name;
+        if let Some(log_stream_name) = &log_stream_name {
+            let log_group_name2 = log_group_name.unwrap_or_default();
+            let log_stream_request = CreateLogStreamRequest {
+                log_group_name: log_group_name2.clone(),
+                log_stream_name: log_stream_name.clone(),
+            };
 
-        let log_stream_request = CreateLogStreamRequest {
-            log_group_name: log_group_name.clone(),
-            log_stream_name: log_stream_name.clone(),
-        };
+            log_group_name = Some(log_group_name2);
+            client.create_log_stream(log_stream_request).sync().unwrap();
+        }
 
-        client.create_log_stream(log_stream_request).sync().unwrap();
         Self {
             client,
-            log_stream_name: Some(log_stream_name),
-            log_group_name: Some(log_group_name),
+            log_stream_name: log_stream_name,
+            log_group_name: log_group_name,
             sequence_token: None,
         }
     }
@@ -355,6 +303,37 @@ impl Default for CloudWatchLogger {
     fn default() -> Self {
         let default_log_stream = Self::default_log_stream();
         let default_log_group = Self::default_log_group();
-        CloudWatchLogger::with_log_stream(default_log_stream, default_log_group, &DEFAULT_REGION)
+        let provider = assume_role(&DEFAULT_REGION);
+        CloudWatchLogger::new(
+            Some(default_log_stream),
+            Some(default_log_group),
+            provider,
+            &DEFAULT_REGION,
+        )
     }
+}
+
+const DEFAULT_ASSUME_ROLE_ARN: &str =
+    "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
+
+pub fn assume_role(region: &Region) -> StsAssumeRoleSessionCredentialsProvider {
+    let sts = StsClient::new_with(
+        rusoto_core::request::HttpClient::new().unwrap(),
+        rusoto_credential::InstanceMetadataProvider::new(),
+        region.clone(),
+    );
+
+    let provider = StsAssumeRoleSessionCredentialsProvider::new(
+        sts,
+        DEFAULT_ASSUME_ROLE_ARN.to_owned(),
+        format!(
+            "hc-metrics-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ),
+        None,
+        None,
+        None,
+        None,
+    );
+    provider
 }

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+
+docker build ./docker --build-arg DOCKER_BRANCH=${2} -f ./docker/Dockerfile.${1} -t "holochain/holochain-rust:${1}.${2}" --no-cache

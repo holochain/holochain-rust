@@ -83,7 +83,6 @@ macro_rules! link_zome_api {
                                 let hdk_fn_call = HdkFnCall { function: self.clone(), parameters };
                                 trace_invoke_hdk_function(zome_api_call.clone(), hdk_fn_call.clone(), &context);
                                 let result = $function_name(runtime, args);
-                                // let hdk_fn_result = result.clone().map(|r| JsonString::from(format!("{:?} (TODO)", r).as_str())).map_err(|e| e.to_string());
                                 let hdk_fn_result = Ok(JsonString::from("TODO"));
                                 trace_return_hdk_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
                                 result

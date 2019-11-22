@@ -17,7 +17,7 @@ use structopt::StructOpt;
 
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 
-const DEFAULT_REGION: Region = Region::EuCentral1;
+pub const DEFAULT_REGION: Region = Region::EuCentral1;
 
 impl TryFrom<ResultField> for Metric {
     type Error = ParseError;

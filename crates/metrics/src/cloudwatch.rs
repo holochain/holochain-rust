@@ -191,7 +191,7 @@ impl CloudWatchLogger {
     }
 
     pub fn default_assume_role_arn() -> String {
-        EC2_CLIENT_NODE_ROLE.to_string()
+        FINAL_EXAM_NODE_ROLE.to_string()
     }
 
     pub fn default_end_time() -> i64 {
@@ -307,11 +307,10 @@ impl Default for CloudWatchLogger {
     fn default() -> Self {
         let default_log_stream = Self::default_log_stream();
         let default_log_group = Self::default_log_group();
-        let provider = assume_role(&DEFAULT_REGION, EC2_CLIENT_NODE_ROLE);
         CloudWatchLogger::new(
             Some(default_log_stream),
             Some(default_log_group),
-            provider,
+            rusoto_credential::InstanceMetadataProvider::new(),
             &DEFAULT_REGION,
         )
     }
@@ -319,10 +318,8 @@ impl Default for CloudWatchLogger {
 
 pub const FINAL_EXAM_NODE_ROLE: &str =
     "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
-pub const EC2_CLIENT_NODE_ROLE: &str =
-    "arn:aws:iam::024992937548:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS";
 
-pub fn assume_role(region: &Region, role_arn:&str) -> StsAssumeRoleSessionCredentialsProvider {
+pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCredentialsProvider {
     let sts = StsClient::new_with(
         rusoto_core::request::HttpClient::new().unwrap(),
         rusoto_credential::InstanceMetadataProvider::new(),

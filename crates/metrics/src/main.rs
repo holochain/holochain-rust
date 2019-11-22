@@ -46,7 +46,7 @@ enum Command {
             about = "Optional override for the amazon role to assume when querying"
         )]
         assume_role_arn: Option<String>,
-       #[structopt(flatten)]
+        #[structopt(flatten)]
         query_args: QueryArgs,
     },
 
@@ -77,11 +77,12 @@ fn main() {
             region,
             log_group_name,
             query_args,
-            assume_role_arn
+            assume_role_arn,
         } => {
             let region = region.unwrap_or_default();
             let log_group_name = log_group_name.unwrap_or_else(CloudWatchLogger::default_log_group);
-            let assume_role_arn = assume_role_arn.unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
+            let assume_role_arn = assume_role_arn
+                .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
             print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
         }
         Command::PrintLogStats { log_file } => print_log_stats(log_file),
@@ -115,7 +116,12 @@ fn cloudwatch_test() {
     stats.print_csv().unwrap()
 }
 
-fn print_cloudwatch_stats(query_args: &QueryArgs, log_group_name: String, region: &Region, assume_role_arn: &str) {
+fn print_cloudwatch_stats(
+    query_args: &QueryArgs,
+    log_group_name: String,
+    region: &Region,
+    assume_role_arn: &str,
+) {
     let cloudwatch = CloudWatchLogger::with_log_group(
         log_group_name,
         crate::cloudwatch::assume_role(&region, assume_role_arn),

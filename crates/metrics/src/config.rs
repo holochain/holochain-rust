@@ -12,7 +12,7 @@ pub enum MetricPublisherConfig {
         region: Option<rusoto_core::region::Region>,
         log_group_name: Option<String>,
         log_stream_name: Option<String>,
-        assume_role_arn: Option<String>
+        assume_role_arn: Option<String>,
     },
 }
 
@@ -31,18 +31,24 @@ impl MetricPublisherConfig {
                 region,
                 log_group_name,
                 log_stream_name,
-                assume_role_arn
+                assume_role_arn,
             } => {
                 let region = region.clone().unwrap_or_default();
-                let assume_role_arn = assume_role_arn.clone()
-                    .unwrap_or_else(crate::cloudwatch::CloudWatchLogger::default_assume_role_arn);
-                let provider = crate::cloudwatch::assume_role(&region, &assume_role_arn);
-                Arc::new(RwLock::new(CloudWatchLogger::new(
-                    log_stream_name.clone(),
-                    log_group_name.clone(),
-                    provider,
-                    &region,
-                )))
+                match &assume_role_arn {
+                    Some(assume_role_arn) => Arc::new(RwLock::new(CloudWatchLogger::new(
+                        log_stream_name.clone(),
+                        log_group_name.clone(),
+                        crate::cloudwatch::assume_role(&region, &assume_role_arn),
+                        &region,
+                    ))),
+
+                    None => Arc::new(RwLock::new(CloudWatchLogger::new(
+                        log_stream_name.clone(),
+                        log_group_name.clone(),
+                        rusoto_credential::InstanceMetadataProvider::new(),
+                        &region,
+                    ))),
+                }
             }
         };
         publisher
@@ -59,7 +65,7 @@ impl MetricPublisherConfig {
             region: Default::default(),
             log_group_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_group()),
             log_stream_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_stream()),
-            assume_role_arn: Some(crate::cloudwatch::CloudWatchLogger::default_assume_role_arn())
+            assume_role_arn: None,
         }
     }
 }

@@ -62,7 +62,6 @@ env_logger = "=0.6.1"
 url = { version = "=2.1.0", features = ["serde"] }
 rand = "0.7.2"
 threadpool = "=1.7.1"
-maplit = "=1.0.2"
 
 [dev-dependencies]
 wabt = "=0.7.4"

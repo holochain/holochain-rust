@@ -15,7 +15,6 @@ use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
-use maplit::hashset;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -52,10 +51,10 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Asp
         let content_aspect = get_content_aspect(&entry_address, context.clone())
             .expect("Must be able to get content aspect of entry that is in our source chain");
 
-        address_map.insert(
-            EntryHash::from(entry_address.clone()),
-            hashset![AspectHash::from(content_aspect.address())],
-        );
+        address_map
+            .entry(EntryHash::from(entry_address.clone()))
+            .or_insert_with(|| HashSet::new())
+            .insert(AspectHash::from(content_aspect.address()));
 
         let (entry, header) = match content_aspect {
             EntryAspect::Content(entry, header) => (entry, header),
@@ -85,11 +84,12 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Asp
             )),
             _ => None,
         };
+
         if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
-            address_map.insert(
-                EntryHash::from(base_address.to_owned()),
-                hashset![AspectHash::from(meta_aspect.address())],
-            );
+            address_map
+                .entry(EntryHash::from(base_address.clone()))
+                .or_insert_with(|| HashSet::new())
+                .insert(AspectHash::from(meta_aspect.address()));
         }
     }
 

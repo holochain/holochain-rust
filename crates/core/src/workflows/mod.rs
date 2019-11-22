@@ -111,7 +111,7 @@ async fn validation_package(
 /// Runs the given pending validation using the right holding workflow
 /// as specified by PendingValidationStruct::workflow.
 pub fn run_holding_workflow(
-    pending: &PendingValidation,
+    pending: PendingValidation,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     match pending.workflow {

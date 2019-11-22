@@ -10,6 +10,7 @@ use crate::{
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
+    network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
@@ -73,8 +74,10 @@ pub async fn hold_link_workflow(
     })?;
     log_debug!(context, "workflow/hold_link: is valid!");
 
-    // 3. If valid store the entry in the local DHT shard
-    add_link(&link_add, &context).await?;
+    // 3. If valid store the entry aspect in the local DHT shard
+    let aspect = EntryAspect::AddLink(link_add.clone(), entry_with_header.header.clone());
+    hold_aspect(&aspect, &context).await?;
+
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up

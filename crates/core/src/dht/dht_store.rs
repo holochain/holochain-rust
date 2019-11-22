@@ -23,8 +23,9 @@ use regex::Regex;
 use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
+use lib3h_protocol::types::{AspectHash, EntryHash};
 use std::{
-    collections::{BTreeSet, HashMap, VecDeque},
+    collections::{BTreeSet, HashMap, HashSet, VecDeque},
     convert::TryFrom,
     sync::Arc,
     time::{Duration, SystemTime},
@@ -39,8 +40,8 @@ pub struct DhtStore {
     content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
 
-    /// All the entries that the network has told us to hold
-    holding_list: Vec<Address>,
+    /// All the entry aspects that the network has told us to hold
+    holding_map: HashMap<EntryHash, HashSet<AspectHash>>,
 
     pub(crate) queued_holding_workflows:
         VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
@@ -243,8 +244,15 @@ impl DhtStore {
         Ok(())
     }
 
-    pub fn mark_entry_as_held(&mut self, entry: &Entry) {
-        self.holding_list.push(entry.address());
+    pub fn mark_aspect_as_held(
+        &mut self,
+        entry_address: EntryHash,
+        entry_aspect_address: AspectHash,
+    ) {
+        self.holding_map
+            .entry(entry_address)
+            .or_insert_with(|| HashSet::new())
+            .insert(entry_aspect_address);
     }
 
     pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {

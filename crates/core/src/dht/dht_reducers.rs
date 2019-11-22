@@ -12,8 +12,9 @@ use super::dht_inner_reducers::{
     reduce_update_entry_inner, LinkModification,
 };
 
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{entry::Entry, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::AddressableContent;
+use lib3h_protocol::types::EntryHash;
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -65,86 +66,77 @@ pub(crate) fn reduce_commit_entry(
     }
 }
 
-pub(crate) fn reduce_hold_entry(
+pub(crate) fn reduce_hold_aspect(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let EntryWithHeader { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
+    let aspect = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
-    match reduce_store_entry_inner(&mut new_store, &entry) {
-        Ok(()) => {
-            new_store.mark_entry_as_held(&entry);
-            new_store.add_header_for_entry(&entry, &header).ok()?;
+    new_store.mark_aspect_as_held(
+        &aspect.header().entry_address().into(),
+        aspect.address().into(),
+    );
+
+    match aspect {
+        EntryAspect::Content(entry, header) => {
+            match reduce_store_entry_inner(&mut new_store, entry) {
+                Ok(()) => {
+                    new_store.add_header_for_entry(&entry, &header).ok()?;
+                    Some(new_store)
+                }
+                Err(e) => {
+                    println!("{}", e);
+                    None
+                }
+            }
+        }
+        EntryAspect::LinkAdd(link_add, header) => {
+            let entry = Entry::LinkAdd(link_data.clone());
+            let res = reduce_add_remove_link_inner(
+                &mut new_store,
+                link_data.link(),
+                &entry.address(),
+                LinkModification::Add,
+            );
             Some(new_store)
         }
-        Err(e) => {
-            println!("{}", e);
+        EntryAspect::LinkRemove((link_data, links_to_remove), header) => Some(
+            links_to_remove
+                .iter()
+                .fold(new_store, |mut store, link_addresses| {
+                    let res = reduce_add_remove_link_inner(
+                        &mut store,
+                        link_data.link(),
+                        link_addresses,
+                        LinkModification::Remove,
+                    );
+                    store.actions_mut().insert(action_wrapper.clone(), res);
+                    store.clone()
+                }),
+        ),
+        EntryAspect::Update(entry, header) => {
+            if let Some(crud_link) = header.link_update_delete() {
+                let _ = reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address());
+                Some(new_store)
+            } else {
+                error!("EntryAspect::Update without crud_link in header received!");
+                None
+            }
+        }
+        EntryAspect::Deletion(header) => {
+            if let Some(crud_link) = header.link_update_delete() {
+                let _ = reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
+                Some(new_store)
+            } else {
+                error!("EntryAspect::Update without crud_link in header received!");
+                None
+            }
+        }
+        EntryAspect::Header(_) => {
+            error!("Got EntryAspect::Header which is not implemented.");
             None
         }
     }
-}
-
-pub(crate) fn reduce_add_link(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let link_data = unwrap_to!(action_wrapper.action() => Action::AddLink);
-    let mut new_store = (*old_store).clone();
-    let entry = Entry::LinkAdd(link_data.clone());
-    let res = reduce_add_remove_link_inner(
-        &mut new_store,
-        link_data.link(),
-        &entry.address(),
-        LinkModification::Add,
-    );
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
-}
-
-pub(crate) fn reduce_remove_link(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let entry = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
-    let (link_data, links_to_remove) = unwrap_to!(entry => Entry::LinkRemove);
-    let new_store = (*old_store).clone();
-    let store = links_to_remove
-        .iter()
-        .fold(new_store, |mut store, link_addresses| {
-            let res = reduce_add_remove_link_inner(
-                &mut store,
-                link_data.link(),
-                link_addresses,
-                LinkModification::Remove,
-            );
-            store.actions_mut().insert(action_wrapper.clone(), res);
-            store.clone()
-        });
-
-    Some(store)
-}
-
-pub(crate) fn reduce_update_entry(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let (old_address, new_address) = unwrap_to!(action_wrapper.action() => Action::UpdateEntry);
-    let mut new_store = (*old_store).clone();
-    let res = reduce_update_entry_inner(&mut new_store, old_address, new_address);
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
-}
-
-pub(crate) fn reduce_remove_entry(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let (deleted_address, deletion_address) =
-        unwrap_to!(action_wrapper.action() => Action::RemoveEntry);
-    let mut new_store = (*old_store).clone();
-    let res = reduce_remove_entry_inner(&mut new_store, deleted_address, deletion_address);
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
 }
 
 #[allow(dead_code)]

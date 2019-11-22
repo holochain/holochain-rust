@@ -121,7 +121,7 @@ pub enum Action {
     RemoveQueuedHoldingWorkflow(PendingValidation),
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
-    Hold(EntryWithHeader),
+    HoldAspect(EntryAspect),
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.

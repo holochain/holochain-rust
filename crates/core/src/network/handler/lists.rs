@@ -48,6 +48,7 @@ fn convert_address_set_map(map: AddressSetMap) -> AddressVecMap {
 fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<AspectHash>> {
     let mut address_map: HashMap<EntryHash, HashSet<AspectHash>> = HashMap::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
+        // 1. For every public chain entry we definitely add the content aspect:
         let content_aspect = get_content_aspect(&entry_address, context.clone())
             .expect("Must be able to get content aspect of entry that is in our source chain");
 
@@ -56,11 +57,17 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Asp
             .or_insert_with(|| HashSet::new())
             .insert(AspectHash::from(content_aspect.address()));
 
+        // 2. Then we might need to add a meta aspect as well depending on what kind of
+        //    entry this is.
+
+        // So we first unwrap the entry it self from the content aspect:
         let (entry, header) = match content_aspect {
             EntryAspect::Content(entry, header) => (entry, header),
             _ => panic!("get_content_aspect must return only EntryAspect::Content"),
         };
 
+        // And then we deduce the according base entry and meta aspect from that entry
+        // and its header:
         let maybe_meta_aspect = match entry {
             Entry::App(app_type, app_value) => {
                 header.link_update_delete().and_then(|updated_entry| {

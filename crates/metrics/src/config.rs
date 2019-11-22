@@ -8,8 +8,7 @@ use std::sync::Arc;
 #[serde(tag = "type")]
 pub enum MetricPublisherConfig {
     Logger,
-    CloudWatchLogs(CloudWatchLogsConfig)
-        
+    CloudWatchLogs(CloudWatchLogsConfig),
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
@@ -69,7 +68,7 @@ impl MetricPublisherConfig {
 
     /// The default cloudwatch logger publisher configuration.
     pub fn default_cloudwatch_logs() -> Self {
-        Self::CloudWatchLogs (CloudWatchLogsConfig {
+        Self::CloudWatchLogs(CloudWatchLogsConfig {
             region: Some(crate::cloudwatch::DEFAULT_REGION),
             log_group_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_group()),
             log_stream_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_stream()),

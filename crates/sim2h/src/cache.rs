@@ -149,6 +149,7 @@ impl Space {
 
     pub fn remove_agent(&mut self, agent_id: &AgentId) {
         self.agents.remove(agent_id);
+        self.missing_aspects.remove(agent_id);
     }
 
     pub fn agent_id_to_uri(&self, agent_id: &AgentId) -> Option<Lib3hUri> {
@@ -271,6 +272,26 @@ mod tests {
     use super::*;
     use crate::AgentId;
     use lib3h_sodium::SodiumCryptoSystem;
+    use lib3h_protocol::uri::Lib3hUri;
+    use std::convert::TryFrom;
+
+    #[test]
+    fn space_can_add_and_remove_agents() {
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let agent = AgentId::from("HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz");
+        assert_eq!(space.agents.len(),0);
+        space.join_agent(agent.clone(),Lib3hUri::try_from("ws://someagenturi.com:9000").unwrap()).expect("should work");
+        assert_eq!(space.agents.len(),1);
+        let entry_hash_1 = EntryHash::from("entry_hash_1");
+        let aspect_hash_1 = AspectHash::from("aspect_hash_1");
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+
+        space.remove_agent(&agent);
+        assert_eq!(space.agents.len(),0);
+        // when removing the agent it's data in the missing_aspects list should also be cleared
+        assert_eq!(space.agents_with_missing_aspects(), vec![]);
+    }
 
     #[test]
     fn space_can_add_and_remove_missing_aspects() {

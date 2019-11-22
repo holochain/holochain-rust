@@ -75,7 +75,7 @@ impl Space {
     }
 
     /// Returns true if the given agent is missing all of the given aspects for the given entry.
-    /// That is: if all of the aspects are stored as missing for that agent.
+    /// That is: if all of the aspects are recorded as missing for that agent.
     /// If one of the given aspects is not in that vector of missing entries, the agent is supposed
     /// to have it and this function returns false.
     pub fn agent_is_missing_all_aspects(

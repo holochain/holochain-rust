@@ -15,8 +15,9 @@ RUN nix-collect-garbage
 FROM scratch
 COPY --from=build / /
 WORKDIR /holochain
-ENV CARGO_HOME /holochain
-ENV PATH "${CARGO_HOME}/bin:${PATH}"
+ENV CARGO_HOME /holochain/.cargo
 ENV PATH "${CARGO_HOME}/.cargo/bin:${PATH}"
+# this should contain all our freshly built binaries
+RUN ls /holochain/.cargo/bin
 
 CMD trycp_server -p 9000 --port-range 5050-5070

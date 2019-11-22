@@ -5,7 +5,7 @@ ARG DOCKER_BRANCH=develop
 RUN mkdir /holochain
 
 WORKDIR /holochain
-ENV CARGO_HOME /holochain
+ENV CARGO_HOME /holochain/.cargo
 ENV PATH "${CARGO_HOME}/.cargo/bin:${PATH}"
 
 # need $USER to be set for CI, cargo, etc.

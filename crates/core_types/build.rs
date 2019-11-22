@@ -45,9 +45,7 @@ fn main() {
     if Path::new("../../.git/HEAD").exists() {
         println!("cargo:rerun-if-changed=../../.git/HEAD");
     }
-    let maybe_output = Command::new("git").args(&["rev-parse", "HEAD"]).output();
-    if maybe_output.is_ok() {
-        let output = maybe_output.unwrap();
+    if let Ok(output) = Command::new("git").args(&["rev-parse", "HEAD"]).output() {
         let git_hash = String::from_utf8(output.stdout).unwrap();
         println!("cargo:rustc-env=GIT_HASH={}", git_hash);
     }

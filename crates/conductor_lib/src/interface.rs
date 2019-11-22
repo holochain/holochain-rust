@@ -531,7 +531,12 @@ impl ConductorApiBuilder {
             let dna_id = Self::get_as_string("dna_id", &params_map)?;
             let agent_id = Self::get_as_string("agent_id", &params_map)?;
             let storage = Self::get_as_string("storage", &params_map).ok();
-            conductor_call!(|c| c.add_instance(&id, &dna_id, &agent_id, storage.as_ref().map(String::as_str)))?;
+            conductor_call!(|c| c.add_instance(
+                &id,
+                &dna_id,
+                &agent_id,
+                storage.as_ref().map(String::as_str)
+            ))?;
             Ok(json!({"success": true}))
         });
 

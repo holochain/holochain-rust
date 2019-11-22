@@ -197,35 +197,32 @@ impl ConductorAdmin for Conductor {
         storage: Option<&str>,
     ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        let storage_path = self.instance_storage_dir_path().join(id.clone()).to_str()
+        let storage_path = self
+            .instance_storage_dir_path()
+            .join(id.clone())
+            .to_str()
             .ok_or_else(|| {
-                HolochainError::ConfigError(
-                    format!("invalid path {:?}", self.instance_storage_dir_path().join(id.clone()))
-                )
+                HolochainError::ConfigError(format!(
+                    "invalid path {:?}",
+                    self.instance_storage_dir_path().join(id.clone())
+                ))
             })?
             .into();
 
         fs::create_dir_all(&storage_path)?;
         let storage_config = match storage {
             Some("memory") => StorageConfiguration::Memory,
-            Some("file") => {
-                StorageConfiguration::File{
-                    path: storage_path
-                }
-            }
-            Some("pickle") => {
-                StorageConfiguration::Pickle {
-                    path: storage_path,
-                }
-            }
-            None | Some("lmdb") => {
-                StorageConfiguration::Lmdb {
-                    path: storage_path,
-                    initial_mmap_bytes: None,
-                } 
-            }
+            Some("file") => StorageConfiguration::File { path: storage_path },
+            Some("pickle") => StorageConfiguration::Pickle { path: storage_path },
+            None | Some("lmdb") => StorageConfiguration::Lmdb {
+                path: storage_path,
+                initial_mmap_bytes: None,
+            },
             Some(s) => {
-                return Err(HolochainError::ConfigError(format!("Invalid storage option: {}", s)))
+                return Err(HolochainError::ConfigError(format!(
+                    "Invalid storage option: {}",
+                    s
+                )))
             }
         };
 

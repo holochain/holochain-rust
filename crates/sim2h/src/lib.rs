@@ -180,7 +180,7 @@ impl Sim2h {
     }
 
     // removes an agent from a space
-    fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
+    fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
                 Err(SPACE_MISMATCH_ERR_STR.into())
@@ -194,16 +194,21 @@ impl Sim2h {
     }
 
     // removes a uri from connection and from spaces
-    fn disconnect(&self, uri: &Lib3hUri) {
+    fn disconnect(&mut self, uri: &Lib3hUri) {
         trace!("disconnect entered");
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.connection_states.write().remove(uri)
         {
-            self.spaces
+            if self
+                .spaces
                 .get(&space_address)
                 .unwrap()
                 .write()
-                .remove_agent(&agent_id);
+                .remove_agent(&agent_id)
+                == 0
+            {
+                self.spaces.remove(&space_address);
+            }
         }
         trace!("disconnect done");
     }

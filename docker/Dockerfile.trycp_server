@@ -1,4 +1,4 @@
-FROM holochain/holochain-rust:minimal as build
+FROM holochain/holochain-rust:minimal.holochain-info as build
 
 ENV shellfile ./docker/trycp_server.default.nix
 

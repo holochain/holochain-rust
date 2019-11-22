@@ -26,7 +26,7 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, hdk_version::HDK_VERSION, GIT_HASH, HDK_HASH};
 use holochain_locksmith::spawn_locksmith_guard_watcher;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
@@ -40,7 +40,7 @@ struct Opt {
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     config: Option<PathBuf>,
     #[structopt(short = "i", long = "info")]
-    info: bool
+    info: bool,
 }
 
 pub enum SignalConfiguration {
@@ -66,8 +66,15 @@ fn main() {
     let opt = Opt::from_args();
 
     if opt.info {
-        println!("Some Info!");
-        return
+        println!(
+            "HDK_VERSION: {}\nHDK_HASH: {}",
+            HDK_VERSION.to_string(),
+            HDK_HASH
+        );
+        if GIT_HASH != "" {
+            println!("GIT_HASH: {}", GIT_HASH);
+        }
+        return;
     }
 
     let config_path = opt

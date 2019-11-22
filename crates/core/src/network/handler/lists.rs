@@ -101,7 +101,7 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Asp
     }
 
     // chain header entries also should be communicated on the authoring list
-    // In future make this depend if header publishing is enabled
+    // In future make this depend on if header publishing is enabled
     let state = context.state().expect(
         "There must be a state in context when we are responding to a HandleGetAuthoringEntryList",
     );
@@ -115,9 +115,16 @@ fn create_authoring_map(context: Arc<Context>) -> HashMap<EntryHash, HashSet<Asp
             &Vec::new(),
         ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
         let content_aspect = EntryAspect::Content(chain_header_entry, header_entry_header);
-        let mut set = HashSet::new();
-        set.insert(AspectHash::from(content_aspect.address()));
-        address_map.insert(entry_hash, set);
+
+        let aspect_hash = AspectHash::from(content_aspect.address());
+        address_map
+            .entry(entry_hash)
+            .or_insert_with(|| {
+                let mut set = HashSet::new();
+                set.insert(aspect_hash.clone());
+                set
+            })
+            .insert(aspect_hash);
     }
     address_map
 }

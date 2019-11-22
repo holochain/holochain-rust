@@ -150,7 +150,7 @@ pub mod tests {
         let header = agent1_state
             .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
-        let chain_pair = ChainPair::new(header, entry)?;
+        let chain_pair = ChainPair::try_from_header_and_entry(header, entry)?;
 
         // Call hold_entry_workflow on victim DHT node
         let result = context2.block_on(hold_entry_workflow(&chain_pair, &context2));

@@ -217,7 +217,7 @@ pub fn create_chain_pair_for_header(
     let entry = Entry::ChainHeader(chain_header);
     let header =
         create_new_chain_header(&entry, &root_state.agent(), &root_state, &None, &Vec::new())?;
-    ChainPair::new(header, entry)
+    ChainPair::try_from_header_and_entry(header, entry)
 }
 
 /// Do a Commit Action against an agent state.

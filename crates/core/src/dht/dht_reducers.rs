@@ -225,7 +225,8 @@ pub mod tests {
 
         // test_entry is not sys so should do nothing
         let sys_entry = test_sys_entry();
-        let chain_pair = ChainPair::new(test_chain_header(), sys_entry.clone());
+        let chain_pair =
+            ChainPair::try_from_header_and_entry(test_chain_header(), sys_entry.clone())?;
 
         let new_dht_store =
             reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(chain_pair)))
@@ -443,7 +444,7 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let chain_pair = ChainPair::new(test_chain_header(), entry.clone());
+        let chain_pair = ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone())?;
         let action_wrapper = ActionWrapper::new(Action::Hold(chain_pair.clone()));
 
         store.reduce(action_wrapper);

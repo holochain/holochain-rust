@@ -1,6 +1,6 @@
 use crate::{
-    context::Context, dht::actions::add_link::add_link,
-    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
+    context::Context, dht::actions::add_link::add_link, network::chain_pair::ChainPair,
+    nucleus::validation::validate_entry,
 };
 
 use crate::{
@@ -100,11 +100,7 @@ pub async fn hold_link_workflow(
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
     hold_entry_workflow(&chain_pair, context.clone()).await?;
-    log_debug!(
-        context,
-        "workflow/hold_entry: added! {:?}",
-        chain_pair
-    );
+    log_debug!(context, "workflow/hold_entry: added! {:?}", chain_pair);
 
     //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
@@ -168,7 +164,7 @@ pub mod tests {
         let header = agent1_state
             .get_most_recent_header_for_entry(&link_entry)
             .expect("There must be a header in the author's source chain after commit");
-        let chain_pair = ChainPair::new(header, link_entry);
+        let chain_pair = ChainPair::try_from_entry_and_header(header, link_entry);
 
         // Call hold_entry_workflow on victim DHT node
         let result = context2.block_on(hold_link_workflow(&chain_pair, context2.clone()));

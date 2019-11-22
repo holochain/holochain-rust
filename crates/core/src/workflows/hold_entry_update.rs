@@ -1,6 +1,6 @@
 use crate::{
-    context::Context, dht::actions::update_entry::update_entry,
-    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
+    context::Context, dht::actions::update_entry::update_entry, network::chain_pair::ChainPair,
+    nucleus::validation::validate_entry,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 

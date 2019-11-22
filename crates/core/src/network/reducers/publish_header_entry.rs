@@ -3,8 +3,8 @@ use crate::{
     agent::state::create_chain_pair_for_header,
     network::{
         actions::ActionResponse,
-        entry_aspect::EntryAspect,
         chain_pair::fetch_chain_pair,
+        entry_aspect::EntryAspect,
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
     },

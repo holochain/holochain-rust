@@ -4,8 +4,7 @@ use crate::{
     state::{State, StateWrapper},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::content::Address;
-use std::convert::TryInto;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// A `ChainPair` cannot be constructed unless the entry address in the
 /// `ChainHeader` that is within the `ChainPair` is the same as the address
@@ -14,19 +13,31 @@ use std::convert::TryInto;
 pub struct ChainPair(ChainHeader, Entry);
 
 impl ChainPair {
-    pub fn new(header: ChainHeader, entry: Entry) -> Result<ChainPair, HolochainError> {
-        let header_entry = header.entry();
-        let header_entry_address = header_entry.address();
+    // It seems best to not have a new method, since stylistically it is expected to return Self, whereas constructing could fail.
+    pub fn try_from_header_and_entry(
+        header: ChainHeader,
+        entry: Entry,
+    ) -> Result<ChainPair, HolochainError> {
+        let header_entry_address = *header.entry_address();
         let entry_address = entry.address();
         if header_entry_address == entry_address {
             Ok(ChainPair(header, entry))
         } else {
             Err(HolochainError::HeaderEntryMismatch(
-                "Tried to create a ChainPair, but got a mismatch with the header's entry address {} and the entry's address {}.",
-                header_entry_address,
-                entry_address,
+                "Tried to create a ChainPair, but got a mismatch with the header's entry address {} and the entry's address {}. Header:\n{:#?}\nEntry:{:#?}",
+                header_entry_address, entry_address, header, entry
             ))
         }
+    }
+
+    // Convenience function for returning a custom error in the context of validation.
+    pub fn try_validate_from_entry_and_header(
+        entry: Entry,
+        header: ChainHeader,
+        entry_aspect: EntryAspect,
+    ) -> Result<ChainPair, HolochainError> {
+        ChainPair::try_from_header_and_entry(header, entry)
+            .map_err(|e| HolochainError::ValidationFailed(String::from(e)))
     }
 
     pub fn header(&self) -> ChainHeader {
@@ -49,11 +60,12 @@ impl ChainPair {
 
         let header =
             find_chain_header(&entry, &StateWrapper::from(state.clone())).ok_or_else(|| {
-                HolochainError::from(
-                    "No header found for the address {}. Entry:\n{:#?}\n",
+                let error_msg = format!(
+                    "No header found for the address:\n{}\nEntry:\n{:#?}\n",
                     address, entry
                 )
+                HolochainError::from(error_msg)
             })?;
-        ChainPair::new(entry, header)
+        ChainPair::try_from_header_and_entry(header, entry)
     }
 }

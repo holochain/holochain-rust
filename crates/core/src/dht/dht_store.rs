@@ -228,16 +228,16 @@ impl DhtStore {
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
-        match ChainPair::new(header, entry) {
+        match ChainPair::try_from_header_and_entry(header, entry) {
             Ok(_chain_pair) => {
                 let eavi = EntityAttributeValueIndex::new(
-		    &entry.address(),
-		    &Attribute::EntryHeader,
-		    &header.address(),
-		)?;
-		self.add(header)?;
-		self.meta_storage.write().unwrap().add_eavi(&eavi)?;
-		Ok(())
+                    &entry.address(),
+                    &Attribute::EntryHeader,
+                    &header.address(),
+                )?;
+                self.add(header)?;
+                self.meta_storage.write().unwrap().add_eavi(&eavi)?;
+                Ok(())
             }
             Err(err) => match err {
                 HolochainError::HeaderEntryMismatch(err_msg, ..) => {

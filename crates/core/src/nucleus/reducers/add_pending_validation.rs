@@ -46,7 +46,7 @@ pub mod tests {
         let root_state = test_store(context);
 
         let entry = Entry::App("package_entry".into(), RawString::from("test value").into());
-        let chain_pair = ChainPair::new(test_chain_header(), entry.clone());
+        let chain_pair = ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone())?;
 
         let action_wrapper = ActionWrapper::new(Action::AddPendingValidation(Arc::new(
             PendingValidationStruct {

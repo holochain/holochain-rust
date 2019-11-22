@@ -5,7 +5,7 @@ use crate::{
 };
 
 /// Reduce AddPendingValidation Action.
-/// Inserts boxed EntryWithHeader and dependencies into state, referenced with
+/// Inserts boxed ChainPair and dependencies into state, referenced with
 /// the entry's address.
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]

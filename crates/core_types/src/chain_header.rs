@@ -19,8 +19,7 @@ use holochain_json_api::{
     json::JsonString,
 };
 
-use std::{convert::TryInto};
-
+use std::convert::TryInto;
 
 /// ChainHeader of a source chain "Item"
 /// The address of the ChainHeader is used as the Item's key in the source chain hash table

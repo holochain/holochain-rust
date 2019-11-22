@@ -15,7 +15,7 @@ use holochain_core_types::{
     network::entry_aspect::EntryAspect,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{convert::TryFrom, fmt, sync::Arc};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
@@ -90,31 +90,80 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
     type Error = HolochainError;
     fn try_from(aspect: EntryAspect) -> Result<PendingValidationStruct, HolochainError> {
         match aspect {
-            EntryAspect::Content(entry, header) => Ok(PendingValidationStruct::new(
-                ChainPair::try_from_chain_pair(entry, header)?,
-                ValidatingWorkflow::HoldEntry,
-            )),
+            EntryAspect::Content(entry, header) => {
+                match try_validate_from_entry_and_header(entry, header) {
+                    Ok(chain_pair) => {
+                        Ok(PendingValidationStruct::new(
+                            chain_pair,
+                            ValidatingWorkflow::HoldEntry,
+                        )),
+                        Err(error) => {
+                            let error_msg = format!(
+                                "Tried to process EntryAspect::Content(entry, header)\n
+                                where entry is:\n{#:?}\nHeader:\n{#:?}\nError:{}",
+                                entry, header, error
+                            );
+                            Err(HolochainError::ValidationFailed(String::from(error_msg)))
+                        },
+                    }
+                }
+            },
             EntryAspect::Header(_header) => Err(HolochainError::NotImplemented(String::from(
                 "EntryAspect::Header",
             ))),
             EntryAspect::LinkAdd(link_data, header) => {
-                let entry = Entry::LinkAdd(link_data);
-                Ok(PendingValidationStruct::new(
-                    EntryWithHeader::try_from_entry_and_header(entry, header)?,
-                    ValidatingWorkflow::HoldLink,
-                ))
+                let entry = Entry::LinkAdd(link_data);LinkAdd;
+                // TODO: These match statements could be refactored as there
+                // is a  lot of repetition.
+                match try_validate_from_entry_and_header(entry, header) {
+                    Ok(chain_pair) => Ok(PendingValidationStruct::new(
+                        chain_pair,
+                        ValidatingWorkflow::HoldLink,
+                    )),
+                    Err(error) => {
+                        let error_msg = format!(
+                            "Tried to process EntryAspect::LinkAdd:\n{}", error
+                        );
+                        Err(HolochainError::ValidationFailed(String::from(error_msg)))
+                    },
+                }
             }
             EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
                 let entry = Entry::LinkRemove((link_data, links_to_remove));
-                Ok(PendingValidationStruct::new(
-                    EntryWithHeader::try_from_entry_and_header(entry, header)?,
-                    ValidatingWorkflow::RemoveLink,
-                ))
-            }
-            EntryAspect::Update(entry, header) => Ok(PendingValidationStruct::new(
-                EntryWithHeader::try_from_entry_and_header(entry, header)?,
-                ValidatingWorkflow::UpdateEntry,
-            )),
+                match try_validate_from_entry_and_header(entry, header) {
+                    Ok(chain_pair) => Ok(PendingValidationStruct::new(
+                        chain_pair,
+                        ValidatingWorkflow::RemoveLink,
+                    )),
+                    Err(error) => {
+                        let error_msg = format!(
+                            "Tried to process\n
+                            EntryAspect::LinkRemove((link_data, links_to_remove),
+                            \nheader: {}. entry:\n{#:?}\nheader:\nlink_data:\n
+                            {#:?}\nlinks_to_remove:\n{:#?}\nGot error:\n{}",
+                            entry, header, link_data, links_to_remove, error
+                        );
+                        Err(HolochainError::ValidationFailed(String::from(error_msg)))
+                    },
+                }
+            },
+            EntryAspect::Update(entry, header) => {
+                match try_validate_from_entry_and_header(entry, header) {
+                    Ok(chain_pair) => Ok(PendingValidationStruct::new(
+                        chain_pair,
+                        ValidatingWorkflow::UpdateEntry,
+                    )),
+                    Err(error) => {
+                        let error_msg = format!(
+                            "Tried to process\n
+                            EntryAspect::Update(entry, header),\n
+                            entry:\n{#:?}\nheader:\n{:#?}\nGot error:\n{}",
+                            entry, header, link_data, links_to_remove, error
+                        );
+                        Err(HolochainError::ValidationFailed(String::from(error_msg)))
+                    },
+                }
+            },
             EntryAspect::Deletion(header) => {
                 // reconstruct the deletion entry from the header.
                 let deleted_entry_address = header.link_update_delete().ok_or_else(|| {
@@ -124,11 +173,19 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                 })?;
                 let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
 
-                Ok(PendingValidationStruct::new(
-                    EntryWithHeader::try_from_entry_and_header(entry, header)?,
-                    ValidatingWorkflow::RemoveEntry,
-                ))
-            }
+                match ChainPair::try_validate_from_entry_and_header(entry, header) => {
+                    Ok(chain_pair) => {Ok(PendingValidationStruct::new(
+                        chain_pair,
+                        ValidatingWorkflow::RemoveEntry,
+                    ))},
+                    Err(error) => {
+                        HolochainError::ValidationFailed(
+                        "Tried to process EntryAspect::Deletion(header)\n
+                        where header is:\n{#:?}\nGot error:\n{}",
+                        header, error
+                    )},
+                }
+            },
         }
     }
 }
@@ -145,8 +202,8 @@ pub fn run_pending_validations(context: Arc<Context>) {
         log_debug!(
             context,
             "scheduled_jobs/run_pending_validations: found pending validation for {}: {}",
-            pending.entry_with_header.entry.entry_type(),
-            pending.entry_with_header.entry.address()
+            pending.chain_pair.entry().entry_type(),
+            pending.chain_pair.entry().address()
         );
         retry_validation(pending.clone(), context.clone());
     });

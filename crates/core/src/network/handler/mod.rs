@@ -1,4 +1,4 @@
-use crate::agent::state::create_chain_pair_for_header, content_store::GetContent;
+use crate::{agent::state::create_chain_pair_for_header, content_store::GetContent};
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -306,14 +306,14 @@ fn get_content_aspect(
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
             let entry = state
-	                    .agent()
-	                    .chain_store()
-	                    .get(&header.entry_address())?
-	                    .expect("Could not find entry in chain CAS, but header is chain");
-                match ChainPair::new(header, entry) {
-                    Ok(chain_pair) => Some(chain_pair),
-                    Err(error) => return Err(error)
-                }
+                .agent()
+                .chain_store()
+                .get(&header.entry_address())?
+                .expect("Could not find entry in chain CAS, but header is chain");
+            match ChainPair::try_from_header_and_entry(header, entry) {
+                Ok(chain_pair) => Some(chain_pair),
+                Err(error) => return Err(error),
+            }
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
@@ -332,11 +332,11 @@ fn get_content_aspect(
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    match ChainPair::new(headers[0].clone(), entry) {
+                    match ChainPair::try_from_header_and_entry(headers[0].clone(), entry) {
                         Ok(chain_pair) => Some(chain_pair),
                         Err(error) => {
                             log_error!(context, "{}", error);
-                            Err(error)
+                            None
                         },
                     }
                 } else {

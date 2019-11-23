@@ -1,4 +1,5 @@
-FROM holochain/holochain-rust:minimal as build
+ARG DOCKER_BRANCH=develop
+FROM holochain/holochain-rust:minimal.${DOCKER_BRANCH} as build
 
 ENV shellfile ./docker/sim2h_server.default.nix
 

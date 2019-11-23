@@ -44,6 +44,7 @@ pub enum EntryAspect {
     LinkAdd(LinkData, ChainHeader),
 
     // Same as LinkAdd but for removal of links
+    // TODO: can this tuple be combined with EntryType::LinkRemove's data, which is the same?
     LinkRemove((LinkData, Vec<Address>), ChainHeader),
 
     // TODO this looks wrong to me.  I don't think we actually want to

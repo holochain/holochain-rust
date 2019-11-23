@@ -81,7 +81,7 @@ pub(crate) fn reduce_hold_aspect(
                     Some(new_store)
                 }
                 Err(e) => {
-                    error!("{}",e);
+                    error!("{}", e);
                     None
                 }
             }
@@ -96,7 +96,7 @@ pub(crate) fn reduce_hold_aspect(
             ) {
                 Ok(_) => Some(new_store),
                 Err(e) => {
-                    error!("{}",e);
+                    error!("{}", e);
                     None
                 }
             }
@@ -287,7 +287,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::AddLink(link_data.clone()));
+        let action = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
         let link_entry = Entry::LinkAdd(link_data.clone());
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
@@ -331,7 +334,11 @@ pub mod tests {
 
         //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data.clone()));
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
+
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let link_remove_data = LinkData::from_link(
@@ -341,11 +348,14 @@ pub mod tests {
             test_agent_id(),
         );
 
-        let entry_link_remove =
-            Entry::LinkRemove((link_remove_data, vec![entry_link_add.clone().address()]));
-
         //remove added link from dht
-        let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
+        let action_link_remove = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkRemove(
+            (
+                link_remove_data.clone(),
+                vec![entry_link_add.clone().address()],
+            ),
+            test_chain_header(),
+        )));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
@@ -368,7 +378,10 @@ pub mod tests {
         );
 
         //add new link with same chain header
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
@@ -398,7 +411,10 @@ pub mod tests {
             test_agent_id_with_name("new_agent"),
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
         let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
@@ -440,7 +456,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::AddLink(link_data));
+        let action = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
 
         let new_dht_store = reduce(store.dht(), &action);
 
@@ -450,10 +469,6 @@ pub mod tests {
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
-
-        let result = new_dht_store.actions().get(&action).unwrap();
-
-        assert!(result.is_err());
     }
 
     // TODO: Bring the old in-memory network up to speed and turn on this test again!
@@ -465,11 +480,10 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let entry_wh = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
-        let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
+        let action_wrapper = ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
+            entry.clone(),
+            test_chain_header(),
+        )));
 
         store.reduce(action_wrapper);
 

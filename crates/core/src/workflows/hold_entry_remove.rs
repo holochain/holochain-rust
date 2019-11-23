@@ -55,9 +55,7 @@ pub async fn hold_remove_workflow(
     })?;
 
     // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Deletion(
-        entry_with_header.header.clone(),
-    );
+    let aspect = EntryAspect::Deletion(entry_with_header.header.clone());
     hold_aspect(aspect, context.clone()).await?;
     Ok(())
 }

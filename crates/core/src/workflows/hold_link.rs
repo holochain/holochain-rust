@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, dht::actions::add_link::add_link,
+    context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
 
@@ -75,8 +75,8 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::AddLink(link_add.clone(), entry_with_header.header.clone());
-    hold_aspect(&aspect, &context).await?;
+    let aspect = EntryAspect::LinkAdd(link_add.clone(), entry_with_header.header.clone());
+    hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 

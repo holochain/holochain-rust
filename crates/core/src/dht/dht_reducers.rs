@@ -40,11 +40,7 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
-        Action::Hold(_) => Some(reduce_hold_entry),
-        Action::UpdateEntry(_) => Some(reduce_update_entry),
-        Action::RemoveEntry(_) => Some(reduce_remove_entry),
-        Action::AddLink(_) => Some(reduce_add_link),
-        Action::RemoveLink(_) => Some(reduce_remove_link),
+        Action::HoldAspect(_) => Some(reduce_hold_aspect),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
         Action::RemoveQueuedHoldingWorkflow(_) => Some(reduce_remove_queued_holding_workflow),
         _ => None,
@@ -73,7 +69,7 @@ pub(crate) fn reduce_hold_aspect(
     let aspect = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
     new_store.mark_aspect_as_held(
-        &aspect.header().entry_address().into(),
+        aspect.header().entry_address().into(),
         aspect.address().into(),
     );
 
@@ -90,7 +86,7 @@ pub(crate) fn reduce_hold_aspect(
                 }
             }
         }
-        EntryAspect::LinkAdd(link_add, header) => {
+        EntryAspect::LinkAdd(link_data, header) => {
             let entry = Entry::LinkAdd(link_data.clone());
             let res = reduce_add_remove_link_inner(
                 &mut new_store,

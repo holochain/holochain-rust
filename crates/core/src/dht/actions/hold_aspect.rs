@@ -3,33 +3,31 @@ use crate::{
     content_store::GetContent,
     context::Context,
     instance::dispatch_action,
-    network::entry_with_header::EntryWithHeader,
 };
 use futures::{future::Future, task::Poll};
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
-pub async fn hold_entry(
-    entry_wh: &EntryWithHeader,
+pub async fn hold_aspect(
+    aspect: EntryAspect,
     context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let address = entry_wh.entry.address();
-    let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.to_owned()));
+    let action_wrapper = ActionWrapper::new(Action::HoldAspect(aspect));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    HoldEntryFuture { context, address }.await
+    HoldAspectFuture { context, address: "TODO".into() }.await
 }
 
-pub struct HoldEntryFuture {
+pub struct HoldAspectFuture {
     context: Arc<Context>,
     address: Address,
 }
 
-impl Future for HoldEntryFuture {
+impl Future for HoldAspectFuture {
     type Output = Result<Address, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if let Some(err) = self.context.action_channel_error("HoldEntryFuture") {
+        if let Some(err) = self.context.action_channel_error("HoldAspectFuture") {
             return Poll::Ready(Err(err));
         }
         //
@@ -38,8 +36,10 @@ impl Future for HoldEntryFuture {
         //
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
-            if state.dht().contains(&self.address).unwrap() {
-                Poll::Ready(Ok(self.address.clone()))
+            // TODO: wait for it to show up in the holding list
+            // i.e. once we write the reducer we'll know
+            if false {
+                // Poll::Ready(Ok(self.address.clone()))
             } else {
                 Poll::Pending
             }

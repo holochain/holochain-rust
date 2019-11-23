@@ -1,6 +1,5 @@
 use crate::{
     action::{Action, ActionWrapper},
-    agent::state::create_new_chain_header,
     context::Context,
     dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
@@ -10,7 +9,7 @@ use crate::{
         handler::{get_content_aspect, get_meta_aspects},
     },
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HcResult};
+use holochain_core_types::{entry::Entry, error::HcResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
@@ -20,6 +19,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
+use crate::agent::state::create_entry_with_header_for_header;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
@@ -98,48 +98,25 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     // So we iterate over all our source chain headers
     for chain_header in context.state().unwrap().agent().iter_chain() {
         // Create an entry that represents the header
-        let chain_header_entry = Entry::ChainHeader(chain_header.clone());
-        let entry_hash: EntryHash = chain_header_entry.address().into();
-
-        // This header entry needs its own header so we can publish it.
-        // This is a bit delicate:
-        //   * this virtual header needs to be signed
-        //   * but we need to make sure that it is deterministic, i.e. that every call of this
-        //     function creates the exact same header. Otherwise we end up in a endless loop of
-        //     authoring new virtual headers because they have different aspect hashes due to the
-        //     timestamp and the source chain link progressing over time.
-        // So we first call this function that gives a new header as if it would be added to the
-        // source chain...
-        let proto = create_new_chain_header(
-            &chain_header_entry,
-            &state.agent(),
-            &state,
-            &None,
-            &Vec::new(),
-        ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
-
-        // ... and then overwrite all links and the timestamp with static values:
-        let header_entry_header = ChainHeader::new(
-            proto.entry_type(),
-            proto.entry_address(),
-            proto.provenances(),
-            &None,
-            &None,
-            &None,
-            chain_header.timestamp(),
-        );
-
-        let content_aspect = EntryAspect::Content(chain_header_entry, header_entry_header);
-
-        let aspect_hash = AspectHash::from(content_aspect.address());
-        address_map
-            .entry(entry_hash)
-            .or_insert_with(|| {
-                let mut set = HashSet::new();
-                set.insert(aspect_hash.clone());
-                set
-            })
-            .insert(aspect_hash);
+        match create_entry_with_header_for_header(&state, chain_header.clone()) {
+            Err(e) => {
+                log_error!(context, "Could not create virtual header for header. Error: {:?}", e);
+                continue;
+            }
+            Ok(chain_entry_with_header) => {
+                let entry_hash = chain_entry_with_header.entry.address();
+                let content_aspect = EntryAspect::Content(chain_entry_with_header.entry, chain_entry_with_header.header);
+                let aspect_hash = AspectHash::from(content_aspect.address());
+                address_map
+                    .entry(entry_hash.into())
+                    .or_insert_with(|| {
+                        let mut set = HashSet::new();
+                        set.insert(aspect_hash.clone());
+                        set
+                    })
+                    .insert(aspect_hash);
+            }
+        }
     }
     address_map.into()
 }

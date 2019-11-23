@@ -160,7 +160,9 @@ mod tests {
         assert_eq!(map.bare().len(), 0);
         map.add(&test_aspect);
         assert_eq!(map.bare().len(), 1);
-        assert!(map.contains(&test_aspect))
+        assert!(map.contains(&test_aspect));
+        let other_test_aspect = content_aspect_fresh();
+        assert!(!map.contains(&other_test_aspect));
     }
 
     #[test]

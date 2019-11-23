@@ -1,5 +1,4 @@
 use crate::{
-    action::ActionWrapper,
     content_store::{AddContent, GetContent},
     dht::aspect_map::{AspectMap, AspectMapBare},
 };
@@ -26,7 +25,7 @@ use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
 use std::{
-    collections::{BTreeSet, HashMap, VecDeque},
+    collections::{BTreeSet, VecDeque},
     convert::TryFrom,
     sync::Arc,
     time::{Duration, SystemTime},
@@ -46,8 +45,6 @@ pub struct DhtStore {
 
     pub(crate) queued_holding_workflows:
         VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
-
-    actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
 
 impl PartialEq for DhtStore {
@@ -57,7 +54,7 @@ impl PartialEq for DhtStore {
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
-        self.actions == other.actions
+        self.holding_map == other.holding_map
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
@@ -131,7 +128,6 @@ impl DhtStore {
             content_storage,
             meta_storage,
             holding_map: AspectMap::new(),
-            actions: HashMap::new(),
             queued_holding_workflows: VecDeque::new(),
         }
     }
@@ -266,17 +262,6 @@ impl DhtStore {
     ) -> PersistenceResult<Option<EntityAttributeValueIndex>> {
         self.meta_storage.write().unwrap().add_eavi(&eavi)
     }
-
-    pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
-        &self.actions
-    }
-
-    // TODO: Not 100% sure we don't need this
-    // pub(crate) fn actions_mut(
-    //     &mut self,
-    // ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
-    //     &mut self.actions
-    // }
 
     pub(crate) fn next_queued_holding_workflow(
         &self,

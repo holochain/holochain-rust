@@ -7,7 +7,7 @@ pub type AspectSet = HashSet<AspectHash>;
 
 pub type AspectMapBare = HashMap<EntryHash, AspectSet>;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AspectMap(AspectMapBare);
 impl AspectMap {
     pub fn new() -> Self {

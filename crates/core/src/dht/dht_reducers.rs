@@ -81,20 +81,25 @@ pub(crate) fn reduce_hold_aspect(
                     Some(new_store)
                 }
                 Err(e) => {
-                    println!("{}", e);
+                    error!("{}",e);
                     None
                 }
             }
         }
         EntryAspect::LinkAdd(link_data, _header) => {
             let entry = Entry::LinkAdd(link_data.clone());
-            let _ = reduce_add_remove_link_inner(
+            match reduce_add_remove_link_inner(
                 &mut new_store,
                 link_data.link(),
                 &entry.address(),
                 LinkModification::Add,
-            );
-            Some(new_store)
+            ) {
+                Ok(_) => Some(new_store),
+                Err(e) => {
+                    error!("{}",e);
+                    None
+                }
+            }
         }
         EntryAspect::LinkRemove((link_data, links_to_remove), _header) => Some(
             links_to_remove
@@ -217,6 +222,18 @@ pub mod tests {
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::{sync::Arc, time::SystemTime};
+    // TODO do this for all crate tests somehow
+    #[allow(dead_code)]
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
 
     #[test]
     fn reduce_hold_aspect_test() {
@@ -250,6 +267,7 @@ pub mod tests {
 
     #[test]
     fn can_add_links() {
+        enable_logging_for_test();
         let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();

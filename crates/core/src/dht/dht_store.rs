@@ -1,6 +1,7 @@
 use crate::{
     action::ActionWrapper,
     content_store::{AddContent, GetContent},
+    dht::aspect_map::AspectMap,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -41,7 +42,7 @@ pub struct DhtStore {
     meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
 
     /// All the entry aspects that the network has told us to hold
-    holding_map: HashMap<EntryHash, HashSet<AspectHash>>,
+    holding_map: AspectMap,
 
     pub(crate) queued_holding_workflows:
         VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
@@ -64,14 +65,14 @@ impl PartialEq for DhtStore {
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
-    pub holding_list: Vec<Address>,
+    pub holding_map: AspectMap,
     pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
     fn from(state: &StateWrapper) -> Self {
         DhtStoreSnapshot {
-            holding_list: state.dht().holding_list.clone(),
+            holding_map: state.dht().holding_map.clone(),
             queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
         }
     }
@@ -129,7 +130,7 @@ impl DhtStore {
         DhtStore {
             content_storage,
             meta_storage,
-            holding_list: Vec::new(),
+            holding_map: AspectMap::new(),
             actions: HashMap::new(),
             queued_holding_workflows: VecDeque::new(),
         }
@@ -141,7 +142,7 @@ impl DhtStore {
         snapshot: DhtStoreSnapshot,
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
-        new_dht_store.holding_list = snapshot.holding_list;
+        new_dht_store.holding_map = snapshot.holding_map;
         new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
     }
@@ -255,8 +256,8 @@ impl DhtStore {
             .insert(entry_aspect_address);
     }
 
-    pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
-        &self.holding_list
+    pub fn get_holding_map(&self) -> &AspectMap {
+        &self.holding_map
     }
 
     pub(crate) fn fetch_eavi(

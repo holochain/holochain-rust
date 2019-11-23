@@ -69,7 +69,8 @@ impl From<Arc<Context>> for StateDump {
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
-        let held_entries = dht.get_all_held_entry_addresses().clone();
+        // TODO!
+        let held_entries = unimplemented!();
 
         StateDump {
             queued_calls,

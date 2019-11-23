@@ -70,7 +70,7 @@ impl From<Arc<Context>> for StateDump {
         let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
         // TODO!
-        let held_entries = unimplemented!();
+        let held_entries = vec!["TODO: nico, here is a job for you".into()];
 
         StateDump {
             queued_calls,

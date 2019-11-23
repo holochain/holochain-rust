@@ -1,7 +1,7 @@
 use crate::{
     action::ActionWrapper,
     content_store::{AddContent, GetContent},
-    dht::aspect_map::AspectMap,
+    dht::aspect_map::{AspectMap, AspectMapBare},
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -26,7 +26,7 @@ use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
 use lib3h_protocol::types::{AspectHash, EntryHash};
 use std::{
-    collections::{BTreeSet, HashMap, HashSet, VecDeque},
+    collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
     time::{Duration, SystemTime},
@@ -65,14 +65,14 @@ impl PartialEq for DhtStore {
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
-    pub holding_map: AspectMap,
+    pub holding_map: AspectMapBare,
     pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
     fn from(state: &StateWrapper) -> Self {
         DhtStoreSnapshot {
-            holding_map: state.dht().holding_map.clone(),
+            holding_map: state.dht().get_holding_map().bare().clone(),
             queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
         }
     }
@@ -142,7 +142,7 @@ impl DhtStore {
         snapshot: DhtStoreSnapshot,
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
-        new_dht_store.holding_map = snapshot.holding_map;
+        new_dht_store.holding_map = snapshot.holding_map.into();
         new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
     }
@@ -250,10 +250,7 @@ impl DhtStore {
         entry_address: EntryHash,
         entry_aspect_address: AspectHash,
     ) {
-        self.holding_map
-            .entry(entry_address)
-            .or_insert_with(|| HashSet::new())
-            .insert(entry_aspect_address);
+        self.holding_map.add(entry_address, entry_aspect_address);
     }
 
     pub fn get_holding_map(&self) -> &AspectMap {
@@ -278,11 +275,12 @@ impl DhtStore {
         &self.actions
     }
 
-    pub(crate) fn actions_mut(
-        &mut self,
-    ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
-        &mut self.actions
-    }
+    // TODO: Not 100% sure we don't need this
+    // pub(crate) fn actions_mut(
+    //     &mut self,
+    // ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
+    //     &mut self.actions
+    // }
 
     pub(crate) fn next_queued_holding_workflow(
         &self,

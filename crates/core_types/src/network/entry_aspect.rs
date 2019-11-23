@@ -81,15 +81,18 @@ impl EntryAspect {
             EntryAspect::Deletion(_) => String::from("deletion"),
         }
     }
-    pub fn header(&self) -> ChainHeader {
+    pub fn header(&self) -> &ChainHeader {
         match self {
-            EntryAspect::Content(_, header) => header.clone(),
-            EntryAspect::Header(header) => header.clone(),
-            EntryAspect::LinkAdd(_, header) => header.clone(),
-            EntryAspect::LinkRemove(_, header) => header.clone(),
-            EntryAspect::Update(_, header) => header.clone(),
-            EntryAspect::Deletion(header) => header.clone(),
+            EntryAspect::Content(_, header) => header,
+            EntryAspect::Header(header) => header,
+            EntryAspect::LinkAdd(_, header) => header,
+            EntryAspect::LinkRemove(_, header) => header,
+            EntryAspect::Update(_, header) => header,
+            EntryAspect::Deletion(header) => header,
         }
+    }
+    pub fn entry_address(&self) -> &Address {
+        self.header().entry_address()
     }
 }
 

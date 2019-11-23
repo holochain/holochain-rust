@@ -3,7 +3,6 @@
 use crate::{
     action::{Action, ActionWrapper},
     dht::dht_store::DhtStore,
-    network::entry_with_header::EntryWithHeader,
 };
 use std::sync::Arc;
 
@@ -14,7 +13,6 @@ use super::dht_inner_reducers::{
 
 use holochain_core_types::{entry::Entry, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::AddressableContent;
-use lib3h_protocol::types::EntryHash;
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -73,6 +71,12 @@ pub(crate) fn reduce_hold_aspect(
         aspect.address().into(),
     );
 
+    // TODO: we think we don't need this but not 100%
+    // new_store.actions_mut().insert(
+    //     action_wrapper.clone(),
+    //     Ok("TODO: nico, do we need this?".into()),
+    // );
+    
     match aspect {
         EntryAspect::Content(entry, header) => {
             match reduce_store_entry_inner(&mut new_store, entry) {
@@ -86,9 +90,9 @@ pub(crate) fn reduce_hold_aspect(
                 }
             }
         }
-        EntryAspect::LinkAdd(link_data, header) => {
+        EntryAspect::LinkAdd(link_data, _header) => {
             let entry = Entry::LinkAdd(link_data.clone());
-            let res = reduce_add_remove_link_inner(
+            let _ = reduce_add_remove_link_inner(
                 &mut new_store,
                 link_data.link(),
                 &entry.address(),
@@ -96,17 +100,17 @@ pub(crate) fn reduce_hold_aspect(
             );
             Some(new_store)
         }
-        EntryAspect::LinkRemove((link_data, links_to_remove), header) => Some(
+        EntryAspect::LinkRemove((link_data, links_to_remove), _header) => Some(
             links_to_remove
                 .iter()
                 .fold(new_store, |mut store, link_addresses| {
-                    let res = reduce_add_remove_link_inner(
+                    let link = link_data.link();
+                    let _ = reduce_add_remove_link_inner(
                         &mut store,
-                        link_data.link(),
+                        link,
                         link_addresses,
                         LinkModification::Remove,
                     );
-                    store.actions_mut().insert(action_wrapper.clone(), res);
                     store.clone()
                 }),
         ),
@@ -121,7 +125,8 @@ pub(crate) fn reduce_hold_aspect(
         }
         EntryAspect::Deletion(header) => {
             if let Some(crud_link) = header.link_update_delete() {
-                let _ = reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
+                let _ =
+                    reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
                 Some(new_store)
             } else {
                 error!("EntryAspect::Update without crud_link in header received!");

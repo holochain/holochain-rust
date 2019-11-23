@@ -1,10 +1,10 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    context::Context,
+    dht::actions::hold_aspect::hold_aspect,
+    network::entry_with_header::EntryWithHeader,
+    nucleus::validation::{validate_entry, ValidationError},
+    workflows::validation_package,
 };
-use holochain_persistence_api::cas::content::AddressableContent;
-
-use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     network::entry_aspect::EntryAspect,

@@ -1,8 +1,7 @@
-use crate::{
-    action::Action, context::Context, entry::CanPublish,
-    network::entry_with_header::EntryWithHeader, nucleus::ZomeFnCall,
+use crate::{action::Action, context::Context, entry::CanPublish, nucleus::ZomeFnCall};
+use holochain_core_types::{
+    entry::Entry, link::link_data::LinkData, network::entry_aspect::EntryAspect,
 };
-use holochain_core_types::{entry::Entry, link::link_data::LinkData, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
@@ -67,7 +66,7 @@ pub enum ConsistencyEvent {
     UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
     AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
-    RemoveLink(Address),                                            // <- Publish, entry_type=LinkRemove
+    RemoveLink(Address), // <- Publish, entry_type=LinkRemove
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
@@ -190,6 +189,10 @@ impl ConsistencyModel {
                 EntryAspect::LinkRemove(_, header) => Some(ConsistencySignal::new_terminal(
                     ConsistencyEvent::RemoveLink(header.entry_address().clone()),
                 )),
+                EntryAspect::Header(_) => {
+                    error!("Got EntryAspect::Header type, unexpectedly");
+                    None
+                }
             }
 
             Action::QueueZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(

@@ -1,30 +1,25 @@
 use crate::{
     action::{Action, ActionWrapper},
-    content_store::GetContent,
     context::Context,
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, network::entry_aspect::EntryAspect};
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{pin::Pin, sync::Arc};
 
-pub async fn hold_aspect(
-    aspect: EntryAspect,
-    context: Arc<Context>,
-) -> Result<Address, HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::HoldAspect(aspect));
+pub async fn hold_aspect(aspect: EntryAspect, context: Arc<Context>) -> Result<(), HolochainError> {
+    let action_wrapper = ActionWrapper::new(Action::HoldAspect(aspect.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    HoldAspectFuture { context, address: "TODO".into() }.await
+    HoldAspectFuture { context, aspect }.await
 }
 
 pub struct HoldAspectFuture {
     context: Arc<Context>,
-    address: Address,
+    aspect: EntryAspect,
 }
 
 impl Future for HoldAspectFuture {
-    type Output = Result<Address, HolochainError>;
+    type Output = Result<(), HolochainError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("HoldAspectFuture") {
@@ -38,8 +33,8 @@ impl Future for HoldAspectFuture {
         if let Some(state) = self.context.try_state() {
             // TODO: wait for it to show up in the holding list
             // i.e. once we write the reducer we'll know
-            if false {
-                // Poll::Ready(Ok(self.address.clone()))
+            if state.dht().get_holding_map().contains(&self.aspect) {
+                Poll::Ready(Ok(()))
             } else {
                 Poll::Pending
             }

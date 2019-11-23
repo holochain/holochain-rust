@@ -23,9 +23,9 @@ impl ChainPair {
         if header_entry_address == entry_address {
             Ok(ChainPair(header, entry))
         } else {
+            let error_msg = format!("Tried to create a ChainPair, but got a mismatch with the header's entry address and the entry's address. Header:\n{:#?}\nEntry:{:#?}", header, entry);
             Err(HolochainError::HeaderEntryMismatch(
-                "Tried to create a ChainPair, but got a mismatch with the header's entry address {} and the entry's address {}. Header:\n{:#?}\nEntry:{:#?}",
-                header_entry_address, entry_address, header, entry
+                error_msg, header_entry_address, entry_address
             ))
         }
     }
@@ -63,7 +63,7 @@ impl ChainPair {
                 let error_msg = format!(
                     "No header found for the address:\n{}\nEntry:\n{:#?}\n",
                     address, entry
-                )
+                );
                 HolochainError::from(error_msg)
             })?;
         ChainPair::try_from_header_and_entry(header, entry)

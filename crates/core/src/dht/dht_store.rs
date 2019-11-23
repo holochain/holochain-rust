@@ -240,13 +240,13 @@ impl DhtStore {
                 Ok(())
             }
             Err(err) => match err {
-                HolochainError::HeaderEntryMismatch(err_msg, ..) => {
+                HolochainError::HeaderEntryMismatch(err_msg, header_entry_address, entry_address) => {
                     let add_err_msg = format!(
-                        "Tried to add entry {} and header {} to the CAS and EAV, respectively",
+                        "Tried to add entry:\n{:#?}\nand header:\n{:#?}\nto the CAS and EAV, respectively",
                         entry, header,
                     );
                     err_msg = concat!(err_msg, add_err_msg);
-                    Err(HolochainError::HeaderEntryMismatch(err_msg, ..))
+                    Err(HolochainError::HeaderEntryMismatch(err_msg, header_entry_address, entry_address))
                 }
             },
         }

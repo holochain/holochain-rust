@@ -3,7 +3,6 @@
 use crate::{
     action::{Action, ActionWrapper},
     dht::dht_store::DhtStore,
-    network::chain_pair::ChainPair,
 };
 use std::sync::Arc;
 

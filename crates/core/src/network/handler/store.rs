@@ -1,7 +1,6 @@
 use crate::{
     context::Context,
     dht::actions::queue_holding_workflow::dispatch_queue_holding_workflow,
-    network::{chain_pair::ChainPair, entry_aspect::EntryAspect},
     scheduled_jobs::pending_validations::PendingValidationStruct,
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;

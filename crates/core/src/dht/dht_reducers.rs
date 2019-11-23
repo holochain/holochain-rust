@@ -166,7 +166,7 @@ pub fn reduce_queue_holding_workflow(
         let mut new_store = (*old_store).clone();
         new_store
             .queued_holding_workflows
-            .push_back((pending.clone(), maybe_delay.clone()));
+            .push_back((pending.clone(), *maybe_delay));
         Some(new_store)
     }
 }

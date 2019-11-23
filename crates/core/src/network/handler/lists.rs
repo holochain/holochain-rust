@@ -1,5 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
+    agent::state::create_entry_with_header_for_header,
     context::Context,
     dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
@@ -19,7 +20,6 @@ use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
-use crate::agent::state::create_entry_with_header_for_header;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
@@ -100,12 +100,19 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
         // Create an entry that represents the header
         match create_entry_with_header_for_header(&state, chain_header.clone()) {
             Err(e) => {
-                log_error!(context, "Could not create virtual header for header. Error: {:?}", e);
+                log_error!(
+                    context,
+                    "Could not create virtual header for header. Error: {:?}",
+                    e
+                );
                 continue;
             }
             Ok(chain_entry_with_header) => {
                 let entry_hash = chain_entry_with_header.entry.address();
-                let content_aspect = EntryAspect::Content(chain_entry_with_header.entry, chain_entry_with_header.header);
+                let content_aspect = EntryAspect::Content(
+                    chain_entry_with_header.entry,
+                    chain_entry_with_header.header,
+                );
                 let aspect_hash = AspectHash::from(content_aspect.address());
                 address_map
                     .entry(entry_hash.into())

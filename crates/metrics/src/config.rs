@@ -1,8 +1,4 @@
-use crate::{
-    cloudwatch::{CloudWatchLogger, CloudWatchMetricPublisher},
-    logger::LoggerMetricPublisher,
-    MetricPublisher,
-};
+use crate::{cloudwatch::CloudWatchLogger, logger::LoggerMetricPublisher, MetricPublisher};
 use holochain_locksmith::RwLock;
 use std::sync::Arc;
 
@@ -12,7 +8,6 @@ use std::sync::Arc;
 #[serde(tag = "type")]
 pub enum MetricPublisherConfig {
     Logger,
-    CloudWatchMetrics(Option<rusoto_core::region::Region>),
     CloudWatchLogs {
         region: Option<rusoto_core::region::Region>,
         log_group_name: Option<String>,
@@ -31,19 +26,17 @@ impl MetricPublisherConfig {
     pub fn create_metric_publisher(&self) -> Arc<RwLock<dyn MetricPublisher>> {
         let publisher: Arc<RwLock<dyn MetricPublisher>> = match self {
             Self::Logger => Arc::new(RwLock::new(LoggerMetricPublisher::new())),
-            Self::CloudWatchMetrics(maybe_region) => {
-                let region = maybe_region.clone().unwrap_or_default();
-                Arc::new(RwLock::new(CloudWatchMetricPublisher::new(&region)))
-            }
             Self::CloudWatchLogs {
                 region,
                 log_group_name,
                 log_stream_name,
             } => {
                 let region = region.clone().unwrap_or_default();
-                Arc::new(RwLock::new(CloudWatchLogger::with_log_stream(
-                    log_stream_name.clone().unwrap_or_default(),
-                    log_group_name.clone().unwrap_or_default(),
+                let provider = crate::cloudwatch::assume_role(&region);
+                Arc::new(RwLock::new(CloudWatchLogger::new(
+                    log_stream_name.clone(),
+                    log_group_name.clone(),
+                    provider,
                     &region,
                 )))
             }

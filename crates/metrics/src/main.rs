@@ -54,8 +54,15 @@ enum Command {
     },
 }
 
+fn setup_aws_env() {
+    // HACK fix an issue with cloudwatch logs api
+    std::env::set_var("AWS_REGION", "eu-central-1")
+}
+
 fn main() {
     enable_logging();
+    setup_aws_env();
+
     let command = Command::from_args();
 
     match command {
@@ -101,7 +108,11 @@ fn cloudwatch_test() {
 }
 
 fn print_cloudwatch_stats(query_args: &QueryArgs, log_group_name: String, region: &Region) {
-    let cloudwatch = CloudWatchLogger::with_log_group(log_group_name, region);
+    let cloudwatch = CloudWatchLogger::with_log_group(
+        log_group_name,
+        crate::cloudwatch::assume_role(&region),
+        region,
+    );
 
     let stats: StatsByMetric = cloudwatch.query_and_aggregate(query_args);
 

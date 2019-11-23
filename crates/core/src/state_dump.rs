@@ -11,6 +11,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
+use crate::dht::aspect_map::AspectMapBare;
 
 #[derive(Serialize)]
 pub struct StateDump {
@@ -21,7 +22,7 @@ pub struct StateDump {
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
-    pub held_entries: Vec<Address>,
+    pub held_aspects: AspectMapBare,
     pub source_chain: Vec<ChainHeader>,
 }
 
@@ -69,8 +70,7 @@ impl From<Arc<Context>> for StateDump {
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
-        // TODO!
-        let held_entries = vec!["TODO: nico, here is a job for you".into()];
+        let held_aspects = dht.get_holding_map().bare().clone();
 
         StateDump {
             queued_calls,
@@ -80,7 +80,7 @@ impl From<Arc<Context>> for StateDump {
             validation_package_flows,
             direct_message_flows,
             queued_holding_workflows,
-            held_entries,
+            held_aspects,
             source_chain,
         }
     }

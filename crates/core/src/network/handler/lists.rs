@@ -10,7 +10,7 @@ use crate::{
         handler::{get_content_aspect, get_meta_aspects},
     },
 };
-use holochain_core_types::{entry::Entry, error::HcResult};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HcResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
@@ -95,15 +95,40 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     let state = context.state().expect(
         "There must be a state in context when we are responding to a HandleGetAuthoringEntryList",
     );
-    for chain_header_entry in get_all_chain_header_entries(context.clone()) {
+    // So we iterate over all our source chain headers
+    for chain_header in context.state().unwrap().agent().iter_chain() {
+        // Create an entry that represents the header
+        let chain_header_entry = Entry::ChainHeader(chain_header.clone());
         let entry_hash: EntryHash = chain_header_entry.address().into();
-        let header_entry_header = create_new_chain_header(
+
+        // This header entry needs its own header so we can publish it.
+        // This is a bit delicate:
+        //   * this virtual header needs to be signed
+        //   * but we need to make sure that it is deterministic, i.e. that every call of this
+        //     function creates the exact same header. Otherwise we end up in a endless loop of
+        //     authoring new virtual headers because they have different aspect hashes due to the
+        //     timestamp and the source chain link progressing over time.
+        // So we first call this function that gives a new header as if it would be added to the
+        // source chain...
+        let proto = create_new_chain_header(
             &chain_header_entry,
             &state.agent(),
             &state,
             &None,
             &Vec::new(),
         ).expect("Must be able to create dummy header header when responding to HandleGetAuthoringEntryList");
+
+        // ... and then overwrite all links and the timestamp with static values:
+        let header_entry_header = ChainHeader::new(
+            proto.entry_type(),
+            proto.entry_address(),
+            proto.provenances(),
+            &None,
+            &None,
+            &None,
+            chain_header.timestamp()
+        );
+
         let content_aspect = EntryAspect::Content(chain_header_entry, header_entry_header);
 
         let aspect_hash = AspectHash::from(content_aspect.address());
@@ -125,11 +150,6 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .filter(|ref chain_header| chain_header.entry_type().can_publish(&context))
         .map(|chain_header| chain_header.entry_address().clone())
         .collect()
-}
-
-fn get_all_chain_header_entries(context: Arc<Context>) -> Vec<Entry> {
-    let chain = context.state().unwrap().agent().iter_chain();
-    chain.map(Entry::ChainHeader).collect()
 }
 
 fn _get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<Vec<Address>> {

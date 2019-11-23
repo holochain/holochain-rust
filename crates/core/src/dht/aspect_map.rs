@@ -151,17 +151,44 @@ impl From<&HashSet<(EntryHash, AspectHash)>> for AspectMap {
 mod tests {
 
     use super::*;
-    use sim1h::aspect::fixture::content_aspect_fresh;
+    use sim1h::aspect::fixture::{content_aspect_fresh, update_aspect_fresh, deletion_aspect_fresh};
+    use sim1h::entry::fixture::entry_fresh;
 
     #[test]
     fn test_address_map_add_and_contains() {
         let mut map = AspectMap::new();
         let test_aspect = content_aspect_fresh();
+
+        // Entry 1 - basic add() and contains()
         assert_eq!(map.bare().len(), 0);
         map.add(&test_aspect);
         assert_eq!(map.bare().len(), 1);
         assert!(map.contains(&test_aspect));
         let other_test_aspect = content_aspect_fresh();
+        assert!(!map.contains(&other_test_aspect));
+
+
+        // Entry 2 - same with two aspects
+        let entry = entry_fresh();
+        let update_aspect = update_aspect_fresh(&entry);
+        let deletion_aspect = deletion_aspect_fresh(&entry);
+
+        assert!(!map.contains(&update_aspect));
+        assert!(!map.contains(&deletion_aspect));
+
+        map.add(&update_aspect);
+
+        assert!(map.contains(&update_aspect));
+        assert!(!map.contains(&deletion_aspect));
+
+        map.add(&deletion_aspect);
+
+        assert!(map.contains(&update_aspect));
+        assert!(map.contains(&deletion_aspect));
+
+
+        // Finally, check that old entry wasn't affected
+        assert!(map.contains(&test_aspect));
         assert!(!map.contains(&other_test_aspect));
     }
 

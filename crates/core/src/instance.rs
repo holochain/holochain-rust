@@ -28,6 +28,7 @@ use holochain_core_types::{
 use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
+use holochain_tracing::{self as ht, Span};
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -184,12 +185,13 @@ impl Instance {
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
         instance_is_alive.store(true, Ordering::Relaxed);
+        let root_span = context.tracer.span("start_action_loop").start().into();
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
                 ProcessUniqueId::new().to_string()
             ))
-            .spawn(move || {
+            .spawn(move || ht::start_thread_trace(root_span, || {
                 let mut state_observers: Vec<Observer> = Vec::new();
                 let mut unprocessed_action: Option<ActionWrapper> = None;
                 while kill_receiver.try_recv().is_err() {
@@ -222,7 +224,7 @@ impl Instance {
                     }
                 }
                 instance_is_alive.store(false, Relaxed);
-            });
+            }));
     }
 
     pub fn stop_action_loop(&self) {
@@ -548,6 +550,7 @@ pub mod tests {
                 Arc::new(RwLock::new(
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
+                Arc::new(ht::null_tracer()),
             )),
             logger,
         )
@@ -600,6 +603,7 @@ pub mod tests {
                 Arc::new(RwLock::new(
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
+                Arc::new(ht::null_tracer()),
             )
             .unwrap(),
         )
@@ -628,6 +632,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -657,6 +662,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -1021,6 +1027,7 @@ pub mod tests {
                 Arc::new(RwLock::new(
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
+                Arc::new(ht::null_tracer()),
             )),
             logger,
         )

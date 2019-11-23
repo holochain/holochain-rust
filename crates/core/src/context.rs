@@ -34,6 +34,7 @@ use holochain_persistence_api::{
     },
     eav::EntityAttributeValueStorage,
 };
+use holochain_tracing as ht;
 use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
@@ -92,6 +93,7 @@ pub struct Context {
     thread_pool: Arc<Mutex<ThreadPool>>,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+    pub tracer: Arc<ht::Tracer>,
 }
 
 impl Context {
@@ -134,6 +136,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+        tracer: Arc<ht::Tracer>,
     ) -> Self {
         Context {
             instance_name: instance_name.to_owned(),
@@ -156,6 +159,7 @@ impl Context {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
+            tracer,
         }
     }
 
@@ -172,6 +176,7 @@ impl Context {
         p2p_config: P2pConfig,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+        tracer: Arc<ht::Tracer>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             instance_name: instance_name.to_owned(),
@@ -191,6 +196,7 @@ impl Context {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
+            tracer,
         })
     }
 
@@ -459,6 +465,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
 
         // Somehow we need to build our own logging instance for this test to show logs
@@ -505,6 +512,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

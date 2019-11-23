@@ -103,6 +103,7 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_tracing as ht;
     use std::sync::Arc;
     use tempfile;
 
@@ -127,6 +128,7 @@ pub mod test {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

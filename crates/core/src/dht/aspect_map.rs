@@ -1,3 +1,4 @@
+use crate::holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use lib3h_protocol::types::{AspectHash, EntryHash};
 use std::collections::{HashMap, HashSet};
@@ -31,17 +32,22 @@ impl AspectMap {
     }
 
     pub fn contains(&self, aspect: &EntryAspect) -> bool {
+        let entry_address = aspect.entry_address().into();
+        let entry_aspect_address = aspect.address();
         self.0
-            .get(aspect.entry_address())
-            .map(|set| set.contains(aspect.entry_address()))
+            .get(entry_address)
+            .map(|set| set.contains(&entry_aspect_address))
             .unwrap_or_default()
     }
 
-    pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
+    pub fn add(&mut self, aspect: &EntryAspect) {
+        let entry_address = aspect.entry_address().into();
+        let entry_aspect_address = aspect.address().into();
+
         self.0
             .entry(entry_address)
             .or_insert_with(HashSet::new)
-            .insert(aspect_address);
+            .insert(entry_aspect_address);
     }
 
     pub fn entry_addresses(&self) -> impl Iterator<Item = &EntryHash> {
@@ -145,6 +151,17 @@ impl From<&HashSet<(EntryHash, AspectHash)>> for AspectMap {
 mod tests {
 
     use super::*;
+    use sim1h::aspect::fixture::content_aspect_fresh;
+
+    #[test]
+    fn test_address_map_add_and_contains() {
+        let mut map = AspectMap::new();
+        let test_aspect = content_aspect_fresh();
+        assert_eq!(map.bare().len(), 0);
+        map.add(&test_aspect);
+        assert_eq!(map.bare().len(), 1);
+        assert!(map.contains(&test_aspect))
+    }
 
     #[test]
     fn test_merge_address_maps_merges_entries() {

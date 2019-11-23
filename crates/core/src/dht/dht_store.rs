@@ -9,6 +9,7 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
+    network::entry_aspect::EntryAspect,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -24,7 +25,6 @@ use regex::Regex;
 use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
-use lib3h_protocol::types::{AspectHash, EntryHash};
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
@@ -245,12 +245,8 @@ impl DhtStore {
         Ok(())
     }
 
-    pub fn mark_aspect_as_held(
-        &mut self,
-        entry_address: EntryHash,
-        entry_aspect_address: AspectHash,
-    ) {
-        self.holding_map.add(entry_address, entry_aspect_address);
+    pub fn mark_aspect_as_held(&mut self, aspect: &EntryAspect) {
+        self.holding_map.add(aspect);
     }
 
     pub fn get_holding_map(&self) -> &AspectMap {

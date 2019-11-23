@@ -66,10 +66,7 @@ pub(crate) fn reduce_hold_aspect(
 ) -> Option<DhtStore> {
     let aspect = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
-    new_store.mark_aspect_as_held(
-        aspect.header().entry_address().into(),
-        aspect.address().into(),
-    );
+    new_store.mark_aspect_as_held(&aspect);
 
     // TODO: we think we don't need this but not 100%
     // new_store.actions_mut().insert(

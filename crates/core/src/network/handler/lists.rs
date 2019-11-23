@@ -126,7 +126,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
             &None,
             &None,
             &None,
-            chain_header.timestamp()
+            chain_header.timestamp(),
         );
 
         let content_aspect = EntryAspect::Content(chain_header_entry, header_entry_header);

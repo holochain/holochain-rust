@@ -1,6 +1,9 @@
 use crate::{
-    action::QueryKey, context::Context, dht::pending_validations::PendingValidation,
-    network::direct_message::DirectMessage, nucleus::ZomeFnCall,
+    action::QueryKey,
+    context::Context,
+    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidation},
+    network::direct_message::DirectMessage,
+    nucleus::ZomeFnCall,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
@@ -11,7 +14,6 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use crate::dht::aspect_map::AspectMapBare;
 
 #[derive(Serialize)]
 pub struct StateDump {

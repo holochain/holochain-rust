@@ -2,6 +2,8 @@ FROM holochain/holochain-rust:minimal as build
 
 ENV shellfile ./docker/sim2h_server.default.nix
 
+RUN echo $CARGO_HOME
+
 RUN nix-shell $shellfile --run hc-sim2h-server-install
 RUN nix-shell $shellfile --run 'cargo clean'
 RUN nix-collect-garbage

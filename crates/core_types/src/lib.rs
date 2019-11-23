@@ -67,6 +67,7 @@ pub const HDK_HASH: &str = env!(
 
 // may be empty because code isn't always built from git repo
 pub const GIT_HASH: &str = env!("GIT_HASH", "");
+pub const GIT_BRANCH: &str = env!("GIT_BRANCH", "");
 
 #[cfg(test)]
 mod test_hash {

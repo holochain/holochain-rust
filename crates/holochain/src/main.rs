@@ -26,7 +26,9 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core_types::{error::HolochainError, hdk_version::HDK_VERSION, GIT_HASH, HDK_HASH};
+use holochain_core_types::{
+    error::HolochainError, hdk_version::HDK_VERSION, GIT_BRANCH, GIT_HASH, HDK_HASH,
+};
 use holochain_locksmith::spawn_locksmith_guard_watcher;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
@@ -73,6 +75,9 @@ fn main() {
         );
         if GIT_HASH != "" {
             println!("GIT_HASH: {}", GIT_HASH);
+        }
+        if GIT_BRANCH != "" {
+            println!("GIT_BRANCH: {}", GIT_BRANCH);
         }
         return;
     }

@@ -223,7 +223,7 @@ pub mod tests {
         dna.uuid = "test_can_get_authoring_list".to_string();
         let (_instance, context) = instance_by_name("jill", dna, None);
         let authoring_map = create_authoring_map(context);
-        assert_eq!(authoring_map.len(), 3);
+        assert_eq!(authoring_map.bare().len(), 3);
     }
 
     #[test]
@@ -233,7 +233,7 @@ pub mod tests {
         let (_instance, context) = instance_by_name("jill", dna, None);
         let authoring_map = create_authoring_map(context);
         // to start with holding = authoring
-        assert_eq!(authoring_map.len(), 3);
+        assert_eq!(authoring_map.bare().len(), 3);
     }
 
 }

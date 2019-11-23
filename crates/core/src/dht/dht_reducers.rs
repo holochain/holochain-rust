@@ -76,7 +76,6 @@ pub(crate) fn reduce_hold_aspect(
     //     action_wrapper.clone(),
     //     Ok("TODO: nico, do we need this?".into()),
     // );
-    
     match aspect {
         EntryAspect::Content(entry, header) => {
             match reduce_store_entry_inner(&mut new_store, entry) {
@@ -200,7 +199,7 @@ pub mod tests {
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{
-                reduce, reduce_hold_entry, reduce_queue_holding_workflow,
+                reduce, reduce_hold_aspect, reduce_queue_holding_workflow,
                 reduce_remove_queued_holding_workflow,
             },
             dht_store::{create_get_links_eavi_query, DhtStore},
@@ -217,25 +216,27 @@ pub mod tests {
         eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
+        network::entry_aspect::EntryAspect,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::{sync::Arc, time::SystemTime};
 
     #[test]
-    fn reduce_hold_entry_test() {
+    fn reduce_hold_aspect_test() {
         let context = test_context("bob", None);
         let store = test_store(context);
 
         // test_entry is not sys so should do nothing
         let sys_entry = test_sys_entry();
-        let entry_wh = EntryWithHeader {
-            entry: sys_entry.clone(),
-            header: test_chain_header(),
-        };
 
-        let new_dht_store =
-            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
-                .expect("there should be a new store for committing a sys entry");
+        let new_dht_store = reduce_hold_aspect(
+            &store.dht(),
+            &ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
+                sys_entry.clone(),
+                test_chain_header(),
+            ))),
+        )
+        .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),

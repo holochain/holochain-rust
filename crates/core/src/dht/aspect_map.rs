@@ -148,32 +148,34 @@ mod tests {
 
     #[test]
     fn test_merge_address_maps_merges_entries() {
-        let mut map1: AddressSetMap = HashMap::new();
-        let mut map2: AddressSetMap = HashMap::new();
+        let mut map1: AspectMapBare = HashMap::new();
+        let mut map2: AspectMapBare = HashMap::new();
         map1.insert("a".into(), vec!["x".into()].into_iter().collect());
         map2.insert("b".into(), vec!["y".into()].into_iter().collect());
-        let merged = AspectMap::merge(&map1.into(), &map2.into());
-        let merged2 = AspectMap::merge(&map2.into(), &map1.into());
-        assert_eq!(merged, merged2);
-        assert_eq!(merged.len(), 2);
-        assert_eq!(merged.get(&EntryHash::from("a")).unwrap().len(), 1);
-        assert_eq!(merged.get(&EntryHash::from("b")).unwrap().len(), 1);
+        let (map1, map2) = (map1.into(), map2.into());
+        let merged = AspectMap::merge(&map1, &map2);
+        let merged2 = AspectMap::merge(&map2, &map1);
+        assert_eq!(merged.0, merged2.0);
+        assert_eq!(merged.0.len(), 2);
+        assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 1);
+        assert_eq!(merged.0.get(&EntryHash::from("b")).unwrap().len(), 1);
     }
 
     #[test]
     fn test_merge_address_maps_merges_aspects_1() {
-        let mut map1: AddressSetMap = HashMap::new();
-        let mut map2: AddressSetMap = HashMap::new();
+        let mut map1: AspectMapBare = HashMap::new();
+        let mut map2: AspectMapBare = HashMap::new();
         map1.insert("a".into(), vec!["x".into()].into_iter().collect());
         map2.insert(
             "a".into(),
             vec!["x".into(), "y".into()].into_iter().collect(),
         );
-        let merged = AspectMap::merge(&map1.into(), &map2.into());
-        let merged2 = AspectMap::merge(&map1.into(), &map2.into());
-        assert_eq!(merged, merged2);
-        assert_eq!(merged.len(), 1);
-        assert_eq!(merged.get(&EntryHash::from("a")).unwrap().len(), 2);
+        let (map1, map2) = (map1.into(), map2.into());
+        let merged = AspectMap::merge(&map1, &map2);
+        let merged2 = AspectMap::merge(&map1, &map2);
+        assert_eq!(merged.0, merged2.0);
+        assert_eq!(merged.0.len(), 1);
+        assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 2);
     }
 
     #[test]
@@ -181,8 +183,8 @@ mod tests {
         // Full merged outcome should be:
         // a => x, y, z
         // b => u, v, w
-        let mut map1: AddressSetMap = HashMap::new();
-        let mut map2: AddressSetMap = HashMap::new();
+        let mut map1: AspectMapBare = HashMap::new();
+        let mut map2: AspectMapBare = HashMap::new();
         map1.insert(
             "a".into(),
             vec!["x".into(), "y".into()].into_iter().collect(),
@@ -200,12 +202,13 @@ mod tests {
             "b".into(),
             vec!["v".into(), "w".into()].into_iter().collect(),
         );
-        let merged = AspectMap::merge(&map1.into(), &map2.into());
-        let merged2 = AspectMap::merge(&map2.into(), &map1.into());
-        assert_eq!(merged, merged2);
-        assert_eq!(merged.len(), 2);
-        assert_eq!(merged.get(&EntryHash::from("a")).unwrap().len(), 3);
-        assert_eq!(merged.get(&EntryHash::from("b")).unwrap().len(), 3);
+        let (map1, map2) = (map1.into(), map2.into());
+        let merged = AspectMap::merge(&map1, &map2);
+        let merged2 = AspectMap::merge(&map2, &map1);
+        assert_eq!(merged.0, merged2.0);
+        assert_eq!(merged.0.len(), 2);
+        assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 3);
+        assert_eq!(merged.0.get(&EntryHash::from("b")).unwrap().len(), 3);
     }
 
 }

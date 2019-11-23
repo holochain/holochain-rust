@@ -157,12 +157,18 @@ pub fn reduce_queue_holding_workflow(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
-    let mut new_store = (*old_store).clone();
-    new_store
-        .queued_holding_workflows
-        .push_back(pending.clone());
-    Some(new_store)
+    let (pending, maybe_delay) = unwrap_to!(action => Action::QueueHoldingWorkflow);
+    let entry_aspect = EntryAspect::from((**pending).clone());
+    if old_store.get_holding_map().contains(&entry_aspect) {
+        error!("Tried to add pending validation to queue which is already held!");
+        None
+    } else {
+        let mut new_store = (*old_store).clone();
+        new_store
+            .queued_holding_workflows
+            .push_back((pending.clone(), maybe_delay.clone()));
+        Some(new_store)
+    }
 }
 
 #[allow(unknown_lints)]

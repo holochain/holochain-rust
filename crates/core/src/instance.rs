@@ -37,7 +37,9 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use threadpool::ThreadPool;
 
+const HOLDING_WORKFLOW_THREADS: usize = 10;
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
@@ -278,6 +280,7 @@ impl Instance {
     fn start_holding_loop(&mut self, context: Arc<Context>) {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch_holding = Some(kill_sender);
+        let threadpool = ThreadPool::new(HOLDING_WORKFLOW_THREADS);
         thread::Builder::new()
             .name(format!(
                 "holding_loop/{}",
@@ -301,42 +304,44 @@ impl Instance {
                                 context.clone(),
                             ));
 
-                            let result = run_holding_workflow(pending, context.clone());
+                            let context = context.clone();
+                            let pending = pending.clone();
+                            threadpool.execute(move || {
+                                match run_holding_workflow(pending.clone(), context.clone()) {
+                                    // If we couldn't run the validation due to unresolved dependencies,
+                                    // we have to re-add this entry at the end of the queue:
+                                    Err(HolochainError::ValidationPending) => {
+                                        // And with a delay so we are not trying to re-validate many times per second.
+                                        let mut delay = maybe_delay
+                                            .map(|old_delay| {
+                                                // Exponential back-off:
+                                                // If this was delayed before we double the delay.
+                                                old_delay * 2
+                                            })
+                                            .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
 
-                            match result {
-                                // If we couldn't run the validation due to unresolved dependencies,
-                                // we have to re-add this entry at the end of the queue:
-                                Err(HolochainError::ValidationPending) => {
-                                    // And with a delay so we are not trying to re-validate many times per second.
-                                    let mut delay = maybe_delay
-                                        .map(|old_delay| {
-                                            // Exponential back-off:
-                                            // If this was delayed before we double the delay.
-                                            old_delay * 2
-                                        })
-                                        .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
+                                        // Cap delay with max duration
+                                        if delay > RETRY_VALIDATION_DURATION_MAX {
+                                            delay = RETRY_VALIDATION_DURATION_MAX
+                                        }
 
-                                    // Cap delay with max duration
-                                    if delay > RETRY_VALIDATION_DURATION_MAX {
-                                        delay = RETRY_VALIDATION_DURATION_MAX
+                                        context.block_on(queue_holding_workflow(
+                                            Arc::new(pending.same()),
+                                            Some(delay),
+                                            context.clone(),
+                                        ))
                                     }
-
-                                    context.block_on(queue_holding_workflow(
-                                        Arc::new(pending.same()),
-                                        Some(delay),
-                                        context.clone(),
-                                    ))
+                                    Err(e) => log_error!(
+                                        context,
+                                        "Error running holding workflow for {:?}: {:?}",
+                                        pending,
+                                        e,
+                                    ),
+                                    Ok(()) => {
+                                        log_info!(context, "Successfully processed: {:?}", pending)
+                                    }
                                 }
-                                Err(e) => log_error!(
-                                    context,
-                                    "Error running holding workflow for {:?}: {:?}",
-                                    pending,
-                                    e,
-                                ),
-                                Ok(()) => {
-                                    log_info!(context, "Successfully processed: {:?}", pending)
-                                }
-                            }
+                            });
                         } else {
                             break;
                         }

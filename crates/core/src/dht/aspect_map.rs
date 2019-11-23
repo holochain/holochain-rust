@@ -32,10 +32,10 @@ impl AspectMap {
     }
 
     pub fn contains(&self, aspect: &EntryAspect) -> bool {
-        let entry_address = aspect.entry_address().into();
+        let entry_address: EntryHash = aspect.entry_address().into();
         let entry_aspect_address = aspect.address();
         self.0
-            .get(entry_address)
+            .get(&entry_address)
             .map(|set| set.contains(&entry_aspect_address))
             .unwrap_or_default()
     }

@@ -1,9 +1,15 @@
 use crate::{
     agent::find_chain_header,
     content_store::GetContent,
+    scheduled_jobs::{PendingValidationStruct, ValidatingWorkflow},
     state::{State, StateWrapper},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
+use holochain_core_types::{
+    chain_header::ChainHeader,
+    entry::Entry,
+    error::HolochainError,
+    network::entry_aspect::EntryAspect,
+};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// A `ChainPair` cannot be constructed unless the entry address in the
@@ -35,9 +41,21 @@ impl ChainPair {
         entry: Entry,
         header: ChainHeader,
         entry_aspect: EntryAspect,
-    ) -> Result<ChainPair, HolochainError> {
-        ChainPair::try_from_header_and_entry(header, entry)
-            .map_err(|e| HolochainError::ValidationFailed(String::from(e)))
+        validating_workflow: ValidatingWorkflow,
+    ) -> Result<PendingValidationStruct, HolochainError> {
+        match ChainPair::try_from_header_and_entry(header, entry) {
+            Ok(chain_pair) => {
+                Ok(PendingValidationStruct::new(
+                        chain_pair,
+                        validating_workflow,
+                )),
+            },
+            Err(error) => {
+                let add_err_msg = format!("Tried to process {#:?}", entry_aspect);
+                let error = format!("{}, {}", error, add_err_msg);
+                HolochainError::ValidationFailed(String::from(error))
+            },
+        }
     }
 
     pub fn header(&self) -> ChainHeader {

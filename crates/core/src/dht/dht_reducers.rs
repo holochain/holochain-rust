@@ -504,8 +504,7 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
-        let entry = test_entry();
+    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
         let entry_with_header = EntryWithHeader {
             entry: entry.clone(),
             header: test_chain_header(),
@@ -520,7 +519,8 @@ pub mod tests {
         let store = DhtStore::new(context.dht_storage.clone(), context.eav_storage.clone());
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
-        let hold = create_pending_validation(ValidatingWorkflow::HoldEntry);
+        let test_entry = test_entry();
+        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),
@@ -530,14 +530,30 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 1);
         assert!(store.has_queued_holding_workflow(&hold));
 
-        let hold_link = create_pending_validation(ValidatingWorkflow::HoldLink);
+        let test_link = String::from("test_link");
+        let test_tag = String::from("test-tag");
+        let link = Link::new(
+            &test_entry.address(),
+            &test_entry.address(),
+            &test_link.clone(),
+            &test_tag.clone(),
+        );
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            test_chain_header(),
+            test_agent_id(),
+        );
+
+        let link_entry = Entry::LinkAdd(link_data.clone());
+        let hold_link = create_pending_validation(link_entry, ValidatingWorkflow::HoldLink);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let update = create_pending_validation(ValidatingWorkflow::UpdateEntry);
+        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

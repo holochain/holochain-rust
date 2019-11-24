@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Add hdk::version_hash, returning MD5 hash of HDK build environment [#1869](https://github.com/holochain/holochain-rust/pull/1869)
 - Add --info option to conductor to return info on the version including HDK_VERSION & HASH as well as GIT_HASH & GIT_BRANCH if the binary was compiled from a git repo [1902](https://github.com/holochain/holochain-rust/pull/1902)
 - Ability to set storage backend for new instances over RPC [#1900](https://github.com/holochain/holochain-rust/pull/1900)
+- Tracing of HDK API function calls within a zome function call to be used for debugging and in Holoscape's debug view [#1885](https://github.com/holochain/holochain-rust/pull/1885)
 
 ### Changed
 

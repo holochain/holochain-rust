@@ -12,7 +12,7 @@ use crate::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
         validation::ValidationResult,
-        ZomeFnCall,
+        HdkFnCall, HdkFnCallResult, ZomeFnCall,
     },
     state::State,
 };
@@ -207,13 +207,16 @@ pub enum Action {
     ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.
-    /// There is no reducer for this action so this does not change state
-    /// (hence "Signal").
-    /// Is received as signal in the nodejs waiter to attach wait conditions.
     QueueZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+
+    /// Let the State track that a zome call has called an HDK function
+    TraceInvokeHdkFunction((ZomeFnCall, HdkFnCall)),
+
+    /// Let the State track that an HDK function called by a zome call has returned
+    TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context

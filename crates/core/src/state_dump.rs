@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     dht::{aspect_map::AspectMapBare, pending_validations::PendingValidation},
     network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall,
+    nucleus::{ZomeFnCall, ZomeFnCallState},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
@@ -18,7 +18,7 @@ use std::{
 #[derive(Serialize)]
 pub struct StateDump {
     pub queued_calls: Vec<ZomeFnCall>,
-    pub running_calls: Vec<ZomeFnCall>,
+    pub running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)>,
     pub call_results: Vec<(ZomeFnCall, Result<JsonString, HolochainError>)>,
     pub query_flows: Vec<QueryKey>,
     pub validation_package_flows: Vec<Address>,
@@ -44,7 +44,15 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
-        let running_calls: Vec<ZomeFnCall> = nucleus.running_zome_calls.into_iter().collect();
+        let invocations = nucleus.hdk_function_calls;
+        let running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)> = nucleus
+            .running_zome_calls
+            .into_iter()
+            .map(|call| {
+                let state = invocations.get(&call).cloned();
+                (call, state)
+            })
+            .collect();
         let call_results: Vec<(ZomeFnCall, Result<_, _>)> =
             nucleus.zome_call_results.into_iter().collect();
 

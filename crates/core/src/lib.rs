@@ -1,5 +1,10 @@
 //! The library implementing the holochain pattern of validation rules + local source chain + DHT
-#![feature(arbitrary_self_types, async_await, proc_macro_hygiene, custom_inner_attributes)]
+#![feature(
+    arbitrary_self_types,
+    async_await,
+    proc_macro_hygiene,
+    custom_inner_attributes
+)]
 #![warn(unused_extern_crates)]
 
 #[macro_use]
@@ -30,35 +35,34 @@ extern crate holochain_tracing_macros;
 #[macro_use]
 pub mod macros;
 
-#[autotrace]
+// #[autotrace]
 pub mod action;
-#[autotrace]
+// #[autotrace]
 pub mod agent;
-#[autotrace]
+// #[autotrace]
 pub mod consistency;
-#[autotrace]
+// #[autotrace]
 pub mod content_store;
-#[autotrace]
+// #[autotrace]
 pub mod context;
 pub mod dht;
 pub mod entry;
-#[autotrace]
 pub mod instance;
 #[cfg(test)]
 pub mod link_tests;
 pub mod logger;
-#[autotrace]
+// #[autotrace]
 pub mod network;
-#[autotrace]
+// #[autotrace]
 pub mod nucleus;
-#[autotrace]
+// #[autotrace]
 pub mod persister;
 pub mod scheduled_jobs;
-#[autotrace]
+// #[autotrace]
 pub mod signal;
-#[autotrace]
+// #[autotrace]
 pub mod state;
-#[autotrace]
+// #[autotrace]
 pub mod state_dump;
-#[autotrace]
+// #[autotrace]
 pub mod workflows;

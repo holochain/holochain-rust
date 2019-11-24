@@ -9,6 +9,7 @@ use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFil
 use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
 use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+use holochain_tracing;
 
 use jsonrpc_core::IoHandler;
 use std::{
@@ -39,6 +40,7 @@ pub struct ContextBuilder {
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
+    tracer: Option<holochain_tracing::Tracer>,
     state_dump_logging: bool,
     metric_publisher: Option<Arc<RwLock<dyn MetricPublisher>>>,
 }
@@ -54,6 +56,7 @@ impl ContextBuilder {
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
+            tracer: None,
             state_dump_logging: false,
             metric_publisher: None,
         }
@@ -155,6 +158,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_tracer(mut self, tracer: holochain_tracing::Tracer) -> Self {
+        self.tracer = Some(tracer);
+        self
+    }
+
     pub fn with_instance_name(mut self, instance_name: &str) -> Self {
         self.instance_name = Some(String::from(instance_name));
         self
@@ -204,6 +212,10 @@ impl ContextBuilder {
             self.signal_tx,
             self.state_dump_logging,
             metric_publisher,
+            Arc::new(
+                self.tracer
+                    .unwrap_or_else(|| holochain_tracing::null_tracer()),
+            ),
         )
     }
 }

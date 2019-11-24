@@ -19,13 +19,12 @@ use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
-use holochain_locksmith::{Mutex, RwLock};
-
-use holochain_json_api::json::JsonString;
-use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
-
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
+use holochain_json_api::json::JsonString;
+use holochain_locksmith::{Mutex, RwLock};
 use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
+use holochain_tracing as ht;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -785,10 +784,29 @@ impl Conductor {
                 // Signal config:
                 let (sender, receiver) = unbounded();
                 self.instance_signal_receivers
-                    .write()
-                    .unwrap()
-                    .insert(instance_config.id.clone(), receiver);
+                .write()
+                .unwrap()
+                .insert(instance_config.id.clone(), receiver);
                 context_builder = context_builder.with_signals(sender);
+                
+                // Tracer config:
+                {
+                    let (span_tx, span_rx) = unbounded();
+                    let tracer = ht::Tracer::with_sender(ht::AllSampler, span_tx);
+                    context_builder = context_builder.with_tracer(tracer);
+
+                    // TODO: spawn thread somewhere else
+                    let _ = thread::Builder::new()
+                    .name(format!(
+                        "tracer_loop",
+                    )).spawn(move || {
+                        // TODO: killswitch
+                        let reporter = ht::Reporter::new("holochain core").unwrap();
+                        for span in span_rx {
+                            reporter.report(&[span]).expect("could not report span");
+                        }
+                    });
+                }
 
                 // Storage:
                 match instance_config.storage {

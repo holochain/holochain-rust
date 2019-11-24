@@ -934,6 +934,8 @@ dependencies = [
  "holochain_locksmith 0.0.38-alpha14",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4",
+ "holochain_tracing_macros 0.0.1",
  "holochain_wasm_utils 0.0.38-alpha14",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1080,6 +1082,8 @@ dependencies = [
  "holochain_persistence_lmdb 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_mem 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_pickle 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4",
+ "holochain_tracing_macros 0.0.1",
  "holochain_wasm_utils 0.0.38-alpha14",
  "hyper 0.12.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1545,6 +1549,7 @@ version = "0.0.1"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.4",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

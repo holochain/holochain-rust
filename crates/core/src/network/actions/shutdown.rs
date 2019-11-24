@@ -15,7 +15,7 @@ use std::{pin::Pin, sync::Arc};
 /// and sets the P2pNetwork instance in the state to None.
 pub async fn shutdown(
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: Sender<ActionWrapper>,
+    action_channel: ActionSender,
 ) -> HcResult<()> {
     if state.read().unwrap().network().initialized().is_ok() {
         let action_wrapper = ActionWrapper::new(Action::ShutdownNetwork);

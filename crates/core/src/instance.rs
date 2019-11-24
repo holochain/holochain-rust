@@ -28,7 +28,7 @@ use holochain_core_types::{
 use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
-use holochain_tracing::{self as ht, Span};
+use holochain_tracing as ht;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -51,7 +51,7 @@ pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60)
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: Option<Sender<ActionWrapper>>,
+    action_channel: Option<ActionSender>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<RwLock<dyn Persister>>>,
@@ -67,6 +67,7 @@ pub struct Observer {
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
+#[autotrace]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
@@ -130,7 +131,7 @@ impl Instance {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    fn action_channel(&self) -> &Sender<ActionWrapper> {
+    fn action_channel(&self) -> &ActionSender {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
@@ -152,11 +153,11 @@ impl Instance {
     }
 
     /// Returns recievers for actions and observers that get added to this instance
-    fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
+    fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
         let (tx_action, rx_action) = unbounded::<ActionWrapper>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
-        self.action_channel = Some(tx_action.clone());
-        self.observer_channel = Some(tx_observer.clone());
+        self.action_channel = Some(tx_action);
+        self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)
     }
@@ -173,7 +174,7 @@ impl Instance {
     pub fn start_action_loop(
         &mut self,
         context: Arc<Context>,
-        rx_action: Receiver<ActionWrapper>,
+        rx_action: ActionReceiver,
         rx_observer: Receiver<Observer>,
     ) {
         self.stop_action_loop();
@@ -185,7 +186,7 @@ impl Instance {
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
         instance_is_alive.store(true, Ordering::Relaxed);
-        let root_span = context.tracer.span("start_action_loop").start().into();
+        let root_span = sub_context.tracer.span("start_action_loop").start().into();
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
@@ -428,6 +429,7 @@ impl Instance {
     }
 
     #[allow(clippy::needless_lifetimes)]
+    #[no_autotrace]
     pub async fn shutdown_network(&self) -> HcResult<()> {
         network::actions::shutdown::shutdown(
             self.state.clone(),
@@ -476,7 +478,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
+pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
     lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
@@ -576,7 +578,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
-        action_channel: &Sender<ActionWrapper>,
+        action_channel: &ActionSender,
         observer_channel: &Sender<Observer>,
         network_name: Option<&str>,
     ) -> Arc<Context> {

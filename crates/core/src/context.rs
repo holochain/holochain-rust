@@ -51,6 +51,9 @@ use threadpool::ThreadPool;
 
 const NUM_WORKER_THREADS: usize = 20;
 
+pub type ActionSender = Sender<ht::SpanWrap<ActionWrapper>>;
+pub type ActionReceiver = Receiver<ht::SpanWrap<ActionWrapper>>;
+
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {
@@ -80,7 +83,7 @@ pub struct Context {
     pub agent_id: AgentId,
     pub persister: Arc<RwLock<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
-    pub action_channel: Option<Sender<ActionWrapper>>,
+    pub action_channel: Option<ActionSender>,
     pub observer_channel: Option<Sender<Observer>>,
     pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -168,7 +171,7 @@ impl Context {
         instance_name: &str,
         agent_id: AgentId,
         persister: Arc<RwLock<dyn Persister>>,
-        action_channel: Option<Sender<ActionWrapper>>,
+        action_channel: Option<ActionSender>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
         cas: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -280,7 +283,7 @@ impl Context {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &Sender<ActionWrapper> {
+    pub fn action_channel(&self) -> &ActionSender {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")

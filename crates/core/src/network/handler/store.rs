@@ -19,6 +19,20 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
         JsonString::from_json(std::str::from_utf8(&*dht_data.entry_aspect.aspect).unwrap());
     let maybe_aspect: Result<EntryAspect, _> = aspect_json.clone().try_into();
     if let Ok(aspect) = maybe_aspect {
+        if context
+            .state()
+            .unwrap()
+            .dht()
+            .get_holding_map()
+            .contains(&aspect)
+        {
+            log_error!(
+                context,
+                "handle_store: Aspect already being held: {:?}",
+                aspect
+            );
+            return;
+        }
         match PendingValidationStruct::try_from(aspect) {
             Err(e) => log_error!(
                 context,

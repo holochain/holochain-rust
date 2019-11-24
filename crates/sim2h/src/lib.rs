@@ -1,3 +1,4 @@
+#![feature(vec_remove_item)]
 extern crate env_logger;
 extern crate lib3h_crypto_api;
 //#[macro_use]
@@ -12,7 +13,7 @@ pub mod cache;
 pub mod connection_state;
 pub mod crypto;
 pub mod error;
-use lib3h_protocol::types::AgentPubKey;
+use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash};
 mod message_log;
 pub mod websocket;
 pub mod wire_message;
@@ -35,8 +36,11 @@ pub use wire_message::{WireError, WireMessage};
 
 use log::*;
 use parking_lot::RwLock;
-use rand::Rng;
-use std::{collections::HashMap, convert::TryFrom};
+use rand::{seq::SliceRandom, thread_rng};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+};
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
@@ -176,7 +180,7 @@ impl Sim2h {
     }
 
     // removes an agent from a space
-    fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
+    fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
                 Err(SPACE_MISMATCH_ERR_STR.into())
@@ -190,16 +194,21 @@ impl Sim2h {
     }
 
     // removes a uri from connection and from spaces
-    fn disconnect(&self, uri: &Lib3hUri) {
+    fn disconnect(&mut self, uri: &Lib3hUri) {
         trace!("disconnect entered");
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.connection_states.write().remove(uri)
         {
-            self.spaces
+            if self
+                .spaces
                 .get(&space_address)
                 .unwrap()
                 .write()
-                .remove_agent(&agent_id);
+                .remove_agent(&agent_id)
+                == 0
+            {
+                self.spaces.remove(&space_address);
+            }
         }
         trace!("disconnect done");
     }
@@ -484,7 +493,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                let (agents_in_space, aspects_missing_at_node) = {
+                let (mut agents_in_space, aspects_missing_at_node) = {
                     let space = self.spaces
                         .get(space_address)
                         .expect("This function should not get called if we don't have this space")
@@ -495,6 +504,7 @@ impl Sim2h {
 
                     warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
 
+                    // NB: agents_in_space may be randomly shuffled later, do not depend on ordering!
                     let agents_in_space = space
                         .all_agents()
                         .keys()
@@ -503,25 +513,23 @@ impl Sim2h {
                     (agents_in_space, aspects_missing_at_node)
                 };
 
-                let aspect_hashes = aspects_missing_at_node.aspect_hashes();
-                if aspect_hashes.len() > 0 {
+                let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
+                if missing_hashes.len() > 0 {
                     let mut space = self.spaces
                         .get(space_address)
                         .expect("This function should not get called if we don't have this space")
                         .write();
-                    for aspect_hash in aspect_hashes.clone() {
-                        space.add_missing_aspect(agent_id.clone(), aspect_hash);
+                    for (entry_hash, aspect_hash) in missing_hashes {
+                        space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
                     }
                 }
 
                 if agents_in_space.len() == 1 {
                     error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
                 } else {
-                    let other_agents = agents_in_space
-                        .into_iter()
-                        .filter(|a| a!=agent_id)
-                        .collect::<Vec<_>>();
-                    self.fetch_aspects_from_random_agent(aspects_missing_at_node, agent_id.clone(), other_agents, space_address.clone());
+                    let agents_slice = &mut agents_in_space[..];
+                    agents_slice.shuffle(&mut thread_rng());
+                    self.fetch_aspects_from_arbitrary_agent(aspects_missing_at_node, agent_id.clone(), agents_slice, space_address.clone());
                 }
                 Ok(())
             }
@@ -548,7 +556,7 @@ impl Sim2h {
                             .get(space_address)
                             .expect("This function should not get called if we don't have this space")
                             .write()
-                            .remove_missing_aspect(&to_agent_id, &aspect.aspect_address);
+                            .remove_missing_aspect(&to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
                         let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
                                 request_id: "".into(),
@@ -571,45 +579,72 @@ impl Sim2h {
         }
     }
 
-    fn fetch_aspects_from_random_agent(
+    fn fetch_aspects_from_arbitrary_agent(
         &mut self,
         aspects_to_fetch: AspectList,
         for_agent_id: AgentId,
-        agent_pool: Vec<AgentId>,
+        agent_pool: &[AgentId],
         space_address: SpaceHash,
     ) {
-        let mut rng = rand::thread_rng();
-        let random_agent_index = rng.gen_range(0, agent_pool.len());
-        let random_agent = agent_pool
-            .get(random_agent_index)
-            .expect("Random generator must work as documented");
-
-        debug!(
-            "FETCHING missing contents from RANDOM AGENT: {}",
-            random_agent
-        );
-
-        let maybe_url = self.lookup_joined(&space_address, random_agent);
-        if maybe_url.is_none() {
-            error!("Could not find URL for randomly selected agent. This should not happen!");
-            return;
-        }
-        let random_url = maybe_url.unwrap();
-
         for entry_address in aspects_to_fetch.entry_addresses() {
             if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
-                let wire_message =
-                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                        request_id: for_agent_id.clone().into(),
-                        space_address: space_address.clone(),
-                        provider_agent_id: random_agent.clone(),
-                        entry_address: entry_address.clone(),
-                        aspect_address_list: Some(aspect_address_list.clone()),
-                    }));
-                debug!("SENDING fetch with request ID: {:?}", wire_message);
-                self.send(random_agent.clone(), random_url.clone(), &wire_message);
+                if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
+                    entry_address,
+                    aspect_address_list,
+                    &for_agent_id,
+                    agent_pool,
+                    &space_address,
+                ) {
+                    debug!(
+                        "FETCHING missing contents from RANDOM AGENT: {}",
+                        arbitrary_agent
+                    );
+
+                    let maybe_url = self.lookup_joined(&space_address, &arbitrary_agent);
+                    if maybe_url.is_none() {
+                        error!("Could not find URL for randomly selected agent. This should not happen!");
+                        return;
+                    }
+                    let random_url = maybe_url.unwrap();
+
+                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
+                        FetchEntryData {
+                            request_id: for_agent_id.clone().into(),
+                            space_address: space_address.clone(),
+                            provider_agent_id: arbitrary_agent.clone(),
+                            entry_address: entry_address.clone(),
+                            aspect_address_list: Some(aspect_address_list.clone()),
+                        },
+                    ));
+                    debug!("SENDING fetch with request ID: {:?}", wire_message);
+                    self.send(arbitrary_agent.clone(), random_url.clone(), &wire_message);
+                } else {
+                    warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
+                }
             }
         }
+    }
+
+    /// Get an agent who has at least one of the aspects specified, and who is not the same as for_agent_id.
+    /// `agent_pool` is expected to be randomly shuffled, to ensure that no hotspots are created.
+    fn get_agent_not_missing_aspects(
+        &self,
+        entry_hash: &EntryHash,
+        aspects: &Vec<AspectHash>,
+        for_agent_id: &AgentId,
+        agent_pool: &[AgentId],
+        space_address: &SpaceHash,
+    ) -> Option<AgentId> {
+        let space_lock = self.spaces.get(space_address)?.read();
+        agent_pool
+            .into_iter()
+            // We ignore all agents that are missing all of the same aspects as well since
+            // they can't help us.
+            .find(|a| {
+                **a != *for_agent_id
+                    && !space_lock.agent_is_missing_all_aspects(*a, entry_hash, aspects)
+            })
+            .cloned()
     }
 
     fn handle_new_entry_data(

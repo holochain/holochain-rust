@@ -1,14 +1,12 @@
 use crate::{
     agent::find_chain_header,
     content_store::GetContent,
-    scheduled_jobs::{PendingValidationStruct, ValidatingWorkflow},
     state::{State, StateWrapper},
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::Entry,
     error::HolochainError,
-    network::entry_aspect::EntryAspect,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
@@ -33,28 +31,6 @@ impl ChainPair {
             Err(HolochainError::HeaderEntryMismatch(
                 error_msg, header_entry_address, entry_address
             ))
-        }
-    }
-
-    // Convenience function for returning a custom error in the context of validation.
-    pub fn try_validate_from_entry_and_header(
-        entry: Entry,
-        header: ChainHeader,
-        entry_aspect: EntryAspect,
-        validating_workflow: ValidatingWorkflow,
-    ) -> Result<PendingValidationStruct, HolochainError> {
-        match ChainPair::try_from_header_and_entry(header, entry) {
-            Ok(chain_pair) => {
-                Ok(PendingValidationStruct::new(
-                        chain_pair,
-                        validating_workflow,
-                )),
-            },
-            Err(error) => {
-                let add_err_msg = format!("Tried to process {#:?}", entry_aspect);
-                let error = format!("{}, {}", error, add_err_msg);
-                HolochainError::ValidationFailed(String::from(error))
-            },
         }
     }
 

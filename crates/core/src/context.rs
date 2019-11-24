@@ -48,7 +48,7 @@ use std::{
 use test_utils::mock_signing::mock_conductor_api;
 use threadpool::ThreadPool;
 
-const NUM_WORKER_THREADS: usize = 20;
+const NUM_WORKER_THREADS: usize = 100;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 

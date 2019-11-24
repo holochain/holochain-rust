@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper},
+    //action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
     content_store::GetContent,
     context::Context,
@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     signature::Provenance,
-    ugly::lax_send_sync,
+//    ugly::lax_send_sync,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
@@ -26,8 +26,8 @@ pub async fn build_validation_package<'a>(
     context: Arc<Context>,
     provenances: &'a Vec<Provenance>,
 ) -> Result<ValidationPackage, HolochainError> {
-    let id = snowflake::ProcessUniqueId::new();
-
+    let _id = snowflake::ProcessUniqueId::new();
+    println!("VALID 1");
     match entry.entry_type() {
         EntryType::App(app_entry_type) => {
             if context
@@ -72,16 +72,19 @@ pub async fn build_validation_package<'a>(
             )));
         }
     };
+    println!("VALID 2");
 
     {
         let entry = entry.clone();
         let context = context.clone();
+        println!("VALID 3");
         let maybe_entry_header = find_chain_header(
             &entry.clone(),
             &context
                 .state()
                 .expect("No state in build_validation_package"),
         );
+        println!("VALID 4");
         let entry_header = if maybe_entry_header.is_none() {
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
@@ -95,7 +98,9 @@ pub async fn build_validation_package<'a>(
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
+            println!("VALID 4.1");
             let state = State::new(context.clone());
+            println!("VALID 4.2");
             agent::state::create_new_chain_header(
                 &entry,
                 &context.state()?.agent(),
@@ -104,27 +109,34 @@ pub async fn build_validation_package<'a>(
                 provenances,
             )?
         } else {
+            println!("VALID 4.3");
             maybe_entry_header.unwrap()
         };
-
-        context.clone().spawn_task(move || {
+        println!("VALID 5");
+//        context.clone().spawn_task(move || {
+            println!("SPAWN 1");
             let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
+            println!("SPAWN 2");
             let maybe_validation_package = maybe_callback_result
-                .and_then(|callback_result| match callback_result {
-                    CallbackResult::Fail(error_string) => {
-                        Err(HolochainError::ErrorGeneric(error_string))
+                .and_then(|callback_result| {
+                    println!("SPAWN and_then 1");
+                    match callback_result {
+                        CallbackResult::Fail(error_string) => {
+                            Err(HolochainError::ErrorGeneric(error_string))
+                        }
+                        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+                        CallbackResult::NotImplemented(reason) => {
+                            Err(HolochainError::ErrorGeneric(format!(
+                                "ValidationPackage callback not implemented for {:?} ({})",
+                                entry.entry_type().clone(),
+                                reason
+                            )))
+                        }
+                        _ => unreachable!(),
                     }
-                    CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented(reason) => {
-                        Err(HolochainError::ErrorGeneric(format!(
-                            "ValidationPackage callback not implemented for {:?} ({})",
-                            entry.entry_type().clone(),
-                            reason
-                        )))
-                    }
-                    _ => unreachable!(),
                 })
                 .and_then(|package_definition| {
+                    println!("SPAWN and_then 2");
                     Ok(match package_definition {
                         Entry => ValidationPackage::only_header(entry_header),
                         ChainEntries => {
@@ -160,23 +172,27 @@ pub async fn build_validation_package<'a>(
                     })
                 });
 
-            lax_send_sync(
+/*            lax_send_sync(
                 context.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnValidationPackage((
                     id,
                     maybe_validation_package,
                 ))),
                 "build_validation_package",
-            );
-        });
+            );*/
+        //        });
+        println!("VALID 6");
+        maybe_validation_package
     }
-
-    ValidationPackageFuture {
+/*    println!("VALID 6");
+    let r = ValidationPackageFuture {
         context: context.clone(),
         key: id,
         error: None,
     }
-    .await
+    .await;
+    println!("VALID 7");
+    r*/
 }
 
 // given a slice of headers return the entries for those marked public

@@ -14,9 +14,12 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: CommitEntryArg
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    println!("HERE 1");
     let context = runtime.context()?;
     // deserialize args
+    println!("HERE 2");
     let args_str = runtime.load_json_string_from_args(&args);
+    println!("HERE 3");
     let commit_entry_arg = match CommitEntryArgs::try_from(args_str.clone()) {
         Ok(commit_entry_arg_input) => commit_entry_arg_input,
         // Exit on error
@@ -31,6 +34,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+    println!("HERE 4");
     // Wait for future to be resolved
     let task_result: Result<CommitEntryResult, HolochainError> = context.block_on(author_entry(
         &commit_entry_arg.entry(),
@@ -38,8 +42,10 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         &context,
         &commit_entry_arg.options().provenance(),
     ));
-
-    runtime.store_result(task_result)
+    println!("HERE 5");
+    let result = runtime.store_result(task_result);
+    println!("HERE 6");
+    result
 }
 
 #[cfg(test)]

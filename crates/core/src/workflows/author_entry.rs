@@ -28,30 +28,37 @@ pub async fn author_entry<'a>(
     context: &'a Arc<Context>,
     provenances: &'a Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
+    println!("AUTH 1");
     let address = entry.address();
+    println!("AUTH 2");
     log_debug!(
         context,
         "workflow/authoring_entry: {} with content: {:?}",
         address,
         entry
     );
+    println!("AUTH 3");
 
     // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
     if let Entry::LinkAdd(link_data) = entry {
         get_link_entries(&link_data.link, context)?;
     }
+    println!("AUTH 4");
     if let Entry::LinkRemove((link_data, _)) = entry {
         get_link_entries(&link_data.link, context)?;
     }
-
+    println!("AUTH 5");
     // 1. Build the context needed for validation of the entry
     let validation_package = build_validation_package(&entry, context.clone(), provenances).await?;
+    println!("AUTH 6");
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
     };
+    println!("AUTH 7");
 
     // 2. Validate the entry
+    println!("AUTH 8");
     log_debug!(
         context,
         "workflow/authoring_entry/{}: validating...",
@@ -64,6 +71,7 @@ pub async fn author_entry<'a>(
         &context,
     )
     .await?;
+    println!("AUTH 9");
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
@@ -72,26 +80,30 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: committing...",
         address
     );
+    println!("AUTH 10");
     let addr = commit_entry(entry.clone(), maybe_link_update_delete, &context).await?;
     log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
+    println!("AUTH 11");
     if entry.entry_type().can_publish(context) {
         log_debug!(
             context,
             "workflow/authoring_entry/{}: publishing...",
             address
         );
+        println!("AUTH 11.1");
         publish(entry.address(), &context).await?;
         log_debug!(context, "workflow/authoring_entry/{}: published!", address);
     } else {
+        println!("AUTH 11.2");
         log_debug!(
             context,
             "workflow/authoring_entry/{}: entry is private, no publishing",
             address
         );
     }
-
+    println!("AUTH 12");
     // 5. Publish the header for all types (including private entries)
     log_debug!(
         context,
@@ -104,7 +116,7 @@ pub async fn author_entry<'a>(
         "debug/workflow/authoring_entry/{}: header published!",
         address
     );
-
+    println!("AUTH 13");
     Ok(CommitEntryResult::new(addr))
 }
 // TODO: Bring the old in-memory network up to speed and turn on this test again!

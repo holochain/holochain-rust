@@ -243,8 +243,8 @@ impl DhtStore {
         Ok(())
     }
 
-    pub fn mark_entry_as_held(&mut self, entry: &Entry) {
-        self.holding_list.push(entry.address());
+    fn mark_entry_as_held<T: AddressableContent>(&mut self, content: &T) {
+        self.holding_list.push(content.address());
     }
 
     pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
@@ -317,15 +317,19 @@ impl DhtStore {
 
 impl GetContent for DhtStore {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
-        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+        if self.holding_list.contains(address) {
+            Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+        } else {
+            Ok(None) // if its not in the holding list it is as if we don't have it
+        }
     }
 }
 
 impl AddContent for DhtStore {
     fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        (*self.content_storage.write().unwrap())
-            .add(content)
-            .map_err(|e| e.into())
+        (*self.content_storage.write().unwrap()).add(content)?;
+        self.mark_entry_as_held(content);
+        Ok(())
     }
 }
 

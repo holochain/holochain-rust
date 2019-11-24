@@ -33,7 +33,8 @@ function  doTest(url) {
         // call an RPC method with parameters
 
         await ws.call('ping', {"id": "my-player"}).then(function(result) {
-            console.log(result)
+             result = JSON.parse(result)
+             console.log(result)
         })
 
         console.log("making setup call")

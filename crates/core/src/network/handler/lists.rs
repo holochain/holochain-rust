@@ -5,12 +5,9 @@ use crate::{
     dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
     instance::dispatch_action,
-    network::{
-        entry_aspect::EntryAspect,
-        handler::{get_content_aspect, get_meta_aspects},
-    },
+    network::{entry_aspect::EntryAspect, handler::get_content_aspect},
 };
-use holochain_core_types::{entry::Entry, error::HcResult};
+use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
@@ -136,15 +133,6 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .collect()
 }
 
-fn _get_all_aspect_addresses(entry: &Address, context: Arc<Context>) -> HcResult<Vec<Address>> {
-    let mut address_list: Vec<Address> = get_meta_aspects(entry, context.clone())?
-        .iter()
-        .map(|aspect| aspect.address())
-        .collect();
-    address_list.push(get_content_aspect(entry, context.clone())?.address());
-    Ok(address_list)
-}
-
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
         let state = context
@@ -167,59 +155,7 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{nucleus::actions::tests::*, workflows::author_entry::author_entry};
-    use holochain_core_types::entry::{test_entry_with_value, Entry};
-    use holochain_persistence_api::cas::content::AddressableContent;
-    use std::{thread, time};
-
-    #[test]
-    fn test_can_get_chain_header_list() {
-        let mut dna = test_dna();
-        dna.uuid = "test_can_get_chain_header_list".to_string();
-        let (_instance, context) = instance_by_name("jill", dna, None);
-
-        context
-            .block_on(author_entry(
-                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
-                None,
-                &context,
-                &vec![],
-            ))
-            .unwrap()
-            .address();
-
-        thread::sleep(time::Duration::from_millis(500));
-
-        let chain = context.state().unwrap().agent().iter_chain();
-        let header_entries: Vec<Entry> = chain.map(|header| Entry::ChainHeader(header)).collect();
-
-        assert_eq!(get_all_chain_header_entries(context), header_entries,)
-    }
-
-    #[test]
-    fn test_can_get_all_aspect_addr_for_headers() {
-        let mut dna = test_dna();
-        dna.uuid = "test_can_get_all_aspect_addr_for_headers".to_string();
-        let (_instance, context) = instance_by_name("jill", dna, None);
-
-        context
-            .block_on(author_entry(
-                &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
-                None,
-                &context,
-                &vec![],
-            ))
-            .unwrap()
-            .address();
-
-        thread::sleep(time::Duration::from_millis(500));
-
-        assert!(get_all_chain_header_entries(context.clone())
-            .iter()
-            .all(|chain_header| {
-                _get_all_aspect_addresses(&chain_header.address(), context.clone()).is_ok()
-            }));
-    }
+    use crate::nucleus::actions::tests::*;
 
     #[test]
     fn test_can_get_authoring_list() {

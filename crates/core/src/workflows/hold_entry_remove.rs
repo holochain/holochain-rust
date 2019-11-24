@@ -1,6 +1,6 @@
 use crate::{
     context::Context, dht::actions::remove_entry::remove_entry,
-    network::chain_pair::ChainPair
+    network::chain_pair::ChainPair,
     nucleus::validation::validate_entry,
 };
 

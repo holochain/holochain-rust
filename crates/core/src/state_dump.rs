@@ -1,7 +1,7 @@
 use crate::{
     action::QueryKey,
     context::Context,
-    dht::pending_validations::PendingValidation,
+    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidation},
     network::direct_message::DirectMessage,
     nucleus::{ZomeFnCall, ZomeFnCallState},
 };
@@ -24,7 +24,7 @@ pub struct StateDump {
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
-    pub held_entries: Vec<Address>,
+    pub held_aspects: AspectMapBare,
     pub source_chain: Vec<ChainHeader>,
 }
 
@@ -80,7 +80,7 @@ impl From<Arc<Context>> for StateDump {
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
-        let held_entries = dht.get_all_held_entry_addresses().clone();
+        let held_aspects = dht.get_holding_map().bare().clone();
 
         StateDump {
             queued_calls,
@@ -90,7 +90,7 @@ impl From<Arc<Context>> for StateDump {
             validation_package_flows,
             direct_message_flows,
             queued_holding_workflows,
-            held_entries,
+            held_aspects,
             source_chain,
         }
     }

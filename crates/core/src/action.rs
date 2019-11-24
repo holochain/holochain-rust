@@ -19,8 +19,7 @@ use crate::{
 
 use holochain_core_types::{
     chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
-    error::HolochainError, link::link_data::LinkData, signature::Provenance,
-    validation::ValidationPackage,
+    error::HolochainError, signature::Provenance, validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
@@ -119,19 +118,13 @@ pub enum Action {
 
     /// Removes the given item from the holding queue.
     RemoveQueuedHoldingWorkflow(PendingValidation),
-    /// Adds an entry to the local DHT shard.
-    /// Does not validate, assumes entry is valid.
-    Hold(EntryWithHeader),
 
-    /// Adds a link to the local DHT shard's meta/EAV storage
-    /// Does not validate, assumes link is valid.
-    AddLink(LinkData),
+    /// Adds an entry aspect to the local DHT shard.
+    /// Does not validate, assumes referenced entry is valid.
+    HoldAspect(EntryAspect),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
-
-    //Removes a link for the local DHT
-    RemoveLink(Entry),
 
     // ----------------
     // Network actions:
@@ -168,10 +161,6 @@ pub enum Action {
     HandleQuery((NetworkQueryResult, QueryKey)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
-
-    UpdateEntry((Address, Address)),
-    ///
-    RemoveEntry((Address, Address)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

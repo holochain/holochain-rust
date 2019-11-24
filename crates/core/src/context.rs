@@ -480,40 +480,4 @@ pub mod tests {
 
         guard.flush();
     }
-
-    #[test]
-    #[should_panic]
-    #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
-    fn test_deadlock() {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut context = Context::new(
-            "test_deadlock_instance",
-            AgentId::generate_fake("Terence"),
-            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            P2pConfig::new_with_unique_memory_backend(),
-            None,
-            None,
-            false,
-            Arc::new(RwLock::new(
-                holochain_metrics::DefaultMetricPublisher::default(),
-            )),
-        );
-
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
-        context.set_state(global_state.clone());
-
-        {
-            let _write_lock = global_state.write().unwrap();
-            // This line panics because we would enter into a deadlock
-            context.state();
-        }
-    }
 }

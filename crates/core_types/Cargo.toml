@@ -48,4 +48,4 @@ holochain_logging = "=0.0.4"
 
 [dev-dependencies]
 test_utils = { version = "=0.0.38-alpha14", path = "../../test_utils"}
-maplit = "=1.0.1"
+maplit = "=1.0.2"

@@ -42,7 +42,7 @@ const scenarioTest = async (numConductors = 2, debugging = false) => {
 
   let countHolding = 0
   cluster.batch(conductor => conductor.onSignal(async signal => {
-    if (signal.action_type === "Hold") {
+    if (signal.action_type === "HoldAspect")  {
       countHolding++
       console.log("Nodes holding so far:" + countHolding)
     }

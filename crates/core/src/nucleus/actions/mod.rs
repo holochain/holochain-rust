@@ -4,6 +4,8 @@ pub mod call_zome_function;
 pub mod get_entry;
 pub mod initialize;
 pub mod run_validation_callback;
+pub mod trace_invoke_hdk_function;
+pub mod trace_return_hdk_function;
 
 #[cfg(test)]
 pub mod tests {

@@ -17,6 +17,8 @@ use crate::{
             return_validation_package::reduce_return_validation_package,
             return_validation_result::reduce_return_validation_result,
             return_zome_function_result::reduce_return_zome_function_result,
+            trace_invoke_hdk_function::reduce_trace_invoke_hdk_function,
+            trace_return_hdk_function::reduce_trace_return_hdk_function,
         },
         state::NucleusState,
     },
@@ -34,6 +36,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         Action::QueueZomeFunctionCall(_) => Some(reduce_queue_zome_function_call),
+        Action::TraceInvokeHdkFunction(_) => Some(reduce_trace_invoke_hdk_function),
+        Action::TraceReturnHdkFunction(_) => Some(reduce_trace_return_hdk_function),
         _ => None,
     }
 }

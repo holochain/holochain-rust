@@ -177,10 +177,10 @@ impl State {
             context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
-        let dht_store = DhtStore::new_with_holding_list(
+        let dht_store = DhtStore::new_from_snapshot(
             context.dht_storage.clone(),
             context.eav_storage.clone(),
-            dht_store_snapshot.holding_list,
+            dht_store_snapshot,
         );
         Ok(State::new_with_agent_nucleus_dht(
             context.clone(),

@@ -3,13 +3,7 @@ use crate::{
     nucleus::validation::validate_entry, workflows::hold_entry::hold_entry_workflow,
 };
 
-use crate::{
-    nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::ValidationError,
-    },
-    scheduled_jobs::pending_validations::ValidatingWorkflow,
-    workflows::validation_package,
-};
+use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -41,12 +35,6 @@ pub async fn remove_link_workflow(
             let message = "Could not get validation package from source! -> Add to pending...";
             log_debug!(context, "workflow/remove_link: {}", message);
             log_debug!(context, "workflow/remove_link: Error was: {:?}", err);
-            add_pending_validation(
-                chain_pair.to_owned(),
-                Vec::new(),
-                ValidatingWorkflow::RemoveLink,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         })?;
 
@@ -71,12 +59,6 @@ pub async fn remove_link_workflow(
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/remove_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            add_pending_validation(
-                chain_pair.to_owned(),
-                dependencies.clone(),
-                ValidatingWorkflow::HoldLink,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",

@@ -1,7 +1,9 @@
 use crate::{
     context::Context,
-    dht::actions::queue_holding_workflow::dispatch_queue_holding_workflow,
-    scheduled_jobs::pending_validations::PendingValidationStruct,
+    dht::{
+        actions::queue_holding_workflow::dispatch_queue_holding_workflow,
+        pending_validations::PendingValidationStruct,
+    },
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
@@ -29,7 +31,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     "net/handle: handle_store: Adding {} to holding queue...",
                     pending.workflow,
                 );
-                dispatch_queue_holding_workflow(Arc::new(pending), context.clone());
+                dispatch_queue_holding_workflow(Arc::new(pending), None, context.clone());
             }
         }
     } else {

@@ -4,10 +4,7 @@ use crate::{
 };
 
 use crate::{
-    nucleus::{
-        actions::add_pending_validation::add_pending_validation, validation::ValidationError,
-    },
-    scheduled_jobs::pending_validations::ValidatingWorkflow,
+    nucleus::validation::ValidationError,
     workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
@@ -38,23 +35,11 @@ pub async fn hold_link_workflow(
             let message = "Could not get validation package from source! -> Add to pending...";
             log_debug!(context, "workflow/hold_link: {}", message);
             log_debug!(context, "workflow/hold_link: Error was: {:?}", err);
-            add_pending_validation(
-                chain_pair.to_owned(),
-                Vec::new(),
-                ValidatingWorkflow::HoldLink,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         })?;
     let validation_package = maybe_validation_package.ok_or_else(|| {
         let message = "Source did respond to request but did not deliver validation package! (Empty response) This is weird! Let's try this again later -> Add to pending";
         log_debug!(context, "workflow/hold_link: {}", message);
-        add_pending_validation(
-            chain_pair.to_owned(),
-            Vec::new(),
-            ValidatingWorkflow::HoldLink,
-            context.clone(),
-        );
         HolochainError::ValidationPending
     })?;
     log_debug!(context, "workflow/hold_link: got validation package");
@@ -76,12 +61,6 @@ pub async fn hold_link_workflow(
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            add_pending_validation(
-                chain_pair.to_owned(),
-                dependencies.clone(),
-                ValidatingWorkflow::HoldLink,
-                context.clone(),
-            );
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",

@@ -1,5 +1,6 @@
 use crate::{
     agent::state::AgentState,
+    dht::pending_validations::PendingValidation,
     network::{
         chain_pair::ChainPair,
         direct_message::DirectMessage,
@@ -13,7 +14,6 @@ use crate::{
         validation::ValidationResult,
         ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
 };
 
@@ -28,6 +28,7 @@ use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
+    time::{Duration, SystemTime},
     vec::Vec,
 };
 
@@ -111,12 +112,13 @@ pub enum Action {
     // -------------
     // DHT actions:
     // -------------
-    /// Adds a holding workflow to the queue.
-    QueueHoldingWorkflow(PendingValidation),
+    /// Adds a holding workflow (=PendingValidation) to the queue.
+    /// With optional delay where the SystemTime is the time when the action got dispatched
+    /// and the Duration is the delay added to that time.
+    QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),
 
-    /// Pops the head of the holding queue if the item at the head
-    /// is equal to the one given in the action.
-    PopNextHoldingWorkflow(PendingValidation),
+    /// Removes the given item from the holding queue.
+    RemoveQueuedHoldingWorkflow(PendingValidation),
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
     Hold(ChainPair),
@@ -237,13 +239,6 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
-
-    /// An entry could not be validated yet because dependencies are still missing.
-    /// This adds the entry to nucleus state's pending list.
-    AddPendingValidation(PendingValidation),
-
-    /// Clear an entry from the pending validation list
-    RemovePendingValidation((Address, ValidatingWorkflow)),
 
     /// No-op, used to check if an action channel is still open
     Ping,

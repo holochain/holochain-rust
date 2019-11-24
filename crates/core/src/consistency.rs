@@ -1,5 +1,6 @@
 use crate::{
     action::Action, context::Context, entry::CanPublish, network::chain_pair::ChainPair,
+    network::chain_pair::ChainPair,
     nucleus::ZomeFnCall,
 };
 use holochain_core_types::{entry::Entry, link::link_data::LinkData};
@@ -60,7 +61,6 @@ pub enum ConsistencyEvent {
     Publish(Address),                                           // -> Hold
     InitializeNetwork, // -> Hold (the AgentId if initialize chain happend)
     InitializeChain,   // -> prepare to hold AgentId
-    AddPendingValidation(Address), // -> RemovePendingValidation
     SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
@@ -68,8 +68,7 @@ pub enum ConsistencyEvent {
     UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
     AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry),                // <- Publish, entry_type=LinkRemove
-    RemovePendingValidation(Address), // <- AddPendingValidation
+    RemoveLink(Entry), // <- Publish, entry_type=LinkRemove
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
@@ -162,7 +161,7 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::Hold(ChainPair(.., header)) => {
+            Action::Hold(ChainPair(.., entry)) => {
                 Some(ConsistencySignal::new_terminal(Hold(entry.address())))
             }
             Action::UpdateEntry((old, new)) => Some(ConsistencySignal::new_terminal(
@@ -176,18 +175,6 @@ impl ConsistencyModel {
             )),
             Action::RemoveLink(entry) => Some(ConsistencySignal::new_terminal(
                 ConsistencyEvent::RemoveLink(entry.clone()),
-            )),
-
-            Action::AddPendingValidation(validation) => {
-                let address = validation.chain_pair.entry().address();
-                Some(ConsistencySignal::new_pending(
-                    AddPendingValidation(address.clone()),
-                    Source,
-                    vec![RemovePendingValidation(address.clone())],
-                ))
-            }
-            Action::RemovePendingValidation((address, _)) => Some(ConsistencySignal::new_terminal(
-                RemovePendingValidation(address.clone()),
             )),
 
             Action::QueueZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(

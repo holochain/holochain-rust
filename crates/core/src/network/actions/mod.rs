@@ -2,7 +2,6 @@ pub mod custom_send;
 pub mod get_validation_package;
 pub mod initialize_network;
 pub mod publish;
-pub mod publish_header_entry;
 pub mod query;
 pub mod shutdown;
 

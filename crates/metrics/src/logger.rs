@@ -93,6 +93,7 @@ impl TryFrom<LogLine> for Metric {
 
 /// Produces an iterator of metric data given a log file name.
 pub fn metrics_from_file(log_file: String) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
+    let log_file = ::std::path::PathBuf::from(log_file);
     let file = std::fs::File::open(log_file)?;
     let reader = BufReader::new(file);
     let metrics = reader.lines().filter_map(|line| {

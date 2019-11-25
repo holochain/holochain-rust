@@ -2,6 +2,9 @@ use crate::*;
 use std::io::{Error, ErrorKind, Result};
 use url2::prelude::*;
 
+mod frame_type;
+pub use frame_type::*;
+
 /// internal helper, make sure we're dealing with wss urls
 fn validate_url_scheme(url: &Url2) -> Result<()> {
     if url.scheme() != "wss" {
@@ -95,9 +98,7 @@ type TungsteniteCliHandshakeResult<S> = std::result::Result<
         tungstenite::WebSocket<S>,
         tungstenite::handshake::client::Response,
     ),
-    tungstenite::handshake::HandshakeError<
-        tungstenite::handshake::client::ClientHandshake<S>,
-    >,
+    tungstenite::handshake::HandshakeError<tungstenite::handshake::client::ClientHandshake<S>>,
 >;
 
 type TungsteniteSrvHandshakeResult<S> = std::result::Result<
@@ -253,15 +254,26 @@ impl<Sub: InStreamPartial> std::convert::AsMut<tungstenite::WebSocket<Sub::Strea
 }
 
 impl<Sub: InStreamPartial> InStreamFramed for InStreamWebSocket<Sub> {
-    type FrameType = Vec<u8>;
+    type FrameType = WsFrame;
 
     fn read_frame<T: From<Self::FrameType>>(&mut self) -> Result<T> {
         match self.0.read_message() {
-            Ok(tungstenite::Message::Binary(data)) => Ok(data.into()),
-            Ok(oth) => Err(Error::new(
-                ErrorKind::InvalidData,
-                format!("unexpected remote message: {:?}", oth),
-            )),
+            Ok(msg) => Ok(match msg {
+                tungstenite::Message::Text(s) => WsFrame::from(s),
+                tungstenite::Message::Binary(b) => WsFrame::new(b, WsFrameType::Binary),
+                tungstenite::Message::Ping(b) => WsFrame::new(b, WsFrameType::Ping),
+                tungstenite::Message::Pong(b) => WsFrame::new(b, WsFrameType::Pong),
+                tungstenite::Message::Close(c) => match c {
+                    Some(c) => WsFrame::new(
+                        c.reason.to_string().into_bytes(),
+                        WsFrameType::Close {
+                            code: c.code.into(),
+                        },
+                    ),
+                    None => WsFrame::new(vec![], WsFrameType::Close { code: 1000 }),
+                },
+            }
+            .into()),
             Err(tungstenite::error::Error::Io(e)) => Err(e),
             Err(e) => Err(Error::new(
                 ErrorKind::Other,
@@ -271,9 +283,21 @@ impl<Sub: InStreamPartial> InStreamFramed for InStreamWebSocket<Sub> {
     }
 
     fn write_frame<T: Into<Self::FrameType>>(&mut self, data: T) -> Result<()> {
-        let res = self
-            .0
-            .write_message(tungstenite::Message::Binary(data.into()));
+        let frame: WsFrame = data.into();
+        let frame = match frame.frame_type().clone() {
+            WsFrameType::Text => tungstenite::Message::Text(frame.into()),
+            WsFrameType::Binary => tungstenite::Message::Binary(frame.into()),
+            WsFrameType::Ping => tungstenite::Message::Ping(frame.into()),
+            WsFrameType::Pong => tungstenite::Message::Pong(frame.into()),
+            WsFrameType::Close { code } => tungstenite::Message::Close(Some(
+                tungstenite::protocol::CloseFrame {
+                    code: code.into(),
+                    reason: frame.as_str(),
+                }
+                .into_owned(),
+            )),
+        };
+        let res = self.0.write_message(frame);
         match &res {
             Ok(()) => Ok(()),
             Err(tungstenite::error::Error::Io(e)) if e.would_block() => {

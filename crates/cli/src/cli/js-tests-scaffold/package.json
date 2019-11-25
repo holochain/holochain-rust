@@ -1,7 +1,7 @@
 {
   "devDependencies": {},
   "dependencies": {
-    "@holochain/tryorama": "^0.1.2-beta.2",
+    "@holochain/tryorama": "^0.2.0-rc.5",
     "faucet": "0.0.1",
     "json3": "*",
     "sleep": "^6.1.0",

@@ -139,7 +139,7 @@ pub enum Action {
     /// the right thing respectively.
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
-    
+
     ///Performs a Network Query Action based on the key and payload, used for links and Entries
     Query((QueryKey, QueryPayload)),
 

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.38-alpha14"
+version = "0.0.39-alpha1"
 description = "holochain net"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -13,19 +13,19 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-sim1h = { version = "=0.0.38-alpha14", path = "../sim1h" }
-sim2h = { version = "=0.0.38-alpha14", path = "../sim2h" }
+sim1h = { version = "=0.0.39-alpha1", path = "../sim1h" }
+sim2h = { version = "=0.0.39-alpha1", path = "../sim2h" }
 lib3h_sodium = "=0.0.22"
 lib3h_protocol = "=0.0.22"
 lib3h = "=0.0.22"
 lib3h_zombie_actor = "=0.0.22"
 detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.1" }
-holochain_metrics = { version = "=0.0.38-alpha14", path = "../metrics" }
-holochain_common = { version = "=0.0.38-alpha14", path = "../common" }
-holochain_conductor_lib_api = { version = "=0.0.38-alpha14", path = "../conductor_api" }
-holochain_core_types = { version = "=0.0.38-alpha14", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.38-alpha14", path = "../locksmith" }
+holochain_metrics = { version = "=0.0.39-alpha1", path = "../metrics" }
+holochain_common = { version = "=0.0.39-alpha1", path = "../common" }
+holochain_conductor_lib_api = { version = "=0.0.39-alpha1", path = "../conductor_api" }
+holochain_core_types = { version = "=0.0.39-alpha1", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.39-alpha1", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.11"

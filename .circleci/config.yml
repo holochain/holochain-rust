@@ -308,7 +308,7 @@ workflows:
       filters:
        branches:
         only:
-         - 2019-11-19-docker-builds
+         - 2019-11-22-path-for-docker
          - develop
          - final-exam
    - docker.build.trycp_server:

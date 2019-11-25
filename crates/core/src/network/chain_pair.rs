@@ -22,14 +22,15 @@ impl ChainPair {
         header: ChainHeader,
         entry: Entry,
     ) -> Result<ChainPair, HolochainError> {
-        let header_entry_address = *header.entry_address();
+        let header_entry_address = header.entry_address();
         let entry_address = entry.address();
-        if header_entry_address == entry_address {
+        if header_entry_address.clone() == entry_address {
             Ok(ChainPair(header, entry))
         } else {
-            let error_msg = format!("Tried to create a ChainPair, but got a mismatch with the header's entry address and the entry's address. Header:\n{:#?}\nEntry:{:#?}", header, entry);
+            let error_msg = "Tried to create a ChainPair, but got a mismatch with the header's entry address and the entry's address. See the debug log output for data for the header and entry.";
+            debug!("Mismatch between header's entry address and the entry's address. Header:\n{:#?}\nEntry:{:#?}", header, entry);
             Err(HolochainError::HeaderEntryMismatch(
-                error_msg, header_entry_address, entry_address
+                error_msg.to_string(), header_entry_address.clone(), entry_address
             ))
         }
     }

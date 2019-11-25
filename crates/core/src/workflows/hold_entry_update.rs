@@ -1,6 +1,6 @@
 use crate::{
     context::Context, dht::actions::update_entry::update_entry,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 
@@ -12,13 +12,14 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_update_workflow(
-    entry_with_header: &EntryWithHeader,
+    chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let EntryWithHeader { entry, header } = entry_with_header;
+    let entry = chain_pair.entry();
+    let header = chain_pair.header();
 
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(&chain_pair, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -53,7 +54,7 @@ pub async fn hold_update_workflow(
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_update: Entry update {:?} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry,
+                chain_pair.entry(),
                 err,
             );
             HolochainError::from(err)

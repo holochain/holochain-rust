@@ -2,7 +2,7 @@ use crate::{
     action::ActionWrapper,
     network::{
         actions::ActionResponse,
-        chain_pair::{fetch_chain_pair, ChainPair},
+        chain_pair::ChainPair,
         entry_aspect::EntryAspect,
         reducers::send,
         state::NetworkState,
@@ -139,7 +139,7 @@ fn reduce_publish_inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let chain_pair = fetch_chain_pair(&address, root_state)?;
+    let chain_pair = ChainPair::fetch_chain_pair(&address, root_state)?;
 
     match chain_pair.entry().entry_type() {
         EntryType::AgentId => publish_entry(network_state, &chain_pair),

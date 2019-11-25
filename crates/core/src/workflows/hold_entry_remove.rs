@@ -55,15 +55,15 @@ pub async fn hold_remove_workflow(
         }
 
     })?;
-
-    let deletion_entry = unwrap_to!(chain_pair.entry() => Entry::Deletion);
+    let entry = chain_pair.entry();
+    let deletion_entry = unwrap_to!(entry => Entry::Deletion);
 
     let deleted_entry_address = deletion_entry.clone().deleted_entry_address();
     // 3. If valid store the entry in the local DHT shard
     remove_entry(
         &context.clone(),
         deleted_entry_address,
-        chain_pair.entry().address().clone(),
+        entry.address().clone(),
     )
     .await
 }

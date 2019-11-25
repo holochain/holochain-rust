@@ -52,9 +52,9 @@ pub fn state_dump(context: Arc<Context>) {
             format!(
                 "<{}> [{}] {}: {}",
                 pending_validation.workflow.to_string(),
-                pending_validation.entry_with_header.header.entry_type(),
-                pending_validation.entry_with_header.entry.address(),
-                pending_validation.entry_with_header.entry.content(),
+                pending_validation.chain_pair.header().entry_type(),
+                pending_validation.chain_pair.entry().address(),
+                pending_validation.chain_pair.entry().content(),
             )
         })
         .collect::<Vec<String>>();

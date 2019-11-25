@@ -18,7 +18,8 @@ pub async fn hold_link_workflow(
     chain_pair: &ChainPair,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let link_add = match &chain_pair.entry() {
+    let entry = &chain_pair.entry();
+    let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
         _ => Err(HolochainError::ErrorGeneric(
             "hold_link_workflow expects entry to be an Entry::LinkAdd".to_string(),

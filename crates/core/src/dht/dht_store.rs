@@ -1,6 +1,7 @@
 use crate::{
     action::ActionWrapper,
     content_store::{AddContent, GetContent},
+    network::chain_pair::ChainPair,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -230,29 +231,35 @@ impl DhtStore {
     /// Add an entry and header to the CAS and EAV, respectively
     pub fn add_header_for_entry(
         &mut self,
-        entry: &Entry,
-        header: &ChainHeader,
+        entry: Entry,
+        header: ChainHeader,
     ) -> Result<(), HolochainError> {
-        match ChainPair::try_from_header_and_entry(header, entry) {
+        match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {
             Ok(_chain_pair) => {
                 let eavi = EntityAttributeValueIndex::new(
                     &entry.address(),
                     &Attribute::EntryHeader,
                     &header.address(),
                 )?;
-                self.add(header)?;
+                self.add(&header)?;
                 self.meta_storage.write().unwrap().add_eavi(&eavi)?;
                 Ok(())
             }
             Err(err) => match err {
-                HolochainError::HeaderEntryMismatch(err_msg, header_entry_address, entry_address) => {
-                    let add_err_msg = format!(
+                HolochainError::HeaderEntryMismatch(mut err_msg, header_entry_address, entry_address) => {
+                    debug!(
                         "Tried to add entry:\n{:#?}\nand header:\n{:#?}\nto the CAS and EAV, respectively",
                         entry, header,
                     );
-                    err_msg = concat!(err_msg, add_err_msg);
+                    err_msg = format!(
+                        "Tried to add entry and header to the CAS and EAV,\n
+                        respectively. See the debug log for further details\n
+                        of header and entry. {}",
+                        err_msg
+                    );
                     Err(HolochainError::HeaderEntryMismatch(err_msg, header_entry_address, entry_address))
-                }
+                },
+                _ => Err(err),
             },
         }
     }

@@ -3,7 +3,7 @@ use crate::{
     agent::state::create_chain_pair_for_header,
     network::{
         actions::ActionResponse,
-        chain_pair::fetch_chain_pair,
+        chain_pair::ChainPair,
         entry_aspect::EntryAspect,
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
@@ -51,7 +51,7 @@ fn reduce_publish_header_entry_inner(
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let chain_pair = fetch_chain_pair(&address, root_state)?;
+    let chain_pair = ChainPair::fetch_chain_pair(&address, root_state)?;
     publish_header(network_state, root_state, chain_pair.header())
 }
 

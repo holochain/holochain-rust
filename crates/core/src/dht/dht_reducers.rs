@@ -68,12 +68,14 @@ pub(crate) fn reduce_hold_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let chain_pair { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
+    let chain_pair = unwrap_to!(action_wrapper.action() => Action::Hold);
+    let entry = chain_pair.entry();
+    let header = chain_pair.header();
     let mut new_store = (*old_store).clone();
     match reduce_store_entry_inner(&mut new_store, &entry) {
         Ok(()) => {
             new_store.mark_entry_as_held(&entry);
-            new_store.add_header_for_entry(&entry, &header).ok()?;
+            new_store.add_header_for_entry(entry, header).ok()?;
             Some(new_store)
         }
         Err(e) => {
@@ -471,12 +473,12 @@ pub mod tests {
 
     fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
         let entry = test_entry();
-        let entry_with_header = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
+        let chain_pair = ChainPair::try_from_header_and_entry(
+            test_chain_header(),
+            entry.clone(),
+        );
 
-        Arc::new(PendingValidationStruct::new(entry_with_header, workflow))
+        Arc::new(PendingValidationStruct::new(chain_pair, workflow))
     }
 
     #[test]

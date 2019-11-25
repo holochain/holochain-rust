@@ -1,6 +1,5 @@
 use crate::{
-    action::Action, context::Context, entry::CanPublish, network::chain_pair::ChainPair,
-    network::chain_pair::ChainPair,
+    action::Action, context::Context, entry::CanPublish,
     nucleus::ZomeFnCall,
 };
 use holochain_core_types::{entry::Entry, link::link_data::LinkData};
@@ -161,8 +160,8 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::Hold(ChainPair(.., entry)) => {
-                Some(ConsistencySignal::new_terminal(Hold(entry.address())))
+            Action::Hold(chain_pair) => {
+                Some(ConsistencySignal::new_terminal(Hold(chain_pair.entry().address())))
             }
             Action::UpdateEntry((old, new)) => Some(ConsistencySignal::new_terminal(
                 ConsistencyEvent::UpdateEntry(old.clone(), new.clone()),

@@ -232,7 +232,6 @@ fn can_commit_entry_macro() {
         "check_commit_entry_macro",
         &example_valid_entry_params(),
     );
-    println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     let expected: ZomeApiResult<Address> = Ok(Address::from(
         "QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd",
@@ -477,11 +476,33 @@ fn show_env() {
         )))
     );
     let result = make_test_call(&mut hc, "get_version", r#"{"hash": true}"#);
-    println!("get_version( hash == Some(true) ) == {:?}", result);
     let hash_result: ZomeApiResult<String> =
         serde_json::from_str::<ZomeApiResult<String>>(&result.clone().unwrap().to_string())
             .unwrap();
     assert!(hash_result.is_ok() && hash_result.unwrap().len() == 32);
+}
+
+#[test]
+fn test_signing() {
+    let (mut hc, _, _) = start_holochain_instance("test_signal", "alice");
+
+    let payload_unescaped = json!({
+        "payload": r#"test ' payload"#
+    }).to_string();
+    let result = make_test_call(&mut hc, "sign_payload", &payload_unescaped);
+    println!("sign_payload( {:?} ) == {:?}", payload_unescaped, result);
+    assert_eq!(result, Ok(JsonString::from_json(
+        r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
+    )));
+
+    let payload_escapes = json!({
+        "payload": r#"test " payload"#
+    }).to_string();
+    let result = make_test_call(&mut hc, "sign_payload", &payload_escapes);
+    println!("sign_payload( {:?} ) == {:?}", payload_escapes, result);
+    assert_eq!(result, Ok(JsonString::from_json(
+        r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
+    )));
 }
 
 #[test]

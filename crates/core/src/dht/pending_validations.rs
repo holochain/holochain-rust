@@ -131,3 +131,29 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
         }
     }
 }
+
+impl From<PendingValidationStruct> for EntryAspect {
+    fn from(pending: PendingValidationStruct) -> EntryAspect {
+        match pending.workflow {
+            ValidatingWorkflow::HoldEntry => EntryAspect::Content(
+                pending.entry_with_header.entry.clone(),
+                pending.entry_with_header.header.clone(),
+            ),
+            ValidatingWorkflow::HoldLink => {
+                let link_data = unwrap_to!(pending.entry_with_header.entry => Entry::LinkAdd);
+                EntryAspect::LinkAdd(link_data.clone(), pending.entry_with_header.header.clone())
+            }
+            ValidatingWorkflow::RemoveLink => {
+                let link_data = unwrap_to!(pending.entry_with_header.entry => Entry::LinkRemove);
+                EntryAspect::LinkRemove(link_data.clone(), pending.entry_with_header.header.clone())
+            }
+            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(
+                pending.entry_with_header.entry.clone(),
+                pending.entry_with_header.header.clone(),
+            ),
+            ValidatingWorkflow::RemoveEntry => {
+                EntryAspect::Deletion(pending.entry_with_header.header.clone())
+            }
+        }
+    }
+}

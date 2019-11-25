@@ -11,7 +11,6 @@ use crate::{
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
-        validation::ValidationResult,
         HdkFnCall, HdkFnCallResult, ZomeFnCall,
     },
     state::State,
@@ -19,7 +18,7 @@ use crate::{
 
 use holochain_core_types::{
     chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
-    error::HolochainError, signature::Provenance, validation::ValidationPackage,
+    signature::Provenance, validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
@@ -217,20 +216,6 @@ pub enum Action {
 
     /// Let the State track that an HDK function called by a zome call has returned
     TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
-
-    /// A validation result is returned from a local callback execution
-    /// Key is an unique id of the calling context
-    /// and the hash of the entry that was validated
-    ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
-
-    /// A validation package was created locally and is reported back
-    /// to be added to the state
-    ReturnValidationPackage(
-        (
-            snowflake::ProcessUniqueId,
-            Result<ValidationPackage, HolochainError>,
-        ),
-    ),
 
     /// No-op, used to check if an action channel is still open
     Ping,

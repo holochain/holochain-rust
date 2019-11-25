@@ -66,12 +66,15 @@ pub async fn query(
 
     let key_inner = key.clone();
     let context_inner = context.clone();
-    context.spawn_task(move || {
-        thread::sleep(timeout.into());
-        let timeout_action = Action::QueryTimeout(key_inner);
-        let action_wrapper = ActionWrapper::new(timeout_action);
-        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    thread::Builder::new()
+        .name("query_timeout".into())
+        .spawn(move || {
+            thread::sleep(timeout.into());
+            let timeout_action = Action::QueryTimeout(key_inner);
+            let action_wrapper = ActionWrapper::new(timeout_action);
+            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+        })
+        .expect("Could not spawn thread for query timeout");
 
     QueryFuture {
         context: context.clone(),

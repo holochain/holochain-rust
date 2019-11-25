@@ -54,39 +54,56 @@ let
      trycp-server
    ]));
 
- crates-io = pkgs.writeShellScriptBin "hc-release-hook-publish" ''
-set -euox pipefail
-echo "packaging for crates.io"
+ # order is important here due to dependencies
+ publishable-crates = [
+  "locksmith"
+  "common"
+  "metrics"
+  "core_types"
+  "wasm_utils"
+  "conductor_api"
+  "dpki"
+  "sim2h"
+  "sim1h"
+  "net"
+  "core"
+  "conductor_lib"
+  "hdk"
+  "hdk_v2"
+  "holochain"
+  "holochain_wasm"
+  "sim2h_server"
+  ];
 
-cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Cargo.toml
+ remove-dev-deps = ''
 
-# order is important here due to dependencies
-for crate in \
- locksmith \
- common \
- metrics \
- core_types \
- wasm_utils \
- conductor_api \
- dpki \
- sim2h \
- sim1h \
- net \
- core \
- conductor_lib \
- hdk \
- hdk_v2 \
- holochain \
- holochain_wasm \
- sim2h_server
-do
- cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty
- sleep 10
-done
+ '';
 
-git checkout -f
+ reinstate-dev-deps = ''
+ git checkout -f
+ '';
+
+ publish-crates = dry:
+ ''
+ set -euox pipefail
+ echo "packaging for crates.io"
+
+ # remove dev deps
+ cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Cargo.toml
+
+ for $crate in ${pkgs.lib.concatStrings (pkgs.lib.intersperse " " publishable-crates)}
+ do
+  cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty ${ if dry then "--dry-run --no-verify" else "" }
+  sleep ${if dry then "1" else "10" }
+ done
+
+ # clean checkout
+ git checkout -f
 '';
+
+ crates-io-dry-run = pkgs.writeShellScriptBin "hc-release-hook-publish-dry-run" (publish-crates true);
+ crates-io = pkgs.writeShellScriptBin "hc-release-hook-publish" (publish-crates false);
 in
 {
- buildInputs = [ github-binaries crates-io ];
+ buildInputs = [ github-binaries crates-io-dry-run crates-io ];
 }

@@ -1,0 +1,572 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'hc'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=hc",
+                    "--package=hc"
+                ],
+                "filter": {
+                    "name": "hc",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'hc'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=hc",
+                    "--package=hc"
+                ],
+                "filter": {
+                    "name": "hc",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_common'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_common"
+                ],
+                "filter": {
+                    "name": "holochain_common",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_conductor_lib'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_conductor_lib"
+                ],
+                "filter": {
+                    "name": "holochain_conductor_lib",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_core'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_core"
+                ],
+                "filter": {
+                    "name": "holochain_core",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_conductor_lib_api'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_conductor_lib_api"
+                ],
+                "filter": {
+                    "name": "holochain_conductor_lib_api",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_core_types'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_core_types"
+                ],
+                "filter": {
+                    "name": "holochain_core_types",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_locksmith'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_locksmith"
+                ],
+                "filter": {
+                    "name": "holochain_locksmith",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_wasm_utils'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_wasm_utils"
+                ],
+                "filter": {
+                    "name": "holochain_wasm_utils",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'integration-test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=integration-test",
+                    "--package=holochain_wasm_utils"
+                ],
+                "filter": {
+                    "name": "integration-test",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_dpki'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_dpki"
+                ],
+                "filter": {
+                    "name": "holochain_dpki",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_metrics'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_metrics"
+                ],
+                "filter": {
+                    "name": "holochain_metrics",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'holochain_metrics'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=holochain_metrics",
+                    "--package=holochain_metrics"
+                ],
+                "filter": {
+                    "name": "holochain_metrics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'holochain_metrics'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=holochain_metrics",
+                    "--package=holochain_metrics"
+                ],
+                "filter": {
+                    "name": "holochain_metrics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_net'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_net"
+                ],
+                "filter": {
+                    "name": "holochain_net",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sim1h'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sim1h"
+                ],
+                "filter": {
+                    "name": "sim1h",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sim2h'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sim2h"
+                ],
+                "filter": {
+                    "name": "sim2h",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'holochain'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=holochain",
+                    "--package=holochain"
+                ],
+                "filter": {
+                    "name": "holochain",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'holochain'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=holochain",
+                    "--package=holochain"
+                ],
+                "filter": {
+                    "name": "holochain",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'hdk'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=hdk"
+                ],
+                "filter": {
+                    "name": "hdk",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'entry'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=entry",
+                    "--package=hdk"
+                ],
+                "filter": {
+                    "name": "entry",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'links'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=links",
+                    "--package=hdk"
+                ],
+                "filter": {
+                    "name": "links",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'misc'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=misc",
+                    "--package=hdk"
+                ],
+                "filter": {
+                    "name": "misc",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'holochain_stress'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=holochain_stress"
+                ],
+                "filter": {
+                    "name": "holochain_stress",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'sim2h_stress'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=sim2h_stress",
+                    "--package=holochain_stress"
+                ],
+                "filter": {
+                    "name": "sim2h_stress",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'sim2h_stress'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=sim2h_stress",
+                    "--package=holochain_stress"
+                ],
+                "filter": {
+                    "name": "sim2h_stress",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'trycp_server'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=trycp_server",
+                    "--package=trycp_server"
+                ],
+                "filter": {
+                    "name": "trycp_server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'trycp_server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=trycp_server",
+                    "--package=trycp_server"
+                ],
+                "filter": {
+                    "name": "trycp_server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'sim2h_server'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=sim2h_server",
+                    "--package=sim2h_server"
+                ],
+                "filter": {
+                    "name": "sim2h_server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'sim2h_server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=sim2h_server",
+                    "--package=sim2h_server"
+                ],
+                "filter": {
+                    "name": "sim2h_server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

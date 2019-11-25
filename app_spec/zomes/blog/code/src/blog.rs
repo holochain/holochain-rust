@@ -547,6 +547,10 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
     entry
 }
 
+pub fn handle_get_chain_header_hashes() -> ZomeApiResult<Vec<Address>> {
+    hdk::query("**".into(), 0, 0)
+}
+
 #[cfg(test)]
 pub mod tests {
 

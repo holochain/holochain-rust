@@ -7,6 +7,7 @@ module.exports = scenario => {
       scenario('Can perform validation of an entry while the author is offline', async (s, t) => {
         
         const { alice, bob, carol } = await s.players({alice: one, bob: one, carol: one})
+        // alice and bob start online
         await alice.spawn()
         await bob.spawn()
 
@@ -16,6 +17,20 @@ module.exports = scenario => {
         const create_result = await alice.call('app', "blog", "create_post", params)
         t.comment(JSON.stringify(create_result))
         t.equal(create_result.Ok.length, 46)
+        await s.consistency()
+
+        // get all the chain header hashes and check if they are retrievable
+        const chain_header_hashes = await alice.call('app', "blog", "get_chain_header_hashes", {})
+        let chain_headers = [];
+
+        for (header_hash in chain_header_hashes) {
+            // can use get_post because it just returns a raw entry given a hash
+            let header = await alice.call('app', "blog", "get_post", { post_address: header_hash })
+            t.ok(header.Ok)
+            chain_headers.push(header)
+        }
+
+        t.comment(JSON.stringify(chain_headers))
 
         t.comment('waiting for consistency between Alice and Bob')
         // bob will receive the entry and hold it

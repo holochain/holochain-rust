@@ -2,15 +2,14 @@ use crate::{
     context::Context,
     entry::CanPublish,
     network::{
-        actions::query::{query, QueryMethod},
         entry_with_header::EntryWithHeader,
     },
+    workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
     error::HolochainError,
-    network::query::NetworkQueryResult,
     time::Timeout,
     validation::{ValidationPackage, ValidationPackageDefinition},
 };
@@ -27,20 +26,21 @@ async fn all_chain_headers_before_header_dht(
     let mut headers = Vec::new();
 
     while let Some(next_header_addr) = current_header.link() {
-        let get_entry_result = query(
-            context.clone(),
-            QueryMethod::Entry(next_header_addr.clone()),
-            Timeout::new(GET_TIMEOUT_MS),
+        let timeout = Timeout::new(GET_TIMEOUT_MS);
+        let get_entry_result = get_entry_with_meta_workflow(
+            &context,
+            &next_header_addr,
+            &timeout,
         )
         .await;
-        if let Ok(NetworkQueryResult::Entry(Some(EntryWithMetaAndHeader {
+        if let Ok(Some(EntryWithMetaAndHeader {
             entry_with_meta:
                 EntryWithMeta {
                     entry: Entry::ChainHeader(chain_header),
                     ..
                 },
             ..
-        }))) = get_entry_result
+        })) = get_entry_result
         {
             headers.push(chain_header.clone());
             current_header = chain_header;
@@ -63,16 +63,17 @@ async fn public_chain_entries_from_headers_dht(
         .collect::<Vec<_>>();
     let mut entries = Vec::new();
     for header in public_headers {
-        let get_entry_result = query(
-            context.clone(),
-            QueryMethod::Entry(header.entry_address().clone()),
-            Timeout::new(GET_TIMEOUT_MS),
+        let timeout = Timeout::new(GET_TIMEOUT_MS);
+        let get_entry_result = get_entry_with_meta_workflow(
+            &context,
+            &header.entry_address(),
+            &timeout,
         )
         .await;
-        if let Ok(NetworkQueryResult::Entry(Some(EntryWithMetaAndHeader {
+        if let Ok(Some(EntryWithMetaAndHeader {
             entry_with_meta: EntryWithMeta { entry, .. },
             ..
-        }))) = get_entry_result
+        })) = get_entry_result
         {
             entries.push(entry.clone());
         } else {

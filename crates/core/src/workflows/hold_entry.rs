@@ -1,6 +1,6 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
+    context::Context, dht::actions::hold_aspect::hold_aspect, network::chain_pair::ChainPair,
+    nucleus::validation::validate_entry,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
@@ -71,10 +71,7 @@ pub async fn hold_entry_workflow(
     );
 
     // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Content(
-        chain_pair.entry().clone(),
-        chain_pair.header().clone(),
-    );
+    let aspect = EntryAspect::Content(chain_pair.entry().clone(), chain_pair.header().clone());
     hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(

@@ -1,6 +1,6 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
+    context::Context, dht::actions::hold_aspect::hold_aspect, network::chain_pair::ChainPair,
+    nucleus::validation::validate_entry,
 };
 
 use crate::{

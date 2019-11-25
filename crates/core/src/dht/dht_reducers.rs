@@ -506,10 +506,7 @@ pub mod tests {
 
     fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
         let entry = test_entry();
-        let chain_pair = ChainPair::try_from_header_and_entry(
-            test_chain_header(),
-            entry.clone(),
-        );
+        let chain_pair = ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone());
 
         Arc::new(PendingValidationStruct::new(chain_pair, workflow))
     }

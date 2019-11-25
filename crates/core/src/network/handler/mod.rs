@@ -337,7 +337,7 @@ fn get_content_aspect(
                         Err(error) => {
                             log_error!(context, "{}", error);
                             None
-                        },
+                        }
                     }
                 } else {
                     debug!(

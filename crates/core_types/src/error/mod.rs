@@ -163,11 +163,7 @@ impl fmt::Display for HolochainError {
                 "Provided DNA hash does not match actual DNA hash! {} != {}",
                 hash1, hash2
             ),
-            HeaderEntryMismatch(
-                err_msg,
-                header_entry_address,
-                entry_address,
-            ) => write!(
+            HeaderEntryMismatch(err_msg, header_entry_address, entry_address) => write!(
                 f,
                 "Header/Entry mismatch. The entry address {} in the
                  header does not match the address {} of the entry. {}",

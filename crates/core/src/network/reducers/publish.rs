@@ -1,10 +1,7 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse,
-        chain_pair::ChainPair,
-        entry_aspect::EntryAspect,
-        reducers::send,
+        actions::ActionResponse, chain_pair::ChainPair, entry_aspect::EntryAspect, reducers::send,
         state::NetworkState,
     },
     state::State,
@@ -67,10 +64,9 @@ fn publish_update_delete_meta(
     // publish crud-status
 
     let aspect = match crud_status {
-        CrudStatus::Modified => EntryAspect::Update(
-            chain_pair.entry().clone(),
-            chain_pair.header().clone()
-        ),
+        CrudStatus::Modified => {
+            EntryAspect::Update(chain_pair.entry().clone(), chain_pair.header().clone())
+        }
         CrudStatus::Deleted => EntryAspect::Deletion(chain_pair.header().clone()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(
@@ -108,9 +104,7 @@ fn publish_link_meta(
         ),
         Entry::LinkRemove((link_data, links_to_remove)) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkRemove(
-                (link_data, links_to_remove),
-                chain_pair.header().clone()),
+            EntryAspect::LinkRemove((link_data, links_to_remove), chain_pair.header().clone()),
         ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
@@ -155,7 +149,7 @@ fn reduce_publish_inner(
                     None => Ok(()),
                 }
             })
-        },
+        }
         EntryType::LinkAdd => publish_entry(network_state, &chain_pair)
             .and_then(|_| publish_link_meta(network_state, &chain_pair)),
         EntryType::LinkRemove => publish_entry(network_state, &chain_pair)

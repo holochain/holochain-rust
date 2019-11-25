@@ -111,7 +111,10 @@ impl fmt::Display for EntryAspect {
             EntryAspect::Content(_, _) => write!(f, "EntryAspect::Content(Entry, ChainHeader)"),
             EntryAspect::Header(_) => write!(f, "EntryAspect::Header(ChainHeader)"),
             EntryAspect::LinkAdd(_, _) => write!(f, "EntryAspect::LinkAdd(LinkData, ChainHeader)"),
-            EntryAspect::LinkRemove(_, _) => write!(f, "EntryAspect::LinkRemove((LinkData, Vec<Address>), ChainHeader)"),
+            EntryAspect::LinkRemove(_, _) => write!(
+                f,
+                "EntryAspect::LinkRemove((LinkData, Vec<Address>), ChainHeader)"
+            ),
             EntryAspect::Update(_, _) => write!(f, "EntryAspect::Update(Entry, ChainHeader)"),
             EntryAspect::Deletion(_) => write!(f, "EntryAspect::Deletion(ChainHeader)"),
         }

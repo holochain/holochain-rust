@@ -106,10 +106,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
             }
             Ok(chain_pair) => {
                 let entry_hash = chain_pair.entry().address();
-                let content_aspect = EntryAspect::Content(
-                    chain_pair.entry(),
-                    chain_pair.header(),
-                );
+                let content_aspect = EntryAspect::Content(chain_pair.entry(), chain_pair.header());
                 let aspect_hash = AspectHash::from(content_aspect.address());
                 address_map
                     .entry(entry_hash.into())

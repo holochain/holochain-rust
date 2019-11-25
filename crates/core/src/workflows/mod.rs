@@ -14,9 +14,7 @@ pub mod respond_validation_package_request;
 use crate::{
     context::Context,
     dht::pending_validations::{PendingValidation, ValidatingWorkflow},
-    network::{
-        actions::get_validation_package::get_validation_package, chain_pair::ChainPair,
-    },
+    network::{actions::get_validation_package::get_validation_package, chain_pair::ChainPair},
     nucleus::{
         actions::build_validation_package::build_validation_package,
         ribosome::callback::{
@@ -75,12 +73,7 @@ async fn try_make_local_validation_package(
 
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
-                build_validation_package(
-                    entry,
-                    context.clone(),
-                    header.provenances(),
-                )
-                .await
+                build_validation_package(entry, context.clone(), header.provenances()).await
             } else {
                 Err(HolochainError::ErrorGeneric(String::from(
                     "Can't create validation package locally",
@@ -98,9 +91,7 @@ async fn validation_package(
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 1. Try to construct it locally:
-    if let Ok(package) =
-        try_make_local_validation_package(&chain_pair, context.clone()).await
-    {
+    if let Ok(package) = try_make_local_validation_package(&chain_pair, context.clone()).await {
         Ok(Some(package))
     } else {
         // If that is not possible, get the validation package from source
@@ -115,25 +106,20 @@ pub fn run_holding_workflow(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     match pending.workflow {
-        ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-            &pending.chain_pair,
-            context.clone(),
-        )),
-        ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-            &pending.chain_pair,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-            &pending.chain_pair,
-            context.clone(),
-        )),
-        ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-            &pending.chain_pair,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-            &pending.chain_pair,
-            context.clone(),
-        )),
+        ValidatingWorkflow::HoldLink => {
+            context.block_on(hold_link_workflow(&pending.chain_pair, context.clone()))
+        }
+        ValidatingWorkflow::HoldEntry => {
+            context.block_on(hold_entry_workflow(&pending.chain_pair, context.clone()))
+        }
+        ValidatingWorkflow::RemoveLink => {
+            context.block_on(remove_link_workflow(&pending.chain_pair, context.clone()))
+        }
+        ValidatingWorkflow::UpdateEntry => {
+            context.block_on(hold_update_workflow(&pending.chain_pair, context.clone()))
+        }
+        ValidatingWorkflow::RemoveEntry => {
+            context.block_on(hold_remove_workflow(&pending.chain_pair, context.clone()))
+        }
     }
 }

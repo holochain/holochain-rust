@@ -3,11 +3,7 @@ use crate::{
     content_store::GetContent,
     state::{State, StateWrapper},
 };
-use holochain_core_types::{
-    chain_header::ChainHeader,
-    entry::Entry,
-    error::HolochainError,
-};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// A `ChainPair` cannot be constructed unless the entry address in the
@@ -30,7 +26,9 @@ impl ChainPair {
             let error_msg = "Tried to create a ChainPair, but got a mismatch with the header's entry address and the entry's address. See the debug log output for data for the header and entry.";
             debug!("Mismatch between header's entry address and the entry's address. Header:\n{:#?}\nEntry:{:#?}", header, entry);
             Err(HolochainError::HeaderEntryMismatch(
-                error_msg.to_string(), header_entry_address.clone(), entry_address
+                error_msg.to_string(),
+                header_entry_address.clone(),
+                entry_address,
             ))
         }
     }
@@ -43,10 +41,7 @@ impl ChainPair {
         self.1.clone()
     }
 
-    pub fn fetch_chain_pair(
-        address: &Address,
-        state: &State
-    ) -> Result<ChainPair, HolochainError> {
+    pub fn fetch_chain_pair(address: &Address, state: &State) -> Result<ChainPair, HolochainError> {
         let entry = state
             .agent()
             .chain_store()

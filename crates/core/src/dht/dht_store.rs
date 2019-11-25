@@ -1,7 +1,7 @@
 use crate::{
     content_store::{AddContent, GetContent},
     dht::aspect_map::{AspectMap, AspectMapBare},
-    network::chain_pair::ChainPair
+    network::chain_pair::ChainPair,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -244,7 +244,11 @@ impl DhtStore {
                 Ok(())
             }
             Err(err) => match err {
-                HolochainError::HeaderEntryMismatch(mut err_msg, header_entry_address, entry_address) => {
+                HolochainError::HeaderEntryMismatch(
+                    mut err_msg,
+                    header_entry_address,
+                    entry_address,
+                ) => {
                     debug!(
                         "Tried to add entry:\n{:#?}\nand header:\n{:#?}\nto the CAS and EAV, respectively",
                         entry, header,
@@ -255,8 +259,12 @@ impl DhtStore {
                         of header and entry. {}",
                         err_msg
                     );
-                    Err(HolochainError::HeaderEntryMismatch(err_msg, header_entry_address, entry_address))
-                },
+                    Err(HolochainError::HeaderEntryMismatch(
+                        err_msg,
+                        header_entry_address,
+                        entry_address,
+                    ))
+                }
                 _ => Err(err),
             },
         }

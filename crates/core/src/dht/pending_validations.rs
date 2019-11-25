@@ -93,18 +93,19 @@ impl PendingValidationStruct {
         validating_workflow: ValidatingWorkflow,
     ) -> Result<PendingValidationStruct, HolochainError> {
         match ChainPair::try_from_header_and_entry(header, entry) {
-            Ok(chain_pair) => {
-                Ok(PendingValidationStruct::new(
-                        chain_pair,
-                        validating_workflow,
-                ))
-            },
+            Ok(chain_pair) => Ok(PendingValidationStruct::new(
+                chain_pair,
+                validating_workflow,
+            )),
             Err(error) => {
-                let error = format!("Tried to process {}; see the\n
-                debug output for further details of its contents. {}", entry_aspect, error);
+                let error = format!(
+                    "Tried to process {}; see the\n
+                debug output for further details of its contents. {}",
+                    entry_aspect, error
+                );
                 debug!("Tried to process {:?}", entry_aspect);
                 Err(HolochainError::ValidationFailed(String::from(error)))
-            },
+            }
         }
     }
 }
@@ -120,7 +121,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                     EntryAspect::Content(entry, header),
                     ValidatingWorkflow::HoldEntry,
                 )
-            },
+            }
             EntryAspect::Header(_header) => Err(HolochainError::NotImplemented(String::from(
                 "EntryAspect::Header",
             ))),
@@ -141,7 +142,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                     EntryAspect::LinkRemove((link_data, links_to_remove), header),
                     ValidatingWorkflow::RemoveLink,
                 )
-            },
+            }
             EntryAspect::Update(entry, header) => {
                 PendingValidationStruct::try_validate_from_entry_and_header(
                     entry.clone(),
@@ -149,7 +150,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                     EntryAspect::Update(entry, header),
                     ValidatingWorkflow::UpdateEntry,
                 )
-            },
+            }
             EntryAspect::Deletion(header) => {
                 // reconstruct the deletion entry from the header.
                 let deleted_entry_address = header.link_update_delete().ok_or_else(|| {
@@ -165,7 +166,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                     EntryAspect::Deletion(header),
                     ValidatingWorkflow::RemoveEntry,
                 )
-            },
+            }
         }
     }
 }
@@ -175,10 +176,7 @@ impl From<PendingValidationStruct> for EntryAspect {
         let entry = pending.chain_pair.entry();
         let header = pending.chain_pair.header();
         match pending.workflow {
-            ValidatingWorkflow::HoldEntry => EntryAspect::Content(
-                entry,
-                header,
-            ),
+            ValidatingWorkflow::HoldEntry => EntryAspect::Content(entry, header),
             ValidatingWorkflow::HoldLink => {
                 let link_data = unwrap_to!(entry => Entry::LinkAdd);
                 EntryAspect::LinkAdd(link_data.clone(), header)
@@ -187,13 +185,8 @@ impl From<PendingValidationStruct> for EntryAspect {
                 let link_data = unwrap_to!(entry => Entry::LinkRemove);
                 EntryAspect::LinkRemove(link_data.clone(), header)
             }
-            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(
-                entry,
-                header,
-            ),
-            ValidatingWorkflow::RemoveEntry => {
-                EntryAspect::Deletion(header)
-            }
+            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(entry, header),
+            ValidatingWorkflow::RemoveEntry => EntryAspect::Deletion(header),
         }
     }
 }

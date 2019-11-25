@@ -91,8 +91,9 @@ let
  # remove dev deps
  cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Cargo.toml
 
- for $crate in ${pkgs.lib.concatStrings (pkgs.lib.intersperse " " publishable-crates)}
+ for crate in ${pkgs.lib.concatStrings (pkgs.lib.intersperse " " publishable-crates)}
  do
+  echo "publishing ''${crate}"
   cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty ${ if dry then "--dry-run --no-verify" else "" }
   sleep ${if dry then "1" else "10" }
  done

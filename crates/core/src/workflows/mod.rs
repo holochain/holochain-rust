@@ -44,22 +44,10 @@ use std::sync::Arc;
 /// Fails if this entry type needs more than just the header for validation.
 pub(crate) async fn try_make_local_validation_package(
     entry_with_header: &EntryWithHeader,
+    validation_package_definition: &ValidationPackageDefinition,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
-    let entry = &entry_with_header.entry;
     let entry_header = &entry_with_header.header;
-
-    let validation_package_definition = get_validation_package_definition(entry, context.clone())
-        .and_then(|callback_result| match callback_result {
-        CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
-        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-        CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
-            "ValidationPackage callback not implemented for {:?} ({})",
-            entry.entry_type().clone(),
-            reason
-        ))),
-        _ => unreachable!(),
-    })?;
 
     match validation_package_definition {
         ValidationPackageDefinition::Entry => {
@@ -96,6 +84,22 @@ async fn validation_package(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
+
+    //0. Call into the DNA to get the validation package definition for this entry
+    // e.g. what data is needed to validate it (chain, entry, headers, etc)
+    let entry = &entry_with_header.entry;
+    let validation_package_definition = get_validation_package_definition(entry, context.clone())
+        .and_then(|callback_result| match callback_result {
+        CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
+        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+        CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
+            "ValidationPackage callback not implemented for {:?} ({})",
+            entry.entry_type().clone(),
+            reason
+        ))),
+        _ => unreachable!(),
+    })?;
+
     // 1. Try to construct it locally.
     // This will work if the entry doesn't need a chain to validate or if this agent is the author:
     log_debug!(
@@ -104,7 +108,10 @@ async fn validation_package(
         entry_with_header.entry.address()
     );
     if let Ok(package) =
-        try_make_local_validation_package(&entry_with_header, context.clone()).await
+        try_make_local_validation_package(
+            &entry_with_header,
+            &validation_package_definition,
+            context.clone()).await
     {
         log_debug!(
             context,
@@ -137,7 +144,10 @@ async fn validation_package(
         "validation_package:{} - Trying to build from published headers",
         entry_with_header.entry.address()
     );
-    if let Ok(package) = try_make_validation_package_dht(&entry_with_header, context.clone()).await
+    if let Ok(package) = try_make_validation_package_dht(
+        &entry_with_header, 
+        &validation_package_definition,
+        context.clone()).await
     {
         log_debug!(
             context,

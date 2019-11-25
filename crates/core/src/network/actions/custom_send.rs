@@ -33,11 +33,14 @@ pub async fn custom_send(
     dispatch_action(context.action_channel(), action_wrapper);
     let context_inner = context.clone();
     let id_inner = id.clone();
-    context.spawn_task(move || {
-        thread::sleep(timeout.into());
-        let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
-        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-    });
+    thread::Builder::new()
+        .name("custom_send_timeout".into())
+        .spawn(move || {
+            thread::sleep(timeout.into());
+            let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id_inner));
+            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+        })
+        .expect("Couldn't spawn thread for custom_send timeout");
 
     SendResponseFuture {
         context: context.clone(),

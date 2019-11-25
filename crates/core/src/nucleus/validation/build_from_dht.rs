@@ -5,9 +5,6 @@ use crate::{
         actions::query::{query, QueryMethod},
         entry_with_header::EntryWithHeader,
     },
-    nucleus::ribosome::callback::{
-        validation_package::get_validation_package_definition, CallbackResult,
-    },
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -89,6 +86,7 @@ async fn public_chain_entries_from_headers_dht(
 
 pub(crate) async fn try_make_validation_package_dht(
     entry_with_header: &EntryWithHeader,
+    validation_package_definition: &ValidationPackageDefinition,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
     log_debug!(
@@ -96,20 +94,7 @@ pub(crate) async fn try_make_validation_package_dht(
         "Constructing validation package from DHT for entry with address: {}",
         entry_with_header.header.entry_address()
     );
-    let entry = &entry_with_header.entry;
     let entry_header = entry_with_header.header.clone();
-
-    let validation_package_definition =
-        match get_validation_package_definition(entry, context.clone())? {
-            CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-            CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
-            CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
-                "ValidationPackage callback not implemented for {:?} ({})",
-                entry.entry_type().clone(),
-                reason
-            ))),
-            _ => unreachable!(),
-        }?;
 
     let chain_headers = all_chain_headers_before_header_dht(&context, &entry_header).await?;
 
@@ -131,7 +116,7 @@ pub(crate) async fn try_make_validation_package_dht(
             package.source_chain_entries =
                 Some(public_chain_entries_from_headers_dht(&context, &chain_headers).await?);
         }
-        ValidationPackageDefinition::Custom(string) => package.custom = Some(string),
+        ValidationPackageDefinition::Custom(string) => package.custom = Some(string.to_string()),
     };
     Ok(package)
 }

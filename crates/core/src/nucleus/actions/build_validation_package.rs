@@ -1,5 +1,4 @@
 use crate::{
-    action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
     content_store::GetContent,
     context::Context,
@@ -9,25 +8,20 @@ use crate::{
     },
     state::{State, StateWrapper},
 };
-use futures::{future::Future, task::Poll};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     signature::Provenance,
-    ugly::lax_send_sync,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use snowflake;
-use std::{pin::Pin, sync::Arc, vec::Vec};
+use std::{sync::Arc, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
     context: Arc<Context>,
     provenances: &'a Vec<Provenance>,
 ) -> Result<ValidationPackage, HolochainError> {
-    let id = snowflake::ProcessUniqueId::new();
-
     match entry.entry_type() {
         EntryType::App(app_entry_type) => {
             if context
@@ -73,109 +67,84 @@ pub async fn build_validation_package<'a>(
         }
     };
 
-    {
-        let entry = entry.clone();
-        let context = context.clone();
-        let maybe_entry_header = find_chain_header(
-            &entry.clone(),
-            &context
-                .state()
-                .expect("No state in build_validation_package"),
-        );
-        let entry_header = if maybe_entry_header.is_none() {
-            // TODO: make sure that we don't run into race conditions with respect to the chain
-            // We need the source chain header as part of the validation package.
-            // For an already committed entry (when asked to deliver the validation package to
-            // a DHT node) we should have gotten one from chain_header() above.
-            // But when we commit an entry, there is no header for it in the chain yet.
-            // That is why we have to create a pre-flight header here.
-            // If there is another zome function call that also calls commit before this commit
-            // is done, we might create two pre-flight chain headers linking to the same
-            // previous header. Since these pre-flight headers are not written to the chain
-            // and just used for the validation, I don't see why it would be a problem.
-            // If it was a problem, we would have to make sure that the whole commit process
-            // (including validtion) is atomic.
-            let state = State::new(context.clone());
-            agent::state::create_new_chain_header(
-                &entry,
-                &context.state()?.agent(),
-                &StateWrapper::from(state),
-                &None,
-                provenances,
-            )?
-        } else {
-            maybe_entry_header.unwrap()
-        };
+    let entry = entry.clone();
+    let context = context.clone();
+    let maybe_entry_header = find_chain_header(
+        &entry.clone(),
+        &context
+            .state()
+            .expect("No state in build_validation_package"),
+    );
+    let entry_header = if maybe_entry_header.is_none() {
+        // TODO: make sure that we don't run into race conditions with respect to the chain
+        // We need the source chain header as part of the validation package.
+        // For an already committed entry (when asked to deliver the validation package to
+        // a DHT node) we should have gotten one from chain_header() above.
+        // But when we commit an entry, there is no header for it in the chain yet.
+        // That is why we have to create a pre-flight header here.
+        // If there is another zome function call that also calls commit before this commit
+        // is done, we might create two pre-flight chain headers linking to the same
+        // previous header. Since these pre-flight headers are not written to the chain
+        // and just used for the validation, I don't see why it would be a problem.
+        // If it was a problem, we would have to make sure that the whole commit process
+        // (including validtion) is atomic.
+        let state = State::new(context.clone());
+        agent::state::create_new_chain_header(
+            &entry,
+            &context.state()?.agent(),
+            &StateWrapper::from(state),
+            &None,
+            provenances,
+        )?
+    } else {
+        maybe_entry_header.unwrap()
+    };
 
-        context.clone().spawn_task(move || {
-            let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
-            let maybe_validation_package = maybe_callback_result
-                .and_then(|callback_result| match callback_result {
-                    CallbackResult::Fail(error_string) => {
-                        Err(HolochainError::ErrorGeneric(error_string))
-                    }
-                    CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented(reason) => {
-                        Err(HolochainError::ErrorGeneric(format!(
-                            "ValidationPackage callback not implemented for {:?} ({})",
-                            entry.entry_type().clone(),
-                            reason
-                        )))
-                    }
-                    _ => unreachable!(),
-                })
-                .and_then(|package_definition| {
-                    Ok(match package_definition {
-                        Entry => ValidationPackage::only_header(entry_header),
-                        ChainEntries => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_entries = Some(public_chain_entries_from_headers(
-                                &context,
-                                &all_chain_headers_before_header(&context, &package.chain_header),
-                            ));
-                            package
-                        }
-                        ChainHeaders => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers = Some(all_chain_headers_before_header(
-                                &context,
-                                &package.chain_header,
-                            ));
-                            package
-                        }
-                        ChainFull => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            let headers =
-                                all_chain_headers_before_header(&context, &package.chain_header);
-                            package.source_chain_entries =
-                                Some(public_chain_entries_from_headers(&context, &headers));
-                            package.source_chain_headers = Some(headers);
-                            package
-                        }
-                        Custom(string) => {
-                            let mut package = ValidationPackage::only_header(entry_header);
-                            package.custom = Some(string);
-                            package
-                        }
-                    })
-                });
-            lax_send_sync(
-                context.action_channel().clone(),
-                ActionWrapper::new(Action::ReturnValidationPackage((
-                    id,
-                    maybe_validation_package,
-                ))),
-                "build_validation_package",
-            );
-        });
-    }
-
-    ValidationPackageFuture {
-        context: context.clone(),
-        key: id,
-        error: None,
-    }
-    .await
+    get_validation_package_definition(&entry, context.clone())
+        .and_then(|callback_result| match callback_result {
+            CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
+            CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+            CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
+                "ValidationPackage callback not implemented for {:?} ({})",
+                entry.entry_type().clone(),
+                reason
+            ))),
+            _ => unreachable!(),
+        })
+        .and_then(|package_definition| {
+            Ok(match package_definition {
+                Entry => ValidationPackage::only_header(entry_header),
+                ChainEntries => {
+                    let mut package = ValidationPackage::only_header(entry_header);
+                    package.source_chain_entries = Some(public_chain_entries_from_headers(
+                        &context,
+                        &all_chain_headers_before_header(&context, &package.chain_header),
+                    ));
+                    package
+                }
+                ChainHeaders => {
+                    let mut package = ValidationPackage::only_header(entry_header);
+                    package.source_chain_headers = Some(all_chain_headers_before_header(
+                        &context,
+                        &package.chain_header,
+                    ));
+                    package
+                }
+                ChainFull => {
+                    let mut package = ValidationPackage::only_header(entry_header);
+                    let headers = all_chain_headers_before_header(&context, &package.chain_header);
+                    package.source_chain_entries =
+                        Some(public_chain_entries_from_headers(&context, &headers));
+                    package.source_chain_headers = Some(headers);
+                    package
+                }
+                Custom(string) => {
+                    let mut package = ValidationPackage::only_header(entry_header);
+                    package.custom = Some(string);
+                    package
+                }
+            })
+        })
 }
 
 // given a slice of headers return the entries for those marked public
@@ -209,42 +178,6 @@ fn all_chain_headers_before_header(
         .agent()
         .chain_store();
     chain.iter(&Some(header.clone())).skip(1).collect()
-}
-
-/// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.
-pub struct ValidationPackageFuture {
-    context: Arc<Context>,
-    key: snowflake::ProcessUniqueId,
-    error: Option<HolochainError>,
-}
-
-impl Future for ValidationPackageFuture {
-    type Output = Result<ValidationPackage, HolochainError>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
-            return Poll::Ready(Err(err));
-        }
-        if let Some(ref error) = self.error {
-            return Poll::Ready(Err(error.clone()));
-        }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
-            match state.nucleus().validation_packages.get(&self.key) {
-                Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),
-                Some(Err(error)) => Poll::Ready(Err(error.clone())),
-                None => Poll::Pending,
-            }
-        } else {
-            Poll::Ready(Err(HolochainError::ErrorGeneric(
-                "State not initialized".to_string(),
-            )))
-        }
-    }
 }
 
 #[cfg(test)]

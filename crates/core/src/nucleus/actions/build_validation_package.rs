@@ -8,7 +8,6 @@ use crate::{
     },
     state::{State, StateWrapper},
 };
-use futures::{future::Future, task::Poll};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
@@ -16,8 +15,7 @@ use holochain_core_types::{
     signature::Provenance,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
-use snowflake;
-use std::{pin::Pin, sync::Arc, vec::Vec};
+use std::{sync::Arc, vec::Vec};
 
 pub async fn build_validation_package<'a>(
     entry: &'a Entry,
@@ -180,42 +178,6 @@ fn all_chain_headers_before_header(
         .agent()
         .chain_store();
     chain.iter(&Some(header.clone())).skip(1).collect()
-}
-
-/// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.
-pub struct ValidationPackageFuture {
-    context: Arc<Context>,
-    key: snowflake::ProcessUniqueId,
-    error: Option<HolochainError>,
-}
-
-impl Future for ValidationPackageFuture {
-    type Output = Result<ValidationPackage, HolochainError>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if let Some(err) = self.context.action_channel_error("ValidationPackageFuture") {
-            return Poll::Ready(Err(err));
-        }
-        if let Some(ref error) = self.error {
-            return Poll::Ready(Err(error.clone()));
-        }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
-        if let Some(state) = self.context.state() {
-            match state.nucleus().validation_packages.get(&self.key) {
-                Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),
-                Some(Err(error)) => Poll::Ready(Err(error.clone())),
-                None => Poll::Pending,
-            }
-        } else {
-            Poll::Ready(Err(HolochainError::ErrorGeneric(
-                "State not initialized".to_string(),
-            )))
-        }
-    }
 }
 
 #[cfg(test)]

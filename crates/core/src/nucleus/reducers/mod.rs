@@ -1,8 +1,6 @@
 pub mod init_application;
 pub mod queue_zome_function_call;
 pub mod return_initialization_result;
-pub mod return_validation_package;
-pub mod return_validation_result;
 pub mod return_zome_function_result;
 pub mod trace_invoke_hdk_function;
 pub mod trace_return_hdk_function;
@@ -14,8 +12,6 @@ use crate::{
             init_application::reduce_initialize_chain,
             queue_zome_function_call::reduce_queue_zome_function_call,
             return_initialization_result::reduce_return_initialization_result,
-            return_validation_package::reduce_return_validation_package,
-            return_validation_result::reduce_return_validation_result,
             return_zome_function_result::reduce_return_zome_function_result,
         },
         state::NucleusState,
@@ -31,8 +27,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitializeChain(_) => Some(reduce_initialize_chain),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
-        Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
-        Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         Action::QueueZomeFunctionCall(_) => Some(reduce_queue_zome_function_call),
         _ => None,
     }

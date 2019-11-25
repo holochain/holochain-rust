@@ -6,11 +6,9 @@ use crate::{
         CallbackFnCall,
     },
 };
-use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HolochainError;
-use holochain_persistence_api::{cas::content::Address, hash::HashString};
-use snowflake;
-use std::{pin::Pin, sync::Arc};
+use holochain_persistence_api::cas::content::Address;
+use std::sync::Arc;
 
 use holochain_metrics::Metric;
 
@@ -61,36 +59,4 @@ pub async fn run_validation_callback(
     context.metric_publisher.write().unwrap().publish(&metric);
 
     validation_result
-}
-
-/// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-/// Tracks the state for ValidationResults.
-pub struct ValidationCallbackFuture {
-    context: Arc<Context>,
-    key: (snowflake::ProcessUniqueId, HashString),
-}
-
-impl Future for ValidationCallbackFuture {
-    type Output = ValidationResult;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        if !self.context.is_action_channel_open() {
-            return Poll::Ready(Err(ValidationError::Error(HolochainError::LifecycleError(
-                "ValidationCallbackFuture".to_string(),
-            ))));
-        }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
-        if let Some(state) = self.context.try_state() {
-            match state.nucleus().validation_results.get(&self.key) {
-                Some(result) => Poll::Ready(result.clone()),
-                None => Poll::Pending,
-            }
-        } else {
-            Poll::Pending
-        }
-    }
 }

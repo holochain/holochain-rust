@@ -1,12 +1,13 @@
 use crate::{
-    context::Context, dht::actions::update_entry::update_entry,
-    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
+    context::Context,
+    dht::actions::hold_aspect::hold_aspect,
+    network::chain_pair::ChainPair,
+    nucleus::validation::{validate_entry, ValidationError},
+    workflows::validation_package,
 };
-use holochain_persistence_api::cas::content::AddressableContent;
-
-use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
+    network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
@@ -62,8 +63,12 @@ pub async fn hold_update_workflow(
 
     })?;
 
-    // 3. If valid store the entry in the local DHT shard
-    update_entry(&context.clone(), link, entry.address().clone()).await?;
+    // 4. If valid store the entry aspect in the local DHT shard
+    let aspect = EntryAspect::Update(
+        chain_pair.entry().clone(),
+        chain_pair.header().clone(),
+    );
+    hold_aspect(aspect, context.clone()).await?;
 
     Ok(())
 }

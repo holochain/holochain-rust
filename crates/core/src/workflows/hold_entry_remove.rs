@@ -1,16 +1,14 @@
 use crate::{
-    context::Context, dht::actions::remove_entry::remove_entry,
-    network::chain_pair::ChainPair,
-    nucleus::validation::validate_entry,
+    context::Context, dht::actions::hold_aspect::hold_aspect,
+    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
-    entry::Entry,
     error::HolochainError,
+    network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
-use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 pub async fn hold_remove_workflow(
@@ -55,15 +53,9 @@ pub async fn hold_remove_workflow(
         }
 
     })?;
-    let entry = chain_pair.entry();
-    let deletion_entry = unwrap_to!(entry => Entry::Deletion);
 
-    let deleted_entry_address = deletion_entry.clone().deleted_entry_address();
-    // 3. If valid store the entry in the local DHT shard
-    remove_entry(
-        &context.clone(),
-        deleted_entry_address,
-        entry.address().clone(),
-    )
-    .await
+    // 4. If valid store the entry aspect in the local DHT shard
+    let aspect = EntryAspect::Deletion(chain_pair.header().clone());
+    hold_aspect(aspect, context.clone()).await?;
+    Ok(())
 }

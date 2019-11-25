@@ -1,13 +1,12 @@
 use crate::{
-    context::Context,
-    dht::actions::hold::hold_entry,
-    network::chain_pair::ChainPair,
-    nucleus::validation::validate_entry,
+    context::Context, dht::actions::hold_aspect::hold_aspect,
+    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
+    network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
 
@@ -71,8 +70,12 @@ pub async fn hold_entry_workflow(
         chain_pair.entry().address()
     );
 
-    // 3. If valid store the entry in the local DHT shard
-    hold_entry(chain_pair, context.clone()).await?;
+    // 4. If valid store the entry aspect in the local DHT shard
+    let aspect = EntryAspect::Content(
+        chain_pair.entry().clone(),
+        chain_pair.header().clone(),
+    );
+    hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(
         context,

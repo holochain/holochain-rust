@@ -47,7 +47,7 @@ pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
         context::Context,
-        dht::actions::add_link::add_link,
+        dht::actions::hold_aspect::hold_aspect,
         instance::tests::{
             test_context_and_logger_with_in_memory_network, test_instance_and_context,
         },
@@ -61,6 +61,7 @@ pub mod tests {
         chain_header::test_chain_header,
         entry::{entry_type::test_app_entry_type, Entry},
         link::{link_data::LinkData, Link, LinkMatch},
+        network::entry_aspect::EntryAspect,
     };
     use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::Address;
@@ -123,9 +124,12 @@ pub mod tests {
                 ))
                 .is_ok());
             assert!(initialized_context
-                .block_on(add_link(
-                    &LinkData::add_from_link(&link, test_chain_header(), test_agent_id()),
-                    &initialized_context
+                .block_on(hold_aspect(
+                    EntryAspect::LinkAdd(
+                        LinkData::add_from_link(link, test_chain_header(), test_agent_id()),
+                        test_chain_header(),
+                    ),
+                    initialized_context.clone()
                 ))
                 .is_ok());
             println!("added link {:?}", link);

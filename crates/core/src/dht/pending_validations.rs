@@ -169,3 +169,31 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
         }
     }
 }
+
+impl From<PendingValidationStruct> for EntryAspect {
+    fn from(pending: PendingValidationStruct) -> EntryAspect {
+        let entry = pending.chain_pair.entry();
+        let header = pending.chain_pair.header();
+        match pending.workflow {
+            ValidatingWorkflow::HoldEntry => EntryAspect::Content(
+                entry,
+                header,
+            ),
+            ValidatingWorkflow::HoldLink => {
+                let link_data = unwrap_to!(entry => Entry::LinkAdd);
+                EntryAspect::LinkAdd(link_data.clone(), header)
+            }
+            ValidatingWorkflow::RemoveLink => {
+                let link_data = unwrap_to!(entry => Entry::LinkRemove);
+                EntryAspect::LinkRemove(link_data.clone(), header)
+            }
+            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(
+                entry,
+                header,
+            ),
+            ValidatingWorkflow::RemoveEntry => {
+                EntryAspect::Deletion(header)
+            }
+        }
+    }
+}

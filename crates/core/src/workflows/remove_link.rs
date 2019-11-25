@@ -1,12 +1,14 @@
 use crate::{
-    context::Context, dht::actions::remove_link::remove_link, network::chain_pair::ChainPair,
-    nucleus::validation::validate_entry, workflows::hold_entry::hold_entry_workflow,
+    context::Context, dht::actions::hold_aspect::hold_aspect,
+    network::chain_pair::ChainPair, nucleus::validation::validate_entry,
+    workflows::hold_entry::hold_entry_workflow,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
+    network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
@@ -16,13 +18,13 @@ pub async fn remove_link_workflow(
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     let entry = &chain_pair.entry();
-    let link_remove = match entry {
-        Entry::LinkRemove((link_remove, _)) => link_remove,
+    let (link_data, links_to_remove) = match entry {
+        Entry::LinkRemove(data) => data,
         _ => Err(HolochainError::ErrorGeneric(
             "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
         ))?,
     };
-    let link = link_remove.link().clone();
+    let link = link_data.link().clone();
 
     log_debug!(context, "workflow/remove_link: {:?}", link);
     // 1. Get hold of validation package
@@ -73,8 +75,12 @@ pub async fn remove_link_workflow(
 
     log_debug!(context, "workflow/remove_link: is valid!");
 
-    // 3. If valid store remove the entry in the local DHT shard
-    remove_link(&chain_pair.entry(), &context).await?;
+    // 3. If valid store the entry aspect in the local DHT shard
+    let aspect = EntryAspect::LinkRemove(
+        (link_data.clone(), links_to_remove.clone()),
+        chain_pair.header().clone(),
+    );
+    hold_aspect(aspect, context.clone()).await?;
     log_debug!(context, "workflow/remove_link: added! {:?}", link);
 
     //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```

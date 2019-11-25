@@ -60,9 +60,20 @@ pub fn state_dump(context: Arc<Context>) {
         .collect::<Vec<String>>();
 
     let holding_strings = dump
-        .held_entries
+        .held_aspects
         .iter()
-        .map(|address| address_to_content_string(address, context.clone()))
+        .map(|(entry_address, aspect_set)| {
+            format!(
+                "[{}]:\n\t{}",
+                entry_address,
+                aspect_set
+                    .iter()
+                    .map(|aspect_address| aspect_address.to_string())
+                    .collect::<Vec<String>>()
+                    .join("\n\t")
+            )
+            //address_to_content_string(entry_address, context.clone())
+        })
         .collect::<Vec<String>>();
 
     let source_chain_strings = dump

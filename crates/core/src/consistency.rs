@@ -1,8 +1,7 @@
-use crate::{
-    action::Action, context::Context, entry::CanPublish,
-    nucleus::ZomeFnCall,
+use crate::{action::Action, context::Context, entry::CanPublish, nucleus::ZomeFnCall};
+use holochain_core_types::{
+    entry::Entry, link::link_data::LinkData, network::entry_aspect::EntryAspect,
 };
-use holochain_core_types::{entry::Entry, link::link_data::LinkData};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
@@ -67,7 +66,7 @@ pub enum ConsistencyEvent {
     UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
     RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
     AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
-    RemoveLink(Entry), // <- Publish, entry_type=LinkRemove
+    RemoveLink(Address), // <- Publish, entry_type=LinkRemove
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
@@ -131,7 +130,7 @@ impl ConsistencyModel {
                             .clone()
                             .and_then(|crud| Some(RemoveEntry(crud, address.clone()))),
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
-                        Entry::LinkRemove(_) => Some(RemoveLink(entry.clone())),
+                        Entry::LinkRemove(_) => Some(RemoveLink(address.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?
                         // as of now, link data contains more information than just the link
                         _ => None,
@@ -160,21 +159,41 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::Hold(chain_pair) => {
-                Some(ConsistencySignal::new_terminal(Hold(chain_pair.entry().address())))
+            Action::HoldAspect(aspect) => match aspect {
+                EntryAspect::Content(entry, _) => Some(ConsistencySignal::new_terminal(Hold(entry.address()))),
+                EntryAspect::Update(_, header) => {
+                    header.link_update_delete().map(|old| {
+                        let new = header.entry_address().clone();
+                        ConsistencySignal::new_terminal(
+                            ConsistencyEvent::UpdateEntry(old, new),
+                        )
+                    }).or_else(|| {
+                        error!("Got header without link_update_delete associated with EntryAspect::Update");
+                        None
+                    })
+                },
+                EntryAspect::Deletion(header) => {
+                    header.link_update_delete().map(|old| {
+                        let new = header.entry_address().clone();
+                        ConsistencySignal::new_terminal(
+                            ConsistencyEvent::RemoveEntry(old, new),
+                        )
+                    }).or_else(|| {
+                        error!("Got header without link_update_delete associated with EntryAspect::Deletion");
+                        None
+                    })
+                },
+                EntryAspect::LinkAdd(data, _) => Some(ConsistencySignal::new_terminal(
+                    ConsistencyEvent::AddLink(data.clone()),
+                )),
+                EntryAspect::LinkRemove(_, header) => Some(ConsistencySignal::new_terminal(
+                    ConsistencyEvent::RemoveLink(header.entry_address().clone()),
+                )),
+                EntryAspect::Header(_) => {
+                    error!("Got EntryAspect::Header type, unexpectedly");
+                    None
+                }
             }
-            Action::UpdateEntry((old, new)) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::UpdateEntry(old.clone(), new.clone()),
-            )),
-            Action::RemoveEntry((old, new)) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::RemoveEntry(old.clone(), new.clone()),
-            )),
-            Action::AddLink(link) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::AddLink(link.clone()),
-            )),
-            Action::RemoveLink(entry) => Some(ConsistencySignal::new_terminal(
-                ConsistencyEvent::RemoveLink(entry.clone()),
-            )),
 
             Action::QueueZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
                 SignalZomeFunctionCall(display_zome_fn_call(call), call.id()),

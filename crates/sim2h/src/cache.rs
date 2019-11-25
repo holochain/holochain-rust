@@ -175,6 +175,7 @@ impl Space {
     }
 }
 
+// TODO: unify with AspectMap
 #[derive(Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
 impl AspectList {

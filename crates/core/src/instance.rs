@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
-    context::Context,
+    context::{ActionReceiver, ActionSender, Context},
     dht::actions::{
         queue_holding_workflow::queue_holding_workflow,
         remove_queued_holding_workflow::remove_queued_holding_workflow,
@@ -23,7 +23,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
-    ugly::lax_send_sync,
+    ugly::lax_send_wrapped,
 };
 use holochain_locksmith::RwLock;
 #[cfg(test)]
@@ -154,9 +154,9 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
-        let (tx_action, rx_action) = unbounded::<ActionWrapper>();
+        let (tx_action, rx_action) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
-        self.action_channel = Some(tx_action);
+        self.action_channel = Some(tx_action.into());
         self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)
@@ -192,11 +192,13 @@ impl Instance {
                 "action_loop/{}",
                 ProcessUniqueId::new().to_string()
             ))
-            .spawn(move || ht::start_thread_trace(root_span, || {
+            .spawn(move || {
+                let _root = ht::push_root_span(root_span);
                 let mut state_observers: Vec<Observer> = Vec::new();
-                let mut unprocessed_action: Option<ActionWrapper> = None;
+                let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
                 while kill_receiver.try_recv().is_err() {
-                    if let Some(action_wrapper) = unprocessed_action.clone().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
+                    // TODO: I changed a clone() to a take() because I couldn't see how this would work otherwise. Was it right??
+                    if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
                         // Ping can happen often, and should be as lightweight as possible
@@ -225,7 +227,7 @@ impl Instance {
                     }
                 }
                 instance_is_alive.store(false, Relaxed);
-            }));
+            });
     }
 
     pub fn stop_action_loop(&self) {
@@ -433,7 +435,7 @@ impl Instance {
     pub async fn shutdown_network(&self) -> HcResult<()> {
         network::actions::shutdown::shutdown(
             self.state.clone(),
-            self.action_channel.as_ref().unwrap().clone(),
+            self.action_channel.as_ref().unwrap(),
         )
         .await
     }
@@ -479,7 +481,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
-    lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
+    lax_send_wrapped(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
 #[cfg(test)]

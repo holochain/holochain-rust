@@ -800,6 +800,7 @@ impl Conductor {
                     .name(format!(
                         "tracer_loop",
                     )).spawn(move || {
+                        info!("Tracer loop started.");
                         // TODO: killswitch
                         let reporter = ht::Reporter::new("holochain core").unwrap();
                         for span in span_rx {

@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     signature::Provenance,
-    ugly::lax_send_sync,
+    ugly::lax_send_wrapped,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
@@ -160,7 +160,7 @@ pub async fn build_validation_package<'a>(
                     })
                 });
 
-            lax_send_sync(
+            lax_send_wrapped(
                 context.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnValidationPackage((
                     id,

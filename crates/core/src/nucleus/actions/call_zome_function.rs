@@ -15,7 +15,7 @@ use holochain_core_types::{
     },
     error::HolochainError,
     signature::{Provenance, Signature},
-    ugly::lax_send_sync,
+    ugly::lax_send_wrapped,
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -64,6 +64,7 @@ impl ExecuteZomeFnResponse {
 /// the call result gets added there through the `RetunrZomeFunctionResult` action.
 ///
 /// Use Context::block_on to wait for the call result.
+#[autotrace]
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: Arc<Context>,
@@ -86,7 +87,7 @@ pub async fn call_zome_function(
     // Signal (currently mainly to the nodejs_waiter) that we are about to start a zome function:
     context
         .action_channel()
-        .send(ActionWrapper::new(Action::QueueZomeFunctionCall(
+        .send_wrapped(ActionWrapper::new(Action::QueueZomeFunctionCall(
             zome_call.clone(),
         )))
         .expect("action channel to be open");
@@ -295,7 +296,7 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
                 context,
                 "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
             );
-            lax_send_sync(
+            lax_send_wrapped(
                 context.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
                 "call_zome_function",

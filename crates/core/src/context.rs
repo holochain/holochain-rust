@@ -51,8 +51,8 @@ use threadpool::ThreadPool;
 
 const NUM_WORKER_THREADS: usize = 20;
 
-pub type ActionSender = Sender<ht::SpanWrap<ActionWrapper>>;
-pub type ActionReceiver = Receiver<ht::SpanWrap<ActionWrapper>>;
+pub type ActionSender = ht::SpanSender<ActionWrapper>;
+pub type ActionReceiver = ht::SpanReceiver<ActionWrapper>;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
@@ -99,6 +99,7 @@ pub struct Context {
     pub tracer: Arc<ht::Tracer>,
 }
 
+#[autotrace]
 impl Context {
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
@@ -292,13 +293,13 @@ impl Context {
     pub fn is_action_channel_open(&self) -> bool {
         self.action_channel
             .clone()
-            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
+            .map(|tx| tx.send_wrapped(ActionWrapper::new(Action::Ping)).is_ok())
             .unwrap_or(false)
     }
 
     pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
         match &self.action_channel {
-            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
+            Some(tx) => match tx.send_wrapped(ActionWrapper::new(Action::Ping)) {
                 Ok(()) => None,
                 Err(_) => Some(HolochainError::LifecycleError(msg.into())),
             },

@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use futures::{future::Future, task::Poll};
-use holochain_core_types::{error::HolochainError, ugly::lax_send_sync};
+use holochain_core_types::{error::HolochainError, ugly::lax_send_wrapped};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use snowflake;
 use std::{pin::Pin, sync::Arc};
@@ -20,6 +20,7 @@ use holochain_metrics::Metric;
 /// `zome_call`.
 /// Dispatches an `Action::ReturnValidationResult` after completion of the WASM call.
 /// Returns a future that waits for the result to appear in the nucleus state.
+#[no_autotrace]  // TODO: get autotrace working for this future
 pub async fn run_validation_callback(
     address: Address,
     call: CallbackFnCall,
@@ -59,7 +60,7 @@ pub async fn run_validation_callback(
             Err(error) => panic!(error.to_string()), // same here
         };
 
-        lax_send_sync(
+        lax_send_wrapped(
             cloned_context.action_channel().clone(),
             ActionWrapper::new(Action::ReturnValidationResult((
                 (id, clone_address),

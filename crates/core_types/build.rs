@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, path::Path, process::Command};
 /// Detect details about the HDK Version being built, to make available as hdk::HDK_VERSION variable
 /// - Use supplied "HDK_VERSION" or "CARGO_PKG_VERSION" environment variables
 ///   - Should match the nearest upstream Git "tag", eg. "v0.0.32-alpha2-3-g3f9f2f5e0", but
@@ -41,4 +41,19 @@ fn main() {
         &hdk_version
     );
     println!("cargo:rustc-env=HDK_VERSION={}", &hdk_version);
+
+    if Path::new("../../.git/HEAD").exists() {
+        println!("cargo:rerun-if-changed=../../.git/HEAD");
+    }
+    if let Ok(output) = Command::new("git").args(&["rev-parse", "HEAD"]).output() {
+        let git_hash = String::from_utf8(output.stdout).unwrap();
+        println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+    }
+    if let Ok(output) = Command::new("git")
+        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+    {
+        let git_branch = String::from_utf8(output.stdout).unwrap();
+        println!("cargo:rustc-env=GIT_BRANCH={}", git_branch);
+    }
 }

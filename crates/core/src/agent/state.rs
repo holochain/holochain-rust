@@ -214,9 +214,29 @@ pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
 ) -> Result<EntryWithHeader, HolochainError> {
+    let timestamp = chain_header.timestamp().clone();
     let entry = Entry::ChainHeader(chain_header);
-    let header =
+    // This header entry needs its own header so we can publish it.
+    // This is a bit delicate:
+    //   * this virtual header needs to be signed
+    //   * but we need to make sure that it is deterministic, i.e. that every call of this
+    //     function creates the exact same header. Otherwise we end up in a endless loop of
+    //     authoring new virtual headers because they have different aspect hashes due to the
+    //     timestamp and the source chain link progressing over time.
+    // So we first call this function that gives a new header as if it would be added to the
+    // source chain...
+    let proto =
         create_new_chain_header(&entry, &root_state.agent(), &root_state, &None, &Vec::new())?;
+    // ... and then overwrite all links and the timestamp with static values:
+    let header = ChainHeader::new(
+        proto.entry_type(),
+        proto.entry_address(),
+        proto.provenances(),
+        &None,
+        &None,
+        &None,
+        &timestamp,
+    );
     Ok(EntryWithHeader { entry, header })
 }
 

@@ -1,6 +1,9 @@
 use crate::{
-    action::QueryKey, context::Context, dht::pending_validations::PendingValidation,
-    network::direct_message::DirectMessage, nucleus::ZomeFnCall,
+    action::QueryKey,
+    context::Context,
+    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidation},
+    network::direct_message::DirectMessage,
+    nucleus::{ZomeFnCall, ZomeFnCallState},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
@@ -15,13 +18,13 @@ use std::{
 #[derive(Serialize)]
 pub struct StateDump {
     pub queued_calls: Vec<ZomeFnCall>,
-    pub running_calls: Vec<ZomeFnCall>,
+    pub running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)>,
     pub call_results: Vec<(ZomeFnCall, Result<JsonString, HolochainError>)>,
     pub query_flows: Vec<QueryKey>,
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
-    pub held_entries: Vec<Address>,
+    pub held_aspects: AspectMapBare,
     pub source_chain: Vec<ChainHeader>,
 }
 
@@ -41,7 +44,15 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
-        let running_calls: Vec<ZomeFnCall> = nucleus.running_zome_calls.into_iter().collect();
+        let invocations = nucleus.hdk_function_calls;
+        let running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)> = nucleus
+            .running_zome_calls
+            .into_iter()
+            .map(|call| {
+                let state = invocations.get(&call).cloned();
+                (call, state)
+            })
+            .collect();
         let call_results: Vec<(ZomeFnCall, Result<_, _>)> =
             nucleus.zome_call_results.into_iter().collect();
 
@@ -69,7 +80,7 @@ impl From<Arc<Context>> for StateDump {
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
-        let held_entries = dht.get_all_held_entry_addresses().clone();
+        let held_aspects = dht.get_holding_map().bare().clone();
 
         StateDump {
             queued_calls,
@@ -79,7 +90,7 @@ impl From<Arc<Context>> for StateDump {
             validation_package_flows,
             direct_message_flows,
             queued_holding_workflows,
-            held_entries,
+            held_aspects,
             source_chain,
         }
     }

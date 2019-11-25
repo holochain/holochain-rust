@@ -183,7 +183,7 @@ impl CloudWatchLogger {
     }
 
     pub fn default_log_group() -> String {
-        "holochain".to_string()
+        "/aws/ec2/performance/".to_string()
     }
 
     pub fn default_start_time() -> i64 {
@@ -222,6 +222,22 @@ impl CloudWatchLogger {
         }
     }
 
+    pub fn ensure_log_group(&self) {
+        if let Some(log_group_name) = &self.log_group_name {
+            let log_group_request = CreateLogGroupRequest {
+                log_group_name: log_group_name.clone(),
+                ..Default::default()
+            };
+            // TODO Check if log group already exists or set them up a priori
+            self.client
+                .create_log_group(log_group_request)
+                .sync()
+                .unwrap_or_else(|e| {
+                    debug!("Could not create log group- maybe already created: {:?}", e)
+                });
+        }
+    }
+
     pub fn new<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
         log_stream_name: Option<String>,
         log_group_name: Option<String>,
@@ -237,20 +253,6 @@ impl CloudWatchLogger {
             region.clone(),
         );
 
-        if let Some(log_group_name) = &log_group_name {
-            let log_group_request = CreateLogGroupRequest {
-                log_group_name: log_group_name.clone(),
-                ..Default::default()
-            };
-            // TODO Check if log group already exists or set them up a priori
-            client
-                .create_log_group(log_group_request)
-                .sync()
-                .unwrap_or_else(|e| {
-                    debug!("Could not create log group- maybe already created: {:?}", e)
-                });
-        }
-
         let mut log_group_name = log_group_name;
         if let Some(log_stream_name) = &log_stream_name {
             let log_group_name2 = log_group_name.unwrap_or_default();
@@ -260,6 +262,7 @@ impl CloudWatchLogger {
             };
 
             log_group_name = Some(log_group_name2);
+            // TODO check if log stream already exists
             client.create_log_stream(log_stream_request).sync().unwrap();
         }
 

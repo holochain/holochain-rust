@@ -228,6 +228,7 @@ jobs:
    - checkout
    - run:
       name: Deploy mac binaries
+      no_output_timeout: 20m
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
@@ -241,6 +242,7 @@ jobs:
    - checkout
    - run:
       name: Deploy linux binaries
+      no_output_timeout: 20m
       command: |
        . /home/docker/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
@@ -250,7 +252,9 @@ jobs:
    - image: holochain/holonix:latest
   steps:
    - checkout
-   - run: nix-shell --run hc-release-hook-publish
+   - run:
+      no_output_timeout: 20m
+      command: nix-shell --run hc-release-hook-publish
 
  docker.build.latest:
   machine: true

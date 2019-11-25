@@ -2,6 +2,49 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.39-alpha2] - 2019-11-25
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.39-alpha1] - 2019-11-25
+
+### Added
+
+- Adds a retry if a net worker cannot be spawned on startup [#1870](https://github.com/holochain/holochain-rust/pull/1870)
+- Add hdk::version_hash, returning MD5 hash of HDK build environment [#1869](https://github.com/holochain/holochain-rust/pull/1869)
+- Add --info option to conductor to return info on the version including HDK_VERSION & HASH as well as GIT_HASH & GIT_BRANCH if the binary was compiled from a git repo [1902](https://github.com/holochain/holochain-rust/pull/1902)
+- Ability to set storage backend for new instances over RPC [#1900](https://github.com/holochain/holochain-rust/pull/1900)
+- Tracing of HDK API function calls within a zome function call to be used for debugging and in Holoscape's debug view [#1885](https://github.com/holochain/holochain-rust/pull/1885)
+
+### Changed
+
+- Several improvements to gossip related code, both in sim2h server and core [#1884](https://github.com/holochain/holochain-rust/pull/1884/files):
+  * Sim2h server will not just randomly pick a node to fill missing aspects, but it caches the information which aspects are missing for which node and will not ask a node about an aspect it doesn't have (gets rid of the `EntryNotFoundLocally` error).
+  * In core's list responses: merge authoring list into the gossip list so sim2h has gossip sources that are the authors of entry aspects.
+  * Clear sim2h server's caches about nodes when they disconnect. Also forget the whole space when the last node disconnectse.
+- `DhtStore::holding_list` which stored only the hashes of entries being held got changed to `DhtStore::holding_map` which is a map of entry address to set of aspect addresses so we know explicitly which aspects are held for each entry. This helps debugging (and already revealed a bug which is fixed in this version too) and enabled several simplifications in core logic. [1904](https://github.com/holochain/holochain-rust/pull/1904) 
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fix lots of deadlocks by managing threads and encapsulating locks [#1852](https://github.com/holochain/holochain-rust/pull/1852)
+- Have sim2h let go of nodes if the connection got lost because of an error [#1877](https://github.com/holochain/holochain-rust/pull/1877)
+- Fixed infinite gossip loop due to non-deterministic creation of virtual chain header headers [1904](https://github.com/holochain/holochain-rust/pull/1904)
+### Security
+
 ## [0.0.38-alpha14] - 2019-11-13
 
 ### Added

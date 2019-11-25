@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
+    content_store::GetContent,
     context::Context,
     entry::CanPublish,
     nucleus::ribosome::callback::{
@@ -191,14 +192,9 @@ fn public_chain_entries_from_headers(
                 .expect("No state in public_chain_entries_from_headers")
                 .agent()
                 .chain_store()
-                .get_entry_from_cas(chain_header.entry_address())
-                .unwrap_or_else(|_| panic!("Could not get entry {}", chain_header.entry_address()))
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Get entry returned None for {}",
-                        chain_header.entry_address()
-                    )
-                })
+                .get(chain_header.entry_address())
+                .expect("Could not read entry from CAS")
+                .expect("Entry does not exist")
         })
         .collect::<Vec<_>>()
 }

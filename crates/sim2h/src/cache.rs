@@ -19,7 +19,7 @@ pub struct Space {
     crypto: Box<dyn CryptoSystem>,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
-    missing_aspects: HashMap<AgentId, HashSet<AspectHash>>,
+    missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
     /// sim2h currently uses the same radius for all connections
     rrdht_arc_radius: u32,
 }
@@ -36,19 +36,35 @@ impl Space {
         }
     }
 
-    pub fn add_missing_aspect(&mut self, agent: AgentId, aspect_hash: AspectHash) {
-        let set_for_agent = self
+    pub fn add_missing_aspect(
+        &mut self,
+        agent: AgentId,
+        entry_hash: EntryHash,
+        aspect_hash: AspectHash,
+    ) {
+        let map_for_agent = self
             .missing_aspects
             .entry(agent)
-            .or_insert_with(HashSet::new);
-        set_for_agent.insert(aspect_hash);
+            .or_insert_with(HashMap::new);
+        let hash_set_for_entry = map_for_agent.entry(entry_hash).or_insert_with(HashSet::new);
+        hash_set_for_entry.insert(aspect_hash);
     }
 
-    pub fn remove_missing_aspect(&mut self, agent: &AgentId, aspect_hash: &AspectHash) {
-        let maybe_set_for_agent = self.missing_aspects.get_mut(agent);
-        if let Some(set_for_agent) = maybe_set_for_agent {
-            set_for_agent.remove(aspect_hash);
-            if set_for_agent.len() == 0 {
+    pub fn remove_missing_aspect(
+        &mut self,
+        agent: &AgentId,
+        entry_hash: &EntryHash,
+        aspect_hash: &AspectHash,
+    ) {
+        let maybe_map_for_agent = self.missing_aspects.get_mut(agent);
+        if let Some(map_for_agent) = maybe_map_for_agent {
+            if let Some(hash_set_for_entry) = map_for_agent.get_mut(entry_hash) {
+                hash_set_for_entry.remove(aspect_hash);
+                if hash_set_for_entry.len() == 0 {
+                    map_for_agent.remove(entry_hash);
+                }
+            }
+            if map_for_agent.len() == 0 {
                 self.missing_aspects.remove(agent);
             }
         }
@@ -56,6 +72,41 @@ impl Space {
 
     pub fn agents_with_missing_aspects(&self) -> Vec<AgentId> {
         self.missing_aspects.keys().cloned().collect()
+    }
+
+    /// Returns true if the given agent is missing all of the given aspects for the given entry.
+    /// That is: if all of the aspects are recorded as missing for that agent.
+    /// If one of the given aspects is not in that vector of missing entries, the agent is supposed
+    /// to have it and this function returns false.
+    pub fn agent_is_missing_all_aspects(
+        &self,
+        agent_id: &AgentId,
+        entry_hash: &EntryHash,
+        aspects: &Vec<AspectHash>,
+    ) -> bool {
+        let maybe_agent_map = self.missing_aspects.get(agent_id);
+        if maybe_agent_map.is_none() {
+            return false;
+        }
+        let map_for_agent = maybe_agent_map.unwrap();
+
+        let maybe_vec_of_missing_aspects_for_entry = map_for_agent.get(entry_hash);
+        if maybe_vec_of_missing_aspects_for_entry.is_none() {
+            return false;
+        }
+
+        let missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();
+
+        // We check that every of the given aspects is the missing list.
+        // If one is missing from the missing list this block returns some
+        // and the whole function returns false.
+        for aspect in aspects {
+            if !missing_aspects_for_entry.contains(aspect) {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub(crate) fn recalc_rrdht_arc_radius(&mut self) {
@@ -96,8 +147,10 @@ impl Space {
         Ok(())
     }
 
-    pub fn remove_agent(&mut self, agent_id: &AgentId) {
+    pub fn remove_agent(&mut self, agent_id: &AgentId) -> usize {
         self.agents.remove(agent_id);
+        self.missing_aspects.remove(agent_id);
+        self.agents.len()
     }
 
     pub fn agent_id_to_uri(&self, agent_id: &AgentId) -> Option<Lib3hUri> {
@@ -122,6 +175,7 @@ impl Space {
     }
 }
 
+// TODO: unify with AspectMap
 #[derive(Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
 impl AspectList {
@@ -213,4 +267,123 @@ impl From<&HashSet<(EntryHash, AspectHash)>> for AspectList {
         }
         AspectList::from(result)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::AgentId;
+    use lib3h_protocol::uri::Lib3hUri;
+    use lib3h_sodium::SodiumCryptoSystem;
+    use std::convert::TryFrom;
+
+    #[test]
+    fn space_can_add_and_remove_agents() {
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let agent =
+            AgentId::from("HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz");
+        assert_eq!(space.agents.len(), 0);
+        space
+            .join_agent(
+                agent.clone(),
+                Lib3hUri::try_from("ws://someagenturi.com:9000").unwrap(),
+            )
+            .expect("should work");
+        assert_eq!(space.agents.len(), 1);
+        let entry_hash_1 = EntryHash::from("entry_hash_1");
+        let aspect_hash_1 = AspectHash::from("aspect_hash_1");
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+
+        assert_eq!(space.remove_agent(&agent), 0);
+        assert_eq!(space.agents.len(), 0);
+        // when removing the agent it's data in the missing_aspects list should also be cleared
+        assert_eq!(space.agents_with_missing_aspects(), vec![]);
+    }
+
+    #[test]
+    fn space_can_add_and_remove_missing_aspects() {
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let agent = AgentId::from("test-agent");
+
+        assert!(space.agents_with_missing_aspects().is_empty());
+
+        // Adding and removing one aspect and checking if agents_with_missing_aspects()
+        // returns correct agent list:
+        let entry_hash_1 = EntryHash::from("entry_hash_1");
+        let aspect_hash_1 = AspectHash::from("aspect_hash_1");
+
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
+        assert!(space.agents_with_missing_aspects().is_empty());
+
+        // Adding two aspects, removing one first and then the other one and checking if
+        // agents_with_missing_aspects returns correct agent lists.
+        let aspect_hash_2 = AspectHash::from("aspect_hash_2");
+
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_2.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_2);
+        assert!(space.agents_with_missing_aspects().is_empty());
+
+        // Adding two aspects of different entries, removing one first and then the other one
+        // and checking if agents_with_missing_aspects returns correct agent lists.
+        let entry_hash_2 = EntryHash::from("entry_hash_2");
+
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        space.add_missing_aspect(agent.clone(), entry_hash_2.clone(), aspect_hash_2.clone());
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_2, &aspect_hash_2);
+        assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
+        space.remove_missing_aspect(&agent, &entry_hash_1, &aspect_hash_1);
+        assert!(space.agents_with_missing_aspects().is_empty());
+    }
+
+    #[test]
+    fn space_can_tell_if_agent_is_missing_all_aspects() {
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let agent = AgentId::from("test-agent");
+        let entry_hash_1 = EntryHash::from("entry_hash_1");
+        let entry_hash_2 = EntryHash::from("entry_hash_2");
+        let aspect_hash_1_1 = AspectHash::from("aspect_hash_1_1");
+        let aspect_hash_1_2 = AspectHash::from("aspect_hash_1_2");
+        let aspect_hash_2_1 = AspectHash::from("aspect_hash_2_1");
+        //let aspect_hash_2_2 = AspectHash::from("aspect_hash_2_2");
+        //let aspect_hash_2_3 = AspectHash::from("aspect_hash_2_3");
+
+        assert!(!space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone()]
+        ));
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1_1.clone());
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone()]
+        ));
+        space.add_missing_aspect(agent.clone(), entry_hash_2.clone(), aspect_hash_2_1.clone());
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone()]
+        ));
+
+        assert!(!space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+        ));
+        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1_2.clone());
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash_1,
+            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+        ));
+    }
+
 }

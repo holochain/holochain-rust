@@ -1,24 +1,24 @@
-mod add_pending_validation;
 pub mod init_application;
 pub mod queue_zome_function_call;
-mod remove_pending_validation;
 pub mod return_initialization_result;
 pub mod return_validation_package;
 pub mod return_validation_result;
 pub mod return_zome_function_result;
+pub mod trace_invoke_hdk_function;
+pub mod trace_return_hdk_function;
 
 use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
     nucleus::{
         reducers::{
-            add_pending_validation::reduce_add_pending_validation,
             init_application::reduce_initialize_chain,
             queue_zome_function_call::reduce_queue_zome_function_call,
-            remove_pending_validation::reduce_remove_pending_validation,
             return_initialization_result::reduce_return_initialization_result,
             return_validation_package::reduce_return_validation_package,
             return_validation_result::reduce_return_validation_result,
             return_zome_function_result::reduce_return_zome_function_result,
+            trace_invoke_hdk_function::reduce_trace_invoke_hdk_function,
+            trace_return_hdk_function::reduce_trace_return_hdk_function,
         },
         state::NucleusState,
     },
@@ -30,14 +30,14 @@ use std::sync::Arc;
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
-        Action::AddPendingValidation(_) => Some(reduce_add_pending_validation),
-        Action::RemovePendingValidation(_) => Some(reduce_remove_pending_validation),
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitializeChain(_) => Some(reduce_initialize_chain),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         Action::QueueZomeFunctionCall(_) => Some(reduce_queue_zome_function_call),
+        Action::TraceInvokeHdkFunction(_) => Some(reduce_trace_invoke_hdk_function),
+        Action::TraceReturnHdkFunction(_) => Some(reduce_trace_return_hdk_function),
         _ => None,
     }
 }

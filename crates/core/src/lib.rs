@@ -29,6 +29,7 @@ pub mod macros;
 pub mod action;
 pub mod agent;
 pub mod consistency;
+pub mod content_store;
 pub mod context;
 pub mod dht;
 pub mod entry;

@@ -1,20 +1,12 @@
-use crate::{
-    context::Context,
-    network::entry_with_header::EntryWithHeader,
-    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
-};
-use holochain_core_types::error::HolochainError;
-
-use crate::workflows::{
-    hold_entry_remove::hold_remove_workflow, hold_entry_update::hold_update_workflow,
-    remove_link::remove_link_workflow,
-};
+use crate::network::entry_with_header::EntryWithHeader;
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
+    error::HolochainError,
     network::entry_aspect::EntryAspect,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{convert::TryFrom, fmt, sync::Arc};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
@@ -73,6 +65,7 @@ pub struct PendingValidationStruct {
     pub entry_with_header: EntryWithHeader,
     pub dependencies: Vec<Address>,
     pub workflow: ValidatingWorkflow,
+    uuid: ProcessUniqueId,
 }
 
 impl PendingValidationStruct {
@@ -81,7 +74,14 @@ impl PendingValidationStruct {
             entry_with_header,
             dependencies: Vec::new(),
             workflow,
+            uuid: ProcessUniqueId::new(),
         }
+    }
+
+    pub fn same(&self) -> Self {
+        let mut clone = self.clone();
+        clone.uuid = ProcessUniqueId::new();
+        clone
     }
 }
 
@@ -132,30 +132,28 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
     }
 }
 
-pub fn run_holding_workflow(
-    pending: &PendingValidation,
-    context: Arc<Context>,
-) -> Result<(), HolochainError> {
-    match pending.workflow {
-        ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
+impl From<PendingValidationStruct> for EntryAspect {
+    fn from(pending: PendingValidationStruct) -> EntryAspect {
+        match pending.workflow {
+            ValidatingWorkflow::HoldEntry => EntryAspect::Content(
+                pending.entry_with_header.entry.clone(),
+                pending.entry_with_header.header.clone(),
+            ),
+            ValidatingWorkflow::HoldLink => {
+                let link_data = unwrap_to!(pending.entry_with_header.entry => Entry::LinkAdd);
+                EntryAspect::LinkAdd(link_data.clone(), pending.entry_with_header.header.clone())
+            }
+            ValidatingWorkflow::RemoveLink => {
+                let link_data = unwrap_to!(pending.entry_with_header.entry => Entry::LinkRemove);
+                EntryAspect::LinkRemove(link_data.clone(), pending.entry_with_header.header.clone())
+            }
+            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(
+                pending.entry_with_header.entry.clone(),
+                pending.entry_with_header.header.clone(),
+            ),
+            ValidatingWorkflow::RemoveEntry => {
+                EntryAspect::Deletion(pending.entry_with_header.header.clone())
+            }
+        }
     }
 }

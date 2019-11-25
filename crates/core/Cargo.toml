@@ -68,3 +68,4 @@ wabt = "=0.7.4"
 test_utils = { version = "=0.0.38-alpha14", path = "../../test_utils" }
 tempfile = "=3.0.7"
 holochain_persistence_lmdb = "=0.0.11"
+sim1h = { version = "=0.0.38-alpha14", path = "../sim1h" }

@@ -1,5 +1,6 @@
 use crate::{
     agent::state::AgentState,
+    dht::pending_validations::PendingValidation,
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
@@ -11,16 +12,14 @@ use crate::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
         validation::ValidationResult,
-        ZomeFnCall,
+        HdkFnCall, HdkFnCallResult, ZomeFnCall,
     },
-    scheduled_jobs::pending_validations::{PendingValidation, ValidatingWorkflow},
     state::State,
 };
 
 use holochain_core_types::{
     chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
-    error::HolochainError, link::link_data::LinkData, signature::Provenance,
-    validation::ValidationPackage,
+    error::HolochainError, signature::Provenance, validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
@@ -28,6 +27,7 @@ use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
+    time::{Duration, SystemTime},
     vec::Vec,
 };
 
@@ -111,25 +111,20 @@ pub enum Action {
     // -------------
     // DHT actions:
     // -------------
-    /// Adds a holding workflow to the queue.
-    QueueHoldingWorkflow(PendingValidation),
+    /// Adds a holding workflow (=PendingValidation) to the queue.
+    /// With optional delay where the SystemTime is the time when the action got dispatched
+    /// and the Duration is the delay added to that time.
+    QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),
 
-    /// Pops the head of the holding queue if the item at the head
-    /// is equal to the one given in the action.
-    PopNextHoldingWorkflow(PendingValidation),
-    /// Adds an entry to the local DHT shard.
-    /// Does not validate, assumes entry is valid.
-    Hold(EntryWithHeader),
+    /// Removes the given item from the holding queue.
+    RemoveQueuedHoldingWorkflow(PendingValidation),
 
-    /// Adds a link to the local DHT shard's meta/EAV storage
-    /// Does not validate, assumes link is valid.
-    AddLink(LinkData),
+    /// Adds an entry aspect to the local DHT shard.
+    /// Does not validate, assumes referenced entry is valid.
+    HoldAspect(EntryAspect),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
-
-    //Removes a link for the local DHT
-    RemoveLink(Entry),
 
     // ----------------
     // Network actions:
@@ -166,10 +161,6 @@ pub enum Action {
     HandleQuery((NetworkQueryResult, QueryKey)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
-
-    UpdateEntry((Address, Address)),
-    ///
-    RemoveEntry((Address, Address)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -216,13 +207,16 @@ pub enum Action {
     ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.
-    /// There is no reducer for this action so this does not change state
-    /// (hence "Signal").
-    /// Is received as signal in the nodejs waiter to attach wait conditions.
     QueueZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+
+    /// Let the State track that a zome call has called an HDK function
+    TraceInvokeHdkFunction((ZomeFnCall, HdkFnCall)),
+
+    /// Let the State track that an HDK function called by a zome call has returned
+    TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
@@ -237,13 +231,6 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
-
-    /// An entry could not be validated yet because dependencies are still missing.
-    /// This adds the entry to nucleus state's pending list.
-    AddPendingValidation(PendingValidation),
-
-    /// Clear an entry from the pending validation list
-    RemovePendingValidation((Address, ValidatingWorkflow)),
 
     /// No-op, used to check if an action channel is still open
     Ping,

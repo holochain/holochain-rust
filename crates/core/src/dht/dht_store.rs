@@ -1,30 +1,34 @@
-use crate::action::ActionWrapper;
+use crate::{
+    content_store::{AddContent, GetContent},
+    dht::aspect_map::{AspectMap, AspectMapBare},
+};
 use holochain_core_types::{
     chain_header::ChainHeader,
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
-    error::HolochainError,
+    error::{HcResult, HolochainError},
+    network::entry_aspect::EntryAspect,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
-        content::{Address, AddressableContent},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
 };
 use regex::Regex;
 
-use crate::{scheduled_jobs::pending_validations::PendingValidation, state::StateWrapper};
-use holochain_core_types::error::HcResult;
+use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use holochain_json_api::error::JsonResult;
-use holochain_persistence_api::{cas::content::Content, error::PersistenceResult};
+use holochain_persistence_api::error::PersistenceResult;
 use std::{
-    collections::{BTreeSet, HashMap, VecDeque},
+    collections::{BTreeSet, VecDeque},
     convert::TryFrom,
     sync::Arc,
+    time::{Duration, SystemTime},
 };
 
 /// The state-slice for the DHT.
@@ -36,12 +40,11 @@ pub struct DhtStore {
     content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
 
-    /// All the entries that the network has told us to hold
-    holding_list: Vec<Address>,
+    /// All the entry aspects that the network has told us to hold
+    holding_map: AspectMap,
 
-    pub(crate) queued_holding_workflows: VecDeque<PendingValidation>,
-
-    actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
+    pub(crate) queued_holding_workflows:
+        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl PartialEq for DhtStore {
@@ -51,7 +54,7 @@ impl PartialEq for DhtStore {
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
-        self.actions == other.actions
+        self.holding_map == other.holding_map
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
@@ -59,13 +62,15 @@ impl PartialEq for DhtStore {
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
-    pub holding_list: Vec<Address>,
+    pub holding_map: AspectMapBare,
+    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
     fn from(state: &StateWrapper) -> Self {
         DhtStoreSnapshot {
-            holding_list: state.dht().holding_list.clone(),
+            holding_map: state.dht().get_holding_map().bare().clone(),
+            queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
         }
     }
 }
@@ -122,19 +127,19 @@ impl DhtStore {
         DhtStore {
             content_storage,
             meta_storage,
-            holding_list: Vec::new(),
-            actions: HashMap::new(),
+            holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
         }
     }
 
-    pub fn new_with_holding_list(
+    pub fn new_from_snapshot(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-        holding_list: Vec<Address>,
+        snapshot: DhtStoreSnapshot,
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
-        new_dht_store.holding_list = holding_list;
+        new_dht_store.holding_map = snapshot.holding_map.into();
+        new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
     }
 
@@ -199,18 +204,23 @@ impl DhtStore {
             // get the header addresses
             .map(|eavi| eavi.value())
             // fetch the header content from CAS
-            .map(|a| self.cas_fetch(&a))
+            .map(|address| self.get(&address))
             // rearrange
             .collect::<Result<Vec<Option<_>>, _>>()
             .map(|r| {
                 r.into_iter()
                     // ignore None values
                     .flatten()
-                    .map(|content| ChainHeader::try_from_content(&content))
+                    .map(|entry| match entry {
+                        Entry::ChainHeader(chain_header) => Ok(chain_header),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "Unexpected non-chain_header entry".to_string(),
+                        )),
+                    })
                     .collect::<Result<Vec<_>, _>>()
             })?
             .map_err(|err| {
-                let hc_error: HolochainError = err.into();
+                let hc_error: HolochainError = err;
                 hc_error
             })
     }
@@ -226,40 +236,17 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        self.cas_add(header)?;
+        self.add(header)?;
         self.meta_storage.write().unwrap().add_eavi(&eavi)?;
         Ok(())
     }
 
-    pub fn mark_entry_as_held(&mut self, entry: &Entry) {
-        self.holding_list.push(entry.address());
+    pub fn mark_aspect_as_held(&mut self, aspect: &EntryAspect) {
+        self.holding_map.add(aspect);
     }
 
-    pub fn get_all_held_entry_addresses(&self) -> &Vec<Address> {
-        &self.holding_list
-    }
-
-    pub(crate) fn cas_fetch(&self, address: &Address) -> PersistenceResult<Option<Content>> {
-        self.content_storage.clone().read().unwrap().fetch(address)
-    }
-
-    pub(crate) fn cas_contains(&self, address: &Address) -> PersistenceResult<bool> {
-        self.content_storage
-            .clone()
-            .read()
-            .unwrap()
-            .contains(address)
-    }
-
-    pub(crate) fn cas_add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        self.content_storage
-            .clone()
-            .write()
-            .unwrap()
-            .add(content)
-            .map_err(|persistence_error| {
-                HolochainError::ErrorGeneric(persistence_error.to_string())
-            })
+    pub fn get_holding_map(&self) -> &AspectMap {
+        &self.holding_map
     }
 
     pub(crate) fn fetch_eavi(
@@ -276,33 +263,57 @@ impl DhtStore {
         self.meta_storage.write().unwrap().add_eavi(&eavi)
     }
 
-    pub(crate) fn get_entry_from_cas(
+    pub(crate) fn next_queued_holding_workflow(
         &self,
-        address: &Address,
-    ) -> Result<Option<Entry>, HolochainError> {
-        if let Some(json) = self.cas_fetch(&address)? {
-            let entry = Entry::try_from_content(&json)?;
-            Ok(Some(entry))
-        } else {
-            Ok(None) // no errors but entry is not in CAS
-        }
-    }
-
-    pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
-        &self.actions
-    }
-    pub(crate) fn actions_mut(
-        &mut self,
-    ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
-        &mut self.actions
-    }
-
-    pub(crate) fn next_queued_holding_workflow(&self) -> Option<&PendingValidation> {
-        self.queued_holding_workflows.front()
+    ) -> Option<(&PendingValidation, Option<Duration>)> {
+        self.queued_holding_workflows
+            .iter()
+            .skip_while(|(_pending, maybe_delay)| {
+                if let Some((time_of_dispatch, delay)) = maybe_delay {
+                    let maybe_time_elapsed = time_of_dispatch.elapsed();
+                    if let Ok(time_elapsed) = maybe_time_elapsed {
+                        if time_elapsed < *delay {
+                            return true;
+                        }
+                    }
+                }
+                false
+            })
+            .map(|(pending, maybe_delay)| {
+                (
+                    pending,
+                    maybe_delay
+                        .map(|(_time, duration)| Some(duration))
+                        .unwrap_or(None),
+                )
+            })
+            .next()
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        self.queued_holding_workflows.contains(pending)
+        self.queued_holding_workflows
+            .iter()
+            .any(|(current, _)| current == pending)
+    }
+
+    pub(crate) fn queued_holding_workflows(
+        &self,
+    ) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
+        &self.queued_holding_workflows
+    }
+}
+
+impl GetContent for DhtStore {
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
+        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+    }
+}
+
+impl AddContent for DhtStore {
+    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
+        (*self.content_storage.write().unwrap())
+            .add(content)
+            .map_err(|e| e.into())
     }
 }
 

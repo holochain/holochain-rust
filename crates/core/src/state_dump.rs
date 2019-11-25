@@ -1,29 +1,30 @@
 use crate::{
-    action::QueryKey, context::Context, network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall, scheduled_jobs::pending_validations::ValidatingWorkflow,
+    action::QueryKey,
+    context::Context,
+    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidation},
+    network::direct_message::DirectMessage,
+    nucleus::{ZomeFnCall, ZomeFnCallState},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::{convert::TryInto, sync::Arc};
-
-#[derive(Serialize)]
-pub struct PendingValidationDump {
-    pub address: Address,
-    pub dependencies: Vec<Address>,
-    pub workflow: ValidatingWorkflow,
-}
+use std::{
+    collections::VecDeque,
+    convert::TryInto,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Serialize)]
 pub struct StateDump {
     pub queued_calls: Vec<ZomeFnCall>,
-    pub running_calls: Vec<ZomeFnCall>,
+    pub running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)>,
     pub call_results: Vec<(ZomeFnCall, Result<JsonString, HolochainError>)>,
     pub query_flows: Vec<QueryKey>,
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
-    pub pending_validations: Vec<PendingValidationDump>,
-    pub held_entries: Vec<Address>,
+    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    pub held_aspects: AspectMapBare,
     pub source_chain: Vec<ChainHeader>,
 }
 
@@ -43,7 +44,15 @@ impl From<Arc<Context>> for StateDump {
         let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
-        let running_calls: Vec<ZomeFnCall> = nucleus.running_zome_calls.into_iter().collect();
+        let invocations = nucleus.hdk_function_calls;
+        let running_calls: Vec<(ZomeFnCall, Option<ZomeFnCallState>)> = nucleus
+            .running_zome_calls
+            .into_iter()
+            .map(|call| {
+                let state = invocations.get(&call).cloned();
+                (call, state)
+            })
+            .collect();
         let call_results: Vec<(ZomeFnCall, Result<_, _>)> =
             nucleus.zome_call_results.into_iter().collect();
 
@@ -69,19 +78,9 @@ impl From<Arc<Context>> for StateDump {
             .map(|(s, dm)| (s.clone(), dm.clone()))
             .collect();
 
-        let pending_validations = nucleus
-            .pending_validations
-            .into_iter()
-            .map(
-                |(pending_validation_key, pending_validation)| PendingValidationDump {
-                    address: pending_validation_key.address,
-                    workflow: pending_validation_key.workflow,
-                    dependencies: pending_validation.dependencies.clone(),
-                },
-            )
-            .collect::<Vec<PendingValidationDump>>();
+        let queued_holding_workflows = dht.queued_holding_workflows().clone();
 
-        let held_entries = dht.get_all_held_entry_addresses().clone();
+        let held_aspects = dht.get_holding_map().bare().clone();
 
         StateDump {
             queued_calls,
@@ -90,8 +89,8 @@ impl From<Arc<Context>> for StateDump {
             query_flows,
             validation_package_flows,
             direct_message_flows,
-            pending_validations,
-            held_entries,
+            queued_holding_workflows,
+            held_aspects,
             source_chain,
         }
     }

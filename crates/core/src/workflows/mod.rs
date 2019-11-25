@@ -13,6 +13,7 @@ pub mod respond_validation_package_request;
 
 use crate::{
     context::Context,
+    dht::pending_validations::{PendingValidation, ValidatingWorkflow},
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
@@ -22,6 +23,11 @@ use crate::{
             validation_package::get_validation_package_definition, CallbackResult,
         },
         validation::build_from_dht::try_make_validation_package_dht,
+    },
+    workflows::{
+        hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
+        hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
+        remove_link::remove_link_workflow,
     },
 };
 use holochain_core_types::{
@@ -202,5 +208,35 @@ pub mod tests {
                 .len(),
             2
         );
+    }
+}
+
+/// Runs the given pending validation using the right holding workflow
+/// as specified by PendingValidationStruct::workflow.
+pub fn run_holding_workflow(
+    pending: PendingValidation,
+    context: Arc<Context>,
+) -> Result<(), HolochainError> {
+    match pending.workflow {
+        ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
+        ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
+            &pending.entry_with_header,
+            context.clone(),
+        )),
     }
 }

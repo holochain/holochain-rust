@@ -65,6 +65,10 @@ pub const HDK_HASH: &str = env!(
     "failed to obtain HDK hash from build environment. Check build.rs"
 );
 
+// may be empty because code isn't always built from git repo
+pub const GIT_HASH: &str = env!("GIT_HASH", "");
+pub const GIT_BRANCH: &str = env!("GIT_BRANCH", "");
+
 #[cfg(test)]
 mod test_hash {
     use super::*;

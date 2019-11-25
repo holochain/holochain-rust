@@ -81,4 +81,33 @@ mod test_super {
             call_result,
         );
     }
+
+    #[test]
+    fn test_zome_api_crypto_signing() {
+        let payload = r#"{ "payload": "test ' payload", "method" : "Sign" }"#;
+        let (call_result_json, _) = test_zome_api_function(
+            ZomeApiFunction::Crypto.as_str(),
+            payload.as_bytes().to_vec(),
+        );
+        println!("Crypto::Sign( {:?} ) == {:?}", payload, call_result_json);
+        assert_eq!(
+            JsonString::from_json(
+                r#"{"ok":true,"value":"ZDwPQ2TX9Xiq1k73JWczzqWr97rmdAodWWInlGfFjKiE0wFgMc2WvhmaFpNfrCv3y5uSOOLD5MgJqAeDsKb4Cw==","error":"null"}"#
+            ),
+            call_result_json
+        );
+
+        let payload = r#"{ "payload": "test \" payload", "method" : "Sign" }"#;
+        let (call_result_json, _) = test_zome_api_function(
+            ZomeApiFunction::Crypto.as_str(),
+            payload.as_bytes().to_vec(),
+        );
+        println!("Crypto::Sign( {:?} ) == {:?}", payload, call_result_json);
+        assert_eq!(
+            JsonString::from_json(
+                r#"{"ok":true,"value":"ZDwPQ2TX9Xiq1k73JWczzqWr97rmdAodWWInlGfFjKiE0wFgMc2WvhmaFpNfrCv3y5uSOOLD5MgJqAeDsKb4Cw==","error":"null"}"# // TODO: update, when Crypto::Sign w/ escapes working
+            ),
+            call_result_json
+        );
+    }
 }

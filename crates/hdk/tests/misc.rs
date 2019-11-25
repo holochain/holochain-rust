@@ -486,18 +486,14 @@ fn show_env() {
 fn test_signing() {
     let (mut hc, _, _) = start_holochain_instance("test_signal", "alice");
 
-    let payload_unescaped = json!({
-        "payload": r#"test ' payload"#
-    }).to_string();
+    let payload_unescaped = json!({ "payload": r#"test ' payload"# }).to_string();
     let result = make_test_call(&mut hc, "sign_payload", &payload_unescaped);
     println!("sign_payload( {:?} ) == {:?}", payload_unescaped, result);
     assert_eq!(result, Ok(JsonString::from_json(
         r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
     )));
 
-    let payload_escapes = json!({
-        "payload": r#"test " payload"#
-    }).to_string();
+    let payload_escapes = json!({ "payload": r#"test " payload"# }).to_string();
     let result = make_test_call(&mut hc, "sign_payload", &payload_escapes);
     println!("sign_payload( {:?} ) == {:?}", payload_escapes, result);
     assert_eq!(result, Ok(JsonString::from_json(

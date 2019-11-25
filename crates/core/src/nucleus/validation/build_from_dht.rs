@@ -17,7 +17,7 @@ use holochain_core_types::{
 
 use std::sync::Arc;
 
-const GET_TIMEOUT_MS: usize = 500;
+const GET_TIMEOUT_MS: usize = 10000;
 
 async fn all_chain_headers_before_header_dht(
     context: &Arc<Context>,

@@ -85,7 +85,7 @@ async fn validation_package(
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
 
-    //0. Call into the DNA to get the validation package definition for this entry
+    // 0. Call into the DNA to get the validation package definition for this entry
     // e.g. what data is needed to validate it (chain, entry, headers, etc)
     let entry = &entry_with_header.entry;
     let validation_package_definition = get_validation_package_definition(entry, context.clone())
@@ -124,7 +124,7 @@ async fn validation_package(
     // 2. Try and get it from the author
     log_debug!(
         context,
-        "validation_package:{} - Trying to retrieve from author",
+        "validation_package:{} - Could not build locally. Trying to retrieve from author",
         entry_with_header.entry.address()
     );
     if let Ok(Some(package)) =
@@ -141,7 +141,7 @@ async fn validation_package(
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))
     log_debug!(
         context,
-        "validation_package:{} - Trying to build from published headers",
+        "validation_package:{} - Could not retrieve from author. Trying to build from published headers",
         entry_with_header.entry.address()
     );
     if let Ok(package) = try_make_validation_package_dht(
@@ -159,6 +159,11 @@ async fn validation_package(
 
     // If all the above failed then returning an error will add this validation request to pending
     // It will then try all of the above from the start again later
+    log_debug!(
+        context,
+        "validation_package:{} - Could not get validation package!!!",
+        entry_with_header.entry.address()
+    );    
     Err(HolochainError::ErrorGeneric(
         "Could not get validation package".to_string(),
     ))

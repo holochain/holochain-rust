@@ -39,6 +39,7 @@ jobs:
          echo "$UNPINNED"
          exit 1
         fi
+
    # don't allow changelog root items with no PR reference
    - run:
       name: no changelogs without PR references
@@ -53,9 +54,10 @@ jobs:
           echo "$UNREFERENCED"
           exit 1
         fi
-    - run:
-       name: do a publish dry run without building anything
-       command: nix-shell --run hc-release-hook-publish-dry-run
+
+   - run:
+      name: do a publish dry run without building anything
+      command: nix-shell --run hc-release-hook-publish-dry-run
 
    # flag any references to a nightly version in a readme other than the
    # ${date} in nix-shell

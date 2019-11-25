@@ -2,7 +2,7 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     entry::CanPublish,
-    network::actions::{publish::publish, publish_header_entry::publish_header_entry},
+    network::actions::publish::publish,
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
@@ -92,22 +92,8 @@ pub async fn author_entry<'a>(
         );
     }
 
-    // 5. Publish the header for all types (including private entries)
-    log_debug!(
-        context,
-        "debug/workflow/authoring_entry/{}: publishing header...",
-        address
-    );
-    publish_header_entry(entry.address(), &context).await?;
-    log_debug!(
-        context,
-        "debug/workflow/authoring_entry/{}: header published!",
-        address
-    );
-
     Ok(CommitEntryResult::new(addr))
 }
-// TODO: Bring the old in-memory network up to speed and turn on this test again!
 
 #[cfg(test)]
 pub mod tests {

@@ -139,11 +139,7 @@ pub enum Action {
     /// the right thing respectively.
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
-
-    /// Publish to the network the header entry for the entry at the given address.
-    /// Note that the given address is that of the entry NOT the address of the header itself
-    PublishHeaderEntry(Address),
-
+    
     ///Performs a Network Query Action based on the key and payload, used for links and Entries
     Query((QueryKey, QueryPayload)),
 

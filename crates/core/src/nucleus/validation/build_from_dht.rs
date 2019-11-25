@@ -203,6 +203,7 @@ pub mod tests {
         let local_validation_package = context2
             .block_on(try_make_local_validation_package(
                 &entry_with_header,
+                &ValidationPackageDefinition::ChainFull,
                 context2.clone(),
             ))
             .expect("Must be able to locally produce a validation package");
@@ -211,6 +212,7 @@ pub mod tests {
         let dht_validation_package = context1
             .block_on(try_make_validation_package_dht(
                 &entry_with_header,
+                &ValidationPackageDefinition::ChainFull,
                 context1.clone(),
             ))
             .expect("Must be able to contruct validation package from published entries");

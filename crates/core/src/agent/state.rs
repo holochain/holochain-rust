@@ -26,7 +26,8 @@ use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use serde_json;
 use std::{convert::TryFrom, ops::Deref, sync::Arc, time::SystemTime};
 use im::HashMap;
-use crate::state::ActionResponse;
+use crate::state::{ActionResponse, ACTION_PRUNE_MS};
+use bitflags::_core::time::Duration;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -292,10 +293,38 @@ fn reduce_commit_entry(
         .insert(action_wrapper.clone(), Response::from(AgentActionResponse::Commit(result)));
 }
 
+fn reduce_prune(
+    agent_state: &mut AgentState,
+    _root_state: &State,
+    action_wrapper: &ActionWrapper,
+) {
+    assert_eq!(action_wrapper.action(), &Action::Prune);
+
+    agent_state
+        .actions
+        .iter()
+        .filter_map(|(action, response)| {
+            if let Ok(elapsed) = response.created_at.elapsed() {
+                if elapsed > Duration::from_millis(ACTION_PRUNE_MS) {
+                    return Some(action)
+                }
+            }
+            None
+        })
+        .cloned()
+        .collect::<Vec<ActionWrapper>>()
+        .into_iter()
+        .for_each(|action| {
+            agent_state.actions.remove(&action);
+        });
+}
+
+
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
+        Action::Prune => Some(reduce_prune),
         _ => None,
     }
 }

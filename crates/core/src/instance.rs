@@ -468,7 +468,7 @@ pub mod tests {
         action::{tests::test_action_wrapper_commit, Action, ActionWrapper},
         agent::{
             chain_store::ChainStore,
-            state::{ActionResponse, AgentState},
+            state::{AgentActionResponse, AgentState},
         },
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
@@ -769,8 +769,8 @@ pub mod tests {
             .expect("action and reponse should be added after Get action dispatch");
 
         assert_eq!(
-            response,
-            &ActionResponse::Commit(Ok(test_entry().address()))
+            response.response(),
+            &AgentActionResponse::Commit(Ok(test_entry().address()))
         );
     }
 

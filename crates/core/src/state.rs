@@ -29,6 +29,26 @@ use holochain_persistence_api::{
 
 use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{convert::TryInto, sync::Arc};
+use std::time::SystemTime;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ActionResponse<T> {
+    pub created_at: SystemTime,
+    pub response: T,
+}
+
+impl<T> ActionResponse<T> {
+    pub fn new(response: T) -> Self {
+        ActionResponse::<T> {
+            created_at: SystemTime::now(),
+            response,
+        }
+    }
+
+    pub fn response(&self) -> &T {
+        &self.response
+    }
+}
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.

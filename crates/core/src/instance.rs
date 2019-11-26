@@ -451,24 +451,6 @@ impl Drop for Instance {
     }
 }*/
 
-/// Send Action to Instance's Event Queue and block until it has been processed.
-///
-/// # Panics
-///
-/// Panics if the channels passed are disconnected.
-pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWrapper) {
-    let tick_rx = context.create_observer();
-    dispatch_action(context.action_channel(), action_wrapper.clone());
-
-    loop {
-        if context.state().unwrap().history().contains(&action_wrapper) {
-            return;
-        } else {
-            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
-        }
-    }
-}
-
 /// Send Action to the Event Queue
 ///
 /// # Panics
@@ -509,6 +491,7 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
+    use crate::nucleus::state::NucleusStatus;
     use holochain_core_types::entry::Entry;
     use holochain_json_api::json::JsonString;
     use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
@@ -715,56 +698,33 @@ pub mod tests {
             "Empty zomes = No init = infinite loops below!"
         );
 
-        // @TODO abstract and DRY this out
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        while instance
-            .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::InitializeChain(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for InitializeChain");
-            sleep(Duration::from_millis(10))
+        loop {
+            if let NucleusStatus::Initialized(_) = instance.state().nucleus().status {
+                break;
+            } else {
+                println!("Waiting for initialized status");
+                sleep(Duration::from_millis(10))
+            }
         }
 
-        while instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert!(
-                        entry.entry_type() == EntryType::AgentId
-                            || entry.entry_type() == EntryType::Dna
-                            || entry.entry_type() == EntryType::CapTokenGrant
-                    );
-                    true
-                }
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for Commit for init");
-            sleep(Duration::from_millis(10))
-        }
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_type() == EntryType::Dna));
 
-        while instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::ReturnInitializationResult(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for ReturnInitializationResult");
-            sleep(Duration::from_millis(10))
-        }
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_type() == EntryType::AgentId));
+
+        assert!(instance
+            .state()
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_type() == EntryType::CapTokenGrant));
+
         Ok((instance, context))
     }
 
@@ -817,36 +777,6 @@ pub mod tests {
         assert_eq!(
             response,
             &ActionResponse::Commit(Ok(test_entry().address()))
-        );
-    }
-
-    #[test]
-    /// tests that we can dispatch an action and block until it completes
-    fn can_dispatch_and_wait() {
-        let netname = Some("can_dispatch_and_wait");
-        let mut instance = Instance::new(test_context("jason", netname));
-        assert_eq!(instance.state().nucleus().dna(), None);
-        assert_eq!(
-            instance.state().nucleus().status(),
-            crate::nucleus::state::NucleusStatus::New
-        );
-
-        let dna = Dna::new();
-
-        let action = ActionWrapper::new(Action::InitializeChain(dna.clone()));
-        let context = instance.inner_setup(test_context("jane", netname));
-
-        // the initial state is not intialized
-        assert_eq!(
-            instance.state().nucleus().status(),
-            crate::nucleus::state::NucleusStatus::New
-        );
-
-        dispatch_action_and_wait(context, action);
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert_eq!(
-            instance.state().nucleus().status(),
-            crate::nucleus::state::NucleusStatus::Initializing
         );
     }
 
@@ -941,19 +871,11 @@ pub mod tests {
             .expect("process_action should run without error");
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
-        instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert_eq!(entry.entry_type(), EntryType::Dna);
-                    assert_eq!(entry.content(), dna_entry.content());
-                    true
-                }
-                _ => false,
-            });
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_address() == dna_entry.address()))
     }
 
     /// Committing an AgentIdEntry to source chain should work
@@ -973,20 +895,11 @@ pub mod tests {
             .process_action(&commit_agent_action, &context)
             .expect("process_action should run without error");
 
-        // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
-        instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert_eq!(entry.entry_type(), EntryType::AgentId);
-                    assert_eq!(entry.content(), agent_entry.content());
-                    true
-                }
-                _ => false,
-            });
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_address() == agent_entry.address()))
     }
 
     /// create a test context using LMDB storage

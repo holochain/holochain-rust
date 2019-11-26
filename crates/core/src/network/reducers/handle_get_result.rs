@@ -11,4 +11,8 @@ pub fn reduce_handle_get_result(
     network_state
         .get_query_results
         .insert(key.clone(), Some(Ok(payload.clone())));
+
+    network_state
+        .query_timeouts
+        .remove(key);
 }

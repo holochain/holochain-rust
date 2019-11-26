@@ -25,7 +25,7 @@ pub fn latency(args: TokenStream, input_function: TokenStream) -> TokenStream {
     let input_function_cloned = input_function.clone();
     let mut function = parse_macro_input!(input_function_cloned as ItemFn);
 
-    let metric_name = &format!("{}.latency", &function.sig.ident.to_string());
+    let metric_name = &format!("{}.{}.latency", module_path!(), &function.sig.ident.to_string());
 
     // Boiler plate ...start
     let mut move_self = None;

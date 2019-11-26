@@ -94,6 +94,9 @@ pub use mem::*;
 mod tcp;
 pub use tcp::*;
 
+mod tcp2;
+pub use tcp2::*;
+
 mod tls_certificate;
 pub use tls_certificate::*;
 

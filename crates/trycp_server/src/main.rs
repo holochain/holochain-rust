@@ -12,6 +12,7 @@ use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
 };
+use regex::Regex;
 use reqwest::{self, Url};
 use serde_json::map::Map;
 use std::{
@@ -23,7 +24,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
-use regex::Regex;
 
 const MAGIC_STRING: &str = "Done. All interfaces started.";
 
@@ -218,9 +218,9 @@ fn get_info_as_json() -> String {
     // poor mans JSON convert
     let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();
     let result = re.replace_all(&info_str, "\"$key\": \"$val\",");
-    let mut result = format!("{}",result); // pop off the final comma
+    let mut result = format!("{}", result); // pop off the final comma
     result.pop();
-    format!("{{{}}}",result)
+    format!("{{{}}}", result)
 }
 
 fn main() {

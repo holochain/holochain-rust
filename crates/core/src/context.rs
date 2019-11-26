@@ -44,9 +44,9 @@ use std::{
     time::Duration,
 };
 
+use futures::executor::ThreadPool;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
-use futures::executor::ThreadPool;
 
 //const NUM_WORKER_THREADS: usize = 20;
 
@@ -153,7 +153,9 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(ThreadPool::new().expect("Could not create thread pool for futures"))),
+            thread_pool: Arc::new(Mutex::new(
+                ThreadPool::new().expect("Could not create thread pool for futures"),
+            )),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         }
@@ -188,7 +190,9 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(ThreadPool::new().expect("Could not create thread pool for futures"))),
+            thread_pool: Arc::new(Mutex::new(
+                ThreadPool::new().expect("Could not create thread pool for futures"),
+            )),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         })

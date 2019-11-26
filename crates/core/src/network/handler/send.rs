@@ -45,12 +45,10 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                     message_data.request_id,
                     custom_direct_message,
                     c.clone(),
-                ).await {
-                    log_error!(
-                        c,
-                        "net: Error handling custom direct message: {:?}",
-                        error
-                    );
+                )
+                .await
+                {
+                    log_error!(c, "net: Error handling custom direct message: {:?}", error);
                 }
             };
             let future = closure();
@@ -61,13 +59,15 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            context.clone().spawn_task(respond_validation_package_request(
-                message_data.from_agent_id.into(),
-                message_data.request_id,
-                address,
-                context.clone(),
-                vec![],
-            ));
+            context
+                .clone()
+                .spawn_task(respond_validation_package_request(
+                    message_data.from_agent_id.into(),
+                    message_data.request_id,
+                    address,
+                    context.clone(),
+                    vec![],
+                ));
         }
         DirectMessage::ValidationPackage(_) => {
             log_error!(context,

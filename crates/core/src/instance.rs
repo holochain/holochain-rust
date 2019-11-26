@@ -256,23 +256,23 @@ impl Instance {
 
             // Change the state
             *state = new_state;
+
+            if let Err(e) = self.save(&state) {
+                log_error!(
+                    context,
+                    "instance/process_action: could not save state: {:?}",
+                    e
+                );
+            } else {
+                log_trace!(
+                    context,
+                    "reduce/process_actions: reducing {:?}",
+                    action_wrapper
+                );
+            }
         }
 
         context.redux_wants_write.store(false, Relaxed);
-
-        if let Err(e) = self.save() {
-            log_error!(
-                context,
-                "instance/process_action: could not save state: {:?}",
-                e
-            );
-        } else {
-            log_trace!(
-                context,
-                "reduce/process_actions: reducing {:?}",
-                action_wrapper
-            );
-        }
 
         Ok(())
     }
@@ -415,8 +415,7 @@ impl Instance {
             .clone()
     }
 
-    pub fn save(&self) -> HcResult<()> {
-        let state = self.state();
+    pub fn save(&self, state: &StateWrapper) -> HcResult<()> {
         self.persister
             .as_ref()
             .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?

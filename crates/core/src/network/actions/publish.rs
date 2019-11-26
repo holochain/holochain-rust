@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::actions::ActionResponse,
+    network::actions::NetworkActionResponse,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
@@ -49,11 +49,14 @@ impl Future for PublishFuture {
             //
             cx.waker().clone().wake();
             match state.actions().get(&self.action) {
-                Some(ActionResponse::Publish(result)) => match result {
-                    Ok(address) => Poll::Ready(Ok(address.to_owned())),
-                    Err(error) => Poll::Ready(Err(error.clone())),
+                Some(r) => match r.response() {
+                    NetworkActionResponse::Publish(Ok(address)) => {
+                        Poll::Ready(Ok(address.to_owned()))
+                    }
+                    NetworkActionResponse::Publish(Err(error)) => Poll::Ready(Err(error.clone())),
+                    _ => unreachable!(),
                 },
-                _ => Poll::Pending,
+                None => Poll::Pending,
             }
         } else {
             Poll::Pending

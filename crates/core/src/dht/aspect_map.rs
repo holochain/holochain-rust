@@ -1,8 +1,8 @@
 use crate::holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use lib3h_protocol::types::{AspectHash, EntryHash};
-use std::collections::{HashMap, HashSet};
-
+use std::collections::HashMap as StdHashMap;
+use im::{HashMap, HashSet};
 pub type AspectSet = HashSet<AspectHash>;
 
 pub type AspectMapBare = HashMap<EntryHash, AspectSet>;
@@ -19,12 +19,7 @@ impl AspectMap {
     pub fn diff(&self, other: &AspectMap) -> AspectMap {
         let self_set = HashSet::<(EntryHash, AspectHash)>::from(self);
         let other_set = HashSet::<(EntryHash, AspectHash)>::from(other);
-        AspectMap::from(
-            &self_set
-                .difference(&other_set)
-                .cloned()
-                .collect::<HashSet<(EntryHash, AspectHash)>>(),
-        )
+        AspectMap::from(&self_set.difference(other_set))
     }
 
     pub fn bare(&self) -> &AspectMapBare {
@@ -81,7 +76,7 @@ impl AspectMap {
             .join("\n")
     }
 
-    pub fn merge(map1: &AspectMap, map2: &AspectMap) -> AspectMap {
+    pub fn merge(map1: AspectMap, map2: AspectMap) -> AspectMap {
         map1.0
             .keys()
             .chain(map2.0.keys())
@@ -90,9 +85,8 @@ impl AspectMap {
                     .0
                     .get(entry)
                     .unwrap_or(&HashSet::new())
-                    .union(map2.0.get(entry).unwrap_or(&HashSet::new()))
-                    .cloned()
-                    .collect();
+                    .clone()
+                    .union(map2.0.get(entry).unwrap_or(&HashSet::new()).clone());
                 (entry.clone(), merged)
             })
             .collect::<AspectMapBare>()
@@ -118,10 +112,10 @@ impl From<&AspectMap> for HashSet<(EntryHash, AspectHash)> {
     }
 }
 
-pub type AspectVecMap = HashMap<EntryHash, Vec<AspectHash>>;
+pub type AspectVecMap = StdHashMap<EntryHash, Vec<AspectHash>>;
 impl From<AspectMap> for AspectVecMap {
     fn from(map: AspectMap) -> AspectVecMap {
-        let mut new_map = HashMap::new();
+        let mut new_map = StdHashMap::new();
         map.0.into_iter().for_each(|(entry, set)| {
             let vec = set.into_iter().collect();
             new_map.insert(entry, vec);
@@ -150,6 +144,7 @@ impl From<&HashSet<(EntryHash, AspectHash)>> for AspectMap {
 #[cfg(test)]
 mod tests {
 
+    use im::hashset;
     use super::*;
     use sim1h::aspect::fixture::content_aspect_fresh;
 
@@ -169,11 +164,11 @@ mod tests {
     fn test_merge_address_maps_merges_entries() {
         let mut map1: AspectMapBare = HashMap::new();
         let mut map2: AspectMapBare = HashMap::new();
-        map1.insert("a".into(), vec!["x".into()].into_iter().collect());
-        map2.insert("b".into(), vec!["y".into()].into_iter().collect());
-        let (map1, map2) = (map1.into(), map2.into());
-        let merged = AspectMap::merge(&map1, &map2);
-        let merged2 = AspectMap::merge(&map2, &map1);
+        map1.insert("a".into(), hashset![AspectHash::from("x")]);
+        map2.insert("b".into(), hashset![AspectHash::from("y")]);
+        let (map1, map2): (AspectMap, AspectMap) = (map1.into(), map2.into());
+        let merged = AspectMap::merge(map1.clone(), map2.clone());
+        let merged2 = AspectMap::merge(map2.clone(), map1.clone());
         assert_eq!(merged.0, merged2.0);
         assert_eq!(merged.0.len(), 2);
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 1);
@@ -184,14 +179,14 @@ mod tests {
     fn test_merge_address_maps_merges_aspects_1() {
         let mut map1: AspectMapBare = HashMap::new();
         let mut map2: AspectMapBare = HashMap::new();
-        map1.insert("a".into(), vec!["x".into()].into_iter().collect());
+        map1.insert("a".into(), hashset!["x".into()]);
         map2.insert(
             "a".into(),
-            vec!["x".into(), "y".into()].into_iter().collect(),
+            hashset![AspectHash::from("x"), AspectHash::from("y")],
         );
-        let (map1, map2) = (map1.into(), map2.into());
-        let merged = AspectMap::merge(&map1, &map2);
-        let merged2 = AspectMap::merge(&map1, &map2);
+        let (map1, map2): (AspectMap, AspectMap) = (map1.into(), map2.into());
+        let merged = AspectMap::merge(map1.clone(), map2.clone());
+        let merged2 = AspectMap::merge(map1, map2);
         assert_eq!(merged.0, merged2.0);
         assert_eq!(merged.0.len(), 1);
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 2);
@@ -206,24 +201,24 @@ mod tests {
         let mut map2: AspectMapBare = HashMap::new();
         map1.insert(
             "a".into(),
-            vec!["x".into(), "y".into()].into_iter().collect(),
+            hashset![AspectHash::from("x"), AspectHash::from("y")],
         );
         map1.insert(
             "b".into(),
-            vec!["u".into(), "v".into()].into_iter().collect(),
+            hashset![AspectHash::from("u"), AspectHash::from("v")],
         );
 
         map2.insert(
             "a".into(),
-            vec!["y".into(), "z".into()].into_iter().collect(),
+            hashset![AspectHash::from("y"), AspectHash::from("z")],
         );
         map2.insert(
             "b".into(),
-            vec!["v".into(), "w".into()].into_iter().collect(),
+            hashset![AspectHash::from("v"), AspectHash::from("w")],
         );
-        let (map1, map2) = (map1.into(), map2.into());
-        let merged = AspectMap::merge(&map1, &map2);
-        let merged2 = AspectMap::merge(&map2, &map1);
+        let (map1, map2): (AspectMap, AspectMap) = (map1.into(), map2.into());
+        let merged = AspectMap::merge(map1.clone(), map2.clone());
+        let merged2 = AspectMap::merge(map2, map1);
         assert_eq!(merged.0, merged2.0);
         assert_eq!(merged.0.len(), 2);
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 3);

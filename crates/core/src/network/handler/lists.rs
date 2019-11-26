@@ -13,10 +13,8 @@ use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::sync::Arc;
+use im::HashSet;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {
@@ -33,7 +31,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
 }
 
 fn create_authoring_map(context: Arc<Context>) -> AspectMap {
-    let mut address_map: AspectMapBare = HashMap::new();
+    let mut address_map: AspectMapBare = AspectMapBare::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
         // 1. For every public chain entry we definitely add the content aspect:
         let content_aspect = get_content_aspect(&entry_address, context.clone())
@@ -140,7 +138,7 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
             .expect("No state present when trying to respond with gossip list");
         let authoring_map = create_authoring_map(context.clone());
         let holding_map = state.dht().get_holding_map().clone();
-        let address_map = AspectMap::merge(&authoring_map, &holding_map);
+        let address_map = AspectMap::merge(authoring_map, holding_map);
 
         let action = Action::RespondGossipList(EntryListData {
             space_address: get_list_data.space_address,

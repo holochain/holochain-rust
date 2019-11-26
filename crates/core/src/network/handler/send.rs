@@ -55,19 +55,19 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
             context.clone().spawn_task(future);
         }
         DirectMessage::RequestValidationPackage(address) => {
-            // Async functions only get executed when they are polled.
-            // I don't want to wait for this workflow to finish here as it would block the
-            // network thread, so I use block_on to poll the async function but do that in
-            // another thread:
-            context
-                .clone()
-                .spawn_task(respond_validation_package_request(
-                    message_data.from_agent_id.into(),
-                    message_data.request_id,
-                    address,
-                    context.clone(),
-                    vec![],
-                ));
+            // TODO: run this function with an async block spawned to the pool too, like above.
+            // This currently doesn't work, I believe because this function is not async so
+            // we wouldn't have any await in this async block.
+            // Though I did expect that to work. Maybe this is a pull for actually jumping to
+            // rust 1.39 where async/await is part of stable (currently we are using unstable
+            // feature for this).
+            respond_validation_package_request(
+                message_data.from_agent_id.into(),
+                message_data.request_id,
+                address,
+                context,
+                vec![],
+            );
         }
         DirectMessage::ValidationPackage(_) => {
             log_error!(context,

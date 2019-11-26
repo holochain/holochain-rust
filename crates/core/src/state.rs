@@ -33,6 +33,7 @@ use std::{collections::HashSet, convert::TryInto, sync::Arc};
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
 /// To plug in a new module, its state slice needs to be added here.
+#[autotrace]
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,
@@ -248,6 +249,7 @@ pub struct StateWrapper {
     state: Option<State>,
 }
 
+#[autotrace]
 impl StateWrapper {
     pub fn drop_inner_state(&mut self) {
         self.state = None;

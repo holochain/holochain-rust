@@ -186,14 +186,13 @@ impl Instance {
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
         instance_is_alive.store(true, Ordering::Relaxed);
-        let root_span = sub_context.tracer.span("start_action_loop").start().into();
+
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
                 ProcessUniqueId::new().to_string()
             ))
             .spawn(move || {
-                let _root = ht::push_root_span(root_span);
                 let mut state_observers: Vec<Observer> = Vec::new();
                 let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
                 while kill_receiver.try_recv().is_err() {
@@ -201,9 +200,14 @@ impl Instance {
                     if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
+                        let action = action_wrapper.action();
                         // Ping can happen often, and should be as lightweight as possible
-                        let should_process = *action_wrapper.action() != Action::Ping;
+                        let should_process = *action != Action::Ping;
                         if should_process {
+                            let action_span = sub_context.tracer.span("action_loop").tag(
+                                ht::Tag::new("action", format!("{:?}", action))
+                            ).start().into();
+                            let _guard = ht::push_root_span(action_span);
                             match sync_self.process_action(&action_wrapper, &sub_context) {
                                 Ok(()) => {
                                     sync_self.emit_signals(&sub_context, &action_wrapper);

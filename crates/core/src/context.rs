@@ -106,6 +106,7 @@ impl Context {
     // There are two different implementations of this function below which get pulled
     // in depending on if "test" is in the build config, or not.
     // This allows unit tests of core to not have to deal with a conductor_api.
+    #[no_autotrace]
     #[cfg(not(test))]
     fn test_check_conductor_api(
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
@@ -118,7 +119,8 @@ impl Context {
         // Hence the two different cases here.
         conductor_api.expect("Context can't be created without conductor API")
     }
-
+    
+    #[no_autotrace]
     #[cfg(test)]
     fn test_check_conductor_api(
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
@@ -127,6 +129,7 @@ impl Context {
         conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
     }
 
+    #[no_autotrace]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         instance_name: &str,

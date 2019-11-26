@@ -56,7 +56,7 @@ pub mod tests {
         let dna = Dna::new();
         let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna.clone()));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = unbounded::<ActionWrapper>();
+        let (sender, _receiver) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, _observer) = unbounded::<Observer>();
         let context = test_context_with_channels("jimmy", &sender, &tx_observer, None);
         let root_state = test_store(context);

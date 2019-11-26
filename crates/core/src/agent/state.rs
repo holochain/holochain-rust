@@ -39,6 +39,7 @@ pub struct AgentState {
     initial_agent_address: Address,
 }
 
+#[autotrace]
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain_store: ChainStore, initial_agent_address: Address) -> AgentState {

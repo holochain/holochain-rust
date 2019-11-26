@@ -109,8 +109,6 @@ pub struct NucleusState {
 
     // @TODO eventually drop stale calls
     // @see https://github.com/holochain/holochain-rust/issues/166
-    // @TODO should this use the standard ActionWrapper/ActionResponse format?
-    // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 

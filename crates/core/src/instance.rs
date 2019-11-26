@@ -76,6 +76,9 @@ impl Instance {
         scheduler
             .every(10.seconds())
             .run(scheduled_jobs::create_state_dump_callback(context.clone()));
+        scheduler
+            .every(5.seconds())
+            .run(scheduled_jobs::create_state_pruning_callback(context.clone()));
         self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
         self.persister = Some(context.persister.clone());

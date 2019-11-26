@@ -31,6 +31,8 @@ use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{convert::TryInto, sync::Arc};
 use std::time::SystemTime;
 
+pub const ACTION_PRUNE_MS: u64 = 3000;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionResponse<T> {
     pub created_at: SystemTime,

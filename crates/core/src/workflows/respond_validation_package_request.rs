@@ -48,6 +48,6 @@ pub async fn respond_validation_package_request(
         is_response: true,
     };
 
-    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
+    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((direct_message_data, None)));
     dispatch_action(context.action_channel(), action_wrapper);
 }

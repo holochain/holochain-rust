@@ -7,7 +7,7 @@ use holochain_core_types::{error::HolochainError, validation::ValidationPackage}
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use snowflake;
-use std::collections::HashMap;
+use im::HashMap;
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
 

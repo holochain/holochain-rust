@@ -82,8 +82,8 @@ lazy_static! {
 /// in above static CONDUCTOR.
 /// It replaces any Conductor instance that was mounted before to CONDUCTOR with a new one
 /// create from the given configuration.
-pub fn mount_conductor_from_config(config: Configuration) {
-    let conductor = Conductor::from_config(config);
+pub fn mount_conductor_from_config(config: Configuration, tracer: Option<ht::Tracer>) {
+    let conductor = Conductor::from_config(config, tracer);
     CONDUCTOR.lock().unwrap().replace(conductor);
 }
 
@@ -116,6 +116,7 @@ pub struct Conductor {
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
     // TODO: remove this when n3h gets deprecated
     n3h_keepalive_network: Option<P2pNetwork>, // hack needed so that n3h process stays alive even if all instances get shutdown.
+    tracer: Option<ht::Tracer>,
 }
 
 impl Drop for Conductor {
@@ -162,8 +163,9 @@ pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
+#[autotrace]
 impl Conductor {
-    pub fn from_config(config: Configuration) -> Self {
+    pub fn from_config(config: Configuration, tracer: Option<ht::Tracer>) -> Self {
         lib3h_sodium::check_init();
         let _rules = config.logger.rules.clone();
         let mut logger_builder = FastLoggerBuilder::new();
@@ -228,6 +230,7 @@ impl Conductor {
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
+            tracer: tracer,
         }
     }
 
@@ -789,24 +792,8 @@ impl Conductor {
                 .insert(instance_config.id.clone(), receiver);
                 context_builder = context_builder.with_signals(sender);
                 
-                // Tracer config:
-                {
-                    let (span_tx, span_rx) = unbounded();
-                    let tracer = ht::Tracer::with_sender(ht::AllSampler, span_tx);
+                if let Some(tracer) = self.tracer.clone() {
                     context_builder = context_builder.with_tracer(tracer);
-
-                    // TODO: spawn thread somewhere else
-                    let _ = thread::Builder::new()
-                    .name(format!(
-                        "tracer_loop",
-                    )).spawn(move || {
-                        info!("Tracer loop started.");
-                        // TODO: killswitch
-                        let reporter = ht::Reporter::new("holochain core").unwrap();
-                        for span in span_rx {
-                            reporter.report(&[span]).expect("could not report span");
-                        }
-                    });
                 }
 
                 // Storage:
@@ -924,7 +911,7 @@ impl Conductor {
 
                 let mut context_clone = context.clone();
                 let context = Arc::new(context);
-                               Holochain::load(context.clone())
+                Holochain::load(context.clone())
                     .and_then(|hc| {
                        notify(format!(
                             "Successfully loaded instance {} from storage",
@@ -1703,7 +1690,7 @@ pub mod tests {
     pub fn test_conductor(websocket_port: u16, http_port: u16) -> Conductor {
         let config =
             load_configuration::<Configuration>(&test_toml(websocket_port, http_port)).unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor.boot_from_config().unwrap();
@@ -1712,7 +1699,7 @@ pub mod tests {
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml(8888, 8889)).unwrap();
-        let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
+        let mut conductor = Conductor::from_config(config.clone(), None).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor.boot_from_config().unwrap();
@@ -1809,7 +1796,7 @@ pub mod tests {
         let toml = test_toml(10041, 10042);
 
         let config = load_configuration::<Configuration>(&toml).unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         assert_eq!(
@@ -2202,7 +2189,7 @@ pub mod tests {
     #[test]
     fn basic_bridge_call_roundtrip() {
         let config = load_configuration::<Configuration>(&test_toml(10021, 10022)).unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor
@@ -2239,7 +2226,7 @@ pub mod tests {
     #[test]
     fn basic_bridge_call_error() {
         let config = load_configuration::<Configuration>(&test_toml(10041, 10042)).unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor
@@ -2279,7 +2266,7 @@ pub mod tests {
     fn error_if_required_bridge_missing() {
         let mut config = load_configuration::<Configuration>(&test_toml(10061, 10062)).unwrap();
         config.bridges.clear();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
 
@@ -2405,7 +2392,7 @@ pub mod tests {
             "bridge/callee_dna.dna",
         ))
         .unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         let result = conductor.boot_from_config();
@@ -2424,7 +2411,7 @@ pub mod tests {
             "bridge/callee_dna.dna",
         ))
         .unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         let result = conductor.boot_from_config();
@@ -2461,7 +2448,7 @@ pub mod tests {
                     type = "memory"
                 "#
         ).unwrap();
-        let mut conductor = Conductor::from_config(config.clone());
+        let mut conductor = Conductor::from_config(config.clone(), None);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         assert_eq!(

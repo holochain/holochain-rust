@@ -7,6 +7,7 @@ extern crate holochain_json_api;
 extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
+extern crate holochain_tracing as ht;
 extern crate json_patch;
 extern crate lib3h_sodium;
 extern crate structopt;
@@ -19,6 +20,8 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate log;
 extern crate flate2;
 extern crate glob;
 extern crate ignore;
@@ -143,15 +146,33 @@ enum Cli {
 }
 
 fn main() {
+    // Tracer config:
+    let tracer = {
+        let (span_tx, span_rx) = crossbeam_channel::unbounded();
+        let _ = std::thread::Builder::new()
+            .name(format!("tracer_loop"))
+            .spawn(move || {
+                info!("Tracer loop started.");
+                // TODO: killswitch
+                let reporter = ht::Reporter::new("Holochain Core").unwrap();
+                for span in span_rx {
+                    reporter.report(&[span]).expect("could not report span");
+                }
+            });
+        ht::Tracer::with_sender(ht::AllSampler, span_tx)
+    };
+
+    let _trace_guard = ht::push_root_span(tracer.span("hc::main").start().into());
+
     lib3h_sodium::check_init();
-    run().unwrap_or_else(|err| {
+    run(Some(tracer)).unwrap_or_else(|err| {
         eprintln!("{}", err);
 
         ::std::process::exit(1);
     });
 }
 
-fn run() -> HolochainResult<()> {
+fn run(tracer: Option<ht::Tracer>) -> HolochainResult<()> {
     let args = Cli::from_args();
 
     let project_path =
@@ -212,8 +233,15 @@ fn run() -> HolochainResult<()> {
                 logging,
             )
             .map_err(HolochainError::Default)?;
-            cli::run(dna_path, package, port, interface_type, conductor_config)
-                .map_err(HolochainError::Default)?
+            cli::run(
+                dna_path,
+                package,
+                port,
+                interface_type,
+                conductor_config,
+                tracer,
+            )
+            .map_err(HolochainError::Default)?
         }
 
         Cli::Test {

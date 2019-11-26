@@ -2,12 +2,14 @@ use crate::*;
 use std::io::{Error, ErrorKind, Result};
 use url2::prelude::*;
 
+const SCHEME: &'static str = "wss";
+
 /// internal helper, make sure we're dealing with wss urls
 fn validate_url_scheme(url: &Url2) -> Result<()> {
-    if url.scheme() != "wss" {
+    if url.scheme() != SCHEME {
         return Err(Error::new(
             ErrorKind::InvalidInput,
-            format!("got: '{}', expected: 'wss://...'", url),
+            format!("got: '{}', expected: '{}://...'", SCHEME, url),
         ));
     }
     Ok(())
@@ -53,7 +55,7 @@ impl<Sub: InStreamListener> InStreamFramedListener for InStreamListenerWss<Sub> 
 
     fn binding(&self) -> Url2 {
         let mut url = self.sub.binding();
-        url.set_scheme("wss").unwrap();
+        url.set_scheme(SCHEME).unwrap();
         url
     }
 
@@ -95,9 +97,7 @@ type TungsteniteCliHandshakeResult<S> = std::result::Result<
         tungstenite::WebSocket<S>,
         tungstenite::handshake::client::Response,
     ),
-    tungstenite::handshake::HandshakeError<
-        tungstenite::handshake::client::ClientHandshake<S>,
-    >,
+    tungstenite::handshake::HandshakeError<tungstenite::handshake::client::ClientHandshake<S>>,
 >;
 
 type TungsteniteSrvHandshakeResult<S> = std::result::Result<
@@ -178,7 +178,7 @@ impl<Sub: InStreamPartial> InStreamFramedPartial for InStreamPartialWss<Sub> {
     type Stream = InStreamWebSocket<Sub>;
     type ConnectConfig = WssConnectConfig<Sub::ConnectConfig>;
 
-    const URL_SCHEME: &'static str = "wss";
+    const URL_SCHEME: &'static str = SCHEME;
 
     fn with_stream(stream: Self::Stream) -> Result<Self> {
         Ok(Self {
@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn wss_works_mem() {
         let mut url = in_stream_mem::random_url("test");
-        url.set_scheme("wss").unwrap();
+        url.set_scheme(SCHEME).unwrap();
         let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerMem>> =
             InStreamListenerWss::bind(&url, Default::default()).unwrap();
         suite(l);
@@ -373,7 +373,7 @@ mod tests {
     fn wss_works_tcp() {
         let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
             InStreamListenerWss::bind(
-                &url2!("wss://127.0.0.1:0"),
+                &url2!("{}://127.0.0.1:0", SCHEME),
                 WssBindConfig::default().sub_bind_config(TlsBindConfig::with_fake_certificate()),
             )
             .unwrap();

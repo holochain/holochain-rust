@@ -3,12 +3,14 @@ use net2::TcpStreamExt;
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use url2::prelude::*;
 
+const SCHEME: &'static str = "tcp";
+
 /// internal helper convert urls to socket addrs for binding / connection
 fn tcp_url_to_socket_addr(url: &Url2) -> Result<std::net::SocketAddr> {
-    if url.scheme() != "tcp" || url.host_str().is_none() || url.port().is_none() {
+    if url.scheme() != SCHEME || url.host_str().is_none() || url.port().is_none() {
         return Err(Error::new(
             ErrorKind::InvalidInput,
-            format!("got: '{}', expected: 'tcp://host:port'", url),
+            format!("got: '{}', expected: '{}://host:port'", SCHEME, url),
         ));
     }
     let rendered = format!("{}:{}", url.host_str().unwrap(), url.port().unwrap());
@@ -54,7 +56,7 @@ impl InStreamListener for InStreamListenerTcp {
     /// get the bound interface url
     fn binding(&self) -> Url2 {
         let local = self.0.local_addr().unwrap();
-        Url2::parse(&format!("tcp://{}:{}", local.ip(), local.port()))
+        Url2::parse(&format!("{}://{}:{}", SCHEME, local.ip(), local.port()))
     }
 
     /// accept a connection from this listener
@@ -92,7 +94,7 @@ impl InStreamPartial for InStreamPartialTcp {
     type ConnectConfig = TcpConnectConfig;
 
     /// tcp streams expect urls like tcp://
-    const URL_SCHEME: &'static str = "tcp";
+    const URL_SCHEME: &'static str = SCHEME;
 
     /// convert a full stream back into a partial one
     fn with_stream(stream: Self::Stream) -> Result<Self> {

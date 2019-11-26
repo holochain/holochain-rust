@@ -2,12 +2,14 @@ use crate::*;
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use url2::prelude::*;
 
+const SCHEME: &'static str = "tls";
+
 /// internal helper make sure we're dealing with tls:// urls
 fn validate_url_scheme(url: &Url2) -> Result<()> {
-    if url.scheme() != "tls" {
+    if url.scheme() != SCHEME {
         return Err(Error::new(
             ErrorKind::InvalidInput,
-            format!("got: '{}', expected: 'tls://...'", url),
+            format!("got: '{}', expected: '{}://...'", SCHEME, url),
         ));
     }
     Ok(())
@@ -78,7 +80,7 @@ impl<Sub: InStreamListener> InStreamListener for InStreamListenerTls<Sub> {
     /// get our bound address
     fn binding(&self) -> Url2 {
         let mut url = self.sub.binding();
-        url.set_scheme("tls").unwrap();
+        url.set_scheme(SCHEME).unwrap();
         url
     }
 
@@ -198,7 +200,7 @@ impl<Sub: InStreamPartial> InStreamPartial for InStreamPartialTls<Sub> {
     type Stream = InStreamTls<Sub>;
     type ConnectConfig = TlsConnectConfig<Sub::ConnectConfig>;
 
-    const URL_SCHEME: &'static str = "tls";
+    const URL_SCHEME: &'static str = SCHEME;
 
     fn with_stream(stream: Self::Stream) -> Result<Self> {
         Ok(Self {
@@ -337,7 +339,7 @@ mod tests {
     #[test]
     fn tls_works_mem() {
         let mut url = in_stream_mem::random_url("test");
-        url.set_scheme("tls").unwrap();
+        url.set_scheme(SCHEME).unwrap();
         let l: InStreamListenerTls<InStreamListenerMem> =
             InStreamListenerTls::bind(&url, Default::default()).unwrap();
         suite(l);
@@ -346,7 +348,7 @@ mod tests {
     #[test]
     fn tls_works_tcp() {
         let l: InStreamListenerTls<InStreamListenerTcp> = InStreamListenerTls::bind(
-            &url2!("tls://127.0.0.1:0"),
+            &url2!("{}://127.0.0.1:0", SCHEME),
             TlsBindConfig::with_fake_certificate(),
         )
         .unwrap();

@@ -38,35 +38,36 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
-            context.clone().spawn_task(move || {
-                if let Err(error) = context.block_on(handle_custom_direct_message(
+            let c = context.clone();
+            let closure = async move || {
+                if let Err(error) = handle_custom_direct_message(
                     message_data.from_agent_id.into(),
                     message_data.request_id,
                     custom_direct_message,
-                    context.clone(),
-                )) {
+                    c.clone(),
+                ).await {
                     log_error!(
-                        context,
+                        c,
                         "net: Error handling custom direct message: {:?}",
                         error
                     );
                 }
-            });
+            };
+            let future = closure();
+            context.clone().spawn_task(future);
         }
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
-            context.clone().spawn_task(move || {
-                context.block_on(respond_validation_package_request(
-                    message_data.from_agent_id.into(),
-                    message_data.request_id,
-                    address,
-                    context.clone(),
-                    &vec![],
-                ));
-            });
+            context.clone().spawn_task(respond_validation_package_request(
+                message_data.from_agent_id.into(),
+                message_data.request_id,
+                address,
+                context.clone(),
+                vec![],
+            ));
         }
         DirectMessage::ValidationPackage(_) => {
             log_error!(context,

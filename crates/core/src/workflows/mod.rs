@@ -80,7 +80,6 @@ async fn try_make_local_validation_package(
                     context.clone(),
                     entry_with_header.header.provenances(),
                 )
-                .await
             } else {
                 Err(HolochainError::ErrorGeneric(String::from(
                     "Can't create validation package locally",

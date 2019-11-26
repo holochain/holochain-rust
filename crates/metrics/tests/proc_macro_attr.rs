@@ -1,8 +1,7 @@
-//! This test aims at checking the usage of the latency attribute macro with the holochain's metric crate.
+//! This test aims to check the usage of the latency attribute proc macro with the holochain's metric crate.
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
     use holochain_metrics::prelude::*;
 
     #[latency]

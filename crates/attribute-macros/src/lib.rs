@@ -1,12 +1,11 @@
 //! Attribute proc-macro are defined here for easy to use.
 //!
-//! It's intended to be used like this:
+//! It's intended to be used with the `holochain_metrics` crate like this:
 //! ```
-//! use attribute-macros::latency;
-//! // Probably something related to the "metric" crate
+//! use holochain_metrics::prelude::*;
 //!
 //! #[latency]
-//! pub fn invoke_attr_macro(_iam_arg1: u8, _iam_arg2: u8, _iam_arg3: u8) {
+//! pub fn invoke_attr_macro() {
 //!     println!("Attribute Macro Invoked.");
 //!     let _x = 3 + 4;
 //! }

@@ -110,30 +110,25 @@ async fn validation_package(
 
 /// Runs the given pending validation using the right holding workflow
 /// as specified by PendingValidationStruct::workflow.
-pub fn run_holding_workflow(
+pub async fn run_holding_workflow(
     pending: PendingValidation,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     match pending.workflow {
-        ValidatingWorkflow::HoldLink => context.block_on(hold_link_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::HoldEntry => context.block_on(hold_entry_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveLink => context.block_on(remove_link_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::UpdateEntry => context.block_on(hold_update_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
-        ValidatingWorkflow::RemoveEntry => context.block_on(hold_remove_workflow(
-            &pending.entry_with_header,
-            context.clone(),
-        )),
+        ValidatingWorkflow::HoldLink => {
+            hold_link_workflow(&pending.entry_with_header, context.clone()).await
+        }
+        ValidatingWorkflow::HoldEntry => {
+            hold_entry_workflow(&pending.entry_with_header, context.clone()).await
+        }
+        ValidatingWorkflow::RemoveLink => {
+            remove_link_workflow(&pending.entry_with_header, context.clone()).await
+        }
+        ValidatingWorkflow::UpdateEntry => {
+            hold_update_workflow(&pending.entry_with_header, context.clone()).await
+        }
+        ValidatingWorkflow::RemoveEntry => {
+            hold_remove_workflow(&pending.entry_with_header, context.clone()).await
+        }
     }
 }

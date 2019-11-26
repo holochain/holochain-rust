@@ -719,12 +719,6 @@ pub mod tests {
             .iter_chain()
             .any(|header| *header.entry_type() == EntryType::AgentId));
 
-        assert!(instance
-            .state()
-            .agent()
-            .iter_chain()
-            .any(|header| *header.entry_type() == EntryType::CapTokenGrant));
-
         Ok((instance, context))
     }
 

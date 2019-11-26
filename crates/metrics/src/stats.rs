@@ -26,6 +26,9 @@ pub struct StatsRecord {
     pub stddev: f64,
 }
 
+#[derive(Shrinkwrap, Clone)]
+pub struct AllValuesLessThan(DescriptiveStats);
+
 impl StatsRecord {
     pub fn new<S: Into<String>>(metric_name: S, desc: DescriptiveStats) -> Self {
         let metric_name = metric_name.into();
@@ -49,8 +52,23 @@ impl From<DescriptiveStats> for StatsRecord {
     }
 }
 
-// TODO is this necessary?
 impl Copy for DescriptiveStats {}
+
+#[derive(Clone, Debug, Serialize)]
+pub enum DescriptiveStatType {
+    Mean,
+    Max,
+    Min,
+    StdDev,
+    Count,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct StatFailure {
+    expected: f64,
+    actual: f64,
+    stat_type: DescriptiveStatType,
+}
 
 impl DescriptiveStats {
     /// An initial empty statistic.
@@ -103,6 +121,73 @@ impl DescriptiveStats {
     /// The number of samples of the running statistic.
     pub fn count(&self) -> u64 {
         self.cnt
+    }
+}
+
+pub trait StatCheck {
+    fn check(
+        &self,
+        expected: &DescriptiveStats,
+        actual: &DescriptiveStats,
+    ) -> Result<DescriptiveStats, Vec<StatFailure>>;
+}
+
+#[derive(Clone, Debug)]
+pub struct LessThanStatCheck;
+
+impl StatCheck for LessThanStatCheck {
+    fn check(
+        &self,
+        expected: &DescriptiveStats,
+        actual: &DescriptiveStats,
+    ) -> Result<DescriptiveStats, Vec<StatFailure>> {
+        let mut failures = Vec::new();
+
+        if actual.mean() > expected.mean() {
+            failures.push(StatFailure {
+                expected: expected.mean(),
+                actual: actual.mean(),
+                stat_type: DescriptiveStatType::Mean,
+            })
+        }
+
+        if actual.stddev() > expected.stddev() {
+            failures.push(StatFailure {
+                expected: expected.stddev(),
+                actual: actual.stddev(),
+                stat_type: DescriptiveStatType::StdDev,
+            })
+        }
+
+        if actual.max() > expected.max() {
+            failures.push(StatFailure {
+                expected: expected.max(),
+                actual: actual.max(),
+                stat_type: DescriptiveStatType::Max,
+            })
+        }
+
+        if actual.min() > expected.min() {
+            failures.push(StatFailure {
+                expected: expected.min(),
+                actual: actual.min(),
+                stat_type: DescriptiveStatType::Min,
+            })
+        }
+
+        if actual.count() > expected.count() {
+            failures.push(StatFailure {
+                expected: expected.count() as f64,
+                actual: actual.count() as f64,
+                stat_type: DescriptiveStatType::Count,
+            })
+        }
+
+        if failures.is_empty() {
+            Ok(*actual)
+        } else {
+            Err(failures)
+        }
     }
 }
 

@@ -98,7 +98,7 @@ macro_rules! def_api_fns {
             ) -> ZomeApiResult<O> {
                 let mut mem_stack = unsafe { G_MEM_STACK }
                 .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
-
+                println!("writing to WASM stack");
                 let wasm_allocation = mem_stack.write_json(input)?;
 
                 // Call Ribosome's function
@@ -178,7 +178,7 @@ def_api_fns! {
     hc_send, Send;
     hc_debug, Debug;
     hc_call, Call;
-    hc_crypto,Crypto;
+    hc_crypto, Crypto;
     hc_sign_one_time, SignOneTime;
     hc_verify_signature, VerifySignature;
     hc_link_entries, LinkEntries;
@@ -186,7 +186,7 @@ def_api_fns! {
     hc_get_links, GetLinks;
     hc_get_links_count,GetLinksCount;
     hc_sleep, Sleep;
-    hc_meta,Meta;
+    hc_meta, Meta;
     hc_keystore_list, KeystoreList;
     hc_keystore_new_random, KeystoreNewRandom;
     hc_keystore_derive_seed, KeystoreDeriveSeed;

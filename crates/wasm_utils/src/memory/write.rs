@@ -34,9 +34,11 @@ impl WasmStack {
 
     /// Write a data struct as a json string in wasm memory according to stack state.
     pub fn write_json<J: TryInto<JsonString>>(&mut self, jsonable: J) -> AllocationResult {
-        let j: JsonString = jsonable
+        let j_maybe = jsonable
             .try_into()
-            .map_err(|_| AllocationError::Serialization)?;
+            .map_err(|_| AllocationError::Serialization);
+        println!("writing to WASM: {:?}", &j_maybe);
+        let j: JsonString = j_maybe?;
 
         let json_bytes = j.to_bytes();
         let json_bytes_len = max(json_bytes.len(), 1) as MemoryInt; // always allocate at least 1 byte

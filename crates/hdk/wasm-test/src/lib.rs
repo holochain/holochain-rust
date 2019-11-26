@@ -340,7 +340,6 @@ fn handle_links_roundtrip_get_and_load(
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
-    println!("handle_check_query");
     fn err(s: &str) -> ZomeApiResult<Vec<Address>> {
         Err(ZomeApiError::Internal(s.to_owned()))
     }

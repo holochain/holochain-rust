@@ -50,10 +50,15 @@ pub fn keystore_derive_key<S: Into<String>>(
 /// Signs a payload using a private key from the keystore.
 /// Accepts one argument: the keystore ID of the desired private key.
 pub fn keystore_sign<S: Into<String>>(src_id: S, payload: S) -> ZomeApiResult<String> {
-    Dispatch::KeystoreSign.with_input(KeystoreSignArgs {
+    println!("keystore_sign");
+    let input = KeystoreSignArgs {
         src_id: src_id.into(),
         payload: payload.into(),
-    })
+    };
+    println!("keystore_sign input {:?}", &input);
+    let result = Dispatch::KeystoreSign.with_input(input.clone());
+    println!("keystore_sign input {:?} --> result {:?}", &input, &result);
+    result
 }
 
 /// Returns the public key of a key secret

@@ -160,6 +160,7 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
+    println!("invoke_keystore_sign: {:?} -> {:?}", &args, &args_str);
 
     let result = conductor_callback(
         "agent/keystore/sign",

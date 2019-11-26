@@ -1,6 +1,6 @@
 [package]
 name = "trycp_server"
-version = "0.0.38-alpha14"
+version = "0.0.39-alpha4"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "Conductor provisioner server for try-o-rama"
@@ -23,3 +23,4 @@ tempfile = "=3.0.7"
 lazy_static = "=1.2.0"
 nix = "=0.14.1"
 reqwest = "=0.9.11"
+regex = "=1.1.2"

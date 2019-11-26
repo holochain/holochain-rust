@@ -11,16 +11,14 @@ use crate::{
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
-        validation::ValidationResult,
-        ZomeFnCall,
+        HdkFnCall, HdkFnCallResult, ZomeFnCall,
     },
     state::State,
 };
 
 use holochain_core_types::{
     chain_header::ChainHeader, crud_status::CrudStatus, dna::Dna, entry::Entry,
-    error::HolochainError, link::link_data::LinkData, signature::Provenance,
-    validation::ValidationPackage,
+    signature::Provenance, validation::ValidationPackage,
 };
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
@@ -119,19 +117,13 @@ pub enum Action {
 
     /// Removes the given item from the holding queue.
     RemoveQueuedHoldingWorkflow(PendingValidation),
-    /// Adds an entry to the local DHT shard.
-    /// Does not validate, assumes entry is valid.
-    Hold(EntryWithHeader),
 
-    /// Adds a link to the local DHT shard's meta/EAV storage
-    /// Does not validate, assumes link is valid.
-    AddLink(LinkData),
+    /// Adds an entry aspect to the local DHT shard.
+    /// Does not validate, assumes referenced entry is valid.
+    HoldAspect(EntryAspect),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),
-
-    //Removes a link for the local DHT
-    RemoveLink(Entry),
 
     // ----------------
     // Network actions:
@@ -168,10 +160,6 @@ pub enum Action {
     HandleQuery((NetworkQueryResult, QueryKey)),
 
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
-
-    UpdateEntry((Address, Address)),
-    ///
-    RemoveEntry((Address, Address)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -218,27 +206,16 @@ pub enum Action {
     ReturnInitializationResult(Result<Initialization, String>),
 
     /// Gets dispatched when a zome function call starts.
-    /// There is no reducer for this action so this does not change state
-    /// (hence "Signal").
-    /// Is received as signal in the nodejs waiter to attach wait conditions.
     QueueZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
-    /// A validation result is returned from a local callback execution
-    /// Key is an unique id of the calling context
-    /// and the hash of the entry that was validated
-    ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
+    /// Let the State track that a zome call has called an HDK function
+    TraceInvokeHdkFunction((ZomeFnCall, HdkFnCall)),
 
-    /// A validation package was created locally and is reported back
-    /// to be added to the state
-    ReturnValidationPackage(
-        (
-            snowflake::ProcessUniqueId,
-            Result<ValidationPackage, HolochainError>,
-        ),
-    ),
+    /// Let the State track that an HDK function called by a zome call has returned
+    TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
 
     /// No-op, used to check if an action channel is still open
     Ping,

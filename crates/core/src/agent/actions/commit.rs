@@ -54,10 +54,12 @@ impl Future for CommitFuture {
         if let Some(state) = self.context.try_state() {
             match state.agent().actions().get(&self.action) {
                 Some(r) => match r.response() {
-                    AgentActionResponse::Commit(Ok(ref address)) => Poll::Ready(Ok(address.clone())),
+                    AgentActionResponse::Commit(Ok(ref address)) => {
+                        Poll::Ready(Ok(address.clone()))
+                    }
                     AgentActionResponse::Commit(Err(ref error)) => Poll::Ready(Err(error.clone())),
                     _ => unreachable!(),
-                }
+                },
                 None => Poll::Pending,
             }
         } else {

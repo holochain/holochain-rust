@@ -28,8 +28,7 @@ use holochain_persistence_api::{
 };
 
 use crate::dht::dht_store::DhtStoreSnapshot;
-use std::{convert::TryInto, sync::Arc};
-use std::time::SystemTime;
+use std::{convert::TryInto, sync::Arc, time::SystemTime};
 
 pub const ACTION_PRUNE_MS: u64 = 3000;
 

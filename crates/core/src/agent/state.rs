@@ -8,8 +8,9 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent, Conte
 
 use crate::{
     content_store::{AddContent, GetContent},
-    state::StateWrapper,
+    state::{ActionResponse, StateWrapper, ACTION_PRUNE_MS},
 };
+use bitflags::_core::time::Duration;
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -23,11 +24,9 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use im::HashMap;
 use serde_json;
 use std::{convert::TryFrom, ops::Deref, sync::Arc, time::SystemTime};
-use im::HashMap;
-use crate::state::{ActionResponse, ACTION_PRUNE_MS};
-use bitflags::_core::time::Duration;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -288,16 +287,13 @@ fn reduce_commit_entry(
         Ok(address)
     });
 
-    agent_state
-        .actions
-        .insert(action_wrapper.clone(), Response::from(AgentActionResponse::Commit(result)));
+    agent_state.actions.insert(
+        action_wrapper.clone(),
+        Response::from(AgentActionResponse::Commit(result)),
+    );
 }
 
-fn reduce_prune(
-    agent_state: &mut AgentState,
-    _root_state: &State,
-    action_wrapper: &ActionWrapper,
-) {
+fn reduce_prune(agent_state: &mut AgentState, _root_state: &State, action_wrapper: &ActionWrapper) {
     assert_eq!(action_wrapper.action(), &Action::Prune);
 
     agent_state
@@ -306,7 +302,7 @@ fn reduce_prune(
         .filter_map(|(action, response)| {
             if let Ok(elapsed) = response.created_at.elapsed() {
                 if elapsed > Duration::from_millis(ACTION_PRUNE_MS) {
-                    return Some(action)
+                    return Some(action);
                 }
             }
             None
@@ -318,7 +314,6 @@ fn reduce_prune(
             agent_state.actions.remove(&action);
         });
 }
-
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
@@ -361,8 +356,8 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::AddressableContent;
-    use serde_json;
     use im::HashMap;
+    use serde_json;
     use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
@@ -404,10 +399,7 @@ pub mod tests {
         reduce_commit_entry(&mut agent_state, &state, &action_wrapper);
 
         let response = agent_state.actions().get(&action_wrapper).unwrap().clone();
-        assert_eq!(
-            response.response(),
-            &test_action_response_commit(),
-        );
+        assert_eq!(response.response(), &test_action_response_commit(),);
     }
 
     #[test]
@@ -451,7 +443,9 @@ pub mod tests {
                 "{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}",
                 expected_entry_address()
             )),
-            JsonString::from(AgentActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
+            JsonString::from(AgentActionResponse::GetLinks(Ok(vec![
+                test_entry().address()
+            ]))),
         );
         assert_eq!(
             JsonString::from_json("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),

@@ -48,7 +48,9 @@ mod tests {
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let mut instance = Instance::new(context.clone());
-        let context = instance.initialize(Some(dna.clone()), context.clone()).unwrap();
+        let context = instance
+            .initialize(Some(dna.clone()), context.clone())
+            .unwrap();
 
         let custom_direct_message = DirectMessage::Custom(CustomDirectMessage {
             zome: String::from("test"),

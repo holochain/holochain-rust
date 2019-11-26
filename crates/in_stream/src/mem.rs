@@ -5,6 +5,9 @@ use std::{
 };
 use url2::prelude::*;
 
+const SCHEME: &'static str = "mem";
+const PORT: u16 = 4242;
+
 /// bind to a virtual in-process ipc "interface"
 #[derive(Debug)]
 pub struct InStreamListenerMem {
@@ -95,7 +98,7 @@ impl InStreamPartial for InStreamPartialMem {
     type ConnectConfig = MemConnectConfig;
 
     /// we want a url like mem://
-    const URL_SCHEME: &'static str = "mem";
+    const URL_SCHEME: &'static str = SCHEME;
 
     fn with_stream(stream: Self::Stream) -> Result<Self> {
         Ok(Self(Some(stream)))
@@ -144,8 +147,8 @@ impl InStreamMem {
 impl Read for InStreamMem {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         let mut disconnected = false;
-        loop {
-            // first, drain everything from our channel
+        for _ in 0..100 {
+            // first, drain up to 100 non-blocking items from our channel
             match self.recv.try_recv() {
                 Ok(mut data) => {
                     self.recv_buf.append(&mut data);
@@ -201,7 +204,8 @@ pub mod in_stream_mem {
     /// create a unique url for binding an InStreamListenerMem instance
     pub fn random_url(prefix: &str) -> Url2 {
         Url2::parse(&format!(
-            "mem://{}-{}",
+            "{}://{}-{}",
+            SCHEME,
             prefix,
             nanoid::simple().replace("_", "-").replace("~", "+"),
         ))
@@ -236,18 +240,18 @@ impl MemManager {
 
     /// manage binding a new MemListener interface
     fn bind(&mut self, url: &Url2) -> Result<InStreamListenerMem> {
-        if "mem" != url.scheme() {
+        if SCHEME != url.scheme() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
-                "mem bind: url scheme must be mem",
+                format!("mem bind: url scheme must be '{}'", SCHEME),
             ));
         }
         match url.port() {
-            None | Some(0) | Some(4242) => (),
+            None | Some(0) | Some(PORT) => (),
             _ => {
                 return Err(Error::new(
                     ErrorKind::InvalidInput,
-                    "mem bind: url port must be None, 0, or 4242",
+                    format!("mem bind: url port must be None, 0, or {}", PORT),
                 ));
             }
         }
@@ -257,7 +261,12 @@ impl MemManager {
                 "mem bind: host_str must be set",
             ));
         }
-        let new_url = Url2::parse(&format!("mem://{}:4242", url.host_str().unwrap(),));
+        let new_url = Url2::parse(&format!(
+            "{}://{}:{}",
+            SCHEME,
+            url.host_str().unwrap(),
+            PORT
+        ));
         match self.listeners.entry(new_url.clone()) {
             Entry::Occupied(_) => Err(ErrorKind::AddrInUse.into()),
             Entry::Vacant(e) => {
@@ -276,8 +285,8 @@ impl MemManager {
 
     /// connect to an existing MemListener interface
     fn connect(&mut self, url: &Url2) -> Result<InStreamMem> {
-        let url = if url.scheme() != "mem" || url.host_str().is_none() {
-            Url2::parse(&format!("mem://{}", url,))
+        let url = if url.scheme() != SCHEME || url.host_str().is_none() {
+            Url2::parse(&format!("{}://{}", SCHEME, url))
         } else {
             url.clone()
         };

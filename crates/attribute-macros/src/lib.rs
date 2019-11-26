@@ -26,7 +26,7 @@ pub fn latency(args: TokenStream, input_function: TokenStream) -> TokenStream {
     let input_function_cloned = input_function.clone();
     let mut function = parse_macro_input!(input_function_cloned as ItemFn);
 
-    let metric_name = format!("{}.latency", &function.sig.ident.to_string());
+    let metric_name = &format!("{}.latency", &function.sig.ident.to_string());
 
     // Boiler plate ...start
     let mut move_self = None;
@@ -73,16 +73,17 @@ pub fn latency(args: TokenStream, input_function: TokenStream) -> TokenStream {
                 let #arg_pat = #arg_val;
             )*
 
+            use holochain_metrics::prelude::*;
             let t = ::std::time::SystemTime::now();
             #body
             let latency = t
                 .elapsed()
                 .expect("Fail to elapsed time")
                 .as_millis();
-            let metric = $crate::Metric::new(#metric_name.as_str(), latency as f64);
+            let metric = Metric::new(#metric_name, latency as f64);
 
-            // How to instantiate the publisher at this point ?
-            // #publisher.write().unwrap().publish(&metric);
+            // Use a lazily instantiated `LoggerMetricPublisher`
+            PUBLISHER.write().unwrap().publish(&metric);
 
         })();
         __result

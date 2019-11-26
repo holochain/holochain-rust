@@ -23,3 +23,11 @@ pub mod stats;
 pub use cloudwatch::*;
 pub use config::*;
 pub use metrics::*;
+
+pub mod prelude {
+    pub use crate::{
+        logger::LoggerMetricPublisher,
+        metrics::{Metric, MetricPublisher, PUBLISHER},
+    };
+    pub use attribute_macros::*;
+}

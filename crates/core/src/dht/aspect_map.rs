@@ -1,8 +1,8 @@
 use crate::holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::network::entry_aspect::EntryAspect;
+use im::{HashMap, HashSet};
 use lib3h_protocol::types::{AspectHash, EntryHash};
 use std::collections::HashMap as StdHashMap;
-use im::{HashMap, HashSet};
 pub type AspectSet = HashSet<AspectHash>;
 
 pub type AspectMapBare = HashMap<EntryHash, AspectSet>;
@@ -144,8 +144,8 @@ impl From<&HashSet<(EntryHash, AspectHash)>> for AspectMap {
 #[cfg(test)]
 mod tests {
 
-    use im::hashset;
     use super::*;
+    use im::hashset;
     use sim1h::aspect::fixture::content_aspect_fresh;
 
     #[test]

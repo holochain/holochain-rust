@@ -9,12 +9,12 @@ use crate::{
 };
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use im::HashSet;
 use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
 use std::sync::Arc;
-use im::HashSet;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     context.clone().spawn_task(move || {

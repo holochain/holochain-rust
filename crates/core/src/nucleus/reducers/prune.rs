@@ -28,5 +28,6 @@ pub fn reduce_prune(
         .into_iter()
         .for_each(|action| {
             nucleus_state.zome_call_results.remove(&action);
+            nucleus_state.hdk_function_calls.remove(&action);
         });
 }

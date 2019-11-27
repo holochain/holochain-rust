@@ -48,8 +48,6 @@ use futures::executor::ThreadPool;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
-//const NUM_WORKER_THREADS: usize = 20;
-
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
 impl P2pNetworkWrapper {

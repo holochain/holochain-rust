@@ -38,16 +38,19 @@ impl Future for PublishFuture {
         if let Some(err) = self.context.action_channel_error("PublishFuture") {
             return Poll::Ready(Err(err));
         }
+
+        //
+        // TODO: connect the waker to state updates for performance reasons
+        // See: https://github.com/holochain/holochain-rust/issues/314
+        //
+        cx.waker().clone().wake();
+
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
                 return Poll::Ready(Err(error));
             }
-            //
-            // TODO: connect the waker to state updates for performance reasons
-            // See: https://github.com/holochain/holochain-rust/issues/314
-            //
-            cx.waker().clone().wake();
+
             match state.actions().get(&self.action) {
                 Some(r) => match r.response() {
                     NetworkActionResponse::Publish(Ok(address)) => {

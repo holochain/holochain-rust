@@ -17,7 +17,8 @@ use lib3h_protocol::{
 use std::sync::Arc;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
-    context.clone().spawn_task(move || {
+    let c = context.clone();
+    let closure = async move || {
         let address_map = create_authoring_map(context.clone());
 
         let action = Action::RespondAuthoringList(EntryListData {
@@ -27,7 +28,10 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
             address_map: address_map.into(),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
-    });
+    };
+
+    let future = closure();
+    c.spawn_task(future);
 }
 
 fn create_authoring_map(context: Arc<Context>) -> AspectMap {
@@ -132,7 +136,8 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
 }
 
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
-    context.clone().spawn_task(move || {
+    let c = context.clone();
+    let closure = async move || {
         let state = context
             .state()
             .expect("No state present when trying to respond with gossip list");
@@ -147,7 +152,9 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
             address_map: address_map.into(),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
-    });
+    };
+    let future = closure();
+    c.spawn_task(future);
 }
 
 #[cfg(test)]

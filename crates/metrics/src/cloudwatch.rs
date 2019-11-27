@@ -17,7 +17,7 @@ use structopt::StructOpt;
 
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 
-const DEFAULT_REGION: Region = Region::EuCentral1;
+pub const DEFAULT_REGION: Region = Region::EuCentral1;
 
 impl TryFrom<ResultField> for Metric {
     type Error = ParseError;
@@ -183,11 +183,15 @@ impl CloudWatchLogger {
     }
 
     pub fn default_log_group() -> String {
-        "holochain".to_string()
+        "/aws/ec2/holochain/performance/".to_string()
     }
 
     pub fn default_start_time() -> i64 {
         UNIX_EPOCH.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64
+    }
+
+    pub fn default_assume_role_arn() -> String {
+        FINAL_EXAM_NODE_ROLE.to_string()
     }
 
     pub fn default_end_time() -> i64 {
@@ -218,6 +222,22 @@ impl CloudWatchLogger {
         }
     }
 
+    pub fn ensure_log_group(&self) {
+        if let Some(log_group_name) = &self.log_group_name {
+            let log_group_request = CreateLogGroupRequest {
+                log_group_name: log_group_name.clone(),
+                ..Default::default()
+            };
+            // TODO Check if log group already exists or set them up a priori
+            self.client
+                .create_log_group(log_group_request)
+                .sync()
+                .unwrap_or_else(|e| {
+                    debug!("Could not create log group- maybe already created: {:?}", e)
+                });
+        }
+    }
+
     pub fn new<P: rusoto_credential::ProvideAwsCredentials + Sync + Send + 'static>(
         log_stream_name: Option<String>,
         log_group_name: Option<String>,
@@ -233,20 +253,6 @@ impl CloudWatchLogger {
             region.clone(),
         );
 
-        if let Some(log_group_name) = &log_group_name {
-            let log_group_request = CreateLogGroupRequest {
-                log_group_name: log_group_name.clone(),
-                ..Default::default()
-            };
-            // TODO Check if log group already exists or set them up a priori
-            client
-                .create_log_group(log_group_request)
-                .sync()
-                .unwrap_or_else(|e| {
-                    debug!("Could not create log group- maybe already created: {:?}", e)
-                });
-        }
-
         let mut log_group_name = log_group_name;
         if let Some(log_stream_name) = &log_stream_name {
             let log_group_name2 = log_group_name.unwrap_or_default();
@@ -256,6 +262,7 @@ impl CloudWatchLogger {
             };
 
             log_group_name = Some(log_group_name2);
+            // TODO check if log stream already exists
             client.create_log_stream(log_stream_request).sync().unwrap();
         }
 
@@ -303,20 +310,19 @@ impl Default for CloudWatchLogger {
     fn default() -> Self {
         let default_log_stream = Self::default_log_stream();
         let default_log_group = Self::default_log_group();
-        let provider = assume_role(&DEFAULT_REGION);
         CloudWatchLogger::new(
             Some(default_log_stream),
             Some(default_log_group),
-            provider,
+            rusoto_credential::InstanceMetadataProvider::new(),
             &DEFAULT_REGION,
         )
     }
 }
 
-const DEFAULT_ASSUME_ROLE_ARN: &str =
+pub const FINAL_EXAM_NODE_ROLE: &str =
     "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
 
-pub fn assume_role(region: &Region) -> StsAssumeRoleSessionCredentialsProvider {
+pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCredentialsProvider {
     let sts = StsClient::new_with(
         rusoto_core::request::HttpClient::new().unwrap(),
         rusoto_credential::InstanceMetadataProvider::new(),
@@ -325,7 +331,7 @@ pub fn assume_role(region: &Region) -> StsAssumeRoleSessionCredentialsProvider {
 
     let provider = StsAssumeRoleSessionCredentialsProvider::new(
         sts,
-        DEFAULT_ASSUME_ROLE_ARN.to_owned(),
+        role_arn.to_owned(),
         format!(
             "hc-metrics-{}",
             snowflake::ProcessUniqueId::new().to_string()

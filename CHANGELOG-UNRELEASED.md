@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Exchanged [vanilla thread-pool](https://docs.rs/threadpool/1.7.1/threadpool/) with the futures executor thread-pool [from the futures crate](https://docs.rs/futures/0.3.1/futures/executor/index.html). This enables M:N Future:Thread execution which is much less wasteful than having a thread per future. Number of threads in the pool is kept at the default (of that crate) of number of CPUs. [#1915](https://github.com/holochain/holochain-rust/pull/1915) 
+- Replace naive timeout implementation (for network queries / direct messages) that uses a thread per timeout with a scheduled job that polls the State and sends timeout actions when needed (reduces number of used threads and thus memory footprint) [#1916](https://github.com/holochain/holochain-rust/pull/1916).
+
 ### Deprecated
 
 ### Removed

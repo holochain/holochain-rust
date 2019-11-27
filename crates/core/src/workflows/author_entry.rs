@@ -45,7 +45,7 @@ pub async fn author_entry<'a>(
     }
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = build_validation_package(&entry, context.clone(), provenances).await?;
+    let validation_package = build_validation_package(&entry, context.clone(), provenances)?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,

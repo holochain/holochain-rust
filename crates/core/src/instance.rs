@@ -37,9 +37,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use threadpool::ThreadPool;
 
-const HOLDING_WORKFLOW_THREADS: usize = 10;
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
@@ -280,7 +278,6 @@ impl Instance {
     fn start_holding_loop(&mut self, context: Arc<Context>) {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch_holding = Some(kill_sender);
-        let threadpool = ThreadPool::new(HOLDING_WORKFLOW_THREADS);
         thread::Builder::new()
             .name(format!(
                 "holding_loop/{}",
@@ -304,10 +301,10 @@ impl Instance {
                                 context.clone(),
                             ));
 
-                            let context = context.clone();
+                            let c = context.clone();
                             let pending = pending.clone();
-                            threadpool.execute(move || {
-                                match run_holding_workflow(pending.clone(), context.clone()) {
+                            let closure = async move || {
+                                match run_holding_workflow(pending.clone(), c.clone()).await {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
@@ -325,23 +322,24 @@ impl Instance {
                                             delay = RETRY_VALIDATION_DURATION_MAX
                                         }
 
-                                        context.block_on(queue_holding_workflow(
+                                        queue_holding_workflow(
                                             Arc::new(pending.same()),
                                             Some(delay),
-                                            context.clone(),
-                                        ))
+                                            c.clone(),
+                                        )
+                                        .await
                                     }
                                     Err(e) => log_error!(
-                                        context,
+                                        c,
                                         "Error running holding workflow for {:?}: {:?}",
                                         pending,
                                         e,
                                     ),
-                                    Ok(()) => {
-                                        log_info!(context, "Successfully processed: {:?}", pending)
-                                    }
+                                    Ok(()) => log_info!(c, "Successfully processed: {:?}", pending),
                                 }
-                            });
+                            };
+                            let future = closure();
+                            context.spawn_task(future);
                         } else {
                             break;
                         }

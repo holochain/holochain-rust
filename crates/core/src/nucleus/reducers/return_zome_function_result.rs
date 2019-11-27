@@ -14,8 +14,6 @@ pub fn reduce_return_zome_function_result(
 ) {
     let action = action_wrapper.action();
     let zome_fn_response = unwrap_to!(action => Action::ReturnZomeFunctionResult);
-    // @TODO store the action and result directly
-    // @see https://github.com/holochain/holochain-rust/issues/198
     state.zome_call_results.insert(
         zome_fn_response.call(),
         (zome_fn_response.result(), SystemTime::now()),

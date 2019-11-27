@@ -1,17 +1,11 @@
 use crate::{
-    context::Context,
-    entry::CanPublish,
-    network::{
-        actions::query::{query, QueryMethod},
-        entry_with_header::EntryWithHeader,
-    },
+    context::Context, entry::CanPublish, network::entry_with_header::EntryWithHeader,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
     error::HolochainError,
-    network::query::NetworkQueryResult,
     time::Timeout,
     validation::{ValidationPackage, ValidationPackageDefinition},
 };
@@ -21,7 +15,7 @@ use std::sync::Arc;
 const GET_TIMEOUT_MS: usize = 10000;
 
 async fn all_chain_headers_before_header_dht(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     header: &ChainHeader,
 ) -> Result<Vec<ChainHeader>, HolochainError> {
     let mut current_header = header.clone();
@@ -29,26 +23,24 @@ async fn all_chain_headers_before_header_dht(
 
     while let Some(next_header_addr) = current_header.link() {
         log_debug!(context, "About to try and get header: {}", next_header_addr);
-        let get_entry_result = query(
-            context.clone(),
-            QueryMethod::Entry(next_header_addr.clone()),
-            Timeout::new(GET_TIMEOUT_MS),
-        )
-        .await;
 
-        if let Ok(NetworkQueryResult::Entry(Some(EntryWithMetaAndHeader {
+        let timeout = Timeout::new(GET_TIMEOUT_MS);
+        let get_entry_result =
+            get_entry_with_meta_workflow(&context, &next_header_addr, &timeout).await?;
+
+        if let Some(EntryWithMetaAndHeader {
             entry_with_meta:
                 EntryWithMeta {
                     entry: Entry::ChainHeader(chain_header),
                     ..
                 },
             ..
-        }))) = get_entry_result
+        }) = get_entry_result
         {
             headers.push(chain_header.clone());
             current_header = chain_header;
         } else {
-            log_debug!(context, "When building validation package from DHT, Could not retrieve a header entry at address: {:?}", next_header_addr);
+            log_debug!(context, "When building validation package from DHT, Could not retrieve a header entry at address: {:?}. Got {:?}", next_header_addr, get_entry_result);
             return Err(HolochainError::ErrorGeneric(
                 format!("When building validation package from DHT, Could not retrieve a header entry at address: {:?}", next_header_addr))
             );
@@ -58,22 +50,23 @@ async fn all_chain_headers_before_header_dht(
 }
 
 async fn public_chain_entries_from_headers_dht(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     headers: &[ChainHeader],
 ) -> Result<Vec<Entry>, HolochainError> {
     let public_headers = headers
         .iter()
-        .filter(|ref chain_header| chain_header.entry_type().can_publish(context))
+        .filter(|ref chain_header| chain_header.entry_type().can_publish(&context))
         .collect::<Vec<_>>();
     let mut entries = Vec::new();
     for header in public_headers {
         let timeout = Timeout::new(GET_TIMEOUT_MS);
         let get_entry_result =
-            get_entry_with_meta_workflow(&context, &header.entry_address(), &timeout).await;
-        if let Ok(Some(EntryWithMetaAndHeader {
+            get_entry_with_meta_workflow(&context, &header.entry_address(), &timeout).await?;
+
+        if let Some(EntryWithMetaAndHeader {
             entry_with_meta: EntryWithMeta { entry, .. },
             ..
-        })) = get_entry_result
+        }) = get_entry_result
         {
             entries.push(entry.clone());
         } else {
@@ -99,7 +92,7 @@ pub(crate) async fn try_make_validation_package_dht(
 
     log_debug!(context, "Retrieving chain headers...");
 
-    let chain_headers = all_chain_headers_before_header_dht(&context, &entry_header).await?;
+    let chain_headers = all_chain_headers_before_header_dht(context.clone(), &entry_header).await?;
 
     log_debug!(context, "Chain headers obtained successfully");
 
@@ -111,7 +104,7 @@ pub(crate) async fn try_make_validation_package_dht(
         }
         ValidationPackageDefinition::ChainEntries => {
             package.source_chain_entries =
-                Some(public_chain_entries_from_headers_dht(&context, &chain_headers).await?);
+                Some(public_chain_entries_from_headers_dht(context.clone(), &chain_headers).await?);
         }
         ValidationPackageDefinition::ChainHeaders => {
             package.source_chain_headers = Some(chain_headers)
@@ -119,7 +112,7 @@ pub(crate) async fn try_make_validation_package_dht(
         ValidationPackageDefinition::ChainFull => {
             package.source_chain_headers = Some(chain_headers.clone());
             package.source_chain_entries =
-                Some(public_chain_entries_from_headers_dht(&context, &chain_headers).await?);
+                Some(public_chain_entries_from_headers_dht(context.clone(), &chain_headers).await?);
         }
         ValidationPackageDefinition::Custom(string) => package.custom = Some(string.to_string()),
     };
@@ -163,7 +156,10 @@ pub mod tests {
 
         // reconstruct from published headers
         let reconstructed = context
-            .block_on(all_chain_headers_before_header_dht(&context, &top_header))
+            .block_on(all_chain_headers_before_header_dht(
+                context.clone(),
+                &top_header,
+            ))
             .expect("Could not get headers from DHT");
 
         assert_eq!(local_chain_headers.len(), 2);

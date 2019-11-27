@@ -1,9 +1,10 @@
 use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
-    network::actions::initialize_network::initialize_network,
+    network::actions::{
+        initialize_network::initialize_network, publish_header_entry::publish_header_entry,
+    },
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
-    network::actions::publish_header_entry::publish_header_entry,
 };
 use holochain_core_types::{
     dna::Dna,
@@ -76,9 +77,7 @@ pub async fn initialize(
             "dna/initialize: publishing headers of initial chain entries...",
         );
 
-        for header in context.state().unwrap()
-            .agent()
-            .iter_chain() {
+        for header in context.state().unwrap().agent().iter_chain() {
             publish_header_entry(header.entry_address().clone(), &context).await?;
         }
 
@@ -87,6 +86,6 @@ pub async fn initialize(
             "dna/initialize: initial chain entry headers published!",
         );
     }
-    
+
     Ok(instance_context)
 }

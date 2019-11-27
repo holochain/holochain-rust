@@ -2,6 +2,7 @@ use crate::{
     context::Context,
     entry::CanPublish,
     network::{
+        actions::query::{query, QueryMethod},
         entry_with_header::EntryWithHeader,
     },
     workflows::get_entry_result::get_entry_with_meta_workflow,
@@ -10,6 +11,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{Entry, EntryWithMeta, EntryWithMetaAndHeader},
     error::HolochainError,
+    network::query::NetworkQueryResult,
     time::Timeout,
     validation::{ValidationPackage, ValidationPackageDefinition},
 };
@@ -26,25 +28,27 @@ async fn all_chain_headers_before_header_dht(
     let mut headers = Vec::new();
 
     while let Some(next_header_addr) = current_header.link() {
-        let timeout = Timeout::new(GET_TIMEOUT_MS);
-        let get_entry_result = get_entry_with_meta_workflow(
-            &context,
-            &next_header_addr,
-            &timeout,
+        log_debug!(context, "About to try and get header: {}", next_header_addr);
+        let get_entry_result = query(
+            context.clone(),
+            QueryMethod::Entry(next_header_addr.clone()),
+            Timeout::new(GET_TIMEOUT_MS),
         )
         .await;
-        if let Ok(Some(EntryWithMetaAndHeader {
+
+        if let Ok(NetworkQueryResult::Entry(Some(EntryWithMetaAndHeader {
             entry_with_meta:
                 EntryWithMeta {
                     entry: Entry::ChainHeader(chain_header),
                     ..
                 },
             ..
-        })) = get_entry_result
+        }))) = get_entry_result
         {
             headers.push(chain_header.clone());
             current_header = chain_header;
         } else {
+            log_debug!(context, "When building validation package from DHT, Could not retrieve a header entry at address: {:?}", next_header_addr);
             return Err(HolochainError::ErrorGeneric(
                 format!("When building validation package from DHT, Could not retrieve a header entry at address: {:?}", next_header_addr))
             );
@@ -64,12 +68,8 @@ async fn public_chain_entries_from_headers_dht(
     let mut entries = Vec::new();
     for header in public_headers {
         let timeout = Timeout::new(GET_TIMEOUT_MS);
-        let get_entry_result = get_entry_with_meta_workflow(
-            &context,
-            &header.entry_address(),
-            &timeout,
-        )
-        .await;
+        let get_entry_result =
+            get_entry_with_meta_workflow(&context, &header.entry_address(), &timeout).await;
         if let Ok(Some(EntryWithMetaAndHeader {
             entry_with_meta: EntryWithMeta { entry, .. },
             ..
@@ -97,7 +97,11 @@ pub(crate) async fn try_make_validation_package_dht(
     );
     let entry_header = entry_with_header.header.clone();
 
+    log_debug!(context, "Retrieving chain headers...");
+
     let chain_headers = all_chain_headers_before_header_dht(&context, &entry_header).await?;
+
+    log_debug!(context, "Chain headers obtained successfully");
 
     let mut package = ValidationPackage::only_header(entry_header.clone());
 

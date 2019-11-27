@@ -23,11 +23,6 @@ fn tcp_url_to_socket_addr(url: &Url2) -> Result<std::net::SocketAddr> {
     }
 }
 
-/// a tcp listener allows you to receive tcp connections on a network interface
-#[derive(Shrinkwrap, Debug)]
-#[shrinkwrap(mutable)]
-pub struct InStreamListenerTcp(pub std::net::TcpListener);
-
 /// configuration options for the listener bind call
 pub struct TcpBindConfig {
     pub backlog: i32,
@@ -39,11 +34,13 @@ impl Default for TcpBindConfig {
     }
 }
 
-impl InStreamListener for InStreamListenerTcp {
-    type Partial = InStreamPartialTcp;
+#[derive(Debug)]
+pub struct InStreamListenerTcp(pub std::net::TcpListener);
+
+impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
+    type Stream = InStreamTcp;
     type BindConfig = TcpBindConfig;
 
-    /// bind to a network interface
     fn bind(url: &Url2, config: Self::BindConfig) -> Result<Self> {
         let addr = tcp_url_to_socket_addr(url)?;
         let listener = net2::TcpBuilder::new_v4()?
@@ -53,27 +50,16 @@ impl InStreamListener for InStreamListenerTcp {
         Ok(Self(listener))
     }
 
-    /// get the bound interface url
     fn binding(&self) -> Url2 {
         let local = self.0.local_addr().unwrap();
         Url2::parse(&format!("{}://{}:{}", SCHEME, local.ip(), local.port()))
     }
 
-    /// accept a connection from this listener
-    fn accept(&mut self) -> Result<<Self as InStreamListener>::Partial> {
+    fn accept(&mut self) -> Result<<Self as InStreamListener<&mut [u8], &[u8]>>::Stream> {
         let (stream, _addr) = self.0.accept()?;
         stream.set_nonblocking(true)?;
-        Ok(InStreamPartialTcp::with_stream(InStreamTcp(stream))?)
+        InStreamTcp::priv_new(stream, None)
     }
-}
-
-/// represents a partial tcp connection, there may still be handshaking to do
-#[derive(Debug)]
-pub struct InStreamPartialTcp {
-    stream: Option<InStreamTcp>,
-    addr: String,
-    is_connecting: bool,
-    connect_timeout: Option<std::time::Instant>,
 }
 
 /// configuration options for tcp connect
@@ -89,97 +75,135 @@ impl Default for TcpConnectConfig {
     }
 }
 
-impl InStreamPartial for InStreamPartialTcp {
-    type Stream = InStreamTcp;
-    type ConnectConfig = TcpConnectConfig;
+#[derive(Debug)]
+struct TcpConnectingData {
+    addr: std::net::SocketAddr,
+    connect_timeout: Option<std::time::Instant>,
+}
 
-    /// tcp streams expect urls like tcp://
-    const URL_SCHEME: &'static str = SCHEME;
+#[derive(Shrinkwrap, Debug)]
+#[shrinkwrap(mutable)]
+pub struct InStreamTcp {
+    #[shrinkwrap(main_field)]
+    pub stream: std::net::TcpStream,
+    connecting: Option<TcpConnectingData>,
+    write_buf: Vec<u8>,
+}
 
-    /// convert a full stream back into a partial one
-    fn with_stream(stream: Self::Stream) -> Result<Self> {
+impl InStreamTcp {
+    fn priv_new(
+        stream: std::net::TcpStream,
+        connecting: Option<TcpConnectingData>,
+    ) -> Result<Self> {
         Ok(Self {
-            stream: Some(stream),
-            addr: "".to_string(),
-            is_connecting: false,
-            connect_timeout: None,
+            stream,
+            connecting,
+            write_buf: Vec::new(),
         })
     }
 
-    /// establish a tcp connection to a remote listener
+    fn priv_process(&mut self) -> Result<()> {
+        if let Some(cdata) = &mut self.connecting {
+            if let Ok(_) = self.stream.connect(&cdata.addr) {
+                self.connecting = None;
+            } else {
+                if let Some(timeout) = cdata.connect_timeout {
+                    if std::time::Instant::now() >= timeout {
+                        return Err(ErrorKind::TimedOut.into());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn priv_write_pending(&mut self) -> Result<()> {
+        if self.connecting.is_some() {
+            return Ok(());
+        }
+        let written = self.stream.write(&self.write_buf)?;
+        assert_eq!(written, self.write_buf.drain(..written).count());
+        Ok(())
+    }
+}
+
+impl InStream<&mut [u8], &[u8]> for InStreamTcp {
+    type ConnectConfig = TcpConnectConfig;
+
+    /// tcp streams should use urls like tcp://
+    const URL_SCHEME: &'static str = SCHEME;
+
     fn connect(url: &Url2, config: Self::ConnectConfig) -> Result<Self> {
         let addr = tcp_url_to_socket_addr(url)?;
         let stream = net2::TcpBuilder::new_v4()?.to_tcp_stream()?;
         stream.set_nonblocking(true)?;
-        let is_connecting = match stream.connect(addr) {
-            Err(_) => true,
-            Ok(_) => false,
-        };
-        let connect_timeout = match config.connect_timeout_ms {
-            None => None,
-            Some(ms) => Some(
-                std::time::Instant::now()
-                    .checked_add(std::time::Duration::from_millis(ms))
-                    .unwrap(),
+        match stream.connect(addr) {
+            Err(_) => Self::priv_new(
+                stream,
+                Some(TcpConnectingData {
+                    addr,
+                    connect_timeout: match config.connect_timeout_ms {
+                        None => None,
+                        Some(ms) => Some(
+                            std::time::Instant::now()
+                                .checked_add(std::time::Duration::from_millis(ms))
+                                .unwrap(),
+                        ),
+                    },
+                }),
             ),
-        };
-        Ok(Self {
-            stream: Some(InStreamTcp(stream)),
-            addr: addr.to_string(),
-            is_connecting,
-            connect_timeout,
-        })
+            Ok(_) => Self::priv_new(stream, None),
+        }
     }
 
-    /// take a step attempting to finish any needed handshaking
-    /// will return a full stream if ready
-    fn process(&mut self) -> Result<Self::Stream> {
-        match &mut self.stream {
-            None => Err(Error::new(ErrorKind::NotFound, "raw stream is None")),
-            Some(stream) => {
-                if self.is_connecting {
-                    if let Ok(_) = stream.0.connect(&self.addr) {
-                        self.is_connecting = false;
-                    };
-                }
+    fn read(&mut self, data: &mut [u8]) -> Result<usize> {
+        self.priv_process()?;
+        if self.connecting.is_none() {
+            self.stream.read(data)
+        } else {
+            Err(Error::with_would_block())
+        }
+    }
 
-                if self.is_connecting {
-                    if let Some(timeout) = self.connect_timeout {
-                        if std::time::Instant::now() >= timeout {
-                            return Err(ErrorKind::TimedOut.into());
-                        }
-                    }
-                    Err(Error::with_would_block())
-                } else {
-                    Ok(std::mem::replace(&mut self.stream, None).unwrap())
+    fn write(&mut self, data: &[u8]) -> Result<usize> {
+        self.priv_process()?;
+        if self.connecting.is_none() {
+            if self.write_buf.is_empty() {
+                // in the 99% case we can just write without buffering
+                let written = self.stream.write(data)?;
+                if written < data.len() {
+                    self.write_buf.extend_from_slice(&data[written..]);
                 }
+                Ok(data.len())
+            } else {
+                // if we already have a buffer, append to it and
+                // try to write the whole thing
+                self.write_buf.extend_from_slice(data);
+                self.priv_write_pending()?;
+                Ok(data.len())
             }
+        } else {
+            self.write_buf.extend_from_slice(data);
+            Ok(data.len())
+        }
+    }
+
+    fn flush(&mut self) -> Result<()> {
+        loop {
+            self.priv_process()?;
+            if self.connecting.is_none() {
+                self.priv_write_pending()?;
+                self.stream.flush()?;
+            }
+            if self.write_buf.is_empty() {
+                return Ok(());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
     }
 }
 
-/// a tcp connection to a remote node
-#[derive(Shrinkwrap, Debug)]
-#[shrinkwrap(mutable)]
-pub struct InStreamTcp(pub std::net::TcpStream);
-
-impl InStream for InStreamTcp {}
-
-impl Read for InStreamTcp {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.0.read(buf)
-    }
-}
-
-impl Write for InStreamTcp {
-    fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        self.0.write(buf)
-    }
-
-    fn flush(&mut self) -> Result<()> {
-        self.0.flush()
-    }
-}
+impl InStreamStd<&mut [u8], &[u8]> for InStreamTcp {}
 
 #[cfg(test)]
 mod tests {
@@ -187,28 +211,72 @@ mod tests {
 
     #[test]
     fn tcp_works() {
-        let mut l =
-            InStreamListenerTcp::bind(&Url2::parse("tcp://127.0.0.1:0"), TcpBindConfig::default())
-                .unwrap();
-        println!("bound to: {}", l.binding());
+        let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
-        let mut c = InStreamPartialTcp::connect(&l.binding(), TcpConnectConfig::default()).unwrap();
+        let server_thread = std::thread::spawn(move || {
+            let mut listener = InStreamListenerTcp::bind(
+                &Url2::parse("tcp://127.0.0.1:0"),
+                TcpBindConfig::default(),
+            )
+            .unwrap();
+            println!("bound to: {}", listener.binding());
+            send_binding.send(listener.binding()).unwrap();
 
-        let mut srv = l.accept_blocking().unwrap().process_blocking().unwrap();
+            let mut srv = loop {
+                match listener.accept() {
+                    Ok(srv) => break srv,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            }
+            .into_std_stream();
 
-        let mut cli = c.process_blocking().unwrap();
+            srv.write(b"hello from server").unwrap();
+            srv.flush().unwrap();
+            srv.shutdown(std::net::Shutdown::Write).unwrap();
 
-        let mut buf = [0; 32];
+            let mut res = String::new();
+            loop {
+                match srv.read_to_string(&mut res) {
+                    Ok(_) => break,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            }
+            assert_eq!("hello from client", &res);
+        });
 
-        srv.write_all(b"hello from server").unwrap();
-        cli.write_all(b"hello from client").unwrap();
+        let client_thread = std::thread::spawn(move || {
+            let binding = recv_binding.recv().unwrap();
+            println!("connect to: {}", binding);
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+            let mut cli = InStreamTcp::connect(&binding, TcpConnectConfig::default())
+                .unwrap()
+                .into_std_stream();
 
-        assert_eq!(17, srv.read(&mut buf).unwrap());
-        assert_eq!("hello from client", &String::from_utf8_lossy(&buf[..17]));
-        assert_eq!(17, cli.read(&mut buf).unwrap());
-        assert_eq!("hello from server", &String::from_utf8_lossy(&buf[..17]));
+            cli.write(b"hello from client").unwrap();
+            cli.flush().unwrap();
+            cli.shutdown(std::net::Shutdown::Write).unwrap();
+
+            let mut res = String::new();
+            loop {
+                match cli.read_to_string(&mut res) {
+                    Ok(_) => break,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            }
+            assert_eq!("hello from server", &res);
+        });
+
+        server_thread.join().unwrap();
+        client_thread.join().unwrap();
 
         println!("done");
     }

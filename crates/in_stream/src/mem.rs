@@ -1,7 +1,7 @@
 use crate::*;
 use std::{
     collections::{hash_map::Entry, HashMap},
-    io::{Error, ErrorKind, Read, Result, Write},
+    io::{Error, ErrorKind, Result},
 };
 use url2::prelude::*;
 
@@ -42,8 +42,8 @@ impl Default for MemBindConfig {
     }
 }
 
-impl InStreamListener for InStreamListenerMem {
-    type Partial = InStreamPartialMem;
+impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerMem {
+    type Stream = InStreamMem;
     type BindConfig = MemBindConfig;
 
     fn bind(url: &Url2, _config: Self::BindConfig) -> Result<Self> {
@@ -54,7 +54,7 @@ impl InStreamListener for InStreamListenerMem {
         self.url.clone()
     }
 
-    fn accept(&mut self) -> Result<<Self as InStreamListener>::Partial> {
+    fn accept(&mut self) -> Result<<Self as InStreamListener<&mut [u8], &[u8]>>::Stream> {
         loop {
             // first, drain all pending connections from our recv channel
             match self.recv.try_recv() {
@@ -76,13 +76,10 @@ impl InStreamListener for InStreamListenerMem {
             return Err(Error::with_would_block());
         }
         // pull the next item off the queue
-        Ok(InStreamPartialMem(Some(self.accept_queue.remove(0))))
+
+        Ok(self.accept_queue.remove(0))
     }
 }
-
-/// a partly connected memory stream
-#[derive(Debug)]
-pub struct InStreamPartialMem(Option<InStreamMem>);
 
 /// memory stream specific connect config
 pub struct MemConnectConfig {}
@@ -93,71 +90,41 @@ impl Default for MemConnectConfig {
     }
 }
 
-impl InStreamPartial for InStreamPartialMem {
-    type Stream = InStreamMem;
-    type ConnectConfig = MemConnectConfig;
-
-    /// we want a url like mem://
-    const URL_SCHEME: &'static str = SCHEME;
-
-    fn with_stream(stream: Self::Stream) -> Result<Self> {
-        Ok(Self(Some(stream)))
-    }
-
-    fn connect(url: &Url2, _config: Self::ConnectConfig) -> Result<Self> {
-        Ok(Self(Some(get_mem_manager().connect(url)?)))
-    }
-
-    fn process(&mut self) -> Result<Self::Stream> {
-        match self.0.take() {
-            None => Err(Error::new(ErrorKind::NotFound, "raw stream is None")),
-            Some(stream) => Ok(stream),
-        }
-    }
-}
-
 /// a singleton memory transport
 /// could be used for unit testing or for in-process ipc
 #[derive(Debug)]
 pub struct InStreamMem {
     url: Url2,
-    send: crossbeam_channel::Sender<Vec<u8>>,
-    recv: crossbeam_channel::Receiver<Vec<u8>>,
+    send: Option<crossbeam_channel::Sender<Vec<u8>>>,
+    recv: Option<crossbeam_channel::Receiver<Vec<u8>>>,
     recv_buf: Vec<u8>,
 }
 
-impl InStream for InStreamMem {}
+impl InStream<&mut [u8], &[u8]> for InStreamMem {
+    type ConnectConfig = MemConnectConfig;
 
-impl InStreamMem {
-    /// private constructor, you probably want `connect`
-    fn priv_new(
-        url: Url2,
-        send: crossbeam_channel::Sender<Vec<u8>>,
-        recv: crossbeam_channel::Receiver<Vec<u8>>,
-    ) -> Self {
-        Self {
-            url,
-            send,
-            recv,
-            recv_buf: Vec::new(),
-        }
+    /// we want a url like mem://
+    const URL_SCHEME: &'static str = SCHEME;
+
+    fn connect(url: &Url2, _config: Self::ConnectConfig) -> Result<Self> {
+        Ok(get_mem_manager().connect(url)?)
     }
-}
 
-impl Read for InStreamMem {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         let mut disconnected = false;
-        for _ in 0..100 {
-            // first, drain up to 100 non-blocking items from our channel
-            match self.recv.try_recv() {
-                Ok(mut data) => {
-                    self.recv_buf.append(&mut data);
-                }
-                Err(crossbeam_channel::TryRecvError::Empty) => break,
-                Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                    // if our channel is broken, we will consider it EOF
-                    disconnected = true;
-                    break;
+        if let Some(recv) = &mut self.recv {
+            for _ in 0..100 {
+                // first, drain up to 100 non-blocking items from our channel
+                match recv.try_recv() {
+                    Ok(mut data) => {
+                        self.recv_buf.append(&mut data);
+                    }
+                    Err(crossbeam_channel::TryRecvError::Empty) => break,
+                    Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                        // if our channel is broken, we will consider it EOF
+                        disconnected = true;
+                        break;
+                    }
                 }
             }
         }
@@ -180,18 +147,58 @@ impl Read for InStreamMem {
         buf[0..v.len()].copy_from_slice(&v);
         Ok(v.len())
     }
-}
 
-impl Write for InStreamMem {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        // if we're still connected, send data to our pair
-        match self.send.send(buf.to_vec()) {
-            Ok(_) => Ok(buf.len()),
-            Err(_) => Err(ErrorKind::NotConnected.into()),
+        match &mut self.send {
+            None => Err(ErrorKind::NotConnected.into()),
+            Some(send) => {
+                // if we're still connected, send data to our pair
+                match send.send(buf.to_vec()) {
+                    Ok(_) => Ok(buf.len()),
+                    Err(_) => Err(ErrorKind::NotConnected.into()),
+                }
+            }
         }
     }
 
     fn flush(&mut self) -> Result<()> {
+        if self.send.is_none() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+        Ok(())
+    }
+}
+
+impl InStreamStd<&mut [u8], &[u8]> for InStreamMem {}
+
+impl InStreamMem {
+    /// private constructor, you probably want `connect`
+    fn priv_new(
+        url: Url2,
+        send: crossbeam_channel::Sender<Vec<u8>>,
+        recv: crossbeam_channel::Receiver<Vec<u8>>,
+    ) -> Self {
+        Self {
+            url,
+            send: Some(send),
+            recv: Some(recv),
+            recv_buf: Vec::new(),
+        }
+    }
+
+    pub fn shutdown(&mut self, how: std::net::Shutdown) -> Result<()> {
+        match how {
+            std::net::Shutdown::Read => {
+                self.recv.take();
+            }
+            std::net::Shutdown::Write => {
+                self.send.take();
+            }
+            std::net::Shutdown::Both => {
+                self.recv.take();
+                self.send.take();
+            }
+        }
         Ok(())
     }
 }
@@ -330,27 +337,71 @@ mod tests {
 
     #[test]
     fn mem_works() {
-        let mut l =
-            InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default()).unwrap();
-        println!("bound to: {}", l.binding());
+        use std::io::{Read, Write};
 
-        let mut c = InStreamPartialMem::connect(&l.binding(), MemConnectConfig::default()).unwrap();
+        let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
-        let mut srv = l.accept_blocking().unwrap().process_blocking().unwrap();
+        let server_thread = std::thread::spawn(move || {
+            let mut listener =
+                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default()).unwrap();
+            println!("bound to: {}", listener.binding());
+            send_binding.send(listener.binding()).unwrap();
 
-        let mut cli = c.process_blocking().unwrap();
+            let mut srv = loop {
+                match listener.accept() {
+                    Ok(srv) => break srv,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            }
+            .into_std_stream();
 
-        let mut buf = [0; 32];
+            srv.write(b"hello from server").unwrap();
+            srv.flush().unwrap();
+            srv.shutdown(std::net::Shutdown::Write).unwrap();
 
-        srv.write_all(b"hello from server").unwrap();
-        cli.write_all(b"hello from client").unwrap();
+            let mut res = String::new();
+            loop {
+                match srv.read_to_string(&mut res) {
+                    Ok(_) => break,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            }
+            assert_eq!("hello from client", &res);
+        });
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        let client_thread = std::thread::spawn(move || {
+            let binding = recv_binding.recv().unwrap();
+            println!("connect to: {}", binding);
 
-        assert_eq!(17, srv.read(&mut buf).unwrap());
-        assert_eq!("hello from client", &String::from_utf8_lossy(&buf[..17]));
-        assert_eq!(17, cli.read(&mut buf).unwrap());
-        assert_eq!("hello from server", &String::from_utf8_lossy(&buf[..17]));
+            let mut cli = InStreamMem::connect(&binding, MemConnectConfig::default())
+                .unwrap()
+                .into_std_stream();
+
+            cli.write(b"hello from client").unwrap();
+            cli.flush().unwrap();
+            cli.shutdown(std::net::Shutdown::Write).unwrap();
+
+            let mut res = String::new();
+            loop {
+                match cli.read_to_string(&mut res) {
+                    Ok(_) => break,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            }
+            assert_eq!("hello from server", &res);
+        });
+
+        server_thread.join().unwrap();
+        client_thread.join().unwrap();
 
         println!("done");
     }

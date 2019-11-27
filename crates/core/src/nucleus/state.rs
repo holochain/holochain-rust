@@ -18,6 +18,7 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     convert::TryFrom,
     fmt,
+    time::SystemTime,
 };
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
@@ -106,10 +107,7 @@ pub struct NucleusState {
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
     pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
-
-    // @TODO eventually drop stale calls
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
+    pub zome_call_results: HashMap<ZomeFnCall, (Result<JsonString, HolochainError>, SystemTime)>,
 }
 
 impl NucleusState {
@@ -128,7 +126,10 @@ impl NucleusState {
         &self,
         zome_call: &ZomeFnCall,
     ) -> Option<Result<JsonString, HolochainError>> {
-        self.zome_call_results.get(zome_call).cloned()
+        self.zome_call_results
+            .get(zome_call)
+            .and_then(|(result, _time)| Some(result))
+            .cloned()
     }
 
     pub fn has_initialized(&self) -> bool {

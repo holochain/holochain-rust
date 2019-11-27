@@ -263,9 +263,15 @@ impl CloudWatchLogger {
 
             log_group_name = Some(log_group_name2);
             // TODO check if log stream already exists
-            client.create_log_stream(log_stream_request).sync().unwrap_or_else(|e|
-                debug!("Failed to create log stream, maybe it's already created: {:?}", e)
-            );
+            client
+                .create_log_stream(log_stream_request)
+                .sync()
+                .unwrap_or_else(|e| {
+                    debug!(
+                        "Failed to create log stream, maybe it's already created: {:?}",
+                        e
+                    )
+                });
         }
 
         Self {

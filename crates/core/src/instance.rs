@@ -304,6 +304,16 @@ impl Instance {
                             .expect("Couldn't get state in run_pending_validations")
                             .dht();
                         let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
+                        
+                        // TODO: TRACING: it would be ideal to be able to associate a tracing Span with each queued holding workflow.
+                        // To do this, we'd need to store a Span in each item of the DhtStore::queued_holding_workflows.
+                        // However, Span is not Clone, and the entire DhtStore needs to be Cloned.
+                        // So, the span has to be cut short here until we stop cloning the state.
+
+                        let root_span: ht::Span = context.tracer.span("[TRUNCATED] start_holding_loop (TODO)").tag(ht::Tag::new("pending_validation", format!("{:?}", maybe_holding_workflow))).start().into();
+                        let inner_span = root_span.follower("thread a8dnf8i");
+                        ht::push_root_span(root_span);
+                        
                         if let Some((pending, maybe_delay)) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
@@ -316,6 +326,7 @@ impl Instance {
                             let context = context.clone();
                             let pending = pending.clone();
                             threadpool.execute(move || {
+                                ht::push_root_span(inner_span);
                                 match run_holding_workflow(pending.clone(), context.clone()) {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:

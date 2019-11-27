@@ -165,6 +165,11 @@ pub fn reduce_queue_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
     let mut new_store = (*old_store).clone();
+
+    // TODO: TRACING: this is where we would include a Span, so that we can resume
+    // the trace when the workflow gets popped (see instance.rs), but we can't do that
+    // until we stop cloning the State, because Spans are not Cloneable.
+
     new_store.queue_holding_workflow(pending.clone());
     Some(new_store)
 }

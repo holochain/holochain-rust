@@ -10,11 +10,12 @@ use holochain_persistence_api::cas::content::Address;
 
 use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 
-use std::{pin::Pin, sync::Arc, thread};
+use std::{pin::Pin, sync::Arc};
 
 use snowflake::ProcessUniqueId;
 
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
+use std::time::SystemTime;
 
 /// FetchEntry Action Creator
 /// This is the network version of get_entry that makes the network module start
@@ -60,21 +61,13 @@ pub async fn query(
         }
     };
 
-    let entry = Action::Query((key.clone(), payload.clone()));
+    let entry = Action::Query((
+        key.clone(),
+        payload.clone(),
+        Some((SystemTime::now(), timeout.into())),
+    ));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
-
-    let key_inner = key.clone();
-    let context_inner = context.clone();
-    thread::Builder::new()
-        .name("query_timeout".into())
-        .spawn(move || {
-            thread::sleep(timeout.into());
-            let timeout_action = Action::QueryTimeout(key_inner);
-            let action_wrapper = ActionWrapper::new(timeout_action);
-            dispatch_action(context_inner.action_channel(), action_wrapper.clone());
-        })
-        .expect("Could not spawn thread for query timeout");
 
     QueryFuture {
         context: context.clone(),

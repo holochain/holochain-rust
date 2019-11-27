@@ -38,7 +38,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-//const HOLDING_WORKFLOW_THREADS: usize = 10;
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);

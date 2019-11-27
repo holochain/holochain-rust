@@ -8,10 +8,7 @@ use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use im::HashMap;
 use snowflake;
-use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 
 type Actions = HashMap<ActionWrapper, Response>;
 

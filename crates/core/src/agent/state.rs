@@ -23,9 +23,9 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use im::HashMap;
 use serde_json;
 use std::{convert::TryFrom, sync::Arc, time::SystemTime};
-use im::HashMap;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -315,8 +315,8 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::AddressableContent;
-    use serde_json;
     use im::HashMap;
+    use serde_json;
     use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state

@@ -12,18 +12,16 @@ use holochain_core_types::signature::Provenance;
 use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, vec::Vec};
 
-pub async fn respond_validation_package_request(
+pub fn respond_validation_package_request(
     to_agent_id: Address,
     msg_id: String,
     requested_entry_address: Address,
     context: Arc<Context>,
-    provenances: &Vec<Provenance>,
+    provenances: Vec<Provenance>,
 ) {
     let maybe_validation_package =
         match get_entry_from_agent_chain(&context, &requested_entry_address) {
-            Ok(Some(entry)) => build_validation_package(&entry, context.clone(), provenances)
-                .await
-                .ok(),
+            Ok(Some(entry)) => build_validation_package(&entry, context.clone(), &provenances).ok(),
             _ => None,
         };
 

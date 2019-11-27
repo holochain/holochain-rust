@@ -98,15 +98,16 @@ impl Future for QueryFuture {
             return Poll::Ready(Err(err));
         }
 
+        //
+        // TODO: connect the waker to state updates for performance reasons
+        // See: https://github.com/holochain/holochain-rust/issues/314
+        //
+        cx.waker().clone().wake();
+
         if let Some(state) = self.context.try_state() {
             if let Err(error) = state.network().initialized() {
                 return Poll::Ready(Err(error));
             }
-            //
-            // TODO: connect the waker to state updates for performance reasons
-            // See: https://github.com/holochain/holochain-rust/issues/314
-            //
-            cx.waker().clone().wake();
             match state.network().get_query_results.get(&self.key) {
                 Some(Some(result)) => Poll::Ready(result.clone()),
                 _ => Poll::Pending,

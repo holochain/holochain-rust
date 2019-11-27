@@ -8,11 +8,19 @@ use std::sync::Arc;
 #[serde(tag = "type")]
 pub enum MetricPublisherConfig {
     Logger,
-    CloudWatchLogs {
-        region: Option<rusoto_core::region::Region>,
-        log_group_name: Option<String>,
-        log_stream_name: Option<String>,
-    },
+    CloudWatchLogs(CloudWatchLogsConfig),
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct CloudWatchLogsConfig {
+    #[serde(default)]
+    pub region: Option<rusoto_core::region::Region>,
+    #[serde(default)]
+    pub log_group_name: Option<String>,
+    #[serde(default)]
+    pub log_stream_name: Option<String>,
+    #[serde(default)]
+    pub assume_role_arn: Option<String>,
 }
 
 impl Default for MetricPublisherConfig {
@@ -26,19 +34,28 @@ impl MetricPublisherConfig {
     pub fn create_metric_publisher(&self) -> Arc<RwLock<dyn MetricPublisher>> {
         let publisher: Arc<RwLock<dyn MetricPublisher>> = match self {
             Self::Logger => Arc::new(RwLock::new(LoggerMetricPublisher::new())),
-            Self::CloudWatchLogs {
+            Self::CloudWatchLogs(CloudWatchLogsConfig {
                 region,
                 log_group_name,
                 log_stream_name,
-            } => {
+                assume_role_arn,
+            }) => {
                 let region = region.clone().unwrap_or_default();
-                let provider = crate::cloudwatch::assume_role(&region);
-                Arc::new(RwLock::new(CloudWatchLogger::new(
-                    log_stream_name.clone(),
-                    log_group_name.clone(),
-                    provider,
-                    &region,
-                )))
+                match &assume_role_arn {
+                    Some(assume_role_arn) => Arc::new(RwLock::new(CloudWatchLogger::new(
+                        log_stream_name.clone(),
+                        log_group_name.clone(),
+                        crate::cloudwatch::assume_role(&region, &assume_role_arn),
+                        &region,
+                    ))),
+
+                    None => Arc::new(RwLock::new(CloudWatchLogger::new(
+                        log_stream_name.clone(),
+                        log_group_name.clone(),
+                        rusoto_credential::InstanceMetadataProvider::new(),
+                        &region,
+                    ))),
+                }
             }
         };
         publisher
@@ -51,10 +68,11 @@ impl MetricPublisherConfig {
 
     /// The default cloudwatch logger publisher configuration.
     pub fn default_cloudwatch_logs() -> Self {
-        Self::CloudWatchLogs {
-            region: Default::default(),
+        Self::CloudWatchLogs(CloudWatchLogsConfig {
+            region: Some(crate::cloudwatch::DEFAULT_REGION),
             log_group_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_group()),
             log_stream_name: Some(crate::cloudwatch::CloudWatchLogger::default_log_stream()),
-        }
+            assume_role_arn: None,
+        })
     }
 }

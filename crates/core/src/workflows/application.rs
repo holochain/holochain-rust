@@ -3,6 +3,7 @@ use crate::{
     instance::Instance,
     network::actions::initialize_network::initialize_network,
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
+    network::actions::publish_header_entry::publish_header_entry,
 };
 use holochain_core_types::{
     dna::Dna,
@@ -66,8 +67,26 @@ pub async fn initialize(
     initialize_network(&instance_context).await?;
 
     // 4. (first initialization only) Call the init callbacks in the zomes
+    //     and publish the headers of the initial chain entries
     if first_initialization {
         call_init(dna, &instance_context).await?;
+
+        log_debug!(
+            context,
+            "dna/initialize: publishing headers of initial chain entries...",
+        );
+
+        for header in context.state().unwrap()
+            .agent()
+            .iter_chain() {
+            publish_header_entry(header.entry_address().clone(), &context).await?;
+        }
+
+        log_debug!(
+            context,
+            "dna/initialize: initial chain entry headers published!",
+        );
     }
+    
     Ok(instance_context)
 }

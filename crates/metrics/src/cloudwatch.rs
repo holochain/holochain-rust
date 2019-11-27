@@ -274,8 +274,10 @@ impl CloudWatchLogger {
                 });
         }
 
-        debug!("cloudwatch logger instance created for log_stream {:?} and log_group {:?}",
-            log_stream_name, log_group_name);
+        debug!(
+            "cloudwatch logger instance created for log_stream {:?} and log_group {:?}",
+            log_stream_name, log_group_name
+        );
 
         Self {
             client,

@@ -57,6 +57,7 @@ pub struct CloudWatchLogger {
     pub log_stream_name: Option<String>,
     /// Set automatically when publishing log metrics
     pub sequence_token: Option<String>,
+    pub metrics_to_publish: Vec<Metric>,
 }
 
 #[derive(Clone, Debug, Default, StructOpt)]
@@ -219,6 +220,7 @@ impl CloudWatchLogger {
             log_stream_name: None,
             log_group_name: None,
             sequence_token: None,
+            metrics_to_publish: vec![],
         }
     }
 
@@ -284,22 +286,39 @@ impl CloudWatchLogger {
             log_stream_name: log_stream_name,
             log_group_name: log_group_name,
             sequence_token: None,
+            metrics_to_publish: vec![],
         }
     }
 }
 
+const PUBLISH_CHUNK_SIZE: usize = 100;
+
 impl MetricPublisher for CloudWatchLogger {
     fn publish(&mut self, metric: &Metric) {
-        let log_line: LogLine = metric.into();
-        let input_log_event = InputLogEvent {
-            message: format!("metrics.rs: {}", log_line.to_string()),
-            timestamp: std::time::SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as i64,
-        };
+        self.metrics_to_publish.push(metric.clone());
+
+        if self.metrics_to_publish.len() < PUBLISH_CHUNK_SIZE {
+            return;
+        }
+
+        let log_events = self
+            .metrics_to_publish
+            .drain(..)
+            .map(|metric| {
+                let log_line: LogLine = metric.into();
+                InputLogEvent {
+                    message: format!("metrics.rs: {}", log_line.to_string()),
+                    timestamp: std::time::SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis() as i64,
+                }
+            })
+            .into_iter()
+            .collect::<Vec<InputLogEvent>>();
+
         let put_log_events_request = PutLogEventsRequest {
-            log_events: vec![input_log_event],
+            log_events,
             log_group_name: self
                 .log_group_name
                 .clone()
@@ -310,11 +329,13 @@ impl MetricPublisher for CloudWatchLogger {
                 .unwrap_or_else(|| panic!("log_stream_name must be set")),
             sequence_token: self.sequence_token.clone(),
         };
+
         let result = self
             .client
             .put_log_events(put_log_events_request)
             .sync()
             .unwrap();
+
         self.sequence_token = result.next_sequence_token
     }
 }

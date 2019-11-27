@@ -12,7 +12,7 @@ use holochain_core_types::{
 
 use std::sync::Arc;
 
-const GET_TIMEOUT_MS: usize = 10000;
+const GET_TIMEOUT_MS: usize = 1000;
 
 async fn all_chain_headers_before_header_dht(
     context: Arc<Context>,
@@ -29,16 +29,22 @@ async fn all_chain_headers_before_header_dht(
         // this does not happen when running the tests below. Only when triggered as part of a
         // validate entry workflow
         let get_entry_result =
-            get_entry_with_meta_workflow(&context, &next_header_addr, &timeout).await?;
+            get_entry_with_meta_workflow(&context, &next_header_addr, &timeout).await;
 
-        if let Some(EntryWithMetaAndHeader {
+        log_debug!(
+            context,
+            "get_entry_workflow returned: {:?}",
+            get_entry_result
+        );
+
+        if let Ok(Some(EntryWithMetaAndHeader {
             entry_with_meta:
                 EntryWithMeta {
                     entry: Entry::ChainHeader(chain_header),
                     ..
                 },
             ..
-        }) = get_entry_result
+        })) = get_entry_result
         {
             headers.push(chain_header.clone());
             current_header = chain_header;

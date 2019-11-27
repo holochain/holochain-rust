@@ -53,7 +53,9 @@ module.exports = scenario => {
         const { alice, bob, carol } = await s.players({alice: one, bob: one, carol: one})
         // alice and bob start online
         await alice.spawn()
+        await s.consistency()
         await bob.spawn()
+        await s.consistency()
 
         // alice publishes the original entry. !This is an entry that requires full chain validation!
         const initialContent = "Holo world y'all"
@@ -73,6 +75,8 @@ module.exports = scenario => {
         t.ok(bob_result.Ok)
         t.equal(JSON.parse(bob_result.Ok.App[1]).content, initialContent)
         
+        await delay(10000)
+
         // alice then goes offline
         t.comment('waiting for alice to go offline')
         await alice.kill()
@@ -88,6 +92,8 @@ module.exports = scenario => {
         t.comment('Waiting for Carol to get all data via gossip')
         await s.consistency()
         t.comment('consistency has been reached')
+
+        await delay(10000)
 
         // Bob now go offline to ensure the following get_post uses carols local store only
         t.comment('waiting for Bob to go offline')

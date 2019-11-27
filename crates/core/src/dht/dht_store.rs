@@ -30,6 +30,8 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+type QueuedItem = (PendingValidation, Option<(SystemTime, Duration)>);
+
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard
 /// as well as the holding list, i.e. list of all entries held for the DHT.
@@ -42,8 +44,7 @@ pub struct DhtStore {
     /// All the entries that the network has told us to hold
     holding_list: Vec<Address>,
 
-    pub(crate) queued_holding_workflows:
-        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    queued_holding_workflows: VecDeque<QueuedItem>,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -64,7 +65,7 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_list: Vec<Address>,
-    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    queued_holding_workflows: VecDeque<QueuedItem>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
@@ -308,10 +309,23 @@ impl DhtStore {
             .any(|(current, _)| current == pending)
     }
 
-    pub(crate) fn queued_holding_workflows(
-        &self,
-    ) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
+    pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<QueuedItem> {
         &self.queued_holding_workflows
+    }
+
+    pub(crate) fn queue_holding_workflow(&mut self, v: QueuedItem) {
+        self.queued_holding_workflows.push_back(v);
+    }
+
+    // pub(crate) fn pop_next_holding_workflow(&mut self) -> Option<QueuedItem> {
+    //     self.queued_holding_workflows.pop_front()
+    // }
+
+    pub(crate) fn remove_holding_workflow(&mut self, item: &PendingValidation) -> Option<QueuedItem> {
+        self.queued_holding_workflows()
+            .iter()
+            .position(|(i, _)| i == item)
+            .and_then(|index| self.queued_holding_workflows.remove(index))
     }
 }
 

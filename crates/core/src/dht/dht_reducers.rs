@@ -165,9 +165,7 @@ pub fn reduce_queue_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    new_store
-        .queued_holding_workflows
-        .push_back(pending.clone());
+    new_store.queue_holding_workflow(pending.clone());
     Some(new_store)
 }
 
@@ -180,19 +178,7 @@ pub fn reduce_remove_queued_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let Some((front, _)) = new_store.queued_holding_workflows.front() {
-        if front == pending {
-            let _ = new_store.queued_holding_workflows.pop_front();
-        } else {
-            // The first item in the queue could be a delayed one which will result
-            // in the holding thread seeing another item as the next one.
-            // The holding thread will still try to pop that next item, so we need
-            // this else case where we just remove an item from some position inside the queue:
-            new_store
-                .queued_holding_workflows
-                .retain(|(item, _)| item != pending);
-        }
-    } else {
+    if let None = new_store.remove_holding_workflow(pending) {
         error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
     }
 

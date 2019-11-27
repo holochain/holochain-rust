@@ -55,16 +55,18 @@ impl Future for SendResponseFuture {
         if let Some(err) = self.context.action_channel_error("SendResponseFuture") {
             return Poll::Ready(Err(err));
         }
+
+        //
+        // TODO: connect the waker to state updates for performance reasons
+        // See: https://github.com/holochain/holochain-rust/issues/314
+        //
+        cx.waker().clone().wake();
+
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
                 return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));
             }
-            //
-            // TODO: connect the waker to state updates for performance reasons
-            // See: https://github.com/holochain/holochain-rust/issues/314
-            //
-            cx.waker().clone().wake();
             match state.custom_direct_message_replys.get(&self.id) {
                 Some(result) => Poll::Ready(result.clone()),
                 _ => Poll::Pending,

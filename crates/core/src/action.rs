@@ -147,10 +147,11 @@ pub enum Action {
     /// Note that the given address is that of the entry NOT the address of the header itself
     PublishHeaderEntry(Address),
 
-    ///Performs a Network Query Action based on the key and payload, used for links and Entries
-    Query((QueryKey, QueryPayload)),
+    /// Performs a Network Query Action based on the key and payload, used for links and Entries.
+    /// Includes the timeout information: system time of dispatch and duration until it timeouts.
+    Query((QueryKey, QueryPayload, Option<(SystemTime, Duration)>)),
 
-    ///Performs a Query Timeout Action which times out based the values given
+    ///Performs a Query Timeout Action which times out the query given by the key.
     QueryTimeout(QueryKey),
 
     /// Lets the network module respond to a Query request.
@@ -166,7 +167,8 @@ pub enum Action {
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
-    SendDirectMessage(DirectMessageData),
+    /// Includes the timeout information: system time of dispatch and duration until it timeouts.
+    SendDirectMessage((DirectMessageData, Option<(SystemTime, Duration)>)),
 
     /// Makes the direct message connection with the given ID timeout by adding an
     /// Err(HolochainError::Timeout) to NetworkState::custom_direct_message_replys.
@@ -317,6 +319,7 @@ pub mod tests {
                 id: String::from("test-id"),
             }),
             QueryPayload::Entry,
+            None,
         ))
     }
 
@@ -338,6 +341,7 @@ pub mod tests {
                 id: snowflake::ProcessUniqueId::new().to_string(),
             }),
             QueryPayload::Entry,
+            None,
         )))
     }
 

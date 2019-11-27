@@ -76,6 +76,9 @@ impl Instance {
             .every(10.seconds())
             .run(scheduled_jobs::create_state_dump_callback(context.clone()));
         scheduler
+            .every(1.second())
+            .run(scheduled_jobs::create_timeout_callback(context.clone()));
+        scheduler
             .every(5.seconds())
             .run(scheduled_jobs::create_state_pruning_callback(
                 context.clone(),

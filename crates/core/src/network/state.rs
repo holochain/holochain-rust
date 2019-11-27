@@ -8,6 +8,7 @@ use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use im::HashMap;
 use snowflake;
+use std::time::{Duration, SystemTime};
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
 
@@ -33,6 +34,7 @@ pub struct NetworkState {
 
     // Here are the results of every get action
     pub get_query_results: HashMap<QueryKey, GetResults>,
+    pub query_timeouts: HashMap<QueryKey, (SystemTime, Duration)>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -41,6 +43,7 @@ pub struct NetworkState {
     /// This stores every open (= waiting for response) node-to-node messages.
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
     pub direct_message_connections: HashMap<String, DirectMessage>,
+    pub direct_message_timeouts: HashMap<String, (SystemTime, Duration)>,
 
     pub custom_direct_message_replys: HashMap<String, Result<String, HolochainError>>,
 
@@ -61,8 +64,10 @@ impl NetworkState {
             dna_address: None,
             agent_id: None,
             get_query_results: HashMap::new(),
+            query_timeouts: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
+            direct_message_timeouts: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),
 
             id: snowflake::ProcessUniqueId::new(),

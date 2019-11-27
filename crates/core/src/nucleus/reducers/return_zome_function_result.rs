@@ -19,6 +19,7 @@ pub fn reduce_return_zome_function_result(
         (zome_fn_response.result(), SystemTime::now()),
     );
     state.running_zome_calls.remove(&zome_fn_response.call());
+    state.hdk_function_calls.remove(&zome_fn_response.call());
     if let Some(next_call) = state.queued_zome_calls.pop_front() {
         state.running_zome_calls.insert(next_call);
     }

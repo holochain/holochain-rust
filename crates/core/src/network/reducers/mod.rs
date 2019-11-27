@@ -3,6 +3,7 @@ pub mod handle_custom_send_response;
 pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;
+pub mod prune;
 pub mod publish;
 pub mod publish_header_entry;
 pub mod query;
@@ -24,6 +25,7 @@ use crate::{
             handle_get_result::reduce_handle_get_result,
             handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
+            prune::reduce_prune,
             publish::reduce_publish,
             publish_header_entry::reduce_publish_header_entry,
             query::{reduce_query, reduce_query_timeout},
@@ -60,6 +62,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::HandleQuery(_) => Some(reduce_handle_get_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
+        Action::Prune => Some(reduce_prune),
         Action::Publish(_) => Some(reduce_publish),
         Action::PublishHeaderEntry(_) => Some(reduce_publish_header_entry),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),

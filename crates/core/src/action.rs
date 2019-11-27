@@ -100,6 +100,9 @@ pub enum QueryPayload {
 #[serde(tag = "action_type", content = "data")]
 #[allow(clippy::large_enum_variant)]
 pub enum Action {
+    /// Get rid of stale information that we should drop to not have the state grow infinitely.
+    Prune,
+
     // ----------------
     // Agent actions:
     // ----------------

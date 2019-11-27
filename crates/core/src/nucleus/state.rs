@@ -15,12 +15,7 @@ use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{
-    collections::VecDeque,
-    convert::TryFrom,
-    fmt,
-    time::SystemTime,
-};
+use std::{collections::VecDeque, convert::TryFrom, fmt, time::SystemTime};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {

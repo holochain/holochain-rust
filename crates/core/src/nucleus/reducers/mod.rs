@@ -1,3 +1,4 @@
+pub mod clear_zome_function_call;
 pub mod init_application;
 pub mod prune;
 pub mod queue_zome_function_call;

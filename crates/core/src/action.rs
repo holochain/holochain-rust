@@ -222,6 +222,9 @@ pub enum Action {
     /// Let the State track that an HDK function called by a zome call has returned
     TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
 
+    /// Remove all traces of the given call from state (mainly the result)
+    ClearZomeFunctionCall(ZomeFnCall),
+
     /// No-op, used to check if an action channel is still open
     Ping,
 }

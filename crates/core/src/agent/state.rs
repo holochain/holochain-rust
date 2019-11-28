@@ -315,9 +315,22 @@ fn reduce_prune(agent_state: &mut AgentState, _root_state: &State, action_wrappe
         });
 }
 
+fn reduce_clear_action_response(agent_state: &mut AgentState, _root_state: &State, action_wrapper: &ActionWrapper) {
+    let action = action_wrapper.action();
+    let id = unwrap_to!(action => Action::ClearActionResponse);
+
+    agent_state.actions = agent_state
+        .actions
+        .iter()
+        .filter(|(action, _)| action.id() == id)
+        .cloned()
+        .collect();
+}
+
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
+        Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
         Action::Commit(_) => Some(reduce_commit_entry),
         Action::Prune => Some(reduce_prune),
         _ => None,

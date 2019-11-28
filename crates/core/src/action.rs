@@ -102,6 +102,7 @@ pub enum QueryPayload {
 pub enum Action {
     /// Get rid of stale information that we should drop to not have the state grow infinitely.
     Prune,
+    ClearActionResponse(snowflake::ProcessUniqueId),
 
     // ----------------
     // Agent actions:

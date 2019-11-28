@@ -60,6 +60,12 @@ pub struct CloudWatchLogger {
     pub metrics_to_publish: Vec<Metric>,
 }
 
+impl Drop for CloudWatchLogger {
+    fn drop(&mut self) {
+        self.publish_internal()
+    }
+}
+
 #[derive(Clone, Debug, Default, StructOpt)]
 pub struct QueryArgs {
     #[structopt(name = "start_time")]
@@ -300,7 +306,12 @@ impl MetricPublisher for CloudWatchLogger {
         if self.metrics_to_publish.len() < PUBLISH_CHUNK_SIZE {
             return;
         }
+        self.publish_internal();
+    }
+}
 
+impl CloudWatchLogger {
+    fn publish_internal(&mut self) {
         let log_events = self
             .metrics_to_publish
             .drain(..)

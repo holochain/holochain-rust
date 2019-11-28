@@ -35,7 +35,7 @@ pub fn reduce_query(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (key_type, payload) = unwrap_to!(action => crate::action::Action::Query);
+    let (key_type, payload, maybe_timeout) = unwrap_to!(action => crate::action::Action::Query);
     let network_query = match key_type.clone() {
         QueryKey::Entry(_) => NetworkQuery::GetEntry,
         QueryKey::Links(key) => {
@@ -55,6 +55,12 @@ pub fn reduce_query(
     network_state
         .get_query_results
         .insert(key_type.clone(), result);
+
+    if let Some(timeout) = maybe_timeout {
+        network_state
+            .query_timeouts
+            .insert(key_type.clone(), timeout.clone());
+    }
 }
 
 pub fn reduce_query_timeout(
@@ -64,6 +70,9 @@ pub fn reduce_query_timeout(
 ) {
     let action = action_wrapper.action();
     let key = unwrap_to!(action => crate::action::Action::QueryTimeout);
+
+    network_state.query_timeouts.remove(key);
+
     if network_state.get_query_results.get(&key).is_none() {
         return;
     }
@@ -99,7 +108,7 @@ mod tests {
             address: entry.address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let action = Action::Query((QueryKey::Entry(key.clone()), QueryPayload::Entry));
+        let action = Action::Query((QueryKey::Entry(key.clone()), QueryPayload::Entry, None));
         let action_wrapper = ActionWrapper::new(action);
 
         let store = store.reduce(action_wrapper);
@@ -286,7 +295,7 @@ mod tests {
         let config = GetLinksQueryConfiguration { headers: false };
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
         let payload = QueryPayload::Links((None, get_links_network_query));
-        let action = Action::Query((QueryKey::Links(key.clone()), payload));
+        let action = Action::Query((QueryKey::Links(key.clone()), payload, None));
         let action_wrapper = ActionWrapper::new(action);
 
         let store = store.reduce(action_wrapper);

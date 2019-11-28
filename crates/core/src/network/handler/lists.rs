@@ -9,17 +9,16 @@ use crate::{
 };
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use im::HashSet;
 use lib3h_protocol::{
     data_types::{EntryListData, GetListData},
     types::{AspectHash, EntryHash},
 };
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
-    context.clone().spawn_task(move || {
+    let c = context.clone();
+    let closure = async move || {
         let address_map = create_authoring_map(context.clone());
 
         let action = Action::RespondAuthoringList(EntryListData {
@@ -29,11 +28,14 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
             address_map: address_map.into(),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
-    });
+    };
+
+    let future = closure();
+    c.spawn_task(future);
 }
 
 fn create_authoring_map(context: Arc<Context>) -> AspectMap {
-    let mut address_map: AspectMapBare = HashMap::new();
+    let mut address_map: AspectMapBare = AspectMapBare::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
         // 1. For every public chain entry we definitely add the content aspect:
         let content_aspect = get_content_aspect(&entry_address, context.clone())
@@ -134,13 +136,14 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
 }
 
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
-    context.clone().spawn_task(move || {
+    let c = context.clone();
+    let closure = async move || {
         let state = context
             .state()
             .expect("No state present when trying to respond with gossip list");
         let authoring_map = create_authoring_map(context.clone());
         let holding_map = state.dht().get_holding_map().clone();
-        let address_map = AspectMap::merge(&authoring_map, &holding_map);
+        let address_map = AspectMap::merge(authoring_map, holding_map);
 
         let action = Action::RespondGossipList(EntryListData {
             space_address: get_list_data.space_address,
@@ -149,7 +152,9 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
             address_map: address_map.into(),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
-    });
+    };
+    let future = closure();
+    c.spawn_task(future);
 }
 
 #[cfg(test)]

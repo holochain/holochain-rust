@@ -30,7 +30,7 @@ use holochain_persistence_api::{
 use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{convert::TryInto, sync::Arc, time::SystemTime};
 
-pub const ACTION_PRUNE_MS: u64 = 3000;
+pub const ACTION_PRUNE_MS: u64 = 60000;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionResponse<T> {

@@ -164,6 +164,9 @@ pub enum Action {
     /// Triggered from the network handler.
     HandleQuery((NetworkQueryResult, QueryKey)),
 
+    /// Clean up the query result so the state doesn't grow indefinitely.
+    ClearQueryResult(QueryKey),
+
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 
     /// Makes the network module send a direct (node-to-node) message
@@ -189,10 +192,16 @@ pub enum Action {
     /// Triggered from the network handler when we get the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
 
+    /// Clean up the validation package result so the state doesn't grow indefinitely.
+    ClearValidationPackageResult(Address),
+
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
     /// Triggered from the network handler when we get the response.
     HandleCustomSendResponse((String, Result<String, String>)),
+
+    /// Clean up the custom send response result so the state doesn't grow indefinitely.
+    ClearCustomSendResponse(String),
 
     /// Sends the given data as JsonProtocol::HandleGetAuthoringEntryListResult
     RespondAuthoringList(EntryListData),

@@ -1,3 +1,4 @@
+pub mod clear;
 pub mod clear_action_response;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
@@ -49,6 +50,10 @@ use holochain_net::connection::net_connection::NetSend;
 
 use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
 
+use crate::network::reducers::clear::{
+    reduce_clear_custom_send_response, reduce_clear_query_result,
+    reduce_clear_validation_package_result,
+};
 use holochain_persistence_api::cas::content::Address;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
@@ -58,6 +63,9 @@ use std::sync::Arc;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
+        Action::ClearQueryResult(_) => Some(reduce_clear_query_result),
+        Action::ClearValidationPackageResult(_) => Some(reduce_clear_validation_package_result),
+        Action::ClearCustomSendResponse(_) => Some(reduce_clear_custom_send_response),
         Action::Query(_) => Some(reduce_query),
         Action::QueryTimeout(_) => Some(reduce_query_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),

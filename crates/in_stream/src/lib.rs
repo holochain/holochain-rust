@@ -5,6 +5,67 @@
 //! ```rust
 //! use url2::prelude::*;
 //! use in_stream::*;
+//!
+//! let (send_binding, recv_binding) = crossbeam_channel::unbounded();
+//!
+//! let server_thread = std::thread::spawn(move || {
+//!     let config = TcpBindConfig::default();
+//!     let config = TlsBindConfig::new(config).fake_certificate();
+//!     let config = WssBindConfig::new(config);
+//!     let mut listener:
+//!         InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
+//!         InStreamListenerWss::raw_bind(
+//!             &url2!("wss://127.0.0.1:0"),
+//!             config
+//!         ).unwrap();
+//!
+//!     println!("bound to: {}", listener.binding());
+//!     send_binding.send(listener.binding()).unwrap();
+//!
+//!     let mut srv = loop {
+//!         match listener.accept() {
+//!             Ok(srv) => break srv,
+//!             Err(e) if e.would_block() => {
+//!                 std::thread::sleep(std::time::Duration::from_millis(1));
+//!             }
+//!             Err(e) => panic!("{:?}", e),
+//!         }
+//!     };
+//!
+//!     srv.write("hello from server".into()).unwrap();
+//!     srv.flush().unwrap();
+//!
+//!     std::thread::sleep(std::time::Duration::from_millis(100));
+//!
+//!     let mut res: WsFrame = "".into();
+//!     srv.read(&mut res).unwrap();
+//!     assert_eq!("hello from client", res.as_str());
+//! });
+//!
+//! let client_thread = std::thread::spawn(move || {
+//!     let binding = recv_binding.recv().unwrap();
+//!     println!("connect to: {}", binding);
+//!
+//!     let mut cli: InStreamWss<InStreamTls<InStreamTcp>> =
+//!         InStreamWss::raw_connect(
+//!             &binding,
+//!             WssConnectConfig::new(
+//!                 TlsConnectConfig::new(
+//!                     TcpConnectConfig::default()))).unwrap();
+//!
+//!     cli.write("hello from client".into()).unwrap();
+//!     cli.flush().unwrap();
+//!
+//!     std::thread::sleep(std::time::Duration::from_millis(100));
+//!
+//!     let mut res: WsFrame = "".into();
+//!     cli.read(&mut res).unwrap();
+//!     assert_eq!("hello from server", res.as_str());
+//! });
+//!
+//! server_thread.join().unwrap();
+//! client_thread.join().unwrap();
+//!
 //! ```
 
 #[macro_use]

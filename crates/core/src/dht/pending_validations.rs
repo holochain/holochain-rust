@@ -1,6 +1,6 @@
 use crate::{
-    network::entry_with_header::EntryWithHeader,
     entry::validation_dependencies::ValidationDependencies,
+    network::entry_with_header::EntryWithHeader,
 };
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},

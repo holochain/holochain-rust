@@ -265,12 +265,16 @@ impl DhtStore {
 
     pub(crate) fn next_queued_holding_workflow(
         &self,
-    ) -> Option<(&PendingValidation, Option<Duration>)> {
-        // WTODO: This is where we should toposort to find the next thing to validate
+    ) -> Option<(PendingValidation, Option<Duration>)> {
+        // calculate the leaf dependencies (the things we can validate right now)
+        let sorted_holding_workflows =
+            get_sorted_dependencies(self.queued_holding_workflows.clone());
 
-        self.queued_holding_workflows
-            .iter()
+        // respect the delays on the leaf nodes
+        sorted_holding_workflows
+            .into_iter()
             .skip_while(|(_pending, maybe_delay)| {
+                // skip pending validation with an unelapsed delay
                 if let Some((time_of_dispatch, delay)) = maybe_delay {
                     let maybe_time_elapsed = time_of_dispatch.elapsed();
                     if let Ok(time_elapsed) = maybe_time_elapsed {
@@ -303,6 +307,53 @@ impl DhtStore {
     ) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
         &self.queued_holding_workflows
     }
+}
+
+use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
+use std::collections::HashMap;
+
+fn get_sorted_dependencies<I>(
+    pending: I,
+) -> Vec<(PendingValidation, Option<(SystemTime, Duration)>)>
+where
+    I: IntoIterator<Item = (PendingValidation, Option<(SystemTime, Duration)>)>,
+{
+    let pending: Vec<(PendingValidation, Option<(SystemTime, Duration)>)> =
+        pending.into_iter().collect();
+
+    let mut graph = DiGraph::<(), ()>::new();
+    let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
+    let mut index_reverse_map: HashMap<
+        NodeIndex,
+        (PendingValidation, Option<(SystemTime, Duration)>),
+    > = HashMap::new();
+
+    // add the nodes
+    for p in pending.clone() {
+        let node_index = graph.add_node(());
+        index_map.insert(p.0.entry_with_header.entry.address(), node_index);
+        index_reverse_map.insert(node_index, p);
+    }
+
+    // add the edges
+    for p in pending {
+        let from = index_map
+            .get(&p.0.entry_with_header.entry.address())
+            .unwrap();
+        for to_addr in p.0.dependencies.clone() {
+            let to = index_map.get(&to_addr).unwrap();
+            graph.add_edge(*from, *to, ());
+        }
+    }
+
+    // return in topologically sorted order
+    // i.e. if a node has a dependency it will always come first
+    let mut sorted = toposort(&graph, None).unwrap();
+    sorted.reverse();
+    sorted
+        .iter()
+        .map(|i| index_reverse_map.get(&i).unwrap().clone())
+        .collect()
 }
 
 impl GetContent for DhtStore {
@@ -344,4 +395,7 @@ pub mod tests {
         let headers = store.get_headers(entry.address()).unwrap();
         assert_eq!(headers, vec![header1, header2]);
     }
+
+    #[test]
+    fn test_topo_sorting() {}
 }

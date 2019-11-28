@@ -561,7 +561,7 @@ pub mod tests {
         assert!(store.has_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(hold_link, *next_pending);
+        assert_eq!(hold_link, next_pending);
 
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
@@ -573,7 +573,7 @@ pub mod tests {
         assert!(store.has_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(update, *next_pending);
+        assert_eq!(update, next_pending);
 
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
@@ -583,6 +583,6 @@ pub mod tests {
         assert!(store.has_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(update, *next_pending);
+        assert_eq!(update, next_pending);
     }
 }

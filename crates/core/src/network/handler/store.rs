@@ -34,7 +34,6 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
             return;
         }
         match PendingValidationStruct::try_from(aspect) {
-            // WTODO: This is where pending validation is first added
             Err(e) => log_error!(
                 context,
                 "net/handle: handle_store: received bad aspect: {:?}",

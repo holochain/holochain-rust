@@ -122,9 +122,7 @@ impl NucleusState {
         &self,
         zome_call: &ZomeFnCall,
     ) -> Option<Result<JsonString, HolochainError>> {
-        self.zome_call_results
-            .get(zome_call)
-            .cloned()
+        self.zome_call_results.get(zome_call).cloned()
     }
 
     pub fn has_initialized(&self) -> bool {

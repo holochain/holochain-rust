@@ -13,10 +13,9 @@ pub fn reduce_return_zome_function_result(
 ) {
     let action = action_wrapper.action();
     let zome_fn_response = unwrap_to!(action => Action::ReturnZomeFunctionResult);
-    state.zome_call_results.insert(
-        zome_fn_response.call(),
-        zome_fn_response.result(),
-    );
+    state
+        .zome_call_results
+        .insert(zome_fn_response.call(), zome_fn_response.result());
     state.running_zome_calls.remove(&zome_fn_response.call());
     state.hdk_function_calls.remove(&zome_fn_response.call());
     if let Some(next_call) = state.queued_zome_calls.pop_front() {

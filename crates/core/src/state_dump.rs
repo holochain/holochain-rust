@@ -53,10 +53,8 @@ impl From<Arc<Context>> for StateDump {
                 (call, state)
             })
             .collect();
-        let call_results: Vec<(ZomeFnCall, Result<_, _>)> = nucleus
-            .zome_call_results
-            .into_iter()
-            .collect();
+        let call_results: Vec<(ZomeFnCall, Result<_, _>)> =
+            nucleus.zome_call_results.into_iter().collect();
 
         let query_flows: Vec<QueryKey> = network
             .get_query_results

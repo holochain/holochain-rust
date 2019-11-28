@@ -325,7 +325,6 @@ impl CloudWatchLogger {
                         .as_millis() as i64,
                 }
             })
-            .into_iter()
             .collect::<Vec<InputLogEvent>>();
 
         let put_log_events_request = PutLogEventsRequest {

@@ -1,4 +1,8 @@
-use crate::{action::{Action, ActionWrapper}, network::state::NetworkState, state::State};
+use crate::{
+    action::{Action, ActionWrapper},
+    network::state::NetworkState,
+    state::State,
+};
 
 pub fn reduce_clear_action_response(
     network_state: &mut NetworkState,
@@ -11,7 +15,7 @@ pub fn reduce_clear_action_response(
     network_state.actions = network_state
         .actions
         .iter()
-        .filter(|(action, _)| action.id() == id)
+        .filter(|(action, _)| action.id() != id)
         .cloned()
         .collect();
 }

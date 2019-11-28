@@ -211,6 +211,7 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
     }
 }
 
+#[autotrace]
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.

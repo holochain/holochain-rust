@@ -99,14 +99,12 @@ pub struct Context {
     pub tracer: Arc<ht::Tracer>,
 }
 
-#[autotrace]
 impl Context {
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
     // There are two different implementations of this function below which get pulled
     // in depending on if "test" is in the build config, or not.
     // This allows unit tests of core to not have to deal with a conductor_api.
-    #[no_autotrace]
     #[cfg(not(test))]
     fn test_check_conductor_api(
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
@@ -120,7 +118,6 @@ impl Context {
         conductor_api.expect("Context can't be created without conductor API")
     }
     
-    #[no_autotrace]
     #[cfg(test)]
     fn test_check_conductor_api(
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
@@ -129,7 +126,6 @@ impl Context {
         conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
     }
 
-    #[no_autotrace]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         instance_name: &str,
@@ -216,6 +212,7 @@ impl Context {
         self.state = Some(state);
     }
 
+    #[autotrace]
     pub fn state(&self) -> Option<StateWrapper> {
         self.state.as_ref().map(|s| {
             while self.redux_wants_write.load(Relaxed) {
@@ -229,6 +226,7 @@ impl Context {
     /// Returns immediately either with the lock or with None if the lock
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
+    #[autotrace]
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         if self.redux_wants_write.load(Relaxed) {
             None
@@ -244,6 +242,7 @@ impl Context {
         self.state().map(move |state| state.network())
     }
 
+    #[autotrace]
     pub fn get_dna(&self) -> Option<Dna> {
         // In the case of init we encounter race conditions with regards to setting the DNA.
         // Init gets called asynchronously right after dispatching an action that sets the DNA in
@@ -275,6 +274,7 @@ impl Context {
         dna
     }
 
+    #[autotrace]
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
@@ -343,6 +343,7 @@ impl Context {
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
     /// This makes use of the redux action loop and the observers.
     /// The given future gets polled everytime the instance's state got changed.
+    #[autotrace]
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
@@ -374,6 +375,7 @@ impl Context {
     }
 
     /// returns the public capability token (if any)
+    #[autotrace]
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
         let state = self.state().ok_or("State uninitialized!")?;
         let top = state
@@ -409,6 +411,7 @@ impl Context {
     }
 }
 
+#[autotrace]
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()

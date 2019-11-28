@@ -204,12 +204,13 @@ impl Instance {
                         // Ping can happen often, and should be as lightweight as possible
                         let should_process = *action != Action::Ping;
                         if should_process {
-                            let action_span = sub_context.tracer.span("action_loop").tag(
-                                ht::Tag::new("action", format!("{:?}", action))
-                            ).start().into();
-                            let _guard = ht::push_root_span(action_span);
                             match sync_self.process_action(&action_wrapper, &sub_context) {
                                 Ok(()) => {
+                                    let tag = ht::Tag::new("action", format!("{:?}", action));
+                                    let _guard = action_wrapper.follower_(&sub_context.tracer, "action_loop thread", |s| s.tag(tag).start()).map(|span| {
+
+                                        ht::push_root_span(span)
+                                    });
                                     sync_self.emit_signals(&sub_context, &action_wrapper);
                                     // Tick all observers and remove those that have lost their receiving part
                                     state_observers= state_observers
@@ -304,17 +305,11 @@ impl Instance {
                         // However, Span is not Clone, and the entire DhtStore needs to be Cloned.
                         // So, the span has to be cut short here until we stop cloning the state.
 
-                        let root_span: ht::Span = context.tracer.span("[TRUNCATED] start_holding_loop (TODO)").start().into();
-                        let root_ctx = root_span.0.context().unwrap().clone();
-                        let inner_span = context.tracer.span("thread execution").follows_from(&root_ctx);
-                        ht::push_root_span(root_span);
-                        
                         let dht_store = context
                             .state()
                             .expect("Couldn't get state in run_pending_validations")
                             .dht();
                         let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
-                        
                         if let Some((pending, maybe_delay)) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
@@ -326,9 +321,19 @@ impl Instance {
 
                             let context = context.clone();
                             let pending = pending.clone();
-                            let tag = ht::Tag::new("pending_validation", format!("{:?}", maybe_holding_workflow));
-                            threadpool.execute(move || {                                    
-                                ht::push_root_span(inner_span.tag(tag).start().into());
+
+                            let tag = ht::Tag::new(
+                                "pending_validation",
+                                format!("{:?}", maybe_holding_workflow),
+                            );
+                            let root_span: ht::Span = context
+                                .tracer
+                                .span("[TRUNCATED] start_holding_loop (TODO)")
+                                .tag(tag)
+                                .start()
+                                .into();
+                            threadpool.execute(move || {
+                                let _trace_guard = ht::push_root_span(root_span);
 
                                 match run_holding_workflow(pending.clone(), context.clone()) {
                                     // If we couldn't run the validation due to unresolved dependencies,

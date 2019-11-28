@@ -315,7 +315,6 @@ workflows:
          - 2019-11-22-path-for-docker
          - develop
          - final-exam
-         - assume-role
    - docker.build.trycp_server:
       requires:
        - docker.build.minimal

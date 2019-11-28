@@ -33,8 +33,6 @@ use std::{convert::TryFrom, ops::Deref, sync::Arc, time::SystemTime};
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
     /// every action and the result of that action
-    // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
-    // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, Response>,
     chain_store: ChainStore,
     top_chain_header: Option<ChainHeader>,
@@ -158,8 +156,6 @@ impl AddressableContent for AgentStateSnapshot {
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
-// @TODO abstract this to a standard trait
-// @see https://github.com/holochain/holochain-rust/issues/196
 #[allow(clippy::large_enum_variant)]
 pub enum AgentActionResponse {
     Commit(Result<Address, HolochainError>),

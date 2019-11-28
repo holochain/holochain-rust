@@ -1,6 +1,5 @@
 pub mod clear_zome_function_call;
 pub mod init_application;
-pub mod prune;
 pub mod queue_zome_function_call;
 pub mod return_initialization_result;
 pub mod return_zome_function_result;
@@ -11,7 +10,7 @@ use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
     nucleus::{
         reducers::{
-            init_application::reduce_initialize_chain, prune::reduce_prune,
+            init_application::reduce_initialize_chain,
             queue_zome_function_call::reduce_queue_zome_function_call,
             return_initialization_result::reduce_return_initialization_result,
             return_zome_function_result::reduce_return_zome_function_result,
@@ -30,7 +29,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitializeChain(_) => Some(reduce_initialize_chain),
-        Action::Prune => Some(reduce_prune),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::QueueZomeFunctionCall(_) => Some(reduce_queue_zome_function_call),
         Action::TraceInvokeHdkFunction(_) => Some(reduce_trace_invoke_hdk_function),

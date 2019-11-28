@@ -15,7 +15,7 @@ use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{collections::VecDeque, convert::TryFrom, fmt, time::SystemTime};
+use std::{collections::VecDeque, convert::TryFrom, fmt};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -103,7 +103,7 @@ pub struct NucleusState {
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
     pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
-    pub zome_call_results: HashMap<ZomeFnCall, (Result<JsonString, HolochainError>, SystemTime)>,
+    pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 
 impl NucleusState {
@@ -124,7 +124,6 @@ impl NucleusState {
     ) -> Option<Result<JsonString, HolochainError>> {
         self.zome_call_results
             .get(zome_call)
-            .and_then(|(result, _time)| Some(result))
             .cloned()
     }
 

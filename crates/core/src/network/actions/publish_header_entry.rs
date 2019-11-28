@@ -55,9 +55,7 @@ impl Future for PublishHeaderEntryFuture {
                     NetworkActionResponse::PublishHeaderEntry(result) => {
                         dispatch_action(
                             self.context.action_channel(),
-                            ActionWrapper::new(Action::ClearActionResponse(
-                                self.action.id().clone(),
-                            )),
+                            ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),
                         );
                         Poll::Ready(result.clone())
                     }

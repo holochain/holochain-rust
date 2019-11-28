@@ -267,8 +267,7 @@ impl DhtStore {
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
         // calculate the leaf dependencies (the things we can validate right now)
-        let free_dependencies =
-            get_free_dependencies(self.queued_holding_workflows.clone());
+        let free_dependencies = get_free_dependencies(self.queued_holding_workflows.clone());
 
         // respect the delays on the leaf nodes
         free_dependencies
@@ -309,12 +308,10 @@ impl DhtStore {
     }
 }
 
-use petgraph::{Direction::Outgoing, graph::DiGraph, prelude::NodeIndex};
+use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
 use std::collections::HashMap;
 
-fn get_free_dependencies<I>(
-    pending: I,
-) -> Vec<(PendingValidation, Option<(SystemTime, Duration)>)>
+fn get_free_dependencies<I>(pending: I) -> Vec<(PendingValidation, Option<(SystemTime, Duration)>)>
 where
     I: IntoIterator<Item = (PendingValidation, Option<(SystemTime, Duration)>)>,
 {
@@ -350,7 +347,8 @@ where
 
     // return only the pending valiations that don't have dependencies that are also pending
     // i.e. the leaf nodes or 'sinks' of the graph
-    graph.externals(Outgoing)
+    graph
+        .externals(Outgoing)
         .map(|i| index_reverse_map.get(&i).unwrap().clone())
         .collect()
 }
@@ -396,7 +394,5 @@ pub mod tests {
     }
 
     #[test]
-    fn test_dependency_resolution() {
-
-    }
+    fn test_dependency_resolution() {}
 }

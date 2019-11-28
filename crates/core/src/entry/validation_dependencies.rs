@@ -32,7 +32,7 @@ impl ValidationDependencies for EntryWithHeader {
                     .map(|prev_addr| vec![prev_addr])
                     .unwrap_or_else(Vec::new)
             }
-            // link remove? deletion? etc?
+            // TODO: link remove? deletion? etc?
             _ => Vec::new(),
         }
     }

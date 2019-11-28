@@ -1,4 +1,7 @@
-use crate::network::entry_with_header::EntryWithHeader;
+use crate::{
+    network::entry_with_header::EntryWithHeader,
+    entry::validation_dependencies::ValidationDependencies,
+};
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
@@ -70,9 +73,10 @@ pub struct PendingValidationStruct {
 
 impl PendingValidationStruct {
     pub fn new(entry_with_header: EntryWithHeader, workflow: ValidatingWorkflow) -> Self {
+        let dependencies = entry_with_header.get_validation_dependencies();
         Self {
             entry_with_header,
-            dependencies: Vec::new(),
+            dependencies,
             workflow,
             uuid: ProcessUniqueId::new(),
         }
@@ -88,8 +92,6 @@ impl PendingValidationStruct {
 impl TryFrom<EntryAspect> for PendingValidationStruct {
     type Error = HolochainError;
     fn try_from(aspect: EntryAspect) -> Result<PendingValidationStruct, HolochainError> {
-        // WTODO: this is where the dependencies can be calculated
-
         match aspect {
             EntryAspect::Content(entry, header) => Ok(PendingValidationStruct::new(
                 EntryWithHeader::try_from_entry_and_header(entry, header)?,

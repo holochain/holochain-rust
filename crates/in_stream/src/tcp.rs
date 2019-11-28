@@ -23,6 +23,7 @@ fn tcp_url_to_socket_addr(url: &Url2) -> Result<std::net::SocketAddr> {
     }
 }
 
+#[derive(Debug)]
 /// configuration options for the listener bind call
 pub struct TcpBindConfig {
     pub backlog: i32,
@@ -34,14 +35,16 @@ impl Default for TcpBindConfig {
     }
 }
 
+impl InStreamConfig for TcpBindConfig {}
+
 #[derive(Debug)]
 pub struct InStreamListenerTcp(pub std::net::TcpListener);
 
 impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
     type Stream = InStreamTcp;
-    type BindConfig = TcpBindConfig;
 
-    fn bind(url: &Url2, config: Self::BindConfig) -> Result<Self> {
+    fn raw_bind<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
+        let config = TcpBindConfig::from_gen(config)?;
         let addr = tcp_url_to_socket_addr(url)?;
         let listener = net2::TcpBuilder::new_v4()?
             .bind(addr)?
@@ -62,6 +65,15 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
     }
 }
 
+impl InStreamListenerStd for InStreamListenerTcp {
+    type StreamStd = InStreamTcp;
+
+    fn accept_std(&mut self) -> Result<<Self as InStreamListenerStd>::StreamStd> {
+        self.accept()
+    }
+}
+
+#[derive(Debug)]
 /// configuration options for tcp connect
 pub struct TcpConnectConfig {
     pub connect_timeout_ms: Option<u64>,
@@ -74,6 +86,8 @@ impl Default for TcpConnectConfig {
         }
     }
 }
+
+impl InStreamConfig for TcpConnectConfig {}
 
 #[derive(Debug)]
 struct TcpConnectingData {
@@ -128,12 +142,11 @@ impl InStreamTcp {
 }
 
 impl InStream<&mut [u8], &[u8]> for InStreamTcp {
-    type ConnectConfig = TcpConnectConfig;
-
     /// tcp streams should use urls like tcp://
     const URL_SCHEME: &'static str = SCHEME;
 
-    fn connect(url: &Url2, config: Self::ConnectConfig) -> Result<Self> {
+    fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
+        let config = TcpConnectConfig::from_gen(config)?;
         let addr = tcp_url_to_socket_addr(url)?;
         let stream = net2::TcpBuilder::new_v4()?.to_tcp_stream()?;
         stream.set_nonblocking(true)?;
@@ -203,7 +216,7 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
     }
 }
 
-impl InStreamStd<&mut [u8], &[u8]> for InStreamTcp {}
+impl InStreamStd for InStreamTcp {}
 
 #[cfg(test)]
 mod tests {
@@ -214,7 +227,7 @@ mod tests {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
-            let mut listener = InStreamListenerTcp::bind(
+            let mut listener = InStreamListenerTcp::raw_bind(
                 &Url2::parse("tcp://127.0.0.1:0"),
                 TcpBindConfig::default(),
             )
@@ -254,7 +267,7 @@ mod tests {
             let binding = recv_binding.recv().unwrap();
             println!("connect to: {}", binding);
 
-            let mut cli = InStreamTcp::connect(&binding, TcpConnectConfig::default())
+            let mut cli = InStreamTcp::raw_connect(&binding, TcpConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
 

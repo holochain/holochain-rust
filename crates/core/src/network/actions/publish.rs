@@ -53,10 +53,15 @@ impl Future for PublishFuture {
 
             match state.actions().get(&self.action) {
                 Some(r) => match r.response() {
-                    NetworkActionResponse::Publish(Ok(address)) => {
-                        Poll::Ready(Ok(address.to_owned()))
+                    NetworkActionResponse::Publish(result) => {
+                        dispatch_action(
+                            self.context.action_channel(),
+                            ActionWrapper::new(Action::ClearActionResponse(
+                                self.action.id().clone(),
+                            )),
+                        );
+                        Poll::Ready(result.clone())
                     }
-                    NetworkActionResponse::Publish(Err(error)) => Poll::Ready(Err(error.clone())),
                     _ => unreachable!(),
                 },
                 None => Poll::Pending,

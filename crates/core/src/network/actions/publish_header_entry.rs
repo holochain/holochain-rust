@@ -52,11 +52,14 @@ impl Future for PublishHeaderEntryFuture {
             }
             match state.actions().get(&self.action) {
                 Some(r) => match r.response() {
-                    NetworkActionResponse::PublishHeaderEntry(Ok(address)) => {
-                        Poll::Ready(Ok(address.to_owned()))
-                    }
-                    NetworkActionResponse::PublishHeaderEntry(Err(error)) => {
-                        Poll::Ready(Err(error.clone()))
+                    NetworkActionResponse::PublishHeaderEntry(result) => {
+                        dispatch_action(
+                            self.context.action_channel(),
+                            ActionWrapper::new(Action::ClearActionResponse(
+                                self.action.id().clone(),
+                            )),
+                        );
+                        Poll::Ready(result.clone())
                     }
                     _ => unreachable!(),
                 },

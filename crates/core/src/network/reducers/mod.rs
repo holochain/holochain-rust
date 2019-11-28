@@ -1,3 +1,4 @@
+pub mod clear_action_response;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
 pub mod handle_get_result;
@@ -20,6 +21,7 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         reducers::{
+            clear_action_response::reduce_clear_action_response,
             get_validation_package::reduce_get_validation_package,
             handle_custom_send_response::reduce_handle_custom_send_response,
             handle_get_result::reduce_handle_get_result,
@@ -55,6 +57,7 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
+        Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
         Action::Query(_) => Some(reduce_query),
         Action::QueryTimeout(_) => Some(reduce_query_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),

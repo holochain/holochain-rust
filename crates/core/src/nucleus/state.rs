@@ -10,15 +10,12 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use im::{HashMap, HashSet};
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    convert::TryFrom,
-    fmt,
-};
+use std::{collections::VecDeque, convert::TryFrom, fmt};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {

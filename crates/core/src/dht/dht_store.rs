@@ -266,6 +266,8 @@ impl DhtStore {
     pub(crate) fn next_queued_holding_workflow(
         &self,
     ) -> Option<(&PendingValidation, Option<Duration>)> {
+        // WTODO: This is where we should toposort to find the next thing to validate
+
         self.queued_holding_workflows
             .iter()
             .skip_while(|(_pending, maybe_delay)| {

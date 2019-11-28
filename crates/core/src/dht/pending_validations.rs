@@ -88,6 +88,8 @@ impl PendingValidationStruct {
 impl TryFrom<EntryAspect> for PendingValidationStruct {
     type Error = HolochainError;
     fn try_from(aspect: EntryAspect) -> Result<PendingValidationStruct, HolochainError> {
+        // WTODO: this is where the dependencies can be calculated
+
         match aspect {
             EntryAspect::Content(entry, header) => Ok(PendingValidationStruct::new(
                 EntryWithHeader::try_from_entry_and_header(entry, header)?,

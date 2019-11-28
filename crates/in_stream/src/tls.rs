@@ -195,11 +195,18 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
     }
 
     fn priv_write_pending(&mut self) -> Result<()> {
+        if self.write_buf.is_empty() {
+            return Ok(());
+        }
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
             Some(state) => {
                 if let TlsState::Ready(tls) = state {
-                    let written = tls.write(&self.write_buf)?;
+                    let written = match tls.write(&self.write_buf) {
+                        Ok(written) => written,
+                        Err(e) if e.would_block() => return Ok(()),
+                        Err(e) => return Err(e),
+                    };
                     assert_eq!(written, self.write_buf.drain(..written).count());
                 }
                 Ok(())
@@ -234,6 +241,7 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
 
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {
         self.priv_process()?;
+        self.priv_write_pending()?;
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
             Some(state) => {
@@ -259,7 +267,14 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
                     }
                     TlsState::Ready(tls) => {
                         if self.write_buf.is_empty() {
-                            let written = tls.write(data)?;
+                            let written = match tls.write(data) {
+                                Ok(written) => written,
+                                Err(e) if e.would_block() => {
+                                    self.write_buf.extend_from_slice(data);
+                                    return Ok(data.len());
+                                }
+                                Err(e) => return Err(e),
+                            };
                             if written < data.len() {
                                 self.write_buf.extend_from_slice(&data[..written]);
                             }

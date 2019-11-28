@@ -132,10 +132,17 @@ impl InStreamTcp {
     }
 
     fn priv_write_pending(&mut self) -> Result<()> {
+        if self.write_buf.is_empty() {
+            return Ok(());
+        }
         if self.connecting.is_some() {
             return Ok(());
         }
-        let written = self.stream.write(&self.write_buf)?;
+        let written = match self.stream.write(&self.write_buf) {
+            Ok(written) => written,
+            Err(e) if e.would_block() => return Ok(()),
+            Err(e) => return Err(e),
+        };
         assert_eq!(written, self.write_buf.drain(..written).count());
         Ok(())
     }
@@ -171,6 +178,7 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
 
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {
         self.priv_process()?;
+        self.priv_write_pending()?;
         if self.connecting.is_none() {
             self.stream.read(data)
         } else {
@@ -183,7 +191,14 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
         if self.connecting.is_none() {
             if self.write_buf.is_empty() {
                 // in the 99% case we can just write without buffering
-                let written = self.stream.write(data)?;
+                let written = match self.stream.write(data) {
+                    Ok(written) => written,
+                    Err(e) if e.would_block() => {
+                        self.write_buf.extend_from_slice(data);
+                        return Ok(data.len());
+                    }
+                    Err(e) => return Err(e),
+                };
                 if written < data.len() {
                     self.write_buf.extend_from_slice(&data[written..]);
                 }

@@ -315,7 +315,11 @@ fn reduce_prune(agent_state: &mut AgentState, _root_state: &State, action_wrappe
         });
 }
 
-fn reduce_clear_action_response(agent_state: &mut AgentState, _root_state: &State, action_wrapper: &ActionWrapper) {
+fn reduce_clear_action_response(
+    agent_state: &mut AgentState,
+    _root_state: &State,
+    action_wrapper: &ActionWrapper,
+) {
     let action = action_wrapper.action();
     let id = unwrap_to!(action => Action::ClearActionResponse);
 

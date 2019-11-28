@@ -267,11 +267,11 @@ impl DhtStore {
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
         // calculate the leaf dependencies (the things we can validate right now)
-        let sorted_holding_workflows =
-            get_sorted_dependencies(self.queued_holding_workflows.clone());
+        let free_dependencies =
+            get_free_dependencies(self.queued_holding_workflows.clone());
 
         // respect the delays on the leaf nodes
-        sorted_holding_workflows
+        free_dependencies
             .into_iter()
             .skip_while(|(_pending, maybe_delay)| {
                 // skip pending validation with an unelapsed delay
@@ -309,10 +309,10 @@ impl DhtStore {
     }
 }
 
-use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
+use petgraph::{Direction::Outgoing, graph::DiGraph, prelude::NodeIndex};
 use std::collections::HashMap;
 
-fn get_sorted_dependencies<I>(
+fn get_free_dependencies<I>(
     pending: I,
 ) -> Vec<(PendingValidation, Option<(SystemTime, Duration)>)>
 where
@@ -337,21 +337,20 @@ where
 
     // add the edges
     for p in pending {
-        let from = index_map
+        let to = index_map
             .get(&p.0.entry_with_header.entry.address())
-            .unwrap();
-        for to_addr in p.0.dependencies.clone() {
-            let to = index_map.get(&to_addr).unwrap();
-            graph.add_edge(*from, *to, ());
+            .expect("we literally just added this");
+        for from_addr in p.0.dependencies.clone() {
+            // only add the dependencies that are also in the pending validation list
+            if let Some(from) = index_map.get(&from_addr) {
+                graph.add_edge(*from, *to, ());
+            }
         }
     }
 
-    // return in topologically sorted order
-    // i.e. if a node has a dependency it will always come first
-    let mut sorted = toposort(&graph, None).unwrap();
-    sorted.reverse();
-    sorted
-        .iter()
+    // return only the pending valiations that don't have dependencies that are also pending
+    // i.e. the leaf nodes or 'sinks' of the graph
+    graph.externals(Outgoing)
         .map(|i| index_reverse_map.get(&i).unwrap().clone())
         .collect()
 }
@@ -397,5 +396,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_topo_sorting() {}
+    fn test_dependency_resolution() {
+
+    }
 }

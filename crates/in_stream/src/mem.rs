@@ -33,7 +33,7 @@ impl Drop for InStreamListenerMem {
     }
 }
 
-/*
+#[derive(Debug)]
 /// memory connection specific bind config
 pub struct MemBindConfig {}
 
@@ -42,12 +42,14 @@ impl Default for MemBindConfig {
         Self {}
     }
 }
-*/
+
+impl InStreamConfig for MemBindConfig {}
 
 impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerMem {
     type Stream = InStreamMem;
 
-    fn raw_bind<C: InStreamConfig>(url: &Url2, _config: C) -> Result<Self> {
+    fn raw_bind<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
+        let _ = MemBindConfig::from_gen(config)?;
         get_mem_manager().bind(url)
     }
 
@@ -90,7 +92,7 @@ impl InStreamListenerStd for InStreamListenerMem {
     }
 }
 
-/*
+#[derive(Debug)]
 /// memory stream specific connect config
 pub struct MemConnectConfig {}
 
@@ -99,7 +101,8 @@ impl Default for MemConnectConfig {
         Self {}
     }
 }
-*/
+
+impl InStreamConfig for MemConnectConfig {}
 
 /// a singleton memory transport
 /// could be used for unit testing or for in-process ipc
@@ -115,7 +118,8 @@ impl InStream<&mut [u8], &[u8]> for InStreamMem {
     /// we want a url like mem://
     const URL_SCHEME: &'static str = SCHEME;
 
-    fn raw_connect<C: InStreamConfig>(url: &Url2, _config: C) -> Result<Self> {
+    fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
+        let _ = MemConnectConfig::from_gen(config)?;
         Ok(get_mem_manager().connect(url)?)
     }
 
@@ -195,6 +199,7 @@ impl InStreamMem {
         }
     }
 
+    /// see std::net::TcpStream::shutdown
     pub fn shutdown(&mut self, how: std::net::Shutdown) -> Result<()> {
         match how {
             std::net::Shutdown::Read => {
@@ -351,7 +356,9 @@ mod tests {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
-            let mut listener = InStreamListenerMem::raw_bind(&random_url("test"), ()).unwrap();
+            let mut listener =
+                InStreamListenerMem::raw_bind(&random_url("test"), MemBindConfig::default())
+                    .unwrap();
             println!("bound to: {}", listener.binding());
             send_binding.send(listener.binding()).unwrap();
 
@@ -387,7 +394,7 @@ mod tests {
             let binding = recv_binding.recv().unwrap();
             println!("connect to: {}", binding);
 
-            let mut cli = InStreamMem::raw_connect(&binding, ())
+            let mut cli = InStreamMem::raw_connect(&binding, MemConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
 

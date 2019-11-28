@@ -37,6 +37,7 @@ impl Default for TcpBindConfig {
 
 impl InStreamConfig for TcpBindConfig {}
 
+/// basic tcp socket server/listener
 #[derive(Debug)]
 pub struct InStreamListenerTcp(pub std::net::TcpListener);
 
@@ -95,6 +96,7 @@ struct TcpConnectingData {
     connect_timeout: Option<std::time::Instant>,
 }
 
+/// basic tcp socket stream
 #[derive(Shrinkwrap, Debug)]
 #[shrinkwrap(mutable)]
 pub struct InStreamTcp {

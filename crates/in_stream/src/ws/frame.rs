@@ -88,10 +88,12 @@ impl From<WsFrame> for tungstenite::protocol::Message {
 }
 
 impl WsFrame {
+    /// consume another frame-type instance
     pub fn assume<O: Into<Self>>(&mut self, oth: O) {
         *self = oth.into();
     }
 
+    /// get frame data out as byte slice
     pub fn as_bytes(&self) -> &[u8] {
         match self {
             WsFrame::Text(s) => s.as_bytes(),
@@ -102,6 +104,7 @@ impl WsFrame {
         }
     }
 
+    /// get frame data out as a string slice
     pub fn as_str(&self) -> std::borrow::Cow<'_, str> {
         match self {
             WsFrame::Text(s) => std::borrow::Cow::from(s),

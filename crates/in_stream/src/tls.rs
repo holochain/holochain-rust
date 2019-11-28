@@ -122,6 +122,7 @@ enum TlsState<Sub: InStreamStd> {
     Ready(native_tls::TlsStream<StdStreamAdapter<Sub>>),
 }
 
+/// basic tls wrapper stream
 pub struct InStreamTls<Sub: InStreamStd> {
     state: Option<TlsState<Sub>>,
     write_buf: Vec<u8>,
@@ -368,10 +369,10 @@ mod tests {
     fn tls_works_mem() {
         let mut url = in_stream_mem::random_url("test");
         url.set_scheme(SCHEME).unwrap();
-        let config = TlsBindConfig::new(()).fake_certificate();
+        let config = TlsBindConfig::new(MemBindConfig::default()).fake_certificate();
         let l: InStreamListenerTls<InStreamListenerMem> =
             InStreamListenerTls::raw_bind(&url, config).unwrap();
-        suite(l, ());
+        suite(l, MemConnectConfig::default());
     }
 
     #[test]

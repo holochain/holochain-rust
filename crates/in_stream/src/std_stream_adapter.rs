@@ -1,6 +1,7 @@
 use crate::*;
 use std::io::{Read, Result, Write};
 
+/// provides std::io::{Read, Write} adapter for anything implementing InStreamStd
 #[derive(Shrinkwrap, Debug)]
 #[shrinkwrap(mutable)]
 pub struct StdStreamAdapter<T: InStreamStd> {

@@ -10,9 +10,7 @@ pub struct StdStreamAdapter<T: InStreamStd> {
 
 impl<T: InStreamStd> StdStreamAdapter<T> {
     pub fn new(stream: T) -> Self {
-        Self {
-            stream,
-        }
+        Self { stream }
     }
 
     pub fn into_inner(self) -> T {

@@ -19,6 +19,61 @@ fn validate_url_scheme(url: &Url2) -> Result<()> {
 }
 
 #[derive(Debug)]
+/// websocket specific bind configuration
+pub struct WssBindConfig {
+    pub sub_bind_config: InStreamConfigAny,
+}
+
+impl WssBindConfig {
+    pub fn new<Sub: InStreamConfig>(sub_config: Sub) -> Self {
+        Self {
+            sub_bind_config: sub_config.to_any(),
+        }
+    }
+}
+
+impl InStreamConfig for WssBindConfig {}
+
+/// bind to a network interface to listen for websocket connections
+#[derive(Debug)]
+pub struct InStreamListenerWss<Sub: InStreamListenerStd> {
+    sub: Sub,
+}
+
+impl<Sub: InStreamListenerStd> InStreamListener<&mut WsFrame, WsFrame>
+    for InStreamListenerWss<Sub>
+{
+    type Stream = InStreamWss<Sub::StreamStd>;
+
+    fn raw_bind<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
+        let config = WssBindConfig::from_gen(config)?;
+        validate_url_scheme(url)?;
+        let mut url = url.clone();
+        url.set_scheme(Sub::StreamStd::URL_SCHEME).unwrap();
+        let sub = Sub::raw_bind(&url, config.sub_bind_config)?;
+        Ok(Self { sub })
+    }
+
+    fn binding(&self) -> Url2 {
+        let mut url = self.sub.binding();
+        url.set_scheme(SCHEME).unwrap();
+        url
+    }
+
+    fn accept(&mut self) -> Result<<Self as InStreamListener<&mut WsFrame, WsFrame>>::Stream> {
+        let stream: Sub::StreamStd = self.sub.accept_std()?;
+
+        let res = tungstenite::accept(stream.into_std_stream());
+        let mut out = InStreamWss::priv_new(Url2::default());
+        match out.priv_proc_wss_srv_result(res) {
+            Ok(_) => Ok(out),
+            Err(e) if e.would_block() => Ok(out),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+#[derive(Debug)]
 /// websocket specific connect config
 pub struct WssConnectConfig {
     pub sub_connect_config: InStreamConfigAny,
@@ -41,7 +96,10 @@ enum WssState<Sub: InStreamStd> {
     ),
     MidSrvHandshake(
         tungstenite::handshake::MidHandshake<
-            tungstenite::ServerHandshake<StdStreamAdapter<Sub>, tungstenite::handshake::server::NoCallback>,
+            tungstenite::ServerHandshake<
+                StdStreamAdapter<Sub>,
+                tungstenite::handshake::server::NoCallback,
+            >,
         >,
     ),
     Ready(tungstenite::WebSocket<StdStreamAdapter<Sub>>),
@@ -149,7 +207,9 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                             Ok(_) => (),
                             // ignore would-block errors on write
                             // tungstenite queues them in pending, they'll get sent
-                            Err(tungstenite::error::Error::Io(e)) if e.would_block() => (),
+                            Err(tungstenite::error::Error::Io(e)) if e.would_block() => {
+                                return Ok(())
+                            }
                             Err(tungstenite::error::Error::Io(_)) => {
                                 if let Err(tungstenite::error::Error::Io(e)) = res {
                                     return Err(e);
@@ -157,39 +217,20 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                                     unreachable!();
                                 }
                             }
-                            Err(e) => return Err(Error::new(
-                                ErrorKind::Other,
-                                format!("tungstenite error: {:?}", e),
-                            )),
+                            Err(e) => {
+                                return Err(Error::new(
+                                    ErrorKind::Other,
+                                    format!("tungstenite error: {:?}", e),
+                                ))
+                            }
                         }
+                    } else {
+                        return Ok(());
                     }
                 }
             }
         }
     }
-
-    /*
-    fn priv_sub(&mut self, mut sub: Sub) -> Result<<Self as InStreamFramedPartial>::Stream> {
-        let stream = match sub.process() {
-            Ok(stream) => stream,
-            Err(e) => {
-                self.state = Some(PartialWssState::PartialSub(sub));
-                return Err(e);
-            }
-        };
-        if self.is_server {
-            self.priv_proc_wss_srv_result(tungstenite::accept(stream))
-        } else {
-            self.priv_proc_wss_cli_result(tungstenite::client(
-                tungstenite::handshake::client::Request {
-                    url: self.connect_url.clone().into(),
-                    extra_headers: None,
-                },
-                stream,
-            ))
-        }
-    }
-    */
 }
 
 impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
@@ -220,24 +261,20 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
         self.priv_process()?;
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
-            Some(state) => {
-                match state {
-                    WssState::Ready(wss) => {
-                        match wss.read_message() {
-                            Ok(msg) => {
-                                data.assume(msg);
-                                Ok(1)
-                            }
-                            Err(tungstenite::error::Error::Io(e)) => Err(e),
-                            Err(e) => Err(Error::new(
-                                ErrorKind::Other,
-                                format!("tungstenite error: {:?}", e),
-                            )),
-                        }
+            Some(state) => match state {
+                WssState::Ready(wss) => match wss.read_message() {
+                    Ok(msg) => {
+                        data.assume(msg);
+                        Ok(1)
                     }
-                    _ => Err(Error::with_would_block()),
-                }
-            }
+                    Err(tungstenite::error::Error::Io(e)) => Err(e),
+                    Err(e) => Err(Error::new(
+                        ErrorKind::Other,
+                        format!("tungstenite error: {:?}", e),
+                    )),
+                },
+                _ => Err(Error::with_would_block()),
+            },
         }
     }
 
@@ -254,17 +291,21 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
             self.priv_write_pending()?;
             if let Some(WssState::Ready(wss)) = &mut self.state {
                 match wss.write_pending() {
-                    Ok(_) => (),
+                    Ok(_) => {
+                        if self.write_buf.is_empty() {
+                            return Ok(());
+                        }
+                    }
+                    // data still in queue
                     Err(tungstenite::error::Error::Io(e)) if e.would_block() => (),
                     Err(tungstenite::error::Error::Io(e)) => return Err(e),
-                    Err(e) => return Err(Error::new(
-                        ErrorKind::Other,
-                        format!("tungstenite error: {:?}", e),
-                    )),
+                    Err(e) => {
+                        return Err(Error::new(
+                            ErrorKind::Other,
+                            format!("tungstenite error: {:?}", e),
+                        ))
+                    }
                 }
-            }
-            if self.write_buf.is_empty() {
-                return Ok(());
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
@@ -661,3 +702,79 @@ mod tests {
     }
 }
 */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn wait_read<Sub: 'static + InStreamStd>(s: &mut InStreamWss<Sub>) -> WsFrame {
+        let mut out: WsFrame = "".into();
+        loop {
+            match s.read(&mut out) {
+                Ok(_) => return out,
+                Err(e) if e.would_block() => {
+                    std::thread::sleep(std::time::Duration::from_millis(1))
+                }
+                Err(e) => panic!("{:?}", e),
+            }
+        }
+    }
+
+    fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(
+        mut listener: InStreamListenerWss<SubL>,
+        c: C,
+    ) {
+        let (send_binding, recv_binding) = crossbeam_channel::unbounded();
+
+        let server_thread = std::thread::spawn(move || {
+            println!("bound to: {}", listener.binding());
+            send_binding.send(listener.binding()).unwrap();
+
+            let mut srv = loop {
+                match listener.accept() {
+                    Ok(srv) => break srv,
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+            };
+
+            srv.write("hello from server".into()).unwrap();
+            srv.flush().unwrap();
+
+            let res = wait_read(&mut srv);
+            assert_eq!("hello from client", res.as_str());
+        });
+
+        let client_thread = std::thread::spawn(move || {
+            let binding = recv_binding.recv().unwrap();
+            println!("connect to: {}", binding);
+
+            let mut cli: InStreamWss<SubL::StreamStd> =
+                InStreamWss::raw_connect(&binding, WssConnectConfig::new(c)).unwrap();
+
+            cli.write("hello from client".into()).unwrap();
+            cli.flush().unwrap();
+
+            let res = wait_read(&mut cli);
+            assert_eq!("hello from server", res.as_str());
+        });
+
+        server_thread.join().unwrap();
+        client_thread.join().unwrap();
+
+        println!("done");
+    }
+
+    #[test]
+    fn wss_works_tcp() {
+        let config = TcpBindConfig::default();
+        let config = TlsBindConfig::new(config).fake_certificate();
+        let config = WssBindConfig::new(config);
+        let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
+            InStreamListenerWss::raw_bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
+        //suite(l, TcpConnectConfig::default());
+        suite(l, TlsConnectConfig::new(TcpConnectConfig::default()));
+    }
+}

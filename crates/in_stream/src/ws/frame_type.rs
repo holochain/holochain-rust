@@ -22,6 +22,30 @@ pub enum WsFrame {
     Close(CloseData),
 }
 
+impl From<String> for WsFrame {
+    fn from(s: String) -> Self {
+        WsFrame::Text(s)
+    }
+}
+
+impl From<&str> for WsFrame {
+    fn from(s: &str) -> Self {
+        WsFrame::Text(s.to_string())
+    }
+}
+
+impl From<Vec<u8>> for WsFrame {
+    fn from(b: Vec<u8>) -> Self {
+        WsFrame::Binary(b)
+    }
+}
+
+impl From<&[u8]> for WsFrame {
+    fn from(b: &[u8]) -> Self {
+        WsFrame::Binary(b.to_vec())
+    }
+}
+
 impl From<tungstenite::protocol::Message> for WsFrame {
     fn from(m: tungstenite::protocol::Message) -> Self {
         match m {
@@ -52,12 +76,13 @@ impl From<WsFrame> for tungstenite::protocol::Message {
             WsFrame::Binary(b) => tungstenite::protocol::Message::Binary(b),
             WsFrame::Ping(b) => tungstenite::protocol::Message::Ping(b),
             WsFrame::Pong(b) => tungstenite::protocol::Message::Pong(b),
-            WsFrame::Close(c) => tungstenite::protocol::Message::Close(
-                Some(tungstenite::protocol::CloseFrame {
+            WsFrame::Close(c) => tungstenite::protocol::Message::Close(Some(
+                tungstenite::protocol::CloseFrame {
                     code: c.code.into(),
                     reason: std::borrow::Cow::from(&c.reason),
-                }.into_owned())
-            ),
+                }
+                .into_owned(),
+            )),
         }
     }
 }

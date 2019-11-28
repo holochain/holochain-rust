@@ -39,15 +39,12 @@ impl TlsBindConfig {
 impl InStreamConfig for TlsBindConfig {}
 
 /// bind to a network interface to listen for TLS connections
-pub struct InStreamListenerTls<Sub: InStreamListenerStd>
-{
+pub struct InStreamListenerTls<Sub: InStreamListenerStd> {
     sub: Sub,
     acceptor: native_tls::TlsAcceptor,
 }
 
-impl<Sub: InStreamListenerStd>
-std::fmt::Debug for InStreamListenerTls<Sub>
-{
+impl<Sub: InStreamListenerStd> std::fmt::Debug for InStreamListenerTls<Sub> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("InStreamListenerTls")
             .field("sub", &self.sub)
@@ -55,9 +52,7 @@ std::fmt::Debug for InStreamListenerTls<Sub>
     }
 }
 
-impl<Sub: InStreamListenerStd>
-InStreamListener<&mut [u8], &[u8]> for InStreamListenerTls<Sub>
-{
+impl<Sub: InStreamListenerStd> InStreamListener<&mut [u8], &[u8]> for InStreamListenerTls<Sub> {
     type Stream = InStreamTls<Sub::StreamStd>;
 
     fn raw_bind<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
@@ -244,14 +239,10 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         self.priv_write_pending()?;
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
-            Some(state) => {
-                match state {
-                    TlsState::MidHandshake(_) => Err(Error::with_would_block()),
-                    TlsState::Ready(tls) => {
-                        tls.read(data)
-                    }
-                }
-            }
+            Some(state) => match state {
+                TlsState::MidHandshake(_) => Err(Error::with_would_block()),
+                TlsState::Ready(tls) => tls.read(data),
+            },
         }
     }
 
@@ -259,34 +250,32 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         self.priv_process()?;
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
-            Some(state) => {
-                match state {
-                    TlsState::MidHandshake(_) => {
+            Some(state) => match state {
+                TlsState::MidHandshake(_) => {
+                    self.write_buf.extend_from_slice(data);
+                    Ok(data.len())
+                }
+                TlsState::Ready(tls) => {
+                    if self.write_buf.is_empty() {
+                        let written = match tls.write(data) {
+                            Ok(written) => written,
+                            Err(e) if e.would_block() => {
+                                self.write_buf.extend_from_slice(data);
+                                return Ok(data.len());
+                            }
+                            Err(e) => return Err(e),
+                        };
+                        if written < data.len() {
+                            self.write_buf.extend_from_slice(&data[..written]);
+                        }
+                        Ok(data.len())
+                    } else {
                         self.write_buf.extend_from_slice(data);
+                        self.priv_write_pending()?;
                         Ok(data.len())
                     }
-                    TlsState::Ready(tls) => {
-                        if self.write_buf.is_empty() {
-                            let written = match tls.write(data) {
-                                Ok(written) => written,
-                                Err(e) if e.would_block() => {
-                                    self.write_buf.extend_from_slice(data);
-                                    return Ok(data.len());
-                                }
-                                Err(e) => return Err(e),
-                            };
-                            if written < data.len() {
-                                self.write_buf.extend_from_slice(&data[..written]);
-                            }
-                            Ok(data.len())
-                        } else {
-                            self.write_buf.extend_from_slice(data);
-                            self.priv_write_pending()?;
-                            Ok(data.len())
-                        }
-                    }
                 }
-            }
+            },
         }
     }
 
@@ -318,7 +307,9 @@ mod tests {
         loop {
             match s.read(&mut buf) {
                 Ok(read) => out.extend_from_slice(&buf[..read]),
-                Err(e) if e.would_block() => std::thread::sleep(std::time::Duration::from_millis(1)),
+                Err(e) if e.would_block() => {
+                    std::thread::sleep(std::time::Duration::from_millis(1))
+                }
                 Err(e) => panic!("{:?}", e),
             }
             if out.len() >= c {
@@ -352,16 +343,11 @@ mod tests {
             assert_eq!("hello from client", &res);
         });
 
-        std::thread::sleep(std::time::Duration::from_millis(100));
-
         let client_thread = std::thread::spawn(move || {
             let binding = recv_binding.recv().unwrap();
             println!("connect to: {}", binding);
 
-            let mut cli = L::StreamStd::raw_connect(
-                &binding,
-                TlsConnectConfig::new(c),
-            )
+            let mut cli = L::StreamStd::raw_connect(&binding, TlsConnectConfig::new(c))
                 .unwrap()
                 .into_std_stream();
 
@@ -391,11 +377,8 @@ mod tests {
     #[test]
     fn tls_works_tcp() {
         let config = TlsBindConfig::new(TcpBindConfig::default()).fake_certificate();
-        let l: InStreamListenerTls<InStreamListenerTcp> = InStreamListenerTls::raw_bind(
-            &url2!("{}://127.0.0.1:0", SCHEME),
-            config,
-        )
-        .unwrap();
+        let l: InStreamListenerTls<InStreamListenerTcp> =
+            InStreamListenerTls::raw_bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
         suite(l, TcpConnectConfig::default());
     }
 }

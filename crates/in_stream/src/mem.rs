@@ -351,8 +351,7 @@ mod tests {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
-            let mut listener =
-                InStreamListenerMem::raw_bind(&random_url("test"), ()).unwrap();
+            let mut listener = InStreamListenerMem::raw_bind(&random_url("test"), ()).unwrap();
             println!("bound to: {}", listener.binding());
             send_binding.send(listener.binding()).unwrap();
 

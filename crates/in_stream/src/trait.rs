@@ -1,5 +1,8 @@
 use crate::*;
-use std::{fmt::Debug, io::{Error, ErrorKind, Result}};
+use std::{
+    fmt::Debug,
+    io::{Error, ErrorKind, Result},
+};
 use url2::prelude::*;
 
 pub type InStreamConfigAny = Box<dyn std::any::Any + 'static + Send>;
@@ -41,7 +44,8 @@ pub trait InStreamListener<R: Sized + Debug + Send + Sync, W: Sized + Debug + Se
 }
 
 pub trait InStreamListenerStd
-where for<'a> Self: InStreamListener<&'a mut [u8], &'a [u8]>
+where
+    for<'a> Self: InStreamListener<&'a mut [u8], &'a [u8]>,
 {
     type StreamStd: InStreamStd;
 
@@ -60,7 +64,9 @@ pub trait InStream<R: Sized + Debug + Send + Sync, W: Sized + Debug + Send + Syn
     fn flush(&mut self) -> Result<()>;
 }
 
-pub trait InStreamStd where for<'a> Self: InStream<&'a mut [u8], &'a [u8]>
+pub trait InStreamStd
+where
+    for<'a> Self: InStream<&'a mut [u8], &'a [u8]>,
 {
     fn into_std_stream(self) -> StdStreamAdapter<Self> {
         StdStreamAdapter::new(self)

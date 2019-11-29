@@ -257,7 +257,7 @@ impl Holochain {
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        let metric_name = format!("{}.{}", zome, fn_name);
+        let metric_name = format!("call_zome_function.{}.{}", zome, fn_name);
         with_latency_publishing!(
             metric_name,
             context.metric_publisher,

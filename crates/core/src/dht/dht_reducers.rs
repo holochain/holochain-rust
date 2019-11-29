@@ -521,7 +521,7 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();
-        let hold = create_pending_validation(test_entry, ValidatingWorkflow::HoldEntry);
+        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),

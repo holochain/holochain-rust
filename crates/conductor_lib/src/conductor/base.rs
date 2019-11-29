@@ -1859,7 +1859,7 @@ pub mod tests {
         let serialized_config = load_configuration::<Configuration>(&config_toml_string)
             .expect("Could not deserialize toml");
 
-        let mut reanimated_conductor = Conductor::from_config(serialized_config);
+        let mut reanimated_conductor = Conductor::from_config(serialized_config, None);
         reanimated_conductor.dna_loader = test_dna_loader();
         reanimated_conductor.key_loader = test_key_loader();
 

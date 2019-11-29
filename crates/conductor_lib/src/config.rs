@@ -1060,7 +1060,10 @@ pub mod tests {
     n3h_log_level = "d"
 
     [metric_publisher]
-    type = "logger"
+    type = "cloudwatchlogs"
+    log_stream_name = "2019-11-22_20-53-31.sim2h_public"
+    log_group_name = "holochain"
+ 
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -1078,7 +1081,7 @@ pub mod tests {
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
         assert_eq!(config.logger.logger_level, "debug");
-        assert_eq!(format!("{:?}", config.metric_publisher), "Some(Logger)");
+        assert_eq!(format!("{:?}", config.metric_publisher), "Some(CloudWatchLogs(CloudWatchLogsConfig { region: None, log_group_name: Some(\"holochain\"), log_stream_name: Some(\"2019-11-22_20-53-31.sim2h_public\"), assume_role_arn: None }))");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig::N3h(N3hConfig {

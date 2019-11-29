@@ -8,8 +8,9 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent, Conte
 
 use crate::{
     content_store::{AddContent, GetContent},
-    state::StateWrapper,
+    state::{ActionResponse, StateWrapper, ACTION_PRUNE_MS},
 };
+use bitflags::_core::time::Duration;
 use holochain_core_types::{
     agent::AgentId,
     chain_header::ChainHeader,
@@ -23,17 +24,16 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use im::HashMap;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
+use std::{convert::TryFrom, ops::Deref, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
     /// every action and the result of that action
-    // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    actions: HashMap<ActionWrapper, ActionResponse>,
+    actions: HashMap<ActionWrapper, Response>,
     chain_store: ChainStore,
     top_chain_header: Option<ChainHeader>,
     initial_agent_address: Address,
@@ -66,7 +66,7 @@ impl AgentState {
 
     /// getter for a copy of self.actions
     /// uniquely maps action executions to the result of the action
-    pub fn actions(&self) -> HashMap<ActionWrapper, ActionResponse> {
+    pub fn actions(&self) -> HashMap<ActionWrapper, Response> {
         self.actions.clone()
     }
 
@@ -157,14 +157,28 @@ impl AddressableContent for AgentStateSnapshot {
 /// the agent's response to an action
 /// stored alongside the action in AgentState::actions to provide a state history that observers
 /// poll and retrieve
-// @TODO abstract this to a standard trait
-// @see https://github.com/holochain/holochain-rust/issues/196
 #[allow(clippy::large_enum_variant)]
-pub enum ActionResponse {
+pub enum AgentActionResponse {
     Commit(Result<Address, HolochainError>),
     FetchEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
+pub struct Response(ActionResponse<AgentActionResponse>);
+
+impl Deref for Response {
+    type Target = ActionResponse<AgentActionResponse>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<AgentActionResponse> for Response {
+    fn from(r: AgentActionResponse) -> Self {
+        Response(ActionResponse::new(r))
+    }
 }
 
 pub fn create_new_chain_header(
@@ -215,9 +229,29 @@ pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
 ) -> Result<EntryWithHeader, HolochainError> {
+    let timestamp = chain_header.timestamp().clone();
     let entry = Entry::ChainHeader(chain_header);
-    let header =
+    // This header entry needs its own header so we can publish it.
+    // This is a bit delicate:
+    //   * this virtual header needs to be signed
+    //   * but we need to make sure that it is deterministic, i.e. that every call of this
+    //     function creates the exact same header. Otherwise we end up in a endless loop of
+    //     authoring new virtual headers because they have different aspect hashes due to the
+    //     timestamp and the source chain link progressing over time.
+    // So we first call this function that gives a new header as if it would be added to the
+    // source chain...
+    let proto =
         create_new_chain_header(&entry, &root_state.agent(), &root_state, &None, &Vec::new())?;
+    // ... and then overwrite all links and the timestamp with static values:
+    let header = ChainHeader::new(
+        proto.entry_type(),
+        proto.entry_address(),
+        proto.provenances(),
+        &None,
+        &None,
+        &None,
+        &timestamp,
+    );
     Ok(EntryWithHeader { entry, header })
 }
 
@@ -250,15 +284,56 @@ fn reduce_commit_entry(
         Ok(address)
     });
 
+    agent_state.actions.insert(
+        action_wrapper.clone(),
+        Response::from(AgentActionResponse::Commit(result)),
+    );
+}
+
+fn reduce_prune(agent_state: &mut AgentState, _root_state: &State, action_wrapper: &ActionWrapper) {
+    assert_eq!(action_wrapper.action(), &Action::Prune);
+
     agent_state
         .actions
-        .insert(action_wrapper.clone(), ActionResponse::Commit(result));
+        .iter()
+        .filter_map(|(action, response)| {
+            if let Ok(elapsed) = response.created_at.elapsed() {
+                if elapsed > Duration::from_millis(ACTION_PRUNE_MS) {
+                    return Some(action);
+                }
+            }
+            None
+        })
+        .cloned()
+        .collect::<Vec<ActionWrapper>>()
+        .into_iter()
+        .for_each(|action| {
+            agent_state.actions.remove(&action);
+        });
+}
+
+fn reduce_clear_action_response(
+    agent_state: &mut AgentState,
+    _root_state: &State,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let id = unwrap_to!(action => Action::ClearActionResponse);
+
+    agent_state.actions = agent_state
+        .actions
+        .iter()
+        .filter(|(action, _)| action.id() == id)
+        .cloned()
+        .collect();
 }
 
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
+        Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
         Action::Commit(_) => Some(reduce_commit_entry),
+        Action::Prune => Some(reduce_prune),
         _ => None,
     }
 }
@@ -295,8 +370,8 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::AddressableContent;
+    use im::HashMap;
     use serde_json;
-    use std::collections::HashMap;
     use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
@@ -310,8 +385,8 @@ pub mod tests {
     }
 
     /// dummy action response for a successful commit as test_entry()
-    pub fn test_action_response_commit() -> ActionResponse {
-        ActionResponse::Commit(Ok(expected_entry_address()))
+    pub fn test_action_response_commit() -> AgentActionResponse {
+        AgentActionResponse::Commit(Ok(expected_entry_address()))
     }
 
     #[test]
@@ -337,10 +412,8 @@ pub mod tests {
 
         reduce_commit_entry(&mut agent_state, &state, &action_wrapper);
 
-        assert_eq!(
-            agent_state.actions().get(&action_wrapper),
-            Some(&test_action_response_commit()),
-        );
+        let response = agent_state.actions().get(&action_wrapper).unwrap().clone();
+        assert_eq!(response.response(), &test_action_response_commit(),);
     }
 
     #[test]
@@ -351,11 +424,11 @@ pub mod tests {
                 "{{\"Commit\":{{\"Ok\":\"{}\"}}}}",
                 expected_entry_address()
             )),
-            JsonString::from(ActionResponse::Commit(Ok(expected_entry_address()))),
+            JsonString::from(AgentActionResponse::Commit(Ok(expected_entry_address()))),
         );
         assert_eq!(
             JsonString::from_json("{\"Commit\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
-            JsonString::from(ActionResponse::Commit(Err(HolochainError::new(
+            JsonString::from(AgentActionResponse::Commit(Err(HolochainError::new(
                 "some error"
             ))))
         );
@@ -367,13 +440,13 @@ pub mod tests {
             JsonString::from_json(
                 "{\"FetchEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
-            JsonString::from(ActionResponse::FetchEntry(Some(Entry::from(
+            JsonString::from(AgentActionResponse::FetchEntry(Some(Entry::from(
                 test_entry().clone()
             ))))
         );
         assert_eq!(
             JsonString::from_json("{\"FetchEntry\":null}"),
-            JsonString::from(ActionResponse::FetchEntry(None)),
+            JsonString::from(AgentActionResponse::FetchEntry(None)),
         )
     }
 
@@ -384,11 +457,13 @@ pub mod tests {
                 "{{\"GetLinks\":{{\"Ok\":[\"{}\"]}}}}",
                 expected_entry_address()
             )),
-            JsonString::from(ActionResponse::GetLinks(Ok(vec![test_entry().address()]))),
+            JsonString::from(AgentActionResponse::GetLinks(Ok(vec![
+                test_entry().address()
+            ]))),
         );
         assert_eq!(
             JsonString::from_json("{\"GetLinks\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
-            JsonString::from(ActionResponse::GetLinks(Err(HolochainError::new(
+            JsonString::from(AgentActionResponse::GetLinks(Err(HolochainError::new(
                 "some error"
             )))),
         );
@@ -407,13 +482,13 @@ pub mod tests {
     fn test_link_entries_response_to_json() {
         assert_eq!(
             JsonString::from_json("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
-            JsonString::from(ActionResponse::LinkEntries(Ok(Entry::from(
+            JsonString::from(AgentActionResponse::LinkEntries(Ok(Entry::from(
                 test_entry(),
             )))),
         );
         assert_eq!(
             JsonString::from_json("{\"LinkEntries\":{\"Err\":{\"ErrorGeneric\":\"some error\"}}}"),
-            JsonString::from(ActionResponse::LinkEntries(Err(HolochainError::new(
+            JsonString::from(AgentActionResponse::LinkEntries(Err(HolochainError::new(
                 "some error"
             )))),
         );

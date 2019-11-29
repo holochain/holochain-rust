@@ -6,11 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- Adds a retry if a net worker cannot be spawned on startup [#1870](https://github.com/holochain/holochain-rust/pull/1870)
-- Add hdk::version_hash, returning MD5 hash of HDK build environment [#1869](https://github.com/holochain/holochain-rust/pull/1869)
-- Ability to set storage backend for new instances over RPC [#1900](https://github.com/holochain/holochain-rust/pull/1900)
+- Pruning the State of old/stale/history data to prevent it from using up a slowly but infinitely growing amount of memory. [#1920](https://github.com/holochain/holochain-rust/pull/1920)
 
 ### Changed
+
+- Exchanged [vanilla thread-pool](https://docs.rs/threadpool/1.7.1/threadpool/) with the futures executor thread-pool [from the futures crate](https://docs.rs/futures/0.3.1/futures/executor/index.html). This enables M:N Future:Thread execution which is much less wasteful than having a thread per future. Number of threads in the pool is kept at the default (of that crate) of number of CPUs. [#1915](https://github.com/holochain/holochain-rust/pull/1915) 
+- Replace naive timeout implementation (for network queries / direct messages) that uses a thread per timeout with a scheduled job that polls the State and sends timeout actions when needed (reduces number of used threads and thus memory footprint) [#1916](https://github.com/holochain/holochain-rust/pull/1916).
+- Use the [im crate](https://docs.rs/im/14.0.0/im/) for `HashMap`s and `HashSet`s used in the redux State. This makes cloning the state much cheaper and improves over-all performance. [#1923](https://github.com/holochain/holochain-rust/pull/1923)
 
 ### Deprecated
 
@@ -18,7 +20,5 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- Fix lots of deadlocks by managing threads and encapsulating locks [#1852](https://github.com/holochain/holochain-rust/pull/1852)
-- Have sim2h let go of nodes if the connection got lost because of an error [#1877](https://github.com/holochain/holochain-rust/pull/1877)
 ### Security
 

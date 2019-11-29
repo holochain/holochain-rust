@@ -12,6 +12,7 @@ use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
 };
+use regex::Regex;
 use reqwest::{self, Url};
 use serde_json::map::Map;
 use std::{
@@ -23,32 +24,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
-
-/*type Error = String;
-fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> Result<String, Error>
-where
-    P: AsRef<std::path::Path>,
-    S1: AsRef<std::ffi::OsStr>,
-    I: IntoIterator<Item = S2>,
-    S2: AsRef<std::ffi::OsStr>,
-{
-    let mut cmd = Command::new(cmd);
-    cmd.args(args)
-        //        .env("N3H_VERSION_EXIT", "1")
-        //        .env("NO_CLEANUP", "1")
-        .current_dir(dir);
-    let res = cmd
-        .output()
-        .map_err(|e| format!("Failed to execute {:?}: {:?}", cmd, e))?;
-    if !ignore_errors && !res.status.success() {
-        panic!(
-            "bad exit {:?} {:?}",
-            res.status.code(),
-            String::from_utf8_lossy(&res.stderr)
-        );
-    }
-    Ok(String::from_utf8_lossy(&res.stdout).trim().to_string())
-}*/
 
 const MAGIC_STRING: &str = "Done. All interfaces started.";
 
@@ -233,6 +208,21 @@ fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::typ
     Ok(())
 }
 
+fn get_info_as_json() -> String {
+    let output = Command::new("holochain")
+        .args(&["-i"])
+        .output()
+        .expect("failed to execute process");
+    let info_str = String::from_utf8(output.stdout).unwrap();
+
+    // poor mans JSON convert
+    let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();
+    let result = re.replace_all(&info_str, "\"$key\": \"$val\",");
+    let mut result = format!("{}", result); // pop off the final comma
+    result.pop();
+    format!("{{{}}}", result)
+}
+
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
@@ -253,7 +243,9 @@ fn main() {
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc.clone();
 
-    io.add_method("ping", |_params: Params| Ok(Value::String("pong".into())));
+    io.add_method("ping", |_params: Params| {
+        Ok(Value::String(get_info_as_json()))
+    });
 
     io.add_method("dna", move |params: Params| {
         let params_map = unwrap_params_map(params)?;

@@ -1,8 +1,8 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
-    nucleus::{actions::initialize::Initialization, validation::ValidationResult, ZomeFnCall},
+    nucleus::{actions::initialize::Initialization, HdkFnCall, HdkFnCallResult, ZomeFnCall},
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
+use holochain_core_types::{dna::Dna, error::HolochainError};
 
 use crate::state::StateWrapper;
 use holochain_json_api::{
@@ -10,16 +10,12 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use im::{HashMap, HashSet};
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use snowflake;
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    convert::TryFrom,
-    fmt,
-};
+use std::{collections::VecDeque, convert::TryFrom, fmt};
 
 #[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
@@ -107,15 +103,8 @@ pub struct NucleusState {
     //read from there when loading an instance/chain.
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
-
-    // @TODO eventually drop stale calls
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    // @TODO should this use the standard ActionWrapper/ActionResponse format?
-    // @see https://github.com/holochain/holochain-rust/issues/196
+    pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
-    pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
-    pub validation_packages:
-        HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
 }
 
 impl NucleusState {
@@ -126,8 +115,7 @@ impl NucleusState {
             queued_zome_calls: VecDeque::new(),
             running_zome_calls: HashSet::new(),
             zome_call_results: HashMap::new(),
-            validation_results: HashMap::new(),
-            validation_packages: HashMap::new(),
+            hdk_function_calls: HashMap::new(),
         }
     }
 
@@ -189,8 +177,7 @@ impl From<NucleusStateSnapshot> for NucleusState {
             queued_zome_calls: VecDeque::new(),
             running_zome_calls: HashSet::new(),
             zome_call_results: HashMap::new(),
-            validation_results: HashMap::new(),
-            validation_packages: HashMap::new(),
+            hdk_function_calls: HashMap::new(),
         }
     }
 }
@@ -210,13 +197,73 @@ impl AddressableContent for NucleusStateSnapshot {
     }
 }
 
+#[derive(Clone, Default, Debug, PartialEq, Serialize)]
+pub struct ZomeFnCallState {
+    hdk_fn_invocations: Vec<(HdkFnCall, Option<HdkFnCallResult>)>,
+}
+
+impl ZomeFnCallState {
+    pub fn begin_hdk_call(&mut self, call: HdkFnCall) {
+        self.hdk_fn_invocations.push((call, None))
+    }
+
+    pub fn end_hdk_call(
+        &mut self,
+        call: HdkFnCall,
+        result: HdkFnCallResult,
+    ) -> Result<(), HolochainError> {
+        if let Some((current_call, current_result)) = self.hdk_fn_invocations.pop() {
+            if call != current_call {
+                Err(HolochainError::new(
+                    "HDK call other than the current call was ended.",
+                ))
+            } else if current_result.is_some() {
+                Err(HolochainError::new(
+                    "Ending and HDK which was already ended.",
+                ))
+            } else {
+                self.hdk_fn_invocations.push((call, Some(result)));
+                Ok(())
+            }
+        } else {
+            Err(HolochainError::new(
+                "Attempted to end HDK call, but none was started!",
+            ))
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
 
-    use super::NucleusState;
+    use super::{HdkFnCall, NucleusState, ZomeFnCallState};
+    use crate::nucleus::ribosome::api::ZomeApiFunction;
 
     /// dummy nucleus state
     pub fn test_nucleus_state() -> NucleusState {
         NucleusState::new()
+    }
+
+    #[test]
+    fn test_zome_fn_call_state() {
+        let mut state = ZomeFnCallState::default();
+        let call1 = HdkFnCall {
+            function: ZomeApiFunction::Call,
+            parameters: "params1".into(),
+        };
+        let call2 = HdkFnCall {
+            function: ZomeApiFunction::Call,
+            parameters: "params2".into(),
+        };
+
+        state.begin_hdk_call(call1.clone());
+        state.end_hdk_call(call1, Ok("result".into())).unwrap();
+
+        state.begin_hdk_call(call2.clone());
+        state
+            .end_hdk_call(call2, Err("call failed for reasons".into()))
+            .unwrap();
+
+        assert_eq!(state.hdk_fn_invocations.len(), 2);
     }
 }

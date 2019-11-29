@@ -47,6 +47,7 @@ pub mod tests {
         state::test_store,
     };
     use crossbeam_channel::unbounded;
+    use holochain_tracing as ht;
     use holochain_core_types::dna::Dna;
     use std::sync::Arc;
 
@@ -58,7 +59,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, _observer) = unbounded::<Observer>();
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer, None);
+        let context = test_context_with_channels("jimmy", &sender.into(), &tx_observer, None);
         let root_state = test_store(context);
 
         // Reduce Init action

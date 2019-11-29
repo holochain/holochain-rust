@@ -3,7 +3,6 @@
 use crate::{
     action::{Action, ActionWrapper},
     dht::dht_store::DhtStore,
-    network::entry_with_header::EntryWithHeader,
 };
 use std::sync::Arc;
 
@@ -12,7 +11,7 @@ use super::dht_inner_reducers::{
     reduce_update_entry_inner, LinkModification,
 };
 
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{entry::Entry, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::AddressableContent;
 
 // A function that might return a mutated DhtStore
@@ -39,11 +38,7 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
-        Action::Hold(_) => Some(reduce_hold_entry),
-        Action::UpdateEntry(_) => Some(reduce_update_entry),
-        Action::RemoveEntry(_) => Some(reduce_remove_entry),
-        Action::AddLink(_) => Some(reduce_add_link),
-        Action::RemoveLink(_) => Some(reduce_remove_link),
+        Action::HoldAspect(_) => Some(reduce_hold_aspect),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
         Action::RemoveQueuedHoldingWorkflow(_) => Some(reduce_remove_queued_holding_workflow),
         _ => None,
@@ -65,86 +60,85 @@ pub(crate) fn reduce_commit_entry(
     }
 }
 
-pub(crate) fn reduce_hold_entry(
+pub(crate) fn reduce_hold_aspect(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let EntryWithHeader { entry, header } = unwrap_to!(action_wrapper.action() => Action::Hold);
+    let aspect = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
-    match reduce_store_entry_inner(&mut new_store, &entry) {
-        Ok(()) => {
-            new_store.mark_entry_as_held(&entry);
-            new_store.add_header_for_entry(&entry, &header).ok()?;
-            Some(new_store)
+    new_store.mark_aspect_as_held(&aspect);
+
+    // TODO: we think we don't need this but not 100%
+    // new_store.actions_mut().insert(
+    //     action_wrapper.clone(),
+    //     Ok("TODO: nico, do we need this?".into()),
+    // );
+    match aspect {
+        EntryAspect::Content(entry, header) => {
+            match reduce_store_entry_inner(&mut new_store, entry) {
+                Ok(()) => {
+                    new_store.add_header_for_entry(&entry, &header).ok()?;
+                    Some(new_store)
+                }
+                Err(e) => {
+                    error!("{}", e);
+                    None
+                }
+            }
         }
-        Err(e) => {
-            println!("{}", e);
+        EntryAspect::LinkAdd(link_data, _header) => {
+            let entry = Entry::LinkAdd(link_data.clone());
+            match reduce_add_remove_link_inner(
+                &mut new_store,
+                link_data.link(),
+                &entry.address(),
+                LinkModification::Add,
+            ) {
+                Ok(_) => Some(new_store),
+                Err(e) => {
+                    error!("{}", e);
+                    None
+                }
+            }
+        }
+        EntryAspect::LinkRemove((link_data, links_to_remove), _header) => Some(
+            links_to_remove
+                .iter()
+                .fold(new_store, |mut store, link_addresses| {
+                    let link = link_data.link();
+                    let _ = reduce_add_remove_link_inner(
+                        &mut store,
+                        link,
+                        link_addresses,
+                        LinkModification::Remove,
+                    );
+                    store.clone()
+                }),
+        ),
+        EntryAspect::Update(entry, header) => {
+            if let Some(crud_link) = header.link_update_delete() {
+                let _ = reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address());
+                Some(new_store)
+            } else {
+                error!("EntryAspect::Update without crud_link in header received!");
+                None
+            }
+        }
+        EntryAspect::Deletion(header) => {
+            if let Some(crud_link) = header.link_update_delete() {
+                let _ =
+                    reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
+                Some(new_store)
+            } else {
+                error!("EntryAspect::Update without crud_link in header received!");
+                None
+            }
+        }
+        EntryAspect::Header(_) => {
+            error!("Got EntryAspect::Header which is not implemented.");
             None
         }
     }
-}
-
-pub(crate) fn reduce_add_link(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let link_data = unwrap_to!(action_wrapper.action() => Action::AddLink);
-    let mut new_store = (*old_store).clone();
-    let entry = Entry::LinkAdd(link_data.clone());
-    let res = reduce_add_remove_link_inner(
-        &mut new_store,
-        link_data.link(),
-        &entry.address(),
-        LinkModification::Add,
-    );
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
-}
-
-pub(crate) fn reduce_remove_link(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let entry = unwrap_to!(action_wrapper.action() => Action::RemoveLink);
-    let (link_data, links_to_remove) = unwrap_to!(entry => Entry::LinkRemove);
-    let new_store = (*old_store).clone();
-    let store = links_to_remove
-        .iter()
-        .fold(new_store, |mut store, link_addresses| {
-            let res = reduce_add_remove_link_inner(
-                &mut store,
-                link_data.link(),
-                link_addresses,
-                LinkModification::Remove,
-            );
-            store.actions_mut().insert(action_wrapper.clone(), res);
-            store.clone()
-        });
-
-    Some(store)
-}
-
-pub(crate) fn reduce_update_entry(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let (old_address, new_address) = unwrap_to!(action_wrapper.action() => Action::UpdateEntry);
-    let mut new_store = (*old_store).clone();
-    let res = reduce_update_entry_inner(&mut new_store, old_address, new_address);
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
-}
-
-pub(crate) fn reduce_remove_entry(
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let (deleted_address, deletion_address) =
-        unwrap_to!(action_wrapper.action() => Action::RemoveEntry);
-    let mut new_store = (*old_store).clone();
-    let res = reduce_remove_entry_inner(&mut new_store, deleted_address, deletion_address);
-    new_store.actions_mut().insert(action_wrapper.clone(), res);
-    Some(new_store)
 }
 
 #[allow(dead_code)]
@@ -163,15 +157,21 @@ pub fn reduce_queue_holding_workflow(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let pending = unwrap_to!(action => Action::QueueHoldingWorkflow);
-    let mut new_store = (*old_store).clone();
+    let (pending, maybe_delay) = unwrap_to!(action => Action::QueueHoldingWorkflow);
 
     // TODO: TRACING: this is where we would include a Span, so that we can resume
     // the trace when the workflow gets popped (see instance.rs), but we can't do that
     // until we stop cloning the State, because Spans are not Cloneable.
 
-    new_store.queue_holding_workflow(pending.clone());
-    Some(new_store)
+    let entry_aspect = EntryAspect::from((**pending).clone());
+    if old_store.get_holding_map().contains(&entry_aspect) {
+        error!("Tried to add pending validation to queue which is already held!");
+        None
+    } else {
+        let mut new_store = (*old_store).clone();
+        new_store.queue_holding_workflow((pending.clone(), *maybe_delay));
+        Some(new_store)
+    }
 }
 
 #[allow(unknown_lints)]
@@ -198,7 +198,7 @@ pub mod tests {
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{
-                reduce, reduce_hold_entry, reduce_queue_holding_workflow,
+                reduce, reduce_hold_aspect, reduce_queue_holding_workflow,
                 reduce_remove_queued_holding_workflow,
             },
             dht_store::{create_get_links_eavi_query, DhtStore},
@@ -215,25 +215,39 @@ pub mod tests {
         eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
+        network::entry_aspect::EntryAspect,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::{sync::Arc, time::SystemTime};
+    // TODO do this for all crate tests somehow
+    #[allow(dead_code)]
+    fn enable_logging_for_test() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+    }
 
     #[test]
-    fn reduce_hold_entry_test() {
+    fn reduce_hold_aspect_test() {
         let context = test_context("bob", None);
         let store = test_store(context);
 
         // test_entry is not sys so should do nothing
         let sys_entry = test_sys_entry();
-        let entry_wh = EntryWithHeader {
-            entry: sys_entry.clone(),
-            header: test_chain_header(),
-        };
 
-        let new_dht_store =
-            reduce_hold_entry(&store.dht(), &ActionWrapper::new(Action::Hold(entry_wh)))
-                .expect("there should be a new store for committing a sys entry");
+        let new_dht_store = reduce_hold_aspect(
+            &store.dht(),
+            &ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
+                sys_entry.clone(),
+                test_chain_header(),
+            ))),
+        )
+        .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),
@@ -250,6 +264,7 @@ pub mod tests {
 
     #[test]
     fn can_add_links() {
+        enable_logging_for_test();
         let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();
@@ -269,7 +284,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::AddLink(link_data.clone()));
+        let action = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
         let link_entry = Entry::LinkAdd(link_data.clone());
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
@@ -313,7 +331,11 @@ pub mod tests {
 
         //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data.clone()));
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
+
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         let link_remove_data = LinkData::from_link(
@@ -323,11 +345,14 @@ pub mod tests {
             test_agent_id(),
         );
 
-        let entry_link_remove =
-            Entry::LinkRemove((link_remove_data, vec![entry_link_add.clone().address()]));
-
         //remove added link from dht
-        let action_link_remove = ActionWrapper::new(Action::RemoveLink(entry_link_remove.clone()));
+        let action_link_remove = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkRemove(
+            (
+                link_remove_data.clone(),
+                vec![entry_link_add.clone().address()],
+            ),
+            test_chain_header(),
+        )));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
@@ -350,7 +375,10 @@ pub mod tests {
         );
 
         //add new link with same chain header
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
@@ -380,7 +408,10 @@ pub mod tests {
             test_agent_id_with_name("new_agent"),
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::AddLink(link_data));
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
         let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
@@ -422,7 +453,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::AddLink(link_data));
+        let action = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
+            link_data.clone(),
+            test_chain_header(),
+        )));
 
         let new_dht_store = reduce(store.dht(), &action);
 
@@ -432,10 +466,6 @@ pub mod tests {
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
-
-        let result = new_dht_store.actions().get(&action).unwrap();
-
-        assert!(result.is_err());
     }
 
     // TODO: Bring the old in-memory network up to speed and turn on this test again!
@@ -447,11 +477,10 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let entry_wh = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
-        let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
+        let action_wrapper = ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
+            entry.clone(),
+            test_chain_header(),
+        )));
 
         store.reduce(action_wrapper);
 
@@ -466,8 +495,7 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
-        let entry = test_entry();
+    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
         let entry_with_header = EntryWithHeader {
             entry: entry.clone(),
             header: test_chain_header(),
@@ -482,7 +510,8 @@ pub mod tests {
         let store = DhtStore::new(context.dht_storage.clone(), context.eav_storage.clone());
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
-        let hold = create_pending_validation(ValidatingWorkflow::HoldEntry);
+        let test_entry = test_entry();
+        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),
@@ -492,14 +521,30 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 1);
         assert!(store.has_queued_holding_workflow(&hold));
 
-        let hold_link = create_pending_validation(ValidatingWorkflow::HoldLink);
+        let test_link = String::from("test_link");
+        let test_tag = String::from("test-tag");
+        let link = Link::new(
+            &test_entry.address(),
+            &test_entry.address(),
+            &test_link.clone(),
+            &test_tag.clone(),
+        );
+        let link_data = LinkData::from_link(
+            &link,
+            LinkActionKind::ADD,
+            test_chain_header(),
+            test_agent_id(),
+        );
+
+        let link_entry = Entry::LinkAdd(link_data.clone());
+        let hold_link = create_pending_validation(link_entry, ValidatingWorkflow::HoldLink);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let update = create_pending_validation(ValidatingWorkflow::UpdateEntry);
+        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

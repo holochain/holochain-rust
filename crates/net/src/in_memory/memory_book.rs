@@ -32,6 +32,7 @@ pub(crate) fn undo_chain_id(chain_id: &ChainId) -> (Address, AgentPubKey) {
 /// Type for holding list of EntryAspects per Entry.
 /// i.e. map of entry_address -> Set(aspect_address)
 /// entry_address -> Set(aspect_address) -- edge case for indicating we are storing an entry?
+/// TODO: Unify with AspectMap
 pub(crate) type EntryBook = HashMap<EntryHash, HashSet<AspectHash>>;
 
 /// Type for holding list of addresses per entry per ChainId (dna+agent_id)

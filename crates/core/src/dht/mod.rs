@@ -2,7 +2,7 @@
 
 #[autotrace]
 pub mod actions;
-// #[autotrace]
+pub mod aspect_map;
 pub mod dht_reducers;
 #[autotrace]
 pub mod dht_store;

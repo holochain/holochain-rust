@@ -24,6 +24,7 @@ use holochain_json_api::json::JsonString;
 
 use holochain_dpki::utils::Verify;
 
+use crate::instance::dispatch_action;
 use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
@@ -335,7 +336,15 @@ impl Future for CallResultFuture {
         if let Some(state) = self.context.clone().try_state() {
             if self.call_spawned {
                 match state.nucleus().zome_call_result(&self.zome_call) {
-                    Some(result) => Poll::Ready(result),
+                    Some(result) => {
+                        dispatch_action(
+                            self.context.action_channel(),
+                            ActionWrapper::new(Action::ClearZomeFunctionCall(
+                                self.zome_call.clone(),
+                            )),
+                        );
+                        Poll::Ready(result)
+                    }
                     None => Poll::Pending,
                 }
             } else {

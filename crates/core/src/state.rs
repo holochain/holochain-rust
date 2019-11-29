@@ -28,7 +28,28 @@ use holochain_persistence_api::{
 };
 
 use crate::dht::dht_store::DhtStoreSnapshot;
-use std::{collections::HashSet, convert::TryInto, sync::Arc};
+use std::{convert::TryInto, sync::Arc, time::SystemTime};
+
+pub const ACTION_PRUNE_MS: u64 = 60000;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ActionResponse<T> {
+    pub created_at: SystemTime,
+    pub response: T,
+}
+
+impl<T> ActionResponse<T> {
+    pub fn new(response: T) -> Self {
+        ActionResponse::<T> {
+            created_at: SystemTime::now(),
+            response,
+        }
+    }
+
+    pub fn response(&self) -> &T {
+        &self.response
+    }
+}
 
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
@@ -40,9 +61,6 @@ pub struct State {
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
     network: Arc<NetworkState>,
-    // @TODO eventually drop stale history
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    pub history: HashSet<ActionWrapper>,
     pub conductor_api: ConductorApi,
 }
 
@@ -62,7 +80,6 @@ impl State {
             )),
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
             network: Arc::new(NetworkState::new()),
-            history: HashSet::new(),
             conductor_api: context.conductor_api.clone(),
         }
     }
@@ -99,7 +116,6 @@ impl State {
             agent: Arc::new(agent_state),
             dht: Arc::new(dht_store),
             network: Arc::new(NetworkState::new()),
-            history: HashSet::new(),
             conductor_api: context.conductor_api.clone(),
         }
     }
@@ -133,7 +149,7 @@ impl State {
     }
 
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
-        let mut new_state = State {
+        State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
             dht: crate::dht::dht_reducers::reduce(Arc::clone(&self.dht), &action_wrapper),
@@ -142,12 +158,8 @@ impl State {
                 &self,
                 &action_wrapper,
             ),
-            history: self.history.clone(),
             conductor_api: self.conductor_api.clone(),
-        };
-
-        new_state.history.insert(action_wrapper);
-        new_state
+        }
     }
 
     pub fn nucleus(&self) -> Arc<NucleusState> {
@@ -338,14 +350,6 @@ impl StateWrapper {
             .as_ref()
             .expect("Tried to use dropped state")
             .conductor_api
-            .clone()
-    }
-
-    pub fn history(&self) -> HashSet<ActionWrapper> {
-        self.state
-            .as_ref()
-            .expect("Tried to use dropped state")
-            .history
             .clone()
     }
 }

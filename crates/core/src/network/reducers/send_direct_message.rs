@@ -43,7 +43,12 @@ pub fn reduce_send_direct_message(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let dm_data = unwrap_to!(action => crate::action::Action::SendDirectMessage);
+    let (dm_data, maybe_timeout) = unwrap_to!(action => crate::action::Action::SendDirectMessage);
+    if let Some(timeout) = maybe_timeout {
+        network_state
+            .direct_message_timeouts
+            .insert(dm_data.msg_id.clone(), timeout.clone());
+    }
     if let Err(error) = inner(network_state, dm_data) {
         println!("err/net: Error sending direct message: {:?}", error);
     }
@@ -56,6 +61,8 @@ pub fn reduce_send_direct_message_timeout(
 ) {
     let action = action_wrapper.action();
     let id = unwrap_to!(action => crate::action::Action::SendDirectMessageTimeout);
+
+    network_state.direct_message_timeouts.remove(id);
 
     if network_state.custom_direct_message_replys.get(id).is_some() {
         return;
@@ -112,7 +119,8 @@ mod tests {
             msg_id: msg_id.clone(),
             is_response: false,
         };
-        let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
+        let action_wrapper =
+            ActionWrapper::new(Action::SendDirectMessage((direct_message_data, None)));
 
         store = store.reduce(action_wrapper);
 

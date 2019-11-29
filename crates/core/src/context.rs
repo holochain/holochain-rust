@@ -45,11 +45,9 @@ use std::{
     time::Duration,
 };
 
+use futures::executor::ThreadPool;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
-use threadpool::ThreadPool;
-
-const NUM_WORKER_THREADS: usize = 20;
 
 pub type ActionSender = ht::SpanSender<ActionWrapper>;
 pub type ActionReceiver = ht::SpanReceiver<ActionWrapper>;
@@ -159,7 +157,9 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
+            thread_pool: Arc::new(Mutex::new(
+                ThreadPool::new().expect("Could not create thread pool for futures"),
+            )),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
             tracer,
@@ -196,7 +196,9 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
+            thread_pool: Arc::new(Mutex::new(
+                ThreadPool::new().expect("Could not create thread pool for futures"),
+            )),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
             tracer,
@@ -364,14 +366,14 @@ impl Context {
         }
     }
 
-    pub fn spawn_task<F>(&self, f: F)
+    pub fn spawn_task<Fut>(&self, f: Fut)
     where
-        F: FnOnce() + Send + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
     {
         self.thread_pool
             .lock()
             .expect("Couldn't get lock on Context::thread_pool")
-            .execute(f);
+            .run(f);
     }
 
     /// returns the public capability token (if any)
@@ -496,42 +498,5 @@ pub mod tests {
         log_error!(ctx, "'{}' log level with Context target.", "Error");
 
         guard.flush();
-    }
-
-    #[test]
-    #[should_panic]
-    #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
-    fn test_deadlock() {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut context = Context::new(
-            "test_deadlock_instance",
-            AgentId::generate_fake("Terence"),
-            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            P2pConfig::new_with_unique_memory_backend(),
-            None,
-            None,
-            false,
-            Arc::new(RwLock::new(
-                holochain_metrics::DefaultMetricPublisher::default(),
-            )),
-            Arc::new(ht::null_tracer()),
-        );
-
-        let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
-        context.set_state(global_state.clone());
-
-        {
-            let _write_lock = global_state.write().unwrap();
-            // This line panics because we would enter into a deadlock
-            context.state();
-        }
     }
 }

@@ -2,6 +2,7 @@
 #![feature(
     arbitrary_self_types,
     async_await,
+    async_closure,
     proc_macro_hygiene,
     custom_inner_attributes
 )]

@@ -8,7 +8,7 @@ pub mod tests {
         instance::{tests::test_context, Instance},
     };
     use holochain_core_types::{
-        entry::{entry_type::EntryType, Entry},
+        entry::Entry,
         link::{link_list::LinkList, Link},
     };
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -62,19 +62,11 @@ pub mod tests {
             .process_action(&commit_action, &context)
             .expect("process_action should run without error");
         // Check if LinkEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
-        instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert_eq!(entry.entry_type(), EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.content());
-                    true
-                }
-                _ => false,
-            });
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_address() == link_list_entry.address()))
     }
 
     /// Committing a LinkList to source chain should work
@@ -98,18 +90,10 @@ pub mod tests {
             .process_action(&commit_action, &context)
             .expect("process_action should run without error");
         // Check if LinkEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
-        instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert_eq!(entry.entry_type(), EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.content());
-                    true
-                }
-                _ => false,
-            });
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_address() == link_list_entry.address()))
     }
 }

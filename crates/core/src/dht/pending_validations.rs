@@ -167,7 +167,7 @@ impl From<PendingValidationStruct> for EntryAspect {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ValidationTimeout {
     pub time_of_dispatch: SystemTime,
     pub delay: Duration,
@@ -188,7 +188,7 @@ impl From<(SystemTime, Duration)> for ValidationTimeout {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PendingValidationWithTimeout {
     pub pending: PendingValidation,
     pub timeout: Option<ValidationTimeout>,

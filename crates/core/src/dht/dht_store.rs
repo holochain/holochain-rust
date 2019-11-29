@@ -309,7 +309,7 @@ impl DhtStore {
     }
 }
 
-use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
+use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing, algo::is_cyclic_directed};
 use std::collections::HashMap;
 
 fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
@@ -329,15 +329,19 @@ where
 
     // add the edges
     for p in pending.clone() {
-        let to = index_map
+        let from = index_map
             .get(&p.pending.entry_with_header.entry.address())
             .expect("we literally just added this");
-        for from_addr in p.pending.dependencies.clone() {
+        for to_addr in p.pending.dependencies.clone() {
             // only add the dependencies that are also in the pending validation list
-            if let Some(from) = index_map.get(&from_addr) {
+            if let Some(to) = index_map.get(&to_addr) {
                 graph.add_edge(*from, *to, ());
             }
         }
+    }
+
+    if is_cyclic_directed(&graph) { // this might be expensive..
+        panic!("Cyclic validation dependencies detected!!")
     }
 
     // return only the pending valiations that don't have dependencies that are also pending
@@ -365,7 +369,9 @@ impl AddContent for DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::test_entry};
+    use crate::network::entry_with_header::EntryWithHeader;
+    use crate::dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow};
+    use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::{test_entry, test_entry_a, test_entry_b, test_entry_c}};
 
     use holochain_persistence_api::{
         cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
@@ -388,6 +394,56 @@ pub mod tests {
         assert_eq!(headers, vec![header1, header2]);
     }
 
+    fn pending_validation_for_entry(entry: Entry, dependencies: Vec<Address>) -> PendingValidationWithTimeout {
+        let header = test_chain_header_with_sig("sig1");
+        let mut pending_struct = PendingValidationStruct::new(EntryWithHeader{entry, header}, ValidatingWorkflow::HoldEntry);
+        pending_struct.dependencies = dependencies;
+        PendingValidationWithTimeout::new(Arc::new(pending_struct.clone()), None)
+    }
+
     #[test]
-    fn test_dependency_resolution() {}
+    fn test_dependency_resolution_no_dependencies() {
+        // A and B have no dependencies. Both should be free
+        let a = pending_validation_for_entry(test_entry_a(), Vec::new());
+        let b = pending_validation_for_entry(test_entry_b(), Vec::new());
+        assert_eq!(
+            get_free_dependencies(&vec![a.clone(), b.clone()]),
+            vec![a, b]
+        );
+    }
+
+    #[test]
+    fn test_dependency_resolution_chain() {
+        // A depends on B and B depends on C. C should be free
+        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
+        let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()]);
+        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+
+        assert_eq!(
+            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            vec![c]
+        );
+    }
+
+    #[test]
+    fn test_dependency_resolution_tree() {
+        // A depends on B and C. B and C should be free
+        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address(), test_entry_c().address()]);
+        let b = pending_validation_for_entry(test_entry_b(), vec![]);
+        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+
+        assert_eq!(
+            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            vec![b, c]
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Cyclic validation dependencies detected!!")]
+    fn test_dependency_resolution_cycle() {
+        // A depends on B, B depends on A. Uh Oh we have a cycle!
+        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
+        let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_a().address()]);
+        get_free_dependencies(&vec![a.clone(), b.clone()]);
+    }
 }

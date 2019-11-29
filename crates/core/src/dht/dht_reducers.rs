@@ -504,7 +504,7 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(workflow: ValidatingWorkflow) -> Result<PendingValidation, HolochainError> {
+    fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
         let entry = test_entry();
         match ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone()) {
             Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),

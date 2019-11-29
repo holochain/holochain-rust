@@ -10,20 +10,18 @@ impl ValidationDependencies for EntryWithHeader {
     fn get_validation_dependencies(&self) -> Vec<Address> {
         match &self.entry {
             Entry::App(_, _) => {
-                // an app entry is dependent on its previous header being validated
-                // QUESTION: Should this be its own header??
-                self.header
-                    .link()
-                    .map(|prev_addr| vec![prev_addr])
-                    .unwrap_or_else(Vec::new)
+                // in the future an entry should be dependent on its header but 
+                // for now it can require nothing
+                Vec::new()
             }
-            Entry::LinkAdd(link_data) => {
-                // A link depends on its base and target being validated
+            Entry::LinkAdd(link_data) 
+            | Entry::LinkRemove((link_data, _)) => {
+                // A link or link remove depends on its base and target being validated
                 vec![
                     link_data.link.base().clone(),
                     link_data.link.target().clone(),
                 ]
-            }
+            },
             Entry::ChainHeader(chain_header) => {
                 // A chain header entry is dependent on its previous header
                 // unless it is the genesis header (link is None)
@@ -31,8 +29,11 @@ impl ValidationDependencies for EntryWithHeader {
                     .link()
                     .map(|prev_addr| vec![prev_addr])
                     .unwrap_or_else(Vec::new)
+            },
+            Entry::Deletion(deletion) => {
+                // a deletion depends on the thing being deleted
+                vec![deletion.deleted_entry_address().clone()]
             }
-            // TODO: link remove? deletion? etc?
             _ => Vec::new(),
         }
     }
@@ -69,7 +70,7 @@ pub mod tests {
         let entry_wh = entry_with_header_from_entry(entry);
         assert_eq!(
             entry_wh.get_validation_dependencies(),
-            vec![Address::from("QmEntryPreviousHeaderHash")],
+            Vec::new(),
         )
     }
 

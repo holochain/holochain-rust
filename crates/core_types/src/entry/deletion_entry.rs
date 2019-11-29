@@ -17,8 +17,8 @@ impl DeletionEntry {
         }
     }
 
-    pub fn deleted_entry_address(self) -> Address {
-        self.deleted_entry_address
+    pub fn deleted_entry_address(&self) -> &Address {
+        &self.deleted_entry_address
     }
 }
 

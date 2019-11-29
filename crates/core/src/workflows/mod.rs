@@ -73,7 +73,7 @@ async fn try_make_local_validation_package(
 
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
-                build_validation_package(entry, context.clone(), header.provenances()
+                build_validation_package(entry, context.clone(), header.provenances())
             } else {
                 Err(HolochainError::ErrorGeneric(String::from(
                     "Can't create validation package locally",

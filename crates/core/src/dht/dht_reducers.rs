@@ -508,7 +508,10 @@ pub mod tests {
         match ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone()) {
             Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),
             Err(err) => {
-                let err_msg = format!("Tried to create a pending validation, got an error: {}", err);
+                let err_msg = format!(
+                    "Tried to create a pending validation, got an error: {}",
+                    err
+                );
                 panic!(err_msg);
             }
         }

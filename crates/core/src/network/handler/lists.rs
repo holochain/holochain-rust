@@ -177,5 +177,4 @@ pub mod tests {
         // to start with holding = authoring
         assert_eq!(authoring_map.bare().len(), 3);
     }
-
 }

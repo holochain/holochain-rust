@@ -309,7 +309,7 @@ impl DhtStore {
     }
 }
 
-use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing, algo::is_cyclic_directed};
+use petgraph::{algo::is_cyclic_directed, graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
 use std::collections::HashMap;
 
 fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
@@ -340,7 +340,8 @@ where
         }
     }
 
-    if is_cyclic_directed(&graph) { // this might be expensive..
+    if is_cyclic_directed(&graph) {
+        // this might be expensive..
         panic!("Cyclic validation dependencies detected!!")
     }
 
@@ -369,9 +370,14 @@ impl AddContent for DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::network::entry_with_header::EntryWithHeader;
-    use crate::dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow};
-    use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::{test_entry, test_entry_a, test_entry_b, test_entry_c}};
+    use crate::{
+        dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
+        network::entry_with_header::EntryWithHeader,
+    };
+    use holochain_core_types::{
+        chain_header::test_chain_header_with_sig,
+        entry::{test_entry, test_entry_a, test_entry_b, test_entry_c},
+    };
 
     use holochain_persistence_api::{
         cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
@@ -394,9 +400,15 @@ pub mod tests {
         assert_eq!(headers, vec![header1, header2]);
     }
 
-    fn pending_validation_for_entry(entry: Entry, dependencies: Vec<Address>) -> PendingValidationWithTimeout {
+    fn pending_validation_for_entry(
+        entry: Entry,
+        dependencies: Vec<Address>,
+    ) -> PendingValidationWithTimeout {
         let header = test_chain_header_with_sig("sig1");
-        let mut pending_struct = PendingValidationStruct::new(EntryWithHeader{entry, header}, ValidatingWorkflow::HoldEntry);
+        let mut pending_struct = PendingValidationStruct::new(
+            EntryWithHeader { entry, header },
+            ValidatingWorkflow::HoldEntry,
+        );
         pending_struct.dependencies = dependencies;
         PendingValidationWithTimeout::new(Arc::new(pending_struct.clone()), None)
     }
@@ -428,7 +440,10 @@ pub mod tests {
     #[test]
     fn test_dependency_resolution_tree() {
         // A depends on B and C. B and C should be free
-        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address(), test_entry_c().address()]);
+        let a = pending_validation_for_entry(
+            test_entry_a(),
+            vec![test_entry_b().address(), test_entry_c().address()],
+        );
         let b = pending_validation_for_entry(test_entry_b(), vec![]);
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
 

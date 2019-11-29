@@ -209,7 +209,7 @@ impl Instance {
                                     let tag = ht::Tag::new("action", format!("{:?}", action));
                                     let _guard = action_wrapper.follower_(&sub_context.tracer, "action_loop thread", |s| s.tag(tag).start()).map(|span| {
 
-                                        ht::push_root_span(span)
+                                        ht::push_span(span)
                                     });
                                     sync_self.emit_signals(&sub_context, &action_wrapper);
                                     // Tick all observers and remove those that have lost their receiving part
@@ -333,7 +333,7 @@ impl Instance {
                                 .start()
                                 .into();
                             threadpool.execute(move || {
-                                let _trace_guard = ht::push_root_span(root_span);
+                                let _trace_guard = ht::push_span(root_span);
 
                                 match run_holding_workflow(pending.clone(), context.clone()) {
                                     // If we couldn't run the validation due to unresolved dependencies,

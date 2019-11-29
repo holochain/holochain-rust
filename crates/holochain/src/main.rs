@@ -82,7 +82,7 @@ fn main() {
         ht::Tracer::with_sender(ht::AllSampler, span_tx)
     };
 
-    let _trace_guard = ht::push_root_span(tracer.span("holochain::main").start().into());
+    let _trace_guard = ht::push_span(tracer.span("holochain::main").start().into());
 
     let _ = spawn_locksmith_guard_watcher();
 

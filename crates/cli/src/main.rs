@@ -162,7 +162,7 @@ fn main() {
         ht::Tracer::with_sender(ht::AllSampler, span_tx)
     };
 
-    let _trace_guard = ht::push_root_span(tracer.span("hc::main").start().into());
+    let _trace_guard = ht::push_span(tracer.span("hc::main").start().into());
 
     lib3h_sodium::check_init();
     run(Some(tracer)).unwrap_or_else(|err| {

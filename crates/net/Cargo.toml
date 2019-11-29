@@ -20,7 +20,7 @@ lib3h_protocol = "=0.0.22"
 lib3h = "=0.0.22"
 lib3h_zombie_actor = "=0.0.22"
 detach = "=0.0.19"
-holochain_tracing = { version = "=0.0.1" }
+holochain_tracing = { version = "=0.0.4", git = "https://github.com/holochain/holochain-tracing.git", branch="span-stack-v2" }
 holochain_metrics = { version = "=0.0.39-alpha4", path = "../metrics" }
 holochain_common = { version = "=0.0.39-alpha4", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.39-alpha4", path = "../conductor_api" }

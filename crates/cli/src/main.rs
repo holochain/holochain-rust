@@ -150,7 +150,7 @@ fn main() {
     let tracer = {
         let (span_tx, span_rx) = crossbeam_channel::unbounded();
         let _ = std::thread::Builder::new()
-            .name(format!("tracer_loop"))
+            .name("tracer_loop".to_string())
             .spawn(move || {
                 info!("Tracer loop started.");
                 // TODO: killswitch

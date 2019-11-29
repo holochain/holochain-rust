@@ -309,7 +309,10 @@ impl DhtStore {
     //     self.queued_holding_workflows.pop_front()
     // }
 
-    pub(crate) fn remove_holding_workflow(&mut self, item: &PendingValidation) -> Option<QueuedItem> {
+    pub(crate) fn remove_holding_workflow(
+        &mut self,
+        item: &PendingValidation,
+    ) -> Option<QueuedItem> {
         self.queued_holding_workflows()
             .iter()
             .position(|(i, _)| i == item)

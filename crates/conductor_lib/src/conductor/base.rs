@@ -791,7 +791,7 @@ impl Conductor {
                 .unwrap()
                 .insert(instance_config.id.clone(), receiver);
                 context_builder = context_builder.with_signals(sender);
-                
+
                 if let Some(tracer) = self.tracer.clone() {
                     context_builder = context_builder.with_tracer(tracer);
                 }
@@ -1699,7 +1699,8 @@ pub mod tests {
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml(8888, 8889)).unwrap();
-        let mut conductor = Conductor::from_config(config.clone(), None).with_signal_channel(signal_tx);
+        let mut conductor =
+            Conductor::from_config(config.clone(), None).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor.boot_from_config().unwrap();

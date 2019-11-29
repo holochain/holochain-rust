@@ -115,7 +115,7 @@ impl Context {
         // Hence the two different cases here.
         conductor_api.expect("Context can't be created without conductor API")
     }
-    
+
     #[cfg(test)]
     fn test_check_conductor_api(
         conductor_api: Option<Arc<RwLock<IoHandler>>>,

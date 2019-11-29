@@ -54,7 +54,8 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, _observer) = unbounded::<Observer>();
-        let context = test_context_with_channels("jimmy", &sender.into(), &tx_observer, None).clone();
+        let context =
+            test_context_with_channels("jimmy", &sender.into(), &tx_observer, None).clone();
         let root_state = test_store(context);
 
         // Reduce Init action

@@ -47,8 +47,8 @@ pub mod tests {
         state::test_store,
     };
     use crossbeam_channel::unbounded;
-    use holochain_tracing as ht;
     use holochain_core_types::dna::Dna;
+    use holochain_tracing as ht;
     use std::sync::Arc;
 
     #[test]

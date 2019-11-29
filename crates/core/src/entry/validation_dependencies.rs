@@ -10,18 +10,17 @@ impl ValidationDependencies for EntryWithHeader {
     fn get_validation_dependencies(&self) -> Vec<Address> {
         match &self.entry {
             Entry::App(_, _) => {
-                // in the future an entry should be dependent on its header but 
+                // in the future an entry should be dependent on its header but
                 // for now it can require nothing
                 Vec::new()
             }
-            Entry::LinkAdd(link_data) 
-            | Entry::LinkRemove((link_data, _)) => {
+            Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
                 // A link or link remove depends on its base and target being validated
                 vec![
                     link_data.link.base().clone(),
                     link_data.link.target().clone(),
                 ]
-            },
+            }
             Entry::ChainHeader(chain_header) => {
                 // A chain header entry is dependent on its previous header
                 // unless it is the genesis header (link is None)
@@ -29,7 +28,7 @@ impl ValidationDependencies for EntryWithHeader {
                     .link()
                     .map(|prev_addr| vec![prev_addr])
                     .unwrap_or_else(Vec::new)
-            },
+            }
             Entry::Deletion(deletion) => {
                 // a deletion depends on the thing being deleted
                 vec![deletion.deleted_entry_address().clone()]
@@ -68,10 +67,7 @@ pub mod tests {
     fn test_get_validation_dependencies_app_entry() {
         let entry = Entry::App("entry_type".into(), "content".into());
         let entry_wh = entry_with_header_from_entry(entry);
-        assert_eq!(
-            entry_wh.get_validation_dependencies(),
-            Vec::new(),
-        )
+        assert_eq!(entry_wh.get_validation_dependencies(), Vec::new(),)
     }
 
     #[test]

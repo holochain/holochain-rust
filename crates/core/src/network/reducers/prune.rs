@@ -12,21 +12,17 @@ pub fn reduce_prune(
 ) {
     assert_eq!(action_wrapper.action(), &Action::Prune);
 
-    network_state
+    network_state.actions = network_state
         .actions
         .iter()
-        .filter_map(|(action, response)| {
+        .filter(|(_, response)| {
             if let Ok(elapsed) = response.created_at.elapsed() {
                 if elapsed > Duration::from_millis(ACTION_PRUNE_MS) {
-                    return Some(action);
+                    return false;
                 }
             }
-            None
+            true
         })
         .cloned()
-        .collect::<Vec<ActionWrapper>>()
-        .into_iter()
-        .for_each(|action| {
-            network_state.actions.remove(&action);
-        });
+        .collect();
 }

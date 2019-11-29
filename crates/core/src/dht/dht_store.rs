@@ -269,7 +269,7 @@ impl DhtStore {
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
         // calculate the leaf dependencies (the things we can validate right now)
-        let free_dependencies = get_free_dependencies(self.queued_holding_workflows.clone());
+        let free_dependencies = get_free_dependencies(&self.queued_holding_workflows);
 
         // respect the delays on the leaf nodes
         free_dependencies
@@ -312,12 +312,10 @@ impl DhtStore {
 use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
 use std::collections::HashMap;
 
-fn get_free_dependencies<I>(pending: I) -> Vec<PendingValidationWithTimeout>
+fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
 where
-    I: IntoIterator<Item = PendingValidationWithTimeout>,
+    I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
 {
-    let pending: Vec<PendingValidationWithTimeout> = pending.into_iter().collect();
-
     let mut graph = DiGraph::<(), ()>::new();
     let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
     let mut index_reverse_map: HashMap<NodeIndex, PendingValidationWithTimeout> = HashMap::new();
@@ -330,7 +328,7 @@ where
     }
 
     // add the edges
-    for p in pending {
+    for p in pending.clone() {
         let to = index_map
             .get(&p.pending.entry_with_header.entry.address())
             .expect("we literally just added this");

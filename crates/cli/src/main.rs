@@ -159,7 +159,7 @@ fn main() {
                     reporter.report(&[span]).expect("could not report span");
                 }
             });
-        ht::Tracer::with_sender(ht::AllSampler, span_tx)
+        ht::Tracer::with_sender(ht::NullSampler, span_tx)
     };
 
     let _trace_guard = ht::push_span(tracer.span("hc::main").start().into());

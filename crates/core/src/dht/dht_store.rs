@@ -1,6 +1,9 @@
 use crate::{
     content_store::{AddContent, GetContent},
-    dht::aspect_map::{AspectMap, AspectMapBare},
+    dht::{
+        aspect_map::{AspectMap, AspectMapBare},
+        pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
+    },
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -28,7 +31,7 @@ use std::{
     collections::{BTreeSet, VecDeque},
     convert::TryFrom,
     sync::Arc,
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 /// The state-slice for the DHT.
@@ -43,8 +46,7 @@ pub struct DhtStore {
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
 
-    pub(crate) queued_holding_workflows:
-        VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    pub(crate) queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl PartialEq for DhtStore {
@@ -63,7 +65,7 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_map: AspectMapBare,
-    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
@@ -272,9 +274,13 @@ impl DhtStore {
         // respect the delays on the leaf nodes
         free_dependencies
             .into_iter()
-            .skip_while(|(_pending, maybe_delay)| {
+            .skip_while(|PendingValidationWithTimeout { timeout, .. }| {
                 // skip pending validation with an unelapsed delay
-                if let Some((time_of_dispatch, delay)) = maybe_delay {
+                if let Some(ValidationTimeout {
+                    time_of_dispatch,
+                    delay,
+                }) = timeout
+                {
                     let maybe_time_elapsed = time_of_dispatch.elapsed();
                     if let Ok(time_elapsed) = maybe_time_elapsed {
                         if time_elapsed < *delay {
@@ -284,26 +290,21 @@ impl DhtStore {
                 }
                 false
             })
-            .map(|(pending, maybe_delay)| {
-                (
-                    pending,
-                    maybe_delay
-                        .map(|(_time, duration)| Some(duration))
-                        .unwrap_or(None),
-                )
+            .map(|PendingValidationWithTimeout { pending, timeout }| {
+                (pending, timeout.map(|t| Some(t.delay)).unwrap_or(None))
             })
             .next()
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        self.queued_holding_workflows
-            .iter()
-            .any(|(current, _)| current == pending)
+        self.queued_holding_workflows.iter().any(
+            |PendingValidationWithTimeout {
+                 pending: current, ..
+             }| current == pending,
+        )
     }
 
-    pub(crate) fn queued_holding_workflows(
-        &self,
-    ) -> &VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)> {
+    pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<PendingValidationWithTimeout> {
         &self.queued_holding_workflows
     }
 }
@@ -311,33 +312,29 @@ impl DhtStore {
 use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
 use std::collections::HashMap;
 
-fn get_free_dependencies<I>(pending: I) -> Vec<(PendingValidation, Option<(SystemTime, Duration)>)>
+fn get_free_dependencies<I>(pending: I) -> Vec<PendingValidationWithTimeout>
 where
-    I: IntoIterator<Item = (PendingValidation, Option<(SystemTime, Duration)>)>,
+    I: IntoIterator<Item = PendingValidationWithTimeout>,
 {
-    let pending: Vec<(PendingValidation, Option<(SystemTime, Duration)>)> =
-        pending.into_iter().collect();
+    let pending: Vec<PendingValidationWithTimeout> = pending.into_iter().collect();
 
     let mut graph = DiGraph::<(), ()>::new();
     let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
-    let mut index_reverse_map: HashMap<
-        NodeIndex,
-        (PendingValidation, Option<(SystemTime, Duration)>),
-    > = HashMap::new();
+    let mut index_reverse_map: HashMap<NodeIndex, PendingValidationWithTimeout> = HashMap::new();
 
     // add the nodes
     for p in pending.clone() {
         let node_index = graph.add_node(());
-        index_map.insert(p.0.entry_with_header.entry.address(), node_index);
+        index_map.insert(p.pending.entry_with_header.entry.address(), node_index);
         index_reverse_map.insert(node_index, p);
     }
 
     // add the edges
     for p in pending {
         let to = index_map
-            .get(&p.0.entry_with_header.entry.address())
+            .get(&p.pending.entry_with_header.entry.address())
             .expect("we literally just added this");
-        for from_addr in p.0.dependencies.clone() {
+        for from_addr in p.pending.dependencies.clone() {
             // only add the dependencies that are also in the pending validation list
             if let Some(from) = index_map.get(&from_addr) {
                 graph.add_edge(*from, *to, ());

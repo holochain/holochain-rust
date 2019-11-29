@@ -10,7 +10,12 @@ use holochain_core_types::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom, fmt, sync::Arc};
+use std::{
+    convert::TryFrom,
+    fmt,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -159,5 +164,38 @@ impl From<PendingValidationStruct> for EntryAspect {
                 EntryAspect::Deletion(pending.entry_with_header.header.clone())
             }
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ValidationTimeout {
+    pub time_of_dispatch: SystemTime,
+    pub delay: Duration,
+}
+
+impl ValidationTimeout {
+    pub fn new(time_of_dispatch: SystemTime, delay: Duration) -> Self {
+        Self {
+            time_of_dispatch,
+            delay,
+        }
+    }
+}
+
+impl From<(SystemTime, Duration)> for ValidationTimeout {
+    fn from(tuple: (SystemTime, Duration)) -> Self {
+        Self::new(tuple.0, tuple.1)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PendingValidationWithTimeout {
+    pub pending: PendingValidation,
+    pub timeout: Option<ValidationTimeout>,
+}
+
+impl PendingValidationWithTimeout {
+    pub fn new(pending: PendingValidation, timeout: Option<ValidationTimeout>) -> Self {
+        Self { pending, timeout }
     }
 }

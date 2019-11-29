@@ -13,12 +13,11 @@ pub fn reduce_return_zome_function_result(
 ) {
     let action = action_wrapper.action();
     let zome_fn_response = unwrap_to!(action => Action::ReturnZomeFunctionResult);
-    // @TODO store the action and result directly
-    // @see https://github.com/holochain/holochain-rust/issues/198
     state
         .zome_call_results
         .insert(zome_fn_response.call(), zome_fn_response.result());
     state.running_zome_calls.remove(&zome_fn_response.call());
+    state.hdk_function_calls.remove(&zome_fn_response.call());
     if let Some(next_call) = state.queued_zome_calls.pop_front() {
         state.running_zome_calls.insert(next_call);
     }

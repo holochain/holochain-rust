@@ -2,7 +2,7 @@ use crate::{
     action::ActionWrapper,
     agent::state::create_entry_with_header_for_header,
     network::{
-        actions::ActionResponse,
+        actions::NetworkActionResponse,
         entry_aspect::EntryAspect,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::{publish::entry_data_to_entry_aspect_data, send},
@@ -16,7 +16,7 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
-use crate::state::StateWrapper;
+use crate::{network::actions::Response, state::StateWrapper};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a request to publish a header entry alone
@@ -65,10 +65,10 @@ pub fn reduce_publish_header_entry(
     let result = reduce_publish_header_entry_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::PublishHeaderEntry(match result {
+        Response::from(NetworkActionResponse::PublishHeaderEntry(match result {
             Ok(_) => Ok(address.clone()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
+        })),
     );
 }
 

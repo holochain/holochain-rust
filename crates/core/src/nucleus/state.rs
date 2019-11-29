@@ -103,11 +103,6 @@ pub struct NucleusState {
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
     pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
-
-    // @TODO eventually drop stale calls
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    // @TODO should this use the standard ActionWrapper/ActionResponse format?
-    // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 

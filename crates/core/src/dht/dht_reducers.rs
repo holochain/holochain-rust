@@ -504,11 +504,14 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(workflow: ValidatingWorkflow) -> PendingValidation {
-        let entry = test_entry();
-        let chain_pair = ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone());
-
-        Arc::new(PendingValidationStruct::new(chain_pair, workflow))
+    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
+        match ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone()) {
+            Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),
+            Err(err) => {
+                let err_msg = format!("Tried to create a pending validation, got an error: {}", err);
+                panic!(err_msg);
+            }
+        }
     }
 
     #[test]
@@ -518,7 +521,7 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();
-        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
+        let hold = create_pending_validation(test_entry, ValidatingWorkflow::HoldEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),

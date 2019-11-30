@@ -12,7 +12,7 @@ use self::{
     deletion_entry::DeletionEntry,
 };
 use agent::{test_agent_id, AgentId};
-use chain_header::ChainHeader;
+use chain_header::{ChainHeader, test_chain_header};
 use chain_migrate::ChainMigrate;
 use crud_status::CrudStatus;
 use dna::Dna;
@@ -214,6 +214,7 @@ pub fn test_entry_unique() -> Entry {
 }
 
 pub fn test_link_entry() -> Entry {
+    let test_entry = test_entry();
     let test_link = String::from("test_link");
     let test_tag = String::from("test-tag");
     let link = Link::new(
@@ -254,7 +255,7 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::entry::{expected_entry_address, Entry};
+    use crate::{chain_header::test_chain_header, entry::{expected_entry_address, Entry}};
     use holochain_persistence_api::cas::{
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},

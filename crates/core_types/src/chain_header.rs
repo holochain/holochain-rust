@@ -5,8 +5,8 @@
 use crate::{
     agent::test_agent_id,
     entry::{
-        entry_type::{test_entry_type, EntryType},
-        test_entry, test_sys_entry,
+        entry_type::{test_entry_type, test_link_entry_type, test_sys_entry_type, EntryType},
+        test_entry, test_link_entry, test_sys_entry,
     },
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
@@ -194,11 +194,11 @@ pub mod tests {
     use crate::{
         chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
-            entry_type::{
+            Entry, entry_type::{
                 test_entry_type, test_entry_type_a, test_entry_type_b, test_link_entry_type,
                 test_sys_entry_type,
             },
-            test_entry, test_entry_a, test_entry_b, Entry,
+            test_entry, test_entry_a, test_entry_b, test_link_entry,
         },
         time::test_iso_8601,
     };

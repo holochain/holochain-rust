@@ -7,16 +7,18 @@ use crate::error::HolochainError;
 use base64;
 use serde::{
     self,
-    de::{Deserializer, Visitor},
-    ser::Serializer,
+    de::{Deserializer, SeqAccess, Visitor},
+    ser::{Error, Serializer, SerializeSeq},
 };
 use std::{
     fmt,
     hash::{Hash, Hasher},
+    io::{Read, BufReader},
     ops::Deref,
     sync::{Arc, RwLock},
 };
 use wasmi::Module;
+use flate2::{Compression, bufread::{GzEncoder, GzDecoder}};
 
 /// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
 /// which are all needed to add it to the DnaWasm below, and hence to the state.
@@ -46,16 +48,38 @@ impl fmt::Debug for ModuleArc {
     }
 }
 
-/// Private helper for converting binary WebAssembly into base64 serialized string.
+/// Private helper for converting binary WebAssembly into base64 serialized string sequence.
+/// Encodes to Gzip compressed, base-64 encoded String, or [String, ...]
 fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let b64 = base64::encode(data.as_ref());
-    s.serialize_str(&b64)
+    let buf_reader = BufReader::new(data.as_slice());
+    let mut gz = GzEncoder::new(buf_reader, Compression::default());
+    let mut buf = Vec::new();
+    gz.read_to_end(&mut buf).map_err(S::Error::custom)?;
+    let b64 = base64::encode(&buf);
+    let cnt = ( b64.len() + 127 ) / 128;
+    println!("WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes, {} rows",
+             data.len(), buf.len(), b64.len(), &cnt);
+    if cnt <= 1 {
+        // For small WASMs (and backward-compatibility) emit them as a simple *un-compressed* "string"
+        let b64 = base64::encode(data.as_ref());
+        println!("Encoding {}-byte base-64 uncompressed WASM to String", b64.len());
+        s.serialize_str(&b64)
+    } else {
+        // Output the base-64 encoded compressed WASM in (1024*5/4)/10 == 128-symbol chunks
+        let mut seq = s.serialize_seq(Some(cnt)).map_err(S::Error::custom)?;
+        println!("Encoding {}-byte base-64 gzipped WASM into {} String rows", b64.len(), &cnt);
+        for c in b64.as_bytes().chunks( 128 ) {
+            seq.serialize_element(c).map_err(S::Error::custom)?;
+        };
+        seq.end()
+    }
 }
 
-/// Private helper for converting base64 string into binary WebAssembly.
+/// Private helper for converting base64 string into binary WebAssembly.  Decodes base-64 encoded
+/// String (optionally Gzip-compressed for backward-compatibility), or Gzip-compressed [String, ...]
 fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Arc<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -68,18 +92,35 @@ where
 
         /// we only want to accept strings
         fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-            formatter.write_str("string")
+            formatter.write_str("base-64 encoded string, or [string, ...] ")
         }
 
-        /// if we get a string, try to base64 decode into binary
+        /// if we get a String, try to base-64 decode straight into binary WASM
         fn visit_str<E>(self, value: &str) -> Result<Vec<u8>, E>
         where
             E: serde::de::Error,
         {
-            match base64::decode(value) {
-                Ok(v) => Ok(v),
-                Err(e) => Err(serde::de::Error::custom(e)),
+            println!("Decoding {}-symbol base-64 raw WASM String", value.len());
+            base64::decode(value).map_err(serde::de::Error::custom)
+        }
+
+        /// If we got a [String, ...], decode base-64 and uncompress
+        fn visit_seq<A>(self, mut seq: A) -> Result<Vec<u8>, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let mut compressed: Vec<u8> = vec![];
+            while let Some(elem) = seq.next_element::<&[u8]>()? {
+                println!("Decoding {}-symbol base-64 raw WASM row", elem.len());
+                compressed.extend_from_slice( // inefficient but WASM loading is rare
+                    &base64::decode(elem)
+                        .map_err(serde::de::Error::custom)?
+                );
             }
+            let mut gz = GzDecoder::new(compressed.as_slice());
+            let mut value: Vec<u8> = vec![];
+            gz.read_to_end(&mut value).map_err(serde::de::Error::custom)?;
+            Ok(value)
         }
     }
 

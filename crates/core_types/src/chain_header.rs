@@ -175,9 +175,10 @@ pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        chain_header::{test_chain_header, test_provenances, ChainHeader},
+        chain_header::{test_chain_header, test_chain_header_for_sys_entry,test_provenances,
+            ChainHeader
+        },
         entry::{
-            Entry,
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
         },

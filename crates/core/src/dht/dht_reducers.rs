@@ -219,17 +219,15 @@ pub mod tests {
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{
-                reduce, reduce_hold_aspect, reduce_queue_holding_workflow,
-                reduce_remove_queued_holding_workflow,
+                reduce, reduce_hold_aspect,
             },
-            dht_store::{create_get_links_eavi_query, DhtStore},
+            dht_store::{create_get_links_eavi_query},
             pending_validations::{PendingValidation, PendingValidationStruct, ValidatingWorkflow},
         },
         instance::tests::test_context,
         network::chain_pair::ChainPair,
         state::test_store,
     };
-    use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
         chain_header::test_chain_header,
@@ -517,7 +515,7 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
+    fn try_create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
         let header = test_chain_header();
         match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {
             Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),
@@ -535,9 +533,9 @@ pub mod tests {
         }
     }
 
-    // Causes a header and entry mismatch when calling create_pending_validation()
+    // Causes a header and entry mismatch when calling try_create_pending_validation()
     // -> try_from_header_and_entry().
-    // So test_entry.address() <> test_chain_header().entry_address()
+    // So test_entry.address() <> test_chain_header().entry_address(), etc.
     #[cfg(feature = "broken-tests")]
     #[test]
     pub fn test_holding_queue() {
@@ -547,7 +545,7 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();
-        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
+        let hold = try_create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),
@@ -573,14 +571,14 @@ pub mod tests {
         );
 
         let link_entry = Entry::LinkAdd(link_data.clone());
-        let hold_link = create_pending_validation(link_entry, ValidatingWorkflow::HoldLink);
+        let hold_link = try_create_pending_validation(link_entry, ValidatingWorkflow::HoldLink);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
+        let update = try_create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

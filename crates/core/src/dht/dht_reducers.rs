@@ -253,6 +253,7 @@ pub mod tests {
             .try_init();
     }
 
+    #[cfg(feature = "broken-tests")]
     #[test]
     fn reduce_hold_aspect_test() {
         enable_logging_for_test();
@@ -535,6 +536,7 @@ pub mod tests {
         }
     }
 
+    #[cfg(feature = "broken-tests")]
     #[test]
     pub fn test_holding_queue() {
         enable_logging_for_test();

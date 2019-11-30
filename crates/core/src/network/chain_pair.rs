@@ -31,7 +31,7 @@ impl ChainPair {
                 basic_error_msg
             );
             debug!(
-                "{}\nHeader:\n{:#?}\nEntry:{:#?}\nentry in header (i.e. header.entry()=\n{:#?}",
+                "{}\nHeader:\n{:#?}\nEntry:{:#?}\nentry in header (i.e. header.entry()=\n",
                 basic_error_msg, header, entry
             );
             Err(HolochainError::HeaderEntryMismatch(

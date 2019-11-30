@@ -1,4 +1,3 @@
-use entry::Entry;
 use error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use std::{

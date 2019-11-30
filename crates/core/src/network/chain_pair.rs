@@ -20,7 +20,6 @@ impl ChainPair {
     ) -> Result<ChainPair, HolochainError> {
         let header_entry_address = header.entry_address();
         let entry_address = entry.address();
-        let entry_in_header = header.entry();
         if header_entry_address.clone() == entry_address {
             Ok(ChainPair(header, entry))
         } else {
@@ -33,7 +32,7 @@ impl ChainPair {
             );
             debug!(
                 "{}\nHeader:\n{:#?}\nEntry:{:#?}\nentry in header (i.e. header.entry()=\n{:#?}",
-                basic_error_msg, header, entry, entry_in_header
+                basic_error_msg, header, entry
             );
             Err(HolochainError::HeaderEntryMismatch(
                 error_msg.to_string(),

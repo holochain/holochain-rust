@@ -37,9 +37,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use threadpool::ThreadPool;
 
-const HOLDING_WORKFLOW_THREADS: usize = 10;
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
@@ -76,6 +74,14 @@ impl Instance {
         scheduler
             .every(10.seconds())
             .run(scheduled_jobs::create_state_dump_callback(context.clone()));
+        scheduler
+            .every(1.second())
+            .run(scheduled_jobs::create_timeout_callback(context.clone()));
+        scheduler
+            .every(30.seconds())
+            .run(scheduled_jobs::create_state_pruning_callback(
+                context.clone(),
+            ));
         self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
         self.persister = Some(context.persister.clone());
@@ -256,23 +262,23 @@ impl Instance {
 
             // Change the state
             *state = new_state;
+
+            if let Err(e) = self.save(&state) {
+                log_error!(
+                    context,
+                    "instance/process_action: could not save state: {:?}",
+                    e
+                );
+            } else {
+                log_trace!(
+                    context,
+                    "reduce/process_actions: reducing {:?}",
+                    action_wrapper
+                );
+            }
         }
 
         context.redux_wants_write.store(false, Relaxed);
-
-        if let Err(e) = self.save() {
-            log_error!(
-                context,
-                "instance/process_action: could not save state: {:?}",
-                e
-            );
-        } else {
-            log_trace!(
-                context,
-                "reduce/process_actions: reducing {:?}",
-                action_wrapper
-            );
-        }
 
         Ok(())
     }
@@ -280,7 +286,6 @@ impl Instance {
     fn start_holding_loop(&mut self, context: Arc<Context>) {
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch_holding = Some(kill_sender);
-        let threadpool = ThreadPool::new(HOLDING_WORKFLOW_THREADS);
         thread::Builder::new()
             .name(format!(
                 "holding_loop/{}",
@@ -304,10 +309,10 @@ impl Instance {
                                 context.clone(),
                             ));
 
-                            let context = context.clone();
+                            let c = context.clone();
                             let pending = pending.clone();
-                            threadpool.execute(move || {
-                                match run_holding_workflow(pending.clone(), context.clone()) {
+                            let closure = async move || {
+                                match run_holding_workflow(pending.clone(), c.clone()).await {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
@@ -325,23 +330,24 @@ impl Instance {
                                             delay = RETRY_VALIDATION_DURATION_MAX
                                         }
 
-                                        context.block_on(queue_holding_workflow(
+                                        queue_holding_workflow(
                                             Arc::new(pending.same()),
                                             Some(delay),
-                                            context.clone(),
-                                        ))
+                                            c.clone(),
+                                        )
+                                        .await
                                     }
                                     Err(e) => log_error!(
-                                        context,
+                                        c,
                                         "Error running holding workflow for {:?}: {:?}",
                                         pending,
                                         e,
                                     ),
-                                    Ok(()) => {
-                                        log_info!(context, "Successfully processed: {:?}", pending)
-                                    }
+                                    Ok(()) => log_info!(c, "Successfully processed: {:?}", pending),
                                 }
-                            });
+                            };
+                            let future = closure();
+                            context.spawn_task(future);
                         } else {
                             break;
                         }
@@ -415,8 +421,7 @@ impl Instance {
             .clone()
     }
 
-    pub fn save(&self) -> HcResult<()> {
-        let state = self.state();
+    pub fn save(&self, state: &StateWrapper) -> HcResult<()> {
         self.persister
             .as_ref()
             .ok_or_else(|| HolochainError::new("Instance::save() called without persister set."))?
@@ -451,24 +456,6 @@ impl Drop for Instance {
     }
 }*/
 
-/// Send Action to Instance's Event Queue and block until it has been processed.
-///
-/// # Panics
-///
-/// Panics if the channels passed are disconnected.
-pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWrapper) {
-    let tick_rx = context.create_observer();
-    dispatch_action(context.action_channel(), action_wrapper.clone());
-
-    loop {
-        if context.state().unwrap().history().contains(&action_wrapper) {
-            return;
-        } else {
-            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
-        }
-    }
-}
-
 /// Send Action to the Event Queue
 ///
 /// # Panics
@@ -486,7 +473,7 @@ pub mod tests {
         action::{tests::test_action_wrapper_commit, Action, ActionWrapper},
         agent::{
             chain_store::ChainStore,
-            state::{ActionResponse, AgentState},
+            state::{AgentActionResponse, AgentState},
         },
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
@@ -509,6 +496,7 @@ pub mod tests {
 
     use test_utils::mock_signing::registered_test_agent;
 
+    use crate::nucleus::state::NucleusStatus;
     use holochain_core_types::entry::Entry;
     use holochain_json_api::json::JsonString;
     use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
@@ -715,56 +703,27 @@ pub mod tests {
             "Empty zomes = No init = infinite loops below!"
         );
 
-        // @TODO abstract and DRY this out
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        while instance
-            .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::InitializeChain(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for InitializeChain");
-            sleep(Duration::from_millis(10))
+        loop {
+            if let NucleusStatus::Initialized(_) = instance.state().nucleus().status {
+                break;
+            } else {
+                println!("Waiting for initialized status");
+                sleep(Duration::from_millis(10))
+            }
         }
 
-        while instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert!(
-                        entry.entry_type() == EntryType::AgentId
-                            || entry.entry_type() == EntryType::Dna
-                            || entry.entry_type() == EntryType::CapTokenGrant
-                    );
-                    true
-                }
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for Commit for init");
-            sleep(Duration::from_millis(10))
-        }
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_type() == EntryType::Dna));
 
-        while instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::ReturnInitializationResult(_) => true,
-                _ => false,
-            })
-            .is_none()
-        {
-            println!("Waiting for ReturnInitializationResult");
-            sleep(Duration::from_millis(10))
-        }
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_type() == EntryType::AgentId));
+
         Ok((instance, context))
     }
 
@@ -815,38 +774,8 @@ pub mod tests {
             .expect("action and reponse should be added after Get action dispatch");
 
         assert_eq!(
-            response,
-            &ActionResponse::Commit(Ok(test_entry().address()))
-        );
-    }
-
-    #[test]
-    /// tests that we can dispatch an action and block until it completes
-    fn can_dispatch_and_wait() {
-        let netname = Some("can_dispatch_and_wait");
-        let mut instance = Instance::new(test_context("jason", netname));
-        assert_eq!(instance.state().nucleus().dna(), None);
-        assert_eq!(
-            instance.state().nucleus().status(),
-            crate::nucleus::state::NucleusStatus::New
-        );
-
-        let dna = Dna::new();
-
-        let action = ActionWrapper::new(Action::InitializeChain(dna.clone()));
-        let context = instance.inner_setup(test_context("jane", netname));
-
-        // the initial state is not intialized
-        assert_eq!(
-            instance.state().nucleus().status(),
-            crate::nucleus::state::NucleusStatus::New
-        );
-
-        dispatch_action_and_wait(context, action);
-        assert_eq!(instance.state().nucleus().dna(), Some(dna));
-        assert_eq!(
-            instance.state().nucleus().status(),
-            crate::nucleus::state::NucleusStatus::Initializing
+            response.response(),
+            &AgentActionResponse::Commit(Ok(test_entry().address()))
         );
     }
 
@@ -941,19 +870,11 @@ pub mod tests {
             .expect("process_action should run without error");
 
         // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
-        instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert_eq!(entry.entry_type(), EntryType::Dna);
-                    assert_eq!(entry.content(), dna_entry.content());
-                    true
-                }
-                _ => false,
-            });
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_address() == dna_entry.address()))
     }
 
     /// Committing an AgentIdEntry to source chain should work
@@ -973,20 +894,11 @@ pub mod tests {
             .process_action(&commit_agent_action, &context)
             .expect("process_action should run without error");
 
-        // Check if AgentIdEntry is found
-        assert_eq!(1, instance.state().history().iter().count());
-        instance
+        assert!(instance
             .state()
-            .history()
-            .iter()
-            .find(|aw| match aw.action() {
-                Action::Commit((entry, _, _)) => {
-                    assert_eq!(entry.entry_type(), EntryType::AgentId);
-                    assert_eq!(entry.content(), agent_entry.content());
-                    true
-                }
-                _ => false,
-            });
+            .agent()
+            .iter_chain()
+            .any(|header| *header.entry_address() == agent_entry.address()))
     }
 
     /// create a test context using LMDB storage

@@ -1,11 +1,8 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
-    nucleus::{
-        actions::initialize::Initialization, validation::ValidationResult, HdkFnCall,
-        HdkFnCallResult, ZomeFnCall,
-    },
+    nucleus::{actions::initialize::Initialization, HdkFnCall, HdkFnCallResult, ZomeFnCall},
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, validation::ValidationPackage};
+use holochain_core_types::{dna::Dna, error::HolochainError};
 
 use crate::state::StateWrapper;
 use holochain_json_api::{
@@ -13,16 +10,12 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use im::{HashMap, HashSet};
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use snowflake;
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    convert::TryFrom,
-    fmt,
-};
+use std::{collections::VecDeque, convert::TryFrom, fmt};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -110,15 +103,7 @@ pub struct NucleusState {
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
     pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
-
-    // @TODO eventually drop stale calls
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    // @TODO should this use the standard ActionWrapper/ActionResponse format?
-    // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
-    pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
-    pub validation_packages:
-        HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
 }
 
 impl NucleusState {
@@ -129,8 +114,6 @@ impl NucleusState {
             queued_zome_calls: VecDeque::new(),
             running_zome_calls: HashSet::new(),
             zome_call_results: HashMap::new(),
-            validation_results: HashMap::new(),
-            validation_packages: HashMap::new(),
             hdk_function_calls: HashMap::new(),
         }
     }
@@ -193,8 +176,6 @@ impl From<NucleusStateSnapshot> for NucleusState {
             queued_zome_calls: VecDeque::new(),
             running_zome_calls: HashSet::new(),
             zome_call_results: HashMap::new(),
-            validation_results: HashMap::new(),
-            validation_packages: HashMap::new(),
             hdk_function_calls: HashMap::new(),
         }
     }

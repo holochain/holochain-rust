@@ -9,4 +9,5 @@ pub fn reduce_resolve_direct_connection(
     let id = unwrap_to!(action => crate::action::Action::ResolveDirectConnection);
 
     network_state.direct_message_connections.remove(id);
+    network_state.direct_message_timeouts.remove(id);
 }

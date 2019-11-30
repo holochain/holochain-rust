@@ -68,7 +68,13 @@ impl Future for SendResponseFuture {
                 return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));
             }
             match state.custom_direct_message_replys.get(&self.id) {
-                Some(result) => Poll::Ready(result.clone()),
+                Some(result) => {
+                    dispatch_action(
+                        self.context.action_channel(),
+                        ActionWrapper::new(Action::ClearCustomSendResponse(self.id.clone())),
+                    );
+                    Poll::Ready(result.clone())
+                }
                 _ => Poll::Pending,
             }
         } else {

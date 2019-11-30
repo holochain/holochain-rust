@@ -1,8 +1,11 @@
+pub mod clear;
+pub mod clear_action_response;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
 pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;
+pub mod prune;
 pub mod publish;
 pub mod publish_header_entry;
 pub mod query;
@@ -19,11 +22,13 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         reducers::{
+            clear_action_response::reduce_clear_action_response,
             get_validation_package::reduce_get_validation_package,
             handle_custom_send_response::reduce_handle_custom_send_response,
             handle_get_result::reduce_handle_get_result,
             handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
+            prune::reduce_prune,
             publish::reduce_publish,
             publish_header_entry::reduce_publish_header_entry,
             query::{reduce_query, reduce_query_timeout},
@@ -45,6 +50,10 @@ use holochain_net::connection::net_connection::NetSend;
 
 use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
 
+use crate::network::reducers::clear::{
+    reduce_clear_custom_send_response, reduce_clear_query_result,
+    reduce_clear_validation_package_result,
+};
 use holochain_persistence_api::cas::content::Address;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use snowflake::ProcessUniqueId;
@@ -53,6 +62,10 @@ use std::sync::Arc;
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
+        Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
+        Action::ClearQueryResult(_) => Some(reduce_clear_query_result),
+        Action::ClearValidationPackageResult(_) => Some(reduce_clear_validation_package_result),
+        Action::ClearCustomSendResponse(_) => Some(reduce_clear_custom_send_response),
         Action::Query(_) => Some(reduce_query),
         Action::QueryTimeout(_) => Some(reduce_query_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
@@ -60,6 +73,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::HandleQuery(_) => Some(reduce_handle_get_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
+        Action::Prune => Some(reduce_prune),
         Action::Publish(_) => Some(reduce_publish),
         Action::PublishHeaderEntry(_) => Some(reduce_publish_header_entry),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),

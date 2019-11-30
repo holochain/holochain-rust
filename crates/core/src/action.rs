@@ -100,6 +100,10 @@ pub enum QueryPayload {
 #[serde(tag = "action_type", content = "data")]
 #[allow(clippy::large_enum_variant)]
 pub enum Action {
+    /// Get rid of stale information that we should drop to not have the state grow infinitely.
+    Prune,
+    ClearActionResponse(snowflake::ProcessUniqueId),
+
     // ----------------
     // Agent actions:
     // ----------------
@@ -160,6 +164,9 @@ pub enum Action {
     /// Triggered from the network handler.
     HandleQuery((NetworkQueryResult, QueryKey)),
 
+    /// Clean up the query result so the state doesn't grow indefinitely.
+    ClearQueryResult(QueryKey),
+
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 
     /// Makes the network module send a direct (node-to-node) message
@@ -185,10 +192,16 @@ pub enum Action {
     /// Triggered from the network handler when we get the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
 
+    /// Clean up the validation package result so the state doesn't grow indefinitely.
+    ClearValidationPackageResult(Address),
+
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
     /// Triggered from the network handler when we get the response.
     HandleCustomSendResponse((String, Result<String, String>)),
+
+    /// Clean up the custom send response result so the state doesn't grow indefinitely.
+    ClearCustomSendResponse(String),
 
     /// Sends the given data as JsonProtocol::HandleGetAuthoringEntryListResult
     RespondAuthoringList(EntryListData),
@@ -218,6 +231,9 @@ pub enum Action {
 
     /// Let the State track that an HDK function called by a zome call has returned
     TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
+
+    /// Remove all traces of the given call from state (mainly the result)
+    ClearZomeFunctionCall(ZomeFnCall),
 
     /// No-op, used to check if an action channel is still open
     Ping,

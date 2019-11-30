@@ -216,18 +216,20 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        chain_header::test_chain_header_for_sys_entry,
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{
                 reduce, reduce_hold_aspect,
             },
-            dht_store::{create_get_links_eavi_query},
+            dht_store::{create_get_links_eavi_query, DhtStore},
             pending_validations::{PendingValidation, PendingValidationStruct, ValidatingWorkflow},
         },
         instance::tests::test_context,
         network::chain_pair::ChainPair,
         state::test_store,
     };
+    use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
         chain_header::test_chain_header,
@@ -237,7 +239,7 @@ pub mod tests {
         network::entry_aspect::EntryAspect,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
-    use std::sync::Arc;
+    use std::{sync::Arc, time::SystemTime};
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
     fn enable_logging_for_test() {
@@ -535,8 +537,7 @@ pub mod tests {
 
     // Causes a header and entry mismatch when calling try_create_pending_validation()
     // -> try_from_header_and_entry().
-    // So test_entry.address() <> test_chain_header().entry_address(), etc.
-    #[cfg(feature = "broken-tests")]
+    // Should be since link_entry doesn't match with test chain header
     #[test]
     pub fn test_holding_queue() {
         enable_logging_for_test();

@@ -561,33 +561,28 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
-        let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
-        let store = reduce_queue_holding_workflow(&store, &action).unwrap();
-
-        assert_eq!(store.queued_holding_workflows().len(), 3);
-        assert!(store.has_queued_holding_workflow(&update));
+        // the link won't validate while the entry is pending so we have to remove it
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
         assert_eq!(hold_link, next_pending);
 
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
-        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
+        let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
+        let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
-        assert!(!store.has_queued_holding_workflow(&hold_link));
-
-        assert!(store.has_queued_holding_workflow(&hold));
+        assert!(!store.has_queued_holding_workflow(&hold));
         assert!(store.has_queued_holding_workflow(&update));
+        assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(update, next_pending);
-
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);
         assert!(!store.has_queued_holding_workflow(&hold));
+        assert!(!store.has_queued_holding_workflow(&hold_link));
         assert!(store.has_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();

@@ -11,8 +11,12 @@ impl ValidationDependencies for EntryWithHeader {
         match &self.entry {
             Entry::App(_, _) => {
                 // in the future an entry should be dependent on its header but
-                // for now it can require nothing
-                Vec::new()
+                // for now it can require nothing by default.
+                // If it is an update, require that the original entry is validated
+                match self.header.link_update_delete() {
+                    Some(entry_to_update) => vec![entry_to_update],
+                    None => Vec::new(),
+                }
             }
             Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
                 // A link or link remove depends on its base and target being validated

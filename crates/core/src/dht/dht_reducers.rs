@@ -86,7 +86,7 @@ pub(crate) fn reduce_hold_aspect(
                             debug!(
                                 "{}, entry:\n{:?}\nheader:\n{:?} \nnew_store:\n{:?}", err_msg, entry, header, new_store
                             );
-                            error!(err_msg);
+                            error!("{}", err_msg);
                             None
                         },
                     }
@@ -516,13 +516,18 @@ pub mod tests {
     }
 
     fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
-        match ChainPair::try_from_header_and_entry(test_chain_header(), entry.clone()) {
+        let header = test_chain_header();
+        match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {
             Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),
             Err(err) => {
                 let err_msg = format!(
                     "Tried to create a pending validation, got an error: {}",
                     err
                 );
+                debug!(
+                    "{}, entry:\n{:?}\nheader from test_chain_header():\n{:?}\n",
+                    err_msg, entry, header
+                )
                 panic!(err_msg);
             }
         }

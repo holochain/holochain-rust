@@ -237,7 +237,7 @@ pub mod tests {
         network::entry_aspect::EntryAspect,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
-    use std::{sync::Arc};
+    use std::sync::Arc;
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
     fn enable_logging_for_test() {

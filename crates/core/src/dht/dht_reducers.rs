@@ -255,6 +255,7 @@ pub mod tests {
 
     #[test]
     fn reduce_hold_aspect_test() {
+        enable_logging_for_test();
         let context = test_context("bob", None);
         let store = test_store(context);
 
@@ -536,6 +537,7 @@ pub mod tests {
 
     #[test]
     pub fn test_holding_queue() {
+        enable_logging_for_test();
         let context = test_context("test", None);
         let store = DhtStore::new(context.dht_storage.clone(), context.eav_storage.clone());
         assert_eq!(store.queued_holding_workflows().len(), 0);

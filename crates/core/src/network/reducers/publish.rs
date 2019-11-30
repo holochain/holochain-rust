@@ -190,7 +190,7 @@ pub fn reduce_publish(
         Response::from(NetworkActionResponse::Publish(match result {
             Ok(_) => Ok(address.clone()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
+        })),
     );
 }
 

@@ -22,7 +22,7 @@ use holochain_json_api::{
     json::{JsonString, RawString},
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-use link::{link_data::LinkData, link_list::LinkList};
+use link::{Link, link_data::LinkData, link_list::LinkList, LinkActionKind};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
@@ -213,18 +213,32 @@ pub fn test_entry_unique() -> Entry {
     )
 }
 
+pub fn test_link_entry() -> Entry {
+    let test_link = String::from("test_link");
+    let test_tag = String::from("test-tag");
+    let link = Link::new(
+        &test_entry.address(),
+        &test_entry.address(),
+        &test_link.clone(),
+        &test_tag.clone(),
+    );
+    let link_data = LinkData::from_link(
+        &link,
+        LinkActionKind::ADD,
+        test_chain_header(),
+        test_agent_id(),
+    );
+
+    let link_entry = Entry::LinkAdd(link_data.clone());
+
+    link_entry
+}
+
+// TODO: refactor
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
     Entry::AgentId(test_sys_entry_value())
 }
-
-// /// dummy entry
-// #[cfg_attr(tarpaulin, skip)]
-// pub fn test_entry() -> Entry {
-//     Entry::App(test_app_entry_type(), test_entry_value())
-// }
-
-
 
 pub fn test_sys_entry_address() -> Address {
     Address::from(String::from(

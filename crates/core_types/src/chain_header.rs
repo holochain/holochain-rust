@@ -5,7 +5,7 @@
 use crate::{
     agent::test_agent_id,
     entry::{
-        entry_type::{test_entry_type, test_sys_entry_type, EntryType},
+        entry_type::{test_entry_type, EntryType},
         test_entry, test_sys_entry,
     },
     signature::{Provenance, Signature},
@@ -128,6 +128,7 @@ impl AddressableContent for ChainHeader {
     }
 }
 
+// TODO: refactor these test_chain_headers with passing the test_entry
 /// returns a dummy header for use in tests
 pub fn test_chain_header() -> ChainHeader {
     test_chain_header_with_sig("sig")
@@ -135,6 +136,10 @@ pub fn test_chain_header() -> ChainHeader {
 
 pub fn test_chain_header_for_sys_entry() -> ChainHeader {
     test_chain_header_for_sys_entry_with_sig("sig")
+}
+
+pub test_chain_header_for_link_entry() -> ChainHeader {
+    test_chain_header_for_link_entry_with_sig("sig")
 }
 
 /// returns a dummy header for use in tests
@@ -165,6 +170,18 @@ pub fn test_chain_header_for_sys_entry_with_sig(sig: &'static str) -> ChainHeade
     )
 }
 
+pub fn test_chain_header_for_link_entry_with_sig(sig: &'static str) -> ChainHeader {
+    ChainHeader::new(
+        &test_link_entry_type(),
+        &test_link_entry().address(),
+        &test_provenances(sig),
+        &None,
+        &None,
+        &None,
+        &test_iso_8601(),
+    )
+}
+
 pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
     vec![Provenance::new(
         test_agent_id().address(),
@@ -179,7 +196,12 @@ pub mod tests {
             ChainHeader
         },
         entry::{
-            entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
+            Entry,
+            entry_type::{
+                test_entry_type, test_sys_entry_type,
+                test_link_entry_type,
+                test_entry_type_a, test_entry_type_b
+            },
             test_entry, test_entry_a, test_entry_b,
         },
         time::test_iso_8601,

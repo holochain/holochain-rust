@@ -77,8 +77,19 @@ pub(crate) fn reduce_hold_aspect(
         EntryAspect::Content(entry, header) => {
             match reduce_store_entry_inner(&mut new_store, entry) {
                 Ok(()) => {
-                    new_store.add_header_for_entry(&entry, &header).ok()?;
-                    Some(new_store)
+                    new_store.add_header_for_entry(&entry, &header) {
+                        Ok(()) => Some(new_store),
+                        Err(err) => {
+                            let err_msg = format!(
+                                "Tried to add the header for entry to the new
+                                store in reduce_hold_aspect, got error. {}", err);
+                            debug!(
+                                "{}, entry:\n{:?}\nheader:\n{:?} \nnew_store:\n{:?}", err_msg, entry, header, new_store
+                            );
+                            error!(err_msg);
+                            None
+                        }
+                    }
                 }
                 Err(e) => {
                     error!("{}", e);

@@ -7,7 +7,8 @@ use crate::{
 use std::sync::Arc;
 
 use super::dht_inner_reducers::{
-    reduce_add_remove_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
+    reduce_add_remove_link_inner, reduce_remove_entry_inner, \
+    reduce_store_entry_inner,
     reduce_update_entry_inner, LinkModification,
 };
 
@@ -216,7 +217,7 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        chain_header::test_chain_header_for_sys_entry,
+        chain_header::{test_chain_header_for_sys_entry, test_chain_header_for_link_entry},
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{

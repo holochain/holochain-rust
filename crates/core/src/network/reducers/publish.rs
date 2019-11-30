@@ -187,7 +187,7 @@ pub fn reduce_publish(
     let result = reduce_publish_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
-        Response::from(ActionResponse::Publish(match result {
+        ActionResponse::Publish(match result {
             Ok(_) => Ok(address.clone()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         })),

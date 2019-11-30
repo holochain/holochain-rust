@@ -17,7 +17,7 @@ use holochain_core_types::{
 };
 use std::{sync::Arc, vec::Vec};
 
-pub async fn build_validation_package<'a>(
+pub fn build_validation_package<'a>(
     entry: &'a Entry,
     context: Arc<Context>,
     provenances: &'a Vec<Provenance>,
@@ -199,11 +199,8 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_entry(), &context);
 
-        let maybe_validation_package = context.block_on(build_validation_package(
-            &test_entry_package_entry(),
-            context.clone(),
-            &vec![],
-        ));
+        let maybe_validation_package =
+            build_validation_package(&test_entry_package_entry(), context.clone(), &vec![]);
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
 
@@ -228,11 +225,11 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_entries(), &context);
 
-        let maybe_validation_package = context.block_on(build_validation_package(
+        let maybe_validation_package = build_validation_package(
             &test_entry_package_chain_entries(),
             context.clone(),
             &vec![],
-        ));
+        );
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
 
@@ -260,11 +257,11 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_headers(), &context);
 
-        let maybe_validation_package = context.block_on(build_validation_package(
+        let maybe_validation_package = build_validation_package(
             &test_entry_package_chain_headers(),
             context.clone(),
             &vec![],
-        ));
+        );
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
@@ -288,11 +285,8 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_full(), &context);
 
-        let maybe_validation_package = context.block_on(build_validation_package(
-            &test_entry_package_chain_full(),
-            context.clone(),
-            &vec![],
-        ));
+        let maybe_validation_package =
+            build_validation_package(&test_entry_package_chain_full(), context.clone(), &vec![]);
         assert!(maybe_validation_package.is_ok());
 
         let headers = all_chain_headers_before_header(&context, &chain_header);

@@ -1,3 +1,4 @@
+pub mod clear_zome_function_call;
 pub mod init_application;
 pub mod queue_zome_function_call;
 pub mod return_initialization_result;
@@ -9,6 +10,7 @@ use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
     nucleus::{
         reducers::{
+            clear_zome_function_call::reduce_clear_zome_function_call,
             init_application::reduce_initialize_chain,
             queue_zome_function_call::reduce_queue_zome_function_call,
             return_initialization_result::reduce_return_initialization_result,
@@ -26,6 +28,7 @@ use std::sync::Arc;
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
+        Action::ClearZomeFunctionCall(_) => Some(reduce_clear_zome_function_call),
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitializeChain(_) => Some(reduce_initialize_chain),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),

@@ -169,7 +169,7 @@ pub fn test_entry_type() -> EntryType {
     EntryType::App(test_app_entry_type())
 }
 
-pub fn test_sys_entry_type() -> Entry {
+pub fn test_sys_entry_type() -> EntryType {
     EntryType::AgentId
 }
 

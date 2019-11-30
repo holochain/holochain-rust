@@ -158,7 +158,7 @@ pub fn entry_to_validation_data(
                 })
             }),
         Entry::Deletion(deletion_entry) => {
-            let deletion_address = deletion_entry.clone().deleted_entry_address();
+            let deletion_address = deletion_entry.deleted_entry_address().clone();
             get_entry_with_header(context.clone(), &deletion_address)
                 .map(|entry_with_header| {
                     Ok(EntryValidationData::Delete {

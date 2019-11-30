@@ -1,5 +1,8 @@
 { pkgs }:
 let
+
+  git-branch = "`git rev-parse --abbrev-ref HEAD`";
+
   docker-build = pkgs.writeShellScriptBin "hc-trycp-docker-build"
   ''
   set -euxo pipefail

@@ -1,11 +1,8 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::NetworkActionResponse,
-        chain_pair::ChainPair,
-        entry_aspect::EntryAspect,
-        reducers::send,
-        state::NetworkState,
+        actions::NetworkActionResponse, chain_pair::ChainPair, entry_aspect::EntryAspect,
+        reducers::send, state::NetworkState,
     },
     state::State,
 };

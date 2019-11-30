@@ -138,7 +138,7 @@ pub fn test_chain_header_for_sys_entry() -> ChainHeader {
     test_chain_header_for_sys_entry_with_sig("sig")
 }
 
-pub test_chain_header_for_link_entry() -> ChainHeader {
+pub fn test_chain_header_for_link_entry() -> ChainHeader {
     test_chain_header_for_link_entry_with_sig("sig")
 }
 
@@ -159,7 +159,7 @@ pub fn test_chain_header_with_sig(sig: &'static str) -> ChainHeader {
 // TODO: refactor test_chain_header_for_sys_entry_with_sig
 // and test_chain_header_with_sig by passing an `Entry`.
 pub fn test_chain_header_for_sys_entry_with_sig(sig: &'static str) -> ChainHeader {
-        ChainHeader::new(
+    ChainHeader::new(
         &test_sys_entry_type(),
         &test_sys_entry().address(),
         &test_provenances(sig),
@@ -192,17 +192,13 @@ pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        chain_header::{test_chain_header,test_provenances,
-            ChainHeader
-        },
+        chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
-            Entry,
             entry_type::{
-                test_entry_type, test_sys_entry_type,
-                test_link_entry_type,
-                test_entry_type_a, test_entry_type_b
+                test_entry_type, test_entry_type_a, test_entry_type_b, test_link_entry_type,
+                test_sys_entry_type,
             },
-            test_entry, test_entry_a, test_entry_b,
+            test_entry, test_entry_a, test_entry_b, Entry,
         },
         time::test_iso_8601,
     };

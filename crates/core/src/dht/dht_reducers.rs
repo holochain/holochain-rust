@@ -7,8 +7,7 @@ use crate::{
 use std::sync::Arc;
 
 use super::dht_inner_reducers::{
-    reduce_add_remove_link_inner, reduce_remove_entry_inner, \
-    reduce_store_entry_inner,
+    reduce_add_remove_link_inner, reduce_remove_entry_inner, reduce_store_entry_inner,
     reduce_update_entry_inner, LinkModification,
 };
 
@@ -217,7 +216,7 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        chain_header::{test_chain_header_for_sys_entry, test_chain_header_for_link_entry},
+        chain_header::{test_chain_header_for_link_entry, test_chain_header_for_sys_entry},
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{
@@ -519,7 +518,11 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn try_create_pending_validation(entry: Entry, header: Header, workflow: ValidatingWorkflow) -> PendingValidation {\
+    fn try_create_pending_validation(
+        entry: Entry,
+        header: Header,
+        workflow: ValidatingWorkflow,
+    ) -> PendingValidation {
         match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {
             Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),
             Err(err) => {
@@ -548,7 +551,11 @@ pub mod tests {
 
         let test_entry = test_entry();
         let test_header = test_chain_header();
-        let hold = try_create_pending_validation(test_entry.clone(), test_header.clone(), ValidatingWorkflow::HoldEntry);
+        let hold = try_create_pending_validation(
+            test_entry.clone(),
+            test_header.clone(),
+            ValidatingWorkflow::HoldEntry,
+        );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),
@@ -558,14 +565,19 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 1);
         assert!(store.has_queued_holding_workflow(&hold));
 
-        let hold_link = try_create_pending_validation(test_link_entry(), test_chain_header_for_link_entry(), ValidatingWorkflow::HoldLink);
+        let hold_link = try_create_pending_validation(
+            test_link_entry(),
+            test_chain_header_for_link_entry(),
+            ValidatingWorkflow::HoldLink,
+        );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let update = try_create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
+        let update =
+            try_create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

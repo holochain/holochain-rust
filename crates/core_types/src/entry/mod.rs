@@ -22,7 +22,7 @@ use holochain_json_api::{
     json::{JsonString, RawString},
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-use link::{Link, link_data::LinkData, link_list::LinkList, LinkActionKind};
+use link::{link_data::LinkData, link_list::LinkList, Link, LinkActionKind};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;

@@ -1,3 +1,4 @@
+use entry::Entry;
 use error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use std::{
@@ -169,7 +170,7 @@ pub fn test_entry_type() -> EntryType {
 }
 
 pub fn test_sys_entry_type() -> Entry {
-    EntryType::AgentId()
+    EntryType::AgentId
 }
 
 /// dummy entry type, same as test_type()

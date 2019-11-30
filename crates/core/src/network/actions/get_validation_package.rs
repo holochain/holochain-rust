@@ -65,7 +65,15 @@ impl Future for GetValidationPackageFuture {
             }
 
             match state.get_validation_package_results.get(&self.address) {
-                Some(Some(result)) => Poll::Ready(result.clone()),
+                Some(Some(result)) => {
+                    dispatch_action(
+                        self.context.action_channel(),
+                        ActionWrapper::new(Action::ClearValidationPackageResult(
+                            self.address.clone(),
+                        )),
+                    );
+                    Poll::Ready(result.clone())
+                }
                 _ => Poll::Pending,
             }
         } else {

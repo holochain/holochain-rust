@@ -1,7 +1,7 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse,
+        actions::NetworkActionResponse,
         entry_aspect::EntryAspect,
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
@@ -10,6 +10,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 
+use crate::network::actions::Response;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, FetchEntryResultData},
     protocol_client::Lib3hClientProtocol,
@@ -50,9 +51,9 @@ pub fn reduce_respond_fetch_data(
     let result = reduce_respond_fetch_data_inner(network_state, fetch_data, maybe_entry);
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Respond(match result {
+        Response::from(NetworkActionResponse::Respond(match result {
             Ok(_) => Ok(()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
+        })),
     );
 }

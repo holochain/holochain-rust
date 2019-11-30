@@ -10,15 +10,12 @@ use holochain_json_api::{
     json::JsonString,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use im::{HashMap, HashSet};
 use serde::{
     de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    convert::TryFrom,
-    fmt,
-};
+use std::{collections::VecDeque, convert::TryFrom, fmt};
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
@@ -106,11 +103,6 @@ pub struct NucleusState {
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
     pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
-
-    // @TODO eventually drop stale calls
-    // @see https://github.com/holochain/holochain-rust/issues/166
-    // @TODO should this use the standard ActionWrapper/ActionResponse format?
-    // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 

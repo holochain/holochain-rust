@@ -535,6 +535,9 @@ pub mod tests {
         }
     }
 
+    // Causes a header and entry mismatch when calling create_pending_validation()
+    // -> try_from_header_and_entry().
+    // So test_entry.address() <> test_chain_header().entry_address()
     #[cfg(feature = "broken-tests")]
     #[test]
     pub fn test_holding_queue() {

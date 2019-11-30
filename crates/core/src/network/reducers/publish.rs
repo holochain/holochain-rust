@@ -1,7 +1,7 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse,
+        actions::NetworkActionResponse,
         chain_pair::ChainPair,
         entry_aspect::EntryAspect,
         reducers::send,
@@ -187,7 +187,7 @@ pub fn reduce_publish(
     let result = reduce_publish_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Publish(match result {
+        Response::from(NetworkActionResponse::Publish(match result {
             Ok(_) => Ok(address.clone()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
         }),

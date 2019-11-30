@@ -85,7 +85,7 @@ impl PendingValidationStruct {
         clone
     }
 
-    // Convenience function for returning a custom error in the context of validation.
+    /// Convenience function for returning a custom error in the context of validation.
     pub fn try_validate_from_entry_and_header(
         entry: Entry,
         header: ChainHeader,

@@ -527,7 +527,7 @@ pub mod tests {
                 debug!(
                     "{}, entry:\n{:?}\nheader from test_chain_header():\n{:?}\n",
                     err_msg, entry, header
-                )
+                );
                 panic!(err_msg);
             }
         }

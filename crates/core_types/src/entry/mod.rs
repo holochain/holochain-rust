@@ -218,6 +218,14 @@ pub fn test_sys_entry() -> Entry {
     Entry::AgentId(test_sys_entry_value())
 }
 
+// /// dummy entry
+// #[cfg_attr(tarpaulin, skip)]
+// pub fn test_entry() -> Entry {
+//     Entry::App(test_app_entry_type(), test_entry_value())
+// }
+
+
+
 pub fn test_sys_entry_address() -> Address {
     Address::from(String::from(
         "QmUZ3wsC4sVdJZK2AC8Ji4HZRfkFSH2cYE6FntmfWKF8GV",

@@ -253,7 +253,6 @@ pub mod tests {
             .try_init();
     }
 
-    #[cfg(feature = "broken-tests")]
     #[test]
     fn reduce_hold_aspect_test() {
         enable_logging_for_test();
@@ -267,7 +266,7 @@ pub mod tests {
             &store.dht(),
             &ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
                 sys_entry.clone(),
-                test_chain_header(),
+                test_chain_header_for_sys_entry(),
             ))),
         )
         .expect("there should be a new store for committing a sys entry");

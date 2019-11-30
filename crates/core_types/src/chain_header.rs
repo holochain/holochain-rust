@@ -5,8 +5,8 @@
 use crate::{
     agent::test_agent_id,
     entry::{
-        entry_type::{test_entry_type, EntryType},
-        test_entry,
+        entry_type::{test_entry_type, test_sys_entry_type, EntryType},
+        test_entry, test_sys_entry,
     },
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
@@ -133,11 +133,30 @@ pub fn test_chain_header() -> ChainHeader {
     test_chain_header_with_sig("sig")
 }
 
+pub fn test_chain_header_for_sys_entry() -> ChainHeader {
+    test_chain_header_for_sys_entry_with_sig("sig")
+}
+
 /// returns a dummy header for use in tests
 pub fn test_chain_header_with_sig(sig: &'static str) -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),
+        &test_provenances(sig),
+        &None,
+        &None,
+        &None,
+        &test_iso_8601(),
+    )
+}
+
+/// returns a sys header for use in tests.
+// TODO: refactor test_chain_header_for_sys_entry_with_sig
+// and test_chain_header_with_sig by passing an `Entry`.
+pub fn test_chain_header_for_sys_entry_with_sig(sig: &'static str) -> ChainHeader {
+        ChainHeader::new(
+        &test_sys_entry_type(),
+        &test_sys_entry().address(),
         &test_provenances(sig),
         &None,
         &None,
@@ -158,6 +177,7 @@ pub mod tests {
     use crate::{
         chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
+            Entry,
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
         },

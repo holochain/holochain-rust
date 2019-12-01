@@ -579,7 +579,11 @@ pub mod tests {
         assert!(store.has_queued_holding_workflow(&hold_link));
 
         let update =
-            try_create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
+            try_create_pending_validation(
+                test_entry.clone(),
+                test_header,
+                ValidatingWorkflow::UpdateEntry
+            );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

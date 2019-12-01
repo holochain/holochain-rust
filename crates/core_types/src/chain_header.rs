@@ -194,11 +194,10 @@ pub mod tests {
     use crate::{
         chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
-            Entry, entry_type::{
-                test_entry_type, test_entry_type_a, test_entry_type_b, test_link_entry_type,
-                test_sys_entry_type,
+            entry_type::{
+                test_entry_type, test_entry_type_a, test_entry_type_b,
             },
-            test_entry, test_entry_a, test_entry_b, test_link_entry,
+            test_entry, test_entry_a, test_entry_b, 
         },
         time::test_iso_8601,
     };

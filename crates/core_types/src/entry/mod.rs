@@ -255,7 +255,7 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{chain_header::test_chain_header, entry::{expected_entry_address, Entry}};
+    use crate::entry::{expected_entry_address, Entry};
     use holochain_persistence_api::cas::{
         content::{AddressableContent, AddressableContentTestSuite},
         storage::{test_content_addressable_storage, ExampleContentAddressableStorage},

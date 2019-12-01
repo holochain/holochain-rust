@@ -216,7 +216,6 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        chain_header::{test_chain_header_for_link_entry, test_chain_header_for_sys_entry},
         content_store::{AddContent, GetContent},
         dht::{
             dht_reducers::{
@@ -233,7 +232,10 @@ pub mod tests {
     use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
-        chain_header::test_chain_header,
+        chain_header::{
+            ChainHeader, test_chain_header, test_chain_header_for_link_entry,
+            test_chain_header_for_sys_entry
+        },
         eav::Attribute,
         entry::{test_entry, test_link_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
@@ -520,7 +522,7 @@ pub mod tests {
 
     fn try_create_pending_validation(
         entry: Entry,
-        header: Header,
+        header: ChainHeader,
         workflow: ValidatingWorkflow,
     ) -> PendingValidation {
         match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {

@@ -11,6 +11,7 @@ use serde::{
     ser::{Error, Serializer, SerializeSeq},
 };
 use std::{
+    cmp,
     fmt,
     hash::{Hash, Hasher},
     io::{Read, BufReader},
@@ -71,8 +72,11 @@ where
         // Output the base-64 encoded compressed WASM in (1024*5/4)/10 == 128-symbol chunks
         let mut seq = s.serialize_seq(Some(cnt)).map_err(S::Error::custom)?;
         println!("Encoding {}-byte base-64 gzipped WASM into {} String rows", b64.len(), &cnt);
-        for c in b64.as_bytes().chunks( 128 ) {
-            seq.serialize_element(c).map_err(S::Error::custom)?;
+        let mut cur: &str = b64.as_ref();
+        while ! cur.is_empty() {
+            let (chunk, rest) = cur.split_at(cmp::min( 128, cur.len()));
+            seq.serialize_element(chunk).map_err(S::Error::custom)?;
+            cur = rest;
         };
         seq.end()
     }
@@ -104,7 +108,7 @@ where
             base64::decode(value).map_err(serde::de::Error::custom)
         }
 
-        /// If we got a [String, ...], decode base-64 and uncompress
+        /// If we got a [String, ...], decode base-64 and uncompress into binary WASM
         fn visit_seq<A>(self, mut seq: A) -> Result<Vec<u8>, A::Error>
         where
             A: SeqAccess<'de>,

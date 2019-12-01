@@ -14,7 +14,7 @@ repository = "https://github.com/holochain/sim2h"
 [dependencies]
 hcid = "=0.0.6"
 holochain_persistence_api = "=0.0.11"
-holochain_json_api = "=0.0.17"
+holochain_json_api = { version = "=0.0.17", path = "../../../holochain-serialization" }
 detach = "=0.0.19"
 lib3h = "=0.0.22"
 lib3h_crypto_api = "=0.0.22"

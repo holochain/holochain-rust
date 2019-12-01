@@ -1,4 +1,3 @@
-#![feature(checked_duration_since)]
 
 #[macro_use]
 extern crate lazy_static;

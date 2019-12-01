@@ -15,7 +15,7 @@ holochain_conductor_lib = { version = "=0.0.39-alpha4", path = "../conductor_lib
 holochain_dpki = { version = "=0.0.39-alpha4", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.39-alpha4", path = "../locksmith" }
 lib3h_sodium = "=0.0.22"
-holochain_json_api = "=0.0.17"
+holochain_json_api = { version = "=0.0.17", path = "../../../holochain-serialization" }
 holochain_persistence_api = "=0.0.11"
 holochain_persistence_file = "=0.0.11"
 holochain_wasm_utils = { path = "../wasm_utils" }

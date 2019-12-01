@@ -38,7 +38,7 @@ holochain_conductor_lib_api = { version = "=0.0.39-alpha4", path = "../conductor
 lib3h_protocol = "=0.0.22"
 lib3h_sodium = "=0.0.22"
 holochain_json_derive = "=0.0.17"
-holochain_json_api = "=0.0.17"
+holochain_json_api = { version = "=0.0.17", path = "../../../holochain-serialization" }
 holochain_persistence_api = "=0.0.11"
 holochain_persistence_file = "=0.0.11"
 holochain_persistence_mem = "=0.0.11"

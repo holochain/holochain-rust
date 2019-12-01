@@ -14,7 +14,7 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 holochain_core_types = { version = "=0.0.39-alpha4", path = "../core_types" }
 holochain_json_derive = "=0.0.17"
 holochain_persistence_api = "=0.0.11"
-holochain_json_api = "=0.0.17"
+holochain_json_api = { version = "=0.0.17", path = "../../../holochain-serialization" }
 
 [dev-dependencies]
 test_utils = { version = "=0.0.39-alpha4", path = "../../test_utils" }

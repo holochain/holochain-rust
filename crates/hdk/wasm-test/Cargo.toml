@@ -21,3 +21,5 @@ serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 boolinator = "=2.4.0"
 holochain_json_derive = "=0.0.17"
 
+[patch.crates-io]
+holochain_json_api = { path = "../../../../holochain-serialization/crates/holochain_json_api" }

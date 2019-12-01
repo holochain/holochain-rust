@@ -33,3 +33,4 @@ exclude = [
 #lib3h_crypto_api = "=0.0.22"
 #lib3h_sodium = "=0.0.22"
 #lib3h_zombie_actor = "=0.0.22"
+holochain_json_api = { path = "../holochain-serialization/crates/holochain_json_api" }

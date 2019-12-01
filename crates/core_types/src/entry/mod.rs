@@ -12,7 +12,7 @@ use self::{
     deletion_entry::DeletionEntry,
 };
 use agent::{test_agent_id, AgentId};
-use chain_header::{ChainHeader, test_chain_header};
+use chain_header::{test_chain_header, ChainHeader};
 use chain_migrate::ChainMigrate;
 use crud_status::CrudStatus;
 use dna::Dna;

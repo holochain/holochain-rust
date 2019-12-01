@@ -233,8 +233,8 @@ pub mod tests {
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
         chain_header::{
-            ChainHeader, test_chain_header, test_chain_header_for_link_entry,
-            test_chain_header_for_sys_entry
+            test_chain_header, test_chain_header_for_link_entry, test_chain_header_for_sys_entry,
+            ChainHeader,
         },
         eav::Attribute,
         entry::{test_entry, test_link_entry, test_sys_entry, Entry},
@@ -578,12 +578,11 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
-        let update =
-            try_create_pending_validation(
-                test_entry.clone(),
-                test_header,
-                ValidatingWorkflow::UpdateEntry
-            );
+        let update = try_create_pending_validation(
+            test_entry.clone(),
+            test_header,
+            ValidatingWorkflow::UpdateEntry,
+        );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

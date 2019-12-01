@@ -104,7 +104,7 @@ impl PendingValidationStruct {
                     entry_aspect, error
                 );
                 debug!("Tried to process {:?}", entry_aspect);
-                Err(HolochainError::ValidationFailed(String::from(error)))
+                Err(HolochainError::ValidationFailed(error))
             }
         }
     }

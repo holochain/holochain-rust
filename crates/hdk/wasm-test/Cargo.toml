@@ -23,3 +23,4 @@ holochain_json_derive = "=0.0.17"
 
 [patch.crates-io]
 holochain_json_api = { path = "../../../../holochain-serialization/crates/holochain_json_api" }
+holochain_json_derive = { path = "../../../../holochain-serialization/crates/holochain_json_derive" }

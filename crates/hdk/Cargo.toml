@@ -32,4 +32,4 @@ tempfile = "=3.0.7"
 boolinator = "=2.4.0"
 
 [patch.crates-io]
-holochain_json_api = { path = "../holochain-serialization/crates/holochain_json_api" }
+holochain_json_api = { version = "=0.0.17", path = "../holochain-serialization/crates/holochain_json_api" }

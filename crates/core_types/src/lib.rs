@@ -5,7 +5,6 @@
 //! crates, but that don't include Holochain itself.
 #![feature(try_trait)]
 #![feature(never_type)]
-#![feature(checked_duration_since)]
 #![warn(unused_extern_crates)]
 
 extern crate backtrace;

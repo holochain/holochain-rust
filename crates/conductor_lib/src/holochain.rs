@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn can_instantiate() {
-        let mut dna = create_arbitrary_test_dna();;
+        let mut dna = create_arbitrary_test_dna();
         dna.name = "TestApp".to_string();
         let (context, _test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());

@@ -10,10 +10,12 @@ impl ValidationDependencies for EntryWithHeader {
     fn get_validation_dependencies(&self) -> Vec<Address> {
         match &self.entry {
             Entry::App(_, _) => {
-                // in the future an entry should be dependent on its header but
+                // In the future an entry should be dependent its previous header but
                 // for now it can require nothing by default.
-                // If it is an update, require that the original entry is validated
+                // There is also potential to add a WASM function for determining dependencies as a function
+                // of the entry content.
                 match self.header.link_update_delete() {
+                    // If it is an update, require that the original entry is validated
                     Some(entry_to_update) => vec![entry_to_update],
                     None => Vec::new(),
                 }

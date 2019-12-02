@@ -309,7 +309,7 @@ impl DhtStore {
     }
 }
 
-use petgraph::{algo::is_cyclic_directed, graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
+use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
 use std::collections::HashMap;
 
 fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
@@ -340,10 +340,7 @@ where
         }
     }
 
-    if is_cyclic_directed(&graph) {
-        // this might be expensive..
-        panic!("Cyclic validation dependencies detected!!")
-    }
+    // TODO: Check for cyles in the graph and remove those pending entries
 
     // return only the pending valiations that don't have dependencies that are also pending
     // i.e. the leaf nodes or 'sinks' of the graph

@@ -47,7 +47,7 @@ pub fn reduce_get_validation_package(
     );
     network_state
         .get_validation_package_timeouts
-        .insert(entry_address, timeout.clone());
+        .insert(entry_address, timeout);
 }
 
 pub fn reduce_get_validation_package_timeout(

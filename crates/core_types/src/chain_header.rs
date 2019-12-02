@@ -402,5 +402,4 @@ pub mod tests {
             .address(),
         );
     }
-
 }

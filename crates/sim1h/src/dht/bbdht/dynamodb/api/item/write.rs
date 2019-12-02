@@ -195,5 +195,4 @@ pub mod tests {
             assert!(ensure_content(&log_context, &local_client, &table_name, &content).is_ok());
         }
     }
-
 }

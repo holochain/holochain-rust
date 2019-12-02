@@ -72,5 +72,4 @@ pub mod test {
         assert!(!table_exists(&log_context, &local_client, &table_name)
             .expect("could not check that the table exists"));
     }
-
 }

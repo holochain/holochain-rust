@@ -3,7 +3,7 @@ const { Orchestrator, tapeExecutor, singleConductor, localOnly, combine, callSyn
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
 // (But never over)
-const MIN_EXPECTED_SCENARIOS = 1
+const MIN_EXPECTED_SCENARIOS = 32
 
 process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);

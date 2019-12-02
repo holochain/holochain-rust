@@ -25,9 +25,6 @@ async fn all_chain_headers_before_header_dht(
         log_debug!(context, "About to try and get header: {}", next_header_addr);
 
         let timeout = Timeout::new(GET_TIMEOUT_MS);
-        // when trying to run the line below there is a panic because the state is dropped
-        // this does not happen when running the tests below. Only when triggered as part of a
-        // validate entry workflow
         let get_entry_result =
             get_entry_with_meta_workflow(&context, &next_header_addr, &timeout).await;
 

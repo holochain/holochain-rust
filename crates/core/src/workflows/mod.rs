@@ -15,7 +15,8 @@ use crate::{
     context::Context,
     dht::pending_validations::{PendingValidation, ValidatingWorkflow},
     network::{
-        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
+        // actions::get_validation_package::get_validation_package,
+        entry_with_header::EntryWithHeader,
     },
     nucleus::{
         actions::build_validation_package::build_validation_package,
@@ -120,22 +121,22 @@ async fn validation_package(
         return Ok(Some(package));
     }
 
-    // 2. Try and get it from the author
-    log_debug!(
-        context,
-        "validation_package:{} - Could not build locally. Trying to retrieve from author",
-        entry_with_header.entry.address()
-    );
-    if let Ok(Some(package)) =
-        get_validation_package(entry_with_header.header.clone(), &context).await
-    {
-        log_debug!(
-            context,
-            "validation_package:{} - Successfully retrieved from author",
-            entry_with_header.entry.address()
-        );
-        return Ok(Some(package));
-    }
+    // // 2. Try and get it from the author
+    // log_debug!(
+    //     context,
+    //     "validation_package:{} - Could not build locally. Trying to retrieve from author",
+    //     entry_with_header.entry.address()
+    // );
+    // if let Ok(Some(package)) =
+    //     get_validation_package(entry_with_header.header.clone(), &context).await
+    // {
+    //     log_debug!(
+    //         context,
+    //         "validation_package:{} - Successfully retrieved from author",
+    //         entry_with_header.entry.address()
+    //     );
+    //     return Ok(Some(package));
+    // }
 
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))
     log_debug!(

@@ -75,8 +75,6 @@ module.exports = scenario => {
         t.ok(bob_result.Ok)
         t.equal(JSON.parse(bob_result.Ok.App[1]).content, initialContent)
         
-        await delay(10000)
-
         // alice then goes offline
         t.comment('waiting for alice to go offline')
         await alice.kill()

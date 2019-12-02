@@ -199,15 +199,10 @@ impl Sim2h {
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.connection_states.write().remove(uri)
         {
-            if self
-                .spaces
-                .get(&space_address)
-                .unwrap()
-                .write()
-                .remove_agent(&agent_id)
-                == 0
-            {
-                self.spaces.remove(&space_address);
+            if let Some(space_lock) = self.spaces.get(&space_address) {
+                if space_lock.write().remove_agent(&agent_id) == 0 {
+                    self.spaces.remove(&space_address);
+                }
             }
         }
         trace!("disconnect done");

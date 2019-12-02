@@ -1,6 +1,6 @@
 [package]
 name = "in_stream"
-version = "0.0.38-alpha14"
+version = "0.0.40-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "trait system for facilitating non-blocking stream chaining with handshaking"

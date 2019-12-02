@@ -1,3 +1,5 @@
+#![feature(bind_by_move_pattern_guards)]
+
 //! Trait system for facilitating non-blocking stream chaining with handshaking
 //!
 //! # Example

@@ -1559,7 +1559,7 @@ dependencies = [
 [[package]]
 name = "holochain_tracing"
 version = "0.0.4"
-source = "git+https://github.com/holochain/holochain-tracing.git?branch=span-stack-v2#a1b1b5374cb2826acbe159a9792ff1cf22962be5"
+source = "git+https://github.com/holochain/holochain-tracing.git?branch=span-stack-v2#3d44909a805219d83cd8107b386edf48e96bd95d"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1573,7 +1573,7 @@ dependencies = [
 [[package]]
 name = "holochain_tracing_macros"
 version = "0.0.1"
-source = "git+https://github.com/holochain/holochain-tracing.git?branch=span-stack-v2#a1b1b5374cb2826acbe159a9792ff1cf22962be5"
+source = "git+https://github.com/holochain/holochain-tracing.git?branch=span-stack-v2#3d44909a805219d83cd8107b386edf48e96bd95d"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.4 (git+https://github.com/holochain/holochain-tracing.git?branch=span-stack-v2)",
@@ -2482,7 +2482,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "openssl-src"
-version = "111.6.0+1.1.1d"
+version = "111.6.1+1.1.1d"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cc 1.0.47 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2496,7 +2496,7 @@ dependencies = [
  "autocfg 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.47 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
- "openssl-src 111.6.0+1.1.1d (registry+https://github.com/rust-lang/crates.io-index)",
+ "openssl-src 111.6.1+1.1.1d (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "vcpkg 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -5016,7 +5016,7 @@ dependencies = [
 "checksum opaque-debug 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
 "checksum openssl 0.10.25 (registry+https://github.com/rust-lang/crates.io-index)" = "2f372b2b53ce10fb823a337aaa674e3a7d072b957c6264d0f4ff0bd86e657449"
 "checksum openssl-probe 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
-"checksum openssl-src 111.6.0+1.1.1d (registry+https://github.com/rust-lang/crates.io-index)" = "b9c2da1de8a7a3f860919c01540b03a6db16de042405a8a07a5e9d0b4b825d9c"
+"checksum openssl-src 111.6.1+1.1.1d (registry+https://github.com/rust-lang/crates.io-index)" = "c91b04cb43c1a8a90e934e0cd612e2a5715d976d2d6cff4490278a0cddf35005"
 "checksum openssl-sys 0.9.53 (registry+https://github.com/rust-lang/crates.io-index)" = "465d16ae7fc0e313318f7de5cecf57b2fbe7511fd213978b457e1c96ff46736f"
 "checksum ordered-float 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "18869315e81473c951eb56ad5558bbc56978562d3ecfb87abb7a1e944cea4518"
 "checksum ordermap 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "a86ed3f5f244b372d6b1a00b72ef7f8876d0bc6a78a4c9985c53614041512063"

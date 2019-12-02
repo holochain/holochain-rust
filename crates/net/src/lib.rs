@@ -14,6 +14,7 @@ pub extern crate holochain_json_derive;
 extern crate holochain_json_api;
 extern crate holochain_metrics;
 extern crate holochain_persistence_api;
+extern crate holochain_tracing;
 
 #[macro_use]
 extern crate lazy_static;

@@ -15,8 +15,7 @@ use crate::{
     context::Context,
     dht::pending_validations::{PendingValidation, ValidatingWorkflow},
     network::{
-        actions::get_validation_package::get_validation_package,
-        entry_with_header::EntryWithHeader,
+        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
     nucleus::{
         actions::build_validation_package::build_validation_package,
@@ -137,15 +136,13 @@ async fn validation_package(
                 entry_with_header.entry.address()
             );
             return Ok(Some(package));
-        },
-        response => {
-            log_debug!(
-                context,
-                "validation_package:{} - Direct message to author responded: {:?}",
-                entry_with_header.entry.address(),
-                response,
-            )
-        },
+        }
+        response => log_debug!(
+            context,
+            "validation_package:{} - Direct message to author responded: {:?}",
+            entry_with_header.entry.address(),
+            response,
+        ),
     }
 
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))

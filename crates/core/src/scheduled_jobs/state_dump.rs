@@ -55,7 +55,11 @@ pub fn state_dump(context: Arc<Context>) {
                 pending.workflow.to_string(),
                 pending.entry_with_header.header.entry_type(),
                 pending.entry_with_header.entry.address(),
-                pending.dependencies.iter().map(|addr| addr.to_string()).collect::<Vec<_>>(),
+                pending
+                    .dependencies
+                    .iter()
+                    .map(|addr| addr.to_string())
+                    .collect::<Vec<_>>(),
             )
         })
         .collect::<Vec<String>>();

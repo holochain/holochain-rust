@@ -63,7 +63,7 @@ pub fn reduce_get_validation_package_timeout(
         .remove(address);
 
     if let Some(Some(_)) = network_state.get_validation_package_results.get(address) {
-        // A result alreay came back from the network so don't overwrite it
+        // A result already came back from the network so don't overwrite it
         return;
     }
 

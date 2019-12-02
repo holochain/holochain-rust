@@ -127,7 +127,6 @@ async fn validation_package(
         entry_with_header.entry.address()
     );
 
-    // this will block until the network goes down! It needs to timeout
     match get_validation_package(entry_with_header.header.clone(), &context).await {
         Ok(Some(package)) => {
             log_debug!(

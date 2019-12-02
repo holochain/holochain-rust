@@ -4,6 +4,7 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
+use std::time::{Duration, SystemTime};
 
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     network_state.initialized()?;
@@ -34,5 +35,30 @@ pub fn reduce_get_validation_package(
 
     network_state
         .get_validation_package_results
-        .insert(entry_address, result);
+        .insert(entry_address.clone(), result);
+
+    // add the timeouts
+    let timeout = (SystemTime::now(), Duration::from_millis(1000));
+    network_state
+        .get_validation_package_timeouts
+        .insert(entry_address, timeout.clone());
+}
+
+pub fn reduce_get_validation_package_timeout(
+    network_state: &mut NetworkState,
+    _root_state: &State,
+    action_wrapper: &ActionWrapper,
+) {
+    let action = action_wrapper.action();
+    let id = unwrap_to!(action => crate::action::Action::GetValidationPackageTimeout);
+
+    network_state.get_validation_package_timeouts.remove(id);
+
+    if network_state.get_validation_package_results.get(id).is_some() {
+        return;
+    }
+
+    network_state
+        .get_validation_package_results
+        .insert(id.clone(), Some(Err(HolochainError::Timeout)));
 }

@@ -15,7 +15,7 @@ use crate::{
     context::Context,
     dht::pending_validations::{PendingValidation, ValidatingWorkflow},
     network::{
-        // actions::get_validation_package::get_validation_package,
+        actions::get_validation_package::get_validation_package,
         entry_with_header::EntryWithHeader,
     },
     nucleus::{
@@ -121,22 +121,32 @@ async fn validation_package(
         return Ok(Some(package));
     }
 
-    // // 2. Try and get it from the author
-    // log_debug!(
-    //     context,
-    //     "validation_package:{} - Could not build locally. Trying to retrieve from author",
-    //     entry_with_header.entry.address()
-    // );
-    // if let Ok(Some(package)) =
-    //     get_validation_package(entry_with_header.header.clone(), &context).await
-    // {
-    //     log_debug!(
-    //         context,
-    //         "validation_package:{} - Successfully retrieved from author",
-    //         entry_with_header.entry.address()
-    //     );
-    //     return Ok(Some(package));
-    // }
+    // 2. Try and get it from the author
+    log_debug!(
+        context,
+        "validation_package:{} - Could not build locally. Trying to retrieve from author",
+        entry_with_header.entry.address()
+    );
+
+    // this will block until the network goes down! It needs to timeout
+    match get_validation_package(entry_with_header.header.clone(), &context).await {
+        Ok(Some(package)) => {
+            log_debug!(
+                context,
+                "validation_package:{} - Successfully retrieved from author",
+                entry_with_header.entry.address()
+            );
+            return Ok(Some(package));
+        },
+        response => {
+            log_debug!(
+                context,
+                "validation_package:{} - Direct message to author responded: {:?}",
+                entry_with_header.entry.address(),
+                response,
+            )
+        },
+    }
 
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))
     log_debug!(

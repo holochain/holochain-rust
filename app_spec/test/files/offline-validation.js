@@ -91,7 +91,7 @@ module.exports = scenario => {
         await s.consistency()
         t.comment('consistency has been reached')
 
-        await delay(10000)
+        await delay(10000) // keep this until consistency works with dynamic starting agents
 
         // Bob now go offline to ensure the following get_post uses carols local store only
         t.comment('waiting for Bob to go offline')

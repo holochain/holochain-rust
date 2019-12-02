@@ -38,7 +38,7 @@ pub fn reduce_get_validation_package(
         .insert(entry_address.clone(), result);
 
     // add the timeouts
-    let timeout = (SystemTime::now(), Duration::from_millis(1000));
+    let timeout = (SystemTime::now(), Duration::from_millis(100));
     network_state
         .get_validation_package_timeouts
         .insert(entry_address, timeout.clone());
@@ -50,15 +50,16 @@ pub fn reduce_get_validation_package_timeout(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let id = unwrap_to!(action => crate::action::Action::GetValidationPackageTimeout);
+    let address = unwrap_to!(action => crate::action::Action::GetValidationPackageTimeout);
 
-    network_state.get_validation_package_timeouts.remove(id);
+    network_state.get_validation_package_timeouts.remove(address);
 
-    if network_state.get_validation_package_results.get(id).is_some() {
+    if let Some(Some(_)) = network_state.get_validation_package_results.get(address) {
+        // A result alreay came back from the network so don't overwrite it
         return;
     }
 
     network_state
         .get_validation_package_results
-        .insert(id.clone(), Some(Err(HolochainError::Timeout)));
+        .insert(address.clone(), Some(Err(HolochainError::Timeout)));
 }

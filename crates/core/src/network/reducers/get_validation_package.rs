@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime};
 
 // Some thought needs to go in to how long this should really be
 // Should probably also be configurable via config or env vars
-const GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS: u64 = 1000;
+const GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS: u64 = 10000;
 
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     network_state.initialized()?;

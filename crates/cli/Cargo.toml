@@ -4,18 +4,18 @@ description = "holochain app scaffolding tools"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.39-alpha4"
+version = "0.0.40-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.39-alpha4", path = "../core_types" }
-holochain_core = { version = "=0.0.39-alpha4", path = "../core" }
-holochain_common = { version = "=0.0.39-alpha4", path = "../common" }
-holochain_conductor_lib = { version = "=0.0.39-alpha4", path = "../conductor_lib" }
-holochain_dpki = { version = "=0.0.39-alpha4", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.39-alpha4", path = "../locksmith" }
+holochain_core_types = { version = "=0.0.40-alpha1", path = "../core_types" }
+holochain_core = { version = "=0.0.40-alpha1", path = "../core" }
+holochain_common = { version = "=0.0.40-alpha1", path = "../common" }
+holochain_conductor_lib = { version = "=0.0.40-alpha1", path = "../conductor_lib" }
+holochain_dpki = { version = "=0.0.40-alpha1", path = "../dpki" }
+holochain_locksmith = { version = "=0.0.40-alpha1", path = "../locksmith" }
 holochain_tracing = { version = "=0.0.4", git = "https://github.com/holochain/holochain-tracing.git", branch="span-stack-v2" }
-holochain_tracing_macros = { version = "=0.0.1", path = "../../../holochain-tracing/crates/tracing_macros" }
+holochain_tracing_macros = { version = "=0.0.1", git = "https://github.com/holochain/holochain-tracing.git", branch="span-stack-v2" }
 lib3h_sodium = "=0.0.22"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.11"

@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    agent::state::ActionResponse,
+    agent::state::AgentActionResponse,
     context::Context,
     instance::dispatch_action,
 };
@@ -53,11 +53,16 @@ impl Future for CommitFuture {
         cx.waker().clone().wake();
         if let Some(state) = self.context.try_state() {
             match state.agent().actions().get(&self.action) {
-                Some(ActionResponse::Commit(result)) => match result {
-                    Ok(address) => Poll::Ready(Ok(address.clone())),
-                    Err(error) => Poll::Ready(Err(error.clone())),
+                Some(r) => match r.response() {
+                    AgentActionResponse::Commit(result) => {
+                        dispatch_action(
+                            self.context.action_channel(),
+                            ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),
+                        );
+                        Poll::Ready(result.clone())
+                    }
+                    _ => unreachable!(),
                 },
-                Some(_) => unreachable!(),
                 None => Poll::Pending,
             }
         } else {

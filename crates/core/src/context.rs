@@ -44,11 +44,9 @@ use std::{
     time::Duration,
 };
 
+use futures::executor::ThreadPool;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
-use threadpool::ThreadPool;
-
-const NUM_WORKER_THREADS: usize = 20;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
@@ -153,7 +151,9 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
+            thread_pool: Arc::new(Mutex::new(
+                ThreadPool::new().expect("Could not create thread pool for futures"),
+            )),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         }
@@ -188,7 +188,9 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(ThreadPool::new(NUM_WORKER_THREADS))),
+            thread_pool: Arc::new(Mutex::new(
+                ThreadPool::new().expect("Could not create thread pool for futures"),
+            )),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         })
@@ -350,14 +352,14 @@ impl Context {
         }
     }
 
-    pub fn spawn_task<F>(&self, f: F)
+    pub fn spawn_task<Fut>(&self, f: Fut)
     where
-        F: FnOnce() + Send + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
     {
         self.thread_pool
             .lock()
             .expect("Couldn't get lock on Context::thread_pool")
-            .execute(f);
+            .run(f);
     }
 
     /// returns the public capability token (if any)

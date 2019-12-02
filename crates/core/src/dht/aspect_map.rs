@@ -224,5 +224,4 @@ mod tests {
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 3);
         assert_eq!(merged.0.get(&EntryHash::from("b")).unwrap().len(), 3);
     }
-
 }

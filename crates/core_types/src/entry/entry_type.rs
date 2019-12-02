@@ -252,5 +252,4 @@ pub mod tests {
             assert_eq!(type_str, &String::from(variant),);
         }
     }
-
 }

@@ -2,6 +2,9 @@ use crate::*;
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use url2::prelude::*;
 
+mod certificate;
+pub use certificate::*;
+
 const SCHEME: &'static str = "tls";
 
 /// internal helper make sure we're dealing with tls:// urls

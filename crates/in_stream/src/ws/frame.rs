@@ -22,6 +22,12 @@ pub enum WsFrame {
     Close(CloseData),
 }
 
+impl Default for WsFrame {
+    fn default() -> Self {
+        WsFrame::Text(String::new())
+    }
+}
+
 impl From<String> for WsFrame {
     fn from(s: String) -> Self {
         WsFrame::Text(s)

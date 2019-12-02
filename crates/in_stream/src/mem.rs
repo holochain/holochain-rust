@@ -8,6 +8,18 @@ use url2::prelude::*;
 const SCHEME: &'static str = "mem";
 const PORT: u16 = 4242;
 
+#[derive(Debug)]
+/// memory connection specific bind config
+pub struct MemBindConfig {}
+
+impl Default for MemBindConfig {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
+impl InStreamConfig for MemBindConfig {}
+
 /// bind to a virtual in-process ipc "interface"
 #[derive(Debug)]
 pub struct InStreamListenerMem {
@@ -17,6 +29,10 @@ pub struct InStreamListenerMem {
 }
 
 impl InStreamListenerMem {
+    pub fn bind(url: &Url2, config: MemBindConfig) -> Result<Self> {
+        InStreamListenerMem::raw_bind(url, config)
+    }
+
     /// private constructor, you probably want `bind`
     fn priv_new(url: Url2, recv: crossbeam_channel::Receiver<InStreamMem>) -> Self {
         Self {
@@ -32,18 +48,6 @@ impl Drop for InStreamListenerMem {
         get_mem_manager().unbind(&self.url);
     }
 }
-
-#[derive(Debug)]
-/// memory connection specific bind config
-pub struct MemBindConfig {}
-
-impl Default for MemBindConfig {
-    fn default() -> Self {
-        Self {}
-    }
-}
-
-impl InStreamConfig for MemBindConfig {}
 
 impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerMem {
     type Stream = InStreamMem;
@@ -112,6 +116,12 @@ pub struct InStreamMem {
     send: Option<crossbeam_channel::Sender<Vec<u8>>>,
     recv: Option<crossbeam_channel::Receiver<Vec<u8>>>,
     recv_buf: Vec<u8>,
+}
+
+impl InStreamMem {
+    pub fn connect(url: &Url2, config: MemConnectConfig) -> Result<Self> {
+        InStreamMem::raw_connect(url, config)
+    }
 }
 
 impl InStream<&mut [u8], &[u8]> for InStreamMem {
@@ -357,7 +367,7 @@ mod tests {
 
         let server_thread = std::thread::spawn(move || {
             let mut listener =
-                InStreamListenerMem::raw_bind(&random_url("test"), MemBindConfig::default())
+                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default())
                     .unwrap();
             println!("bound to: {}", listener.binding());
             send_binding.send(listener.binding()).unwrap();
@@ -394,7 +404,7 @@ mod tests {
             let binding = recv_binding.recv().unwrap();
             println!("connect to: {}", binding);
 
-            let mut cli = InStreamMem::raw_connect(&binding, MemConnectConfig::default())
+            let mut cli = InStreamMem::connect(&binding, MemConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
 

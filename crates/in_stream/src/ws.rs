@@ -40,6 +40,12 @@ pub struct InStreamListenerWss<Sub: InStreamListenerStd> {
     sub: Sub,
 }
 
+impl<Sub: InStreamListenerStd> InStreamListenerWss<Sub> {
+    pub fn bind(url: &Url2, config: WssBindConfig) -> Result<Self> {
+        InStreamListenerWss::raw_bind(url, config)
+    }
+}
+
 impl<Sub: InStreamListenerStd> InStreamListener<&mut WsFrame, WsFrame>
     for InStreamListenerWss<Sub>
 {
@@ -132,6 +138,10 @@ type TungsteniteSrvHandshakeResult<S> = std::result::Result<
 >;
 
 impl<Sub: InStreamStd> InStreamWss<Sub> {
+    pub fn connect(url: &Url2, config: WssConnectConfig) -> Result<Self> {
+        InStreamWss::raw_connect(url, config)
+    }
+
     fn priv_new(connect_url: Url2) -> Self {
         Self {
             state: None,
@@ -318,7 +328,7 @@ mod tests {
     use super::*;
 
     fn wait_read<Sub: 'static + InStreamStd>(s: &mut InStreamWss<Sub>) -> WsFrame {
-        let mut out: WsFrame = "".into();
+        let mut out = WsFrame::default();
         loop {
             match s.read(&mut out) {
                 Ok(_) => return out,
@@ -362,7 +372,7 @@ mod tests {
             println!("connect to: {}", binding);
 
             let mut cli: InStreamWss<SubL::StreamStd> =
-                InStreamWss::raw_connect(&binding, WssConnectConfig::new(c)).unwrap();
+                InStreamWss::connect(&binding, WssConnectConfig::new(c)).unwrap();
 
             cli.write("hello from client".into()).unwrap();
             cli.flush().unwrap();
@@ -385,7 +395,7 @@ mod tests {
         let config = TlsBindConfig::new(config).fake_certificate();
         let config = WssBindConfig::new(config);
         let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerMem>> =
-            InStreamListenerWss::raw_bind(&url, config).unwrap();
+            InStreamListenerWss::bind(&url, config).unwrap();
         suite(l, TlsConnectConfig::new(MemConnectConfig::default()));
     }
 
@@ -395,7 +405,7 @@ mod tests {
         let config = TlsBindConfig::new(config).fake_certificate();
         let config = WssBindConfig::new(config);
         let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
-            InStreamListenerWss::raw_bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
+            InStreamListenerWss::bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
         //suite(l, TcpConnectConfig::default());
         suite(l, TlsConnectConfig::new(TcpConnectConfig::default()));
     }

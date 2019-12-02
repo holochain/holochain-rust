@@ -5,6 +5,8 @@
 //! # Example
 //!
 //! ```rust
+//! #![feature(bind_by_move_pattern_guards)]
+//!
 //! use url2::prelude::*;
 //! use in_stream::*;
 //!
@@ -16,7 +18,7 @@
 //!     let config = WssBindConfig::new(config);
 //!     let mut listener:
 //!         InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
-//!         InStreamListenerWss::raw_bind(
+//!         InStreamListenerWss::bind(
 //!             &url2!("wss://127.0.0.1:0"),
 //!             config
 //!         ).unwrap();
@@ -39,7 +41,7 @@
 //!
 //!     std::thread::sleep(std::time::Duration::from_millis(100));
 //!
-//!     let mut res: WsFrame = "".into();
+//!     let mut res = WsFrame::default();
 //!     srv.read(&mut res).unwrap();
 //!     assert_eq!("hello from client", res.as_str());
 //! });
@@ -49,7 +51,7 @@
 //!     println!("connect to: {}", binding);
 //!
 //!     let mut cli: InStreamWss<InStreamTls<InStreamTcp>> =
-//!         InStreamWss::raw_connect(
+//!         InStreamWss::connect(
 //!             &binding,
 //!             WssConnectConfig::new(
 //!                 TlsConnectConfig::new(
@@ -60,7 +62,7 @@
 //!
 //!     std::thread::sleep(std::time::Duration::from_millis(100));
 //!
-//!     let mut res: WsFrame = "".into();
+//!     let mut res = WsFrame::default();
 //!     cli.read(&mut res).unwrap();
 //!     assert_eq!("hello from server", res.as_str());
 //! });

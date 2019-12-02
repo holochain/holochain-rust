@@ -41,6 +41,12 @@ impl InStreamConfig for TcpBindConfig {}
 #[derive(Debug)]
 pub struct InStreamListenerTcp(pub std::net::TcpListener);
 
+impl InStreamListenerTcp {
+    pub fn bind(url: &Url2, config: TcpBindConfig) -> Result<Self> {
+        InStreamListenerTcp::raw_bind(url, config)
+    }
+}
+
 impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
     type Stream = InStreamTcp;
 
@@ -107,6 +113,10 @@ pub struct InStreamTcp {
 }
 
 impl InStreamTcp {
+    pub fn connect(url: &Url2, config: TcpConnectConfig) -> Result<Self> {
+        InStreamTcp::raw_connect(url, config)
+    }
+
     fn priv_new(
         stream: std::net::TcpStream,
         connecting: Option<TcpConnectingData>,
@@ -244,7 +254,7 @@ mod tests {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
-            let mut listener = InStreamListenerTcp::raw_bind(
+            let mut listener = InStreamListenerTcp::bind(
                 &Url2::parse("tcp://127.0.0.1:0"),
                 TcpBindConfig::default(),
             )
@@ -284,7 +294,7 @@ mod tests {
             let binding = recv_binding.recv().unwrap();
             println!("connect to: {}", binding);
 
-            let mut cli = InStreamTcp::raw_connect(&binding, TcpConnectConfig::default())
+            let mut cli = InStreamTcp::connect(&binding, TcpConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
 

@@ -44,6 +44,12 @@ pub struct InStreamListenerTls<Sub: InStreamListenerStd> {
     acceptor: native_tls::TlsAcceptor,
 }
 
+impl<Sub: InStreamListenerStd> InStreamListenerTls<Sub> {
+    pub fn bind(url: &Url2, config: TlsBindConfig) -> Result<Self> {
+        InStreamListenerTls::raw_bind(url, config)
+    }
+}
+
 impl<Sub: InStreamListenerStd> std::fmt::Debug for InStreamListenerTls<Sub> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("InStreamListenerTls")
@@ -138,6 +144,10 @@ impl<Sub: InStreamStd> std::fmt::Debug for InStreamTls<Sub> {
 }
 
 impl<Sub: InStreamStd> InStreamTls<Sub> {
+    pub fn connect(url: &Url2, config: TlsConnectConfig) -> Result<Self> {
+        InStreamTls::raw_connect(url, config)
+    }
+
     fn priv_new() -> Self {
         Self {
             state: None,
@@ -319,7 +329,7 @@ mod tests {
         }
     }
 
-    fn suite<L: 'static + InStreamListenerStd, C: InStreamConfig>(mut listener: L, c: C) {
+    fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(mut listener: InStreamListenerTls<SubL>, c: C) {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
@@ -348,7 +358,8 @@ mod tests {
             let binding = recv_binding.recv().unwrap();
             println!("connect to: {}", binding);
 
-            let mut cli = L::StreamStd::raw_connect(&binding, TlsConnectConfig::new(c))
+            let mut cli: StdStreamAdapter<InStreamTls<SubL::StreamStd>> =
+                InStreamTls::connect(&binding, TlsConnectConfig::new(c))
                 .unwrap()
                 .into_std_stream();
 
@@ -371,7 +382,7 @@ mod tests {
         url.set_scheme(SCHEME).unwrap();
         let config = TlsBindConfig::new(MemBindConfig::default()).fake_certificate();
         let l: InStreamListenerTls<InStreamListenerMem> =
-            InStreamListenerTls::raw_bind(&url, config).unwrap();
+            InStreamListenerTls::bind(&url, config).unwrap();
         suite(l, MemConnectConfig::default());
     }
 
@@ -379,7 +390,7 @@ mod tests {
     fn tls_works_tcp() {
         let config = TlsBindConfig::new(TcpBindConfig::default()).fake_certificate();
         let l: InStreamListenerTls<InStreamListenerTcp> =
-            InStreamListenerTls::raw_bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
+            InStreamListenerTls::bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
         suite(l, TcpConnectConfig::default());
     }
 }

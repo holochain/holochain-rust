@@ -21,7 +21,7 @@ lib3h_crypto_api = "=0.0.22"
 lib3h_sodium = "=0.0.22"
 lib3h_protocol = "=0.0.22"
 lib3h_zombie_actor = "=0.0.22"
-holochain_tracing = { version = "=0.0.4", git = "https://github.com/holochain/holochain-tracing.git", branch="span-stack-v2" }
+holochain_tracing = "=0.0.4"
 holochain_core_types = { version = "=0.0.40-alpha1", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.40-alpha1", path = "../locksmith" }
 uuid = { version = "0.4", features = ["v4"] }

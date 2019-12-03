@@ -449,13 +449,4 @@ pub mod tests {
             vec![b, c]
         );
     }
-
-    #[test]
-    #[should_panic(expected = "Cyclic validation dependencies detected!!")]
-    fn test_dependency_resolution_cycle() {
-        // A depends on B, B depends on A. Uh Oh we have a cycle!
-        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
-        let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_a().address()]);
-        get_free_dependencies(&vec![a.clone(), b.clone()]);
-    }
 }

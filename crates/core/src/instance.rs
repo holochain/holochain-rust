@@ -411,7 +411,7 @@ impl Instance {
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
-            consistency_model: ConsistencyModel::new(context.clone()),
+            consistency_model: ConsistencyModel::new(context),
             kill_switch: None,
             kill_switch_holding: None,
         }
@@ -424,7 +424,7 @@ impl Instance {
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
-            consistency_model: ConsistencyModel::new(context.clone()),
+            consistency_model: ConsistencyModel::new(context),
             kill_switch: None,
             kill_switch_holding: None,
         }

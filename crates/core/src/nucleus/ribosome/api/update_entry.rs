@@ -53,7 +53,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let res: Result<Address, HolochainError> = context
         .block_on(author_entry(
             &entry,
-            Some(latest_entry.clone().address()),
+            Some(latest_entry.address()),
             &context.clone(),
             &vec![], // TODO should provenance be a parameter?
         ))

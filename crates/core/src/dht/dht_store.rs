@@ -1,6 +1,9 @@
 use crate::{
     content_store::{AddContent, GetContent},
-    dht::aspect_map::{AspectMap, AspectMapBare},
+    dht::{
+        aspect_map::{AspectMap, AspectMapBare},
+        pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
+    },
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -28,10 +31,8 @@ use std::{
     collections::{BTreeSet, VecDeque},
     convert::TryFrom,
     sync::Arc,
-    time::{Duration, SystemTime},
+    time::Duration,
 };
-
-type QueuedItem = (PendingValidation, Option<(SystemTime, Duration)>);
 
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard
@@ -45,7 +46,7 @@ pub struct DhtStore {
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
 
-    queued_holding_workflows: VecDeque<QueuedItem>,
+    queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl PartialEq for DhtStore {
@@ -64,7 +65,7 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_map: AspectMapBare,
-    queued_holding_workflows: VecDeque<QueuedItem>,
+    queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
@@ -102,7 +103,7 @@ pub fn create_get_links_eavi_query<'a>(
         Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
     Ok(EaviQuery::new(
         Some(address).into(),
-        EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+        EavFilter::predicate(move |attr: Attribute| match attr {
             Attribute::LinkTag(query_link_type, query_tag)
             | Attribute::RemovedLink(query_link_type, query_tag) => {
                 link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
@@ -111,10 +112,7 @@ pub fn create_get_links_eavi_query<'a>(
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::single(Attribute::RemovedLink(
-            link_type.clone(),
-            tag.clone(),
-        ))),
+        Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
     ))
 }
 
@@ -173,7 +171,7 @@ impl DhtStore {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let query = EaviQuery::new(
             Some(address.to_owned()).into(),
-            EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+            EavFilter::predicate(move |attr: Attribute| match attr {
                 Attribute::LinkTag(_, _)
                 | Attribute::RemovedLink(_, _)
                 | Attribute::CrudLink
@@ -266,11 +264,20 @@ impl DhtStore {
 
     pub(crate) fn next_queued_holding_workflow(
         &self,
-    ) -> Option<(&PendingValidation, Option<Duration>)> {
-        self.queued_holding_workflows
-            .iter()
-            .skip_while(|(_pending, maybe_delay)| {
-                if let Some((time_of_dispatch, delay)) = maybe_delay {
+    ) -> Option<(PendingValidation, Option<Duration>)> {
+        // calculate the leaf dependencies (the things we can validate right now)
+        let free_dependencies = get_free_dependencies(&self.queued_holding_workflows);
+
+        // respect the delays on the leaf nodes
+        free_dependencies
+            .into_iter()
+            .skip_while(|PendingValidationWithTimeout { timeout, .. }| {
+                // skip pending validation with an unelapsed delay
+                if let Some(ValidationTimeout {
+                    time_of_dispatch,
+                    delay,
+                }) = timeout
+                {
                     let maybe_time_elapsed = time_of_dispatch.elapsed();
                     if let Ok(time_elapsed) = maybe_time_elapsed {
                         if time_elapsed < *delay {
@@ -280,44 +287,78 @@ impl DhtStore {
                 }
                 false
             })
-            .map(|(pending, maybe_delay)| {
-                (
-                    pending,
-                    maybe_delay
-                        .map(|(_time, duration)| Some(duration))
-                        .unwrap_or(None),
-                )
+            .map(|PendingValidationWithTimeout { pending, timeout }| {
+                (pending, timeout.map(|t| Some(t.delay)).unwrap_or(None))
             })
             .next()
     }
 
     pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
-        self.queued_holding_workflows
-            .iter()
-            .any(|(current, _)| current == pending)
+        self.queued_holding_workflows.iter().any(
+            |PendingValidationWithTimeout {
+                 pending: current, ..
+             }| current == pending,
+        )
     }
 
-    pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<QueuedItem> {
+    pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<PendingValidationWithTimeout> {
         &self.queued_holding_workflows
     }
 
-    pub(crate) fn queue_holding_workflow(&mut self, v: QueuedItem) {
+    pub(crate) fn queue_holding_workflow(&mut self, v: PendingValidationWithTimeout) {
         self.queued_holding_workflows.push_back(v);
     }
-
-    // pub(crate) fn pop_next_holding_workflow(&mut self) -> Option<QueuedItem> {
-    //     self.queued_holding_workflows.pop_front()
-    // }
 
     pub(crate) fn remove_holding_workflow(
         &mut self,
         item: &PendingValidation,
-    ) -> Option<QueuedItem> {
+    ) -> Option<PendingValidationWithTimeout> {
         self.queued_holding_workflows()
             .iter()
-            .position(|(i, _)| i == item)
+            .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
             .and_then(|index| self.queued_holding_workflows.remove(index))
     }
+}
+
+use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
+use std::collections::HashMap;
+
+fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
+where
+    I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
+{
+    let mut graph = DiGraph::<(), ()>::new();
+    let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
+    let mut index_reverse_map: HashMap<NodeIndex, PendingValidationWithTimeout> = HashMap::new();
+
+    // add the nodes
+    for p in pending.clone() {
+        let node_index = graph.add_node(());
+        index_map.insert(p.pending.entry_with_header.entry.address(), node_index);
+        index_reverse_map.insert(node_index, p);
+    }
+
+    // add the edges
+    for p in pending.clone() {
+        let from = index_map
+            .get(&p.pending.entry_with_header.entry.address())
+            .expect("we literally just added this");
+        for to_addr in p.pending.dependencies.clone() {
+            // only add the dependencies that are also in the pending validation list
+            if let Some(to) = index_map.get(&to_addr) {
+                graph.add_edge(*from, *to, ());
+            }
+        }
+    }
+
+    // TODO: Check for cyles in the graph and remove those pending entries
+
+    // return only the pending valiations that don't have dependencies that are also pending
+    // i.e. the leaf nodes or 'sinks' of the graph
+    graph
+        .externals(Outgoing)
+        .map(|i| index_reverse_map.get(&i).unwrap().clone())
+        .collect()
 }
 
 impl GetContent for DhtStore {
@@ -337,7 +378,14 @@ impl AddContent for DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_core_types::{chain_header::test_chain_header_with_sig, entry::test_entry};
+    use crate::{
+        dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
+        network::entry_with_header::EntryWithHeader,
+    };
+    use holochain_core_types::{
+        chain_header::test_chain_header_with_sig,
+        entry::{test_entry, test_entry_a, test_entry_b, test_entry_c},
+    };
 
     use holochain_persistence_api::{
         cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
@@ -358,5 +406,58 @@ pub mod tests {
         store.add_header_for_entry(&entry, &header2).unwrap();
         let headers = store.get_headers(entry.address()).unwrap();
         assert_eq!(headers, vec![header1, header2]);
+    }
+
+    fn pending_validation_for_entry(
+        entry: Entry,
+        dependencies: Vec<Address>,
+    ) -> PendingValidationWithTimeout {
+        let header = test_chain_header_with_sig("sig1");
+        let mut pending_struct = PendingValidationStruct::new(
+            EntryWithHeader { entry, header },
+            ValidatingWorkflow::HoldEntry,
+        );
+        pending_struct.dependencies = dependencies;
+        PendingValidationWithTimeout::new(Arc::new(pending_struct.clone()), None)
+    }
+
+    #[test]
+    fn test_dependency_resolution_no_dependencies() {
+        // A and B have no dependencies. Both should be free
+        let a = pending_validation_for_entry(test_entry_a(), Vec::new());
+        let b = pending_validation_for_entry(test_entry_b(), Vec::new());
+        assert_eq!(
+            get_free_dependencies(&vec![a.clone(), b.clone()]),
+            vec![a, b]
+        );
+    }
+
+    #[test]
+    fn test_dependency_resolution_chain() {
+        // A depends on B and B depends on C. C should be free
+        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
+        let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()]);
+        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+
+        assert_eq!(
+            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            vec![c]
+        );
+    }
+
+    #[test]
+    fn test_dependency_resolution_tree() {
+        // A depends on B and C. B and C should be free
+        let a = pending_validation_for_entry(
+            test_entry_a(),
+            vec![test_entry_b().address(), test_entry_c().address()],
+        );
+        let b = pending_validation_for_entry(test_entry_b(), vec![]);
+        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+
+        assert_eq!(
+            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            vec![b, c]
+        );
     }
 }

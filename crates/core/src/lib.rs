@@ -1,11 +1,6 @@
 //! The library implementing the holochain pattern of validation rules + local source chain + DHT
-#![feature(
-    arbitrary_self_types,
-    async_await,
-    async_closure,
-    proc_macro_hygiene,
-    custom_inner_attributes
-)]
+
+#![feature(arbitrary_self_types, async_closure, proc_macro_hygiene)]
 #![warn(unused_extern_crates)]
 
 #[macro_use]

@@ -2,7 +2,10 @@
 
 use crate::{
     action::{Action, ActionWrapper},
-    dht::dht_store::DhtStore,
+    dht::{
+        dht_store::DhtStore,
+        pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
+    },
 };
 use std::sync::Arc;
 
@@ -112,7 +115,7 @@ pub(crate) fn reduce_hold_aspect(
                         link_addresses,
                         LinkModification::Remove,
                     );
-                    store.clone()
+                    store
                 }),
         ),
         EntryAspect::Update(entry, header) => {
@@ -169,7 +172,11 @@ pub fn reduce_queue_holding_workflow(
         None
     } else {
         let mut new_store = (*old_store).clone();
-        new_store.queue_holding_workflow((pending.clone(), *maybe_delay));
+        new_store
+            .queue_holding_workflow(PendingValidationWithTimeout::new(
+                pending.clone(),
+                maybe_delay.map(ValidationTimeout::from),
+            ));
         Some(new_store)
     }
 }
@@ -544,36 +551,31 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 2);
         assert!(store.has_queued_holding_workflow(&hold_link));
 
+        // the link won't validate while the entry is pending so we have to remove it
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+
+        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
+        assert_eq!(hold_link, next_pending);
+
         let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
-        assert_eq!(store.queued_holding_workflows().len(), 3);
+        assert_eq!(store.queued_holding_workflows().len(), 2);
+        assert!(!store.has_queued_holding_workflow(&hold));
         assert!(store.has_queued_holding_workflow(&update));
-
-        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(hold_link, *next_pending);
+        assert!(store.has_queued_holding_workflow(&hold_link));
 
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
-        assert_eq!(store.queued_holding_workflows().len(), 2);
-        assert!(!store.has_queued_holding_workflow(&hold_link));
-
-        assert!(store.has_queued_holding_workflow(&hold));
-        assert!(store.has_queued_holding_workflow(&update));
-
-        let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(update, *next_pending);
-
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
-        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
-
         assert_eq!(store.queued_holding_workflows().len(), 1);
         assert!(!store.has_queued_holding_workflow(&hold));
+        assert!(!store.has_queued_holding_workflow(&hold_link));
         assert!(store.has_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
-        assert_eq!(update, *next_pending);
+        assert_eq!(update, next_pending);
     }
 }

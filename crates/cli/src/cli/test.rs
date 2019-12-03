@@ -69,7 +69,7 @@ pub fn test(
         // CLI feedback
         println!("{}", "Installing node_modules".green().bold());
         util::run_cmd(
-            tests_path.clone(),
+            tests_path,
             "npm".to_string(),
             match show_npm_output {
                 true => &["install"],

@@ -119,8 +119,8 @@ pub async fn initialize_chain(
             .traits
             .iter()
             .find(|(cap_name, _)| *cap_name == ReservedTraitNames::Public.as_str());
-        if maybe_public.is_some() {
-            let (_, cap) = maybe_public.unwrap();
+        if let Some(public) = maybe_public {
+            let (_, cap) = public;
             cap_functions.insert(zome_name, cap.functions.clone());
         }
     }

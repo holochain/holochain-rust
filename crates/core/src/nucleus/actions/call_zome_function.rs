@@ -133,7 +133,7 @@ pub fn validate_call(
     };
 
     if check_capability(context.clone(), fn_call)
-        || (is_token_the_agent(context.clone(), &fn_call.cap)
+        || (is_token_the_agent(context, &fn_call.cap)
             && verify_call_sig(
                 &fn_call.cap.provenance,
                 &fn_call.fn_name,
@@ -163,7 +163,7 @@ pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     let maybe_grant = get_grant(&context.clone(), &fn_call.cap_token());
     match maybe_grant {
         None => false,
-        Some(grant) => verify_grant(context.clone(), &grant, fn_call),
+        Some(grant) => verify_grant(context, &grant, fn_call),
     }
 }
 

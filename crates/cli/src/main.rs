@@ -183,8 +183,8 @@ fn run(tracer: Option<ht::Tracer>) -> HolochainResult<()> {
             output,
             properties: properties_string,
         } => {
-            let output = if output.is_some() {
-                output.unwrap()
+            let output = if let Some(output_inner) = output {
+                output_inner
             } else {
                 util::std_package_path(&project_path).map_err(HolochainError::Default)?
             };

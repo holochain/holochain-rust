@@ -104,7 +104,6 @@ impl ChainStore {
                         self.iter(start_chain_header)
                             .skip(start)
                             .take(limit)
-                            .map(|header| header.to_owned())
                             .collect(),
                     )
                 } else {
@@ -128,7 +127,6 @@ impl ChainStore {
                         self.iter_type(start_chain_header, &entry_type)
                             .skip(start)
                             .take(limit)
-                            .map(|header| header.to_owned())
                             .collect(),
                     )
                 } else {
@@ -165,7 +163,6 @@ impl ChainStore {
                             })
                             .skip(start)
                             .take(limit)
-                            .map(|header| header.to_owned())
                             .collect(),
                     )
                 } else {

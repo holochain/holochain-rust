@@ -14,8 +14,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
 
-use futures::future;
-use futures::future::FutureExt;
+use futures::{future, future::FutureExt};
 use std::sync::Arc;
 
 pub async fn validate_agent_entry(

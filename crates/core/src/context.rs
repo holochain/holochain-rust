@@ -9,6 +9,7 @@ use crate::{
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{
+    executor::ThreadPool,
     task::{noop_waker_ref, Poll},
     Future,
 };
@@ -43,7 +44,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use futures::executor::ThreadPool;
 
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;

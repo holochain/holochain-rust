@@ -55,9 +55,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
             aspect_json
         )
     }
-}
 
-// If reusing/uncommenting, replace EntryWithHeader with ChainPair
 /*
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
@@ -71,9 +69,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         assert_eq!(dht_meta_data.content_list.len(), 1);
         let chain_pair: ChainPair = serde_json::from_str(
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHeader"),
+                .expect("dht_meta_data should be ChainPair"),
         )
-        .expect("dht_meta_data should be EntryWithHeader");
+        .expect("dht_meta_data should be ChainPair");
         thread::spawn(move || {
             match context.block_on(hold_link_workflow(&chain_pair, &context.clone())) {
                 Err(error) => log_error!(context, "net/dht: {}", error),
@@ -84,10 +82,10 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         log_debug!(context, "net/handle: HandleStoreMeta: got LINK REMOVAL. processing...");
         // TODO: do a loop on content once links properly implemented
         assert_eq!(dht_meta_data.content_list.len(), 1);
-        let chain_pair: EntryWithHeader = serde_json::from_str(
+        let chain_pair: ChainPair = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be ChainPair"),
         )
         .expect("dht_meta_data should be EntryWithHader");
         thread::spawn(move || {
@@ -103,12 +101,12 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     {
         log_debug!(context, "net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
 
-        let chain_pair: EntryWithHeader = serde_json::from_str(
+        let chain_pair: ChainPair = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be ChainPair"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be ChainPair");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(hold_remove_workflow(chain_pair, context.clone()))
@@ -121,12 +119,12 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         == CrudStatus::Modified
     {
         log_debug!(context, "net/handle: HandleStoreMeta: got CRUD LINK. processing...");
-        let chain_pair: EntryWithHeader = serde_json::from_str(
+        let chain_pair: ChainPair = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be ChainPair"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be ChainPair");
         thread::spawn(move || {
             if let Err(error) =
                 context.block_on(hold_update_workflow(chain_pair, context.clone()))

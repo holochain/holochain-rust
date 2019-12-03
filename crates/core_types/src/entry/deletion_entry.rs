@@ -17,8 +17,8 @@ impl DeletionEntry {
         }
     }
 
-    pub fn deleted_entry_address(self) -> Address {
-        self.deleted_entry_address
+    pub fn deleted_entry_address(&self) -> &Address {
+        &self.deleted_entry_address
     }
 }
 
@@ -37,7 +37,7 @@ pub mod tests {
     fn deletion_entry_smoke_test() {
         assert_eq!(
             test_entry_a().address(),
-            test_deletion_entry().deleted_entry_address()
+            test_deletion_entry().deleted_entry_address().clone()
         );
     }
 }

@@ -352,14 +352,14 @@ where
     // add the nodes
     for p in pending.clone() {
         let node_index = graph.add_node(());
-        index_map.insert(p.pending.entry_with_header.entry.address(), node_index);
+        index_map.insert(p.pending.chain_pair.entry().address(), node_index);
         index_reverse_map.insert(node_index, p);
     }
 
     // add the edges
     for p in pending.clone() {
         let from = index_map
-            .get(&p.pending.entry_with_header.entry.address())
+            .get(&p.pending.chain_pair.entry().address())
             .expect("we literally just added this");
         for to_addr in p.pending.dependencies.clone() {
             // only add the dependencies that are also in the pending validation list

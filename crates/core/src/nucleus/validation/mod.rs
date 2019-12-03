@@ -138,9 +138,9 @@ pub fn entry_to_validation_data(
                 try_get_entry_with_meta_and_header_tuple(context.clone(), &link_update)
                     .map(|entry_with_meta_and_header_tuple| {
                         Ok(EntryValidationData::Modify {
-                            old_entry: entry_with_meta_and_header.0.entry.clone(),
+                            old_entry: entry_with_meta_and_header_tuple.0.entry.clone(),
                             new_entry: entry.clone(),
-                            old_entry_header: entry_with_meta_and_header.1.clone(),
+                            old_entry_header: entry_with_meta_and_header_tuple.1.clone(),
                             validation_data: validation_data.clone(),
                         })
                     })
@@ -157,9 +157,6 @@ pub fn entry_to_validation_data(
                 })
             }),
         Entry::Deletion(deletion_entry) => {
-            let deletion_address = deletion_entry.clone().deleted_entry_address();
-            try_get_entry_with_meta_and_header_tuple(context.clone(), &deletion_address)
-                .map(|entry_with_meta_and_header_tuple| {
             let deletion_address = deletion_entry.deleted_entry_address().clone();
             try_get_entry_with_meta_and_header_tuple(context.clone(), &deletion_address)
                 .map(|entry_with_meta_and_header| {
@@ -174,8 +171,7 @@ pub fn entry_to_validation_data(
                         "Could not find Entry".to_string(),
                     ))
                 })
-            }
-        }
+        },
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {
             entry: entry.clone(),
             validation_data,

@@ -11,7 +11,157 @@ use holochain_conductor_lib::{
 };
 use holochain_core_types::agent::AgentId;
 use holochain_persistence_api::cas::content::AddressableContent;
-use std::{fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
+use boolinator::Boolinator;
+
+#[derive(Serialize, Deserialize)]
+struct HappBundle {
+    pub instances: Vec<HappBundleInstance>,
+    pub bridges: Vec<Bridge>,
+    pub uis: Vec<HappBundleUi>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct HappBundleInstance {
+    pub name: String,
+    pub id: String,
+    pub dna_hash: String,
+    pub uri: String,
+    pub dna_properties: HashMap<String, String>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct HappBundleUi {
+    pub name: String,
+    pub id: String,
+    pub uri: String,
+    pub intance_references: Vec<HappBundleInstanceReference>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct HappBundleInstanceReference {
+    pub ui_handle: String,
+    pub instance_id: String,
+}
+
+impl HappBundle {
+    pub fn id_references_are_consistent(&self) -> Result<(), String> {
+        for bridge in self.bridges.iter() {
+            for id in vec![bridge.callee_id.clone(), bridge.caller_id.clone()] {
+                self.instances
+                    .iter()
+                    .find(|i| i.id == id)
+                    .ok_or(format!("No instance with ID {} referenced in bridge {:?}", id, bridge))?;
+            }
+        }
+
+        for ui in self.uis.iter() {
+            for reference in ui.intance_references.iter() {
+                self.instances
+                    .iter()
+                    .find(|i| i.id == reference.instance_id)
+                    .ok_or(format!("No instance with ID {} referenced in UI {:?}", reference.instance_id, ui))?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn only_file_uris(&self) -> Result<(), String> {
+        for instance in self.instances.iter() {
+            instance.uri
+                .starts_with("file://")
+                .ok_or(format!(
+                    "Instance {} uses non-file URI which is not supported in `hc run`",
+                    instance.id)
+                )?;
+        }
+
+        for ui in self.uis.iter() {
+            ui.uri
+                .starts_with("dir://")
+                .ok_or(format!(
+                    "UI {} uses non-file URI which is not supported in `hc run`",
+                    ui.id)
+                )?;
+        }
+
+        Ok(())
+    }
+}
+
+impl From<HappBundle> for Configuration {
+    fn from(bundle: HappBundle) -> Configuration {
+        let dnas = bundle.instances
+            .iter()
+            .map(|happ_instance| {
+                // splitting off "file://"
+                let file = happ_instance.uri.clone().split_off(7);
+                DnaConfiguration {
+                    id: happ_instance.id.clone(),
+                    file,
+                    hash: happ_instance.dna_hash.clone(),
+                    uuid: None,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let instances = bundle.instances
+            .iter()
+            .map(|happ_instance| InstanceConfiguration {
+                id: happ_instance.id.clone(),
+                dna: happ_instance.id.clone(),
+                agent: AGENT_CONFIG_ID.into(),
+                storage: StorageConfiguration::Memory,
+            })
+            .collect::<Vec<_>>();
+
+        let mut interfaces = Vec::new();
+        let mut ui_bundles = Vec::new();
+        let mut ui_interfaces = Vec::new();
+        for ui in bundle.uis {
+            interfaces.push(InterfaceConfiguration {
+                id: ui.id.clone(),
+                driver: InterfaceDriver::Websocket {port:8000},
+                admin: false,
+                instances: ui.intance_references
+                    .into_iter()
+                    .map(|ui_ref| InstanceReferenceConfiguration {
+                        id: ui_ref.instance_id,
+                        alias: Some(ui_ref.ui_handle)
+                    })
+                    .collect(),
+            });
+
+            ui_bundles.push(UiBundleConfiguration{
+                id: ui.id.clone(),
+                root_dir: ui.uri.clone().split_off(6), // splitting off "dir://"
+                hash: None,
+            });
+
+            ui_interfaces.push(UiInterfaceConfiguration {
+                id: ui.id.clone(),
+                bundle: ui.id.clone(),
+                port: 8080,
+                dna_interface: Some(ui.id.clone()),
+                reroute_to_root: true,
+                bind_address: String::from("127.0.0.1"),
+            });
+        }
+
+        Configuration {
+            agents: vec![agent_configuration()],
+            dnas,
+            instances,
+            bridges: bundle.bridges,
+            interfaces,
+            ui_bundles,
+            ui_interfaces,
+            network: networking_configuration(false),
+            logger: logger_configuration(true),
+            ..Default::default()
+        }
+    }
+}
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(

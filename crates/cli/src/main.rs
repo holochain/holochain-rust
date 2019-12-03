@@ -26,6 +26,7 @@ extern crate rpassword;
 extern crate tar;
 extern crate tempfile;
 extern crate tera;
+extern crate boolinator;
 
 mod cli;
 mod config_files;

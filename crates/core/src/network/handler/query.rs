@@ -186,8 +186,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
                 GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
             };
-            let respond_links =
-                NetworkQueryResult::Links(links_result, link_type, tag);
+            let respond_links = NetworkQueryResult::Links(links_result, link_type, tag);
             ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
         }
         Ok(NetworkQuery::GetEntry) => {

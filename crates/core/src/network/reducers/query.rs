@@ -40,12 +40,7 @@ pub fn reduce_query(
         QueryKey::Entry(_) => NetworkQuery::GetEntry,
         QueryKey::Links(key) => {
             let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
-            NetworkQuery::GetLinks(
-                key.link_type.clone(),
-                key.tag,
-                *crud_status,
-                query.clone(),
-            )
+            NetworkQuery::GetLinks(key.link_type.clone(), key.tag, *crud_status, query.clone())
         }
     };
 

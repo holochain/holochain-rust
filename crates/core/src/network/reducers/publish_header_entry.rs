@@ -36,8 +36,7 @@ fn publish_header(
             entry: EntryData {
                 entry_address: entry.address().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
-                    entry,
-                    header,
+                    entry, header,
                 ))],
             },
         }),

@@ -155,7 +155,7 @@ impl Packager {
         // Scan files but discard found json file
         let all_nodes = root.iter().filter(|node_path| {
             maybe_json_file_path
-                .map(|path| node_path != &path )
+                .map(|path| node_path != &path)
                 .unwrap_or(true)
         });
 

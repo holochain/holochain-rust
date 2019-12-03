@@ -112,10 +112,7 @@ pub fn create_get_links_eavi_query<'a>(
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::single(Attribute::RemovedLink(
-            link_type,
-            tag,
-        ))),
+        Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
     ))
 }
 

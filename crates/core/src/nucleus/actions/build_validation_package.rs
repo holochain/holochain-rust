@@ -76,7 +76,7 @@ pub fn build_validation_package<'a>(
             .expect("No state in build_validation_package"),
     );
     let entry_header = match maybe_entry_header {
-         None => {
+        None => {
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
             // For an already committed entry (when asked to deliver the validation package to
@@ -97,10 +97,8 @@ pub fn build_validation_package<'a>(
                 &None,
                 provenances,
             )?
-        },
-        Some(entry_header) => {
-            entry_header
         }
+        Some(entry_header) => entry_header,
     };
 
     get_validation_package_definition(&entry, context.clone())

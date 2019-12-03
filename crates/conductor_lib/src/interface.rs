@@ -196,14 +196,8 @@ impl ConductorApiBuilder {
             }
         };
 
-        Holochain::call_zome_function(
-            context,
-            &zome_name,
-            cap_request,
-            &func_name,
-            &args_string,
-        )
-        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+        Holochain::call_zome_function(context, &zome_name, cap_request, &func_name, &args_string)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 
     /// Adds a "call" method for making zome function calls
@@ -276,8 +270,7 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        self.instances
-            .insert(instance_name.clone(), instance);
+        self.instances.insert(instance_name.clone(), instance);
         self.instance_ids_map.insert(
             PublicInstanceIdentifier::from(instance_name.clone()),
             instance_name,

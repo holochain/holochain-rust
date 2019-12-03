@@ -1057,6 +1057,7 @@ dependencies = [
 name = "holochain"
 version = "0.0.40-alpha1"
 dependencies = [
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_common 0.0.40-alpha1",
  "holochain_conductor_lib 0.0.40-alpha1",
  "holochain_core_types 0.0.40-alpha1",

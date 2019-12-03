@@ -248,5 +248,4 @@ pub mod test {
             assert!(ensure_cas_table(&log_context, &local_client, &table_name).is_ok());
         }
     }
-
 }

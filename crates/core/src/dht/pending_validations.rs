@@ -158,7 +158,7 @@ impl From<PendingValidationStruct> for EntryAspect {
             }
             ValidatingWorkflow::UpdateEntry => EntryAspect::Update(
                 pending.entry_with_header.entry.clone(),
-                pending.entry_with_header.header.clone(),
+                pending.entry_with_header.header,
             ),
             ValidatingWorkflow::RemoveEntry => {
                 EntryAspect::Deletion(pending.entry_with_header.header.clone())

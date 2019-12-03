@@ -201,20 +201,30 @@ fn run() -> HolochainResult<()> {
             interface,
             logging,
         } => {
-            let dna_path = dna_path
-                .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
-            let interface_type = cli::get_interface_type_string(interface);
-            let conductor_config = cli::hc_run_configuration(
-                &dna_path,
-                port,
-                persist,
-                networked,
-                &interface_type,
-                logging,
-            )
-            .map_err(HolochainError::Default)?;
-            cli::run(dna_path, package, port, interface_type, conductor_config)
-                .map_err(HolochainError::Default)?
+            let bundle_path = project_path.join("bundle.tom");
+            if bundle_path.exists() {
+                let mut f = File::open(bundle_path)?;
+                let mut contents = String::new();
+                f.read_to_string(&mut contents)?;
+                let happ_bundle = toml::from_str::<HappBundle>(&contents).expect("Error loading bundle.");
+                let config = Configuration::from(happ_bundle);
+                println!("Config from bundle: {:?}", config);
+            } else {
+                let dna_path = dna_path
+                    .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
+                let interface_type = cli::get_interface_type_string(interface);
+                let conductor_config = cli::hc_run_configuration(
+                    &dna_path,
+                    port,
+                    persist,
+                    networked,
+                    &interface_type,
+                    logging,
+                )
+                    .map_err(HolochainError::Default)?;
+                cli::run(dna_path, package, port, interface_type, conductor_config)
+                    .map_err(HolochainError::Default)?
+            }
         }
 
         Cli::Test {

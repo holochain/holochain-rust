@@ -426,13 +426,13 @@ pub mod tests {
         assert_eq!(headers, vec![header1, header2]);
     }
 
-    fn pending_validation_for_entry(
+    fn try_pending_validation_for_entry(
         entry: Entry,
         dependencies: Vec<Address>,
-    ) -> PendingValidationWithTimeout {
+    ) -> Result<PendingValidationWithTimeout, HolochainError> {
         let header = test_chain_header_with_sig("sig1");
         let mut pending_struct = PendingValidationStruct::new(
-            EntryWithHeader { entry, header },
+            chain_pair,
             ValidatingWorkflow::HoldEntry,
         );
         pending_struct.dependencies = dependencies;

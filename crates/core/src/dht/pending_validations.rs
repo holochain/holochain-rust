@@ -95,7 +95,7 @@ impl PendingValidationStruct {
     }
 
     /// Convenience function for returning a custom error in the context of validation.
-    pub fn try_validate_from_entry_and_header(
+    pub fn try_from_entry_and_header(
         entry: Entry,
         header: ChainHeader,
         entry_aspect: EntryAspect,
@@ -124,7 +124,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
     fn try_from(aspect: EntryAspect) -> Result<PendingValidationStruct, HolochainError> {
         match aspect {
             EntryAspect::Content(entry, header) => {
-                PendingValidationStruct::try_validate_from_entry_and_header(
+                PendingValidationStruct::try_from_entry_and_header(
                     entry.clone(),
                     header.clone(),
                     EntryAspect::Content(entry, header),
@@ -136,7 +136,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
             ))),
             EntryAspect::LinkAdd(link_data, header) => {
                 let entry = Entry::LinkAdd(link_data.clone());
-                PendingValidationStruct::try_validate_from_entry_and_header(
+                PendingValidationStruct::try_from_entry_and_header(
                     entry,
                     header.clone(),
                     EntryAspect::LinkAdd(link_data, header),
@@ -145,7 +145,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
             }
             EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
                 let entry = Entry::LinkRemove((link_data.clone(), links_to_remove.clone()));
-                PendingValidationStruct::try_validate_from_entry_and_header(
+                PendingValidationStruct::try_from_entry_and_header(
                     entry,
                     header.clone(),
                     EntryAspect::LinkRemove((link_data, links_to_remove), header),
@@ -153,7 +153,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                 )
             }
             EntryAspect::Update(entry, header) => {
-                PendingValidationStruct::try_validate_from_entry_and_header(
+                PendingValidationStruct::try_from_entry_and_header(
                     entry.clone(),
                     header.clone(),
                     EntryAspect::Update(entry, header),
@@ -169,7 +169,7 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
                 })?;
                 let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));
 
-                PendingValidationStruct::try_validate_from_entry_and_header(
+                PendingValidationStruct::try_from_entry_and_header(
                     entry,
                     header.clone(),
                     EntryAspect::Deletion(header),

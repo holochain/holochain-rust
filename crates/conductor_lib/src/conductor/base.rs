@@ -911,7 +911,7 @@ impl Conductor {
 
                 let mut context_clone = context.clone();
                 let context = Arc::new(context);
-                Holochain::load(context.clone())
+                Holochain::load(context)
                     .and_then(|hc| {
                        notify(format!(
                             "Successfully loaded instance {} from storage",

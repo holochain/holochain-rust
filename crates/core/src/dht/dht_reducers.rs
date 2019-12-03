@@ -172,11 +172,10 @@ pub fn reduce_queue_holding_workflow(
         None
     } else {
         let mut new_store = (*old_store).clone();
-        new_store
-            .queue_holding_workflow(PendingValidationWithTimeout::new(
-                pending.clone(),
-                maybe_delay.map(ValidationTimeout::from),
-            ));
+        new_store.queue_holding_workflow(PendingValidationWithTimeout::new(
+            pending.clone(),
+            maybe_delay.map(ValidationTimeout::from),
+        ));
         Some(new_store)
     }
 }

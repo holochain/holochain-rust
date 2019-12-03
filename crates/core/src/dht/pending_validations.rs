@@ -1,4 +1,7 @@
-use crate::network::chain_pair::ChainPair;
+use crate::{
+    entry::validation_dependencies::ValidationDependencies,
+    network::chain_pair::ChainPair,
+};
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{deletion_entry::DeletionEntry, Entry},
@@ -8,7 +11,12 @@ use holochain_core_types::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom, fmt, sync::Arc};
+use std::{
+    convert::TryFrom,
+    fmt,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -71,9 +79,10 @@ pub struct PendingValidationStruct {
 
 impl PendingValidationStruct {
     pub fn new(chain_pair: ChainPair, workflow: ValidatingWorkflow) -> Self {
+        let dependencies = chain_pair.get_validation_dependencies();
         Self {
             chain_pair,
-            dependencies: Vec::new(),
+            dependencies,
             workflow,
             uuid: ProcessUniqueId::new(),
         }
@@ -188,5 +197,38 @@ impl From<PendingValidationStruct> for EntryAspect {
             ValidatingWorkflow::UpdateEntry => EntryAspect::Update(entry, header),
             ValidatingWorkflow::RemoveEntry => EntryAspect::Deletion(header),
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ValidationTimeout {
+    pub time_of_dispatch: SystemTime,
+    pub delay: Duration,
+}
+
+impl ValidationTimeout {
+    pub fn new(time_of_dispatch: SystemTime, delay: Duration) -> Self {
+        Self {
+            time_of_dispatch,
+            delay,
+        }
+    }
+}
+
+impl From<(SystemTime, Duration)> for ValidationTimeout {
+    fn from(tuple: (SystemTime, Duration)) -> Self {
+        Self::new(tuple.0, tuple.1)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct PendingValidationWithTimeout {
+    pub pending: PendingValidation,
+    pub timeout: Option<ValidationTimeout>,
+}
+
+impl PendingValidationWithTimeout {
+    pub fn new(pending: PendingValidation, timeout: Option<ValidationTimeout>) -> Self {
+        Self { pending, timeout }
     }
 }

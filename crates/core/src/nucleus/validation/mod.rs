@@ -160,6 +160,9 @@ pub fn entry_to_validation_data(
             let deletion_address = deletion_entry.clone().deleted_entry_address();
             get_chain_pair(context.clone(), &deletion_address)
                 .map(|chain_pair| {
+            let deletion_address = deletion_entry.deleted_entry_address().clone();
+            get_chain_pair(context.clone(), &deletion_address)
+                .map(|chain_pair| {
                     Ok(EntryValidationData::Delete {
                         old_entry: chain_pair.0.entry.clone(),
                         old_entry_header: chain_pair.1.clone(),

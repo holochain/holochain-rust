@@ -1,5 +1,7 @@
 //! This module extends Entry and EntryType with the CanPublish trait.
 
+pub mod validation_dependencies;
+
 use holochain_core_types::entry::entry_type::EntryType;
 
 use crate::context::Context;

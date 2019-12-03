@@ -3,7 +3,12 @@ use crate::Metric;
 use num_traits::float::Float;
 /// Extends the metric api with statistical aggregation functions
 use stats::{Commute, OnlineStats};
-use std::{collections::HashMap, iter::FromIterator};
+use std::{
+    collections::HashMap,
+    fmt,
+    fmt::{Display, Formatter},
+    iter::FromIterator,
+};
 
 /// An extension of `OnlineStats` that also incrementally tracks
 /// max and min values.
@@ -63,11 +68,26 @@ pub enum DescriptiveStatType {
     Count,
 }
 
+impl Display for DescriptiveStatType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 #[derive(Clone, Debug, Serialize)]
 pub struct StatFailure {
     expected: f64,
     actual: f64,
     stat_type: DescriptiveStatType,
+}
+
+impl std::fmt::Display for StatFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}: Expected {}, Actual was {}",
+            self.stat_type, self.expected, self.actual
+        )
+    }
 }
 
 impl DescriptiveStats {
@@ -191,6 +211,22 @@ impl StatCheck for LessThanStatCheck {
     }
 }
 
+impl dyn StatCheck {
+    pub fn check_all(
+        &self,
+        expected: &StatsByMetric,
+        actual: &StatsByMetric,
+    ) -> HashMap<String, Result<DescriptiveStats, Vec<StatFailure>>> {
+        HashMap::from_iter(expected.iter().map(|(stat_name, expected_stat)| {
+            if let Some(actual_stat) = actual.get(stat_name) {
+                (stat_name.clone(), self.check(expected_stat, actual_stat))
+            } else {
+                (stat_name.clone(), Err(vec![]))
+            }
+        }))
+    }
+}
+
 impl Commute for DescriptiveStats {
     fn merge(&mut self, rhs: Self) {
         self.online_stats.merge(rhs.online_stats);
@@ -206,7 +242,7 @@ impl Commute for DescriptiveStats {
 
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
-pub struct StatsByMetric(HashMap<String, DescriptiveStats>);
+pub struct StatsByMetric(pub HashMap<String, DescriptiveStats>);
 
 impl StatsByMetric {
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {

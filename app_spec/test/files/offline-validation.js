@@ -4,7 +4,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 module.exports = scenario => {
 
-      scenario('Can retriev header entries using get_entry', async (s, t) => {
+      scenario('Can retrieve header entries using get_entry', async (s, t) => {
         const { alice, bob } = await s.players({ alice: one, bob: one })
         await alice.spawn()
         await bob.spawn()

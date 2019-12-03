@@ -19,6 +19,7 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
+extern crate boolinator;
 extern crate flate2;
 extern crate glob;
 extern crate ignore;
@@ -26,7 +27,6 @@ extern crate rpassword;
 extern crate tar;
 extern crate tempfile;
 extern crate tera;
-extern crate boolinator;
 
 mod cli;
 mod config_files;

@@ -1,3 +1,4 @@
+use boolinator::Boolinator;
 use cli;
 use colored::*;
 use error::DefaultResult;
@@ -12,7 +13,6 @@ use holochain_conductor_lib::{
 use holochain_core_types::agent::AgentId;
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::{collections::HashMap, fs, path::PathBuf};
-use boolinator::Boolinator;
 
 #[derive(Serialize, Deserialize)]
 struct HappBundle {
@@ -27,7 +27,7 @@ struct HappBundleInstance {
     pub id: String,
     pub dna_hash: String,
     pub uri: String,
-    pub dna_properties: HashMap<String, String>
+    pub dna_properties: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -48,10 +48,10 @@ impl HappBundle {
     pub fn id_references_are_consistent(&self) -> Result<(), String> {
         for bridge in self.bridges.iter() {
             for id in vec![bridge.callee_id.clone(), bridge.caller_id.clone()] {
-                self.instances
-                    .iter()
-                    .find(|i| i.id == id)
-                    .ok_or(format!("No instance with ID {} referenced in bridge {:?}", id, bridge))?;
+                self.instances.iter().find(|i| i.id == id).ok_or(format!(
+                    "No instance with ID {} referenced in bridge {:?}",
+                    id, bridge
+                ))?;
             }
         }
 
@@ -60,7 +60,10 @@ impl HappBundle {
                 self.instances
                     .iter()
                     .find(|i| i.id == reference.instance_id)
-                    .ok_or(format!("No instance with ID {} referenced in UI {:?}", reference.instance_id, ui))?;
+                    .ok_or(format!(
+                        "No instance with ID {} referenced in UI {:?}",
+                        reference.instance_id, ui
+                    ))?;
             }
         }
         Ok(())
@@ -68,21 +71,17 @@ impl HappBundle {
 
     pub fn only_file_uris(&self) -> Result<(), String> {
         for instance in self.instances.iter() {
-            instance.uri
-                .starts_with("file://")
-                .ok_or(format!(
-                    "Instance {} uses non-file URI which is not supported in `hc run`",
-                    instance.id)
-                )?;
+            instance.uri.starts_with("file://").ok_or(format!(
+                "Instance {} uses non-file URI which is not supported in `hc run`",
+                instance.id
+            ))?;
         }
 
         for ui in self.uis.iter() {
-            ui.uri
-                .starts_with("dir://")
-                .ok_or(format!(
-                    "UI {} uses non-file URI which is not supported in `hc run`",
-                    ui.id)
-                )?;
+            ui.uri.starts_with("dir://").ok_or(format!(
+                "UI {} uses non-file URI which is not supported in `hc run`",
+                ui.id
+            ))?;
         }
 
         Ok(())
@@ -91,7 +90,8 @@ impl HappBundle {
 
 impl From<HappBundle> for Configuration {
     fn from(bundle: HappBundle) -> Configuration {
-        let dnas = bundle.instances
+        let dnas = bundle
+            .instances
             .iter()
             .map(|happ_instance| {
                 // splitting off "file://"
@@ -105,7 +105,8 @@ impl From<HappBundle> for Configuration {
             })
             .collect::<Vec<_>>();
 
-        let instances = bundle.instances
+        let instances = bundle
+            .instances
             .iter()
             .map(|happ_instance| InstanceConfiguration {
                 id: happ_instance.id.clone(),
@@ -121,18 +122,19 @@ impl From<HappBundle> for Configuration {
         for ui in bundle.uis {
             interfaces.push(InterfaceConfiguration {
                 id: ui.id.clone(),
-                driver: InterfaceDriver::Websocket {port:8000},
+                driver: InterfaceDriver::Websocket { port: 8000 },
                 admin: false,
-                instances: ui.intance_references
+                instances: ui
+                    .intance_references
                     .into_iter()
                     .map(|ui_ref| InstanceReferenceConfiguration {
                         id: ui_ref.instance_id,
-                        alias: Some(ui_ref.ui_handle)
+                        alias: Some(ui_ref.ui_handle),
                     })
                     .collect(),
             });
 
-            ui_bundles.push(UiBundleConfiguration{
+            ui_bundles.push(UiBundleConfiguration {
                 id: ui.id.clone(),
                 root_dir: ui.uri.clone().split_off(6), // splitting off "dir://"
                 hash: None,

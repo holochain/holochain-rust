@@ -199,15 +199,10 @@ impl Sim2h {
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.connection_states.write().remove(uri)
         {
-            if self
-                .spaces
-                .get(&space_address)
-                .unwrap()
-                .write()
-                .remove_agent(&agent_id)
-                == 0
-            {
-                self.spaces.remove(&space_address);
+            if let Some(space_lock) = self.spaces.get(&space_address) {
+                if space_lock.write().remove_agent(&agent_id) == 0 {
+                    self.spaces.remove(&space_address);
+                }
             }
         }
         trace!("disconnect done");
@@ -545,7 +540,7 @@ impl Sim2h {
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
                     let to_agent_id = AgentPubKey::from(fetch_result.request_id);
-                    let maybe_url = self.lookup_joined(space_address, &to_agent_id);;
+                    let maybe_url = self.lookup_joined(space_address, &to_agent_id);
                     if maybe_url.is_none() {
                         error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())

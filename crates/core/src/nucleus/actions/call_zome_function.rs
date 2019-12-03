@@ -24,6 +24,7 @@ use holochain_json_api::json::JsonString;
 
 use holochain_dpki::utils::Verify;
 
+use crate::instance::dispatch_action;
 use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
@@ -131,7 +132,7 @@ pub fn validate_call(
     };
 
     if check_capability(context.clone(), fn_call)
-        || (is_token_the_agent(context.clone(), &fn_call.cap)
+        || (is_token_the_agent(context, &fn_call.cap)
             && verify_call_sig(
                 &fn_call.cap.provenance,
                 &fn_call.fn_name,
@@ -161,7 +162,7 @@ pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     let maybe_grant = get_grant(&context.clone(), &fn_call.cap_token());
     match maybe_grant {
         None => false,
-        Some(grant) => verify_grant(context.clone(), &grant, fn_call),
+        Some(grant) => verify_grant(context, &grant, fn_call),
     }
 }
 
@@ -334,7 +335,15 @@ impl Future for CallResultFuture {
         if let Some(state) = self.context.clone().try_state() {
             if self.call_spawned {
                 match state.nucleus().zome_call_result(&self.zome_call) {
-                    Some(result) => Poll::Ready(result),
+                    Some(result) => {
+                        dispatch_action(
+                            self.context.action_channel(),
+                            ActionWrapper::new(Action::ClearZomeFunctionCall(
+                                self.zome_call.clone(),
+                            )),
+                        );
+                        Poll::Ready(result)
+                    }
                     None => Poll::Pending,
                 }
             } else {

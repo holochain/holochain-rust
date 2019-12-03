@@ -76,5 +76,4 @@ pub mod tests {
         // touch agent
         assert!(touch_agent(&log_context, &local_client, &table_name, &agent_id).is_ok());
     }
-
 }

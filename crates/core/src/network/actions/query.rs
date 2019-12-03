@@ -55,7 +55,7 @@ pub async fn query(
                 LinksStatusRequestKind::Live => Some(CrudStatus::Live),
             };
             (
-                QueryKey::Links(key.clone()),
+                QueryKey::Links(key),
                 QueryPayload::Links((crud_status, query)),
             )
         }
@@ -102,7 +102,13 @@ impl Future for QueryFuture {
                 return Poll::Ready(Err(error));
             }
             match state.network().get_query_results.get(&self.key) {
-                Some(Some(result)) => Poll::Ready(result.clone()),
+                Some(Some(result)) => {
+                    dispatch_action(
+                        self.context.action_channel(),
+                        ActionWrapper::new(Action::ClearQueryResult(self.key.clone())),
+                    );
+                    Poll::Ready(result.clone())
+                }
                 _ => Poll::Pending,
             }
         } else {

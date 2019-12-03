@@ -1,6 +1,6 @@
 use crate::{
     action::{ActionWrapper, QueryKey},
-    network::{actions::ActionResponse, direct_message::DirectMessage, query::NetworkQueryResult},
+    network::{actions::Response, direct_message::DirectMessage, query::NetworkQueryResult},
 };
 use boolinator::*;
 use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
@@ -10,7 +10,7 @@ use im::HashMap;
 use snowflake;
 use std::time::{Duration, SystemTime};
 
-type Actions = HashMap<ActionWrapper, ActionResponse>;
+type Actions = HashMap<ActionWrapper, Response>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network

@@ -220,7 +220,7 @@ impl IntoZome for syn::ItemMod {
                 	syn::Meta::List(meta_list) => {
 		                meta_list.nested.iter().for_each(|e| {
 		                    if let syn::NestedMeta::Literal(syn::Lit::Str(lit)) = e {
-		                        let trait_name = lit.value().clone();
+		                        let trait_name = lit.value();
 		                        if acc.get(&trait_name).is_none() {
 		                            acc.insert(trait_name.clone(), TraitFns::new());
 		                        }

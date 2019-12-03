@@ -1,12 +1,8 @@
-#![feature(bind_by_move_pattern_guards)]
-
 //! Trait system for facilitating non-blocking stream chaining with handshaking
 //!
 //! # Example
 //!
 //! ```rust
-//! #![feature(bind_by_move_pattern_guards)]
-//!
 //! use url2::prelude::*;
 //! use in_stream::*;
 //!

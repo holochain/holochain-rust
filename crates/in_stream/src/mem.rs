@@ -124,19 +124,22 @@ impl InStreamMem {
     }
 }
 
+const READ_RECV_MAX: usize = 100;
+
 impl InStream<&mut [u8], &[u8]> for InStreamMem {
     /// we want a url like mem://
     const URL_SCHEME: &'static str = SCHEME;
 
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
         let _ = MemConnectConfig::from_gen(config)?;
-        Ok(get_mem_manager().connect(url)?)
+        get_mem_manager().connect(url)
+        //Ok(get_mem_manager().connect(url)?)
     }
 
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         let mut disconnected = false;
         if let Some(recv) = &mut self.recv {
-            for _ in 0..100 {
+            for _ in 0..READ_RECV_MAX {
                 // first, drain up to 100 non-blocking items from our channel
                 match recv.try_recv() {
                     Ok(mut data) => {

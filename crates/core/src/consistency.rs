@@ -125,10 +125,10 @@ impl ConsistencyModel {
                     let meta = match entry {
                         Entry::App(_, _) => crud_link
                             .clone()
-                            .and_then(|crud| Some(UpdateEntry(crud, address.clone()))),
+                            .map(|crud| UpdateEntry(crud, address.clone())),
                         Entry::Deletion(_) => crud_link
                             .clone()
-                            .and_then(|crud| Some(RemoveEntry(crud, address.clone()))),
+                            .map(|crud| RemoveEntry(crud, address.clone())),
                         Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
                         Entry::LinkRemove(_) => Some(RemoveLink(address.clone())),
                         // Question: Why does Entry::LinkAdd take LinkData instead of Link?

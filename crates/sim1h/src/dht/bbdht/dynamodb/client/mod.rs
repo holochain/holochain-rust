@@ -34,5 +34,4 @@ pub mod test {
         tracer(&log_context, "smoke test");
         client(Region::SaEast1);
     }
-
 }

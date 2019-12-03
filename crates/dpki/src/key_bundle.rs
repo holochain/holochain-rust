@@ -64,7 +64,7 @@ impl KeyBundle {
             data.len() + lib3h_sodium::aead::ABYTES + lib3h_sodium::aead::NONCEBYTES,
         );
         self.enc_keys.encrypt(data, &mut encrypted_data);
-        Ok(encrypted_data.clone())
+        Ok(encrypted_data)
     }
 
     pub fn decrypt(&mut self, cipher: &mut SecBuf) -> HcResult<SecBuf> {
@@ -72,7 +72,7 @@ impl KeyBundle {
             (cipher.len() - lib3h_sodium::aead::NONCEBYTES) + lib3h_sodium::aead::ABYTES,
         );
         self.enc_keys.decrypt(cipher, &mut decrypted_data);
-        Ok(decrypted_data.clone())
+        Ok(decrypted_data)
     }
 
     /// verify data that was signed with our private signing key

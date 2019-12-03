@@ -68,36 +68,37 @@ pub fn build_validation_package<'a>(
     };
 
     let entry = entry.clone();
-    let context = context.clone();
+    let context = context;
     let maybe_entry_header = find_chain_header(
         &entry.clone(),
         &context
             .state()
             .expect("No state in build_validation_package"),
     );
-    let entry_header = if maybe_entry_header.is_none() {
-        // TODO: make sure that we don't run into race conditions with respect to the chain
-        // We need the source chain header as part of the validation package.
-        // For an already committed entry (when asked to deliver the validation package to
-        // a DHT node) we should have gotten one from chain_header() above.
-        // But when we commit an entry, there is no header for it in the chain yet.
-        // That is why we have to create a pre-flight header here.
-        // If there is another zome function call that also calls commit before this commit
-        // is done, we might create two pre-flight chain headers linking to the same
-        // previous header. Since these pre-flight headers are not written to the chain
-        // and just used for the validation, I don't see why it would be a problem.
-        // If it was a problem, we would have to make sure that the whole commit process
-        // (including validtion) is atomic.
-        let state = State::new(context.clone());
-        agent::state::create_new_chain_header(
-            &entry,
-            &context.state()?.agent(),
-            &StateWrapper::from(state),
-            &None,
-            provenances,
-        )?
-    } else {
-        maybe_entry_header.unwrap()
+    let entry_header = match maybe_entry_header {
+        None => {
+            // TODO: make sure that we don't run into race conditions with respect to the chain
+            // We need the source chain header as part of the validation package.
+            // For an already committed entry (when asked to deliver the validation package to
+            // a DHT node) we should have gotten one from chain_header() above.
+            // But when we commit an entry, there is no header for it in the chain yet.
+            // That is why we have to create a pre-flight header here.
+            // If there is another zome function call that also calls commit before this commit
+            // is done, we might create two pre-flight chain headers linking to the same
+            // previous header. Since these pre-flight headers are not written to the chain
+            // and just used for the validation, I don't see why it would be a problem.
+            // If it was a problem, we would have to make sure that the whole commit process
+            // (including validtion) is atomic.
+            let state = State::new(context.clone());
+            agent::state::create_new_chain_header(
+                &entry,
+                &context.state()?.agent(),
+                &StateWrapper::from(state),
+                &None,
+                provenances,
+            )?
+        }
+        Some(entry_header) => entry_header,
     };
 
     get_validation_package_definition(&entry, context.clone())
@@ -106,7 +107,7 @@ pub fn build_validation_package<'a>(
             CallbackResult::ValidationPackageDefinition(def) => Ok(def),
             CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
                 "ValidationPackage callback not implemented for {:?} ({})",
-                entry.entry_type().clone(),
+                entry.entry_type(),
                 reason
             ))),
             _ => unreachable!(),

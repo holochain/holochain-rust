@@ -21,7 +21,7 @@ impl ToTokens for ZomeFunction {
             .inputs
             .clone()
             .into_iter()
-            .map(|param| param.ident.clone());
+            .map(|param| param.ident);
 
         let output_param_type = &self.declaration.output;
         let function_body = &self.code;

@@ -48,7 +48,7 @@ fn publish_entry(
             space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
-                entry_address: entry_with_header.entry.address().clone().into(),
+                entry_address: entry_with_header.entry.address().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
                     entry_with_header.entry.clone(),
                     entry_with_header.header.clone(),

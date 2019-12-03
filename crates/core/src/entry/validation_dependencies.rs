@@ -47,8 +47,9 @@ impl ValidationDependencies for EntryWithHeader {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::chain_pair::ChainPair;
     use holochain_core_types::{
-        agent::AgentId, chain_header::ChainHeader, link::link_data::LinkData, time::Iso8601,
+        agent::AgentId, chain_header::ChainHeader, error::HolochainError,link::link_data::LinkData, time::Iso8601,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
 
@@ -64,16 +65,16 @@ pub mod tests {
         )
     }
 
-    fn entry_with_header_from_entry(entry: Entry) -> EntryWithHeader {
+    fn try_chain_pair_from_entry(entry: Entry) -> Result<ChainPair, HolochainError> {
         let header = test_header_for_entry(&entry);
-        EntryWithHeader::new(entry, header)
+        ChainPair::try_from_header_and_entry(entry, header)
     }
 
     #[test]
     fn test_get_validation_dependencies_app_entry() {
         let entry = Entry::App("entry_type".into(), "content".into());
-        let entry_wh = entry_with_header_from_entry(entry);
-        assert_eq!(entry_wh.get_validation_dependencies(), Vec::new(),)
+        let Ok(chain_pair) = try_chain_pair_from_entry(entry)?;
+        assert_eq!(chain_pair.get_validation_dependencies(), Vec::new(),)
     }
 
     #[test]
@@ -86,9 +87,9 @@ pub mod tests {
             test_header_for_entry(&Entry::App("".into(), "".into())),
             AgentId::new("HcAgentId", "key".into()),
         ));
-        let entry_wh = entry_with_header_from_entry(entry);
+        let Ok(chain_pair) = try_chain_pair_from_entry(entry)?;
         assert_eq!(
-            entry_wh.get_validation_dependencies(),
+            chain_pair.get_validation_dependencies(),
             vec![
                 Address::from("QmBaseAddress"),
                 Address::from("QmTargetAddress")
@@ -98,7 +99,7 @@ pub mod tests {
 
     #[test]
     fn test_get_validation_dependencies_header_entry() {
-        let header_entry_conent = ChainHeader::new(
+        let header_entry_content = ChainHeader::new(
             &"some type".into(),
             &Address::from("QmAddressOfEntry"),
             &Vec::new(),                                     // provenences
@@ -107,10 +108,10 @@ pub mod tests {
             &None,                                           // link update/delete
             &Iso8601::from(0),
         );
-        let entry = Entry::ChainHeader(header_entry_conent);
-        let entry_wh = entry_with_header_from_entry(entry);
+        let entry = Entry::ChainHeader(header_entry_content);
+        let Ok(chain_pair) = try_chain_pair_from_entry(entry)?;
         assert_eq!(
-            entry_wh.get_validation_dependencies(),
+            chain_pair.get_validation_dependencies(),
             vec![Address::from("QmPreviousHeaderAddress")],
         )
     }

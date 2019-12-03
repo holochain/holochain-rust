@@ -35,7 +35,7 @@ with holonix.pkgs;
     holonix.shell.shellHook
     ];
 
-  buildInputs = [ pkgs.libiconv ]
+  buildInputs = [ holonix.pkgs.libiconv ]
    ++ holonix.shell.buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec {

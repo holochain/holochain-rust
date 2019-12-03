@@ -168,7 +168,7 @@ impl Holochain {
                 log_debug!(context, "conductor: {} instantiated", name);
                 let hc = Holochain {
                     instance: Some(instance),
-                    context: Some(new_context.clone()),
+                    context: Some(new_context),
                     active: false,
                 };
                 Ok(hc)
@@ -182,11 +182,11 @@ impl Holochain {
         let loaded_state = persister.load(context.clone())?.ok_or_else(|| {
             HolochainError::ErrorGeneric("State could not be loaded due to NoneError".to_string())
         })?;
-        let mut instance = Instance::from_state(loaded_state.clone(), context.clone());
-        let new_context = instance.initialize(None, context.clone())?;
+        let mut instance = Instance::from_state(loaded_state, context.clone());
+        let new_context = instance.initialize(None, context)?;
         Ok(Holochain {
             instance: Some(instance),
-            context: Some(new_context.clone()),
+            context: Some(new_context),
             active: false,
         })
     }
@@ -278,7 +278,7 @@ impl Holochain {
     /// return
     pub fn state(&self) -> Result<StateWrapper, HolochainInstanceError> {
         self.check_instance()?;
-        Ok(self.instance.as_ref().unwrap().state().clone())
+        Ok(self.instance.as_ref().unwrap().state())
     }
 
     pub fn context(&self) -> Result<Arc<Context>, HolochainInstanceError> {

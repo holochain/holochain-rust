@@ -347,7 +347,7 @@ impl Configuration {
             )
         })?;
 
-        let caller_dna_file = caller_dna_config.file.clone();
+        let caller_dna_file = caller_dna_config.file;
         let caller_dna =
             Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(caller_dna_file.clone()))
                 .map_err(|err| {
@@ -376,7 +376,7 @@ impl Configuration {
             )
         })?;
 
-        let callee_dna_file = callee_dna_config.file.clone();
+        let callee_dna_file = callee_dna_config.file;
         let callee_dna =
             Arc::get_mut(&mut dna_loader).unwrap()(&PathBuf::from(callee_dna_file.clone()))
                 .map_err(|err| {
@@ -544,13 +544,14 @@ impl Configuration {
             .map(|bridge| -> Result<(&NodeIndex<u32>, &NodeIndex<u32>), HolochainError> {
                 let start = index_map.get(&bridge.caller_id);
                 let end = index_map.get(&bridge.callee_id);
-                if start.is_none() || end.is_none() {
+                if let (Some(start_inner), Some(end_inner)) = (start, end) {
+                    Ok((start_inner, end_inner))
+                }
+                else {
                     Err(HolochainError::ConfigError(format!(
                         "Instance configuration not found, mentioned in bridge configuration: {} -> {}",
                         bridge.caller_id, bridge.callee_id,
                     )))
-                } else {
-                    Ok((start.unwrap(), end.unwrap()))
                 }
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -1062,7 +1063,7 @@ pub mod tests {
     type = "cloudwatchlogs"
     log_stream_name = "2019-11-22_20-53-31.sim2h_public"
     log_group_name = "holochain"
- 
+
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();

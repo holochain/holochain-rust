@@ -59,11 +59,11 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
         // and its header:
         let maybe_meta_aspect = match entry {
             Entry::App(app_type, app_value) => {
-                header.link_update_delete().and_then(|updated_entry| {
-                    Some((
+                header.link_update_delete().map(|updated_entry| {
+                    (
                         updated_entry,
                         EntryAspect::Update(Entry::App(app_type, app_value), header),
-                    ))
+                    )
                 })
             }
             Entry::LinkAdd(link_data) => Some((

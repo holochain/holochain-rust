@@ -75,7 +75,7 @@ impl From<Arc<Context>> for StateDump {
         let direct_message_flows: Vec<(String, DirectMessage)> = network
             .direct_message_connections
             .into_iter()
-            .map(|(s, dm)| (s.clone(), dm.clone()))
+            .map(|(s, dm)| (s, dm))
             .collect();
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();

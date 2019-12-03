@@ -30,7 +30,7 @@ fn dpki_cap_request(
 ) -> Result<CapabilityRequest, HolochainError> {
     let token = context.agent_id.address();
     Ok(make_cap_request_for_call(
-        context.clone(),
+        context,
         token,
         function,
         JsonString::from_json(parameters),
@@ -42,7 +42,7 @@ impl DpkiInstance for Holochain {
     fn dpki_create_agent_key(&mut self, agent_name: String) -> Result<(), HolochainError> {
         let params = json!({ "agent_name": agent_name }).to_string();
         let cap_request =
-            dpki_cap_request(self.context()?.clone(), DPKI_TRAIT_FN_ADD_AGENT, &params)?;
+            dpki_cap_request(self.context()?, DPKI_TRAIT_FN_ADD_AGENT, &params)?;
         let _result = Holochain::call_zome_function(
             self.context()?,
             DPKI_ZOME_NAME,
@@ -56,7 +56,7 @@ impl DpkiInstance for Holochain {
     // wrapper for the dpki init trait function
     fn dpki_init(&mut self, params: String) -> Result<(), HolochainError> {
         let params = json!({ "params": params }).to_string();
-        let cap_request = dpki_cap_request(self.context()?.clone(), DPKI_TRAIT_FN_INIT, &params)?;
+        let cap_request = dpki_cap_request(self.context()?, DPKI_TRAIT_FN_INIT, &params)?;
         let _result = Holochain::call_zome_function(
             self.context()?,
             DPKI_ZOME_NAME,
@@ -71,7 +71,7 @@ impl DpkiInstance for Holochain {
     fn dpki_is_initialized(&mut self) -> Result<bool, HolochainError> {
         let params = "{}";
         let cap_request = dpki_cap_request(
-            self.context()?.clone(),
+            self.context()?,
             DPKI_TRAIT_FN_IS_INITIALIZED,
             params,
         )?;

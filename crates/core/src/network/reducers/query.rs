@@ -15,8 +15,8 @@ fn reduce_query_inner(
     network_state.initialized()?;
     let query_json: JsonString = network_query.into();
     let key_address = match key {
-        QueryKey::Entry(key) => (key.id.clone(), key.address.clone()),
-        QueryKey::Links(key) => (key.id.clone(), key.base_address.clone()),
+        QueryKey::Entry(key) => (key.id.clone(), key.address),
+        QueryKey::Links(key) => (key.id.clone(), key.base_address),
     };
     send(
         network_state,
@@ -42,7 +42,7 @@ pub fn reduce_query(
             let (crud_status, query) = unwrap_to!(payload => crate::action::QueryPayload::Links);
             NetworkQuery::GetLinks(
                 key.link_type.clone(),
-                key.tag.clone(),
+                key.tag,
                 *crud_status,
                 query.clone(),
             )

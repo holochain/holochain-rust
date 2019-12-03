@@ -39,7 +39,7 @@ pub fn get_link_entries(
     }
 
     Ok((
-        base_entry.clone(),
+        base_entry,
         target_entry_get_result.latest().unwrap(),
     ))
 }

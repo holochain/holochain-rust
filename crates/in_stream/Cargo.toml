@@ -24,3 +24,6 @@ parking_lot = "0.9"
 shrinkwraprs = "0.2"
 tungstenite = "0.9"
 url2 = "0.0.4"
+
+[dev-dependencies]
+tempfile = "3"

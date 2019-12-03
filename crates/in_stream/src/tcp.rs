@@ -10,7 +10,7 @@ fn tcp_url_to_socket_addr(url: &Url2) -> Result<std::net::SocketAddr> {
     if url.scheme() != SCHEME || url.host_str().is_none() || url.port().is_none() {
         return Err(Error::new(
             ErrorKind::InvalidInput,
-            format!("got: '{}', expected: '{}://host:port'", SCHEME, url),
+            format!("got: '{}', expected: '{}://host:port'", url, SCHEME),
         ));
     }
     let rendered = format!("{}:{}", url.host_str().unwrap(), url.port().unwrap());

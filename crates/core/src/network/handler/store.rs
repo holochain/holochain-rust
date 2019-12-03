@@ -45,7 +45,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
                     "net/handle: handle_store: Adding {} to holding queue...",
                     pending.workflow,
                 );
-                dispatch_queue_holding_workflow(Arc::new(pending), None, context.clone());
+                dispatch_queue_holding_workflow(Arc::new(pending), None, context);
             }
         }
     } else {

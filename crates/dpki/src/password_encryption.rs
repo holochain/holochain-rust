@@ -212,5 +212,4 @@ pub(crate) mod tests {
         .unwrap();
         assert!(hashed_password_c.compare(&mut hashed_password_b) == 0);
     }
-
 }

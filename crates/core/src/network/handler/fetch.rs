@@ -38,5 +38,5 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     }
 
     let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, aspects)));
-    dispatch_action(context.action_channel(), action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper);
 }

@@ -332,5 +332,4 @@ pub mod tests {
             return_code_for_allocation_result(Ok(allocation)),
         );
     }
-
 }

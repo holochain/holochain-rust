@@ -47,7 +47,7 @@ impl From<Vec<String>> for QueryArgsNames {
 
 impl<'a> From<Vec<&'a str>> for QueryArgsNames {
     fn from(v: Vec<&'a str>) -> QueryArgsNames {
-        QueryArgsNames::QueryList(v.iter().map(|s| s.to_string()).collect())
+        QueryArgsNames::QueryList(v.iter().map(|s| (*s).to_string()).collect())
     }
 }
 

@@ -38,10 +38,7 @@ pub fn get_link_entries(
         )));
     }
 
-    Ok((
-        base_entry.clone(),
-        target_entry_get_result.latest().unwrap(),
-    ))
+    Ok((base_entry, target_entry_get_result.latest().unwrap()))
 }
 
 /// This is a "path" in the DNA tree.

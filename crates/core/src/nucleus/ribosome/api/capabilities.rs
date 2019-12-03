@@ -21,7 +21,7 @@ pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs)
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let args = match CommitCapabilityGrantArgs::try_from(args_str.clone()) {
+    let args = match CommitCapabilityGrantArgs::try_from(args_str) {
         Ok(input) => input,
         Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
@@ -29,7 +29,7 @@ pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs)
     let task_result: Result<Address, HolochainError> =
         match CapTokenGrant::create(&args.id, args.cap_type, args.assignees, args.functions) {
             Ok(grant) => context.block_on(commit_entry(
-                Entry::CapTokenGrant(grant.clone()),
+                Entry::CapTokenGrant(grant),
                 None,
                 &context.clone(),
             )),
@@ -46,14 +46,14 @@ pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs)
     let context = runtime.context()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let args = match CommitCapabilityClaimArgs::try_from(args_str.clone()) {
+    let args = match CommitCapabilityClaimArgs::try_from(args_str) {
         Ok(input) => input,
         Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
     let task_result: Result<Address, HolochainError> = context.block_on(commit_entry(
-        Entry::CapTokenClaim(claim.clone()),
+        Entry::CapTokenClaim(claim),
         None,
         &context.clone(),
     ));

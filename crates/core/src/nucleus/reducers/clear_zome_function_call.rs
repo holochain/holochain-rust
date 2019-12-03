@@ -10,7 +10,7 @@ pub fn reduce_clear_zome_function_call(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let call = unwrap_to!(action => Action::ClearZomeFunctionCall);;
+    let call = unwrap_to!(action => Action::ClearZomeFunctionCall);
 
     nucleus_state.queued_zome_calls = nucleus_state
         .queued_zome_calls

@@ -398,7 +398,6 @@ pub mod tests {
     use super::*;
     use crate::{
         dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
-        network::entry_with_header::EntryWithHeader,
     };
     use holochain_core_types::{
         chain_header::test_chain_header_with_sig,

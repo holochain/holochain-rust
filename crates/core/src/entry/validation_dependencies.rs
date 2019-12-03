@@ -1,4 +1,4 @@
-use crate::network::entry_with_header::EntryWithHeader;
+use crate::network::chain_pair::ChainPair;
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 
@@ -6,15 +6,15 @@ pub trait ValidationDependencies {
     fn get_validation_dependencies(&self) -> Vec<Address>;
 }
 
-impl ValidationDependencies for EntryWithHeader {
+impl ValidationDependencies for ChainPair {
     fn get_validation_dependencies(&self) -> Vec<Address> {
-        match &self.entry {
+        match &self.entry() {
             Entry::App(_, _) => {
                 // In the future an entry should be dependent its previous header but
                 // for now it can require nothing by default.
                 // There is also potential to add a WASM function for determining dependencies as a function
                 // of the entry content.
-                match self.header.link_update_delete() {
+                match self.header().link_update_delete() {
                     // If it is an update, require that the original entry is validated
                     Some(entry_to_update) => vec![entry_to_update],
                     None => Vec::new(),

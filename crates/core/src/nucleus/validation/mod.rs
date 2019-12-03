@@ -135,12 +135,12 @@ pub fn entry_to_validation_data(
     match entry {
         Entry::App(_, _) => maybe_link_update_delete
             .map(|link_update| {
-                get_chain_pair(context.clone(), &link_update)
-                    .map(|chain_pair| {
+                try_get_entry_with_meta_and_header_tuple(context.clone(), &link_update)
+                    .map(|entry_with_meta_and_header_tuple| {
                         Ok(EntryValidationData::Modify {
-                            old_entry: chain_pair.0.entry.clone(),
+                            old_entry: entry_with_meta_and_header.0.entry.clone(),
                             new_entry: entry.clone(),
-                            old_entry_header: chain_pair.1.clone(),
+                            old_entry_header: entry_with_meta_and_header.1.clone(),
                             validation_data: validation_data.clone(),
                         })
                     })
@@ -158,14 +158,14 @@ pub fn entry_to_validation_data(
             }),
         Entry::Deletion(deletion_entry) => {
             let deletion_address = deletion_entry.clone().deleted_entry_address();
-            get_chain_pair(context.clone(), &deletion_address)
-                .map(|chain_pair| {
+            try_get_entry_with_meta_and_header_tuple(context.clone(), &deletion_address)
+                .map(|entry_with_meta_and_header_tuple| {
             let deletion_address = deletion_entry.deleted_entry_address().clone();
-            get_chain_pair(context.clone(), &deletion_address)
-                .map(|chain_pair| {
+            try_get_entry_with_meta_and_header_tuple(context.clone(), &deletion_address)
+                .map(|entry_with_meta_and_header| {
                     Ok(EntryValidationData::Delete {
-                        old_entry: chain_pair.0.entry.clone(),
-                        old_entry_header: chain_pair.1.clone(),
+                        old_entry: entry_with_meta_and_header.0.entry.clone(),
+                        old_entry_header: entry_with_meta_and_header.1.clone(),
                         validation_data: validation_data.clone(),
                     })
                 })
@@ -174,6 +174,7 @@ pub fn entry_to_validation_data(
                         "Could not find Entry".to_string(),
                     ))
                 })
+            }
         }
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {
             entry: entry.clone(),
@@ -185,7 +186,8 @@ pub fn entry_to_validation_data(
     }
 }
 
-fn get_chain_pair(
+// It's a long name but it avoids confusion with getting `EntryWithMetaAndHeader`, or avoiding confusion when searching.
+fn try_get_entry_with_meta_and_header_tuple(
     context: Arc<Context>,
     address: &Address,
 ) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {

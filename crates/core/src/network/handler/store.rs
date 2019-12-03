@@ -55,6 +55,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
             aspect_json
         )
     }
+}
 
 /*
 /// The network requests us to store meta information (links/CRUD/etc) for an

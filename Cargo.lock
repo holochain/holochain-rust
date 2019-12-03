@@ -823,6 +823,7 @@ dependencies = [
  "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-task 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1243,6 +1244,7 @@ dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "globset 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_common 0.0.40-alpha1",
  "holochain_conductor_lib_api 0.0.40-alpha1",

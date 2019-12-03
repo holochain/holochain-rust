@@ -43,8 +43,8 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-
 use futures::executor::ThreadPool;
+
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
@@ -359,7 +359,7 @@ impl Context {
         self.thread_pool
             .lock()
             .expect("Couldn't get lock on Context::thread_pool")
-            .run(f);
+            .spawn_ok(f);
     }
 
     /// returns the public capability token (if any)

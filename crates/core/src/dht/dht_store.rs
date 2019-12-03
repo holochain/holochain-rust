@@ -431,8 +431,10 @@ pub mod tests {
         dependencies: Vec<Address>,
     ) -> Result<PendingValidationWithTimeout, HolochainError> {
         let header = test_chain_header_with_sig("sig1");
-        let mut pending_struct = PendingValidationStruct::new(
-            chain_pair,
+        let mut pending_struct = PendingValidationStruct::try_from_entry_and_header(
+            entry,
+            header,
+            EntryAspect::Content(entry, header),
             ValidatingWorkflow::HoldEntry,
         );
         pending_struct.dependencies = dependencies;
@@ -442,8 +444,8 @@ pub mod tests {
     #[test]
     fn test_dependency_resolution_no_dependencies() {
         // A and B have no dependencies. Both should be free
-        let a = pending_validation_for_entry(test_entry_a(), Vec::new());
-        let b = pending_validation_for_entry(test_entry_b(), Vec::new());
+        let Ok(a) = try_pending_validation_for_entry(test_entry_a(), Vec::new())?;
+        let Ok(b) = try_pending_validation_for_entry(test_entry_b(), Vec::new())?;
         assert_eq!(
             get_free_dependencies(&vec![a.clone(), b.clone()]),
             vec![a, b]
@@ -453,9 +455,9 @@ pub mod tests {
     #[test]
     fn test_dependency_resolution_chain() {
         // A depends on B and B depends on C. C should be free
-        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
-        let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()]);
-        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+        let Ok(a) = try_pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
+        let Ok(b) = try_pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()])?;
+        let Ok(c) = try_pending_validation_for_entry(test_entry_c(), vec![])?;
 
         assert_eq!(
             get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
@@ -466,12 +468,12 @@ pub mod tests {
     #[test]
     fn test_dependency_resolution_tree() {
         // A depends on B and C. B and C should be free
-        let a = pending_validation_for_entry(
+        let Ok(a) = try_pending_validation_for_entry(
             test_entry_a(),
             vec![test_entry_b().address(), test_entry_c().address()],
-        );
-        let b = pending_validation_for_entry(test_entry_b(), vec![]);
-        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+        )?;
+        let Ok(b) = try_pending_validation_for_entry(test_entry_b(), vec![])?;
+        let Ok(c) = try_pending_validation_for_entry(test_entry_c(), vec![])?;
 
         assert_eq!(
             get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),

@@ -41,6 +41,20 @@ pub struct StatsRecord {
     pub stddev: f64,
 }
 
+impl Default for StatsRecord {
+    fn default() -> Self {
+        Self {
+            name: None,
+            max: f64::min_value(),
+            min: f64::max_value(),
+            mean: 0.0,
+            variance: 0.0,
+            stddev: 0.0,
+            cnt: 0,
+        }
+    }
+}
+
 impl StatsRecord {
     pub fn new<S: Into<String>, D: DescriptiveStats>(metric_name: S, desc: D) -> Self {
         let metric_name = metric_name.into();
@@ -186,6 +200,23 @@ pub trait StatCheck {
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
     ) -> Result<(), Vec<StatFailure>>;
+
+    fn check_all(
+        &self,
+        expected: HashMap<String, Box<dyn DescriptiveStats>>,
+        actual: HashMap<String, Box<dyn DescriptiveStats>>,
+    ) -> StatCheckResult {
+        StatCheckResult(HashMap::from_iter(expected.iter().map(
+            |(stat_name, expected_stat)| {
+                let result = if let Some(actual_stat) = actual.get(stat_name) {
+                    self.check(expected_stat.as_ref(), actual_stat.as_ref())
+                } else {
+                    Err(vec![])
+                };
+                (stat_name.clone(), result)
+            },
+        )))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -250,36 +281,17 @@ impl StatCheck for LessThanStatCheck {
 #[derive(Shrinkwrap)]
 pub struct StatCheckResult(HashMap<String, Result<(), Vec<StatFailure>>>);
 
-impl dyn StatCheck {
-    pub fn check_all(
-        &self,
-        expected: HashMap<String, Box<dyn DescriptiveStats>>,
-        actual: HashMap<String, Box<dyn DescriptiveStats>>,
-    ) -> StatCheckResult {
-        StatCheckResult(HashMap::from_iter(expected.iter().map(
-            |(stat_name, expected_stat)| {
-                let result = if let Some(actual_stat) = actual.get(stat_name) {
-                    self.check(expected_stat.as_ref(), actual_stat.as_ref())
-                } else {
-                    Err(vec![])
-                };
-                (stat_name.clone(), result)
-            },
-        )))
-    }
-}
-
 impl Display for StatCheckResult {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for (stat_name, stat_result) in self.iter() {
             match stat_result {
                 Ok(_) => {
-                    write!(f, "{:?}: ok!", stat_name)?;
+                    write!(f, "Checking {} metric... ok!\n", stat_name)?;
                 }
                 Err(stat_failures) => {
-                    write!(f, "{:?}: failed!", stat_name)?;
+                    write!(f, "Checking {} metric... failed!\n", stat_name)?;
                     for stat_failure in stat_failures {
-                        write!(f, "\t{}", stat_failure)?;
+                        write!(f, "\t{}\n", stat_failure)?;
                     }
                 }
             }
@@ -380,5 +392,42 @@ mod tests {
     }
 
     #[test]
-    fn can_perform_stat_check() {}
+    fn can_perform_stat_check() {
+        let expected: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+            vec![(
+                "latency".to_string(),
+                Box::new(StatsRecord {
+                    mean: 50.0,
+                    max: 100.0,
+                    min: 25.0,
+                    cnt: 100,
+                    stddev: 10.0,
+                    variance: 5.0,
+                    ..Default::default()
+                }) as Box<dyn DescriptiveStats>,
+            )]
+            .into_iter(),
+        );
+
+        let actual: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+            vec![(
+                "latency".to_string(),
+                Box::new(StatsRecord {
+                    mean: 75.0,
+                    max: 150.0,
+                    min: 50.0,
+                    cnt: 100,
+                    stddev: 20.0,
+                    variance: 8.0,
+                    ..Default::default()
+                }) as Box<dyn DescriptiveStats>,
+            )]
+            .into_iter(),
+        );
+
+        let actual = format!("{}", LessThanStatCheck.check_all(expected, actual));
+        let expected = "Checking latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
+
+        assert_eq!(expected, actual);
+    }
 }

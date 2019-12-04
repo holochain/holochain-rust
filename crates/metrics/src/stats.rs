@@ -2,14 +2,29 @@
 use crate::Metric;
 use num_traits::float::Float;
 /// Extends the metric api with statistical aggregation functions
-use stats::{Commute, OnlineStats};
-use std::{collections::HashMap, iter::FromIterator};
+use stats::Commute;
+use std::{
+    collections::HashMap,
+    fmt,
+    fmt::{Display, Formatter},
+    iter::FromIterator,
+};
 
-/// An extension of `OnlineStats` that also incrementally tracks
+pub trait DescriptiveStats {
+    fn max(&self) -> f64;
+    fn min(&self) -> f64;
+    fn cnt(&self) -> u64;
+    fn mean(&self) -> f64;
+    fn stddev(&self) -> f64;
+    fn variance(&self) -> f64;
+}
+
+/// An extension of `stats::OnlineStats` that also incrementally tracks
 /// max and min values.
-#[derive(Debug, Clone)]
-pub struct DescriptiveStats {
-    online_stats: OnlineStats,
+#[derive(Debug, Clone, Shrinkwrap)]
+pub struct OnlineStats {
+    #[shrinkwrap(main_field)]
+    online_stats: stats::OnlineStats,
     max: f64,
     min: f64,
     cnt: u64,
@@ -26,20 +41,37 @@ pub struct StatsRecord {
     pub stddev: f64,
 }
 
-#[derive(Shrinkwrap, Clone)]
-pub struct AllValuesLessThan(DescriptiveStats);
-
-impl StatsRecord {
-    pub fn new<S: Into<String>>(metric_name: S, desc: DescriptiveStats) -> Self {
-        let metric_name = metric_name.into();
-        let mut record: Self = desc.into();
-        record.name = Some(metric_name);
-        record
+impl Default for StatsRecord {
+    fn default() -> Self {
+        Self {
+            name: None,
+            max: f64::min_value(),
+            min: f64::max_value(),
+            mean: 0.0,
+            variance: 0.0,
+            stddev: 0.0,
+            cnt: 0,
+        }
     }
 }
 
-impl From<DescriptiveStats> for StatsRecord {
-    fn from(desc_stats: DescriptiveStats) -> Self {
+impl StatsRecord {
+    pub fn new<S: Into<String>, D: DescriptiveStats>(metric_name: S, desc: D) -> Self {
+        let metric_name = metric_name.into();
+        Self {
+            name: Some(metric_name),
+            max: desc.max(),
+            min: desc.min(),
+            mean: desc.mean(),
+            cnt: desc.cnt(),
+            stddev: desc.stddev(),
+            variance: desc.variance(),
+        }
+    }
+}
+
+impl From<OnlineStats> for StatsRecord {
+    fn from(desc_stats: OnlineStats) -> Self {
         Self {
             name: None,
             max: desc_stats.max(),
@@ -47,12 +79,33 @@ impl From<DescriptiveStats> for StatsRecord {
             stddev: desc_stats.stddev(),
             mean: desc_stats.mean(),
             variance: desc_stats.variance(),
-            cnt: desc_stats.count(),
+            cnt: desc_stats.cnt(),
         }
     }
 }
 
-impl Copy for DescriptiveStats {}
+impl DescriptiveStats for StatsRecord {
+    fn max(&self) -> f64 {
+        self.max
+    }
+    fn min(&self) -> f64 {
+        self.min
+    }
+    fn cnt(&self) -> u64 {
+        self.cnt
+    }
+    fn variance(&self) -> f64 {
+        self.variance
+    }
+    fn stddev(&self) -> f64 {
+        self.stddev
+    }
+    fn mean(&self) -> f64 {
+        self.mean
+    }
+}
+
+impl Copy for OnlineStats {}
 
 #[derive(Clone, Debug, Serialize)]
 pub enum DescriptiveStatType {
@@ -63,6 +116,11 @@ pub enum DescriptiveStatType {
     Count,
 }
 
+impl Display for DescriptiveStatType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 #[derive(Clone, Debug, Serialize)]
 pub struct StatFailure {
     expected: f64,
@@ -70,11 +128,21 @@ pub struct StatFailure {
     stat_type: DescriptiveStatType,
 }
 
-impl DescriptiveStats {
+impl std::fmt::Display for StatFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}: Expected {}, Actual was {}",
+            self.stat_type, self.expected, self.actual
+        )
+    }
+}
+
+impl OnlineStats {
     /// An initial empty statistic.
     pub fn empty() -> Self {
         Self {
-            online_stats: OnlineStats::new(),
+            online_stats: stats::OnlineStats::new(),
             max: f64::min_value(),
             min: f64::max_value(),
             cnt: 0,
@@ -92,34 +160,36 @@ impl DescriptiveStats {
         }
         self.cnt += 1;
     }
+}
 
+impl DescriptiveStats for OnlineStats {
     /// The mean value of the running statistic.
-    pub fn mean(&self) -> f64 {
+    fn mean(&self) -> f64 {
         self.online_stats.mean()
     }
 
     /// The standard deviation of the running statistic.
-    pub fn stddev(&self) -> f64 {
+    fn stddev(&self) -> f64 {
         self.online_stats.stddev()
     }
 
     /// The variance of the running statistic.
-    pub fn variance(&self) -> f64 {
+    fn variance(&self) -> f64 {
         self.online_stats.variance()
     }
 
     /// The max of the running statistic.
-    pub fn max(&self) -> f64 {
+    fn max(&self) -> f64 {
         self.max
     }
 
     /// The min of the running statistic.
-    pub fn min(&self) -> f64 {
+    fn min(&self) -> f64 {
         self.min
     }
 
     /// The number of samples of the running statistic.
-    pub fn count(&self) -> u64 {
+    fn cnt(&self) -> u64 {
         self.cnt
     }
 }
@@ -127,9 +197,26 @@ impl DescriptiveStats {
 pub trait StatCheck {
     fn check(
         &self,
-        expected: &DescriptiveStats,
-        actual: &DescriptiveStats,
-    ) -> Result<DescriptiveStats, Vec<StatFailure>>;
+        expected: &dyn DescriptiveStats,
+        actual: &dyn DescriptiveStats,
+    ) -> Result<(), Vec<StatFailure>>;
+
+    fn check_all(
+        &self,
+        expected: HashMap<String, Box<dyn DescriptiveStats>>,
+        actual: HashMap<String, Box<dyn DescriptiveStats>>,
+    ) -> StatCheckResult {
+        StatCheckResult(HashMap::from_iter(expected.iter().map(
+            |(stat_name, expected_stat)| {
+                let result = if let Some(actual_stat) = actual.get(stat_name) {
+                    self.check(expected_stat.as_ref(), actual_stat.as_ref())
+                } else {
+                    Err(vec![])
+                };
+                (stat_name.clone(), result)
+            },
+        )))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -138,9 +225,9 @@ pub struct LessThanStatCheck;
 impl StatCheck for LessThanStatCheck {
     fn check(
         &self,
-        expected: &DescriptiveStats,
-        actual: &DescriptiveStats,
-    ) -> Result<DescriptiveStats, Vec<StatFailure>> {
+        expected: &dyn DescriptiveStats,
+        actual: &dyn DescriptiveStats,
+    ) -> Result<(), Vec<StatFailure>> {
         let mut failures = Vec::new();
 
         if actual.mean() > expected.mean() {
@@ -175,23 +262,45 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if actual.count() > expected.count() {
+        if actual.cnt() > expected.cnt() {
             failures.push(StatFailure {
-                expected: expected.count() as f64,
-                actual: actual.count() as f64,
+                expected: expected.cnt() as f64,
+                actual: actual.cnt() as f64,
                 stat_type: DescriptiveStatType::Count,
             })
         }
 
         if failures.is_empty() {
-            Ok(*actual)
+            Ok(())
         } else {
             Err(failures)
         }
     }
 }
 
-impl Commute for DescriptiveStats {
+#[derive(Shrinkwrap)]
+pub struct StatCheckResult(HashMap<String, Result<(), Vec<StatFailure>>>);
+
+impl Display for StatCheckResult {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        for (stat_name, stat_result) in self.iter() {
+            match stat_result {
+                Ok(_) => {
+                    write!(f, "Checking {} metric... ok!\n", stat_name)?;
+                }
+                Err(stat_failures) => {
+                    write!(f, "Checking {} metric... failed!\n", stat_name)?;
+                    for stat_failure in stat_failures {
+                        write!(f, "\t{}\n", stat_failure)?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Commute for OnlineStats {
     fn merge(&mut self, rhs: Self) {
         self.online_stats.merge(rhs.online_stats);
         if rhs.max > self.max {
@@ -206,7 +315,7 @@ impl Commute for DescriptiveStats {
 
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
-pub struct StatsByMetric(HashMap<String, DescriptiveStats>);
+pub struct StatsByMetric(pub HashMap<String, OnlineStats>);
 
 impl StatsByMetric {
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {
@@ -235,7 +344,7 @@ impl FromIterator<Metric> for StatsByMetric {
             |mut stats_by_metric_name, metric| {
                 let entry = stats_by_metric_name.entry(metric.name);
 
-                let online_stats = entry.or_insert_with(DescriptiveStats::empty);
+                let online_stats = entry.or_insert_with(OnlineStats::empty);
                 online_stats.add(metric.value);
                 stats_by_metric_name
             },
@@ -247,7 +356,7 @@ impl Commute for StatsByMetric {
     fn merge(&mut self, rhs: Self) {
         for (metric_name, online_stats_rhs) in rhs.iter() {
             let entry = self.0.entry(metric_name.to_string());
-            let online_stats = entry.or_insert_with(DescriptiveStats::empty);
+            let online_stats = entry.or_insert_with(OnlineStats::empty);
             online_stats.merge(*online_stats_rhs);
         }
     }
@@ -280,5 +389,45 @@ mod tests {
 
         assert_eq!(size_stats.min(), 1.0);
         assert_eq!(size_stats.max(), 100.0);
+    }
+
+    #[test]
+    fn can_perform_stat_check() {
+        let expected: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+            vec![(
+                "latency".to_string(),
+                Box::new(StatsRecord {
+                    mean: 50.0,
+                    max: 100.0,
+                    min: 25.0,
+                    cnt: 100,
+                    stddev: 10.0,
+                    variance: 5.0,
+                    ..Default::default()
+                }) as Box<dyn DescriptiveStats>,
+            )]
+            .into_iter(),
+        );
+
+        let actual: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+            vec![(
+                "latency".to_string(),
+                Box::new(StatsRecord {
+                    mean: 75.0,
+                    max: 150.0,
+                    min: 50.0,
+                    cnt: 100,
+                    stddev: 20.0,
+                    variance: 8.0,
+                    ..Default::default()
+                }) as Box<dyn DescriptiveStats>,
+            )]
+            .into_iter(),
+        );
+
+        let actual = format!("{}", LessThanStatCheck.check_all(expected, actual));
+        let expected = "Checking latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
+
+        assert_eq!(expected, actual);
     }
 }

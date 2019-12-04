@@ -43,10 +43,12 @@ impl HappBundle {
     pub fn id_references_are_consistent(&self) -> Result<(), String> {
         for bridge in self.bridges.iter() {
             for id in vec![bridge.callee_id.clone(), bridge.caller_id.clone()] {
-                self.instances.iter().find(|i| i.id == id).ok_or(format!(
-                    "No instance with ID {} referenced in bridge {:?}",
-                    id, bridge
-                ))?;
+                self.instances.iter().find(|i| i.id == id).ok_or_else(|| {
+                    format!(
+                        "No instance with ID {} referenced in bridge {:?}",
+                        id, bridge
+                    )
+                })?;
             }
         }
 
@@ -55,10 +57,12 @@ impl HappBundle {
                 self.instances
                     .iter()
                     .find(|i| i.id == reference.instance_id)
-                    .ok_or(format!(
-                        "No instance with ID {} referenced in UI {:?}",
-                        reference.instance_id, ui
-                    ))?;
+                    .ok_or_else(|| {
+                        format!(
+                            "No instance with ID {} referenced in UI {:?}",
+                            reference.instance_id, ui
+                        )
+                    })?;
             }
         }
         Ok(())
@@ -66,17 +70,21 @@ impl HappBundle {
 
     pub fn only_file_uris(&self) -> Result<(), String> {
         for instance in self.instances.iter() {
-            instance.uri.starts_with("file:").ok_or(format!(
-                "Instance {} uses non-file URI which is not supported in `hc run`",
-                instance.id
-            ))?;
+            instance.uri.starts_with("file:").ok_or_else(|| {
+                format!(
+                    "Instance {} uses non-file URI which is not supported in `hc run`",
+                    instance.id
+                )
+            })?;
         }
 
         for ui in self.uis.iter() {
-            ui.uri.starts_with("dir:").ok_or(format!(
-                "UI {} uses non-dir URI which is not supported in `hc run`",
-                ui.id()
-            ))?;
+            ui.uri.starts_with("dir:").ok_or_else(|| {
+                format!(
+                    "UI {} uses non-dir URI which is not supported in `hc run`",
+                    ui.id()
+                )
+            })?;
         }
 
         Ok(())

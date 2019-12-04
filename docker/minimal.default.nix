@@ -1,8 +1,8 @@
 let
- config = { };
+ config = import ../config.nix;
  holonix = import (fetchTarball {
-  url = https://github.com/holochain/holonix/archive/v0.0.52.tar.gz;
-  sha256 = "02x16zyspx8as65z5glmqsana4gmrkvjm9q8ws1f6l1wip87h2ql";
+  url = "https://github.com/holochain/holonix/archive/${config.holonix.github.ref}.tar.gz";
+  sha256 = config.holonix.github.sha256;
   }) { };
  shell-config = {
   CARGO_HOME = "/holochain/.cargo";

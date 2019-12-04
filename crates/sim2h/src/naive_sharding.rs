@@ -73,7 +73,7 @@ mod tests {
         let mut hash_threads = Vec::new();
 
         let (id_send, id_recv) = crossbeam_channel::bounded::<Location>(20);
-        let (addr_send, addr_recv) = crossbeam_channel::bounded::<Location>(200);
+        let (addr_send, addr_recv) = crossbeam_channel::bounded::<Location>(100);
 
         for _ in 0..8 {
             let id_send_clone = id_send.clone();
@@ -90,33 +90,30 @@ mod tests {
                             break;
                         }
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(1));
                     if id.is_none() {
                         id = Some(anything_to_location(&crypto, &gen_id(&crypto)));
                     }
                     if addr.is_none() {
                         addr = Some(anything_to_location(&crypto, &gen_data_addr(&crypto)));
                     }
-                    match id_send_clone.try_send(id.unwrap()) {
+                    match id_send_clone.try_send(id.take().unwrap()) {
                         Ok(_) => (),
                         Err(crossbeam_channel::TrySendError::Full(eid)) => {
                             id = Some(eid);
                         }
                         _ => panic!("send fail"),
                     }
-                    match addr_send_clone.try_send(addr.unwrap()) {
+                    match addr_send_clone.try_send(addr.take().unwrap()) {
                         Ok(_) => (),
                         Err(crossbeam_channel::TrySendError::Full(ea)) => {
                             addr = Some(ea);
                         }
                         _ => panic!("send fail"),
                     }
+                    std::thread::yield_now();
                 }
             }));
         }
-
-        //let crypto: Box<dyn CryptoSystem> =
-        //    Box::new(SodiumCryptoSystem::new().set_pwhash_interactive());
 
         let mut nodes = Vec::new();
 
@@ -125,15 +122,13 @@ mod tests {
         let mut count = 0;
         let mut mean = 0.0;
 
-        // simulate a 10,000 node network, growing 10 nodes at a time
-        for _ in 0..1000 {
-            for _ in 0..10 {
+        // simulate a 10,000 node network, growing 20 nodes at a time
+        for _ in 0..500 {
+            for _ in 0..20 {
                 let id_loc = id_recv.recv().unwrap();
                 //println!("id: {}", *id_loc);
                 nodes.push(id_loc);
             }
-
-            println!("NODE COUNT: {}", nodes.len());
 
             // simulate storing 100 bits of data in this network
             for _ in 0..100 {
@@ -149,8 +144,6 @@ mod tests {
                     }
                 }
 
-                println!(" store - {} - {}", store_count, *data_loc);
-
                 if (nodes.len() as u64) < REDUNDANT_COUNT {
                     // if we have less than 50 nodes
                     // make sure all nodes store all data
@@ -158,26 +151,58 @@ mod tests {
                 } else {
                     // if we have > 50 nodes,
                     // assert that a reasonable number of nodes store the data
+
+                    // too few nodes storing - panic!
                     if store_count < 15 {
-                        let dist: f64 = ARC_LENGTH_MAX as f64 / (nodes.len() as f64 / REDUNDANT_COUNT as f64) * 100.0 / ARC_LENGTH_MAX as f64;
+                        let dist: f64 = ARC_LENGTH_MAX as f64
+                            / (nodes.len() as f64 / REDUNDANT_COUNT as f64)
+                            * 100.0
+                            / ARC_LENGTH_MAX as f64;
                         println!("-- NOT STORING ENOUGH --");
                         println!("-- dist: {}% --", dist as u64);
-                        println!("-- data loc: {}% --", u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX);
+                        println!(
+                            "-- data loc: {}% --",
+                            u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX
+                        );
                         for agent_loc in nodes.iter() {
-                            println!("  - agent loc: {}% - {}", u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX, naive_sharding_should_store(*agent_loc, data_loc, nodes.len() as u64));
+                            println!(
+                                "  - agent loc: {}% - {}",
+                                u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX,
+                                naive_sharding_should_store(
+                                    *agent_loc,
+                                    data_loc,
+                                    nodes.len() as u64
+                                )
+                            );
                         }
                         panic!("store count < 15: {}", store_count);
                     }
+
+                    // too many nodes storing - panic!
                     if store_count >= 100 {
+                        let dist: f64 = ARC_LENGTH_MAX as f64
+                            / (nodes.len() as f64 / REDUNDANT_COUNT as f64)
+                            * 100.0
+                            / ARC_LENGTH_MAX as f64;
                         println!("-- STORING TOO MUCH --");
-                        println!("-- data loc: {} --", *data_loc);
+                        println!("-- dist: {}% --", dist as u64);
+                        println!(
+                            "-- data loc: {}% --",
+                            u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX
+                        );
                         for agent_loc in nodes.iter() {
-                            println!("  - agent loc: {}", **agent_loc);
+                            println!(
+                                "  - agent loc: {}% - {}",
+                                u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX,
+                                naive_sharding_should_store(
+                                    *agent_loc,
+                                    data_loc,
+                                    nodes.len() as u64
+                                )
+                            );
                         }
                         panic!("store count >= 100: {}", store_count);
                     }
-                    //assert!(store_count > 15, format!("got: {} out of {} nodes", store_count, nodes.len()));
-                    //assert!(store_count < 100);
 
                     if store_count < min {
                         min = store_count;

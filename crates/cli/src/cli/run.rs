@@ -12,7 +12,7 @@ use holochain_conductor_lib::{
 };
 use holochain_core_types::agent::AgentId;
 use holochain_persistence_api::cas::content::AddressableContent;
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, convert::TryFrom, fs, path::PathBuf};
 
 #[derive(Serialize, Deserialize)]
 pub struct HappBundle {
@@ -89,8 +89,13 @@ impl HappBundle {
     }
 }
 
-impl From<HappBundle> for Configuration {
-    fn from(bundle: HappBundle) -> Configuration {
+impl TryFrom<HappBundle> for Configuration {
+    type Error = String;
+
+    fn try_from(bundle: HappBundle) -> Result<Configuration, String> {
+        bundle.id_references_are_consistent()?;
+        bundle.only_file_uris()?;
+
         let dnas = bundle
             .instances
             .iter()
@@ -151,7 +156,7 @@ impl From<HappBundle> for Configuration {
             });
         }
 
-        Configuration {
+        Ok(Configuration {
             agents: vec![agent_configuration()],
             dnas,
             instances,
@@ -162,7 +167,7 @@ impl From<HappBundle> for Configuration {
             network: networking_configuration(false),
             logger: logger_configuration(true),
             ..Default::default()
-        }
+        })
     }
 }
 

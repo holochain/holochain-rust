@@ -1,6 +1,7 @@
 use crate::config::*;
 use boolinator::Boolinator;
 use std::collections::HashMap;
+use crate::port_utils::get_free_port;
 
 #[derive(Serialize, Deserialize)]
 pub struct HappBundle {
@@ -121,10 +122,19 @@ impl HappBundle {
         let mut interfaces = Vec::new();
         let mut ui_bundles = Vec::new();
         let mut ui_interfaces = Vec::new();
+
+        const MIN_INTERFACE_PORT: u16 = 50000;
+        const MAX_INTERFACE_PORT: u16 = 60000;
+        let mut next_interface_port: u16 = MIN_INTERFACE_PORT;
+        let mut next_ui_port = ui_port;
+
         for ui in self.uis.iter() {
+            let port = get_free_port(next_interface_port .. MAX_INTERFACE_PORT)
+                .ok_or_else(|| String::from("Couldn't acquire free port"))?;
+            next_interface_port = port+1;
             interfaces.push(InterfaceConfiguration {
                 id: ui.id(),
-                driver: InterfaceDriver::Websocket { port: 8000 },
+                driver: InterfaceDriver::Websocket { port },
                 admin: false,
                 instances: ui
                     .instance_references
@@ -142,10 +152,13 @@ impl HappBundle {
                 hash: None,
             });
 
+            let port = get_free_port(next_ui_port .. MIN_INTERFACE_PORT-1)
+                .ok_or_else(|| String::from("Couldn't acquire free port"))?;
+            next_ui_port = port+1;
             ui_interfaces.push(UiInterfaceConfiguration {
                 id: ui.id(),
                 bundle: ui.id(),
-                port: ui_port,
+                port,
                 dna_interface: Some(ui.id()),
                 reroute_to_root: false,
                 bind_address: String::from("127.0.0.1"),

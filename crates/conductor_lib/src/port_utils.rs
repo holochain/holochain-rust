@@ -1,4 +1,5 @@
 use std::{thread, time::Duration};
+use std::ops::Range;
 
 pub const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;
 pub const INTERFACE_CONNECT_INTERVAL: Duration = Duration::from_secs(1);
@@ -22,4 +23,13 @@ pub fn try_with_port<T, F: FnOnce() -> T>(port: u16, f: F) -> T {
 pub fn port_is_available(port: u16) -> bool {
     use std::net::TcpListener;
     TcpListener::bind(format!("0.0.0.0:{}", port)).is_ok()
+}
+
+pub fn get_free_port(range: Range<u16>) -> Option<u16> {
+    for i in range {
+        if port_is_available(i) {
+            return Some(i);
+        }
+    }
+    None
 }

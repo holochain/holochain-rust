@@ -97,7 +97,6 @@ pub fn hc_run_bundle_configuration(
     port: u16,
     persist: bool,
     networked: bool,
-    _interface_type: &String,
     logging: bool,
 ) -> DefaultResult<Configuration> {
     bundle

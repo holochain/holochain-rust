@@ -220,7 +220,6 @@ fn run() -> HolochainResult<()> {
                     port,
                     persist,
                     networked,
-                    &interface_type,
                     logging,
                 )
                 .map_err(HolochainError::Default)?

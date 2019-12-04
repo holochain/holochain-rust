@@ -1,12 +1,12 @@
-use boolinator::Boolinator;
 use crate::config::*;
+use boolinator::Boolinator;
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 pub struct HappBundle {
     pub instances: Vec<HappBundleInstance>,
     pub bridges: Vec<Bridge>,
-    #[serde(rename="UIs")]
+    #[serde(rename = "UIs")]
     pub uis: Vec<HappBundleUi>,
 }
 

@@ -14,6 +14,6 @@ pub use self::{
     init::init,
     keygen::keygen,
     package::package,
-    run::{get_interface_type_string, hc_run_configuration, hc_run_bundle_configuration, run},
+    run::{get_interface_type_string, hc_run_bundle_configuration, hc_run_configuration, run},
     test::{test, TEST_DIR_NAME},
 };

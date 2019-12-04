@@ -9,8 +9,8 @@ use crate::{
     error::HolochainInstanceError,
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
     Holochain,
-    port_utils::{INTERFACE_CONNECT_ATTEMPTS_MAX, try_with_port}
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;

@@ -95,7 +95,7 @@ pub fn hc_run_configuration(
 pub fn hc_run_bundle_configuration(
     bundle: &HappBundle,
     port: u16,
-    _persist: bool,
+    persist: bool,
     networked: bool,
     _interface_type: &String,
     logging: bool,
@@ -104,6 +104,7 @@ pub fn hc_run_bundle_configuration(
         .build_conductor_config(
             port,
             agent_configuration(),
+            storage_configuration(persist)?,
             networking_configuration(networked),
             logger_configuration(logging),
         )

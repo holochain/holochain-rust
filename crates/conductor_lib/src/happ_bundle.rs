@@ -86,6 +86,7 @@ impl HappBundle {
         &self,
         ui_port: u16,
         agent_config: AgentConfiguration,
+        storage: StorageConfiguration,
         network: Option<NetworkConfig>,
         logger: LoggerConfiguration,
     ) -> Result<Configuration, String> {
@@ -114,7 +115,7 @@ impl HappBundle {
                 id: happ_instance.id.clone(),
                 dna: happ_instance.id.clone(),
                 agent: agent_config.id.clone(),
-                storage: StorageConfiguration::Memory,
+                storage: storage.clone(),
             })
             .collect::<Vec<_>>();
 

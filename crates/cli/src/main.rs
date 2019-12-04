@@ -215,14 +215,8 @@ fn run() -> HolochainResult<()> {
                 let happ_bundle =
                     toml::from_str::<HappBundle>(&contents).expect("Error loading bundle.");
 
-                cli::hc_run_bundle_configuration(
-                    &happ_bundle,
-                    port,
-                    persist,
-                    networked,
-                    logging,
-                )
-                .map_err(HolochainError::Default)?
+                cli::hc_run_bundle_configuration(&happ_bundle, port, persist, networked, logging)
+                    .map_err(HolochainError::Default)?
             } else {
                 cli::hc_run_configuration(
                     &dna_path,

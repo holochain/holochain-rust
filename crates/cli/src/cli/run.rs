@@ -78,15 +78,15 @@ impl HappBundle {
 
     pub fn only_file_uris(&self) -> Result<(), String> {
         for instance in self.instances.iter() {
-            instance.uri.starts_with("file://").ok_or(format!(
+            instance.uri.starts_with("file:").ok_or(format!(
                 "Instance {} uses non-file URI which is not supported in `hc run`",
                 instance.id
             ))?;
         }
 
         for ui in self.uis.iter() {
-            ui.uri.starts_with("dir://").ok_or(format!(
-                "UI {} uses non-file URI which is not supported in `hc run`",
+            ui.uri.starts_with("dir:").ok_or(format!(
+                "UI {} uses non-dir URI which is not supported in `hc run`",
                 ui.id()
             ))?;
         }
@@ -107,7 +107,7 @@ impl TryFrom<HappBundle> for Configuration {
             .iter()
             .map(|happ_instance| {
                 // splitting off "file://"
-                let file = happ_instance.uri.clone().split_off(7);
+                let file = happ_instance.uri.clone().split_off(5);
                 DnaConfiguration {
                     id: happ_instance.id.clone(),
                     file,
@@ -148,7 +148,7 @@ impl TryFrom<HappBundle> for Configuration {
 
             ui_bundles.push(UiBundleConfiguration {
                 id: ui.id(),
-                root_dir: ui.uri.clone().split_off(6), // splitting off "dir://"
+                root_dir: ui.uri.clone().split_off(4), // splitting off "dir://"
                 hash: None,
             });
 

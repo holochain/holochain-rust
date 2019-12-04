@@ -19,7 +19,6 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
-extern crate boolinator;
 extern crate flate2;
 extern crate glob;
 extern crate ignore;
@@ -34,6 +33,7 @@ mod error;
 mod util;
 
 use crate::error::{HolochainError, HolochainResult};
+use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
@@ -213,10 +213,18 @@ fn run() -> HolochainResult<()> {
                 let mut contents = String::new();
                 f.read_to_string(&mut contents)
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
-                let happ_bundle = toml::from_str::<cli::run::HappBundle>(&contents)
+                let happ_bundle = toml::from_str::<HappBundle>(&contents)
                     .expect("Error loading bundle.");
-                happ_bundle.build_conductor_config(port)
-                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
+
+                cli::hc_run_bundle_configuration(
+                    &happ_bundle,
+                    port,
+                    persist,
+                    networked,
+                    &interface_type,
+                    logging,
+                )
+                    .map_err(HolochainError::Default)?
             } else {
                 cli::hc_run_configuration(
                     &dna_path,

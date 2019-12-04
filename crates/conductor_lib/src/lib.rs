@@ -115,6 +115,7 @@ pub mod context_builder;
 pub mod dna_location;
 pub mod dpki_instance;
 pub mod error;
+pub mod happ_bundle;
 pub mod holo_signing_service;
 pub mod holochain;
 pub mod interface;

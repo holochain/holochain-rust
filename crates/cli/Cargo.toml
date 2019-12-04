@@ -38,7 +38,6 @@ reqwest = "=0.9.11"
 tempfile = "=3.0.7"
 tar = "=0.4.26"
 flate2 = "=1.0.12"
-boolinator = "2.4.0"
 
 [dev-dependencies]
 assert_cmd = "=0.10.2"

@@ -12,7 +12,7 @@ use holochain_conductor_lib::{
 };
 use holochain_core_types::agent::AgentId;
 use holochain_persistence_api::cas::content::AddressableContent;
-use std::{collections::HashMap, convert::TryFrom, fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive(Serialize, Deserialize)]
 pub struct HappBundle {
@@ -93,16 +93,12 @@ impl HappBundle {
 
         Ok(())
     }
-}
 
-impl TryFrom<HappBundle> for Configuration {
-    type Error = String;
+    pub fn build_conductor_config(&self, ui_port: u16) -> Result<Configuration, String> {
+        self.id_references_are_consistent()?;
+        self.only_file_uris()?;
 
-    fn try_from(bundle: HappBundle) -> Result<Configuration, String> {
-        bundle.id_references_are_consistent()?;
-        bundle.only_file_uris()?;
-
-        let dnas = bundle
+        let dnas = self
             .instances
             .iter()
             .map(|happ_instance| {
@@ -117,7 +113,7 @@ impl TryFrom<HappBundle> for Configuration {
             })
             .collect::<Vec<_>>();
 
-        let instances = bundle
+        let instances = self
             .instances
             .iter()
             .map(|happ_instance| InstanceConfiguration {
@@ -131,7 +127,7 @@ impl TryFrom<HappBundle> for Configuration {
         let mut interfaces = Vec::new();
         let mut ui_bundles = Vec::new();
         let mut ui_interfaces = Vec::new();
-        for ui in bundle.uis {
+        for ui in self.uis.iter() {
             interfaces.push(InterfaceConfiguration {
                 id: ui.id(),
                 driver: InterfaceDriver::Websocket { port: 8000 },
@@ -155,7 +151,7 @@ impl TryFrom<HappBundle> for Configuration {
             ui_interfaces.push(UiInterfaceConfiguration {
                 id: ui.id(),
                 bundle: ui.id(),
-                port: 8080,
+                port: ui_port,
                 dna_interface: Some(ui.id()),
                 reroute_to_root: false,
                 bind_address: String::from("127.0.0.1"),
@@ -166,7 +162,7 @@ impl TryFrom<HappBundle> for Configuration {
             agents: vec![agent_configuration()],
             dnas,
             instances,
-            bridges: bundle.bridges,
+            bridges: self.bridges.clone(),
             interfaces,
             ui_bundles,
             ui_interfaces,

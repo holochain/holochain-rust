@@ -34,8 +34,7 @@ mod error;
 mod util;
 
 use crate::error::{HolochainError, HolochainResult};
-use holochain_conductor_lib::config::Configuration;
-use std::{convert::TryFrom, fs::File, io::Read, path::PathBuf, str::FromStr};
+use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -216,7 +215,7 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
                 let happ_bundle = toml::from_str::<cli::run::HappBundle>(&contents)
                     .expect("Error loading bundle.");
-                Configuration::try_from(happ_bundle)
+                happ_bundle.build_conductor_config(port)
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
             } else {
                 cli::hc_run_configuration(

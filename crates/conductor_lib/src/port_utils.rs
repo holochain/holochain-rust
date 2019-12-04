@@ -1,5 +1,4 @@
-use std::{thread, time::Duration};
-use std::ops::Range;
+use std::{ops::Range, thread, time::Duration};
 
 pub const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;
 pub const INTERFACE_CONNECT_INTERVAL: Duration = Duration::from_secs(1);

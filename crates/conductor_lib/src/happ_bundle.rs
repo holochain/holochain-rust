@@ -1,7 +1,6 @@
-use crate::config::*;
+use crate::{config::*, port_utils::get_free_port};
 use boolinator::Boolinator;
 use std::collections::HashMap;
-use crate::port_utils::get_free_port;
 
 #[derive(Serialize, Deserialize)]
 pub struct HappBundle {
@@ -129,9 +128,9 @@ impl HappBundle {
         let mut next_ui_port = ui_port;
 
         for ui in self.uis.iter() {
-            let port = get_free_port(next_interface_port .. MAX_INTERFACE_PORT)
+            let port = get_free_port(next_interface_port..MAX_INTERFACE_PORT)
                 .ok_or_else(|| String::from("Couldn't acquire free port"))?;
-            next_interface_port = port+1;
+            next_interface_port = port + 1;
             interfaces.push(InterfaceConfiguration {
                 id: ui.id(),
                 driver: InterfaceDriver::Websocket { port },
@@ -152,9 +151,9 @@ impl HappBundle {
                 hash: None,
             });
 
-            let port = get_free_port(next_ui_port .. MIN_INTERFACE_PORT-1)
+            let port = get_free_port(next_ui_port..MIN_INTERFACE_PORT - 1)
                 .ok_or_else(|| String::from("Couldn't acquire free port"))?;
-            next_ui_port = port+1;
+            next_ui_port = port + 1;
             ui_interfaces.push(UiInterfaceConfiguration {
                 id: ui.id(),
                 bundle: ui.id(),

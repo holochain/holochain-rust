@@ -157,7 +157,7 @@ impl TryFrom<HappBundle> for Configuration {
                 bundle: ui.id(),
                 port: 8080,
                 dna_interface: Some(ui.id()),
-                reroute_to_root: true,
+                reroute_to_root: false,
                 bind_address: String::from("127.0.0.1"),
             });
         }

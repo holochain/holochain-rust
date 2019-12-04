@@ -4,7 +4,7 @@ mod hash_dna;
 mod init;
 mod keygen;
 pub mod package;
-mod run;
+pub mod run;
 pub mod test;
 
 pub use self::{

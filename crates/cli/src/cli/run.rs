@@ -15,14 +15,14 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive(Serialize, Deserialize)]
-struct HappBundle {
+pub struct HappBundle {
     pub instances: Vec<HappBundleInstance>,
     pub bridges: Vec<Bridge>,
     pub uis: Vec<HappBundleUi>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct HappBundleInstance {
+pub struct HappBundleInstance {
     pub name: String,
     pub id: String,
     pub dna_hash: String,
@@ -31,7 +31,7 @@ struct HappBundleInstance {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct HappBundleUi {
+pub struct HappBundleUi {
     pub name: String,
     pub id: String,
     pub uri: String,
@@ -39,7 +39,7 @@ struct HappBundleUi {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct HappBundleInstanceReference {
+pub struct HappBundleInstanceReference {
     pub ui_handle: String,
     pub instance_id: String,
 }

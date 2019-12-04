@@ -34,7 +34,8 @@ mod error;
 mod util;
 
 use crate::error::{HolochainError, HolochainResult};
-use std::{path::PathBuf, str::FromStr};
+use holochain_conductor_lib::config::Configuration;
+use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -203,15 +204,19 @@ fn run() -> HolochainResult<()> {
         } => {
             let bundle_path = project_path.join("bundle.tom");
             if bundle_path.exists() {
-                let mut f = File::open(bundle_path)?;
+                let mut f = File::open(bundle_path)
+                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
                 let mut contents = String::new();
-                f.read_to_string(&mut contents)?;
-                let happ_bundle = toml::from_str::<HappBundle>(&contents).expect("Error loading bundle.");
+                f.read_to_string(&mut contents)
+                    .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+                let happ_bundle = toml::from_str::<cli::run::HappBundle>(&contents)
+                    .expect("Error loading bundle.");
                 let config = Configuration::from(happ_bundle);
                 println!("Config from bundle: {:?}", config);
             } else {
-                let dna_path = dna_path
-                    .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
+                let dna_path = dna_path.unwrap_or(
+                    util::std_package_path(&project_path).map_err(HolochainError::Default)?,
+                );
                 let interface_type = cli::get_interface_type_string(interface);
                 let conductor_config = cli::hc_run_configuration(
                     &dna_path,
@@ -221,7 +226,7 @@ fn run() -> HolochainResult<()> {
                     &interface_type,
                     logging,
                 )
-                    .map_err(HolochainError::Default)?;
+                .map_err(HolochainError::Default)?;
                 cli::run(dna_path, package, port, interface_type, conductor_config)
                     .map_err(HolochainError::Default)?
             }

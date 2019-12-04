@@ -34,9 +34,15 @@ pub struct HappBundleInstance {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HappBundleUi {
     pub name: String,
-    pub id: String,
+    pub id: Option<String>,
     pub uri: String,
     pub instance_references: Vec<HappBundleInstanceReference>,
+}
+
+impl HappBundleUi {
+    pub fn id(&self) -> String {
+        self.id.clone().unwrap_or_else(|| String::from(""))
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -81,7 +87,7 @@ impl HappBundle {
         for ui in self.uis.iter() {
             ui.uri.starts_with("dir://").ok_or(format!(
                 "UI {} uses non-file URI which is not supported in `hc run`",
-                ui.id
+                ui.id()
             ))?;
         }
 
@@ -127,30 +133,30 @@ impl TryFrom<HappBundle> for Configuration {
         let mut ui_interfaces = Vec::new();
         for ui in bundle.uis {
             interfaces.push(InterfaceConfiguration {
-                id: ui.id.clone(),
+                id: ui.id(),
                 driver: InterfaceDriver::Websocket { port: 8000 },
                 admin: false,
                 instances: ui
                     .instance_references
-                    .into_iter()
+                    .iter()
                     .map(|ui_ref| InstanceReferenceConfiguration {
-                        id: ui_ref.instance_id,
-                        alias: Some(ui_ref.ui_handle),
+                        id: ui_ref.instance_id.clone(),
+                        alias: Some(ui_ref.ui_handle.clone()),
                     })
                     .collect(),
             });
 
             ui_bundles.push(UiBundleConfiguration {
-                id: ui.id.clone(),
+                id: ui.id(),
                 root_dir: ui.uri.clone().split_off(6), // splitting off "dir://"
                 hash: None,
             });
 
             ui_interfaces.push(UiInterfaceConfiguration {
-                id: ui.id.clone(),
-                bundle: ui.id.clone(),
+                id: ui.id(),
+                bundle: ui.id(),
                 port: 8080,
-                dna_interface: Some(ui.id.clone()),
+                dna_interface: Some(ui.id()),
                 reroute_to_root: true,
                 bind_address: String::from("127.0.0.1"),
             });

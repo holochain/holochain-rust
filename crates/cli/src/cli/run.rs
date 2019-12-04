@@ -200,6 +200,7 @@ pub fn run(
 
     conductor.start_all_interfaces();
     conductor.start_all_instances()?;
+    conductor.start_all_static_servers().map_err(|e| failure::err_msg(e))?;
 
     println!(
         "Holochain development conductor started. Running {} server on port {}",

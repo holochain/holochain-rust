@@ -1,4 +1,7 @@
-use std::{env, path::Path, process::Command};
+use std::{env, path::Path, process::Command, time::SystemTime};
+extern crate chrono;
+use chrono::{offset::Utc, DateTime};
+
 /// Detect details about the HDK Version being built, to make available as hdk::HDK_VERSION variable
 /// - Use supplied "HDK_VERSION" or "CARGO_PKG_VERSION" environment variables
 ///   - Should match the nearest upstream Git "tag", eg. "v0.0.32-alpha2-3-g3f9f2f5e0", but
@@ -56,4 +59,11 @@ fn main() {
         let git_branch = String::from_utf8(output.stdout).unwrap();
         println!("cargo:rustc-env=GIT_BRANCH={}", git_branch);
     }
+
+    let system_time = SystemTime::now();
+    let datetime: DateTime<Utc> = system_time.into();
+    println!(
+        "cargo:rustc-env=BUILD_DATE={}",
+        datetime.format("%d/%m/%Y %T")
+    );
 }

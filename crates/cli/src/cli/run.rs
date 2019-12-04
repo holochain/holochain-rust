@@ -18,6 +18,7 @@ use std::{collections::HashMap, fs, path::PathBuf};
 pub struct HappBundle {
     pub instances: Vec<HappBundleInstance>,
     pub bridges: Vec<Bridge>,
+    #[serde(rename="UIs")]
     pub uis: Vec<HappBundleUi>,
 }
 
@@ -27,7 +28,7 @@ pub struct HappBundleInstance {
     pub id: String,
     pub dna_hash: String,
     pub uri: String,
-    pub dna_properties: HashMap<String, String>,
+    pub dna_properties: Option<HashMap<String, String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,7 +36,7 @@ pub struct HappBundleUi {
     pub name: String,
     pub id: String,
     pub uri: String,
-    pub intance_references: Vec<HappBundleInstanceReference>,
+    pub instance_references: Vec<HappBundleInstanceReference>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -56,7 +57,7 @@ impl HappBundle {
         }
 
         for ui in self.uis.iter() {
-            for reference in ui.intance_references.iter() {
+            for reference in ui.instance_references.iter() {
                 self.instances
                     .iter()
                     .find(|i| i.id == reference.instance_id)
@@ -125,7 +126,7 @@ impl From<HappBundle> for Configuration {
                 driver: InterfaceDriver::Websocket { port: 8000 },
                 admin: false,
                 instances: ui
-                    .intance_references
+                    .instance_references
                     .into_iter()
                     .map(|ui_ref| InstanceReferenceConfiguration {
                         id: ui_ref.instance_id,

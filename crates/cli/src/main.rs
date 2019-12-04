@@ -202,7 +202,7 @@ fn run() -> HolochainResult<()> {
             interface,
             logging,
         } => {
-            let bundle_path = project_path.join("bundle.tom");
+            let bundle_path = project_path.join("bundle.toml");
             if bundle_path.exists() {
                 let mut f = File::open(bundle_path)
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;

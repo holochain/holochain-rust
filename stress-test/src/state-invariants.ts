@@ -7,9 +7,10 @@ const delay = ms => new Promise(r => setTimeout(r, ms))
 
 module.exports = (scenario, N, M) => {
 
-  scenario.only('all instances hold the same aspects after startup (smooth)', async (s, t) => {
+  scenario('all instances hold the same aspects after startup (smooth)', async (s, t) => {
     const players = R.values(await s.players(configBatchSimple(N, M), true))
 
+    // TODO: we shouldn't even need this delay
     await delay(10000)
     
     const batch = new Batch(players).iteration('series')

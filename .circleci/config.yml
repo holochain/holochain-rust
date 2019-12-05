@@ -307,9 +307,8 @@ workflows:
    # - app-spec-tests-memory
    # - app-spec-tests-websocket
    # @todo reimplement proc tests properly
-   # i.e. don't copy and paste app spec and expec it to work with stale state
+   # i.e. don't copy and paste app spec and expect it to work with stale state
    # - app-spec-proc-tests
-   - cluster-tests
    - cli-tests
    - wasm-conductor-tests
    # @todo this was flakey

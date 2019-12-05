@@ -33,26 +33,192 @@ use lib3h_protocol::{
     types::SpaceHash,
     uri::Lib3hUri,
 };
+use holochain_locksmith::Mutex;
+use url2::prelude::*;
 
 use websocket::streams::{StreamEvent, StreamManager};
 pub use wire_message::{WireError, WireMessage};
 
+use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
+    sync::Arc,
 };
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+
+type JobContinue = bool;
+trait Job: 'static + Send {
+    fn run(&mut self) -> JobContinue;
+}
+
+struct Tick {
+    next_tick: std::time::Instant,
+}
+
+impl Tick {
+    fn new() -> Self {
+        Self {
+            next_tick: std::time::Instant::now().checked_add(std::time::Duration::from_secs(1)).expect("failed to add 1 second"),
+        }
+    }
+}
+
+impl Job for Arc<Mutex<Tick>> {
+    fn run(&mut self) -> JobContinue {
+        let now = std::time::Instant::now();
+        let mut me = self.lock().expect("failed to lock mutex");
+        if now >= me.next_tick {
+            me.next_tick = now.checked_add(std::time::Duration::from_secs(1)).expect("failed to add 1 second");
+            println!("TICK");
+        }
+        true
+    }
+}
+
+struct Pool {
+    job_cont: Arc<Mutex<bool>>,
+    job_threads: Vec<std::thread::JoinHandle<()>>,
+    job_send: crossbeam_channel::Sender<Box<dyn Job>>,
+}
+
+impl Pool {
+    fn new() -> Self {
+        let (job_send, job_recv) = crossbeam_channel::unbounded::<Box<dyn Job>>();
+        let job_cont = Arc::new(Mutex::new(true));
+        let mut job_threads = Vec::new();
+        for _ in 0..num_cpus::get() {
+            let cont = job_cont.clone();
+            let send = job_send.clone();
+            let recv = job_recv.clone();
+            job_threads.push(std::thread::spawn(move || {
+                loop {
+                    {
+                        if !*cont.lock().expect("failed to obtain mutex lock") {
+                            return;
+                        }
+                    }
+
+                    if let Ok(mut job) = recv.try_recv() {
+                        if job.run() {
+                            send.send(job).expect("failed to send job");
+                        }
+                    }
+
+                    std::thread::yield_now();
+                }
+            }));
+        }
+        Self {
+            job_cont,
+            job_threads,
+            job_send,
+        }
+    }
+
+    fn push_job(&self, job: Box<dyn Job>) {
+        self.job_send.send(job).expect("failed to send job");
+    }
+}
+
+impl Drop for Pool {
+    fn drop(&mut self) {
+        *self.job_cont.lock().expect("failed to obtain mutex lock") = false;
+        for thread in self.job_threads.drain(..) {
+            // ignore poisoned threads... we're shutting down anyways
+            let _ = thread.join();
+        }
+    }
+}
+
+type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
+type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
+
+struct ListenJob {
+    listen: TcpWssServer,
+    wss_send: crossbeam_channel::Sender<TcpWss>,
+}
+
+impl ListenJob {
+    fn run(&mut self) -> JobContinue {
+        match self.listen.accept() {
+            Ok(wss) => {
+                self.wss_send.send(wss).expect("failed to send");
+            },
+            Err(e) if e.would_block() => (),
+            Err(e) => {
+                error!("LISTEN ACCEPT FAIL: {:?}", e);
+                //return false;
+                // uhh... this is fatal for now
+                panic!(e);
+            }
+        }
+        true
+    }
+}
+
+impl Job for Arc<Mutex<ListenJob>> {
+    fn run(&mut self) -> JobContinue {
+        self.lock().expect("failed to obtain mutex lock").run()
+    }
+}
+
+struct ConnectionJob {
+    wss: TcpWss,
+    msg_send: crossbeam_channel::Sender<(Url2, WsFrame)>,
+    frame: Option<WsFrame>,
+}
+
+impl ConnectionJob {
+    fn new(wss: TcpWss, msg_send: crossbeam_channel::Sender<(Url2, WsFrame)>) -> Self {
+        Self {
+            wss,
+            msg_send,
+            frame: None,
+        }
+    }
+
+    fn run(&mut self) -> JobContinue {
+        if self.frame.is_none() {
+            self.frame = Some(WsFrame::default());
+        }
+        match self.wss.read(self.frame.as_mut().unwrap()) {
+            Ok(_) => {
+                // TODO - local_addr
+                let url = Url2::default();
+                self.msg_send.send((url, self.frame.take().unwrap()))
+                    .expect("failed to send");
+            }
+            Err(e) if e.would_block() => (),
+            Err(e) => {
+                error!("WEBSOCKET ERROR: {:?}", e);
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl Job for Arc<Mutex<ConnectionJob>> {
+    fn run(&mut self) -> JobContinue {
+        self.lock().expect("failed to obtain mutex lock").run()
+    }
+}
 
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
+    pool: Pool,
+    wss_recv: crossbeam_channel::Receiver<TcpWss>,
+    msg_send: crossbeam_channel::Sender<(Url2, WsFrame)>,
+    msg_recv: crossbeam_channel::Receiver<(Url2, WsFrame)>,
     stream_manager: StreamManager<std::net::TcpStream>,
     num_ticks: u64,
     /// when should we recalculated the rrdht_arc_radius
@@ -67,16 +233,28 @@ impl Sim2h {
         stream_manager: StreamManager<std::net::TcpStream>,
         bind_spec: Lib3hUri,
     ) -> Self {
+        let pool = Pool::new();
+        pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
+
+        let (wss_send, wss_recv) = crossbeam_channel::unbounded();
+        let (msg_send, msg_recv) = crossbeam_channel::unbounded();
+
         let mut sim2h = Sim2h {
             crypto,
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
+            pool,
+            wss_recv,
+            msg_send,
+            msg_recv,
             stream_manager,
             num_ticks: 0,
             rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
         };
+
+        sim2h.priv_bind_listening_socket(wss_send);
 
         debug!("Trying to bind to {}...", bind_spec);
         let url: url::Url = bind_spec.clone().into();
@@ -89,6 +267,32 @@ impl Sim2h {
         );
 
         sim2h
+    }
+
+    fn priv_bind_listening_socket(&mut self, wss_send: crossbeam_channel::Sender<TcpWss>) {
+        let config = TcpBindConfig::default();
+        let config = TlsBindConfig::new(config).dev_certificate();
+        let config = WssBindConfig::new(config);
+        let listen: TcpWssServer = InStreamListenerWss::bind(&url2!("wss://127.0.0.1:0"), config).unwrap();
+        println!("WSS BOUND TO: {}", listen.binding());
+        self.pool.push_job(Box::new(Arc::new(Mutex::new(ListenJob {
+            listen,
+            wss_send,
+        }))));
+    }
+
+    fn priv_check_incoming_connections(&mut self) {
+        if let Ok(wss) = self.wss_recv.try_recv() {
+            self.pool.push_job(Box::new(Arc::new(Mutex::new(ConnectionJob::new(
+                wss,
+                self.msg_send.clone(),
+            )))));
+        }
+    }
+
+    fn priv_check_incoming_messages(&mut self) {
+        if let Ok((_url, _frame)) = self.msg_recv.try_recv() {
+        }
     }
 
     /// recalculate arc radius for our connections
@@ -313,6 +517,9 @@ impl Sim2h {
             debug!(".");
             self.num_ticks = 0;
         }
+
+        self.priv_check_incoming_connections();
+        self.priv_check_incoming_messages();
 
         if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
             self.rrdht_arc_radius_recalc = std::time::Instant::now()

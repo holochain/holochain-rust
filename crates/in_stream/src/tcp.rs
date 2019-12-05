@@ -66,9 +66,10 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
     }
 
     fn accept(&mut self) -> Result<<Self as InStreamListener<&mut [u8], &[u8]>>::Stream> {
-        let (stream, _addr) = self.0.accept()?;
+        let (stream, addr) = self.0.accept()?;
         stream.set_nonblocking(true)?;
-        InStreamTcp::priv_new(stream, None)
+        let remote_url = url2!("{}://{}:{}", SCHEME, addr.ip(), addr.port());
+        InStreamTcp::priv_new(stream, remote_url, None)
     }
 }
 
@@ -108,6 +109,7 @@ struct TcpConnectingData {
 pub struct InStreamTcp {
     #[shrinkwrap(main_field)]
     pub stream: std::net::TcpStream,
+    url: Url2,
     connecting: Option<TcpConnectingData>,
     write_buf: Vec<u8>,
 }
@@ -119,10 +121,12 @@ impl InStreamTcp {
 
     fn priv_new(
         stream: std::net::TcpStream,
+        url: Url2,
         connecting: Option<TcpConnectingData>,
     ) -> Result<Self> {
         Ok(Self {
             stream,
+            url,
             connecting,
             write_buf: Vec::new(),
         })
@@ -172,6 +176,7 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
         match stream.connect(addr) {
             Err(_) => Self::priv_new(
                 stream,
+                url.clone(),
                 Some(TcpConnectingData {
                     addr,
                     connect_timeout: match config.connect_timeout_ms {
@@ -184,8 +189,12 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
                     },
                 }),
             ),
-            Ok(_) => Self::priv_new(stream, None),
+            Ok(_) => Self::priv_new(stream, url.clone(), None),
         }
+    }
+
+    fn remote_url(&self) -> Url2 {
+        self.url.clone()
     }
 
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {
@@ -298,6 +307,8 @@ mod tests {
             let mut cli = InStreamTcp::connect(&binding, TcpConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
+
+            assert_eq!(binding.as_str(), cli.remote_url().as_str());
 
             cli.write(b"hello from client").unwrap();
             cli.flush().unwrap();

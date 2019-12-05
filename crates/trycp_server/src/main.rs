@@ -82,22 +82,25 @@ struct TrycpServer {
     port_range: PortRange,
 }
 
-fn make_conductor_dir() -> PathBuf {
+fn make_conductor_dir() -> Result<PathBuf, String> {
     let conductor_path = PathBuf::new().join(TRYCP_DIRNAME).join(CONDUCTORS_DIRNAME);
-    std::fs::create_dir_all(conductor_path.clone()).expect("can create conductors dir");
-    let dir = Builder::new().tempdir_in(conductor_path).expect("should create conductor tmp dir").into_path();
-    dir
+    std::fs::create_dir_all(conductor_path.clone()).map_err(|err| format!("{:?}",err))?;
+    let dir = Builder::new().tempdir_in(conductor_path).map_err(|err| format!("{:?}",err))?.into_path();
+    Ok(dir)
 }
+
+fn make_dna_dir() -> Result<PathBuf, String> {
+    let dna_path = PathBuf::new().join(TRYCP_DIRNAME).join(DNAS_DIRNAME);
+    std::fs::create_dir_all(dna_path.clone()).map_err(|err| format!("{:?}",err))?;
+    Ok(dna_path)
+}
+
 
 impl TrycpServer {
     pub fn new(port_range: PortRange) -> Self {
-        let root_path = PathBuf::new().join(TRYCP_DIRNAME);
-        std::fs::create_dir_all(root_path.clone()).expect("can create trycp dir");
-        let dna_dir = root_path.join(DNAS_DIRNAME);
-        std::fs::create_dir_all(dna_dir.clone()).expect("can create dna dir");
         TrycpServer {
-            dir: make_conductor_dir(),
-            dna_dir,
+            dir: make_conductor_dir().expect("should create conductor dir"),
+            dna_dir: make_dna_dir().expect("should create dna dir"),
             next_port: port_range.0,
             port_range,
         }
@@ -117,8 +120,11 @@ impl TrycpServer {
     }
 
     pub fn reset(&mut self) {
-        self.dir = make_conductor_dir();
         self.next_port = self.port_range.0;
+        match make_conductor_dir() {
+            Err(err) => println!("reset failed creating conductor dir: {:?}",err),
+            Ok(dir) => self.dir = dir,
+        }
     }
 }
 

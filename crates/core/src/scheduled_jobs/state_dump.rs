@@ -29,7 +29,7 @@ Prev. address: {:?}
 }
 
 fn address_to_content_string(address: &Address, context: Arc<Context>) -> String {
-    let maybe_content = address_to_content_and_type(address, context.clone());
+    let maybe_content = address_to_content_and_type(address, context);
     maybe_content
         .map(|(content_type, content)| {
             format!("* [{}] {}: {}", content_type, address.to_string(), content)

@@ -130,5 +130,4 @@ mod tests {
         assert_eq!("sim2h_worker.tick.latency", metric.name);
         assert_eq!(123.0, metric.value);
     }
-
 }

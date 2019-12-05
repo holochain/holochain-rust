@@ -23,7 +23,7 @@ pub async fn validate_link_entry(
     validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
-    let address = entry.address().clone();
+    let address = entry.address();
     let link = match entry.clone() {
         Entry::LinkAdd(link_add) => link_add.clone(),
         Entry::LinkRemove((link_remove, _)) => link_remove,

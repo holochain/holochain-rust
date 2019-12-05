@@ -45,5 +45,4 @@ pub mod tests {
             }
         }
     }
-
 }

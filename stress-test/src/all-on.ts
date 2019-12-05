@@ -12,7 +12,7 @@ module.exports = (scenario, N, M) => {
 
     // Make every instance of every conductor commit an entry
 
-    const commitResults = await batch.mapInstances(instance =>
+    const commitResults = await batch.mapInstances<any>(instance =>
       instance.call('main', 'commit_entry', { content: trace(`entry-${instance.player.name}-${instance.id}`) })
     )
     const hashes = commitResults.map(x => x.Ok)
@@ -41,7 +41,7 @@ module.exports = (scenario, N, M) => {
 
     // Make each other instance getLinks on the base hash
 
-    const getLinksResults = await batch.mapInstances(instance => instance.call('main', 'get_links', { base: baseHash }))
+    const getLinksResults = await batch.mapInstances<any>(instance => instance.call('main', 'get_links', { base: baseHash }))
 
     // All getLinks results contain the full set
     t.deepEqual(getLinksResults.map(r => r.Ok.links.length), R.repeat(N * M, N * M))
@@ -51,7 +51,7 @@ module.exports = (scenario, N, M) => {
     const players = R.values(await s.players(configBatchSimple(N, M), true))
     const batch = new Batch(players).iteration('parallel')
 
-    const commitResults = await batch.mapInstances(instance =>
+    const commitResults = await batch.mapInstances<any>(instance =>
       instance.call('main', 'commit_entry', { content: trace(`entry-${instance.player.name}-${instance.id}`) })
     )
     const hashes = commitResults.map(x => x.Ok)
@@ -74,7 +74,7 @@ module.exports = (scenario, N, M) => {
 
     await s.consistency()
 
-    const getLinksResults = await batch.mapInstances(instance => instance.call('main', 'get_links', { base: baseHash }))
+    const getLinksResults = await batch.mapInstances<any>(instance => instance.call('main', 'get_links', { base: baseHash }))
 
     // All getLinks results contain the full set
     t.deepEqual(getLinksResults.map(r => r.Ok.links.length), R.repeat(N * M, N * M))

@@ -2,7 +2,7 @@ import * as R from 'ramda'
 import { Config } from '@holochain/tryorama'
 
 
-export const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim1h'
+export const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim2h'
 
 const logger = {
   type: 'debug',

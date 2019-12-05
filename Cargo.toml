@@ -12,6 +12,7 @@ members = [
   "crates/dpki",
   "crates/hdk_v2",
   "crates/hdk",
+  "crates/in_stream",
   "crates/locksmith",
   "crates/net",
   "crates/stress",

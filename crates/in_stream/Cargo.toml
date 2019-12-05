@@ -1,0 +1,26 @@
+[package]
+name = "in_stream"
+version = "0.0.40-alpha1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+description = "trait system for facilitating non-blocking stream chaining with handshaking"
+keywords = ["stream", "socket", "tcp", "websocket", "tls"]
+categories = ["network-programming"]
+license = "Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/in_stream"
+repository = "https://github.com/holochain/holochain-rust"
+
+[dependencies]
+crossbeam-channel = "0.3"
+env_logger = "0.6"
+lazy_static = "=1.2.0"
+log = "0.4"
+nanoid = "0.2"
+native-tls = "0.2"
+net2 = "0.2"
+openssl = "0.10"
+parking_lot = "0.9"
+shrinkwraprs = "0.2"
+tungstenite = "0.9"
+url2 = "0.0.4"

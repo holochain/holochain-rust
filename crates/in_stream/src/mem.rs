@@ -378,9 +378,7 @@ mod tests {
             let mut srv = loop {
                 match listener.accept() {
                     Ok(srv) => break srv,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }
@@ -394,9 +392,7 @@ mod tests {
             loop {
                 match srv.read_to_string(&mut res) {
                     Ok(_) => break,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }
@@ -419,9 +415,7 @@ mod tests {
             loop {
                 match cli.read_to_string(&mut res) {
                     Ok(_) => break,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }

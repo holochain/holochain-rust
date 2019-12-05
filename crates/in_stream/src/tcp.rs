@@ -229,6 +229,7 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
     }
 
     fn flush(&mut self) -> Result<()> {
+        // TODO - flush config with potential timeout?
         loop {
             self.priv_process()?;
             if self.connecting.is_none() {
@@ -238,7 +239,7 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
             if self.write_buf.is_empty() {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::yield_now();
         }
     }
 }
@@ -266,7 +267,7 @@ mod tests {
                 match listener.accept() {
                     Ok(srv) => break srv,
                     Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
+                        std::thread::yield_now();
                     }
                     Err(e) => panic!("{:?}", e),
                 }
@@ -282,7 +283,7 @@ mod tests {
                 match srv.read_to_string(&mut res) {
                     Ok(_) => break,
                     Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
+                        std::thread::yield_now();
                     }
                     Err(e) => panic!("{:?}", e),
                 }
@@ -307,7 +308,7 @@ mod tests {
                 match cli.read_to_string(&mut res) {
                     Ok(_) => break,
                     Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
+                        std::thread::yield_now();
                     }
                     Err(e) => panic!("{:?}", e),
                 }

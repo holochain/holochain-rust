@@ -43,3 +43,6 @@ holochain_logging = "=0.0.4"
 [dev-dependencies]
 test_utils = { version = "=0.0.40-alpha1", path = "../../test_utils"}
 maplit = "=1.0.2"
+
+[build-dependencies]
+chrono = "=0.4.6"

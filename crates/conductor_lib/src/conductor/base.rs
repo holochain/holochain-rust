@@ -49,6 +49,7 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
+    port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
@@ -61,6 +62,8 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
+
+pub const MAX_DYNAMIC_PORT: u16 = 50000;
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -1424,6 +1427,21 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
     }
 }
 
+fn with_port_heuristic<T, F: FnOnce() -> T>(
+    wanted_port: u16,
+    find_free_port: bool,
+    f: F,
+) -> Result<T, HolochainError> {
+    let port = if find_free_port {
+        get_free_port(wanted_port..MAX_DYNAMIC_PORT).ok_or_else(|| {
+            HolochainError::InitializationFailed(String::from("Couldn't find free port"))
+        })?
+    } else {
+        wanted_port
+    };
+    Ok(try_with_port(port, f))
+}
+
 fn run_interface(
     interface_config: &InterfaceConfiguration,
     handler: IoHandler,
@@ -1431,14 +1449,28 @@ fn run_interface(
 ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
-        InterfaceDriver::Websocket { port } => try_with_port(port, || {
-            WebsocketInterface::new(port).run(handler, kill_switch)
-        }),
-        InterfaceDriver::Http { port } => {
-            try_with_port(port, || HttpInterface::new(port).run(handler, kill_switch))
-        }
+        InterfaceDriver::Websocket { port } => with_port_heuristic(
+            port,
+            interface_config.choose_free_port.unwrap_or(false),
+            || {
+                let r = WebsocketInterface::new(port).run(handler, kill_switch);
+                println!("Bound interface {} to port: {}", interface_config.id, port);
+                r
+            },
+        ),
+        InterfaceDriver::Http { port } => with_port_heuristic(
+            port,
+            interface_config.choose_free_port.unwrap_or(false),
+            || {
+                let r = HttpInterface::new(port).run(handler, kill_switch);
+                println!("Bound interface {} to port: {}", interface_config.id, port);
+                r
+            },
+        ),
+
         _ => unimplemented!(),
     }
+    .expect("Couldn't spawn conductor interface!")
 }
 
 #[derive(Clone, Debug)]

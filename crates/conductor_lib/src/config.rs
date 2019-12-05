@@ -739,6 +739,7 @@ pub struct InterfaceConfiguration {
     pub admin: bool,
     #[serde(default)]
     pub instances: Vec<InstanceReferenceConfiguration>,
+    pub choose_free_port: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]

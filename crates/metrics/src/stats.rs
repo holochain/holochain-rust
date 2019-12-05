@@ -5,8 +5,10 @@ use num_traits::float::Float;
 use stats::Commute;
 use std::{
     collections::HashMap,
+    error::Error,
     fmt,
     fmt::{Display, Formatter},
+    io,
     iter::FromIterator,
 };
 
@@ -67,6 +69,25 @@ impl StatsRecord {
             stddev: desc.stddev(),
             variance: desc.variance(),
         }
+    }
+
+    pub fn from_reader(
+        read: &mut dyn std::io::Read,
+    ) -> Result<HashMap<String, Box<dyn DescriptiveStats>>, Box<dyn Error>> {
+        let mut reader = csv::Reader::from_reader(read);
+
+        let mut stats_by_metric_name: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::new();
+        for record in reader.deserialize() {
+            let stat: StatsRecord = record?;
+            let stat_name = stat.name.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+                Err(Box::new(io::Error::new(
+                    io::ErrorKind::Other,
+                    "No stat name in stat record",
+                )))
+            })?;
+            stats_by_metric_name.insert(stat_name.to_string(), Box::new(stat));
+        }
+        Ok(stats_by_metric_name)
     }
 }
 
@@ -220,7 +241,25 @@ pub trait StatCheck {
 }
 
 #[derive(Clone, Debug)]
-pub struct LessThanStatCheck;
+pub struct LessThanStatCheck {
+    percent_deviation_allowed: f64,
+}
+
+impl LessThanStatCheck {
+    pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
+        let e = expected.into();
+        let a = actual.into();
+        f64::abs(e - a) / e
+    }
+}
+
+impl Default for LessThanStatCheck {
+    fn default() -> Self {
+        LessThanStatCheck {
+            percent_deviation_allowed: 0.05,
+        }
+    }
+}
 
 impl StatCheck for LessThanStatCheck {
     fn check(
@@ -425,9 +464,17 @@ mod tests {
             .into_iter(),
         );
 
-        let actual = format!("{}", LessThanStatCheck.check_all(expected, actual));
+        let actual = format!(
+            "{}",
+            LessThanStatCheck::default().check_all(expected, actual)
+        );
         let expected = "Checking latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
 
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn percent_diff_works() {
+        assert_eq!(0.50, LessThanStatCheck::percent_diff(10.0, 15.0));
     }
 }

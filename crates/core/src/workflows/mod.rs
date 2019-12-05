@@ -54,7 +54,7 @@ async fn try_make_local_validation_package(
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),
         CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
             "ValidationPackage callback not implemented for {:?} ({})",
-            entry.entry_type().clone(),
+            entry.entry_type(),
             reason
         ))),
         _ => unreachable!(),
@@ -77,7 +77,7 @@ async fn try_make_local_validation_package(
                 // We authored this entry, so lets build the validation package here and now:
                 build_validation_package(
                     &entry_with_header.entry,
-                    context.clone(),
+                    context,
                     entry_with_header.header.provenances(),
                 )
             } else {

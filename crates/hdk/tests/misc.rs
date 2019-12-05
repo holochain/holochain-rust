@@ -459,7 +459,10 @@ fn show_env() {
     let dna = hc.context().unwrap().get_dna().unwrap();
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
-    let format   = format!(r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmaT1nbEQn8KsMJ32nvBZUHHEtzrP32duzwPr5Es7H5zEW","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,dna_address);
+    let format = format!(
+        r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmaT1nbEQn8KsMJ32nvBZUHHEtzrP32duzwPr5Es7H5zEW","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,
+        dna_address
+    );
     let json_result = Ok(JsonString::from_json(&format));
 
     let result = make_test_call(&mut hc, "show_env", r#"{}"#);
@@ -514,7 +517,7 @@ fn test_signal() {
                 recieved_signal
                     == &UserSignal {
                         name: String::from("test-signal"),
-                        arguments: JsonString::from(r#"{"message":"test message"}"#)
+                        arguments: JsonString::from(r#"{"message":"test message"}"#),
                     }
             }
             _ => false,

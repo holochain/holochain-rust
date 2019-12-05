@@ -56,9 +56,17 @@ mod test_super {
             ZomeApiFunction::Crypto.as_str(),
             r#"{ "payload": "this is data", "method":"Sign" }"#.as_bytes().to_vec(),
         );
-        assert_eq!(JsonString::from_json(r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#), call_result,);
+        assert_eq!(
+            JsonString::from_json(
+                r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#
+            ),
+            call_result,
+        );
 
-        let args = format!(r#"{{ "provenance": ["{}","xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA=="], "payload": "this is data" }}"#,context.agent_id.address());
+        let args = format!(
+            r#"{{ "provenance": ["{}","xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA=="], "payload": "this is data" }}"#,
+            context.agent_id.address()
+        );
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::VerifySignature.as_str(),
             args.as_bytes().to_vec(),

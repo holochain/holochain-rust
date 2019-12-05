@@ -62,7 +62,7 @@ impl ConductorUiAdmin for Conductor {
         };
 
         let mut new_config = self.config.clone();
-        new_config.ui_bundles.push(new_bundle.clone());
+        new_config.ui_bundles.push(new_bundle);
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;

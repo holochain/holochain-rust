@@ -1,4 +1,7 @@
-use crate::network::entry_with_header::EntryWithHeader;
+use crate::{
+    entry::validation_dependencies::ValidationDependencies,
+    network::entry_with_header::EntryWithHeader,
+};
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
@@ -7,7 +10,12 @@ use holochain_core_types::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom, fmt, sync::Arc};
+use std::{
+    convert::TryFrom,
+    fmt,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 pub type PendingValidation = Arc<PendingValidationStruct>;
 
@@ -70,9 +78,10 @@ pub struct PendingValidationStruct {
 
 impl PendingValidationStruct {
     pub fn new(entry_with_header: EntryWithHeader, workflow: ValidatingWorkflow) -> Self {
+        let dependencies = entry_with_header.get_validation_dependencies();
         Self {
             entry_with_header,
-            dependencies: Vec::new(),
+            dependencies,
             workflow,
             uuid: ProcessUniqueId::new(),
         }
@@ -149,11 +158,44 @@ impl From<PendingValidationStruct> for EntryAspect {
             }
             ValidatingWorkflow::UpdateEntry => EntryAspect::Update(
                 pending.entry_with_header.entry.clone(),
-                pending.entry_with_header.header.clone(),
+                pending.entry_with_header.header,
             ),
             ValidatingWorkflow::RemoveEntry => {
                 EntryAspect::Deletion(pending.entry_with_header.header.clone())
             }
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ValidationTimeout {
+    pub time_of_dispatch: SystemTime,
+    pub delay: Duration,
+}
+
+impl ValidationTimeout {
+    pub fn new(time_of_dispatch: SystemTime, delay: Duration) -> Self {
+        Self {
+            time_of_dispatch,
+            delay,
+        }
+    }
+}
+
+impl From<(SystemTime, Duration)> for ValidationTimeout {
+    fn from(tuple: (SystemTime, Duration)) -> Self {
+        Self::new(tuple.0, tuple.1)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct PendingValidationWithTimeout {
+    pub pending: PendingValidation,
+    pub timeout: Option<ValidationTimeout>,
+}
+
+impl PendingValidationWithTimeout {
+    pub fn new(pending: PendingValidation, timeout: Option<ValidationTimeout>) -> Self {
+        Self { pending, timeout }
     }
 }

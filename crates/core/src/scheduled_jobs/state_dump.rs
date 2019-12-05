@@ -1,5 +1,6 @@
 use crate::{
     context::Context,
+    dht::pending_validations::PendingValidationWithTimeout,
     state_dump::{address_to_content_and_type, StateDump},
 };
 use holochain_core_types::chain_header::ChainHeader;
@@ -28,7 +29,7 @@ Prev. address: {:?}
 }
 
 fn address_to_content_string(address: &Address, context: Arc<Context>) -> String {
-    let maybe_content = address_to_content_and_type(address, context.clone());
+    let maybe_content = address_to_content_and_type(address, context);
     maybe_content
         .map(|(content_type, content)| {
             format!("* [{}] {}: {}", content_type, address.to_string(), content)
@@ -48,13 +49,13 @@ pub fn state_dump(context: Arc<Context>) {
     let queued_holding_workflows_strings = dump
         .queued_holding_workflows
         .iter()
-        .map(|(pending_validation, _maybe_delay)| {
+        .map(|PendingValidationWithTimeout { pending, .. }| {
             format!(
                 "<{}> [{}] {}: {}",
-                pending_validation.workflow.to_string(),
-                pending_validation.entry_with_header.header.entry_type(),
-                pending_validation.entry_with_header.entry.address(),
-                pending_validation.entry_with_header.entry.content(),
+                pending.workflow.to_string(),
+                pending.entry_with_header.header.entry_type(),
+                pending.entry_with_header.entry.address(),
+                pending.entry_with_header.entry.content(),
             )
         })
         .collect::<Vec<String>>();

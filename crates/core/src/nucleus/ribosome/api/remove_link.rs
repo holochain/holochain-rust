@@ -72,7 +72,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         options: GetLinksOptions::default(),
     };
     let config = GetLinksQueryConfiguration { headers: false };
-    let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
+    let method = QueryMethod::Link(get_links_args, GetLinksNetworkQuery::Links(config));
     let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
     if response_result.is_err() {
         log_error!("zome : Could not get links for remove_link method.");

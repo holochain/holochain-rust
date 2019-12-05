@@ -868,7 +868,7 @@ pub mod tests {
 
             Ok(())
         })
-        .collect::<Result<(()), HolochainError>>()
+        .collect::<Result<(), HolochainError>>()
         .map_err(|e| panic!("Unexpected failure of checked Period::try_from: {:?}", e))
         .unwrap();
     }
@@ -1077,7 +1077,7 @@ pub mod tests {
                     Ok(())
                 })
         })
-        .collect::<Result<(()), HolochainError>>()
+        .collect::<Result<(), HolochainError>>()
         .map_err(|e| {
             panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
@@ -1103,7 +1103,7 @@ pub mod tests {
             Iso8601::try_from(*ts)
                 .and_then(|iso| Ok(assert_eq!(iso.to_string(), "2018-01-01T03:23:00+00:00")))
         })
-        .collect::<Result<(()), HolochainError>>()
+        .collect::<Result<(), HolochainError>>()
         .map_err(|e| {
             panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
@@ -1132,7 +1132,7 @@ pub mod tests {
                 "2015-02-18T23:59:60.234567-05:00"
             ))
         })
-        .collect::<Result<(()), HolochainError>>()
+        .collect::<Result<(), HolochainError>>()
         .map_err(|e| {
             panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
@@ -1157,7 +1157,7 @@ pub mod tests {
             ))),
             Err(_) => Ok(()),
         })
-        .collect::<Result<(()), HolochainError>>()
+        .collect::<Result<(), HolochainError>>()
         .map_err(|e| {
             panic!(
                 "Unexpected success of invalid checked DateTime<FixedOffset> try_from: {:?}",

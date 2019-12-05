@@ -330,7 +330,10 @@ mod tests {
         }
     }
 
-    fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(mut listener: InStreamListenerTls<SubL>, c: C) {
+    fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(
+        mut listener: InStreamListenerTls<SubL>,
+        c: C,
+    ) {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
@@ -359,8 +362,8 @@ mod tests {
 
             let mut cli: StdStreamAdapter<InStreamTls<SubL::StreamStd>> =
                 InStreamTls::connect(&binding, TlsConnectConfig::new(c))
-                .unwrap()
-                .into_std_stream();
+                    .unwrap()
+                    .into_std_stream();
 
             cli.write(b"hello from client").unwrap();
             cli.flush().unwrap();

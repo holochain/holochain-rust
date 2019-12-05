@@ -86,6 +86,9 @@ pub use mem::*;
 mod tcp;
 pub use tcp::*;
 
+mod ipc;
+pub use ipc::*;
+
 mod tls;
 pub use tls::*;
 

@@ -19,7 +19,7 @@ pub fn dispatch_queue_holding_workflow(
     let delay_with_now = delay.map(|d| (SystemTime::now(), d));
     let action_wrapper =
         ActionWrapper::new(Action::QueueHoldingWorkflow((pending, delay_with_now)));
-    dispatch_action(context.action_channel(), action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper);
 }
 
 pub async fn queue_holding_workflow(

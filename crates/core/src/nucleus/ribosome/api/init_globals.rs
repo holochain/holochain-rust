@@ -33,7 +33,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         public_token: Address::from(""),
         cap_request: runtime
             .zome_call_data()
-            .map(|zome_call_data| Some(zome_call_data.call.cap.clone()))
+            .map(|zome_call_data| Some(zome_call_data.call.cap))
             .unwrap_or_else(|_| None),
         properties: JsonString::from(dna.properties),
     };
@@ -65,8 +65,8 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
     // Update public_token
     let maybe_token = call_data.context.get_public_token();
-    if maybe_token.is_ok() {
-        globals.public_token = maybe_token.unwrap();
+    if let Ok(token) = maybe_token {
+        globals.public_token = token;
     }
 
     // Store it in wasm memory

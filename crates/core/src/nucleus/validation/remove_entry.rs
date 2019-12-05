@@ -20,7 +20,7 @@ pub async fn validate_remove_entry(
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set");
     let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
-    let deletion_address = deletion_entry.clone().deleted_entry_address();
+    let deletion_address = deletion_entry.deleted_entry_address().clone();
     let entry_to_delete = get_entry_from_dht(&context.clone(), &deletion_address)
         .map_err(|_| ValidationError::UnresolvedDependencies(vec![deletion_address.clone()]))?
         .ok_or_else(|| {

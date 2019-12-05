@@ -196,5 +196,4 @@ mod tests {
         assert_eq!(size_stats.min(), 1.0);
         assert_eq!(size_stats.max(), 100.0);
     }
-
 }

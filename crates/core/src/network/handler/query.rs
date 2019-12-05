@@ -35,7 +35,7 @@ fn get_links(
     let dht_store = context.state().unwrap().dht();
 
     let (get_link, error): (Vec<_>, Vec<_>) = dht_store
-        .get_links(base, link_type.clone(), tag, crud_status)
+        .get_links(base, link_type, tag, crud_status)
         .unwrap_or_default()
         .into_iter()
         //get tag
@@ -141,7 +141,7 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
                         .map(|entry_with_meta| {
                             if entry_with_meta.entry.entry_type().can_publish(&context) {
                                 Some(EntryWithMetaAndHeader {
-                                    entry_with_meta: entry_with_meta.clone(),
+                                    entry_with_meta: entry_with_meta,
                                     headers,
                                 })
                             } else {
@@ -186,8 +186,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
                 GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
             };
-            let respond_links =
-                NetworkQueryResult::Links(links_result, link_type.clone(), tag.clone());
+            let respond_links = NetworkQueryResult::Links(links_result, link_type, tag);
             ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
         }
         Ok(NetworkQuery::GetEntry) => {
@@ -236,9 +235,9 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                 payload,
                 QueryKey::Links(GetLinksKey {
                     base_address: query_result_data.entry_address.clone().into(),
-                    link_type: link_type.clone(),
-                    tag: tag.clone(),
-                    id: query_result_data.request_id.clone(),
+                    link_type: link_type,
+                    tag: tag,
+                    id: query_result_data.request_id,
                 }),
             )))
         }
@@ -252,5 +251,5 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
             return;
         }
     };
-    dispatch_action(context.action_channel(), action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper);
 }

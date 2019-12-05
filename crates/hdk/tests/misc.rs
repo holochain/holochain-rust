@@ -460,7 +460,7 @@ fn show_env() {
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
     let format = format!(
-        r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmaT1nbEQn8KsMJ32nvBZUHHEtzrP32duzwPr5Es7H5zEW","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,
+        r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmNa15k7quxkQFY18LHZFgBJjUKksBEeHdvKedbkc411jz","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,
         dna_address
     );
     let json_result = Ok(JsonString::from_json(&format));
@@ -489,19 +489,27 @@ fn show_env() {
 fn test_signing() {
     let (mut hc, _, _) = start_holochain_instance("test_signal", "alice");
 
+    println!("test_signing: payload unescaped");
     let payload_unescaped = json!({ "payload": r#"test ' payload"# }).to_string();
     let result = make_test_call(&mut hc, "sign_payload", &payload_unescaped);
-    println!("sign_payload( {:?} ) == {:?}", payload_unescaped, result);
-    assert_eq!(result, Ok(JsonString::from_json(
-        r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
-    )));
+    println!("1: sign_payload( {:?} ) == {:?}", payload_unescaped, result);
+    assert_eq!(
+        result,
+        Ok(JsonString::from_json(
+            r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
+        ))
+    );
 
+    println!("test_signing: payload escapes");
     let payload_escapes = json!({ "payload": r#"test " payload"# }).to_string();
     let result = make_test_call(&mut hc, "sign_payload", &payload_escapes);
     println!("sign_payload( {:?} ) == {:?}", payload_escapes, result);
-    assert_eq!(result, Ok(JsonString::from_json(
-        r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
-    )));
+    assert_eq!(
+        result,
+        Ok(JsonString::from_json(
+            r#"{"Ok":"Svgly2c/aO7ZXHnXsdF3SCs+Jq7MKzKKK5MgJ05xKaX0eCUnfS0prAR+FAjs9N406DBuuwUPAPNKsXXYZiu0DA=="}"#
+        ))
+    );
 }
 
 #[test]

@@ -84,17 +84,19 @@ struct TrycpServer {
 
 fn make_conductor_dir() -> Result<PathBuf, String> {
     let conductor_path = PathBuf::new().join(TRYCP_DIRNAME).join(CONDUCTORS_DIRNAME);
-    std::fs::create_dir_all(conductor_path.clone()).map_err(|err| format!("{:?}",err))?;
-    let dir = Builder::new().tempdir_in(conductor_path).map_err(|err| format!("{:?}",err))?.into_path();
+    std::fs::create_dir_all(conductor_path.clone()).map_err(|err| format!("{:?}", err))?;
+    let dir = Builder::new()
+        .tempdir_in(conductor_path)
+        .map_err(|err| format!("{:?}", err))?
+        .into_path();
     Ok(dir)
 }
 
 fn make_dna_dir() -> Result<PathBuf, String> {
     let dna_path = PathBuf::new().join(TRYCP_DIRNAME).join(DNAS_DIRNAME);
-    std::fs::create_dir_all(dna_path.clone()).map_err(|err| format!("{:?}",err))?;
+    std::fs::create_dir_all(dna_path.clone()).map_err(|err| format!("{:?}", err))?;
     Ok(dna_path)
 }
-
 
 impl TrycpServer {
     pub fn new(port_range: PortRange) -> Self {
@@ -122,7 +124,7 @@ impl TrycpServer {
     pub fn reset(&mut self) {
         self.next_port = self.port_range.0;
         match make_conductor_dir() {
-            Err(err) => println!("reset failed creating conductor dir: {:?}",err),
+            Err(err) => println!("reset failed creating conductor dir: {:?}", err),
             Ok(dir) => self.dir = dir,
         }
     }

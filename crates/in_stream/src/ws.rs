@@ -55,6 +55,8 @@ impl<Sub: InStreamListenerStd> InStreamListener<&mut WsFrame, WsFrame>
         let config = WssBindConfig::from_gen(config)?;
         validate_url_scheme(url)?;
         let mut url = url.clone();
+        // will only fail if scheme is mal-formed, but it's a constant
+        // so unwrap() is Ok
         url.set_scheme(Sub::StreamStd::URL_SCHEME).unwrap();
         let sub = Sub::raw_bind(&url, config.sub_bind_config)?;
         Ok(Self { sub })
@@ -318,7 +320,7 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
                     }
                 }
             }
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::yield_now();
         }
     }
 }
@@ -332,9 +334,7 @@ mod tests {
         loop {
             match s.read(&mut out) {
                 Ok(_) => return out,
-                Err(e) if e.would_block() => {
-                    std::thread::sleep(std::time::Duration::from_millis(1))
-                }
+                Err(e) if e.would_block() => std::thread::yield_now(),
                 Err(e) => panic!("{:?}", e),
             }
         }
@@ -353,9 +353,7 @@ mod tests {
             let mut srv = loop {
                 match listener.accept() {
                     Ok(srv) => break srv,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             };

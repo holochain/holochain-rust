@@ -98,5 +98,4 @@ pub mod test {
             describe_table(&log_context, &local_client, &table_name),
         );
     }
-
 }

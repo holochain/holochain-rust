@@ -303,7 +303,7 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
             if self.write_buf.is_empty() {
                 return Ok(());
             }
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::yield_now();
         }
     }
 }
@@ -321,9 +321,7 @@ mod tests {
         loop {
             match s.read(&mut buf) {
                 Ok(read) => out.extend_from_slice(&buf[..read]),
-                Err(e) if e.would_block() => {
-                    std::thread::sleep(std::time::Duration::from_millis(1))
-                }
+                Err(e) if e.would_block() => std::thread::yield_now(),
                 Err(e) => panic!("{:?}", e),
             }
             if out.len() >= c {
@@ -342,9 +340,7 @@ mod tests {
             let mut srv = loop {
                 match listener.accept_std() {
                     Ok(srv) => break srv,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }

@@ -12,7 +12,7 @@ pub fn hash_dna(
     let mut dna = Conductor::load_dna(dna_file_path)?;
     if let Some(properties) = properties {
         let mut map = if let serde_json::Value::Object(map) = dna.properties {
-            map.clone()
+            map
         } else {
             Map::new()
         };

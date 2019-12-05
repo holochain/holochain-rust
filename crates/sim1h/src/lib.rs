@@ -5,7 +5,6 @@ extern crate log;
 //extern crate detach;
 
 extern crate env_logger;
-extern crate futures;
 
 pub mod agent;
 pub mod aspect;

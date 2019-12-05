@@ -324,5 +324,4 @@ mod tests {
         let succeeded = sign_keys.verify(&mut message, &mut signature);
         assert!(!succeeded);
     }
-
 }

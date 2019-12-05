@@ -1,12 +1,8 @@
-#![feature(bind_by_move_pattern_guards)]
-
 //! Trait system for facilitating non-blocking stream chaining with handshaking
 //!
 //! # Example
 //!
 //! ```rust
-//! #![feature(bind_by_move_pattern_guards)]
-//!
 //! use url2::prelude::*;
 //! use in_stream::*;
 //!
@@ -29,9 +25,7 @@
 //!     let mut srv = loop {
 //!         match listener.accept() {
 //!             Ok(srv) => break srv,
-//!             Err(e) if e.would_block() => {
-//!                 std::thread::sleep(std::time::Duration::from_millis(1));
-//!             }
+//!             Err(e) if e.would_block() => std::thread::yield_now(),
 //!             Err(e) => panic!("{:?}", e),
 //!         }
 //!     };

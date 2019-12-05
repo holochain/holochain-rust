@@ -6,7 +6,7 @@ jobs:
  build:
   docker:
    - image: holochain/holochain-rust:latest
-  resource_class: large
+  resource_class: xlarge
   steps:
    - checkout
    - run:
@@ -261,7 +261,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build latest $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build latest $CIRCLE_BRANCH
    - run: ./docker/push latest $CIRCLE_BRANCH
 
  docker.build.sim2h_server:
@@ -269,7 +271,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build sim2h_server $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build sim2h_server $CIRCLE_BRANCH
    - run: ./docker/push sim2h_server $CIRCLE_BRANCH
 
  docker.build.trycp_server:
@@ -277,7 +281,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build trycp_server $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build trycp_server $CIRCLE_BRANCH
    - run: ./docker/push trycp_server $CIRCLE_BRANCH
 
  docker.build.minimal:
@@ -285,7 +291,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build minimal $CIRCLE_BRANCH
+   - run:
+      no_output_timout: 20m
+      command: ./docker/build minimal $CIRCLE_BRANCH
    - run: ./docker/push minimal $CIRCLE_BRANCH
 
 workflows:
@@ -312,7 +320,7 @@ workflows:
       filters:
        branches:
         only:
-         - 2019-11-22-path-for-docker
+         - 2019-12-04-docker-timeouts
          - develop
          - final-exam
          - assume-role

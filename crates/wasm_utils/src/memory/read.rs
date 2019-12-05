@@ -29,5 +29,4 @@ pub mod tests {
 
         assert_eq!(s, WasmAllocation::read_str_raw(ptr as *mut c_char),);
     }
-
 }

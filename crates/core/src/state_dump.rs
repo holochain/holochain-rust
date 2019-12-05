@@ -1,19 +1,14 @@
 use crate::{
     action::QueryKey,
     context::Context,
-    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidation},
+    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
     network::direct_message::DirectMessage,
     nucleus::{ZomeFnCall, ZomeFnCallState},
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use std::{
-    collections::VecDeque,
-    convert::TryInto,
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{collections::VecDeque, convert::TryInto, sync::Arc};
 
 #[derive(Serialize)]
 pub struct StateDump {
@@ -23,7 +18,7 @@ pub struct StateDump {
     pub query_flows: Vec<QueryKey>,
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
-    pub queued_holding_workflows: VecDeque<(PendingValidation, Option<(SystemTime, Duration)>)>,
+    pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
     pub source_chain: Vec<ChainHeader>,
 }
@@ -75,7 +70,7 @@ impl From<Arc<Context>> for StateDump {
         let direct_message_flows: Vec<(String, DirectMessage)> = network
             .direct_message_connections
             .into_iter()
-            .map(|(s, dm)| (s.clone(), dm.clone()))
+            .map(|(s, dm)| (s, dm))
             .collect();
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();

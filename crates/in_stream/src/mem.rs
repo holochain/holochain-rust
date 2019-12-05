@@ -124,19 +124,22 @@ impl InStreamMem {
     }
 }
 
+const READ_RECV_MAX: usize = 100;
+
 impl InStream<&mut [u8], &[u8]> for InStreamMem {
     /// we want a url like mem://
     const URL_SCHEME: &'static str = SCHEME;
 
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
         let _ = MemConnectConfig::from_gen(config)?;
-        Ok(get_mem_manager().connect(url)?)
+        get_mem_manager().connect(url)
+        //Ok(get_mem_manager().connect(url)?)
     }
 
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         let mut disconnected = false;
         if let Some(recv) = &mut self.recv {
-            for _ in 0..100 {
+            for _ in 0..READ_RECV_MAX {
                 // first, drain up to 100 non-blocking items from our channel
                 match recv.try_recv() {
                     Ok(mut data) => {
@@ -375,9 +378,7 @@ mod tests {
             let mut srv = loop {
                 match listener.accept() {
                     Ok(srv) => break srv,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }
@@ -391,9 +392,7 @@ mod tests {
             loop {
                 match srv.read_to_string(&mut res) {
                     Ok(_) => break,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }
@@ -416,9 +415,7 @@ mod tests {
             loop {
                 match cli.read_to_string(&mut res) {
                     Ok(_) => break,
-                    Err(e) if e.would_block() => {
-                        std::thread::sleep(std::time::Duration::from_millis(1));
-                    }
+                    Err(e) if e.would_block() => std::thread::yield_now(),
                     Err(e) => panic!("{:?}", e),
                 }
             }

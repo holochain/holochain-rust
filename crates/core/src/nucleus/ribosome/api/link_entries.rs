@@ -63,7 +63,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // This is where the link entry actually gets created.
     let result: Result<Address, HolochainError> = context
         .block_on(author_entry(&entry, None, &context, &vec![]))
-        .map(|_| entry.address().clone());
+        .map(|_| entry.address());
 
     runtime.store_result(result)
 }

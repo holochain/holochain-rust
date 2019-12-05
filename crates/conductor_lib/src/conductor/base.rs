@@ -1454,7 +1454,7 @@ fn run_interface(
             interface_config.choose_free_port.unwrap_or(false),
             || {
                 let r = WebsocketInterface::new(port).run(handler, kill_switch);
-                println!("Bound interface {} to port: {}", interface_config.id, port);
+                println!("Bound interface '{}' to port: {}", interface_config.id, port);
                 r
             },
         ),
@@ -1463,7 +1463,7 @@ fn run_interface(
             interface_config.choose_free_port.unwrap_or(false),
             || {
                 let r = HttpInterface::new(port).run(handler, kill_switch);
-                println!("Bound interface {} to port: {}", interface_config.id, port);
+                println!("Bound interface '{}' to port: {}", interface_config.id, port);
                 r
             },
         ),

@@ -15,10 +15,22 @@ use std::{
 pub trait DescriptiveStats {
     fn max(&self) -> f64;
     fn min(&self) -> f64;
-    fn cnt(&self) -> u64;
+    fn cnt(&self) -> f64;
     fn mean(&self) -> f64;
     fn stddev(&self) -> f64;
     fn variance(&self) -> f64;
+
+    fn percent_diff(&self, other: &dyn DescriptiveStats) -> StatsRecord {
+        StatsRecord {
+            mean: percent_diff(self.mean(), other.mean()),
+            max: percent_diff(self.max(), other.max()),
+            min: percent_diff(self.min(), other.min()),
+            cnt: percent_diff(self.cnt(), other.cnt()),
+            stddev: percent_diff(self.stddev(), other.stddev()),
+            variance: percent_diff(self.variance(), other.variance()),
+            ..Default::default()
+        }
+    }
 }
 
 /// An extension of `stats::OnlineStats` that also incrementally tracks
@@ -37,12 +49,79 @@ pub struct StatsRecord {
     pub name: Option<String>,
     pub max: f64,
     pub min: f64,
-    pub cnt: u64,
+    pub cnt: f64,
     pub mean: f64,
     pub variance: f64,
     pub stddev: f64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CheckedStatsRecord {
+    scenario_name: String,
+    metric_name: String,
+    pub expected_max: f64,
+    pub expected_min: f64,
+    pub expected_cnt: f64,
+    pub expected_mean: f64,
+    pub expected_variance: f64,
+    pub expected_stddev: f64,
+    pub actual_max: f64,
+    pub actual_min: f64,
+    pub actual_cnt: f64,
+    pub actual_mean: f64,
+    pub actual_variance: f64,
+    pub actual_stddev: f64,
+    pub percent_diff_max: f64,
+    pub percent_diff_min: f64,
+    pub percent_diff_cnt: f64,
+    pub percent_diff_mean: f64,
+    pub percent_diff_variance: f64,
+    pub percent_diff_stddev: f64,
+    pub percent_diff_allowed: f64,
+    pub passed: bool,
+}
+
+impl CheckedStatsRecord {
+    pub fn new<S: Into<String>>(
+        scenario_name: S,
+        metric_name: S,
+        expected: &dyn DescriptiveStats,
+        actual: &dyn DescriptiveStats,
+        percent_diff_allowed: f64,
+    ) -> Self {
+        let percent_diff = expected.percent_diff(actual);
+        let scenario_name = scenario_name.into();
+        let metric_name = metric_name.into();
+        Self {
+            scenario_name,
+            metric_name,
+            expected_max: expected.max(),
+            expected_min: expected.min(),
+            expected_cnt: expected.cnt(),
+            expected_mean: expected.mean(),
+            expected_variance: expected.variance(),
+            expected_stddev: expected.stddev(),
+            actual_max: actual.max(),
+            actual_min: actual.min(),
+            actual_cnt: actual.cnt(),
+            actual_mean: actual.mean(),
+            actual_variance: actual.variance(),
+            actual_stddev: actual.stddev(),
+            percent_diff_max: percent_diff.max(),
+            percent_diff_min: percent_diff.min(),
+            percent_diff_cnt: percent_diff.cnt(),
+            percent_diff_mean: percent_diff.mean(),
+            percent_diff_variance: percent_diff.variance(),
+            percent_diff_stddev: percent_diff.stddev(),
+            percent_diff_allowed,
+            passed: LessThanStatCheck {
+                percent_diff_allowed,
+            }
+            .check(expected, actual)
+            .is_ok(),
+        }
+    }
+}
 impl Default for StatsRecord {
     fn default() -> Self {
         Self {
@@ -52,7 +131,7 @@ impl Default for StatsRecord {
             mean: 0.0,
             variance: 0.0,
             stddev: 0.0,
-            cnt: 0,
+            cnt: 0.,
         }
     }
 }
@@ -65,7 +144,7 @@ impl StatsRecord {
             max: desc.max(),
             min: desc.min(),
             mean: desc.mean(),
-            cnt: desc.cnt(),
+            cnt: desc.cnt() as f64,
             stddev: desc.stddev(),
             variance: desc.variance(),
         }
@@ -100,7 +179,7 @@ impl From<OnlineStats> for StatsRecord {
             stddev: desc_stats.stddev(),
             mean: desc_stats.mean(),
             variance: desc_stats.variance(),
-            cnt: desc_stats.cnt(),
+            cnt: desc_stats.cnt() as f64,
         }
     }
 }
@@ -112,7 +191,7 @@ impl DescriptiveStats for StatsRecord {
     fn min(&self) -> f64 {
         self.min
     }
-    fn cnt(&self) -> u64 {
+    fn cnt(&self) -> f64 {
         self.cnt
     }
     fn variance(&self) -> f64 {
@@ -210,8 +289,8 @@ impl DescriptiveStats for OnlineStats {
     }
 
     /// The number of samples of the running statistic.
-    fn cnt(&self) -> u64 {
-        self.cnt
+    fn cnt(&self) -> f64 {
+        self.cnt as f64
     }
 }
 
@@ -240,23 +319,24 @@ pub trait StatCheck {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct LessThanStatCheck {
-    percent_deviation_allowed: f64,
+/// Computes percentage different between expected and actual
+pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
+    let e = expected.into();
+    let a = actual.into();
+    f64::abs(e - a) / e
 }
 
-impl LessThanStatCheck {
-    pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
-        let e = expected.into();
-        let a = actual.into();
-        f64::abs(e - a) / e
-    }
+#[derive(Clone, Debug)]
+pub struct LessThanStatCheck {
+    percent_diff_allowed: f64,
 }
+
+impl LessThanStatCheck {}
 
 impl Default for LessThanStatCheck {
     fn default() -> Self {
         LessThanStatCheck {
-            percent_deviation_allowed: 0.05,
+            percent_diff_allowed: 0.05,
         }
     }
 }
@@ -267,9 +347,11 @@ impl StatCheck for LessThanStatCheck {
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
     ) -> Result<(), Vec<StatFailure>> {
+        let percent_diff = expected.percent_diff(actual);
+
         let mut failures = Vec::new();
 
-        if actual.mean() > expected.mean() {
+        if percent_diff.mean() > self.percent_diff_allowed {
             failures.push(StatFailure {
                 expected: expected.mean(),
                 actual: actual.mean(),
@@ -277,7 +359,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if actual.stddev() > expected.stddev() {
+        if percent_diff.stddev() > self.percent_diff_allowed {
             failures.push(StatFailure {
                 expected: expected.stddev(),
                 actual: actual.stddev(),
@@ -285,7 +367,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if actual.max() > expected.max() {
+        if percent_diff.max() > self.percent_diff_allowed {
             failures.push(StatFailure {
                 expected: expected.max(),
                 actual: actual.max(),
@@ -293,7 +375,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if actual.min() > expected.min() {
+        if percent_diff.min() > self.percent_diff_allowed {
             failures.push(StatFailure {
                 expected: expected.min(),
                 actual: actual.min(),
@@ -301,7 +383,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if actual.cnt() > expected.cnt() {
+        if percent_diff.cnt() > self.percent_diff_allowed {
             failures.push(StatFailure {
                 expected: expected.cnt() as f64,
                 actual: actual.cnt() as f64,
@@ -439,7 +521,7 @@ mod tests {
                     mean: 50.0,
                     max: 100.0,
                     min: 25.0,
-                    cnt: 100,
+                    cnt: 100.,
                     stddev: 10.0,
                     variance: 5.0,
                     ..Default::default()
@@ -455,7 +537,7 @@ mod tests {
                     mean: 75.0,
                     max: 150.0,
                     min: 50.0,
-                    cnt: 100,
+                    cnt: 100.0,
                     stddev: 20.0,
                     variance: 8.0,
                     ..Default::default()
@@ -475,6 +557,41 @@ mod tests {
 
     #[test]
     fn percent_diff_works() {
-        assert_eq!(0.50, LessThanStatCheck::percent_diff(10.0, 15.0));
+        assert_eq!(0.50, percent_diff(10.0, 15.0));
+    }
+
+    #[test]
+    fn checked_stats_can_serialize() {
+        let expected = StatsRecord {
+            mean: 50.0,
+            max: 100.0,
+            min: 25.0,
+            cnt: 100.0,
+            stddev: 10.0,
+            variance: 5.0,
+            ..Default::default()
+        };
+        let actual = StatsRecord {
+            mean: 60.0,
+            max: 150.0,
+            min: 35.0,
+            cnt: 100.0,
+            stddev: 15.0,
+            variance: 8.0,
+            ..Default::default()
+        };
+
+        let percent_diff_allowed = 0.05;
+        let checked = CheckedStatsRecord::new(
+            "direct message",
+            "zome_call.commit.latency",
+            &expected,
+            &actual,
+            percent_diff_allowed,
+        );
+
+        let mut writer = csv::Writer::from_writer(std::io::stdout());
+        writer.serialize(checked).unwrap();
+        writer.flush().unwrap();
     }
 }

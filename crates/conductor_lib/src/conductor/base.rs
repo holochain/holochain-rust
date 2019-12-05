@@ -63,7 +63,14 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 
-pub const MAX_DYNAMIC_PORT: u16 = 50000;
+pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
+
+/// Special string to be printed on stdout, which clients must parse 
+/// in order to discover which port the interface bound to.
+/// DO NOT CHANGE!
+fn magic_port_binding_string(interface_config_id: &str, port: &u16) -> String {
+    format!("*** Bound interface '{}' to port: {}", interface_config_id, port)
+}
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -1454,7 +1461,7 @@ fn run_interface(
             interface_config.choose_free_port.unwrap_or(false),
             || {
                 let r = WebsocketInterface::new(port).run(handler, kill_switch);
-                println!("Bound interface '{}' to port: {}", interface_config.id, port);
+                println!("{}", magic_port_binding_string(&interface_config.id, &port));
                 r
             },
         ),
@@ -1463,7 +1470,7 @@ fn run_interface(
             interface_config.choose_free_port.unwrap_or(false),
             || {
                 let r = HttpInterface::new(port).run(handler, kill_switch);
-                println!("Bound interface '{}' to port: {}", interface_config.id, port);
+                println!("{}", magic_port_binding_string(&interface_config.id, &port));
                 r
             },
         ),

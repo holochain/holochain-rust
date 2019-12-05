@@ -25,7 +25,7 @@ use std::{
 };
 use structopt::StructOpt;
 
-const MAGIC_STRING: &str = "Done. All interfaces started.";
+const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 const CONDUCTOR_CONFIG_FILENAME: &str = "conductor-config.toml";
 const CONDUCTOR_STDOUT_LOG_FILENAME: &str = "stdout.txt";

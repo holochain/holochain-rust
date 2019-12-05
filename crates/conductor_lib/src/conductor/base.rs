@@ -9,6 +9,7 @@ use crate::{
     error::HolochainInstanceError,
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -60,9 +61,6 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-
-const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;
-const INTERFACE_CONNECT_INTERVAL: Duration = Duration::from_secs(1);
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -1414,27 +1412,6 @@ impl Conductor {
         }
         Ok(())
     }
-}
-
-fn try_with_port<T, F: FnOnce() -> T>(port: u16, f: F) -> T {
-    let mut attempts = 0;
-    while attempts <= INTERFACE_CONNECT_ATTEMPTS_MAX {
-        if port_is_available(port) {
-            return f();
-        }
-        warn!(
-            "Waiting for port {} to be available, sleeping (attempt #{})",
-            port, attempts
-        );
-        thread::sleep(INTERFACE_CONNECT_INTERVAL);
-        attempts += 1;
-    }
-    f()
-}
-
-fn port_is_available(port: u16) -> bool {
-    use std::net::TcpListener;
-    TcpListener::bind(format!("0.0.0.0:{}", port)).is_ok()
 }
 
 /// This can eventually be dependency injected for third party Interface definitions

@@ -493,7 +493,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "detach"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -1036,7 +1036,7 @@ dependencies = [
  "holochain_wasm_utils 0.0.40-alpha1",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustyline 5.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1140,7 +1140,7 @@ dependencies = [
  "holochain_conductor_lib 0.0.40-alpha1",
  "holochain_core_types 0.0.40-alpha1",
  "holochain_locksmith 0.0.40-alpha1",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1186,8 +1186,8 @@ dependencies = [
  "jsonrpc-http-server 14.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-ws-server 14.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "maplit 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1265,8 +1265,8 @@ dependencies = [
  "jsonrpc-core 14.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1307,7 +1307,7 @@ dependencies = [
  "holochain_logging 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "maplit 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "mashup 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1336,7 +1336,7 @@ dependencies = [
  "holochain_core_types 0.0.40-alpha1",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1453,12 +1453,12 @@ dependencies = [
  "holochain_logging 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_metrics 0.0.40-alpha1",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_zombie_actor 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_zombie_actor 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1589,9 +1589,9 @@ dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1606,10 +1606,13 @@ dependencies = [
 
 [[package]]
 name = "holochain_tracing"
-version = "0.0.1"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
+ "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustracing 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustracing_jaeger 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1941,22 +1944,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lib3h"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "detach 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_mdns 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_p2p_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_zombie_actor 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_mdns 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_p2p_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_zombie_actor 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1974,7 +1977,7 @@ dependencies = [
 
 [[package]]
 name = "lib3h_crypto_api"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1984,12 +1987,12 @@ dependencies = [
 
 [[package]]
 name = "lib3h_mdns"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2000,7 +2003,7 @@ dependencies = [
 
 [[package]]
 name = "lib3h_p2p_protocol"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "capnp 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2011,7 +2014,7 @@ dependencies = [
 
 [[package]]
 name = "lib3h_protocol"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2027,11 +2030,11 @@ dependencies = [
 
 [[package]]
 name = "lib3h_sodium"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust_sodium-sys 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2039,13 +2042,13 @@ dependencies = [
 
 [[package]]
 name = "lib3h_zombie_actor"
-version = "0.0.22"
+version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "detach 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lock_api 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3674,9 +3677,9 @@ dependencies = [
  "holochain_core_types 0.0.40-alpha1",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusoto_core 0.40.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3700,13 +3703,13 @@ dependencies = [
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_locksmith 0.0.40-alpha1",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_zombie_actor 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_zombie_actor 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3729,9 +3732,9 @@ version = "0.0.40-alpha1"
 dependencies = [
  "detach 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "sim2h 0.0.40-alpha1",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4000,7 +4003,7 @@ dependencies = [
  "holochain_wasm_utils 0.0.40-alpha1",
  "jsonrpc-ws-server 14.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4922,7 +4925,7 @@ dependencies = [
 "checksum csv-core 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "9b5cadb6b25c77aeff80ba701712494213f4a8418fcda2ee11b6560c3ad0bf4c"
 "checksum ctor 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8ce37ad4184ab2ce004c33bf6379185d3b1c95801cab51026bd271bf68eedc"
 "checksum detach 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)" = "891f5117f720f720924586e087b7eb385d816afb467a231c2fec64239de00986"
-"checksum detach 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "b38cf336beac3b5a78642f1f96880026cd2148e11e6374387e953f3624b05e8f"
+"checksum detach 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "140b57c3caa1ee1317666b60407437715485e1b74d9909bdc1ce02ec47685156"
 "checksum deunicode 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 "checksum difference 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 "checksum digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)" = "03b072242a8cbaf9c145665af9d250c59af3b958f83ed6824e13533cf76d5b90"
@@ -4998,7 +5001,7 @@ dependencies = [
 "checksum holochain_persistence_lmdb 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d2da4d3d6cf165f763f4496e8744149ff47ea134202a0ad7912c93a31d455c48"
 "checksum holochain_persistence_mem 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)" = "67d52d4387e51ee816b8663f99d6d90930bce219b0aab2a66e171bd832727e92"
 "checksum holochain_persistence_pickle 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)" = "a200265cba8e7c436ea7761b3ff2da3905575198bfbcd7e355bd5a455328417d"
-"checksum holochain_tracing 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "61624e309224fe09d17d3f0efb10dc85df5af33c5b92840b2e37c447b3caa8f4"
+"checksum holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "3fd6f5987867695d591dfe959eeebabf9d58733479c8efb791d5b7b2d8f36f55"
 "checksum hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "21ceb46a83a85e824ef93669c8b390009623863b5c195d1ba747292c0c72f94e"
 "checksum http 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)" = "d6ccf5ede3a895d8856620237b2f02972c1bbc78d2965ad7fe8838d4a0ed41f0"
 "checksum http_req 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "23fdb3445813f5f5e7fdb9d93df8f1c7e382237f2656b21c42e93e3a63e25c11"
@@ -5027,13 +5030,13 @@ dependencies = [
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"
 "checksum lazycell 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
-"checksum lib3h 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "dc1f6981e1ab03e1f0b9a8ece12d4f1a19ac830b740f98e23df7995ead151e16"
-"checksum lib3h_crypto_api 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "78219b823beb15d23a94a92c97806728ce6e14ad14c7c568b0b7ff7738b95832"
-"checksum lib3h_mdns 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "d5325b5d79e24789c0885ce8d9948f3c9dc7f77860fe9e8f114e69b6b1037e51"
-"checksum lib3h_p2p_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "2e984ba6ac73f1772767f57179d929fa988fff4e4610c5b9f3bf9ca7fa2f613f"
-"checksum lib3h_protocol 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "260c7985d04a896ea218ed493ca02c1391ed69cb2866bda90f3c490780c0171d"
-"checksum lib3h_sodium 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "feffdc3b367bba0b95c5fadde851eb9653faae64d139365fb99886e46e3d2caf"
-"checksum lib3h_zombie_actor 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "8b56af2e6071b80bc161745a68e5327f333f67cbc7abe31d50f4113c67f2bb08"
+"checksum lib3h 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "b6e9b910ab7d359eb986143d5494d2e75dbf0e15575d57eed6db028fd18bb4b3"
+"checksum lib3h_crypto_api 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "19a0a24067df7c3f67adbf39fe8490c36cd4f161698521317e461b4af3033c5c"
+"checksum lib3h_mdns 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "b6d6187212379bfb595a01b1c5c50279b10f3eb38e3760ffcf1c33a453ffe83b"
+"checksum lib3h_p2p_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "2e1951ee0f1522a016f114bb60c0c5ea89b0e1d5eece2ab8df50f8e123552745"
+"checksum lib3h_protocol 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "c57dd453e4539d1265b380101ebace4d2e9737ec0ce23e3198f1981cb7d22a50"
+"checksum lib3h_sodium 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "340a15e2e026f20b14de6f8213b09f4274735fd254b4a5a962875cbd2aab6923"
+"checksum lib3h_zombie_actor 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "1a9eea0aa670170b1ef97d0d4807d8dd9cd96569807de50a5dc4c47951372547"
 "checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
 "checksum libflate 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)" = "d9135df43b1f5d0e333385cb6e7897ecd1a43d7d11b91ac003f4d2c2d2401fdd"
 "checksum linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"

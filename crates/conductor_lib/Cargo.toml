@@ -21,8 +21,8 @@ holochain_persistence_pickle = "=0.0.11"
 holochain_persistence_lmdb = "=0.0.11"
 holochain_dpki = { version = "=0.0.40-alpha1", path = "../dpki" }
 holochain_net = { version = "=0.0.40-alpha1", path = "../net" }
-lib3h = "=0.0.22"
-lib3h_sodium = "=0.0.22"
+lib3h = "=0.0.24"
+lib3h_sodium = "=0.0.24"
 holochain_metrics = { version = "=0.0.40-alpha1", path = "../metrics" }
 holochain_common = { version = "=0.0.40-alpha1", path = "../common" }
 chrono = "=0.4.6"

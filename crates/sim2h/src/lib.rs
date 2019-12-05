@@ -9,6 +9,9 @@ extern crate serde;
 #[macro_use]
 extern crate lazy_static;
 
+#[allow(dead_code)]
+mod naive_sharding;
+
 pub mod cache;
 pub mod connection_state;
 pub mod crypto;

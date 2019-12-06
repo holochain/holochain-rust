@@ -26,11 +26,11 @@ jobs:
   steps:
    - checkout
    - run:
-    command: nix-shell --run hc-test-fmt
-    no_output_timeout: 20m
+      command: nix-shell --run hc-test-fmt
+      no_output_timeout: 20m
    - run:
-    command: nix-shell --run hn-rust-clippy
-    no_output_timeout: 20m
+      command: nix-shell --run hn-rust-clippy
+      no_output_timeout: 20m
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps

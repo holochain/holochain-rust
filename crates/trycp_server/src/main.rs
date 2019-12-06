@@ -313,10 +313,9 @@ fn main() {
         let id = get_as_string("id", &params_map)?;
         let mut state = state_setup.write().unwrap();
         let file_path = get_dir(&state, &id);
-        let admin_port = state.acquire_port().map_err(|e| internal_error(e))?;
-        let zome_port = state.acquire_port().map_err(|e| internal_error(e))?;
+        let interface_port = state.acquire_port().map_err(|e| internal_error(e))?;
         Ok(json!({
-            "adminPort": admin_port,
+            "interfacePort": interface_port,
             "zomePort": zome_port,
             "configDir": file_path.to_string_lossy(),
         }))

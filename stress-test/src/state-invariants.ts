@@ -7,7 +7,7 @@ const delay = ms => new Promise(r => setTimeout(r, ms))
 
 module.exports = (scenario, N, M) => {
 
-  scenario.only('all instances hold the same aspects after a smooth startup', async (s, t) => {
+  scenario('all instances hold the same aspects after a smooth startup', async (s, t) => {
     const players = R.values(await s.players(configBatchSimple(N, M), true))
     const batch = new Batch(players).iteration('series')
 
@@ -16,9 +16,9 @@ module.exports = (scenario, N, M) => {
     const holds1 = await batch.mapInstances(getHoldCount)
     t.ok(holds1[0] !== 0)
     t.deepEqual(holds1, R.repeat(holds1[0], N * M))
-    
+
     await delay(10000)
-    
+
     // Again, ensure that everyone holds the same number of nonzero entries
     // This is the easiest test to pass, more of a sanity check
     const holds2 = await batch.mapInstances(getHoldCount)

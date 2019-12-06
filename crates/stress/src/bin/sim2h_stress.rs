@@ -575,13 +575,10 @@ impl Suite {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();
         let sim2h_join = Some(std::thread::spawn(move || {
-            //let tls_config = TlsConfig::build_from_entropy();
-            //let stream_manager = StreamManager::with_std_tcp_stream(tls_config);
             let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
 
             let mut sim2h = Sim2h::new(
                 Box::new(SodiumCryptoSystem::new()),
-                //stream_manager,
                 Lib3hUri(url.into()),
             );
 

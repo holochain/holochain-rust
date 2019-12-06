@@ -194,7 +194,8 @@ impl ConnectionJob {
     }
 
     fn report_msg(&self, msg: FrameResult) {
-        self.msg_send.send((self.wss.remote_url(), msg))
+        self.msg_send
+            .send((self.wss.remote_url(), msg))
             .expect("failed to send");
     }
 
@@ -278,8 +279,7 @@ impl Sim2h {
             missing_aspects_resync: std::time::Instant::now(),
         };
 
-        sim2h.priv_bind_listening_socket(
-            url::Url::from(bind_spec).into(), wss_send);
+        sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
 
         /*
         debug!("Trying to bind to {}...", bind_spec);
@@ -296,12 +296,15 @@ impl Sim2h {
         sim2h
     }
 
-    fn priv_bind_listening_socket(&mut self, url: Url2, wss_send: crossbeam_channel::Sender<TcpWss>) {
+    fn priv_bind_listening_socket(
+        &mut self,
+        url: Url2,
+        wss_send: crossbeam_channel::Sender<TcpWss>,
+    ) {
         let config = TcpBindConfig::default();
         let config = TlsBindConfig::new(config).dev_certificate();
         let config = WssBindConfig::new(config);
-        let listen: TcpWssServer =
-            InStreamListenerWss::bind(&url, config).unwrap();
+        let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());
         self.pool.push_job(Box::new(Arc::new(Mutex::new(ListenJob {
             listen,
@@ -312,10 +315,7 @@ impl Sim2h {
     fn priv_check_incoming_connections(&mut self) {
         if let Ok(wss) = self.wss_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-            let job = Arc::new(Mutex::new(ConnectionJob::new(
-                wss,
-                self.msg_send.clone(),
-            )));
+            let job = Arc::new(Mutex::new(ConnectionJob::new(wss, self.msg_send.clone())));
             if let Err(error) = self.handle_incoming_connect(url.clone()) {
                 error!("Error handling incoming connection: {:?}", error);
                 return;
@@ -343,33 +343,33 @@ impl Sim2h {
         if let Ok((url, msg)) = self.msg_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(url).into();
             match msg {
-                Ok(frame) => {
-                    match frame {
-                        WsFrame::Text(s) => self.priv_drop_connection_for_error(url, format!("unexpected text message: {:?}", s).into()),
-                        WsFrame::Binary(b) => {
-                            let payload: Opaque = b.into();
-                            match Sim2h::verify_payload(payload.clone()) {
-                                Ok((source, wire_message)) => {
-                                    if let Err(error) =
-                                        self.handle_message(&url, wire_message, &source)
-                                    {
-                                        error!("Error handling message: {:?}", error);
-                                    }
+                Ok(frame) => match frame {
+                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                        url,
+                        format!("unexpected text message: {:?}", s).into(),
+                    ),
+                    WsFrame::Binary(b) => {
+                        let payload: Opaque = b.into();
+                        match Sim2h::verify_payload(payload.clone()) {
+                            Ok((source, wire_message)) => {
+                                if let Err(error) = self.handle_message(&url, wire_message, &source)
+                                {
+                                    error!("Error handling message: {:?}", error);
                                 }
-                                Err(error) => error!(
-                                    "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                    error, payload
-                                ),
                             }
-                        }
-                        WsFrame::Ping(_) => (),
-                        WsFrame::Pong(_) => (),
-                        WsFrame::Close(c) => {
-                            debug!("Disconnecting {} after connection reset {:?}", url, c);
-                            self.disconnect(&url);
+                            Err(error) => error!(
+                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                error, payload
+                            ),
                         }
                     }
-                }
+                    WsFrame::Ping(_) => (),
+                    WsFrame::Pong(_) => (),
+                    WsFrame::Close(c) => {
+                        debug!("Disconnecting {} after connection reset {:?}", url, c);
+                        self.disconnect(&url);
+                    }
+                },
                 Err(e) => self.priv_drop_connection_for_error(url, e),
             }
         }
@@ -1039,9 +1039,10 @@ impl Sim2h {
                 error!("FAILED TO SEND, NO ROUTE: {}", uri);
                 return;
             }
-            Some(con) => {
-                con.lock().expect("failed to obtain mutex lock").send(payload.clone().as_bytes().into())
-            }
+            Some(con) => con
+                .lock()
+                .expect("failed to obtain mutex lock")
+                .send(payload.as_bytes().into()),
         } {
             self.priv_drop_connection_for_error(uri.clone(), e);
         }

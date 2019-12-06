@@ -154,7 +154,9 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             .unwrap();
 
         let run_until = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(config.warm_time_ms + config.run_time_ms))
+            .checked_add(std::time::Duration::from_millis(
+                config.warm_time_ms + config.run_time_ms,
+            ))
             .unwrap();
 
         let next_progress = std::time::Instant::now()
@@ -367,6 +369,7 @@ mod tests {
             thread_pool_size: 10,
             job_count: 100,
             run_time_ms: 200,
+            warm_time_ms: 100,
             progress_interval_ms: 50,
             suite: Suite,
             job_factory: Box::new(move |_| Job {

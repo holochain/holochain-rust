@@ -689,6 +689,7 @@ mod tests {
             thread_pool_size: 1,
             job_count: 1,
             run_time_ms: 1000,
+            warm_time_ms: 100,
             progress_interval_ms: 2000,
             suite,
             job_factory: Box::new(move |_| std::mem::replace(&mut job, None).unwrap()),

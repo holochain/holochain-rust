@@ -2,7 +2,7 @@ extern crate structopt;
 use crate::structopt::StructOpt;
 use holochain_metrics::{
     cloudwatch::*,
-    stats::{StatsByMetric, StatsRecord},
+    stats::{StatCheck, StatsByMetric, StatsRecord},
     *,
 };
 use rusoto_core::Region;
@@ -169,12 +169,12 @@ fn print_stat_check(
 ) {
     let mut actual_reader = BufReader::new(File::open(actual_csv_file).unwrap());
     let mut expected_reader = BufReader::new(File::open(expected_csv_file).unwrap());
-    let actual_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut actual_reader);
-    let expected_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut expected_reader);
+    let actual_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut actual_reader).unwrap();
+    let expected_csv_data =
+        StatsByMetric::<StatsRecord>::from_reader(&mut expected_reader).unwrap();
 
-    println!("Actual: {:?}", actual_csv_data);
-    println!("Expected: {:?}", expected_csv_data);
-    //    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
-    //   let stats = StatsByMetric::from_iter(metrics);
-    //    stats.print_csv().unwrap()
+    let checked =
+        crate::stats::LessThanStatCheck::default().check_all(&expected_csv_data, &actual_csv_data);
+
+    println!("{}", checked);
 }

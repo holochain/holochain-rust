@@ -20,14 +20,14 @@ pub trait DescriptiveStats {
     fn stddev(&self) -> f64;
     fn variance(&self) -> f64;
 
-    fn percent_diff(&self, other: &dyn DescriptiveStats) -> StatsRecord {
+    fn percent_change(&self, other: &dyn DescriptiveStats) -> StatsRecord {
         StatsRecord {
-            mean: percent_diff(self.mean(), other.mean()),
-            max: percent_diff(self.max(), other.max()),
-            min: percent_diff(self.min(), other.min()),
-            cnt: percent_diff(self.cnt(), other.cnt()),
-            stddev: percent_diff(self.stddev(), other.stddev()),
-            variance: percent_diff(self.variance(), other.variance()),
+            mean: percent_change(self.mean(), other.mean()),
+            max: percent_change(self.max(), other.max()),
+            min: percent_change(self.min(), other.min()),
+            cnt: percent_change(self.cnt(), other.cnt()),
+            stddev: percent_change(self.stddev(), other.stddev()),
+            variance: percent_change(self.variance(), other.variance()),
             ..Default::default()
         }
     }
@@ -71,13 +71,13 @@ pub struct CheckedStatsRecord {
     pub actual_mean: f64,
     pub actual_variance: f64,
     pub actual_stddev: f64,
-    pub percent_diff_max: f64,
-    pub percent_diff_min: f64,
-    pub percent_diff_cnt: f64,
-    pub percent_diff_mean: f64,
-    pub percent_diff_variance: f64,
-    pub percent_diff_stddev: f64,
-    pub percent_diff_allowed: f64,
+    pub percent_change_max: f64,
+    pub percent_change_min: f64,
+    pub percent_change_cnt: f64,
+    pub percent_change_mean: f64,
+    pub percent_change_variance: f64,
+    pub percent_change_stddev: f64,
+    pub percent_change_allowed: f64,
     pub passed: bool,
 }
 
@@ -87,9 +87,9 @@ impl CheckedStatsRecord {
         metric_name: S,
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
-        percent_diff_allowed: f64,
+        percent_change_allowed: f64,
     ) -> Self {
-        let percent_diff = expected.percent_diff(actual);
+        let percent_change = expected.percent_change(actual);
         let scenario_name = scenario_name.into();
         let metric_name = metric_name.into();
         Self {
@@ -107,21 +107,22 @@ impl CheckedStatsRecord {
             actual_mean: actual.mean(),
             actual_variance: actual.variance(),
             actual_stddev: actual.stddev(),
-            percent_diff_max: percent_diff.max(),
-            percent_diff_min: percent_diff.min(),
-            percent_diff_cnt: percent_diff.cnt(),
-            percent_diff_mean: percent_diff.mean(),
-            percent_diff_variance: percent_diff.variance(),
-            percent_diff_stddev: percent_diff.stddev(),
-            percent_diff_allowed,
+            percent_change_max: percent_change.max(),
+            percent_change_min: percent_change.min(),
+            percent_change_cnt: percent_change.cnt(),
+            percent_change_mean: percent_change.mean(),
+            percent_change_variance: percent_change.variance(),
+            percent_change_stddev: percent_change.stddev(),
+            percent_change_allowed,
             passed: LessThanStatCheck {
-                percent_diff_allowed,
+                percent_change_allowed,
             }
             .check(expected, actual)
             .is_ok(),
         }
     }
 }
+
 impl Default for StatsRecord {
     fn default() -> Self {
         Self {
@@ -320,8 +321,9 @@ pub trait StatCheck {
     }
 }
 
-/// Computes percentage different between expected and actual
-pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
+/// Computes percentage change between expected and actual
+/// May produce `NaN`
+pub fn percent_change<N: Into<f64>>(expected: N, actual: N) -> f64 {
     let e = expected.into();
     let a = actual.into();
     f64::abs(e - a) / e
@@ -329,7 +331,7 @@ pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
 
 #[derive(Clone, Debug)]
 pub struct LessThanStatCheck {
-    percent_diff_allowed: f64,
+    percent_change_allowed: f64,
 }
 
 impl LessThanStatCheck {}
@@ -337,7 +339,7 @@ impl LessThanStatCheck {}
 impl Default for LessThanStatCheck {
     fn default() -> Self {
         LessThanStatCheck {
-            percent_diff_allowed: 0.05,
+            percent_change_allowed: 0.05,
         }
     }
 }
@@ -348,11 +350,11 @@ impl StatCheck for LessThanStatCheck {
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
     ) -> Result<(), Vec<StatFailure>> {
-        let percent_diff = expected.percent_diff(actual);
+        let percent_change = expected.percent_change(actual);
 
         let mut failures = Vec::new();
 
-        if percent_diff.mean() > self.percent_diff_allowed {
+        if percent_change.mean() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.mean(),
                 actual: actual.mean(),
@@ -360,7 +362,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.stddev() > self.percent_diff_allowed {
+        if percent_change.stddev() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.stddev(),
                 actual: actual.stddev(),
@@ -368,7 +370,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.max() > self.percent_diff_allowed {
+        if percent_change.max() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.max(),
                 actual: actual.max(),
@@ -376,7 +378,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.min() > self.percent_diff_allowed {
+        if percent_change.min() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.min(),
                 actual: actual.min(),
@@ -384,7 +386,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.cnt() > self.percent_diff_allowed {
+        if percent_change.cnt() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.cnt() as f64,
                 actual: actual.cnt() as f64,
@@ -590,8 +592,10 @@ mod tests {
     }
 
     #[test]
-    fn percent_diff_works() {
-        assert_eq!(0.50, percent_diff(10.0, 15.0));
+    fn percent_change_works() {
+        assert_eq!(0.50, percent_change(10.0, 15.0));
+        assert_eq!(1. / 3., percent_change(15.0, 10.0));
+        assert!(f64::is_infinite(percent_change(0., 10.0)));
     }
 
     #[test]
@@ -615,13 +619,13 @@ mod tests {
             ..Default::default()
         };
 
-        let percent_diff_allowed = 0.05;
+        let percent_change_allowed = 0.05;
         let checked = CheckedStatsRecord::new(
             "direct message",
             "zome_call.commit.latency",
             &expected,
             &actual,
-            percent_diff_allowed,
+            percent_change_allowed,
         );
 
         let mut writer = csv::Writer::from_writer(std::io::stdout());

@@ -348,6 +348,25 @@ impl CloudWatchLogger {
 
         self.sequence_token = result.next_sequence_token
     }
+
+    pub fn get_log_stream_names<S:Into<String>>(&self, log_stream_name_prefix:S) -> Box<dyn Iterator<Item=String>> {
+   
+        let log_stream_name_prefix = Some(log_stream_name_prefix.into());
+
+        let log_group_name = self.log_group_name.clone().unwrap_or_else(CloudWatchLogger::default_log_group);
+        let request = DescribeLogStreamsRequest {
+            log_group_name,
+            log_stream_name_prefix,
+            ..Default::default()
+        };
+
+        let response = self.client.describe_log_streams(request).sync()
+            .unwrap_or_else(|e| { panic!("Problem querying log streams: {:?}", e)});
+
+        response.log_streams.map(|log_streams| { 
+            Box::new(log_streams.into_iter().filter_map(|log_stream| log_stream.log_stream_name)) as Box<dyn Iterator<Item=String>>
+        }).unwrap_or_else(|| Box::new(vec![].into_iter()) as Box<dyn Iterator<Item=String>>)
+    }
 }
 
 impl Default for CloudWatchLogger {

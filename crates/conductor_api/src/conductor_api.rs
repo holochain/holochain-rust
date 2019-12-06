@@ -106,3 +106,32 @@ impl fmt::Debug for ConductorApi {
         write!(f, "{:?}", self.0)
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use super::JsonRpcRequest;
+    use holochain_json_api::json::JsonString;
+
+    #[test]
+    fn test_json_rpc_string_building() {
+        let request = "sign";
+        let payload = r#"test ' payload"#;
+
+        let json_rpc_request = JsonRpcRequest::new(request, payload);
+
+        assert_eq!(
+            String::from(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test ' payload"},"id":"puid-0-0"}"#),
+            String::from(JsonString::from(json_rpc_request)),
+        );
+
+        let escaped_payload = r#"test " payload"#;
+        let json_rpc_request = JsonRpcRequest::new(request, escaped_payload);
+
+        assert_eq!(
+            String::from(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test \" payload"},"id":"puid-0-1"}"#),
+            String::from(JsonString::from(json_rpc_request)),
+        );
+    }
+
+}

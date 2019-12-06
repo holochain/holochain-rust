@@ -9,6 +9,7 @@ use holochain_core_types::{
 };
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_json_api::json::JsonString;
+// use holochain_json_api::json::RawString;
 use holochain_locksmith::{Mutex, RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
@@ -279,18 +280,21 @@ impl ConductorApiBuilder {
     }
 
     fn unwrap_params_map(params: Params) -> Result<Map<String, Value>, jsonrpc_core::Error> {
+        println!("yy: {:?}", params);
         match params {
             Params::Map(map) => Ok(map),
             _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
         }
     }
 
-    fn get_as_string<T: Into<String>>(
+    fn get_as_string<T: Into<String> + std::fmt::Debug + Clone>(
         key: T,
         params_map: &Map<String, Value>,
     ) -> Result<String, jsonrpc_core::Error> {
+        println!("xx: {:?} {:?}", key, params_map);
+        println!("zzz: {}", params_map.get(&key.clone().into()).unwrap());
         let key = key.into();
-        Ok(params_map
+        let value = params_map
             .get(&key)
             .ok_or_else(|| {
                 jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
@@ -302,7 +306,15 @@ impl ConductorApiBuilder {
                     &key
                 ))
             })?
-            .to_string())
+            .to_string();
+        println!("aaa: {}", value.chars().count());
+        println!("aaaa: {}", &value);
+        // let ss = RawString::from(value);
+        // println!("ss: {:?}", ss);
+        // println!("ss: {:?}", value);
+        // let unserialized: String = serde_json::from_str(&ss).unwrap();
+        // println!("xxx: {:?}", unserialized);
+        Ok(value)
     }
 
     fn get_as_bool<T: Into<String>>(
@@ -1227,6 +1239,7 @@ pub trait Interface {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use holochain_dpki::SEED_SIZE;
     use crate::{conductor::tests::test_conductor, config::Configuration};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
@@ -1251,6 +1264,31 @@ pub mod tests {
         let result = &serde_json::from_str::<serde_json::Value>(response_str)
             .expect("Response not valid JSON")["result"];
         result.to_string()
+    }
+
+    #[test]
+    fn test_agent_rpc_sign() {
+        let (config, instances) = example_config_and_instances();
+
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        let key_bundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
+
+        let handler = ConductorApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .with_admin_dna_functions()
+            .with_agent_signature_callback(Arc::new(Mutex::new(key_bundle)))
+            .spawn();
+
+        let response_str = handler
+            .handle_request_sync(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test \" payload"},"id":"puid-0-1"}"#)
+            .expect("Invalid call to handler");
+        println!("iii: {}", response_str);
+        let result = unwrap_response_if_valid(&response_str);
+        assert_eq!(
+            result,
+            r#"{"signature":"645pchCrU6heLE6yULPigk7BGqcjE4balj7JGg/0mpneFS1oE7rO37ExUq/PY3zOclOwF9OjoLNPFjhgIdoqAg=="}"#
+        );
     }
 
     #[test]

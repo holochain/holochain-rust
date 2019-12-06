@@ -63,11 +63,11 @@ where
     let b64 = base64::encode(&buf);
     println!("WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes", data.len(), buf.len(), b64.len());
     let cnt = ( b64.len() + 127 ) / 128;
-    if cnt <= 1 {
-        // For small WASMs (and backward-compatibility) emit them as a simple *un-compressed* "string"
-        let b64 = base64::encode(data.as_ref());
-        println!("Encoding {}-byte base-64 uncompressed WASM to a String", b64.len());
-        s.serialize_str(&b64)
+    if cnt <= 10 {
+        // For small WASMs (and backward-compatibility) emit them as a simple *un-compressed* String
+        let b64_uncompressed = base64::encode(data.as_ref());
+        println!("Encoding {}-byte base-64 uncompressed WASM to a String", b64_uncompressed.len());
+        s.serialize_str(&b64_uncompressed)
     } else {
         // Output the base-64 encoded compressed WASM in (1024*5/4)/10 == 128-symbol chunks
         let mut seq = s.serialize_seq(Some(cnt)).map_err(S::Error::custom)?;

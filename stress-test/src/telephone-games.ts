@@ -17,7 +17,8 @@ import { configBatchSimple } from './config'
 // * postSpawn: after the next agent was spawned, this callback is called with the older one to have it create new
 //              entries/links while the new agent is there
 // * stepCheck:
-const telephoneGame = async (s, t, N, players, functions) => {
+const telephoneGame = async (s, t, N, players, functions, timeout = 5000) => {
+    const STEP_TIMEOUT_MS = timeout
     let {init, preSpawn, postSpawn, stepCheck} = functions
     console.log("##################################")
     console.log("### Starting 'telephone game'")
@@ -52,6 +53,14 @@ const telephoneGame = async (s, t, N, players, functions) => {
         console.log("##################################")
         await postSpawn(instance1, baseHash, i)
         await s.consistency()
+
+        console.log("##################################")
+        console.log("### TIMEOUT START")
+        console.log("##################################")
+        await new Promise((resolve)=>setTimeout(resolve, STEP_TIMEOUT_MS))
+        console.log("##################################")
+        console.log("### TIMEOUT END")
+        console.log("##################################")
 
         console.log("##################################")
         console.log("### STEP CHECK")
@@ -248,6 +257,6 @@ module.exports = (scenario, N, M) => {
             t.equal(b_links.Ok.links[0].address, agent)
         }
 
-        await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck})
+        await telephoneGame(s, t, N, players, {init, preSpawn, postSpawn, stepCheck}, 15000)
     })
 }

@@ -12,26 +12,9 @@ let
  ''
  echo "checking rust formatting";
  __fmtexit=0
- for p in \
-  cli \
-  common \
-  conductor_api \
-  conductor_lib \
-  core \
-  core_types \
-  dpki \
-  hdk \
-  hdk_v2 \
-  holochain \
-  holochain_wasm \
-  net \
-  sim2h \
-  sim2h_server \
-  stress \
-  wasm_utils
- do
+ for p in crates/*; do
   echo "checking ''${p}"
-  if ! ( cd "crates/$p" && cargo fmt -- --check ); then __fmtexit=1; fi
+  if ! ( cd "$p" && cargo fmt -- --check ); then __fmtexit=1; fi
  done
  exit ''${__fmtexit}
  '';

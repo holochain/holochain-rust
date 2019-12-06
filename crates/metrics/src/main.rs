@@ -31,19 +31,19 @@ enum Command {
         #[structopt(
             name = "region",
             short = "r",
-            about = "The AWS region, defaults to eu-central-1."
+            help = "The AWS region, defaults to eu-central-1."
         )]
         region: Option<Region>,
         #[structopt(
             name = "log_group_name",
             short = "l",
-            about = "The AWS log group name to query over."
+            help = "The AWS log group name to query over."
         )]
         log_group_name: Option<String>,
         #[structopt(
             name = "assume_role_arn",
             short = "a",
-            about = "Optional override for the amazon role to assume when querying"
+            help = "Optional override for the amazon role to assume when querying"
         )]
         assume_role_arn: Option<String>,
         #[structopt(flatten)]
@@ -52,11 +52,23 @@ enum Command {
 
     #[structopt(
         name = "print-log-stats",
-        about = "Prints descriptive stats in csv form over a time range"
+        help = "Prints descriptive stats in csv form over a time range"
     )]
     PrintLogStats {
         #[structopt(name = "log_file", short = "f")]
         log_file: String,
+    },
+    #[structopt(
+        name = "print-stat-check",
+        help = "Prints descriptive stats in csv form over a time range"
+    )]
+    StatCheck {
+        #[structopt(name = "expected_csv_file", short = "ef")]
+        expected_csv_file: String,
+        #[structopt(name = "acual_csv_file", short = "af")]
+        actual_csv_file: String,
+        #[structopt(name = "result_csv_file", short = "rf")]
+        result_csv_file: String,
     },
 }
 
@@ -86,6 +98,11 @@ fn main() {
             print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
         }
         Command::PrintLogStats { log_file } => print_log_stats(log_file),
+        Command::StatCheck {
+            expected_csv_file,
+            actual_csv_file,
+            result_csv_file,
+        } => print_stat_check(expected_csv_file, actual_csv_file, result_csv_file),
     }
 }
 
@@ -137,4 +154,17 @@ fn print_log_stats(log_file: String) {
     let metrics = crate::logger::metrics_from_file(log_file).unwrap();
     let stats = StatsByMetric::from_iter(metrics);
     stats.print_csv().unwrap()
+}
+
+/// Prints to stdout human readonly pass/fail info
+/// Saves to `result_csv_file` gradient info
+fn print_stat_check(
+    _expected_csv_file: String, // StatsByMetric
+    _actual_csv_file: String,   // StatsByMetric
+    _result_csv_file: String,   // A collection of CheckedStatRecords
+) {
+    //    let actual_csv_data = StatsByMetric::metrics_from_file
+    //    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
+    //   let stats = StatsByMetric::from_iter(metrics);
+    //    stats.print_csv().unwrap()
 }

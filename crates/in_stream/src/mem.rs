@@ -370,8 +370,7 @@ mod tests {
 
         let server_thread = std::thread::spawn(move || {
             let mut listener =
-                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default())
-                    .unwrap();
+                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default()).unwrap();
             println!("bound to: {}", listener.binding());
             send_binding.send(listener.binding()).unwrap();
 

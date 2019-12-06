@@ -54,6 +54,7 @@ use crate::{
     static_server_impls::NickelStaticServer as StaticServer,
 };
 use boolinator::Boolinator;
+use holochain_core::signal::{InstanceStats, StatsSignal};
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -61,7 +62,6 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-use holochain_core::signal::{StatsSignal, InstanceStats};
 use std::time::Instant;
 
 const STATS_SIGNAL_INTERVAL: Duration = Duration::from_millis(500);
@@ -363,8 +363,13 @@ impl Conductor {
                         // Get stats for all instances:
                         let mut instance_stats: HashMap<String, InstanceStats> = HashMap::new();
                         for (id, instance) in instances.iter() {
-                            if let Err(error) = instance.read()
-                                .map_err(|_| HolochainInstanceError::InternalFailure(HolochainError::new("Could not get lock on instance")))
+                            if let Err(error) = instance
+                                .read()
+                                .map_err(|_| {
+                                    HolochainInstanceError::InternalFailure(HolochainError::new(
+                                        "Could not get lock on instance",
+                                    ))
+                                })
                                 .and_then(|instance| instance.context())
                                 .and_then(|context| context.get_stats().map_err(|e| e.into()))
                                 .and_then(|stats| {
@@ -372,12 +377,15 @@ impl Conductor {
                                     Ok(())
                                 })
                             {
-                                error!("Could not get stats for instance '{}'. Error: {:?}", id, error);
+                                error!(
+                                    "Could not get stats for instance '{}'. Error: {:?}",
+                                    id, error
+                                );
                             }
                         }
 
                         // Wrap stats in signal:
-                        let stats_signal = Signal::Stats(StatsSignal{instance_stats});
+                        let stats_signal = Signal::Stats(StatsSignal { instance_stats });
 
                         // Send signal over admin interfaces:
                         for interface in admin_interfaces {
@@ -393,7 +401,6 @@ impl Conductor {
                     }
                     last_stats_signal_instant = Instant::now();
                 }
-
 
                 if kill_switch_rx.try_recv().is_ok() {
                     break;

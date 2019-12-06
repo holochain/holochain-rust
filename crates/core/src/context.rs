@@ -45,9 +45,9 @@ use std::{
     time::Duration,
 };
 
+use crate::signal::InstanceStats;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
-use crate::signal::InstanceStats;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
@@ -397,9 +397,11 @@ impl Context {
             .ok_or_else(|| "Couldn't get instance state".to_string())?;
         let dht_store = state.dht();
         let holding_map = dht_store.get_holding_map().bare();
-        Ok(InstanceStats{
+        Ok(InstanceStats {
             number_held_entries: holding_map.keys().count(),
-            number_held_aspects: holding_map.values().fold(0, |acc, aspect_set| acc + aspect_set.len()),
+            number_held_aspects: holding_map
+                .values()
+                .fold(0, |acc, aspect_set| acc + aspect_set.len()),
             number_pending_validations: dht_store.queued_holding_workflows().len(),
             number_running_zome_calls: state.nucleus().running_zome_calls.len(),
             offline: false,

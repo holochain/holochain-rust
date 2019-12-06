@@ -4,8 +4,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
 use snowflake::ProcessUniqueId;
-use std::thread;
-use std::collections::HashMap;
+use std::{collections::HashMap, thread};
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
 #[serde(tag = "signal_type")]
@@ -45,7 +44,6 @@ pub struct InstanceStats {
     pub number_running_zome_calls: usize,
     pub offline: bool,
 }
-
 
 impl<'de> Deserialize<'de> for Signal {
     fn deserialize<D>(_deserializer: D) -> Result<Signal, D::Error>

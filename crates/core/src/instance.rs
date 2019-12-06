@@ -23,12 +23,11 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
-    ugly::lax_send_wrapped,
 };
 use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
-use holochain_tracing as ht;
+use holochain_tracing::{self as ht, channel::lax_send_wrapped};
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{

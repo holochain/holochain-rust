@@ -31,8 +31,6 @@ holochain_persistence_api = "=0.0.11"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_locksmith = { version = "=0.0.40-alpha1", path = "../locksmith" }
-holochain_tracing = "=0.0.4"
-holochain_tracing_macros = "=0.0.1"
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"

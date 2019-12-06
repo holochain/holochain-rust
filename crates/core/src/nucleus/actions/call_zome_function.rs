@@ -15,11 +15,10 @@ use holochain_core_types::{
     },
     error::HolochainError,
     signature::{Provenance, Signature},
-    ugly::lax_send_wrapped,
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-
+use holochain_tracing::channel::lax_send_wrapped;
 use holochain_json_api::json::JsonString;
 
 use holochain_dpki::utils::Verify;

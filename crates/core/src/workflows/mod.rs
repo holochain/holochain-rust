@@ -49,18 +49,6 @@ pub(crate) async fn try_make_local_validation_package(
 ) -> Result<ValidationPackage, HolochainError> {
     let entry_header = &entry_with_header.header;
 
-    let validation_package_definition = get_validation_package_definition(entry, context.clone())
-        .and_then(|callback_result| match callback_result {
-        CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
-        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-        CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
-            "ValidationPackage callback not implemented for {:?} ({})",
-            entry.entry_type(),
-            reason
-        ))),
-        _ => unreachable!(),
-    })?;
-
     match validation_package_definition {
         ValidationPackageDefinition::Entry => {
             Ok(ValidationPackage::only_header(entry_header.clone()))

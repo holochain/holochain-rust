@@ -11,7 +11,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 crossbeam-channel = "=0.3.8"
 holochain_core_types = { version = "=0.0.40-alpha1", path = "../core_types" }
 holochain_conductor_lib = { version = "=0.0.40-alpha1", path = "../conductor_lib" }
-lib3h_sodium = "=0.0.23"
+lib3h_sodium = "=0.0.25"
 holochain_common = { version = "=0.0.40-alpha1", path = "../common" }
 holochain_locksmith = { version = "=0.0.40-alpha1", path = "../locksmith" }
 holochain_tracing = "=0.0.4"

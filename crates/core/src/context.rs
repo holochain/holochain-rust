@@ -91,7 +91,7 @@ pub struct Context {
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
-    thread_pool: Arc<Mutex<ThreadPool>>,
+    thread_pool: ThreadPool,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
     pub tracer: Arc<ht::Tracer>,
@@ -157,9 +157,7 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(
-                ThreadPool::new().expect("Could not create thread pool for futures"),
-            )),
+            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
             tracer,
@@ -196,9 +194,7 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(
-                ThreadPool::new().expect("Could not create thread pool for futures"),
-            )),
+            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
             tracer,
@@ -370,10 +366,7 @@ impl Context {
     where
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.thread_pool
-            .lock()
-            .expect("Couldn't get lock on Context::thread_pool")
-            .spawn_ok(f);
+        self.thread_pool.spawn_ok(f);
     }
 
     /// returns the public capability token (if any)

@@ -16,7 +16,7 @@ holochain_dpki = { version = "=0.0.40-alpha1", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.40-alpha1", path = "../locksmith" }
 holochain_tracing = "=0.0.4"
 holochain_tracing_macros = "=0.0.1"
-lib3h_sodium = "=0.0.23"
+lib3h_sodium = "=0.0.25"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.11"
 holochain_persistence_file = "=0.0.11"

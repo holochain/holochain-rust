@@ -64,6 +64,6 @@ fn main() {
     let datetime: DateTime<Utc> = system_time.into();
     println!(
         "cargo:rustc-env=BUILD_DATE={}",
-        datetime.format("%d/%m/%Y %T")
+        datetime.format("%Y-%m-%d %T")
     );
 }

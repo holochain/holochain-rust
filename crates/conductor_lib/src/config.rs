@@ -739,6 +739,11 @@ pub struct InterfaceConfiguration {
     pub admin: bool,
     #[serde(default)]
     pub instances: Vec<InstanceReferenceConfiguration>,
+    /// Experimental!
+    /// If this flag is set the conductor might change the port the interface binds to if the
+    /// given port is occupied. This might cause problems if the context that runs the conductor
+    /// is not aware of this logic and is not tracking the new port (which gets printed on stdout).
+    /// Use at your own risk...
     pub choose_free_port: Option<bool>,
 }
 

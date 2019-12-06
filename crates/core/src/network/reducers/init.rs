@@ -103,9 +103,9 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use serde_json::json;
     use std::sync::Arc;
     use tempfile;
-    use serde_json::json;
 
     fn test_context(p2p_config: P2pConfig) -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
@@ -158,7 +158,7 @@ pub mod test {
 
         assert_eq!(result, ());
     }
-    
+
     #[test]
     pub fn should_set_sim2h_url() {
         let p2p_config = P2pConfig::new_with_sim2h_backend("wss://localhost:9999");
@@ -181,7 +181,6 @@ pub mod test {
         let mut dna = Dna::new();
         dna.properties = props;
 
-
         root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(dna)));
 
         let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
@@ -191,7 +190,6 @@ pub mod test {
         if let Some(network) = network_state.network {
             assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/")
         } else {
-
         }
     }
 }

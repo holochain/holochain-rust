@@ -15,9 +15,9 @@ repository = "https://github.com/holochain/holochain-rust"
 rusoto_core = "0.40.0"
 rusoto_dynamodb = "0.40.0"
 dynomite = "0.5"
-lib3h_protocol = "=0.0.22"
+lib3h_protocol = "=0.0.25"
 detach = "=0.0.19"
-holochain_tracing = { version = "=0.0.1" }
+holochain_tracing = { version = "=0.0.4" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.4.8"
 env_logger = "=0.6.1"

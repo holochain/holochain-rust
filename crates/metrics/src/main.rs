@@ -156,10 +156,12 @@ fn print_log_stats(log_file: String) {
     stats.print_csv().unwrap()
 }
 
+/// Prints to stdout human readonly pass/fail info
+/// Saves to `result_csv_file` gradient info
 fn print_stat_check(
-    _expected_csv_file: String,
-    _actual_csv_file: String,
-    _result_csv_file: String,
+    _expected_csv_file: String, // StatsByMetric
+    _actual_csv_file: String,   // StatsByMetric
+    _result_csv_file: String,   // A collection of CheckedStatRecords
 ) {
     //    let actual_csv_data = StatsByMetric::metrics_from_file
     //    let metrics = crate::logger::metrics_from_file(log_file).unwrap();

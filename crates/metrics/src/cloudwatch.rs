@@ -432,7 +432,7 @@ impl TryFrom<String> for ScenarioData {
 }
 impl ScenarioData {
     fn grouping_key(&self) -> String {
-        format!("{}.{}.{}", self.run_name, self.net_name, self.scenario_name).to_string()
+        format!("{}.{}.{}", self.run_name, self.net_name, self.scenario_name)
     }
 }
 
@@ -446,8 +446,8 @@ pub fn group_by_scenario(
         if let Ok(scenario_data) = scenario_data {
             grouped
                 .entry(scenario_data.grouping_key())
-                .or_insert(HashSet::new())
-                .insert(scenario_data.clone());
+                .or_insert_with(HashSet::new)
+                .insert(scenario_data);
         }
         grouped
     })

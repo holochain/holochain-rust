@@ -115,7 +115,7 @@ pub(crate) fn reduce_hold_aspect(
                         link_addresses,
                         LinkModification::Remove,
                     );
-                    store.clone()
+                    store
                 }),
         ),
         EntryAspect::Update(entry, header) => {

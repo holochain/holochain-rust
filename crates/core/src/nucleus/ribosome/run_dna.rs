@@ -27,12 +27,12 @@ use wasmi::RuntimeValue;
 /// For ZomeCalls and CallbackCalls it gets the according module from the DNA.
 fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
-        let transient_module = ModuleArc::new(wasm_module_factory(wasm.clone())?);
+        let transient_module = ModuleArc::new(wasm_module_factory(wasm)?);
         return Ok(transient_module);
     } else {
         match data {
-            WasmCallData::ZomeCall(d) => (d.context.clone(), d.call.zome_name.clone()),
-            WasmCallData::CallbackCall(d) => (d.context.clone(), d.call.zome_name.clone()),
+            WasmCallData::ZomeCall(d) => (d.context.clone(), d.call.zome_name),
+            WasmCallData::CallbackCall(d) => (d.context.clone(), d.call.zome_name),
             WasmCallData::DirectCall(_, _) => unreachable!(),
         }
     };

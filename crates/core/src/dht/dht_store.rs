@@ -103,7 +103,7 @@ pub fn create_get_links_eavi_query<'a>(
         Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
     Ok(EaviQuery::new(
         Some(address).into(),
-        EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+        EavFilter::predicate(move |attr: Attribute| match attr {
             Attribute::LinkTag(query_link_type, query_tag)
             | Attribute::RemovedLink(query_link_type, query_tag) => {
                 link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
@@ -112,10 +112,7 @@ pub fn create_get_links_eavi_query<'a>(
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::single(Attribute::RemovedLink(
-            link_type.clone(),
-            tag.clone(),
-        ))),
+        Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
     ))
 }
 
@@ -174,7 +171,7 @@ impl DhtStore {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let query = EaviQuery::new(
             Some(address.to_owned()).into(),
-            EavFilter::predicate(move |attr: Attribute| match attr.clone() {
+            EavFilter::predicate(move |attr: Attribute| match attr {
                 Attribute::LinkTag(_, _)
                 | Attribute::RemovedLink(_, _)
                 | Attribute::CrudLink

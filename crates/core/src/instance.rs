@@ -160,8 +160,8 @@ impl Instance {
     fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
         let (tx_action, rx_action) = unbounded::<ActionWrapper>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
-        self.action_channel = Some(tx_action.clone());
-        self.observer_channel = Some(tx_observer.clone());
+        self.action_channel = Some(tx_action);
+        self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)
     }
@@ -395,7 +395,7 @@ impl Instance {
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
-            consistency_model: ConsistencyModel::new(context.clone()),
+            consistency_model: ConsistencyModel::new(context),
             kill_switch: None,
             kill_switch_holding: None,
         }
@@ -408,7 +408,7 @@ impl Instance {
             observer_channel: None,
             scheduler_handle: None,
             persister: None,
-            consistency_model: ConsistencyModel::new(context.clone()),
+            consistency_model: ConsistencyModel::new(context),
             kill_switch: None,
             kill_switch_holding: None,
         }

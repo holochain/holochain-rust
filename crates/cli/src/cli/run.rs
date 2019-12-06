@@ -5,6 +5,7 @@ use holochain_common::env_vars::EnvVar;
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
     config::*,
+    happ_bundle::HappBundle,
     key_loaders::{test_keystore, test_keystore_loader},
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
@@ -36,6 +37,9 @@ pub fn run(
 
     conductor.start_all_interfaces();
     conductor.start_all_instances()?;
+    conductor
+        .start_all_static_servers()
+        .map_err(|e| failure::err_msg(e))?;
 
     println!(
         "Holochain development conductor started. Running {} server on port {}",
@@ -86,6 +90,24 @@ pub fn hc_run_configuration(
         logger: logger_configuration(logging),
         ..Default::default()
     })
+}
+
+pub fn hc_run_bundle_configuration(
+    bundle: &HappBundle,
+    port: u16,
+    persist: bool,
+    networked: bool,
+    logging: bool,
+) -> DefaultResult<Configuration> {
+    bundle
+        .build_conductor_config(
+            port,
+            agent_configuration(),
+            storage_configuration(persist)?,
+            networking_configuration(networked),
+            logger_configuration(logging),
+        )
+        .map_err(|e| failure::err_msg(e))
 }
 
 // AGENT

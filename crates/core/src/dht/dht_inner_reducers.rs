@@ -91,7 +91,7 @@ pub(crate) fn reduce_remove_entry_inner(
         .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?;
 
     // pre-condition: entry_type must not be sys type, since they cannot be deleted
-    if entry.entry_type().to_owned().is_sys() {
+    if entry.entry_type().is_sys() {
         return Err(HolochainError::ErrorGeneric(
             "trying to remove a system entry type".into(),
         ));

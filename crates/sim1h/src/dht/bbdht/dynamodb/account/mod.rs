@@ -44,5 +44,4 @@ pub mod tests {
         // fail to describe limits
         assert!(describe_limits(&log_context, &bad_client).is_err());
     }
-
 }

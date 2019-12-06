@@ -241,7 +241,7 @@ fn main() {
     let players_arc: Arc<RwLock<HashMap<String, Child>>> = Arc::new(RwLock::new(HashMap::new()));
     let players_arc_kill = players_arc.clone();
     let players_arc_reset = players_arc.clone();
-    let players_arc_spawn = players_arc.clone();
+    let players_arc_spawn = players_arc;
 
     io.add_method("ping", |_params: Params| {
         Ok(Value::String(get_info_as_json()))
@@ -257,7 +257,7 @@ fn main() {
         let file_path = get_dna_path(&state, &url);
         if !file_path.exists() {
             println!("Downloading dna from {} ...", &url_str);
-            let content: String = reqwest::get::<Url>(url.clone())
+            let content: String = reqwest::get::<Url>(url)
                 .map_err(|e| {
                     internal_error(format!("error downloading dna: {:?} {:?}", e, url_str))
                 })?
@@ -313,11 +313,9 @@ fn main() {
         let id = get_as_string("id", &params_map)?;
         let mut state = state_setup.write().unwrap();
         let file_path = get_dir(&state, &id);
-        let admin_port = state.acquire_port().map_err(|e| internal_error(e))?;
-        let zome_port = state.acquire_port().map_err(|e| internal_error(e))?;
+        let interface_port = state.acquire_port().map_err(|e| internal_error(e))?;
         Ok(json!({
-            "adminPort": admin_port,
-            "zomePort": zome_port,
+            "interfacePort": interface_port,
             "configDir": file_path.to_string_lossy(),
         }))
     });

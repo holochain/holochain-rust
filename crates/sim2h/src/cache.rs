@@ -385,5 +385,4 @@ mod tests {
             &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
         ));
     }
-
 }

@@ -112,7 +112,7 @@ pub struct DebugLogger {
 impl DebugLogger {
     pub fn new(rules: LogRules) -> Self {
         let (tx, rx) = ChannelLogger::setup();
-        let logger = DebugLogger { sender: tx.clone() };
+        let logger = DebugLogger { sender: tx };
 
         thread::Builder::new()
             .name("debug_logger".to_string())

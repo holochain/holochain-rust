@@ -195,7 +195,7 @@ impl State {
             dht_store_snapshot,
         );
         Ok(State::new_with_agent_nucleus_dht(
-            context.clone(),
+            context,
             agent_state,
             nucleus_state,
             dht_store,

@@ -9,6 +9,7 @@ use crate::{
     error::HolochainInstanceError,
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -60,9 +61,6 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-
-const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;
-const INTERFACE_CONNECT_INTERVAL: Duration = Duration::from_secs(1);
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -373,7 +371,7 @@ impl Conductor {
             notify(format!("Stopping interface {}", id));
             kill_switch.send(()).unwrap_or_else(|err| {
                 let message = format!("Error stopping interface: {}", err);
-                notify(message.clone());
+                notify(message);
             });
         }
     }
@@ -614,11 +612,11 @@ impl Conductor {
                         { vec![urls[0].clone().into()] }
                         else
                         { config.bootstrap_nodes.clone() };
-                    let mut p2p_config = p2p_config.clone();
+                    let mut p2p_config = p2p_config;
                     p2p_config.backend_config = BackendConfig::Memory(config);
                     p2p_config
                 },
-                _ => p2p_config.clone()
+                _ => p2p_config
             }
         }).unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
@@ -778,7 +776,7 @@ impl Conductor {
                     self.save_config()?;
                 }
 
-                context_builder = context_builder.with_agent(agent_address.clone());
+                context_builder = context_builder.with_agent(agent_address);
 
                 context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
@@ -905,7 +903,7 @@ impl Conductor {
 
                 let mut context_clone = context.clone();
                 let context = Arc::new(context);
-                               Holochain::load(context.clone())
+                               Holochain::load(context)
                     .and_then(|hc| {
                        notify(format!(
                             "Successfully loaded instance {} from storage",
@@ -988,7 +986,7 @@ impl Conductor {
         }
 
         // Bridges:
-        let id = instance_config.id.clone();
+        let id = instance_config.id;
         for bridge in self.config.bridge_dependencies(id.clone()) {
             assert_eq!(bridge.caller_id, id.clone());
             let callee_config = self
@@ -1300,7 +1298,7 @@ impl Conductor {
             self.interface_broadcasters
                 .write()
                 .unwrap()
-                .insert(interface_config.id.clone(), broadcaster);
+                .insert(interface_config.id, broadcaster);
         }
 
         kill_switch_tx
@@ -1403,7 +1401,7 @@ impl Conductor {
 
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();
-            let hc_lock_inner = hc_lock.clone();
+            let hc_lock_inner = hc_lock;
             let mut hc = hc_lock_inner.write().unwrap();
 
             if !hc.dpki_is_initialized()? {
@@ -1414,27 +1412,6 @@ impl Conductor {
         }
         Ok(())
     }
-}
-
-fn try_with_port<T, F: FnOnce() -> T>(port: u16, f: F) -> T {
-    let mut attempts = 0;
-    while attempts <= INTERFACE_CONNECT_ATTEMPTS_MAX {
-        if port_is_available(port) {
-            return f();
-        }
-        warn!(
-            "Waiting for port {} to be available, sleeping (attempt #{})",
-            port, attempts
-        );
-        thread::sleep(INTERFACE_CONNECT_INTERVAL);
-        attempts += 1;
-    }
-    f()
-}
-
-fn port_is_available(port: u16) -> bool {
-    use std::net::TcpListener;
-    TcpListener::bind(format!("0.0.0.0:{}", port)).is_ok()
 }
 
 /// This can eventually be dependency injected for third party Interface definitions

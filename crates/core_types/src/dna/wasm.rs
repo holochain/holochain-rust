@@ -50,7 +50,8 @@ impl fmt::Debug for ModuleArc {
 }
 
 /// Private helper for converting binary WebAssembly into base64 serialized string sequence.
-/// Encodes to Gzip compressed, base-64 encoded String, or [String, ...]
+/// Encodes to Gzip compressed, base-64 encoded String, or [String, ...].  Will load historical
+/// large single-String WASMs, but will *not* correctly compute `hc hash`.
 fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -60,13 +61,12 @@ where
     let mut buf = Vec::new();
     gz.read_to_end(&mut buf).map_err(S::Error::custom)?;
     let b64 = base64::encode(&buf);
+    println!("WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes", data.len(), buf.len(), b64.len());
     let cnt = ( b64.len() + 127 ) / 128;
-    println!("WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes, {} rows",
-             data.len(), buf.len(), b64.len(), &cnt);
     if cnt <= 1 {
         // For small WASMs (and backward-compatibility) emit them as a simple *un-compressed* "string"
         let b64 = base64::encode(data.as_ref());
-        println!("Encoding {}-byte base-64 uncompressed WASM to String", b64.len());
+        println!("Encoding {}-byte base-64 uncompressed WASM to a String", b64.len());
         s.serialize_str(&b64)
     } else {
         // Output the base-64 encoded compressed WASM in (1024*5/4)/10 == 128-symbol chunks
@@ -83,7 +83,7 @@ where
 }
 
 /// Private helper for converting base64 string into binary WebAssembly.  Decodes base-64 encoded
-/// String (optionally Gzip-compressed for backward-compatibility), or Gzip-compressed [String, ...]
+/// String (not Gzip-compressed, for backward-compatibility), or Gzip-compressed [String, ...]
 fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Arc<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,

@@ -13,6 +13,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use std::collections::{HashMap, HashSet};
 use structopt::StructOpt;
 
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
@@ -349,23 +350,38 @@ impl CloudWatchLogger {
         self.sequence_token = result.next_sequence_token
     }
 
-    pub fn get_log_stream_names<S:Into<String>>(&self, log_stream_name_prefix:S) -> Box<dyn Iterator<Item=String>> {
-   
+    pub fn get_log_stream_names<S: Into<String>>(
+        &self,
+        log_stream_name_prefix: S,
+    ) -> Box<dyn Iterator<Item = String>> {
         let log_stream_name_prefix = Some(log_stream_name_prefix.into());
 
-        let log_group_name = self.log_group_name.clone().unwrap_or_else(CloudWatchLogger::default_log_group);
+        let log_group_name = self
+            .log_group_name
+            .clone()
+            .unwrap_or_else(CloudWatchLogger::default_log_group);
         let request = DescribeLogStreamsRequest {
             log_group_name,
             log_stream_name_prefix,
             ..Default::default()
         };
 
-        let response = self.client.describe_log_streams(request).sync()
-            .unwrap_or_else(|e| { panic!("Problem querying log streams: {:?}", e)});
+        let response = self
+            .client
+            .describe_log_streams(request)
+            .sync()
+            .unwrap_or_else(|e| panic!("Problem querying log streams: {:?}", e));
 
-        response.log_streams.map(|log_streams| { 
-            Box::new(log_streams.into_iter().filter_map(|log_stream| log_stream.log_stream_name)) as Box<dyn Iterator<Item=String>>
-        }).unwrap_or_else(|| Box::new(vec![].into_iter()) as Box<dyn Iterator<Item=String>>)
+        response
+            .log_streams
+            .map(|log_streams| {
+                Box::new(
+                    log_streams
+                        .into_iter()
+                        .filter_map(|log_stream| log_stream.log_stream_name),
+                ) as Box<dyn Iterator<Item = String>>
+            })
+            .unwrap_or_else(|| Box::new(vec![].into_iter()) as Box<dyn Iterator<Item = String>>)
     }
 }
 
@@ -380,6 +396,61 @@ impl Default for CloudWatchLogger {
             &DEFAULT_REGION,
         )
     }
+}
+
+const LOG_STREAM_SEPARATOR: &str = ".";
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ScenarioData {
+    run_name: String,
+    net_name: String,
+    scenario_name: String,
+    conductor_id: String,
+    log_stream_name: String,
+}
+
+impl TryFrom<String> for ScenarioData {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        let log_stream_name = s.clone();
+        let split = s.split(LOG_STREAM_SEPARATOR).collect::<Vec<_>>();
+        if split.len() < 4 {
+            return Err(format!(
+                "Log stream name doesn't have at least 4 path elements: {:?}",
+                split
+            ));
+        }
+        Ok(Self {
+            run_name: split[0].into(),
+            net_name: split[1].into(),
+            scenario_name: split[2].into(),
+            conductor_id: split[3].into(),
+            log_stream_name,
+        })
+    }
+}
+impl ScenarioData {
+    fn grouping_key(&self) -> String {
+        format!("{}.{}.{}", self.run_name, self.net_name, self.scenario_name).to_string()
+    }
+}
+
+/// Groups a log stream name by its scenario name, which is by convention is the 2nd to last field.
+/// Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
+pub fn group_by_scenario(
+    log_stream_names: &mut dyn Iterator<Item = String>,
+) -> HashMap<String, HashSet<ScenarioData>> {
+    log_stream_names.fold(HashMap::new(), |mut grouped, log_stream_name| {
+        let scenario_data: Result<ScenarioData, _> = log_stream_name.try_into();
+        if let Ok(scenario_data) = scenario_data {
+            grouped
+                .entry(scenario_data.grouping_key())
+                .or_insert(HashSet::new())
+                .insert(scenario_data.clone());
+        }
+        grouped
+    })
 }
 
 pub const FINAL_EXAM_NODE_ROLE: &str =

@@ -1,11 +1,12 @@
 use crate::{error::DefaultResult, util};
-use base64;
 use serde_json;
 use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
 };
+
+use holochain_core_types::dna::wasm::DnaWasm;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct BuildStep {
@@ -29,8 +30,8 @@ impl Build {
         Ok(build)
     }
 
-    /// Starts the build using the supplied build steps and returns the contents of the artifact
-    pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
+    /// Starts the build using the supplied build steps and returns the contents of the artifact as DnaWasm
+    pub fn run(&self, base_path: &PathBuf) -> DefaultResult<DnaWasm> {
         for build_step in &self.steps {
             let slice_vec: Vec<_> = build_step.arguments.iter().map(|e| e.as_str()).collect();
             util::run_cmd(
@@ -46,7 +47,7 @@ impl Build {
             let mut wasm_buf = Vec::new();
             File::open(&artifact_path)?.read_to_end(&mut wasm_buf)?;
 
-            Ok(base64::encode(&wasm_buf))
+            Ok(DnaWasm::from_bytes(wasm_buf))
         } else {
             bail!(
                 "artifact path {} either doesn't point to a file or doesn't exist",

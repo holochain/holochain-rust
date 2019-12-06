@@ -272,8 +272,8 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
 
     fn remote_url(&self) -> Url2 {
         let mut url = match self.state.as_ref().unwrap() {
-            WssState::MidCliHandshake(s) => s.get_ref().remote_url(),
-            WssState::MidSrvHandshake(s) => s.get_ref().remote_url(),
+            WssState::MidCliHandshake(s) => s.get_ref().get_ref().remote_url(),
+            WssState::MidSrvHandshake(s) => s.get_ref().get_ref().remote_url(),
             WssState::Ready(s) => s.get_ref().remote_url(),
         };
         url.set_scheme(SCHEME).unwrap();
@@ -367,6 +367,10 @@ mod tests {
                     Err(e) => panic!("{:?}", e),
                 }
             };
+
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
 
             srv.write("hello from server".into()).unwrap();
             srv.flush().unwrap();

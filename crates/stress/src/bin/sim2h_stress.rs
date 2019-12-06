@@ -45,6 +45,10 @@ struct OptStressRunConfig {
     /// total runtime for the test
     run_time_ms: u64,
 
+    #[structopt(short, long, env = "STRESS_WARM_TIME_MS", default_value = "5000")]
+    /// total runtime for the test
+    warm_time_ms: u64,
+
     #[structopt(
         short,
         long,
@@ -146,6 +150,7 @@ impl Opt {
                     thread_count,
                     job_count,
                     run_time_ms,
+                    warm_time_ms,
                     progress_interval_ms,
                     ping_freq_ms,
                     publish_freq_ms,
@@ -156,6 +161,7 @@ impl Opt {
                     cfg_def!(thread_count);
                     cfg_def!(job_count);
                     cfg_def!(run_time_ms);
+                    cfg_def!(warm_time_ms);
                     cfg_def!(progress_interval_ms);
                     cfg_def!(ping_freq_ms);
                     cfg_def!(publish_freq_ms);
@@ -179,6 +185,7 @@ impl Opt {
             thread_pool_size: self.stress.thread_count,
             job_count: self.stress.job_count,
             run_time_ms: self.stress.run_time_ms,
+            warm_time_ms: self.stress.warm_time_ms,
             progress_interval_ms: self.stress.progress_interval_ms,
             suite,
             job_factory,
@@ -568,13 +575,13 @@ impl Suite {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();
         let sim2h_join = Some(std::thread::spawn(move || {
-            let tls_config = TlsConfig::build_from_entropy();
-            let stream_manager = StreamManager::with_std_tcp_stream(tls_config);
+            //let tls_config = TlsConfig::build_from_entropy();
+            //let stream_manager = StreamManager::with_std_tcp_stream(tls_config);
             let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
 
             let mut sim2h = Sim2h::new(
                 Box::new(SodiumCryptoSystem::new()),
-                stream_manager,
+                //stream_manager,
                 Lib3hUri(url.into()),
             );
 

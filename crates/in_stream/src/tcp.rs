@@ -61,7 +61,10 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
     }
 
     fn binding(&self) -> Url2 {
-        let local = self.0.local_addr().expect("Couldn't unwrap local_addr() of TcpListener when trying to get binding URL");
+        let local = self
+            .0
+            .local_addr()
+            .expect("Couldn't unwrap local_addr() of TcpListener when trying to get binding URL");
         Url2::parse(&format!("{}://{}:{}", SCHEME, local.ip(), local.port()))
     }
 
@@ -282,6 +285,10 @@ mod tests {
                 }
             }
             .into_std_stream();
+
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
 
             srv.write(b"hello from server").unwrap();
             srv.flush().unwrap();

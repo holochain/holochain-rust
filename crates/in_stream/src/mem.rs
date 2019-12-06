@@ -373,8 +373,7 @@ mod tests {
 
         let server_thread = std::thread::spawn(move || {
             let mut listener =
-                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default())
-                    .unwrap();
+                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default()).unwrap();
             println!("bound to: {}", listener.binding());
             send_binding.send(listener.binding()).unwrap();
 
@@ -386,6 +385,10 @@ mod tests {
                 }
             }
             .into_std_stream();
+
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
 
             srv.write(b"hello from server").unwrap();
             srv.flush().unwrap();

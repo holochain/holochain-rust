@@ -98,6 +98,8 @@ pub struct StressRunConfig<S: StressSuite, J: StressJob> {
     pub job_count: usize,
     /// the total runtime of the stress test run
     pub run_time_ms: u64,
+    /// the total warmup time before beginnig to collect stats
+    pub warm_time_ms: u64,
     /// how often should we report progress statistics
     pub progress_interval_ms: u64,
     /// the suite to execute
@@ -112,6 +114,7 @@ impl<S: StressSuite, J: StressJob> std::fmt::Debug for StressRunConfig<S, J> {
             .field("thread_pool_size", &self.thread_pool_size)
             .field("job_count", &self.job_count)
             .field("run_time_ms", &self.run_time_ms)
+            .field("warm_time_ms", &self.run_time_ms)
             .field("progress_interval_ms", &self.progress_interval_ms)
             .finish()
     }
@@ -147,16 +150,16 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         let (log_send, log_recv) = crossbeam_channel::unbounded();
 
         let warmup_target = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(5000))
+            .checked_add(std::time::Duration::from_millis(config.warm_time_ms))
             .unwrap();
 
         let run_until = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(5000 + config.run_time_ms))
+            .checked_add(std::time::Duration::from_millis(config.warm_time_ms + config.run_time_ms))
             .unwrap();
 
         let next_progress = std::time::Instant::now()
             .checked_add(std::time::Duration::from_millis(
-                5000 + config.progress_interval_ms,
+                config.warm_time_ms + config.progress_interval_ms,
             ))
             .unwrap();
 

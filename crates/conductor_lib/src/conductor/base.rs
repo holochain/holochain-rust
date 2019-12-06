@@ -840,6 +840,7 @@ impl Conductor {
                 }
 
                 if let Some(metric_publisher_config) = &self.config.metric_publisher {
+                    debug!("Setting metric publisher in context_builder to: {:?}", metric_publisher_config);
                     context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
                 };
 

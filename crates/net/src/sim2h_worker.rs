@@ -452,7 +452,7 @@ impl NetWorker for Sim2hWorker {
     }
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {
-        None
+        Some(self.server_url.clone().into())
     }
 
     /// Set the advertise as worker's endpoint

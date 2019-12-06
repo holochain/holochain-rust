@@ -56,7 +56,7 @@ where
     S: Serializer,
 {
     let buf_reader = BufReader::new(data.as_slice());
-    let mut gz = GzEncoder::new(buf_reader, Compression::default());
+    let mut gz = GzEncoder::new(buf_reader, Compression::best());
     let mut buf = Vec::new();
     gz.read_to_end(&mut buf).map_err(S::Error::custom)?;
     let b64 = base64::encode(&buf);

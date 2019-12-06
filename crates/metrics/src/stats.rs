@@ -150,6 +150,7 @@ impl StatsRecord {
         }
     }
 
+    /// Produces a hash map of descriptive statistics from `read` keyed by metric name.
     pub fn from_reader(
         read: &mut dyn std::io::Read,
     ) -> Result<HashMap<String, Box<dyn DescriptiveStats>>, Box<dyn Error>> {
@@ -301,15 +302,15 @@ pub trait StatCheck {
         actual: &dyn DescriptiveStats,
     ) -> Result<(), Vec<StatFailure>>;
 
-    fn check_all(
+    fn check_all<D1: DescriptiveStats, D2: DescriptiveStats>(
         &self,
-        expected: HashMap<String, Box<dyn DescriptiveStats>>,
-        actual: HashMap<String, Box<dyn DescriptiveStats>>,
+        expected: &StatsByMetric<D1>,
+        actual: &StatsByMetric<D2>,
     ) -> StatCheckResult {
         StatCheckResult(HashMap::from_iter(expected.iter().map(
             |(stat_name, expected_stat)| {
                 let result = if let Some(actual_stat) = actual.get(stat_name) {
-                    self.check(expected_stat.as_ref(), actual_stat.as_ref())
+                    self.check(expected_stat, actual_stat)
                 } else {
                     Err(vec![])
                 };
@@ -436,10 +437,10 @@ impl Commute for OnlineStats {
 
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
-pub struct StatsByMetric(pub HashMap<String, OnlineStats>);
+pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<String, D>);
 
-impl StatsByMetric {
-    pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {
+impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
+    pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();
         Box::new(
             me.into_iter()
@@ -456,10 +457,31 @@ impl StatsByMetric {
         writer.flush()?;
         Ok(())
     }
+
+    /// Produces a hash map of descriptive statistics from `read` keyed by metric name.
+    pub fn from_reader(
+        read: &mut dyn std::io::Read,
+    ) -> Result<StatsByMetric<StatsRecord>, Box<dyn Error>> {
+        let mut reader = csv::Reader::from_reader(read);
+
+        let mut data = HashMap::new();
+        for record in reader.deserialize() {
+            let stat: StatsRecord = record?;
+            let stat_name = stat.name.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+                Err(Box::new(io::Error::new(
+                    io::ErrorKind::Other,
+                    "No stat name in stat record",
+                )))
+            })?;
+            data.insert(stat_name, stat);
+        }
+
+        Ok(Self(data))
+    }
 }
 
-impl FromIterator<Metric> for StatsByMetric {
-    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric {
+impl FromIterator<Metric> for StatsByMetric<OnlineStats> {
+    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric<OnlineStats> {
         StatsByMetric(source.into_iter().fold(
             HashMap::new(),
             |mut stats_by_metric_name, metric| {
@@ -473,7 +495,19 @@ impl FromIterator<Metric> for StatsByMetric {
     }
 }
 
-impl Commute for StatsByMetric {
+impl<S: Into<String>, D: DescriptiveStats> FromIterator<(S, D)> for StatsByMetric<D> {
+    fn from_iter<I: IntoIterator<Item = (S, D)>>(source: I) -> StatsByMetric<D> {
+        StatsByMetric(source.into_iter().fold(
+            HashMap::new(),
+            |mut stats_by_metric_name, (s, d)| {
+                stats_by_metric_name.insert(s.into(), d);
+                stats_by_metric_name
+            },
+        ))
+    }
+}
+
+impl Commute for StatsByMetric<OnlineStats> {
     fn merge(&mut self, rhs: Self) {
         for (metric_name, online_stats_rhs) in rhs.iter() {
             let entry = self.0.entry(metric_name.to_string());
@@ -514,10 +548,10 @@ mod tests {
 
     #[test]
     fn can_perform_stat_check() {
-        let expected: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+        let expected: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(
             vec![(
                 "latency".to_string(),
-                Box::new(StatsRecord {
+                StatsRecord {
                     mean: 50.0,
                     max: 100.0,
                     min: 25.0,
@@ -525,15 +559,15 @@ mod tests {
                     stddev: 10.0,
                     variance: 5.0,
                     ..Default::default()
-                }) as Box<dyn DescriptiveStats>,
+                },
             )]
             .into_iter(),
         );
 
-        let actual: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+        let actual: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(
             vec![(
                 "latency".to_string(),
-                Box::new(StatsRecord {
+                StatsRecord {
                     mean: 75.0,
                     max: 150.0,
                     min: 50.0,
@@ -541,14 +575,14 @@ mod tests {
                     stddev: 20.0,
                     variance: 8.0,
                     ..Default::default()
-                }) as Box<dyn DescriptiveStats>,
+                },
             )]
             .into_iter(),
         );
 
         let actual = format!(
             "{}",
-            LessThanStatCheck::default().check_all(expected, actual)
+            LessThanStatCheck::default().check_all(&expected, &actual)
         );
         let expected = "Checking latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
 

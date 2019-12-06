@@ -1,8 +1,12 @@
 extern crate structopt;
 use crate::structopt::StructOpt;
-use holochain_metrics::{cloudwatch::*, stats::StatsByMetric, *};
+use holochain_metrics::{
+    cloudwatch::*,
+    stats::{StatsByMetric, StatsRecord},
+    *,
+};
 use rusoto_core::Region;
-use std::iter::FromIterator;
+use std::{fs::File, io::BufReader, iter::FromIterator};
 
 fn enable_logging() {
     if std::env::var("RUST_LOG").is_err() {
@@ -145,7 +149,7 @@ fn print_cloudwatch_stats(
         region,
     );
 
-    let stats: StatsByMetric = cloudwatch.query_and_aggregate(query_args);
+    let stats: StatsByMetric<_> = cloudwatch.query_and_aggregate(query_args);
 
     stats.print_csv().unwrap()
 }
@@ -159,11 +163,17 @@ fn print_log_stats(log_file: String) {
 /// Prints to stdout human readonly pass/fail info
 /// Saves to `result_csv_file` gradient info
 fn print_stat_check(
-    _expected_csv_file: String, // StatsByMetric
-    _actual_csv_file: String,   // StatsByMetric
-    _result_csv_file: String,   // A collection of CheckedStatRecords
+    expected_csv_file: String, // StatsByMetric
+    actual_csv_file: String,   // StatsByMetric
+    _result_csv_file: String,  // A collection of CheckedStatRecords
 ) {
-    //    let actual_csv_data = StatsByMetric::metrics_from_file
+    let mut actual_reader = BufReader::new(File::open(actual_csv_file).unwrap());
+    let mut expected_reader = BufReader::new(File::open(expected_csv_file).unwrap());
+    let actual_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut actual_reader);
+    let expected_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut expected_reader);
+
+    println!("Actual: {:?}", actual_csv_data);
+    println!("Expected: {:?}", expected_csv_data);
     //    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
     //   let stats = StatsByMetric::from_iter(metrics);
     //    stats.print_csv().unwrap()

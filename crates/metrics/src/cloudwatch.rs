@@ -178,7 +178,7 @@ impl CloudWatchLogger {
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// aggregate statistics of metrics from the results.
-    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric {
+    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric<stats::OnlineStats> {
         StatsByMetric::from_iter(self.query_metrics(query_args))
     }
 

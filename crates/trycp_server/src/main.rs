@@ -316,7 +316,6 @@ fn main() {
         let interface_port = state.acquire_port().map_err(|e| internal_error(e))?;
         Ok(json!({
             "interfacePort": interface_port,
-            "zomePort": zome_port,
             "configDir": file_path.to_string_lossy(),
         }))
     });

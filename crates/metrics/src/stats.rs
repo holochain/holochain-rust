@@ -57,7 +57,7 @@ pub struct StatsRecord {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckedStatsRecord {
-    scenario_name: String,
+    //    scenario_name: String,
     metric_name: String,
     pub expected_max: f64,
     pub expected_min: f64,
@@ -83,17 +83,18 @@ pub struct CheckedStatsRecord {
 
 impl CheckedStatsRecord {
     pub fn new<S: Into<String>>(
-        scenario_name: S,
+        //scenario_name: S,
         metric_name: S,
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
         percent_change_allowed: f64,
+        passed: bool,
     ) -> Self {
         let percent_change = expected.percent_change(actual);
-        let scenario_name = scenario_name.into();
+        //        let scenario_name = scenario_name.into();
         let metric_name = metric_name.into();
         Self {
-            scenario_name,
+            //  scenario_name,
             metric_name,
             expected_max: expected.max(),
             expected_min: expected.min(),
@@ -114,11 +115,7 @@ impl CheckedStatsRecord {
             percent_change_variance: percent_change.variance(),
             percent_change_stddev: percent_change.stddev(),
             percent_change_allowed,
-            passed: LessThanStatCheck {
-                percent_change_allowed,
-            }
-            .check(expected, actual)
-            .is_ok(),
+            passed,
         }
     }
 }
@@ -301,7 +298,7 @@ pub trait StatCheck {
         &self,
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
-    ) -> Result<(), Vec<StatFailure>>;
+    ) -> Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>;
 
     fn check_all<D1: DescriptiveStats, D2: DescriptiveStats>(
         &self,
@@ -313,7 +310,7 @@ pub trait StatCheck {
                 let result = if let Some(actual_stat) = actual.get(stat_name) {
                     self.check(expected_stat, actual_stat)
                 } else {
-                    Err(vec![])
+                    panic!("No stat name") // TODO Better error handling
                 };
                 (stat_name.clone(), result)
             },
@@ -349,11 +346,18 @@ impl StatCheck for LessThanStatCheck {
         &self,
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
-    ) -> Result<(), Vec<StatFailure>> {
+    ) -> Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)> {
         let percent_change = expected.percent_change(actual);
 
         let mut failures = Vec::new();
 
+        let mut checked_stats_record = CheckedStatsRecord::new(
+            "FIXME",
+            expected,
+            actual,
+            self.percent_change_allowed,
+            false,
+        );
         if percent_change.mean() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.mean(),
@@ -395,24 +399,27 @@ impl StatCheck for LessThanStatCheck {
         }
 
         if failures.is_empty() {
-            Ok(())
+            checked_stats_record.passed = true;
+            Ok(checked_stats_record)
         } else {
-            Err(failures)
+            Err((checked_stats_record, failures))
         }
     }
 }
 
 #[derive(Shrinkwrap)]
-pub struct StatCheckResult(HashMap<String, Result<(), Vec<StatFailure>>>);
+pub struct StatCheckResult(
+    HashMap<String, Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>>,
+);
 
 impl Display for StatCheckResult {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for (stat_name, stat_result) in self.iter() {
             match stat_result {
-                Ok(_) => {
+                Ok(_checked_stat) => {
                     write!(f, "Checking {} metric... ok!\n", stat_name)?;
                 }
-                Err(stat_failures) => {
+                Err((_checked_stat, stat_failures)) => {
                     write!(f, "Checking {} metric... failed!\n", stat_name)?;
                     for stat_failure in stat_failures {
                         write!(f, "\t{}\n", stat_failure)?;
@@ -621,11 +628,12 @@ mod tests {
 
         let percent_change_allowed = 0.05;
         let checked = CheckedStatsRecord::new(
-            "direct message",
+            //           "direct message",
             "zome_call.commit.latency",
             &expected,
             &actual,
             percent_change_allowed,
+            false,
         );
 
         let mut writer = csv::Writer::from_writer(std::io::stdout());

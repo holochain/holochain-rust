@@ -577,10 +577,7 @@ impl Suite {
         let sim2h_join = Some(std::thread::spawn(move || {
             let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(
-                Box::new(SodiumCryptoSystem::new()),
-                Lib3hUri(url.into()),
-            );
+            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);

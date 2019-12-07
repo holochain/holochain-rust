@@ -5,21 +5,23 @@ use backtrace::Backtrace;
 
 use crate::error::HolochainError;
 use base64;
+use flate2::{
+    bufread::{GzDecoder, GzEncoder},
+    Compression,
+};
 use serde::{
     self,
     de::{Deserializer, SeqAccess, Visitor},
-    ser::{Error, Serializer, SerializeSeq},
+    ser::{Error, SerializeSeq, Serializer},
 };
 use std::{
-    cmp,
-    fmt,
+    cmp, fmt,
     hash::{Hash, Hasher},
-    io::{Read, BufReader},
+    io::{BufReader, Read},
     ops::Deref,
     sync::{Arc, RwLock},
 };
 use wasmi::Module;
-use flate2::{Compression, bufread::{GzEncoder, GzDecoder}};
 
 /// Wrapper around wasmi::Module since it does not implement Clone, Debug, PartialEq, Eq,
 /// which are all needed to add it to the DnaWasm below, and hence to the state.
@@ -61,23 +63,35 @@ where
     let mut buf = Vec::new();
     gz.read_to_end(&mut buf).map_err(S::Error::custom)?;
     let b64 = base64::encode(&buf);
-    println!("WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes", data.len(), buf.len(), b64.len());
-    let cnt = ( b64.len() + 127 ) / 128;
+    println!(
+        "WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes",
+        data.len(),
+        buf.len(),
+        b64.len()
+    );
+    let cnt = (b64.len() + 127) / 128;
     if cnt <= 1 {
         // For small WASMs (eg. tests, and for backward-compatibility) emit them as a simple *un-compressed* String
         let b64_uncompressed = base64::encode(data.as_ref());
-        println!("Encoding {}-byte base-64 uncompressed WASM to a String", b64_uncompressed.len());
+        println!(
+            "Encoding {}-byte base-64 uncompressed WASM to a String",
+            b64_uncompressed.len()
+        );
         s.serialize_str(&b64_uncompressed)
     } else {
         // Output the base-64 encoded compressed WASM in (1024*5/4)/10 == 128-symbol chunks
         let mut seq = s.serialize_seq(Some(cnt)).map_err(S::Error::custom)?;
-        println!("Encoding {}-byte base-64 gzipped WASM into {} String rows", b64.len(), &cnt);
+        println!(
+            "Encoding {}-byte base-64 gzipped WASM into {} String rows",
+            b64.len(),
+            &cnt
+        );
         let mut cur: &str = b64.as_ref();
-        while ! cur.is_empty() {
-            let (chunk, rest) = cur.split_at(cmp::min( 128, cur.len()));
+        while !cur.is_empty() {
+            let (chunk, rest) = cur.split_at(cmp::min(128, cur.len()));
             seq.serialize_element(chunk).map_err(S::Error::custom)?;
             cur = rest;
-        };
+        }
         seq.end()
     }
 }
@@ -116,14 +130,15 @@ where
             let mut compressed: Vec<u8> = vec![];
             while let Some(elem) = seq.next_element::<&[u8]>()? {
                 println!("Decoding {}-symbol base-64 raw WASM row", elem.len());
-                compressed.extend_from_slice( // inefficient but WASM loading is rare
-                    &base64::decode(elem)
-                        .map_err(serde::de::Error::custom)?
+                compressed.extend_from_slice(
+                    // inefficient but WASM loading is rare
+                    &base64::decode(elem).map_err(serde::de::Error::custom)?,
                 );
             }
             let mut gz = GzDecoder::new(compressed.as_slice());
             let mut value: Vec<u8> = vec![];
-            gz.read_to_end(&mut value).map_err(serde::de::Error::custom)?;
+            gz.read_to_end(&mut value)
+                .map_err(serde::de::Error::custom)?;
             Ok(value)
         }
     }

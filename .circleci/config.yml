@@ -5,7 +5,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.2019-12-07-docker-latest
   resource_class: xlarge
   steps:
    - checkout

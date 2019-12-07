@@ -344,8 +344,13 @@ workflows:
    - docker.build.sim2h_server:
       requires:
        - docker.build.minimal
-   # @todo this fails because the tests don't pass without a git repo
-   # - docker.build.latest
+   - docker.build.latest:
+      filters:
+       branches:
+        only:
+         - develop
+         - final-exam
+         - 2019-12-07-docker-latest
 
  cold.mac:
   jobs:

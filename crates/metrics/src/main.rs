@@ -6,7 +6,7 @@ use holochain_metrics::{
     *,
 };
 use rusoto_core::Region;
-use std::{fs::File, io::BufReader, iter::FromIterator};
+use std::{collections::HashMap, fs::File, io::BufReader, iter::FromIterator};
 
 fn enable_logging() {
     if std::env::var("RUST_LOG").is_err() {
@@ -22,15 +22,6 @@ fn enable_logging() {
 #[derive(StructOpt)]
 #[structopt(name = "metrics", about = "Holochain metric utilities")]
 enum Command {
-    #[structopt(
-        name = "cloudwatch-test",
-        about = "Runs a simple smoke test of cloudwatch publishing features"
-    )]
-    CloudwatchTest,
-    #[structopt(
-        name = "print-cloudwatch-stats",
-        about = "Prints descriptive stats in csv form over a time range from a cloudwatch datasource"
-    )]
     PrintCloudwatchStats {
         #[structopt(
             name = "region",
@@ -88,7 +79,6 @@ fn main() {
     let command = Command::from_args();
 
     match command {
-        Command::CloudwatchTest => cloudwatch_test(),
         Command::PrintCloudwatchStats {
             region,
             log_group_name,
@@ -110,33 +100,6 @@ fn main() {
     }
 }
 
-fn cloudwatch_test() {
-    let mut cloudwatch = CloudWatchLogger::default();
-
-    let latency = Metric::new("latency", 100.0);
-    cloudwatch.publish(&latency);
-    let latency = Metric::new("latency", 200.0);
-    cloudwatch.publish(&latency);
-
-    let size = Metric::new("size", 1000.0);
-    cloudwatch.publish(&size);
-
-    let size = Metric::new("size", 1.0);
-    cloudwatch.publish(&size);
-
-    let query = cloudwatch.query(&Default::default());
-
-    println!("query: {:?}", query);
-    let metrics = CloudWatchLogger::metrics_of_query(query);
-    let vec = Vec::from_iter(metrics);
-    println!("metrics: {:?}", vec);
-
-    let stats = StatsByMetric::from_iter(vec.into_iter());
-    println!("stats: {:?}", stats);
-
-    stats.print_csv().unwrap()
-}
-
 fn print_cloudwatch_stats(
     query_args: &QueryArgs,
     log_group_name: String,
@@ -149,15 +112,18 @@ fn print_cloudwatch_stats(
         region,
     );
 
-    let stats: StatsByMetric<_> = cloudwatch.query_and_aggregate(query_args);
+    let stats: HashMap<String, StatsByMetric<_>> = cloudwatch.query_and_aggregate(query_args);
 
-    stats.print_csv().unwrap()
+    for (grouping_key, stats) in stats.iter() {
+        println!("Stats for {}", grouping_key);
+        stats.write_csv(std::io::stdout()).unwrap();
+    }
 }
 
 fn print_log_stats(log_file: String) {
     let metrics = crate::logger::metrics_from_file(log_file).unwrap();
     let stats = StatsByMetric::from_iter(metrics);
-    stats.print_csv().unwrap()
+    stats.write_csv(std::io::stdout()).unwrap()
 }
 
 /// Prints to stdout human readonly pass/fail info

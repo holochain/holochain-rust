@@ -446,6 +446,7 @@ impl Commute for OnlineStats {
 
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
+#[shrinkwrap(mutable)]
 pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<String, D>);
 
 impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
@@ -457,8 +458,8 @@ impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
         )
     }
 
-    pub fn print_csv(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut writer = csv::Writer::from_writer(std::io::stdout());
+    pub fn write_csv<W: std::io::Write>(&self, write: W) -> Result<(), Box<dyn std::error::Error>> {
+        let mut writer = csv::Writer::from_writer(write);
         let records = self.to_records();
         for record in records {
             writer.serialize(record)?;
@@ -486,6 +487,18 @@ impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
         }
 
         Ok(Self(data))
+    }
+}
+
+impl<D: DescriptiveStats> StatsByMetric<D> {
+    pub fn empty() -> StatsByMetric<D> {
+        Self(HashMap::new())
+    }
+}
+
+impl<D: DescriptiveStats> Default for StatsByMetric<D> {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 

@@ -3,13 +3,12 @@ use crate::*;
 
 use crate::{
     logger::{LogLine, ParseError},
-    stats::StatsByMetric,
+    stats::{OnlineStats, StatsByMetric},
 };
 use rusoto_core::region::Region;
 use rusoto_logs::*;
 use std::{
     convert::{TryFrom, TryInto},
-    iter::FromIterator,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -150,36 +149,67 @@ impl CloudWatchLogger {
     /// Converts raw result fields to in iterator over metric samples
     pub fn metrics_of_query<'a>(
         query: Vec<Vec<ResultField>>,
-    ) -> Box<dyn Iterator<Item = Metric> + 'a> {
-        let iterator = query
-            .into_iter()
-            .map(|result_vec| {
-                result_vec.into_iter().filter_map(|result_field| {
-                    result_field.clone().field.and_then(|field| {
-                        if field == "@message" {
-                            let metric: Metric = result_field.try_into().unwrap();
-                            Some(metric)
-                        } else {
-                            None
-                        }
-                    })
-                })
-            })
-            .flatten();
+    ) -> Box<dyn Iterator<Item = (String, Metric)> + 'a> {
+        let iterator = query.into_iter().filter_map(|result_vec| {
+            let (log_stream_name, metric) = result_vec.into_iter().fold(
+                (None, None),
+                |(log_stream_name, metric), result_field| {
+                    let field = result_field.clone().field.unwrap_or_default();
+                    if field == "@message" {
+                        let metric: Metric = result_field.try_into().unwrap();
+                        (log_stream_name, Some(metric))
+                    } else if field == "@logStream" {
+                        (result_field.value, metric)
+                    } else {
+                        (log_stream_name, metric)
+                    }
+                },
+            );
+
+            log_stream_name
+                .and_then(|log_stream_name| metric.map(|metric| (log_stream_name, metric)))
+        });
         Box::new(iterator)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// all metric samples observed during the interval
-    pub fn query_metrics(&self, query_args: &QueryArgs) -> Box<dyn Iterator<Item = Metric>> {
+    pub fn query_metrics(
+        &self,
+        query_args: &QueryArgs,
+    ) -> Box<dyn Iterator<Item = (String, Metric)>> {
         let query = self.query(query_args);
         Self::metrics_of_query(query)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// aggregate statistics of metrics from the results.
-    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric<stats::OnlineStats> {
-        StatsByMetric::from_iter(self.query_metrics(query_args))
+    pub fn query_and_aggregate(
+        &self,
+        query_args: &QueryArgs,
+    ) -> HashMap<String, StatsByMetric<OnlineStats>> {
+        let mut hash_map = HashMap::new();
+
+        for (log_stream, metric) in self.query_metrics(query_args) {
+            let scenario_data_result: Result<ScenarioData, _> = log_stream.try_into();
+
+            if let Err(e) = scenario_data_result {
+                debug!("Not a valid log stream pattern, skipping: {:?}", e);
+                continue;
+            }
+
+            let scenario_data = scenario_data_result.unwrap();
+
+            let entry = hash_map.entry(scenario_data.grouping_key());
+
+            let stats_by_metric = entry.or_insert_with(StatsByMetric::empty);
+
+            let entry = stats_by_metric.entry(metric.name);
+
+            let stats = entry.or_insert_with(OnlineStats::empty);
+            stats.add(metric.value);
+        }
+        hash_map
     }
 
     pub fn default_log_stream() -> String {

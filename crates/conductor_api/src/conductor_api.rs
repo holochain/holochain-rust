@@ -121,7 +121,9 @@ pub mod tests {
         let json_rpc_request = JsonRpcRequest::new(request, payload);
 
         assert_eq!(
-            String::from(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test ' payload"},"id":"puid-0-0"}"#),
+            String::from(
+                r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test ' payload"},"id":"puid-0-0"}"#
+            ),
             String::from(JsonString::from(json_rpc_request)),
         );
 
@@ -129,9 +131,10 @@ pub mod tests {
         let json_rpc_request = JsonRpcRequest::new(request, escaped_payload);
 
         assert_eq!(
-            String::from(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test \" payload"},"id":"puid-0-1"}"#),
+            String::from(
+                r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test \" payload"},"id":"puid-0-1"}"#
+            ),
             String::from(JsonString::from(json_rpc_request)),
         );
     }
-
 }

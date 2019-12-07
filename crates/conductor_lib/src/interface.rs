@@ -1240,8 +1240,8 @@ pub trait Interface {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_dpki::SEED_SIZE;
     use crate::{conductor::tests::test_conductor, config::Configuration};
+    use holochain_dpki::SEED_SIZE;
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let conductor = test_conductor(7777, 7778);

@@ -5,6 +5,8 @@ version = "0.0.40-alpha1"
 description = "holochain hdk"
 license = "GPL-3.0-only"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+repository = "https://github.com/holochain/holochain-rust"
+documentation = "https://docs.rs/hdk"
 
 [dependencies]
 serde = "=1.0.89"

@@ -63,8 +63,8 @@ where
     let b64 = base64::encode(&buf);
     println!("WASM of {} bytes gzipped to {} bytes, base-64 encoded to {} bytes", data.len(), buf.len(), b64.len());
     let cnt = ( b64.len() + 127 ) / 128;
-    if cnt <= 10 {
-        // For small WASMs (and backward-compatibility) emit them as a simple *un-compressed* String
+    if cnt <= 1 {
+        // For small WASMs (eg. tests, and for backward-compatibility) emit them as a simple *un-compressed* String
         let b64_uncompressed = base64::encode(data.as_ref());
         println!("Encoding {}-byte base-64 uncompressed WASM to a String", b64_uncompressed.len());
         s.serialize_str(&b64_uncompressed)

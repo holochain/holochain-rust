@@ -7,6 +7,8 @@ ARG DOCKER_BRANCH=develop
 ADD https://github.com/holochain/holochain-rust/archive/$DOCKER_BRANCH.tar.gz /holochain-rust/build/$DOCKER_BRANCH.tar.gz
 RUN tar --strip-components=1 -zxvf $DOCKER_BRANCH.tar.gz
 
+# warm things
 RUN nix-shell --run echo
+RUN nix-shell --run hc-sim2h-server-install
 # @todo this fails because the tests don't pass without a git repo
 # RUN nix-shell --run hc-test

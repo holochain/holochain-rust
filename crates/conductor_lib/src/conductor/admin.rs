@@ -1314,6 +1314,7 @@ type = 'websocket'"#,
             driver: InterfaceDriver::Http { port: 8080 },
             admin: false,
             instances: Vec::new(),
+            choose_free_port: None,
         };
 
         assert_eq!(conductor.add_interface(interface_config), Ok(()),);

@@ -60,7 +60,8 @@ impl Default for SignalConfiguration {
     }
 }
 
-const MAGIC_STRING: &str = "Done. All interfaces started.";
+// NOTE: don't change without also changing in crates/trycp_server/src/main.rs
+const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {

@@ -57,7 +57,6 @@ pub struct StatsRecord {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckedStatsRecord {
-    //    scenario_name: String,
     metric_name: String,
     pub expected_max: f64,
     pub expected_min: f64,
@@ -83,7 +82,6 @@ pub struct CheckedStatsRecord {
 
 impl CheckedStatsRecord {
     pub fn new<S: Into<String>>(
-        //scenario_name: S,
         metric_name: S,
         expected: &dyn DescriptiveStats,
         actual: &dyn DescriptiveStats,
@@ -91,10 +89,8 @@ impl CheckedStatsRecord {
         passed: bool,
     ) -> Self {
         let percent_change = expected.percent_change(actual);
-        //        let scenario_name = scenario_name.into();
         let metric_name = metric_name.into();
         Self {
-            //  scenario_name,
             metric_name,
             expected_max: expected.max(),
             expected_min: expected.min(),
@@ -641,7 +637,6 @@ mod tests {
 
         let percent_change_allowed = 0.05;
         let checked = CheckedStatsRecord::new(
-            //           "direct message",
             "zome_call.commit.latency",
             &expected,
             &actual,

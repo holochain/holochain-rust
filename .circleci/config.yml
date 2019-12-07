@@ -272,6 +272,7 @@ jobs:
       command: nix-shell --run hc-release-hook-publish
 
  docker.build.latest:
+  resource_class: xlarge
   machine: true
   steps:
    - checkout

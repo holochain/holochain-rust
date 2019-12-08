@@ -1,6 +1,5 @@
 import * as R from 'ramda'
-import { Config } from '@holochain/tryorama'
-import { configBatchSimple } from './config'
+import { configBatch } from './config'
 
 
 // This is a customizable blue print for "telephone game" network/time topology setups.
@@ -74,7 +73,7 @@ const telephoneGame = async (s, t, N, players, functions, timeout = 5000) => {
 
 module.exports = (scenario, N, M) => {
     scenario('telephone game: const entry -> entry', async (s, t) => {
-        const players = R.values(await s.players(configBatchSimple(N, M), false))
+        const players = R.values(await s.players(configBatch(N, M), false))
         const init = (instance) => {
             return instance.call('main', 'commit_entry', { content: 'base' }).then(r => r.Ok)
         }
@@ -105,7 +104,7 @@ module.exports = (scenario, N, M) => {
     })
 
     scenario('telephone game: const entry -> agent_id', async (s, t) => {
-        const players = R.values(await s.players(configBatchSimple(N, M), false))
+        const players = R.values(await s.players(configBatch(N, M), false))
 
         const init = (instance) => {
             return instance.call('main', 'commit_entry', { content: 'base' }).then(r => r.Ok)
@@ -139,7 +138,7 @@ module.exports = (scenario, N, M) => {
     })
 
     scenario('telephone game: get all previously seen agent entries', async (s, t) => {
-        const players = R.values(await s.players(configBatchSimple(N, M), false))
+        const players = R.values(await s.players(configBatch(N, M), false))
 
         const init = () => {
             return []
@@ -162,7 +161,7 @@ module.exports = (scenario, N, M) => {
     })
 
     scenario('telephone game:  agent_id -> const entry', async (s, t) => {
-        const players = R.values(await s.players(configBatchSimple(N, M), false))
+        const players = R.values(await s.players(configBatch(N, M), false))
 
         const init = (instance) => {
             return instance.agentAddress
@@ -198,7 +197,7 @@ module.exports = (scenario, N, M) => {
     })
 
     scenario('telephone game:  complex initial data', async (s, t) => {
-        const players = R.values(await s.players(configBatchSimple(N, M), false))
+        const players = R.values(await s.players(configBatch(N, M), false))
 
         const init = async (instance) => {
             console.log("Committing entry")

@@ -343,6 +343,7 @@ impl Sim2h {
             match transport_message {
                 StreamEvent::ReceivedData(uri, payload) => {
                     let payload: Opaque = payload.into();
+                    debug!("{:?}", payload);
                     match Sim2h::verify_payload(payload.clone()) {
                         Ok((source, wire_message)) => {
                             if let Err(error) =

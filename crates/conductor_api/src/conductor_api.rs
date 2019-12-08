@@ -7,6 +7,7 @@ use jsonrpc_lite::JsonRpc;
 use serde_json;
 use snowflake::ProcessUniqueId;
 use std::{fmt, sync::Arc};
+use log::*;
 
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
@@ -30,14 +31,14 @@ struct JsonRpcRequest {
 }
 
 impl JsonRpcRequest {
-    fn new(request: &str, payload: &str) -> Self {
+    fn new(request: &str, payload: &str, id: &ProcessUniqueId) -> Self {
         JsonRpcRequest {
             jsonrpc: "2.0".into(),
             method: format!("agent/{}", request),
             params: JsonRpcParams {
                 payload: payload.to_owned(),
             },
-            id: format!("{}", ProcessUniqueId::new()),
+            id: format!("{}", id),
         }
     }
 }
@@ -50,10 +51,36 @@ pub fn send_json_rpc(
     let handler = handle.write().unwrap();
 
     let (request, _) = request_response;
-    let json_rpc_request = JsonRpcRequest::new(&request, &payload);
+    let id = ProcessUniqueId::new();
+    let json_rpc_request = String::from(JsonString::from(JsonRpcRequest::new(&request, &payload, &id)));
+
+    let naive_request = format!(
+        // r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
+        r#"{{"jsonrpc":"2.0","method":"agent/{}","params":{{"payload":"{}"}},"id":"{}"}}"#,
+        request,
+        payload,
+        id,
+    );
+
+    // assert_eq!(json_rpc_request, naive_request);
+
+    println!("json_rpc: {:?}", json_rpc_request);
+    println!("naive_request: {:?}", naive_request);
+    println!("xx: {}", json_rpc_request == naive_request);
+    debug!("fooooooooooooo");
+    if json_rpc_request != naive_request {
+        println!("zaaaaaa");
+        println!("nn {}", payload);
+        println!("nnn {}", json_rpc_request);
+        println!("nnnn {}", naive_request);
+        // error!("request mismatch r: {} n: {}", json_rpc_request, naive_request);
+    }
 
     let response = handler
-        .handle_request_sync(&String::from(JsonString::from(json_rpc_request)))
+        .handle_request_sync(&
+            json_rpc_request
+            // naive_request
+        )
         .ok_or_else(|| format!("Conductor request agent/{} failed", request))?;
 
     let response = JsonRpc::parse(&response)?;
@@ -112,13 +139,14 @@ pub mod tests {
 
     use super::JsonRpcRequest;
     use holochain_json_api::json::JsonString;
+    use snowflake::ProcessUniqueId;
 
     #[test]
     fn test_json_rpc_string_building() {
         let request = "sign";
         let payload = r#"test ' payload"#;
 
-        let json_rpc_request = JsonRpcRequest::new(request, payload);
+        let json_rpc_request = JsonRpcRequest::new(request, payload, &ProcessUniqueId::new());
 
         assert_eq!(
             String::from(
@@ -128,7 +156,7 @@ pub mod tests {
         );
 
         let escaped_payload = r#"test " payload"#;
-        let json_rpc_request = JsonRpcRequest::new(request, escaped_payload);
+        let json_rpc_request = JsonRpcRequest::new(request, escaped_payload, &ProcessUniqueId::new());
 
         assert_eq!(
             String::from(

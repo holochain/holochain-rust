@@ -104,7 +104,7 @@ async fn validation_package(
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),
         CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
             "ValidationPackage callback not implemented for {:?} ({})",
-            entry.entry_type().clone(),
+            entry.entry_type(),
             reason
         ))),
         _ => unreachable!(),

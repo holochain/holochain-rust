@@ -209,6 +209,7 @@ fn interface_configuration(
             id: INSTANCE_CONFIG_ID.into(),
             alias: None,
         }],
+        choose_free_port: None,
     })
 }
 
@@ -385,6 +386,7 @@ mod tests {
                     id: "test-instance".to_string(),
                     alias: None,
                 }],
+                choose_free_port: None,
             }
         );
 
@@ -400,6 +402,7 @@ mod tests {
                     id: "test-instance".to_string(),
                     alias: None,
                 }],
+                choose_free_port: None,
             }
         );
 

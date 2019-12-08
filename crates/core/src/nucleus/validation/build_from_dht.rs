@@ -244,5 +244,4 @@ pub mod tests {
 
         assert_eq!(local_validation_package, dht_validation_package,)
     }
-
 }

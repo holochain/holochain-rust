@@ -25,6 +25,7 @@ use std::{
 };
 use structopt::StructOpt;
 
+// NOTE: don't change without also changing in crates/holochain/src/main.rs
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 const CONDUCTOR_CONFIG_FILENAME: &str = "conductor-config.toml";

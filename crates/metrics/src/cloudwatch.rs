@@ -434,16 +434,25 @@ const LOG_STREAM_SEPARATOR: &str = ".";
 pub struct ScenarioData {
     run_name: String,
     net_name: String,
+    dna_name: String,
     scenario_name: String,
-    conductor_id: String,
-    log_stream_name: String,
+    player_name: String,
+}
+
+impl Into<String> for ScenarioData {
+    fn into(self: Self) -> String {
+        let s = self;
+        format!(
+            "{}.{}.{}.{}.{}",
+            s.run_name, s.net_name, s.dna_name, s.scenario_name, s.player_name
+        )
+    }
 }
 
 impl TryFrom<String> for ScenarioData {
     type Error = String;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        let log_stream_name = s.clone();
         let split = s.split(LOG_STREAM_SEPARATOR).collect::<Vec<_>>();
         if split.len() < 4 {
             return Err(format!(
@@ -454,15 +463,31 @@ impl TryFrom<String> for ScenarioData {
         Ok(Self {
             run_name: split[0].into(),
             net_name: split[1].into(),
-            scenario_name: split[2].into(),
-            conductor_id: split[3].into(),
-            log_stream_name,
+            dna_name: split[2].into(),
+            scenario_name: split[3].into(),
+            player_name: split[4].into(),
         })
     }
 }
+
+impl TryFrom<LogStream> for ScenarioData {
+    type Error = String;
+    fn try_from(log_stream: LogStream) -> Result<Self, Self::Error> {
+        let result: Result<Self, Self::Error> = log_stream
+            .log_stream_name
+            .map(|x| Ok(x))
+            .unwrap_or_else(|| Err(format!("Log stream name missing")))
+            .and_then(TryFrom::try_from);
+        result
+    }
+}
 impl ScenarioData {
+    /// Groups by everything _but_ the player name
     fn grouping_key(&self) -> String {
-        format!("{}.{}.{}", self.run_name, self.net_name, self.scenario_name)
+        format!(
+            "{}.{}.{}.{}",
+            self.run_name, self.net_name, self.dna_name, self.scenario_name
+        )
     }
 }
 

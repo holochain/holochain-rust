@@ -35,14 +35,14 @@ const orchestrator = new Orchestrator({
   }
 })
 
-// require('./regressions')(orchestrator.registerScenario)
-// require('./files/test')(orchestrator.registerScenario)
-// require('./files/entry')(orchestrator.registerScenario)
-// require('./files/links')(orchestrator.registerScenario)
-// require('./files/memo')(orchestrator.registerScenario)
-// require('./files/crypto')(orchestrator.registerScenario)
+require('./regressions')(orchestrator.registerScenario)
+require('./files/test')(orchestrator.registerScenario)
+require('./files/entry')(orchestrator.registerScenario)
+require('./files/links')(orchestrator.registerScenario)
+require('./files/memo')(orchestrator.registerScenario)
+require('./files/crypto')(orchestrator.registerScenario)
 require('./files/offline-validation')(orchestrator.registerScenario)
-// require('./multi-dna')(orchestrator.registerScenario)
+require('./multi-dna')(orchestrator.registerScenario)
 // require('./validate-agent-test')(orchestrator.registerScenario)
 
 // Check to see that we haven't accidentally disabled a bunch of scenarios

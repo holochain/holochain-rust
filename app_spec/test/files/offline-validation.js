@@ -33,15 +33,9 @@ module.exports = scenario => {
             let header_hash = chain_header_hashes[i]
             t.comment(header_hash)
 
-            // check alice can retrieve their own header entries
-            let header_alice = await alice.call('app', "blog", "get_post", { post_address: header_hash })
-            t.ok(header_alice.Ok)
-
             // check bob can retrieve alices header entries
             let header_bob = await bob.call('app', "blog", "get_post", { post_address: header_hash })
             t.ok(header_bob.Ok)
-
-            t.deepEqual(header_alice.Ok, header_bob.Ok)
 
             chain_headers.push(header_bob.Ok)
         }

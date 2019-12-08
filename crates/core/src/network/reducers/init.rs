@@ -161,7 +161,7 @@ pub mod test {
 
     #[test]
     pub fn should_set_sim2h_url() {
-        let p2p_config = P2pConfig::new_with_sim2h_backend("wss://localhost:9999");
+        let p2p_config = P2pConfig::new_with_sim2h_backend("wss://0.0.0.0:9999");
         let context: Arc<Context> = test_context(p2p_config);
         let dna_address: Address = context.agent_id.address();
         let agent_id = context.agent_id.content().to_string();
@@ -187,9 +187,7 @@ pub mod test {
 
         assert_eq!(result, ());
 
-        if let Some(network) = network_state.network {
-            assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/")
-        } else {
-        }
+        let network = network_state.network.expect("No network connection set");
+        assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/");
     }
 }

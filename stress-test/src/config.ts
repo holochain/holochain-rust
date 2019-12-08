@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import { Config } from '@holochain/tryorama'
+import { configBatchSimple } from '@holochain/tryorama-stress-utils'
 
 
 export const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim1h'
@@ -41,7 +42,7 @@ const logger = {
   state_dump: false
 }
 
-const network = 
+const network =
   ( networkType === 'sim1h'
   ? {
     type: 'sim1h',
@@ -69,11 +70,6 @@ const configCommon = {
 }
 
 /** Generates a bunch of identical conductor configs with multiple identical instances */
-export const configBatchSimple = (numConductors, numInstances) => {
-  const conductor = R.pipe(
-    R.map(n => [`${n}`, dna]),
-    R.fromPairs,
-    x => (Config.gen(x, configCommon)),
-  )(R.range(0, numInstances))
-  return R.repeat(conductor, numConductors)
-}
+export const configBatch = (numConductors, numInstances) => (
+  configBatchSimple(numConductors, numInstances, dna, configCommon)
+)

@@ -547,6 +547,17 @@ pub fn handle_get_post_bridged(post_address: Address) -> ZomeApiResult<Option<En
     entry
 }
 
+pub fn handle_get_chain_header_hashes() -> ZomeApiResult<Vec<Address>> {
+    match hdk::query_result("**".into(), QueryArgsOptions{ headers: true, ..Default::default()})? {
+        QueryResult::Headers(headers) => {
+            Ok(headers.iter().map(|header| {
+                header.address()
+            }).collect())
+        }
+        _ => unreachable!()
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
 

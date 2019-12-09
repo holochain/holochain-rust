@@ -342,6 +342,10 @@ impl CloudWatchLogger {
             })
             .collect::<Vec<InputLogEvent>>();
 
+        if log_events.is_empty() {
+            return;
+        }
+
         let put_log_events_request = PutLogEventsRequest {
             log_events,
             log_group_name: self

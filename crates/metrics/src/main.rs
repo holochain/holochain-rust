@@ -160,9 +160,9 @@ fn print_stat_check(
             }
             Err((record, errors)) => {
                 writer.serialize(record).unwrap();
-                println!("{}:", key);
+                println!("{}", key);
                 for e in errors {
-                    println!("\t{}:", e);
+                    println!("\t{}", e);
                 }
             }
         }

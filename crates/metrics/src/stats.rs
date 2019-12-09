@@ -453,7 +453,7 @@ pub struct GroupingKey(String, String);
 
 impl Display for GroupingKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}.{}", self.0, self.1)
+        write!(f, "{}: {}", self.0, self.1)
     }
 }
 

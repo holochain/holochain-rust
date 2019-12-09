@@ -133,11 +133,20 @@ fn print_stat_check(
     actual_csv_file: String,   // StatsByMetric
     result_csv_file: String,   // A collection of CheckedStatRecords
 ) {
-    let mut actual_reader = BufReader::new(File::open(actual_csv_file).unwrap());
-    let mut expected_reader = BufReader::new(File::open(expected_csv_file).unwrap());
+    let mut actual_reader = BufReader::new(File::open(actual_csv_file.clone()).unwrap());
     let actual_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut actual_reader).unwrap();
-    let expected_csv_data =
-        StatsByMetric::<StatsRecord>::from_reader(&mut expected_reader).unwrap();
+
+    let expected_csv_data = File::open(expected_csv_file.clone()).map(|expected_csv_reader| {
+        let mut expected_reader = BufReader::new(expected_csv_reader);
+        let expected_csv_data =
+            StatsByMetric::<StatsRecord>::from_reader(&mut expected_reader).unwrap();
+        expected_csv_data
+    }).unwrap_or_else(|e| {
+        println!("Expected data not found for path {:?} because error {:?}, bootstrapping from actual {:?}",
+            expected_csv_file.clone(), e, actual_csv_file);
+        std::fs::copy(actual_csv_file.clone(), expected_csv_file).unwrap();
+        actual_csv_data.clone()
+    });
 
     let checked =
         crate::stats::LessThanStatCheck::default().check_all(&expected_csv_data, &actual_csv_data);

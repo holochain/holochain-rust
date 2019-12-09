@@ -467,7 +467,7 @@ impl TryFrom<LogStream> for ScenarioData {
         let result: Result<Self, Self::Error> = log_stream
             .log_stream_name
             .map(|x| Ok(x))
-            .unwrap_or_else(|| Err(format!("Log stream name missing")))
+            .unwrap_or_else(|| Err("Log stream name missing".into()))
             .and_then(TryFrom::try_from);
         result
     }

@@ -471,23 +471,7 @@ impl GroupingKey {
 #[shrinkwrap(mutable)]
 pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<GroupingKey, D>);
 
-/*
-trait ToRecords<'a> {
-    fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>+'a>;
-}
-
-impl<'a> ToRecords<'a> for StatsByMetric<StatsRecord> {
-    fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {
-        let me = self.0.clone();
-        Box::new(
-            me.into_iter()
-            .map(|(name, stat)| StatsRecord::new(name, stat.run.clone(), stat)),
-        )
-    }
-}
-*/
 impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
-    // TODO clean this up with ToRecords trait
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();
         Box::new(

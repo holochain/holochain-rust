@@ -174,50 +174,41 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) {
-        //let start = std::time::Instant::now();
-        //for _ in 0..100 {
-            if let Ok((url, msg)) = self.msg_recv.try_recv() {
-                let url: Lib3hUri = url::Url::from(url).into();
-                match msg {
-                    Ok(frame) => match frame {
-                        WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                            url,
-                            format!("unexpected text message: {:?}", s).into(),
-                        ),
-                        WsFrame::Binary(b) => {
-                            let payload: Opaque = b.into();
-                            match Sim2h::verify_payload(payload.clone()) {
-                                Ok((source, wire_message)) => {
-                                    if let Err(error) =
-                                        self.handle_message(&url, wire_message, &source)
-                                    {
-                                        error!("Error handling message: {:?}", error);
-                                    }
+        if let Ok((url, msg)) = self.msg_recv.try_recv() {
+            let url: Lib3hUri = url::Url::from(url).into();
+            match msg {
+                Ok(frame) => match frame {
+                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                        url,
+                        format!("unexpected text message: {:?}", s).into(),
+                    ),
+                    WsFrame::Binary(b) => {
+                        let payload: Opaque = b.into();
+                        match Sim2h::verify_payload(payload.clone()) {
+                            Ok((source, wire_message)) => {
+                                if let Err(error) = self.handle_message(&url, wire_message, &source)
+                                {
+                                    error!("Error handling message: {:?}", error);
                                 }
-                                Err(error) => error!(
-                                    "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                    error, payload
-                                ),
                             }
+                            Err(error) => error!(
+                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                error, payload
+                            ),
                         }
-                        // TODO - we should use websocket ping/pong
-                        //        instead of rolling our own on top of Binary
-                        WsFrame::Ping(_) => (),
-                        WsFrame::Pong(_) => (),
-                        WsFrame::Close(c) => {
-                            debug!("Disconnecting {} after connection reset {:?}", url, c);
-                            self.disconnect(&url);
-                        }
-                    },
-                    Err(e) => self.priv_drop_connection_for_error(url, e),
-                }
-            } //else {
-            //    break;
-            //}
-            //if start.elapsed() > std::time::Duration::from_millis(200) {
-            //    break;
-            //}
-        //}
+                    }
+                    // TODO - we should use websocket ping/pong
+                    //        instead of rolling our own on top of Binary
+                    WsFrame::Ping(_) => (),
+                    WsFrame::Pong(_) => (),
+                    WsFrame::Close(c) => {
+                        debug!("Disconnecting {} after connection reset {:?}", url, c);
+                        self.disconnect(&url);
+                    }
+                },
+                Err(e) => self.priv_drop_connection_for_error(url, e),
+            }
+        }
     }
 
     /// recalculate arc radius for our connections

@@ -760,8 +760,7 @@ impl Conductor {
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
-
-        self.start_signal_multiplexer();
+        
         self.dpki_bootstrap()?;
 
         for id in self.config.instance_ids_sorted_by_bridge_dependencies()? {
@@ -780,6 +779,8 @@ impl Conductor {
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }
         }
+
+        self.start_signal_multiplexer();
 
         for ui_interface_config in self.config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));

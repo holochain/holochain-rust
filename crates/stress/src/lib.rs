@@ -2,7 +2,7 @@ extern crate crossbeam_channel;
 extern crate num_cpus;
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, VecDeque},
     sync::{Arc, Mutex},
 };
 
@@ -70,7 +70,7 @@ pub struct StressLogStats {
 #[derive(Debug, Clone)]
 pub struct StressStats {
     pub master_tick_count: u64,
-    pub log_stats: HashMap<String, StressLogStats>,
+    pub log_stats: BTreeMap<String, StressLogStats>,
 }
 
 /// internal job metric log struct
@@ -180,7 +180,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             log_send,
             stats: StressStats {
                 master_tick_count: 0,
-                log_stats: HashMap::new(),
+                log_stats: BTreeMap::new(),
             },
         };
 
@@ -264,7 +264,15 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             // let's reset our statistics
             self.is_warmup = false;
             self.stats.master_tick_count = 0;
-            self.stats.log_stats = HashMap::new();
+            self.stats.log_stats = BTreeMap::new();
+            self.run_until = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(self.config.run_time_ms))
+                .unwrap();
+            self.next_progress = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    self.config.progress_interval_ms,
+                ))
+                .unwrap();
             self.config.suite.warmup_complete();
         }
 
@@ -307,7 +315,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             let start = std::time::Instant::now();
             let result = job.job.tick(&mut job.logger);
             job.logger
-                .log("job_tick_elapsed_ms", start.elapsed().as_millis() as f64);
+                .log("tick_job_elapsed_ms", start.elapsed().as_millis() as f64);
             if result.should_continue {
                 (*job_queue.lock().unwrap()).push_back(job);
             } else {

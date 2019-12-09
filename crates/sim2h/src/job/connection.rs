@@ -10,30 +10,30 @@ pub(crate) struct ConnectionJob {
     wss: TcpWss,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     frame: Option<WsFrame>,
+    outgoing_recv: crossbeam_channel::Receiver<WsFrame>,
 }
 
 impl ConnectionJob {
     pub(crate) fn new(
         wss: TcpWss,
         msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    ) -> Self {
-        Self {
-            cont: true,
-            wss,
-            msg_send,
-            frame: None,
-        }
+    ) -> (Self, crossbeam_channel::Sender<WsFrame>) {
+        let (outgoing_send, outgoing_recv) = crossbeam_channel::unbounded();
+        (
+            Self {
+                cont: true,
+                wss,
+                msg_send,
+                frame: None,
+                outgoing_recv,
+            },
+            outgoing_send,
+        )
     }
 
     /// cancel this job - will be dropped next time it is polled.
     pub(crate) fn stop(&mut self) {
         self.cont = false;
-    }
-
-    /// send data out on this websocket connection
-    pub(crate) fn send(&mut self, msg: WsFrame) -> Sim2hResult<()> {
-        self.wss.write(msg)?;
-        Ok(())
     }
 
     /// internal - report a received message or error
@@ -47,6 +47,13 @@ impl ConnectionJob {
         }
         if self.frame.is_none() {
             self.frame = Some(WsFrame::default());
+        }
+        if let Ok(frame) = self.outgoing_recv.try_recv() {
+            if let Err(e) = self.wss.write(frame) {
+                error!("WEBSOCKET ERROR: {:?}", e);
+                self.report_msg(Err(e.into()));
+                return false;
+            }
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {

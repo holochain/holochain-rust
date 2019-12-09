@@ -86,7 +86,13 @@ pub struct Sim2h {
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
-    open_connections: HashMap<Lib3hUri, Arc<Mutex<ConnectionJob>>>,
+    open_connections: HashMap<
+        Lib3hUri,
+        (
+            Arc<Mutex<ConnectionJob>>,
+            crossbeam_channel::Sender<WsFrame>,
+        ),
+    >,
     num_ticks: u64,
     /// when should we recalculated the rrdht_arc_radius
     rrdht_arc_radius_recalc: std::time::Instant,
@@ -143,12 +149,14 @@ impl Sim2h {
     fn priv_check_incoming_connections(&mut self) {
         if let Ok(wss) = self.wss_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-            let job = Arc::new(Mutex::new(ConnectionJob::new(wss, self.msg_send.clone())));
+            let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
+            let job = Arc::new(Mutex::new(job));
             if let Err(error) = self.handle_incoming_connect(url.clone()) {
                 error!("Error handling incoming connection: {:?}", error);
                 return;
             }
-            self.open_connections.insert(url, job.clone());
+            self.open_connections
+                .insert(url, (job.clone(), outgoing_send));
             self.pool.push_job(Box::new(job));
         }
     }
@@ -166,41 +174,50 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) {
-        if let Ok((url, msg)) = self.msg_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(url).into();
-            match msg {
-                Ok(frame) => match frame {
-                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                        url,
-                        format!("unexpected text message: {:?}", s).into(),
-                    ),
-                    WsFrame::Binary(b) => {
-                        let payload: Opaque = b.into();
-                        match Sim2h::verify_payload(payload.clone()) {
-                            Ok((source, wire_message)) => {
-                                if let Err(error) = self.handle_message(&url, wire_message, &source)
-                                {
-                                    error!("Error handling message: {:?}", error);
+        //let start = std::time::Instant::now();
+        //for _ in 0..100 {
+            if let Ok((url, msg)) = self.msg_recv.try_recv() {
+                let url: Lib3hUri = url::Url::from(url).into();
+                match msg {
+                    Ok(frame) => match frame {
+                        WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                            url,
+                            format!("unexpected text message: {:?}", s).into(),
+                        ),
+                        WsFrame::Binary(b) => {
+                            let payload: Opaque = b.into();
+                            match Sim2h::verify_payload(payload.clone()) {
+                                Ok((source, wire_message)) => {
+                                    if let Err(error) =
+                                        self.handle_message(&url, wire_message, &source)
+                                    {
+                                        error!("Error handling message: {:?}", error);
+                                    }
                                 }
+                                Err(error) => error!(
+                                    "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                    error, payload
+                                ),
                             }
-                            Err(error) => error!(
-                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                error, payload
-                            ),
                         }
-                    }
-                    // TODO - we should use websocket ping/pong
-                    //        instead of rolling our own on top of Binary
-                    WsFrame::Ping(_) => (),
-                    WsFrame::Pong(_) => (),
-                    WsFrame::Close(c) => {
-                        debug!("Disconnecting {} after connection reset {:?}", url, c);
-                        self.disconnect(&url);
-                    }
-                },
-                Err(e) => self.priv_drop_connection_for_error(url, e),
-            }
-        }
+                        // TODO - we should use websocket ping/pong
+                        //        instead of rolling our own on top of Binary
+                        WsFrame::Ping(_) => (),
+                        WsFrame::Pong(_) => (),
+                        WsFrame::Close(c) => {
+                            debug!("Disconnecting {} after connection reset {:?}", url, c);
+                            self.disconnect(&url);
+                        }
+                    },
+                    Err(e) => self.priv_drop_connection_for_error(url, e),
+                }
+            } //else {
+            //    break;
+            //}
+            //if start.elapsed() > std::time::Duration::from_millis(200) {
+            //    break;
+            //}
+        //}
     }
 
     /// recalculate arc radius for our connections
@@ -312,7 +329,7 @@ impl Sim2h {
     fn disconnect(&mut self, uri: &Lib3hUri) {
         trace!("disconnect entered");
 
-        if let Some(con) = self.open_connections.remove(uri) {
+        if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
             con.f_lock().stop();
         }
 
@@ -813,14 +830,12 @@ impl Sim2h {
         }
         let payload: Opaque = msg.clone().into();
 
-        if let Err(e) = match self.open_connections.get_mut(&uri) {
+        match self.open_connections.get_mut(&uri) {
             None => {
                 error!("FAILED TO SEND, NO ROUTE: {}", uri);
                 return;
             }
-            Some(con) => con.f_lock().send(payload.as_bytes().into()),
-        } {
-            self.priv_drop_connection_for_error(uri.clone(), e);
+            Some((_con, outgoing_send)) => outgoing_send.f_send(payload.as_bytes().into()),
         }
 
         match msg {

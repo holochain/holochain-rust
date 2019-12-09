@@ -51,11 +51,15 @@ pub fn state_dump(context: Arc<Context>) {
         .iter()
         .map(|PendingValidationWithTimeout { pending, .. }| {
             format!(
-                "<{}> [{}] {}: {}",
+                "<{}({})> {}: depends on : {:?}",
                 pending.workflow.to_string(),
                 pending.entry_with_header.header.entry_type(),
                 pending.entry_with_header.entry.address(),
-                pending.entry_with_header.entry.content(),
+                pending
+                    .dependencies
+                    .iter()
+                    .map(|addr| addr.to_string())
+                    .collect::<Vec<_>>(),
             )
         })
         .collect::<Vec<String>>();

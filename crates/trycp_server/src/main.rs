@@ -5,7 +5,7 @@ extern crate serde_json;
 
 //use log::error;
 //use std::process::exit;
-use self::tempfile::tempdir;
+use self::tempfile::Builder;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
 use nix::{
@@ -25,12 +25,15 @@ use std::{
 };
 use structopt::StructOpt;
 
-const MAGIC_STRING: &str = "Done. All interfaces started.";
+// NOTE: don't change without also changing in crates/holochain/src/main.rs
+const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 const CONDUCTOR_CONFIG_FILENAME: &str = "conductor-config.toml";
 const CONDUCTOR_STDOUT_LOG_FILENAME: &str = "stdout.txt";
 const CONDUCTOR_STDERR_LOG_FILENAME: &str = "stderr.txt";
-const DNA_DIRNAME: &str = "dnas";
+const DNAS_DIRNAME: &str = "dnas";
+const CONDUCTORS_DIRNAME: &str = "conductors";
+const TRYCP_DIRNAME: &str = "/tmp/trycp";
 
 #[derive(StructOpt)]
 struct Cli {
@@ -80,11 +83,27 @@ struct TrycpServer {
     port_range: PortRange,
 }
 
+fn make_conductor_dir() -> Result<PathBuf, String> {
+    let conductor_path = PathBuf::new().join(TRYCP_DIRNAME).join(CONDUCTORS_DIRNAME);
+    std::fs::create_dir_all(conductor_path.clone()).map_err(|err| format!("{:?}", err))?;
+    let dir = Builder::new()
+        .tempdir_in(conductor_path)
+        .map_err(|err| format!("{:?}", err))?
+        .into_path();
+    Ok(dir)
+}
+
+fn make_dna_dir() -> Result<PathBuf, String> {
+    let dna_path = PathBuf::new().join(TRYCP_DIRNAME).join(DNAS_DIRNAME);
+    std::fs::create_dir_all(dna_path.clone()).map_err(|err| format!("{:?}", err))?;
+    Ok(dna_path)
+}
+
 impl TrycpServer {
     pub fn new(port_range: PortRange) -> Self {
         TrycpServer {
-            dir: tempdir().expect("should create tmp dir").into_path(),
-            dna_dir: tempdir().expect("should create tmp dir").into_path(),
+            dir: make_conductor_dir().expect("should create conductor dir"),
+            dna_dir: make_dna_dir().expect("should create dna dir"),
             next_port: port_range.0,
             port_range,
         }
@@ -104,8 +123,11 @@ impl TrycpServer {
     }
 
     pub fn reset(&mut self) {
-        self.dir = tempdir().expect("should create tmp dir").into_path();
         self.next_port = self.port_range.0;
+        match make_conductor_dir() {
+            Err(err) => println!("reset failed creating conductor dir: {:?}", err),
+            Ok(dir) => self.dir = dir,
+        }
     }
 }
 
@@ -157,7 +179,7 @@ fn get_config_path(state: &TrycpServer, id: &String) -> PathBuf {
 }
 
 fn get_dna_dir(state: &TrycpServer) -> PathBuf {
-    state.dna_dir.join(DNA_DIRNAME)
+    state.dna_dir.clone()
 }
 
 fn get_dna_path(state: &TrycpServer, url: &Url) -> PathBuf {
@@ -313,11 +335,9 @@ fn main() {
         let id = get_as_string("id", &params_map)?;
         let mut state = state_setup.write().unwrap();
         let file_path = get_dir(&state, &id);
-        let admin_port = state.acquire_port().map_err(|e| internal_error(e))?;
-        let zome_port = state.acquire_port().map_err(|e| internal_error(e))?;
+        let interface_port = state.acquire_port().map_err(|e| internal_error(e))?;
         Ok(json!({
-            "adminPort": admin_port,
-            "zomePort": zome_port,
+            "interfacePort": interface_port,
             "configDir": file_path.to_string_lossy(),
         }))
     });

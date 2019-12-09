@@ -78,7 +78,7 @@ pub fn definition() -> ValidatingEntryType {
                 "%agent_id",
                 link_type: "authored_posts",
                 validation_package: || {
-                    hdk::ValidationPackageDefinition::ChainFull
+                    hdk::ValidationPackageDefinition::Entry
                 },
                 validation: | validation_data: hdk::LinkValidationData | {
                     // test validation of links based on their tag
@@ -97,7 +97,7 @@ pub fn definition() -> ValidatingEntryType {
                 "%agent_id",
                 link_type: "recommended_posts",
                 validation_package: || {
-                    hdk::ValidationPackageDefinition::ChainFull
+                    hdk::ValidationPackageDefinition::Entry
                 },
                 validation: | _validation_data: hdk::LinkValidationData | {
                     Ok(())

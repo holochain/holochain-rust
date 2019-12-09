@@ -624,6 +624,7 @@ impl ConductorApiBuilder {
                     }
                 },
                 instances: Vec::new(),
+                choose_free_port: None,
             };
 
             conductor_call!(|c| c.add_interface(new_interface))?;

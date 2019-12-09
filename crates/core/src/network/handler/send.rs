@@ -52,7 +52,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
                 }
             };
             let future = closure();
-            context.clone().spawn_task(future);
+            context.spawn_task(future);
         }
         DirectMessage::RequestValidationPackage(address) => {
             // TODO: run this function with an async block spawned to the pool too, like above.
@@ -110,11 +110,11 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
                 message_data.request_id.clone(),
                 custom_direct_message.payload,
             )));
-            dispatch_action(context.action_channel(), action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper);
 
             let action_wrapper =
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
-            dispatch_action(context.action_channel(), action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper);
         }
         DirectMessage::RequestValidationPackage(_) => log_error!(context,
             "net: Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
@@ -130,13 +130,13 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
 
             let action_wrapper = ActionWrapper::new(Action::HandleGetValidationPackage((
                 address.clone(),
-                maybe_validation_package.clone(),
+                maybe_validation_package,
             )));
-            dispatch_action(context.action_channel(), action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper);
 
             let action_wrapper =
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
-            dispatch_action(context.action_channel(), action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper);
         }
     };
 }

@@ -84,8 +84,8 @@ impl From<RusotoError<GetItemError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -111,8 +111,8 @@ impl From<RusotoError<PutItemError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -144,8 +144,8 @@ impl From<RusotoError<UpdateItemError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -162,8 +162,8 @@ impl From<RusotoError<DescribeTableError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -179,8 +179,8 @@ impl From<RusotoError<DescribeLimitsError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -194,8 +194,8 @@ impl From<RusotoError<ListTablesError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -211,8 +211,8 @@ impl From<RusotoError<CreateTableError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -229,8 +229,8 @@ impl From<RusotoError<DeleteTableError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }
@@ -249,8 +249,8 @@ impl From<RusotoError<ScanError>> for BbDhtError {
             },
             RusotoError::HttpDispatch(err) => BbDhtError::HttpDispatch(err.to_string()),
             RusotoError::Credentials(err) => BbDhtError::Credentials(err.to_string()),
-            RusotoError::Validation(err) => BbDhtError::Validation(err.to_string()),
-            RusotoError::ParseError(err) => BbDhtError::ParseError(err.to_string()),
+            RusotoError::Validation(err) => BbDhtError::Validation(err),
+            RusotoError::ParseError(err) => BbDhtError::ParseError(err),
             RusotoError::Unknown(err) => BbDhtError::Unknown(format!("{:?}", err)),
         }
     }

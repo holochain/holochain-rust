@@ -22,7 +22,7 @@ impl ZomeFnCall {
         // TODO we are currently signing the call ourself.  This signature
         // should have happend at the client and be extracted from the args.
         let cap_call = make_cap_request_for_call(
-            context.clone(),
+            context,
             args.cap_token,
             &args.fn_name,
             JsonString::from_json(&args.fn_args.clone()),

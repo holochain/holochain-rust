@@ -52,7 +52,7 @@ async fn try_make_local_validation_package(
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),
         CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
             "ValidationPackage callback not implemented for {:?} ({})",
-            entry.entry_type().clone(),
+            entry.entry_type(),
             reason
         ))),
         _ => unreachable!(),
@@ -73,7 +73,7 @@ async fn try_make_local_validation_package(
 
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
-                build_validation_package(entry, context.clone(), header.provenances())
+                build_validation_package(entry, context, header.provenances())
             } else {
                 Err(HolochainError::ErrorGeneric(String::from(
                     "Can't create validation package locally",

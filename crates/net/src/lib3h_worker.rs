@@ -10,7 +10,7 @@ use lib3h::{
     error::Lib3hError,
 };
 
-use holochain_tracing::HSpan;
+use holochain_tracing::Span;
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 /// A worker that makes use of lib3h / NetworkEngine.
@@ -41,7 +41,7 @@ impl Lib3hWorker {
             net_engine: LegacyLib3h::new(
                 "core",
                 GhostEngine::new(
-                    HSpan::fixme(),
+                    Span::fixme(),
                     Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
                     real_config,
                     // TODO generate this automatically in the lib3h api
@@ -58,7 +58,7 @@ impl Lib3hWorker {
         real_config: EngineConfig,
     ) -> NetResult<Self> {
         let ghost_engine = GhostEngine::new(
-            HSpan::fixme(),
+            Span::fixme(),
             Box::new(lib3h_sodium::SodiumCryptoSystem::new()),
             real_config.clone(),
             // TODO generate this automatically in the lib3h api

@@ -61,7 +61,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let res: Result<Address, HolochainError> = context
         .block_on(author_entry(
             &deletion_entry.clone(),
-            Some(deleted_entry_address.clone()),
+            Some(deleted_entry_address),
             &context.clone(),
             &vec![],
         ))

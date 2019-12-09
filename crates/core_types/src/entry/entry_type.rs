@@ -32,7 +32,7 @@ impl From<String> for AppEntryType {
 
 impl From<AppEntryType> for String {
     fn from(app_entry_type: AppEntryType) -> Self {
-        app_entry_type.0.clone()
+        app_entry_type.0
     }
 }
 

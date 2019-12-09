@@ -85,7 +85,7 @@ impl AgentState {
         self.chain_store()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
-            .and_then(|chain_header| Some(chain_header.entry_address().clone()))
+            .map(|chain_header| chain_header.entry_address().clone())
             .or_else(|| Some(self.initial_agent_address.clone()))
             .ok_or_else(|| HolochainError::ErrorGeneric("Agent entry not found".to_string()))
     }
@@ -210,12 +210,12 @@ pub fn create_new_chain_header(
         &agent_state
             .top_chain_header
             .clone()
-            .and_then(|chain_header| Some(chain_header.address())),
+            .map(|chain_header| chain_header.address()),
         &agent_state
             .chain_store()
             .iter_type(&agent_state.top_chain_header, &entry.entry_type())
             .nth(0)
-            .and_then(|chain_header| Some(chain_header.address())),
+            .map(|chain_header| chain_header.address()),
         crud_link,
         &Iso8601::from(duration_since_epoch.as_secs()),
     ))

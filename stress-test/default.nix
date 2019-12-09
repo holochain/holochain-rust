@@ -8,7 +8,7 @@ let
     cd stress-test &&
     wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json -O passthrough-dna.dna.json
     npm install &&
-    APP_SPEC_NETWORK_TYPE=sim1h AWS_ACCESS_KEY_ID=bla AWS_SECRET_ACCESS_KEY=blup npm test -- "$@"
+    APP_SPEC_NETWORK_TYPE=sim1h TRYORAMA_CHOOSE_FREE_PORT=1 AWS_ACCESS_KEY_ID=bla AWS_SECRET_ACCESS_KEY=blup npm test -- "$@"
     )
   '';
 
@@ -20,7 +20,7 @@ let
     cd stress-test &&
     wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.6/passthrough-dna.dna.json -O passthrough-dna.dna.json
     npm install &&
-    APP_SPEC_NETWORK_TYPE=sim2h npm test -- "$@"
+    APP_SPEC_NETWORK_TYPE=sim2h TRYORAMA_CHOOSE_FREE_PORT=1 npm test -- "$@"
   )
   '';
 in

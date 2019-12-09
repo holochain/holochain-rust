@@ -36,7 +36,7 @@ pub fn query_entry_aspects(
         Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
     };
     let query_json = JsonString::from_json(&query_str.to_string());
-    let _query = match NetworkQuery::try_from(query_json.clone()) {
+    let _query = match NetworkQuery::try_from(query_json) {
         Ok(v) => v,
         Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
     };

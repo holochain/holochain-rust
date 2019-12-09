@@ -149,9 +149,8 @@ impl ConductorApiBuilder {
             .get(id)
             .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
         let hc_lock = instance.clone();
-        let hc_lock_inner = hc_lock.clone();
         let context = {
-            let hc = hc_lock_inner
+            let hc = hc_lock
                 .read()
                 .unwrap()
                 .annotate(format!("RPC method_call: {:?}", params_map));
@@ -197,14 +196,8 @@ impl ConductorApiBuilder {
             }
         };
 
-        Holochain::call_zome_function(
-            context.clone(),
-            &zome_name,
-            cap_request,
-            &func_name,
-            &args_string,
-        )
-        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+        Holochain::call_zome_function(context, &zome_name, cap_request, &func_name, &args_string)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 
     /// Adds a "call" method for making zome function calls
@@ -277,11 +270,10 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        self.instances
-            .insert(instance_name.clone(), instance.clone());
+        self.instances.insert(instance_name.clone(), instance);
         self.instance_ids_map.insert(
             PublicInstanceIdentifier::from(instance_name.clone()),
-            instance_name.clone(),
+            instance_name,
         );
         self
     }
@@ -498,7 +490,7 @@ impl ConductorApiBuilder {
                     .map(|v| v.to_string());
                 let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
-                    id.to_string(),
+                    id,
                     copy,
                     expected_hash,
                     properties,
@@ -620,7 +612,7 @@ impl ConductorApiBuilder {
             })?;
 
             let new_interface = InterfaceConfiguration {
-                id: id.to_string(),
+                id,
                 admin,
                 driver: match driver_type.as_ref() {
                     "websocket" => InterfaceDriver::Websocket { port },
@@ -632,6 +624,7 @@ impl ConductorApiBuilder {
                     }
                 },
                 instances: Vec::new(),
+                choose_free_port: None,
             };
 
             conductor_call!(|c| c.add_interface(new_interface))?;
@@ -937,7 +930,7 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -961,7 +954,7 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -1034,8 +1027,8 @@ impl ConductorApiBuilder {
         agent_id: AgentId,
         signing_service_uri: String,
     ) -> Self {
-        let agent_id = agent_id.clone();
-        let signing_service_uri = signing_service_uri.clone();
+        let agent_id = agent_id;
+        let signing_service_uri = signing_service_uri;
 
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
@@ -1058,7 +1051,7 @@ impl ConductorApiBuilder {
         agent_id: AgentId,
         encryption_service_uri: String,
     ) -> Self {
-        let agent_id = agent_id.clone();
+        let agent_id = agent_id;
         self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
@@ -1079,7 +1072,7 @@ impl ConductorApiBuilder {
         agent_id: AgentId,
         decryption_service_uri: String,
     ) -> Self {
-        let agent_id = agent_id.clone();
+        let agent_id = agent_id;
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
@@ -1185,19 +1178,18 @@ impl ConductorApiBuilder {
             let signature = k
                 .lock()
                 .unwrap()
-                .sign(&src_id, payload.clone())
+                .sign(&src_id, payload)
                 .map_err(|_| jsonrpc_core::Error::internal_error())?;
 
             Ok(json!({ "signature": String::from(signature) }))
         });
 
-        let k = keystore.clone();
         self.io
             .add_method("agent/keystore/get_public_key", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let src_id = Self::get_as_string("src_id", &params_map)?;
 
-                let secret = k.lock().unwrap().get(&src_id).map_err(|err| {
+                let secret = keystore.lock().unwrap().get(&src_id).map_err(|err| {
                     jsonrpc_core::Error::invalid_params(format!(
                         r#"error getting "{}": {}"#,
                         src_id, err

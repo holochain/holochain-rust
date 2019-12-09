@@ -144,7 +144,7 @@ fn print_stat_check(
 
     let file = BufWriter::new(File::create(result_csv_file).unwrap());
     let mut writer = csv::Writer::from_writer(file);
-     for (key, record) in checked.iter() {
+    for (key, record) in checked.iter() {
         match record {
             Ok(record) => {
                 writer.serialize(record).unwrap();

@@ -3,7 +3,7 @@ use crate::*;
 
 use crate::{
     logger::{LogLine, ParseError},
-    stats::{OnlineStats, StatsByMetric},
+    stats::{GroupingKey, OnlineStats, StatsByMetric},
 };
 use rusoto_core::region::Region;
 use rusoto_logs::*;
@@ -184,32 +184,23 @@ impl CloudWatchLogger {
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// aggregate statistics of metrics from the results.
-    pub fn query_and_aggregate(
-        &self,
-        query_args: &QueryArgs,
-    ) -> HashMap<String, StatsByMetric<OnlineStats>> {
+    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric<OnlineStats> {
         let mut hash_map = HashMap::new();
 
         for (log_stream, metric) in self.query_metrics(query_args) {
-            let scenario_data_result: Result<ScenarioData, _> = log_stream.try_into();
+            let scenario_data_result: Result<ScenarioData, _> = log_stream.clone().try_into();
 
             if let Err(e) = scenario_data_result {
                 debug!("Not a valid log stream pattern, skipping: {:?}", e);
                 continue;
             }
 
-            let scenario_data = scenario_data_result.unwrap();
-
-            let entry = hash_map.entry(scenario_data.grouping_key());
-
-            let stats_by_metric = entry.or_insert_with(StatsByMetric::empty);
-
-            let entry = stats_by_metric.entry(metric.name);
+            let entry = hash_map.entry(GroupingKey::new(log_stream, metric.name));
 
             let stats = entry.or_insert_with(OnlineStats::empty);
             stats.add(metric.value);
         }
-        hash_map
+        StatsByMetric(hash_map)
     }
 
     pub fn default_log_stream() -> String {
@@ -483,7 +474,7 @@ impl TryFrom<LogStream> for ScenarioData {
 }
 impl ScenarioData {
     /// Groups by everything _but_ the player name
-    fn grouping_key(&self) -> String {
+    fn without_player_name(&self) -> String {
         format!(
             "{}.{}.{}.{}",
             self.run_name, self.net_name, self.dna_name, self.scenario_name
@@ -500,7 +491,7 @@ pub fn group_by_scenario(
         let scenario_data: Result<ScenarioData, _> = log_stream_name.try_into();
         if let Ok(scenario_data) = scenario_data {
             grouped
-                .entry(scenario_data.grouping_key())
+                .entry(scenario_data.without_player_name())
                 .or_insert_with(HashSet::new)
                 .insert(scenario_data);
         }

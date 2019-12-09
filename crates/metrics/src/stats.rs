@@ -1,5 +1,5 @@
+use crate::metrics::Metric;
 /// Provides statistical features over metric data.
-use crate::Metric;
 use num_traits::float::Float;
 /// Extends the metric api with statistical aggregation functions
 use stats::Commute;
@@ -46,7 +46,8 @@ pub struct OnlineStats {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StatsRecord {
-    pub name: Option<String>,
+    pub metric: Option<String>,
+    pub stream_id: Option<String>,
     pub max: f64,
     pub min: f64,
     pub cnt: f64,
@@ -57,7 +58,8 @@ pub struct StatsRecord {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckedStatsRecord {
-    metric_name: String,
+    metric: String,
+    stream_id: String,
     pub expected_max: f64,
     pub expected_min: f64,
     pub expected_cnt: f64,
@@ -81,17 +83,18 @@ pub struct CheckedStatsRecord {
 }
 
 impl CheckedStatsRecord {
-    pub fn new<S: Into<String>>(
-        metric_name: S,
-        expected: &dyn DescriptiveStats,
+    pub fn new(
+        expected: &StatsRecord,
         actual: &dyn DescriptiveStats,
         percent_change_allowed: f64,
         passed: bool,
     ) -> Self {
         let percent_change = expected.percent_change(actual);
-        let metric_name = metric_name.into();
+        let metric = expected.metric.clone().unwrap_or_default();
+        let stream_id = expected.stream_id.clone().unwrap_or_default();
         Self {
-            metric_name,
+            metric,
+            stream_id,
             expected_max: expected.max(),
             expected_min: expected.min(),
             expected_cnt: expected.cnt(),
@@ -119,7 +122,8 @@ impl CheckedStatsRecord {
 impl Default for StatsRecord {
     fn default() -> Self {
         Self {
-            name: None,
+            metric: None,
+            stream_id: None,
             max: f64::min_value(),
             min: f64::max_value(),
             mean: 0.0,
@@ -131,10 +135,16 @@ impl Default for StatsRecord {
 }
 
 impl StatsRecord {
-    pub fn new<S: Into<String>, D: DescriptiveStats>(metric_name: S, desc: D) -> Self {
-        let metric_name = metric_name.into();
+    pub fn new<S: Into<Option<String>>, S2: Into<Option<String>>, D: DescriptiveStats>(
+        stream_id: S,
+        metric: S2,
+        desc: D,
+    ) -> Self {
+        let metric = metric.into();
+        let stream_id = stream_id.into();
         Self {
-            name: Some(metric_name),
+            metric,
+            stream_id,
             max: desc.max(),
             min: desc.min(),
             mean: desc.mean(),
@@ -153,7 +163,7 @@ impl StatsRecord {
         let mut stats_by_metric_name: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::new();
         for record in reader.deserialize() {
             let stat: StatsRecord = record?;
-            let stat_name = stat.name.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+            let stat_name = stat.metric.clone().map(|x| Ok(x)).unwrap_or_else(|| {
                 Err(Box::new(io::Error::new(
                     io::ErrorKind::Other,
                     "No stat name in stat record",
@@ -168,7 +178,8 @@ impl StatsRecord {
 impl From<OnlineStats> for StatsRecord {
     fn from(desc_stats: OnlineStats) -> Self {
         Self {
-            name: None,
+            metric: None,
+            stream_id: None,
             max: desc_stats.max(),
             min: desc_stats.min(),
             stddev: desc_stats.stddev(),
@@ -216,6 +227,7 @@ impl Display for DescriptiveStatType {
         write!(f, "{:?}", self)
     }
 }
+
 #[derive(Clone, Debug, Serialize)]
 pub struct StatFailure {
     expected: f64,
@@ -292,23 +304,23 @@ impl DescriptiveStats for OnlineStats {
 pub trait StatCheck {
     fn check(
         &self,
-        expected: &dyn DescriptiveStats,
+        expected: &StatsRecord,
         actual: &dyn DescriptiveStats,
     ) -> Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>;
 
-    fn check_all<D1: DescriptiveStats, D2: DescriptiveStats>(
+    fn check_all(
         &self,
-        expected: &StatsByMetric<D1>,
-        actual: &StatsByMetric<D2>,
+        expected: &StatsByMetric<StatsRecord>,
+        actual: &StatsByMetric<StatsRecord>,
     ) -> StatCheckResult {
         StatCheckResult(HashMap::from_iter(expected.iter().map(
-            |(stat_name, expected_stat)| {
-                let result = if let Some(actual_stat) = actual.get(stat_name) {
+            |(grouping_key, expected_stat)| {
+                let result = if let Some(actual_stat) = actual.get(grouping_key) {
                     self.check(expected_stat, actual_stat)
                 } else {
                     panic!("No stat name") // TODO Better error handling
                 };
-                (stat_name.clone(), result)
+                (grouping_key.clone(), result)
             },
         )))
     }
@@ -340,20 +352,15 @@ impl Default for LessThanStatCheck {
 impl StatCheck for LessThanStatCheck {
     fn check(
         &self,
-        expected: &dyn DescriptiveStats,
+        expected: &StatsRecord,
         actual: &dyn DescriptiveStats,
     ) -> Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)> {
         let percent_change = expected.percent_change(actual);
 
         let mut failures = Vec::new();
 
-        let mut checked_stats_record = CheckedStatsRecord::new(
-            "FIXME",
-            expected,
-            actual,
-            self.percent_change_allowed,
-            false,
-        );
+        let mut checked_stats_record =
+            CheckedStatsRecord::new(expected, actual, self.percent_change_allowed, false);
         if percent_change.mean() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.mean(),
@@ -405,7 +412,7 @@ impl StatCheck for LessThanStatCheck {
 
 #[derive(Shrinkwrap)]
 pub struct StatCheckResult(
-    HashMap<String, Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>>,
+    HashMap<GroupingKey, Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>>,
 );
 
 impl Display for StatCheckResult {
@@ -440,17 +447,52 @@ impl Commute for OnlineStats {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+/// (metric name, run name)
+pub struct GroupingKey(String, String);
+
+impl Display for GroupingKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}.{}", self.0, self.1)
+    }
+}
+
+impl GroupingKey {
+    pub fn new<S1: Into<String>, S2: Into<String>>(stream_id: S1, metric: S2) -> Self {
+        let stream_id = stream_id.into();
+        let metric = metric.into();
+
+        Self(stream_id, metric)
+    }
+}
+
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
 #[shrinkwrap(mutable)]
-pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<String, D>);
+pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<GroupingKey, D>);
 
+/*
+trait ToRecords<'a> {
+    fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>+'a>;
+}
+
+impl<'a> ToRecords<'a> for StatsByMetric<StatsRecord> {
+    fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {
+        let me = self.0.clone();
+        Box::new(
+            me.into_iter()
+            .map(|(name, stat)| StatsRecord::new(name, stat.run.clone(), stat)),
+        )
+    }
+}
+*/
 impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
+    // TODO clean this up with ToRecords trait
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();
         Box::new(
             me.into_iter()
-                .map(|(name, stat)| StatsRecord::new(name, stat)),
+                .map(|(key, stat)| StatsRecord::new(key.0, key.1, stat)),
         )
     }
 
@@ -473,13 +515,19 @@ impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
         let mut data = HashMap::new();
         for record in reader.deserialize() {
             let stat: StatsRecord = record?;
-            let stat_name = stat.name.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+            let metric_name = stat.metric.clone().map(|x| Ok(x)).unwrap_or_else(|| {
                 Err(Box::new(io::Error::new(
                     io::ErrorKind::Other,
-                    "No stat name in stat record",
+                    "No metric name in stat record",
                 )))
             })?;
-            data.insert(stat_name, stat);
+            let stream_id = stat.stream_id.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+                Err(Box::new(io::Error::new(
+                    io::ErrorKind::Other,
+                    "No stream id stat record",
+                )))
+            })?;
+            data.insert(GroupingKey::new(stream_id, metric_name), stat);
         }
 
         Ok(Self(data))
@@ -498,12 +546,17 @@ impl<D: DescriptiveStats> Default for StatsByMetric<D> {
     }
 }
 
-impl FromIterator<Metric> for StatsByMetric<OnlineStats> {
-    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric<OnlineStats> {
+impl StatsByMetric<StatsRecord> {
+    pub fn from_iter_with_stream_id<I: IntoIterator<Item = Metric>, S: Into<String>>(
+        source: I,
+        stream_id: S,
+    ) -> StatsByMetric<OnlineStats> {
+        let stream_id = stream_id.into();
         StatsByMetric(source.into_iter().fold(
             HashMap::new(),
             |mut stats_by_metric_name, metric| {
-                let entry = stats_by_metric_name.entry(metric.name);
+                let entry =
+                    stats_by_metric_name.entry(GroupingKey::new(stream_id.clone(), metric.name));
 
                 let online_stats = entry.or_insert_with(OnlineStats::empty);
                 online_stats.add(metric.value);
@@ -513,12 +566,12 @@ impl FromIterator<Metric> for StatsByMetric<OnlineStats> {
     }
 }
 
-impl<S: Into<String>, D: DescriptiveStats> FromIterator<(S, D)> for StatsByMetric<D> {
-    fn from_iter<I: IntoIterator<Item = (S, D)>>(source: I) -> StatsByMetric<D> {
+impl<D: DescriptiveStats> FromIterator<(GroupingKey, D)> for StatsByMetric<D> {
+    fn from_iter<I: IntoIterator<Item = (GroupingKey, D)>>(source: I) -> StatsByMetric<D> {
         StatsByMetric(source.into_iter().fold(
             HashMap::new(),
             |mut stats_by_metric_name, (s, d)| {
-                stats_by_metric_name.insert(s.into(), d);
+                stats_by_metric_name.insert(s, d);
                 stats_by_metric_name
             },
         ))
@@ -527,8 +580,8 @@ impl<S: Into<String>, D: DescriptiveStats> FromIterator<(S, D)> for StatsByMetri
 
 impl Commute for StatsByMetric<OnlineStats> {
     fn merge(&mut self, rhs: Self) {
-        for (metric_name, online_stats_rhs) in rhs.iter() {
-            let entry = self.0.entry(metric_name.to_string());
+        for (key, online_stats_rhs) in rhs.iter() {
+            let entry = self.entry(key.clone());
             let online_stats = entry.or_insert_with(OnlineStats::empty);
             online_stats.merge(*online_stats_rhs);
         }
@@ -548,12 +601,16 @@ mod tests {
             .into_iter()
             .map(|x| Metric::new("size", x));
         let all_data = latency_data.chain(size_data);
-        let stats = StatsByMetric::from_iter(all_data);
+        let stats = StatsByMetric::from_iter_with_stream_id(all_data, "test");
 
-        let latency_stats = stats.get("latency").expect("latency stats to be present");
+        let latency_stats = stats
+            .get(&GroupingKey::new("test", "latency"))
+            .expect("latency stats to be present");
 
         assert_eq!(latency_stats.mean(), 100.0);
-        let size_stats = stats.get("size").expect("size stats to be present");
+        let size_stats = stats
+            .get(&GroupingKey::new("test", "size"))
+            .expect("size stats to be present");
 
         assert_eq!(size_stats.mean(), 37.0);
 
@@ -568,7 +625,7 @@ mod tests {
     fn can_perform_stat_check() {
         let expected: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(
             vec![(
-                "latency".to_string(),
+                GroupingKey::new("test", "latency"),
                 StatsRecord {
                     mean: 50.0,
                     max: 100.0,
@@ -584,7 +641,7 @@ mod tests {
 
         let actual: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(
             vec![(
-                "latency".to_string(),
+                GroupingKey::new("test", "latency"),
                 StatsRecord {
                     mean: 75.0,
                     max: 150.0,
@@ -636,13 +693,7 @@ mod tests {
         };
 
         let percent_change_allowed = 0.05;
-        let checked = CheckedStatsRecord::new(
-            "zome_call.commit.latency",
-            &expected,
-            &actual,
-            percent_change_allowed,
-            false,
-        );
+        let checked = CheckedStatsRecord::new(&expected, &actual, percent_change_allowed, false);
 
         let mut writer = csv::Writer::from_writer(std::io::stdout());
         writer.serialize(checked).unwrap();

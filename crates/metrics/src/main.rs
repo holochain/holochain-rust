@@ -6,7 +6,10 @@ use holochain_metrics::{
     *,
 };
 use rusoto_core::Region;
-use std::{collections::HashMap, fs::File, io::BufReader, iter::FromIterator};
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter},
+};
 
 fn enable_logging() {
     if std::env::var("RUST_LOG").is_err() {
@@ -112,17 +115,14 @@ fn print_cloudwatch_stats(
         region,
     );
 
-    let stats: HashMap<String, StatsByMetric<_>> = cloudwatch.query_and_aggregate(query_args);
+    let stats: StatsByMetric<_> = cloudwatch.query_and_aggregate(query_args);
 
-    for (grouping_key, stats) in stats.iter() {
-        println!("Stats for {}", grouping_key);
-        stats.write_csv(std::io::stdout()).unwrap();
-    }
+    stats.write_csv(std::io::stdout()).unwrap();
 }
 
 fn print_log_stats(log_file: String) {
-    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
-    let stats = StatsByMetric::from_iter(metrics);
+    let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
+    let stats = StatsByMetric::from_iter_with_stream_id(metrics, log_file);
     stats.write_csv(std::io::stdout()).unwrap()
 }
 
@@ -131,7 +131,7 @@ fn print_log_stats(log_file: String) {
 fn print_stat_check(
     expected_csv_file: String, // StatsByMetric
     actual_csv_file: String,   // StatsByMetric
-    _result_csv_file: String,  // A collection of CheckedStatRecords
+    result_csv_file: String,   // A collection of CheckedStatRecords
 ) {
     let mut actual_reader = BufReader::new(File::open(actual_csv_file).unwrap());
     let mut expected_reader = BufReader::new(File::open(expected_csv_file).unwrap());
@@ -142,5 +142,20 @@ fn print_stat_check(
     let checked =
         crate::stats::LessThanStatCheck::default().check_all(&expected_csv_data, &actual_csv_data);
 
-    println!("{}", checked);
+    let file = BufWriter::new(File::open(result_csv_file).unwrap());
+    let mut writer = csv::Writer::from_writer(file);
+    for (key, record) in checked.iter() {
+        match record {
+            Ok(record) => {
+                writer.serialize(record).unwrap();
+            }
+            Err((record, errors)) => {
+                writer.serialize(record).unwrap();
+                for e in errors {
+                    println!("{}: {}", key, e);
+                }
+            }
+        }
+    }
+    writer.flush().unwrap();
 }

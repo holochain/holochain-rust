@@ -142,7 +142,7 @@ fn print_stat_check(
     let checked =
         crate::stats::LessThanStatCheck::default().check_all(&expected_csv_data, &actual_csv_data);
 
-    let file = BufWriter::new(File::open(result_csv_file).unwrap());
+    let file = BufWriter::new(File::create(result_csv_file).unwrap());
     let mut writer = csv::Writer::from_writer(file);
     for (key, record) in checked.iter() {
         match record {

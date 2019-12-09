@@ -742,6 +742,9 @@ impl ConductorApiBuilder {
     ///   Returns a JSON object with all relevant fields of an instance's state.
     ///   Params:
     ///   - `instance_id` ID of the instance of which the state is requested
+    ///   - `source_chain` [bool] (optional) If set to false, will exclude source chain headers
+    ///   - `held_aspects` [bool] (optional) If set to false, will exclude the holding map entries
+    ///   - `queued_holding_workflows` [bool] (optional If set to false, will exclude contents of the validatio queue
     ///
     /// - `debug/fetch_cas`
     ///   Returns content of a given instance's CAS.
@@ -762,7 +765,20 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let instance_id = Self::get_as_string("instance_id", &params_map)?;
 
-            let dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+
+            let mut dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+
+            if Ok(false) == Self::get_as_bool("source_chain", &params_map) {
+                dump.source_chain.clear()
+            }
+
+            if Ok(false) == Self::get_as_bool("held_aspects", &params_map) {
+                dump.held_aspects.clear()
+            }
+
+            if Ok(false) == Self::get_as_bool("queued_holding_workflows", &params_map) {
+                dump.queued_holding_workflows.clear()
+            }
 
             Ok(serde_json::to_value(dump)
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?)

@@ -1,21 +1,11 @@
 //! `cargo run --bin sim2h_stress -- --help`
 
-extern crate base64;
-extern crate env_logger;
-extern crate hcid;
-extern crate holochain_stress;
-extern crate lib3h_crypto_api;
-extern crate lib3h_protocol;
-extern crate lib3h_sodium;
 #[macro_use]
 extern crate log;
-extern crate serde;
+#[macro_use]
+extern crate prettytable;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate sim2h;
-extern crate structopt;
-extern crate url2;
 
 use holochain_stress::*;
 use lib3h_crypto_api::CryptoSystem;
@@ -52,7 +42,7 @@ struct OptStressRunConfig {
         short,
         long,
         env = "STRESS_PROGRESS_INTERVAL_MS",
-        default_value = "5500"
+        default_value = "1000"
     )]
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
@@ -407,7 +397,7 @@ impl Job {
     pub fn ping(&mut self, logger: &mut StressJobMetricLogger) {
         self.ping_sent_stack.push_back(std::time::Instant::now());
         self.send_wire(WireMessage::Ping);
-        logger.log("send_ping_count", 1.0);
+        logger.log("ping_send_count", 1.0);
     }
 
     pub fn dm(&mut self, logger: &mut StressJobMetricLogger) {
@@ -433,7 +423,7 @@ impl Job {
                 }),
             ));
 
-            logger.log("send_dm_count", 1.0);
+            logger.log("dm_send_count", 1.0);
         }
     }
 
@@ -484,7 +474,7 @@ impl Job {
             },
         )));
 
-        logger.log("send_publish_count", 1.0);
+        logger.log("publish_send_count", 1.0);
     }
 }
 
@@ -509,7 +499,7 @@ impl StressJob for Job {
                             panic!("spurious pong");
                         }
                         let res = res.unwrap();
-                        logger.log("received_pong_ms", res.elapsed().as_millis() as f64);
+                        logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
                     } else if data.contains("HandleGetAuthoringEntryList")
                         || data.contains("HandleGetGossipingEntryList")
                     {
@@ -527,7 +517,7 @@ impl StressJob for Job {
                                 let published =
                                     aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
                                 let elapsed = epoch_millis - published;
-                                logger.log("received_handle_store_aspect_in_ms", elapsed as f64);
+                                logger.log("publish_received_aspect_in_ms", elapsed as f64);
                             }
                             e @ _ => panic!("unexpected: {:?}", e),
                         }
@@ -542,15 +532,12 @@ impl StressJob for Job {
                                     panic!("invalid dm.request_id")
                                 }
                                 let res = res.unwrap();
-                                logger.log(
-                                    "received_dm_result_in_ms",
-                                    res.elapsed().as_millis() as f64,
-                                );
+                                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
                             }
                             e @ _ => panic!("unexpected: {:?}", e),
                         }
                     } else if data.contains("HandleSendDirectMessage") {
-                        logger.log("received_handle_send_dm", 1.0);
+                        logger.log("dm_handle_count", 1.0);
                         let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
                         match parsed {
                             WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(
@@ -658,7 +645,7 @@ impl Suite {
                 }
 
                 if let Some(logger) = &mut logger {
-                    logger.log("sim2h_tick_elapsed_ms", start.elapsed().as_millis() as f64);
+                    logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
                 }
             }
         }));
@@ -681,6 +668,33 @@ impl Suite {
     }
 }
 
+fn print_stats(stats: StressStats) {
+    println!("\n== RUN COMPLETE - Results ==");
+    println!(" - master_tick_count: {}", stats.master_tick_count);
+
+    let mut table = prettytable::Table::new();
+    table.set_format(*prettytable::format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
+
+    table.set_titles(prettytable::row![
+        r -> "STAT",
+        l -> "COUNT",
+        l -> "MIN",
+        l -> "MAX",
+        l -> "AVG"
+    ]);
+
+    for (k, v) in stats.log_stats.iter() {
+        table.add_row(prettytable::row![
+            r -> k,
+            l -> v.count,
+            l -> v.min,
+            l -> v.max,
+            l -> v.avg,
+        ]);
+    }
+    table.printstd();
+}
+
 impl StressSuite for Suite {
     fn start(&mut self, logger: StressJobMetricLogger) {
         self.snd_thread_logger.send(logger).unwrap();
@@ -691,13 +705,14 @@ impl StressSuite for Suite {
     }
 
     fn progress(&mut self, stats: &StressStats) {
-        println!("PROGRESS: {:#?}", stats);
+        println!("PROGRESS - {}", stats.master_tick_count);
     }
 
     fn stop(&mut self, stats: StressStats) {
         *self.sim2h_cont.lock().unwrap() = false;
         self.sim2h_join.take().unwrap().join().unwrap();
-        println!("FINAL STATS: {:#?}", stats);
+        //println!("FINAL STATS: {:#?}", stats);
+        print_stats(stats);
     }
 }
 

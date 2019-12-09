@@ -765,7 +765,6 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let instance_id = Self::get_as_string("instance_id", &params_map)?;
 
-
             let mut dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
 
             if Ok(false) == Self::get_as_bool("source_chain", &params_map) {

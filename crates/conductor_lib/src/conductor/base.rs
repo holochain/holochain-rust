@@ -760,7 +760,7 @@ impl Conductor {
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
-        
+
         self.dpki_bootstrap()?;
 
         for id in self.config.instance_ids_sorted_by_bridge_dependencies()? {

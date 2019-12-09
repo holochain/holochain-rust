@@ -333,7 +333,7 @@ impl CloudWatchLogger {
             .map(|metric| {
                 let log_line: LogLine = metric.into();
                 InputLogEvent {
-                    message: format!("{}", log_line.to_string()),
+                    message: log_line.to_string(),
                     timestamp: std::time::SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()

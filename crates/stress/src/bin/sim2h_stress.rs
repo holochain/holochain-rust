@@ -26,7 +26,10 @@ use sim2h::{
     websocket::{streams::*, tls::TlsConfig},
     Sim2h, WireMessage,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
+};
 use structopt::StructOpt;
 use url2::prelude::*;
 
@@ -327,6 +330,8 @@ struct Job {
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
     next_dm: std::time::Instant,
+    ping_sent_stack: VecDeque<std::time::Instant>,
+    pending_dms: HashMap<String, std::time::Instant>,
 }
 
 impl Job {
@@ -357,6 +362,8 @@ impl Job {
             next_ping: std::time::Instant::now(),
             next_publish: std::time::Instant::now(),
             next_dm: std::time::Instant::now(),
+            ping_sent_stack: VecDeque::new(),
+            pending_dms: HashMap::new(),
         };
 
         out.join_space();
@@ -405,6 +412,7 @@ impl Job {
 
     /// send a ping message to sim2h
     pub fn ping(&mut self, logger: &mut StressJobMetricLogger) {
+        self.ping_sent_stack.push_back(std::time::Instant::now());
         self.send_wire(WireMessage::Ping);
         logger.log("send_ping_count", 1.0);
     }
@@ -418,10 +426,14 @@ impl Job {
                 content
             });
 
+            let rid = nanoid::simple();
+            self.pending_dms
+                .insert(rid.clone(), std::time::Instant::now());
+
             self.send_wire(WireMessage::ClientToLib3h(
                 ClientToLib3h::SendDirectMessage(DirectMessageData {
                     space_address: "abcd".to_string().into(),
-                    request_id: "".to_string(),
+                    request_id: rid,
                     to_agent_id: to_agent_id.into(),
                     from_agent_id: self.agent_id.clone().into(),
                     content,
@@ -450,9 +462,17 @@ impl Job {
 
             let aspect_data: Opaque = (*aspect_data.read_lock()).to_vec().into();
 
+            let sent_epoch_millis = format!(
+                "{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+            );
+
             let aspect = EntryAspectData {
                 aspect_address: aspect_hash.into(),
-                type_hint: "stress-test".to_string(),
+                type_hint: sent_epoch_millis,
                 aspect: aspect_data,
                 publish_ts: 0,
             };
@@ -487,14 +507,55 @@ impl StressJob for Job {
                 StreamEvent::ReceivedData(_, raw_data) => {
                     let data = String::from_utf8_lossy(&raw_data).to_string();
                     if &data == "\"Pong\"" {
-                        logger.log("received_pong_count", 1.0);
+                        // with the current Ping/Pong structs
+                        // there's no way to correlate specific messages
+                        // if we switch to using the Websocket Ping/Pong
+                        // we could put a message id in them.
+                        let res = self.ping_sent_stack.pop_front();
+                        if res.is_none() {
+                            panic!("spurious pong");
+                        }
+                        let res = res.unwrap();
+                        logger.log("received_pong_ms", res.elapsed().as_millis() as f64);
                     } else if data.contains("HandleGetAuthoringEntryList")
                         || data.contains("HandleGetGossipingEntryList")
                     {
                     } else if data.contains("HandleStoreEntryAspect") {
-                        logger.log("received_handle_store_aspect", 1.0);
+                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
+                        match parsed {
+                            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
+                                aspect,
+                            )) => {
+                                let epoch_millis = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_millis()
+                                    as u64;
+                                let published =
+                                    aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
+                                let elapsed = epoch_millis - published;
+                                logger.log("received_handle_store_aspect_in_ms", elapsed as f64);
+                            }
+                            e @ _ => panic!("unexpected: {:?}", e),
+                        }
                     } else if data.contains("SendDirectMessageResult") {
-                        logger.log("received_dm_result", 1.0);
+                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
+                        match parsed {
+                            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(
+                                dm_data,
+                            )) => {
+                                let res = self.pending_dms.remove(&dm_data.request_id);
+                                if res.is_none() {
+                                    panic!("invalid dm.request_id")
+                                }
+                                let res = res.unwrap();
+                                logger.log(
+                                    "received_dm_result_in_ms",
+                                    res.elapsed().as_millis() as f64,
+                                );
+                            }
+                            e @ _ => panic!("unexpected: {:?}", e),
+                        }
                     } else if data.contains("HandleSendDirectMessage") {
                         logger.log("received_handle_send_dm", 1.0);
                         let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();

@@ -680,7 +680,7 @@ fn print_stats(stats: StressStats) {
         l -> "COUNT",
         l -> "MIN",
         l -> "MAX",
-        l -> "AVG"
+        l -> "MEAN",
     ]);
 
     for (k, v) in stats.log_stats.iter() {

@@ -188,13 +188,6 @@ impl CloudWatchLogger {
         let mut hash_map = HashMap::new();
 
         for (log_stream, metric) in self.query_metrics(query_args) {
-            let scenario_data_result: Result<ScenarioData, _> = log_stream.clone().try_into();
-
-            if let Err(e) = scenario_data_result {
-                debug!("Not a valid log stream pattern, skipping: {:?}", e);
-                continue;
-            }
-
             let entry = hash_map.entry(GroupingKey::new(log_stream, metric.name));
 
             let stats = entry.or_insert_with(OnlineStats::empty);

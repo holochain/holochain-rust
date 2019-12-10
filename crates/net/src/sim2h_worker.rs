@@ -6,10 +6,7 @@ use crate::connection::{
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
-use holochain_json_api::{
-    error::JsonError,
-    json::JsonString,
-};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},

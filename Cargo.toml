@@ -29,8 +29,8 @@ exclude = [
 ]
 
 [patch.crates-io]
-#lib3h = "=0.0.24"
-#lib3h_protocol = "=0.0.24"
-#lib3h_crypto_api = "=0.0.24"
-#lib3h_sodium = "=0.0.24"
-#lib3h_zombie_actor = "=0.0.24"
+#lib3h = "=0.0.25"
+#lib3h_protocol = "=0.0.25"
+#lib3h_crypto_api = "=0.0.25"
+#lib3h_sodium = "=0.0.25"
+#lib3h_zombie_actor = "=0.0.25"

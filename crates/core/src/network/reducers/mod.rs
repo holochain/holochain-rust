@@ -23,7 +23,9 @@ use crate::{
         direct_message::DirectMessage,
         reducers::{
             clear_action_response::reduce_clear_action_response,
-            get_validation_package::reduce_get_validation_package,
+            get_validation_package::{
+                reduce_get_validation_package, reduce_get_validation_package_timeout,
+            },
             handle_custom_send_response::reduce_handle_custom_send_response,
             handle_get_result::reduce_handle_get_result,
             handle_get_validation_package::reduce_handle_get_validation_package,
@@ -69,6 +71,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::Query(_) => Some(reduce_query),
         Action::QueryTimeout(_) => Some(reduce_query_timeout),
         Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
+        Action::GetValidationPackageTimeout(_) => Some(reduce_get_validation_package_timeout),
         Action::HandleCustomSendResponse(_) => Some(reduce_handle_custom_send_response),
         Action::HandleQuery(_) => Some(reduce_handle_get_result),
         Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),

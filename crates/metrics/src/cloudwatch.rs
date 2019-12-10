@@ -91,7 +91,7 @@ impl CloudWatchLogger {
         if let Some(log_stream_pat) = &query_args.log_stream_pat {
             query_string =
                 format!(
-                "fields @message, @logStream | filter @message like '{}' and @logStream like '{}'",
+                "fields @message, @logStream | filter @message like '{}' and @logStream like /{}/",
                 logger::METRIC_TAG, log_stream_pat);
         } else {
             query_string = format!(

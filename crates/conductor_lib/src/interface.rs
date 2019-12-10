@@ -9,7 +9,6 @@ use holochain_core_types::{
 };
 use holochain_dpki::key_bundle::KeyBundle;
 use holochain_json_api::json::JsonString;
-// use holochain_json_api::json::RawString;
 use holochain_locksmith::{Mutex, RwLock};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_sodium::secbuf::SecBuf;
@@ -286,7 +285,7 @@ impl ConductorApiBuilder {
         }
     }
 
-    fn get_as_string<T: Into<String> + std::fmt::Debug + Clone>(
+    fn get_as_string<T: Into<String>>(
         key: T,
         params_map: &Map<String, Value>,
     ) -> Result<String, jsonrpc_core::Error> {
@@ -306,7 +305,7 @@ impl ConductorApiBuilder {
             .to_string())
     }
 
-    fn get_as_crypto_string<T: Into<String> + std::fmt::Debug + Clone>(
+    fn get_as_crypto_string<T: Into<String> + Clone>(
         key: T,
         params_map: &Map<String, Value>,
     ) -> Result<String, jsonrpc_core::Error> {
@@ -316,9 +315,9 @@ impl ConductorApiBuilder {
         match base64::decode(&payload_string) {
             Ok(v) => match std::str::from_utf8(&v) {
                 Ok(s) => Ok(s.to_string()),
-                Err(_) => Err(jsonrpc_core::Error::invalid_params(format!("`{:?}` param is invalid utf8", &key))),
+                Err(_) => Err(jsonrpc_core::Error::invalid_params(format!("`{}` param is invalid utf8", &key.into()))),
             },
-            Err(_) => Err(jsonrpc_core::Error::invalid_params(format!("`{:?}` param is invalid base64", &key))),
+            Err(_) => Err(jsonrpc_core::Error::invalid_params(format!("`{}` param is invalid base64", &key.into()))),
         }
     }
 
@@ -945,9 +944,9 @@ impl ConductorApiBuilder {
     pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let crypto_string = Self::get_as_crypto_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(crypto_string);
+            let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -969,9 +968,9 @@ impl ConductorApiBuilder {
     pub fn with_agent_encryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let crypto_string = Self::get_as_crypto_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(crypto_string);
+            let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -1049,7 +1048,7 @@ impl ConductorApiBuilder {
 
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let crypto_string = Self::get_as_crypto_string("payload", &params_map)?;
+            let crypto_string = Self::get_as_string("payload", &params_map)?;
 
             let signature = request_service(&agent_id, &crypto_string, &signing_service_uri).map_err(
                 |holochain_error| {
@@ -1071,7 +1070,7 @@ impl ConductorApiBuilder {
         let agent_id = agent_id;
         self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_crypto_string("payload", &params_map)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
 
             let encrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
                 .map_err(|holochain_error| {
@@ -1092,7 +1091,7 @@ impl ConductorApiBuilder {
         let agent_id = agent_id;
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_crypto_string("payload", &params_map)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
 
             let decrypted_message = request_service(&agent_id, &payload, &decryption_service_uri)
                 .map_err(|holochain_error| {
@@ -1190,7 +1189,7 @@ impl ConductorApiBuilder {
         self.io.add_method("agent/keystore/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let src_id = Self::get_as_string("src_id", &params_map)?;
-            let payload = Self::get_as_crypto_string("payload", &params_map)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
 
             let signature = k
                 .lock()

@@ -517,7 +517,7 @@ pub mod tests {
                 &[Provenance::new(
                     agent_id.address(),
                     Signature::from(mock_signer(
-                        base64::encode(&test_entry().address().to_string()),
+                        test_entry().address().to_string(),
                         &agent_id
                     ))
                 )]

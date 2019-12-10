@@ -15,7 +15,6 @@ pub fn send_json_rpc(
     request_reponse: (String, String),
 ) -> Result<String, HolochainError> {
     let handler = handle.write().unwrap();
-
     let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
         request_reponse.0,
@@ -38,7 +37,7 @@ pub fn send_json_rpc(
         )?)),
         _ => Err(HolochainError::ErrorGeneric(format!(
             "agent/{} failed",
-            request_reponse.0,
+            request_reponse.0
         ))),
     }
 }

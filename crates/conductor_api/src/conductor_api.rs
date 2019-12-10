@@ -54,7 +54,7 @@ pub fn send_json_rpc(
     let id = ProcessUniqueId::new();
     let json_rpc_request = String::from(JsonString::from(JsonRpcRequest::new(&request, &payload, &id)));
 
-    let naive_request = format!(
+    let _naive_request = format!(
         // r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
         r#"{{"jsonrpc":"2.0","method":"agent/{}","params":{{"payload":"{}"}},"id":"{}"}}"#,
         request,
@@ -64,22 +64,22 @@ pub fn send_json_rpc(
 
     // assert_eq!(json_rpc_request, naive_request);
 
-    println!("json_rpc: {:?}", json_rpc_request);
-    println!("naive_request: {:?}", naive_request);
-    println!("xx: {}", json_rpc_request == naive_request);
+    // println!("json_rpc: {:?}", json_rpc_request);
+    // println!("naive_request: {:?}", naive_request);
+    // println!("xx: {}", json_rpc_request == naive_request);
     debug!("fooooooooooooo");
-    if json_rpc_request != naive_request {
-        println!("zaaaaaa");
-        println!("nn {}", payload);
-        println!("nnn {}", json_rpc_request);
-        println!("nnnn {}", naive_request);
-        // error!("request mismatch r: {} n: {}", json_rpc_request, naive_request);
-    }
+    // if json_rpc_request != naive_request {
+    //     println!("zaaaaaa");
+    //     println!("nn {}", payload);
+    //     println!("nnn {}", json_rpc_request);
+    //     println!("nnnn {}", naive_request);
+    //     // error!("request mismatch r: {} n: {}", json_rpc_request, naive_request);
+    // }
 
     let response = handler
         .handle_request_sync(&
-            // json_rpc_request
-            naive_request
+            json_rpc_request
+            // naive_request
         )
         .ok_or_else(|| format!("Conductor request agent/{} failed", request))?;
 
@@ -112,7 +112,8 @@ impl ConductorApi {
         };
         // all crypto payloads are base64 encoded as we need to support arbitrary data and JSON
         // handling is painful without some kind of encoding
-        send_json_rpc(self.0.clone(), base64::encode(&payload), request_response)
+        let encoded_payload = base64::encode(&payload);
+        send_json_rpc(self.0.clone(), encoded_payload, request_response)
     }
 
     pub fn get(&self) -> &Arc<RwLock<IoHandler>> {

@@ -291,10 +291,8 @@ impl ConductorApiBuilder {
         key: T,
         params_map: &Map<String, Value>,
     ) -> Result<String, jsonrpc_core::Error> {
-        println!("xx: {:?} {:?}", key, params_map);
-        // println!("zzz: {}", params_map.get(&key.clone().into()).unwrap());
         let key = key.into();
-        let value = params_map
+        Ok(params_map
             .get(&key)
             .ok_or_else(|| {
                 jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
@@ -306,15 +304,7 @@ impl ConductorApiBuilder {
                     &key
                 ))
             })?
-            .to_string();
-        println!("aaa: {}", value.chars().count());
-        println!("aaaa: {}", &value);
-        // let ss = RawString::from(value);
-        // println!("ss: {:?}", ss);
-        // println!("ss: {:?}", value);
-        // let unserialized: String = serde_json::from_str(&ss).unwrap();
-        // println!("xxx: {:?}", unserialized);
-        Ok(value)
+            .to_string())
     }
 
     fn get_as_crypto_string<T: Into<String> + std::fmt::Debug + Clone>(
@@ -957,7 +947,6 @@ impl ConductorApiBuilder {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let crypto_string = Self::get_as_crypto_string("payload", &params_map)?;
-            println!("jjjj: {}", crypto_string);
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(crypto_string);
 
@@ -1298,10 +1287,11 @@ pub mod tests {
             .with_agent_signature_callback(Arc::new(Mutex::new(key_bundle)))
             .spawn();
 
+        // "dGVzdCAiIHBheWxvYWQ=" is r#"test " payload"# in base64
         let response_str = handler
-            .handle_request_sync(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"test \" payload"},"id":"puid-0-1"}"#)
+            .handle_request_sync(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"dGVzdCAiIHBheWxvYWQ="},"id":"puid-0-1"}"#)
             .expect("Invalid call to handler");
-        println!("iii: {}", response_str);
+
         let result = unwrap_response_if_valid(&response_str);
         assert_eq!(
             result,

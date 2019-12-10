@@ -317,7 +317,7 @@ workflows:
   jobs:
    - build
    - fmt
-   - app-spec-tests-sim1h
+   # - app-spec-tests-sim1h
    - app-spec-tests-sim2h
    # - app-spec-tests-memory
    # - app-spec-tests-websocket

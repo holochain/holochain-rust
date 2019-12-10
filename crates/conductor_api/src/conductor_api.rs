@@ -78,8 +78,8 @@ pub fn send_json_rpc(
 
     let response = handler
         .handle_request_sync(&
-            json_rpc_request
-            // naive_request
+            // json_rpc_request
+            naive_request
         )
         .ok_or_else(|| format!("Conductor request agent/{} failed", request))?;
 
@@ -110,7 +110,9 @@ impl ConductorApi {
             CryptoMethod::Encrypt => (String::from("encrypt"), String::from("message")),
             CryptoMethod::Decrypt => (String::from("decrypt"), String::from("message")),
         };
-        send_json_rpc(self.0.clone(), payload, request_response)
+        // all crypto payloads are base64 encoded as we need to support arbitrary data and JSON
+        // handling is painful without some kind of encoding
+        send_json_rpc(self.0.clone(), base64::encode(&payload), request_response)
     }
 
     pub fn get(&self) -> &Arc<RwLock<IoHandler>> {

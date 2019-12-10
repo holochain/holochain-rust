@@ -643,7 +643,7 @@ mod tests {
             "{}",
             LessThanStatCheck::default().check_all(&expected, &actual)
         );
-        let expected = "Checking latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
+        let expected = "Checking test: latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
 
         assert_eq!(expected, actual);
     }

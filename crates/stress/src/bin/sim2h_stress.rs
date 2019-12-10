@@ -1,21 +1,11 @@
 //! `cargo run --bin sim2h_stress -- --help`
 
-extern crate base64;
-extern crate env_logger;
-extern crate hcid;
-extern crate holochain_stress;
-extern crate lib3h_crypto_api;
-extern crate lib3h_protocol;
-extern crate lib3h_sodium;
 #[macro_use]
 extern crate log;
-extern crate serde;
+#[macro_use]
+extern crate prettytable;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate sim2h;
-extern crate structopt;
-extern crate url2;
 
 use holochain_stress::*;
 use lib3h_crypto_api::CryptoSystem;
@@ -26,7 +16,10 @@ use sim2h::{
     websocket::{streams::*, tls::TlsConfig},
     Sim2h, WireMessage,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
+};
 use structopt::StructOpt;
 use url2::prelude::*;
 
@@ -45,11 +38,15 @@ struct OptStressRunConfig {
     /// total runtime for the test
     run_time_ms: u64,
 
+    #[structopt(short, long, env = "STRESS_WARM_TIME_MS", default_value = "5000")]
+    /// total runtime for the test
+    warm_time_ms: u64,
+
     #[structopt(
         short,
         long,
         env = "STRESS_PROGRESS_INTERVAL_MS",
-        default_value = "5500"
+        default_value = "1000"
     )]
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
@@ -146,6 +143,7 @@ impl Opt {
                     thread_count,
                     job_count,
                     run_time_ms,
+                    warm_time_ms,
                     progress_interval_ms,
                     ping_freq_ms,
                     publish_freq_ms,
@@ -156,6 +154,7 @@ impl Opt {
                     cfg_def!(thread_count);
                     cfg_def!(job_count);
                     cfg_def!(run_time_ms);
+                    cfg_def!(warm_time_ms);
                     cfg_def!(progress_interval_ms);
                     cfg_def!(ping_freq_ms);
                     cfg_def!(publish_freq_ms);
@@ -179,6 +178,7 @@ impl Opt {
             thread_pool_size: self.stress.thread_count,
             job_count: self.stress.job_count,
             run_time_ms: self.stress.run_time_ms,
+            warm_time_ms: self.stress.warm_time_ms,
             progress_interval_ms: self.stress.progress_interval_ms,
             suite,
             job_factory,
@@ -320,6 +320,8 @@ struct Job {
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
     next_dm: std::time::Instant,
+    ping_sent_stack: VecDeque<std::time::Instant>,
+    pending_dms: HashMap<String, std::time::Instant>,
 }
 
 impl Job {
@@ -350,6 +352,8 @@ impl Job {
             next_ping: std::time::Instant::now(),
             next_publish: std::time::Instant::now(),
             next_dm: std::time::Instant::now(),
+            ping_sent_stack: VecDeque::new(),
+            pending_dms: HashMap::new(),
         };
 
         out.join_space();
@@ -398,8 +402,9 @@ impl Job {
 
     /// send a ping message to sim2h
     pub fn ping(&mut self, logger: &mut StressJobMetricLogger) {
+        self.ping_sent_stack.push_back(std::time::Instant::now());
         self.send_wire(WireMessage::Ping);
-        logger.log("send_ping_count", 1.0);
+        logger.log("ping_send_count", 1.0);
     }
 
     pub fn dm(&mut self, logger: &mut StressJobMetricLogger) {
@@ -411,17 +416,21 @@ impl Job {
                 content
             });
 
+            let rid = nanoid::simple();
+            self.pending_dms
+                .insert(rid.clone(), std::time::Instant::now());
+
             self.send_wire(WireMessage::ClientToLib3h(
                 ClientToLib3h::SendDirectMessage(DirectMessageData {
                     space_address: "abcd".to_string().into(),
-                    request_id: "".to_string(),
+                    request_id: rid,
                     to_agent_id: to_agent_id.into(),
                     from_agent_id: self.agent_id.clone().into(),
                     content,
                 }),
             ));
 
-            logger.log("send_dm_count", 1.0);
+            logger.log("dm_send_count", 1.0);
         }
     }
 
@@ -443,9 +452,17 @@ impl Job {
 
             let aspect_data: Opaque = (*aspect_data.read_lock()).to_vec().into();
 
+            let sent_epoch_millis = format!(
+                "{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+            );
+
             let aspect = EntryAspectData {
                 aspect_address: aspect_hash.into(),
-                type_hint: "stress-test".to_string(),
+                type_hint: sent_epoch_millis,
                 aspect: aspect_data,
                 publish_ts: 0,
             };
@@ -464,7 +481,7 @@ impl Job {
             },
         )));
 
-        logger.log("send_publish_count", 1.0);
+        logger.log("publish_send_count", 1.0);
     }
 }
 
@@ -480,16 +497,54 @@ impl StressJob for Job {
                 StreamEvent::ReceivedData(_, raw_data) => {
                     let data = String::from_utf8_lossy(&raw_data).to_string();
                     if &data == "\"Pong\"" {
-                        logger.log("received_pong_count", 1.0);
+                        // with the current Ping/Pong structs
+                        // there's no way to correlate specific messages
+                        // if we switch to using the Websocket Ping/Pong
+                        // we could put a message id in them.
+                        let res = self.ping_sent_stack.pop_front();
+                        if res.is_none() {
+                            panic!("spurious pong");
+                        }
+                        let res = res.unwrap();
+                        logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
                     } else if data.contains("HandleGetAuthoringEntryList")
                         || data.contains("HandleGetGossipingEntryList")
                     {
                     } else if data.contains("HandleStoreEntryAspect") {
-                        logger.log("received_handle_store_aspect", 1.0);
+                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
+                        match parsed {
+                            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
+                                aspect,
+                            )) => {
+                                let epoch_millis = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_millis()
+                                    as u64;
+                                let published =
+                                    aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
+                                let elapsed = epoch_millis - published;
+                                logger.log("publish_received_aspect_in_ms", elapsed as f64);
+                            }
+                            e @ _ => panic!("unexpected: {:?}", e),
+                        }
                     } else if data.contains("SendDirectMessageResult") {
-                        logger.log("received_dm_result", 1.0);
+                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
+                        match parsed {
+                            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(
+                                dm_data,
+                            )) => {
+                                let res = self.pending_dms.remove(&dm_data.request_id);
+                                if res.is_none() {
+                                    panic!("invalid dm.request_id")
+                                }
+                                let res = res.unwrap();
+                                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
+                            }
+                            e @ _ => panic!("unexpected: {:?}", e),
+                        }
                     } else if data.contains("HandleSendDirectMessage") {
-                        logger.log("received_handle_send_dm", 1.0);
+                        logger.log("dm_handle_count", 1.0);
                         let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
                         match parsed {
                             WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(
@@ -568,15 +623,9 @@ impl Suite {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();
         let sim2h_join = Some(std::thread::spawn(move || {
-            let tls_config = TlsConfig::build_from_entropy();
-            let stream_manager = StreamManager::with_std_tcp_stream(tls_config);
             let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(
-                Box::new(SodiumCryptoSystem::new()),
-                stream_manager,
-                Lib3hUri(url.into()),
-            );
+            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);
@@ -597,7 +646,7 @@ impl Suite {
                 }
 
                 if let Some(logger) = &mut logger {
-                    logger.log("sim2h_tick_elapsed_ms", start.elapsed().as_millis() as f64);
+                    logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
                 }
             }
         }));
@@ -620,6 +669,33 @@ impl Suite {
     }
 }
 
+fn print_stats(stats: StressStats) {
+    println!("\n== RUN COMPLETE - Results ==");
+    println!(" - master_tick_count: {}", stats.master_tick_count);
+
+    let mut table = prettytable::Table::new();
+    table.set_format(*prettytable::format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
+
+    table.set_titles(prettytable::row![
+        r -> "STAT",
+        l -> "COUNT",
+        l -> "MIN",
+        l -> "MAX",
+        l -> "MEAN",
+    ]);
+
+    for (k, v) in stats.log_stats.iter() {
+        table.add_row(prettytable::row![
+            r -> k,
+            l -> v.count,
+            l -> v.min,
+            l -> v.max,
+            l -> v.avg,
+        ]);
+    }
+    table.printstd();
+}
+
 impl StressSuite for Suite {
     fn start(&mut self, logger: StressJobMetricLogger) {
         self.snd_thread_logger.send(logger).unwrap();
@@ -630,13 +706,14 @@ impl StressSuite for Suite {
     }
 
     fn progress(&mut self, stats: &StressStats) {
-        println!("PROGRESS: {:#?}", stats);
+        println!("PROGRESS - {}", stats.master_tick_count);
     }
 
     fn stop(&mut self, stats: StressStats) {
         *self.sim2h_cont.lock().unwrap() = false;
         self.sim2h_join.take().unwrap().join().unwrap();
-        println!("FINAL STATS: {:#?}", stats);
+        //println!("FINAL STATS: {:#?}", stats);
+        print_stats(stats);
     }
 }
 
@@ -682,6 +759,7 @@ mod tests {
             thread_pool_size: 1,
             job_count: 1,
             run_time_ms: 1000,
+            warm_time_ms: 100,
             progress_interval_ms: 2000,
             suite,
             job_factory: Box::new(move |_| std::mem::replace(&mut job, None).unwrap()),

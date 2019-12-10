@@ -3,6 +3,7 @@ use holochain_locksmith::RwLock;
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use jsonrpc_core::IoHandler;
 use jsonrpc_lite::JsonRpc;
+use serde_json::json;
 use snowflake::ProcessUniqueId;
 use std::{fmt, sync::Arc};
 
@@ -15,12 +16,17 @@ pub fn send_json_rpc(
     request_reponse: (String, String),
 ) -> Result<String, HolochainError> {
     let handler = handle.write().unwrap();
-    let request = format!(
-        r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-        request_reponse.0,
-        payload,
-        ProcessUniqueId::new(),
-    );
+    let method = format!("agent/{}", request_reponse.0);
+    let id = format!("{}", ProcessUniqueId::new());
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": {
+            "payload": payload,
+        },
+        "id": id,
+    })
+    .to_string();
 
     let response = handler
         .handle_request_sync(&request)

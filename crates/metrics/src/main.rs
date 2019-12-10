@@ -7,9 +7,9 @@ use holochain_metrics::{
 };
 use rusoto_core::Region;
 use std::{
-    path::PathBuf,
     fs::File,
     io::{BufReader, BufWriter},
+    path::PathBuf,
 };
 
 fn enable_logging() {
@@ -30,7 +30,7 @@ enum Command {
         name = "print-cloudwatch-stats",
         about = "Prints descriptive stats in csv format over a time range in cloudwatch"
     )]
-     PrintCloudwatchStats {
+    PrintCloudwatchStats {
         #[structopt(
             name = "region",
             short = "r",

@@ -382,8 +382,9 @@ impl NetWorker for Sim2hWorker {
                 if self.time_of_last_connection_attempt.elapsed() > RECONNECT_INTERVAL {
                     self.time_of_last_connection_attempt = Instant::now();
                     warn!("No connection to sim2h server. Trying to reconnect...");
-                    self.stream_manager
-                        .connect(&self.server_url.clone().into())?;
+                    if let Err(e) = self.stream_manager.connect(&self.server_url.clone().into()) {
+                        error!("TransportError trying to connect to sim2h server: {:?}", e);
+                    }
                 }
             }
             ConnectionStatus::Initializing => debug!("connecting..."),

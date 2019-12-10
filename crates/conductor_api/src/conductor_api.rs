@@ -3,7 +3,6 @@ use holochain_locksmith::RwLock;
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use jsonrpc_core::IoHandler;
 use jsonrpc_lite::JsonRpc;
-use serde_json;
 use snowflake::ProcessUniqueId;
 use std::{fmt, sync::Arc};
 
@@ -13,35 +12,33 @@ pub struct ConductorApi(Arc<RwLock<IoHandler>>);
 pub fn send_json_rpc(
     handle: Arc<RwLock<IoHandler>>,
     payload: String,
-    request_response: (String, String),
+    request_reponse: (String, String),
 ) -> Result<String, HolochainError> {
     let handler = handle.write().unwrap();
 
-    let (request, _) = request_response;
-
-    let naive_request = format!(
+    let request = format!(
         r#"{{"jsonrpc": "2.0", "method": "agent/{}", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
-        request,
+        request_reponse.0,
         payload,
         ProcessUniqueId::new(),
     );
 
     let response = handler
-        .handle_request_sync(&naive_request)
-        .ok_or_else(|| format!("Conductor request agent/{} failed", request))?;
+        .handle_request_sync(&request)
+        .ok_or_else(|| format!("Conductor request agent/{} failed", request_reponse.0))?;
 
     let response = JsonRpc::parse(&response)?;
 
     match response {
         JsonRpc::Success(_) => Ok(String::from(
-            response.get_result()?[request_response.1].as_str()?,
+            response.get_result()?[request_reponse.1].as_str()?,
         )),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
             &response.get_error()?,
         )?)),
         _ => Err(HolochainError::ErrorGeneric(format!(
             "agent/{} failed",
-            request,
+            request_reponse.0,
         ))),
     }
 }
@@ -60,7 +57,6 @@ impl ConductorApi {
         // all crypto payloads are base64 encoded as we need to support arbitrary data and JSON
         // handling is painful without some kind of encoding
         let encoded_payload = base64::encode(&payload);
-        // let encoded_payload = payload;
         send_json_rpc(self.0.clone(), encoded_payload, request_response)
     }
 

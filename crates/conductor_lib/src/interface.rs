@@ -745,7 +745,7 @@ impl ConductorApiBuilder {
     ///   - `instance_id` ID of the instance of which the state is requested
     ///   - `source_chain` [bool] (optional) If set to false, will exclude source chain headers
     ///   - `held_aspects` [bool] (optional) If set to false, will exclude the holding map entries
-    ///   - `queued_holding_workflows` [bool] (optional If set to false, will exclude contents of the validatio queue
+    ///   - `queued_holding_workflows` [bool] (optional If set to false, will exclude contents of the validation queue
     ///
     /// - `debug/fetch_cas`
     ///   Returns content of a given instance's CAS.

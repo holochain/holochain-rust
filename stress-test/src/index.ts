@@ -32,12 +32,13 @@ const M = parseInt(process.argv[3], 10) || 1
 
 console.log(`Running stress tests with N=${N}, M=${M}`)
 
-require('./all-on')(orchestrator.registerScenario, N, M)
-require('./telephone-games')(orchestrator.registerScenario, N, M)
+// require('./all-on')(orchestrator.registerScenario, N, M)
+// require('./telephone-games')(orchestrator.registerScenario, N, M)
+require('./direct-message')(orchestrator.registerScenario, N, M)
 
 // the hammer count here is the largest number we think should be acceptable
 // for ci to pass
-require('./zome-hammer')(orchestrator.registerScenario, 100)
+// require('./zome-hammer')(orchestrator.registerScenario, 100)
 
 
 orchestrator.run()

@@ -26,7 +26,11 @@ fn enable_logging() {
 #[derive(StructOpt)]
 #[structopt(name = "metrics", about = "Holochain metric utilities")]
 enum Command {
-    PrintCloudwatchStats {
+    #[structopt(
+        name = "print-cloudwatch-stats",
+        about = "Prints descriptive stats in csv format over a time range in cloudwatch"
+    )]
+     PrintCloudwatchStats {
         #[structopt(
             name = "region",
             short = "r",
@@ -51,7 +55,7 @@ enum Command {
 
     #[structopt(
         name = "print-log-stats",
-        help = "Prints descriptive stats in csv form over a time range"
+        about = "Prints descriptive stats in csv format over a log file"
     )]
     PrintLogStats {
         #[structopt(name = "log_file", short = "f")]
@@ -59,7 +63,7 @@ enum Command {
     },
     #[structopt(
         name = "print-stat-check",
-        help = "Prints descriptive stats in csv form over a time range"
+        about = "Prints stat checks and save results in csv format"
     )]
     StatCheck {
         #[structopt(name = "expected_csv_file", short = "ef")]

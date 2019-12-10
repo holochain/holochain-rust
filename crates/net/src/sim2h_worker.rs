@@ -54,21 +54,6 @@ pub struct Sim2hWorker {
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
 }
 
-fn wire_message_into_escaped_string(message: &WireMessage) -> String {
-    match message {
-        WireMessage::Ping => String::from("\\\"Ping\\\""),
-        WireMessage::Pong => String::from("\\\"Pong\\\""),
-        _ => {
-            let payload: String = message.clone().into();
-            let json_string: JsonString = RawString::from(payload).into();
-            let mut string: String = json_string.into();
-            string = String::from(string.trim_start_matches("\""));
-            string = String::from(string.trim_end_matches("\""));
-            string
-        }
-    }
-}
-
 impl Sim2hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
@@ -149,7 +134,7 @@ impl Sim2hWorker {
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         self.time_of_last_sent = Instant::now();
-        let payload = wire_message_into_escaped_string(&message);
+        let payload: String = message.clone().into();
         let signature = self
             .conductor_api
             .execute(payload.clone(), CryptoMethod::Sign)

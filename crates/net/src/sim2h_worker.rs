@@ -146,6 +146,7 @@ impl Sim2hWorker {
                 error!("Timed out waiting for connection for url {:?}", url);
                 return status;
             }
+            std::thread::sleep(Duration::from_secs(1));
         }
     }
 

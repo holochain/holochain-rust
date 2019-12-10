@@ -7,6 +7,7 @@ use holochain_metrics::{
 };
 use rusoto_core::Region;
 use std::{
+    path::PathBuf,
     fs::File,
     io::{BufReader, BufWriter},
 };
@@ -62,11 +63,11 @@ enum Command {
     )]
     StatCheck {
         #[structopt(name = "expected_csv_file", short = "ef")]
-        expected_csv_file: String,
+        expected_csv_file: PathBuf,
         #[structopt(name = "acual_csv_file", short = "af")]
-        actual_csv_file: String,
+        actual_csv_file: PathBuf,
         #[structopt(name = "result_csv_file", short = "rf")]
-        result_csv_file: String,
+        result_csv_file: PathBuf,
     },
 }
 
@@ -129,9 +130,9 @@ fn print_log_stats(log_file: String) {
 /// Prints to stdout human readonly pass/fail info
 /// Saves to `result_csv_file` gradient info
 fn print_stat_check(
-    expected_csv_file: String, // StatsByMetric
-    actual_csv_file: String,   // StatsByMetric
-    result_csv_file: String,   // A collection of CheckedStatRecords
+    expected_csv_file: PathBuf, // StatsByMetric
+    actual_csv_file: PathBuf,   // StatsByMetric
+    result_csv_file: PathBuf,   // A collection of CheckedStatRecords
 ) {
     let mut actual_reader = BufReader::new(File::open(actual_csv_file.clone()).unwrap());
     let actual_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut actual_reader).unwrap();

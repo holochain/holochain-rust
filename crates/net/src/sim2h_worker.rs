@@ -107,7 +107,9 @@ impl Sim2hWorker {
             )),
         };
 
-        instance.connection_status = instance.try_connect(Duration::from_millis(5000))?;
+        instance.connection_status = instance
+            .try_connect(Duration::from_millis(5000))
+            .unwrap_or_else(|_| ConnectionStatus::None);
 
         match instance.connection_status {
             ConnectionStatus::Ready => info!("Connected to sim2h server!"),

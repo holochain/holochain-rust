@@ -402,6 +402,8 @@ impl NetWorker for Sim2hWorker {
         let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
         for data in client_messages {
             debug!("CORE >> Sim2h: {:?}", data);
+            // outgoing messages triggered by `self.hand_client_message` that fail because of
+            // connection status, will automatically be re-sent via `self.outgoing_failed_messages`
             if let Err(error) = self.handle_client_message(data) {
                 error!("Error handling client message in Sim2hWorker: {:?}", error);
             }

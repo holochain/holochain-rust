@@ -280,7 +280,6 @@ impl ConductorApiBuilder {
     }
 
     fn unwrap_params_map(params: Params) -> Result<Map<String, Value>, jsonrpc_core::Error> {
-        println!("yy: {:?}", params);
         match params {
             Params::Map(map) => Ok(map),
             _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),

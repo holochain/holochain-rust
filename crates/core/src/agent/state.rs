@@ -516,10 +516,7 @@ pub mod tests {
                 &test_entry().address(),
                 &[Provenance::new(
                     agent_id.address(),
-                    Signature::from(mock_signer(
-                        test_entry().address().to_string(),
-                        &agent_id
-                    ))
+                    Signature::from(mock_signer(test_entry().address().to_string(), &agent_id))
                 )]
                 .to_vec(),
                 &None,

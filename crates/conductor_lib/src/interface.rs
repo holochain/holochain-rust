@@ -1056,11 +1056,12 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
 
-            let signature = request_service(&agent_id, &payload, &signing_service_uri)
-                .map_err(|holochain_error| {
+            let signature = request_service(&agent_id, &payload, &signing_service_uri).map_err(
+                |holochain_error| {
                     println!("Error in signing hack: {:?}", holochain_error);
                     jsonrpc_core::Error::internal_error()
-                })?;
+                },
+            )?;
 
             Ok(json!({ "signature": signature }))
         });

@@ -1,7 +1,6 @@
 #![feature(vec_remove_item)]
 extern crate env_logger;
 extern crate lib3h_crypto_api;
-//#[macro_use]
 extern crate log;
 extern crate nanoid;
 #[macro_use]
@@ -25,7 +24,6 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*};
 use cache::*;
 use connection_state::*;
-//use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
@@ -33,27 +31,68 @@ use lib3h_protocol::{
     types::SpaceHash,
     uri::Lib3hUri,
 };
+use url2::prelude::*;
 
-use websocket::streams::{StreamEvent, StreamManager};
 pub use wire_message::{WireError, WireMessage};
 
+use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
+    sync::Arc,
 };
+
+use holochain_locksmith::Mutex;
+
+pub(crate) trait MutexExt<T> {
+    fn f_lock(&self) -> holochain_locksmith::MutexGuard<T>;
+}
+
+impl<T> MutexExt<T> for Mutex<T> {
+    fn f_lock(&self) -> holochain_locksmith::MutexGuard<T> {
+        self.try_lock_for(std::time::Duration::from_millis(1000))
+            .expect("failed to obtain mutex lock")
+    }
+}
+
+pub(crate) trait SendExt<T> {
+    fn f_send(&self, v: T);
+}
+
+impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
+    fn f_send(&self, v: T) {
+        self.send(v).expect("failed to send on crossbeam_channel");
+    }
+}
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+
+pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
+pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
+
+mod job;
+use job::*;
 
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
-    stream_manager: StreamManager<std::net::TcpStream>,
+    pool: Pool,
+    wss_recv: crossbeam_channel::Receiver<TcpWss>,
+    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
+    msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
+    open_connections: HashMap<
+        Lib3hUri,
+        (
+            Arc<Mutex<ConnectionJob>>,
+            crossbeam_channel::Sender<WsFrame>,
+        ),
+    >,
     num_ticks: u64,
     /// when should we recalculated the rrdht_arc_radius
     rrdht_arc_radius_recalc: std::time::Instant,
@@ -62,33 +101,114 @@ pub struct Sim2h {
 }
 
 impl Sim2h {
-    pub fn new(
-        crypto: Box<dyn CryptoSystem>,
-        stream_manager: StreamManager<std::net::TcpStream>,
-        bind_spec: Lib3hUri,
-    ) -> Self {
+    pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
+        let pool = Pool::new();
+        pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
+
+        let (wss_send, wss_recv) = crossbeam_channel::unbounded();
+        let (msg_send, msg_recv) = crossbeam_channel::unbounded();
+
         let mut sim2h = Sim2h {
             crypto,
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
-            stream_manager,
+            pool,
+            wss_recv,
+            msg_send,
+            msg_recv,
+            open_connections: HashMap::new(),
             num_ticks: 0,
             rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
         };
 
-        debug!("Trying to bind to {}...", bind_spec);
-        let url: url::Url = bind_spec.clone().into();
-        sim2h.bound_uri = Some(
-            sim2h
-                .stream_manager
-                .bind(&url)
-                .unwrap_or_else(|e| panic!("Error binding to url {}: {:?}", bind_spec, e))
-                .into(),
-        );
+        sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
 
         sim2h
+    }
+
+    /// bind a listening socket, and set up the polling job to accept connections
+    fn priv_bind_listening_socket(
+        &mut self,
+        url: Url2,
+        wss_send: crossbeam_channel::Sender<TcpWss>,
+    ) {
+        let config = TcpBindConfig::default();
+        let config = TlsBindConfig::new(config).dev_certificate();
+        let config = WssBindConfig::new(config);
+        let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
+        self.bound_uri = Some(url::Url::from(listen.binding()).into());
+        self.pool
+            .push_job(Box::new(Arc::new(Mutex::new(ListenJob::new(
+                listen, wss_send,
+            )))));
+    }
+
+    /// if our listening socket has accepted any new connections, set them up
+    fn priv_check_incoming_connections(&mut self) {
+        if let Ok(wss) = self.wss_recv.try_recv() {
+            let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+            let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
+            let job = Arc::new(Mutex::new(job));
+            if let Err(error) = self.handle_incoming_connect(url.clone()) {
+                error!("Error handling incoming connection: {:?}", error);
+                return;
+            }
+            self.open_connections
+                .insert(url, (job.clone(), outgoing_send));
+            self.pool.push_job(Box::new(job));
+        }
+    }
+
+    /// we received some kind of error related to a stream/socket
+    /// print some debugging and disconnect it
+    fn priv_drop_connection_for_error(&mut self, uri: Lib3hUri, error: Sim2hError) {
+        error!(
+            "Transport error occurred on connection to {}: {:?}",
+            uri, error,
+        );
+        info!("Dropping connection to {} because of error", uri);
+        self.disconnect(&uri);
+    }
+
+    /// if our connections sent us any data, process it
+    fn priv_check_incoming_messages(&mut self) {
+        if let Ok((url, msg)) = self.msg_recv.try_recv() {
+            let url: Lib3hUri = url::Url::from(url).into();
+            match msg {
+                Ok(frame) => match frame {
+                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                        url,
+                        format!("unexpected text message: {:?}", s).into(),
+                    ),
+                    WsFrame::Binary(b) => {
+                        let payload: Opaque = b.into();
+                        match Sim2h::verify_payload(payload.clone()) {
+                            Ok((source, wire_message)) => {
+                                if let Err(error) = self.handle_message(&url, wire_message, &source)
+                                {
+                                    error!("Error handling message: {:?}", error);
+                                }
+                            }
+                            Err(error) => error!(
+                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                error, payload
+                            ),
+                        }
+                    }
+                    // TODO - we should use websocket ping/pong
+                    //        instead of rolling our own on top of Binary
+                    WsFrame::Ping(_) => (),
+                    WsFrame::Pong(_) => (),
+                    WsFrame::Close(c) => {
+                        debug!("Disconnecting {} after connection reset {:?}", url, c);
+                        self.disconnect(&url);
+                    }
+                },
+                Err(e) => self.priv_drop_connection_for_error(url, e),
+            }
+        }
     }
 
     /// recalculate arc radius for our connections
@@ -199,6 +319,11 @@ impl Sim2h {
     // removes a uri from connection and from spaces
     fn disconnect(&mut self, uri: &Lib3hUri) {
         trace!("disconnect entered");
+
+        if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
+            con.f_lock().stop();
+        }
+
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.connection_states.write().remove(uri)
         {
@@ -314,6 +439,9 @@ impl Sim2h {
             self.num_ticks = 0;
         }
 
+        self.priv_check_incoming_connections();
+        self.priv_check_incoming_messages();
+
         if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
             self.rrdht_arc_radius_recalc = std::time::Instant::now()
                 .checked_add(std::time::Duration::from_millis(
@@ -335,53 +463,6 @@ impl Sim2h {
             self.retry_sync_missing_aspects();
         }
 
-        trace!("process transport");
-        let (_did_work, messages) = self.stream_manager.process()?;
-
-        trace!("process transport done");
-        for transport_message in messages {
-            match transport_message {
-                StreamEvent::ReceivedData(uri, payload) => {
-                    let payload: Opaque = payload.into();
-                    match Sim2h::verify_payload(payload.clone()) {
-                        Ok((source, wire_message)) => {
-                            if let Err(error) =
-                                self.handle_message(&uri.into(), wire_message, &source)
-                            {
-                                error!("Error handling message: {:?}", error);
-                            }
-                        }
-                        Err(error) => error!(
-                            "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                            error, payload
-                        ),
-                    }
-                }
-                StreamEvent::IncomingConnectionEstablished(uri) => {
-                    if let Err(error) = self.handle_incoming_connect(uri.into()) {
-                        error!("Error handling incomming connection: {:?}", error);
-                    }
-                }
-                StreamEvent::ConnectionClosed(uri) => {
-                    debug!("Disconnecting {} after connection reset", uri);
-                    self.disconnect(&uri.into());
-                }
-                StreamEvent::ConnectResult(uri, net_id) => {
-                    debug!("Connected to {} (net_id = {})", uri, net_id);
-                }
-                StreamEvent::ErrorOccured(uri, error) => {
-                    error!(
-                        "Transport error occurred on connection to {}: {:?}",
-                        uri, error,
-                    );
-                    info!("Dropping connection to {} because of error", uri);
-                    if let Err(e) = self.stream_manager.close(&uri) {
-                        error!("Error closing connection to {}: {:?}", uri, e);
-                    }
-                    self.disconnect(&uri.into());
-                }
-            }
-        }
         trace!("process done");
         Ok(())
     }
@@ -739,14 +820,15 @@ impl Sim2h {
             }
         }
         let payload: Opaque = msg.clone().into();
-        let url: url::Url = uri.into();
-        let send_result = self
-            .stream_manager
-            .send(&url, payload.as_bytes().as_slice());
 
-        if let Err(e) = send_result {
-            error!("GhostError during broadcast send: {:?}", e)
+        match self.open_connections.get_mut(&uri) {
+            None => {
+                error!("FAILED TO SEND, NO ROUTE: {}", uri);
+                return;
+            }
+            Some((_con, outgoing_send)) => outgoing_send.f_send(payload.as_bytes().into()),
         }
+
         match msg {
             WireMessage::Ping | WireMessage::Pong => {}
             _ => debug!("sent."),

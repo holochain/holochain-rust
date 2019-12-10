@@ -1,5 +1,6 @@
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
+use lib3h_protocol::types::EntryHash;
 
 const REDUNDANT_COUNT: u64 = 50;
 
@@ -23,6 +24,11 @@ pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> L
             .unwrap()
         }
     }
+}
+
+pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: EntryHash) -> Location {
+    let entry_hash_string: String = entry_hash.into();
+    anything_to_location(crypto, &entry_hash_string)
 }
 
 /// implement a super simple sharding algorithm

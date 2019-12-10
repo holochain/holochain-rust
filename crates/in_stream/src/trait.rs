@@ -93,6 +93,9 @@ pub trait InStream<R: Sized + Debug + Send + Sync, W: Sized + Debug + Send + Syn
     /// your struct provide a wrapper with a concrete config type
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self>;
 
+    /// access the remote url this connection represents
+    fn remote_url(&self) -> Url2;
+
     /// non-blocking read.
     /// if R is an array-type, success result is number of elements read
     /// otherwise it is 1

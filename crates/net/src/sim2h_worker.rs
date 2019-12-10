@@ -32,6 +32,8 @@ use sim2h::{
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
 
+const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
+
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
     pub sim2h_url: String,
@@ -51,6 +53,7 @@ pub struct Sim2hWorker {
     conductor_api: ConductorApi,
     time_of_last_sent: Instant,
     connection_status: ConnectionStatus,
+    time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
 }
 
@@ -102,6 +105,7 @@ impl Sim2hWorker {
             conductor_api,
             time_of_last_sent: Instant::now(),
             connection_status: ConnectionStatus::None,
+            time_of_last_connection_attempt: Instant::now(),
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
                 DefaultMetricPublisher::default(),
             )),
@@ -146,7 +150,7 @@ impl Sim2hWorker {
                 error!("Timed out waiting for connection for url {:?}", url);
                 return status;
             }
-            std::thread::sleep(Duration::from_secs(1));
+            std::thread::sleep(RECONNECT_INTERVAL);
         }
     }
 
@@ -367,9 +371,12 @@ impl NetWorker for Sim2hWorker {
             .connection_status(&self.server_url.clone().into())
         {
             ConnectionStatus::None => {
-                warn!("No connection to sim2h server. Trying to reconnect...");
-                self.stream_manager
-                    .connect(&self.server_url.clone().into())?;
+                if self.time_of_last_connection_attempt.elapsed() > RECONNECT_INTERVAL {
+                    self.time_of_last_connection_attempt = Instant::now();
+                    warn!("No connection to sim2h server. Trying to reconnect...");
+                    self.stream_manager
+                        .connect(&self.server_url.clone().into())?;
+                }
             }
             ConnectionStatus::Initializing => debug!("connecting..."),
             ConnectionStatus::Ready => {

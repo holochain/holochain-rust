@@ -315,9 +315,15 @@ impl ConductorApiBuilder {
         match base64::decode(&payload_string) {
             Ok(v) => match std::str::from_utf8(&v) {
                 Ok(s) => Ok(s.to_string()),
-                Err(_) => Err(jsonrpc_core::Error::invalid_params(format!("`{}` param is invalid utf8", &key.into()))),
+                Err(_) => Err(jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` param is invalid utf8",
+                    &key.into()
+                ))),
             },
-            Err(_) => Err(jsonrpc_core::Error::invalid_params(format!("`{}` param is invalid base64", &key.into()))),
+            Err(_) => Err(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param is invalid base64",
+                &key.into()
+            ))),
         }
     }
 
@@ -1050,12 +1056,11 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let crypto_string = Self::get_as_string("payload", &params_map)?;
 
-            let signature = request_service(&agent_id, &crypto_string, &signing_service_uri).map_err(
-                |holochain_error| {
+            let signature = request_service(&agent_id, &crypto_string, &signing_service_uri)
+                .map_err(|holochain_error| {
                     println!("Error in signing hack: {:?}", holochain_error);
                     jsonrpc_core::Error::internal_error()
-                },
-            )?;
+                })?;
 
             Ok(json!({ "signature": signature }))
         });

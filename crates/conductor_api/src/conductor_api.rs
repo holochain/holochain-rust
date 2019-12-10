@@ -27,9 +27,7 @@ pub fn send_json_rpc(
     );
 
     let response = handler
-        .handle_request_sync(&
-            naive_request
-        )
+        .handle_request_sync(&naive_request)
         .ok_or_else(|| format!("Conductor request agent/{} failed", request))?;
 
     let response = JsonRpc::parse(&response)?;

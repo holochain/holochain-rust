@@ -100,7 +100,6 @@ jobs:
    resource_class: xlarge
    steps:
      - checkout
-     - run: nix-shell --run hc-sim2h-server-install
      - run:
          name: sim2h server
          command: nix-shell --run hc-sim2h-server

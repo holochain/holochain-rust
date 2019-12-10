@@ -70,12 +70,12 @@ impl TlsCertificate {
         let (key, cert) = generate_dev();
 
         let pkcs12 = openssl::pkcs12::Pkcs12::builder()
-            .build("", "in_stream_tls", &*key, &cert)
+            .build("dev-passphrase", "in_stream_tls", &*key, &cert)
             .unwrap();
 
         Self {
             pkcs12_data: pkcs12.to_der().unwrap(),
-            passphrase: "".to_string(),
+            passphrase: "dev-passphrase".to_string(),
         }
     }
 

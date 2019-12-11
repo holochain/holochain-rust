@@ -212,6 +212,7 @@ jobs:
    - run:
       name: test cli
       command: nix-shell --run hc-cli-test
+      no_output_timeout: 20m
 
  wasm-conductor-tests:
   docker:

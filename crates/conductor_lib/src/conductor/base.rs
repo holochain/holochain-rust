@@ -63,9 +63,6 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-use std::time::Instant;
-
-const STATS_SIGNAL_INTERVAL: Duration = Duration::from_millis(500);
 
 pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
 
@@ -121,6 +118,8 @@ pub struct Conductor {
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
     signal_multiplexer_kill_switch: Option<Sender<()>>,
+    stats_thread_kill_switch: Option<Sender<()>>,
+    stats_signal_receiver: Option<Receiver<Signal>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -233,6 +232,8 @@ impl Conductor {
             static_servers: HashMap::new(),
             interface_broadcasters: Arc::new(RwLock::new(HashMap::new())),
             signal_multiplexer_kill_switch: None,
+            stats_thread_kill_switch: None,
+            stats_signal_receiver: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -245,6 +246,55 @@ impl Conductor {
             hash_config: None,
             n3h_keepalive_network: None,
         }
+    }
+
+    pub fn spawn_stats_thread(&mut self) {
+        self.stop_stats_thread();
+        let instances = self.instances.clone();
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        let (stats_tx, stats_rx) = unbounded();
+        self.stats_thread_kill_switch = Some(kill_switch_tx);
+        self.stats_signal_receiver = Some(stats_rx);
+        thread::Builder::new()
+            .name("stats".to_string())
+            .spawn(move || loop {
+                // Get stats for all instances:
+                let mut instance_stats: HashMap<String, InstanceStats> = HashMap::new();
+                for (id, instance) in instances.iter() {
+                    if let Err(error) = instance
+                        .read()
+                        .map_err(|_| {
+                            HolochainInstanceError::InternalFailure(HolochainError::new(
+                                "Could not get lock on instance",
+                            ))
+                        })
+                        .and_then(|instance| instance.context())
+                        .and_then(|context| context.get_stats().map_err(|e| e.into()))
+                        .and_then(|stats| {
+                            instance_stats.insert(id.clone(), stats);
+                            Ok(())
+                        })
+                    {
+                        error!(
+                            "Could not get stats for instance '{}'. Error: {:?}",
+                            id, error
+                        );
+                    }
+                }
+
+                // Wrap stats in signal:
+                let stats_signal = Signal::Stats(StatsSignal { instance_stats });
+
+                if let Err(e) = stats_tx.send(stats_signal) {
+                    error!("Could not send stats signal over channel: {:?}", e);
+                }
+
+                if kill_switch_rx.try_recv().is_ok() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(500));
+            })
+            .expect("");
     }
 
     pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
@@ -279,18 +329,25 @@ impl Conductor {
         self.stop_signal_multiplexer();
         let broadcasters = self.interface_broadcasters.clone();
         let instance_signal_receivers = self.instance_signal_receivers.clone();
-        let instances = self.instances.clone();
         let signal_tx = self.signal_tx.clone();
         let config = self.config.clone();
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
-        let mut last_stats_signal_instant = Instant::now();
+        self.spawn_stats_thread();
+        let stats_signal_receiver = self.stats_signal_receiver.clone().expect(
+            "Receiver must be Some after calling spawn_stats_thread() above which should set it",
+        );
 
         debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
                 let broadcasters = broadcasters.read().unwrap();
+                let admin_interfaces = config
+                    .interfaces
+                    .iter()
+                    .filter(|interface_config| interface_config.admin)
+                    .collect::<Vec<_>>();
                 {
                     for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter()
                     {
@@ -301,11 +358,7 @@ impl Conductor {
                                     // Send internal signals only to admin interfaces, if signals.trace is set:
                                     Signal::Trace(_) => {
                                         if config.signals.trace {
-                                            config
-                                                .interfaces
-                                                .iter()
-                                                .filter(|interface_config| interface_config.admin)
-                                                .collect()
+                                            admin_interfaces.clone()
                                         } else {
                                             Vec::new()
                                         }
@@ -365,62 +418,32 @@ impl Conductor {
                     }
                 }
 
-                if last_stats_signal_instant.elapsed() > STATS_SIGNAL_INTERVAL {
-                    let admin_interfaces = config
-                        .interfaces
-                        .iter()
-                        .filter(|interface_config| interface_config.admin)
-                        .collect::<Vec<_>>();
-
-                    if !admin_interfaces.is_empty() {
-                        // Get stats for all instances:
-                        let mut instance_stats: HashMap<String, InstanceStats> = HashMap::new();
-                        for (id, instance) in instances.iter() {
-                            if let Err(error) = instance
-                                .read()
-                                .map_err(|_| {
-                                    HolochainInstanceError::InternalFailure(HolochainError::new(
-                                        "Could not get lock on instance",
-                                    ))
-                                })
-                                .and_then(|instance| instance.context())
-                                .and_then(|context| context.get_stats().map_err(|e| e.into()))
-                                .and_then(|stats| {
-                                    instance_stats.insert(id.clone(), stats);
-                                    Ok(())
-                                })
-                            {
-                                error!(
-                                    "Could not get stats for instance '{}'. Error: {:?}",
-                                    id, error
-                                );
+                // Process stats signals and send them over admin interfaces:
+                while let Ok(stats_signal) = stats_signal_receiver.try_recv() {
+                    for interface in &admin_interfaces {
+                        if let Some(broadcaster) = broadcasters.get(&interface.id) {
+                            if let Err(error) = broadcaster.send(SignalWrapper {
+                                signal: stats_signal.clone(),
+                                instance_id: String::new(),
+                            }) {
+                                notify(error.to_string());
                             }
-                        }
-
-                        // Wrap stats in signal:
-                        let stats_signal = Signal::Stats(StatsSignal { instance_stats });
-
-                        // Send signal over admin interfaces:
-                        for interface in admin_interfaces {
-                            if let Some(broadcaster) = broadcasters.get(&interface.id) {
-                                if let Err(error) = broadcaster.send(SignalWrapper {
-                                    signal: stats_signal.clone(),
-                                    instance_id: String::new(),
-                                }) {
-                                    notify(error.to_string());
-                                }
-                            };
-                        }
+                        };
                     }
-                    last_stats_signal_instant = Instant::now();
                 }
 
                 if kill_switch_rx.try_recv().is_ok() {
                     break;
                 }
-                thread::sleep(Duration::from_millis(1));
+                thread::yield_now();
             })
             .expect("Must be able to spawn thread")
+    }
+
+    pub fn stop_stats_thread(&self) {
+        self.stats_thread_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn stop_signal_multiplexer(&self) {

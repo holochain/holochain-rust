@@ -6,10 +6,7 @@ use crate::connection::{
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
-use holochain_json_api::{
-    error::JsonError,
-    json::{JsonString, RawString},
-};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
@@ -55,21 +52,7 @@ pub struct Sim2hWorker {
     connection_status: ConnectionStatus,
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
-}
-
-fn wire_message_into_escaped_string(message: &WireMessage) -> String {
-    match message {
-        WireMessage::Ping => String::from("\\\"Ping\\\""),
-        WireMessage::Pong => String::from("\\\"Pong\\\""),
-        _ => {
-            let payload: String = message.clone().into();
-            let json_string: JsonString = RawString::from(payload).into();
-            let mut string: String = json_string.into();
-            string = String::from(string.trim_start_matches("\""));
-            string = String::from(string.trim_end_matches("\""));
-            string
-        }
-    }
+    outgoing_failed_messages: Vec<WireMessage>,
 }
 
 impl Sim2hWorker {
@@ -109,6 +92,7 @@ impl Sim2hWorker {
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
                 DefaultMetricPublisher::default(),
             )),
+            outgoing_failed_messages: Vec::new(),
         };
 
         instance.connection_status = instance
@@ -156,7 +140,7 @@ impl Sim2hWorker {
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         self.time_of_last_sent = Instant::now();
-        let payload = wire_message_into_escaped_string(&message);
+        let payload: String = message.clone().into();
         let signature = self
             .conductor_api
             .execute(payload.clone(), CryptoMethod::Sign)
@@ -168,14 +152,20 @@ impl Sim2hWorker {
             });
 
         let signed_wire_message = SignedWireMessage::new(
-            message,
+            message.clone(),
             Provenance::new(self.agent_id.clone(), signature.into()),
         );
         let to_send: Opaque = signed_wire_message.into();
-        self.stream_manager.send(
+        if let Err(e) = self.stream_manager.send(
             &self.server_url.clone().into(),
             to_send.as_bytes().as_slice(),
-        )?;
+        ) {
+            error!(
+                "TransportError trying to send message to sim2h server: {:?}",
+                e
+            );
+            self.outgoing_failed_messages.push(message);
+        }
         Ok(())
     }
 
@@ -374,21 +364,32 @@ impl NetWorker for Sim2hWorker {
                 if self.time_of_last_connection_attempt.elapsed() > RECONNECT_INTERVAL {
                     self.time_of_last_connection_attempt = Instant::now();
                     warn!("No connection to sim2h server. Trying to reconnect...");
-                    self.stream_manager
-                        .connect(&self.server_url.clone().into())?;
+                    if let Err(e) = self.stream_manager.connect(&self.server_url.clone().into()) {
+                        error!("TransportError trying to connect to sim2h server: {:?}", e);
+                    }
                 }
             }
             ConnectionStatus::Initializing => debug!("connecting..."),
             ConnectionStatus::Ready => {
-                let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
-                for data in client_messages {
-                    debug!("CORE >> Sim2h: {:?}", data);
-                    if let Err(error) = self.handle_client_message(data) {
-                        error!("Error handling client message in Sim2hWorker: {:?}", error);
-                    }
-                    did_something = true;
+                let previously_failed_messages =
+                    self.outgoing_failed_messages.drain(..).collect::<Vec<_>>();
+                for message in previously_failed_messages {
+                    // Ignore error here since send_wire_message logs TransportErrors during send
+                    // and puts back the failed message into self.outgoing_failed_messages
+                    let _ = self.send_wire_message(message);
                 }
             }
+        }
+
+        let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
+        for data in client_messages {
+            debug!("CORE >> Sim2h: {:?}", data);
+            // outgoing messages triggered by `self.hand_client_message` that fail because of
+            // connection status, will automatically be re-sent via `self.outgoing_failed_messages`
+            if let Err(error) = self.handle_client_message(data) {
+                error!("Error handling client message in Sim2hWorker: {:?}", error);
+            }
+            did_something = true;
         }
 
         let server_messages = self.to_core.drain(..).collect::<Vec<_>>();

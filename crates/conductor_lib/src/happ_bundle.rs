@@ -144,6 +144,7 @@ impl HappBundle {
                 id: ui.id(),
                 driver: InterfaceDriver::Websocket { port },
                 admin: false,
+                choose_free_port: Some(false),
                 instances: ui
                     .instance_references
                     .iter()

@@ -305,6 +305,28 @@ impl ConductorApiBuilder {
             .to_string())
     }
 
+    fn get_as_crypto_string<T: Into<String> + Clone>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<String, jsonrpc_core::Error> {
+        // all data to be handled cryptographically is base64 encoded in the payload to avoid
+        // problems with JSON data handling if the client isn't setup to serialize things properly
+        let payload_string = Self::get_as_string(key.clone(), params_map)?;
+        match base64::decode(&payload_string) {
+            Ok(v) => match std::str::from_utf8(&v) {
+                Ok(s) => Ok(s.to_string()),
+                Err(_) => Err(jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` param is invalid utf8",
+                    &key.into()
+                ))),
+            },
+            Err(_) => Err(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param is invalid base64",
+                &key.into()
+            ))),
+        }
+    }
+
     fn get_as_bool<T: Into<String>>(
         key: T,
         params_map: &Map<String, Value>,
@@ -624,6 +646,7 @@ impl ConductorApiBuilder {
                     }
                 },
                 instances: Vec::new(),
+                choose_free_port: None,
             };
 
             conductor_call!(|c| c.add_interface(new_interface))?;
@@ -927,7 +950,7 @@ impl ConductorApiBuilder {
     pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload);
 
@@ -951,7 +974,7 @@ impl ConductorApiBuilder {
     pub fn with_agent_encryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
             let mut message = SecBuf::with_insecure_from_string(payload);
 
@@ -975,7 +998,7 @@ impl ConductorApiBuilder {
     pub fn with_agent_decryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             //decoded base64 string
             let decoded_message = base64::decode(&payload)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
@@ -1228,6 +1251,7 @@ pub trait Interface {
 pub mod tests {
     use super::*;
     use crate::{conductor::tests::test_conductor, config::Configuration};
+    use holochain_dpki::SEED_SIZE;
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let conductor = test_conductor(7777, 7778);
@@ -1251,6 +1275,32 @@ pub mod tests {
         let result = &serde_json::from_str::<serde_json::Value>(response_str)
             .expect("Response not valid JSON")["result"];
         result.to_string()
+    }
+
+    #[test]
+    fn test_agent_rpc_sign() {
+        let (config, instances) = example_config_and_instances();
+
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        let key_bundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
+
+        let handler = ConductorApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .with_admin_dna_functions()
+            .with_agent_signature_callback(Arc::new(Mutex::new(key_bundle)))
+            .spawn();
+
+        // "dGVzdCAiIHBheWxvYWQ=" is r#"test " payload"# in base64
+        let response_str = handler
+            .handle_request_sync(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"dGVzdCAiIHBheWxvYWQ="},"id":"puid-0-1"}"#)
+            .expect("Invalid call to handler");
+
+        let result = unwrap_response_if_valid(&response_str);
+        assert_eq!(
+            result,
+            r#"{"signature":"645pchCrU6heLE6yULPigk7BGqcjE4balj7JGg/0mpneFS1oE7rO37ExUq/PY3zOclOwF9OjoLNPFjhgIdoqAg=="}"#
+        );
     }
 
     #[test]

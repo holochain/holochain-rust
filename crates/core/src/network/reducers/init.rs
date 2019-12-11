@@ -103,10 +103,11 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use serde_json::json;
     use std::sync::Arc;
     use tempfile;
 
-    fn test_context() -> Arc<Context> {
+    fn test_context(p2p_config: P2pConfig) -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
@@ -120,7 +121,7 @@ pub mod test {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            P2pConfig::new_with_unique_memory_backend(),
+            p2p_config,
             None,
             None,
             false,
@@ -136,7 +137,8 @@ pub mod test {
 
     #[test]
     pub fn should_wait_for_protocol_p2p_ready() {
-        let context: Arc<Context> = test_context();
+        let p2p_config = P2pConfig::new_with_unique_memory_backend();
+        let context: Arc<Context> = test_context(p2p_config);
         let dna_address: Address = context.agent_id.address();
         let agent_id = context.agent_id.content().to_string();
         let handler = NetHandler::new(Box::new(|_| Ok(())));
@@ -155,5 +157,37 @@ pub mod test {
         let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
 
         assert_eq!(result, ());
+    }
+
+    #[test]
+    pub fn should_set_sim2h_url() {
+        let p2p_config = P2pConfig::new_with_sim2h_backend("wss://0.0.0.0:9999");
+        let context: Arc<Context> = test_context(p2p_config);
+        let dna_address: Address = context.agent_id.address();
+        let agent_id = context.agent_id.content().to_string();
+        let handler = NetHandler::new(Box::new(|_| Ok(())));
+        let network_settings = crate::action::NetworkSettings {
+            p2p_config: context.p2p_config.clone(),
+            dna_address,
+            agent_id,
+            handler,
+        };
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
+
+        let mut network_state = NetworkState::new();
+        let mut root_state = test_store(context.clone());
+
+        let props = json!({"sim2h_url": "wss://localhost:9000"});
+        let mut dna = Dna::new();
+        dna.properties = props;
+
+        root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(dna)));
+
+        let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
+
+        assert_eq!(result, ());
+
+        let network = network_state.network.expect("No network connection set");
+        assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/");
     }
 }

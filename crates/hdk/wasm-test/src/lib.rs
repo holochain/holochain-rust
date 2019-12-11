@@ -700,6 +700,11 @@ pub fn handle_get_version(hash: Option<bool>) -> ZomeApiResult<String>
     }
 }
 
+pub fn handle_sign_payload(payload: String) -> ZomeApiResult<String>
+{
+    hdk::sign(payload)
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -1127,6 +1132,12 @@ define_zome! {
             inputs: |hash: Option<bool>|,
             outputs: |version: ZomeApiResult<String>|,
             handler: handle_get_version
+        }
+
+        sign_payload: {
+            inputs: |payload: String|,
+            outputs: |version: ZomeApiResult<String>|,
+            handler: handle_sign_payload
         }
     
     ]

@@ -1,5 +1,5 @@
+use crate::metrics::Metric;
 /// Provides statistical features over metric data.
-use crate::Metric;
 use num_traits::float::Float;
 /// Extends the metric api with statistical aggregation functions
 use stats::Commute;
@@ -20,14 +20,14 @@ pub trait DescriptiveStats {
     fn stddev(&self) -> f64;
     fn variance(&self) -> f64;
 
-    fn percent_diff(&self, other: &dyn DescriptiveStats) -> StatsRecord {
+    fn percent_change(&self, other: &dyn DescriptiveStats) -> StatsRecord {
         StatsRecord {
-            mean: percent_diff(self.mean(), other.mean()),
-            max: percent_diff(self.max(), other.max()),
-            min: percent_diff(self.min(), other.min()),
-            cnt: percent_diff(self.cnt(), other.cnt()),
-            stddev: percent_diff(self.stddev(), other.stddev()),
-            variance: percent_diff(self.variance(), other.variance()),
+            mean: percent_change(self.mean(), other.mean()),
+            max: percent_change(self.max(), other.max()),
+            min: percent_change(self.min(), other.min()),
+            cnt: percent_change(self.cnt(), other.cnt()),
+            stddev: percent_change(self.stddev(), other.stddev()),
+            variance: percent_change(self.variance(), other.variance()),
             ..Default::default()
         }
     }
@@ -46,7 +46,8 @@ pub struct OnlineStats {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StatsRecord {
-    pub name: Option<String>,
+    pub metric: Option<String>,
+    pub stream_id: Option<String>,
     pub max: f64,
     pub min: f64,
     pub cnt: f64,
@@ -57,8 +58,8 @@ pub struct StatsRecord {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckedStatsRecord {
-    scenario_name: String,
-    metric_name: String,
+    metric: String,
+    stream_id: String,
     pub expected_max: f64,
     pub expected_min: f64,
     pub expected_cnt: f64,
@@ -71,30 +72,29 @@ pub struct CheckedStatsRecord {
     pub actual_mean: f64,
     pub actual_variance: f64,
     pub actual_stddev: f64,
-    pub percent_diff_max: f64,
-    pub percent_diff_min: f64,
-    pub percent_diff_cnt: f64,
-    pub percent_diff_mean: f64,
-    pub percent_diff_variance: f64,
-    pub percent_diff_stddev: f64,
-    pub percent_diff_allowed: f64,
+    pub percent_change_max: f64,
+    pub percent_change_min: f64,
+    pub percent_change_cnt: f64,
+    pub percent_change_mean: f64,
+    pub percent_change_variance: f64,
+    pub percent_change_stddev: f64,
+    pub percent_change_allowed: f64,
     pub passed: bool,
 }
 
 impl CheckedStatsRecord {
-    pub fn new<S: Into<String>>(
-        scenario_name: S,
-        metric_name: S,
-        expected: &dyn DescriptiveStats,
+    pub fn new(
+        expected: &StatsRecord,
         actual: &dyn DescriptiveStats,
-        percent_diff_allowed: f64,
+        percent_change_allowed: f64,
+        passed: bool,
     ) -> Self {
-        let percent_diff = expected.percent_diff(actual);
-        let scenario_name = scenario_name.into();
-        let metric_name = metric_name.into();
+        let percent_change = expected.percent_change(actual);
+        let metric = expected.metric.clone().unwrap_or_default();
+        let stream_id = expected.stream_id.clone().unwrap_or_default();
         Self {
-            scenario_name,
-            metric_name,
+            metric,
+            stream_id,
             expected_max: expected.max(),
             expected_min: expected.min(),
             expected_cnt: expected.cnt(),
@@ -107,25 +107,23 @@ impl CheckedStatsRecord {
             actual_mean: actual.mean(),
             actual_variance: actual.variance(),
             actual_stddev: actual.stddev(),
-            percent_diff_max: percent_diff.max(),
-            percent_diff_min: percent_diff.min(),
-            percent_diff_cnt: percent_diff.cnt(),
-            percent_diff_mean: percent_diff.mean(),
-            percent_diff_variance: percent_diff.variance(),
-            percent_diff_stddev: percent_diff.stddev(),
-            percent_diff_allowed,
-            passed: LessThanStatCheck {
-                percent_diff_allowed,
-            }
-            .check(expected, actual)
-            .is_ok(),
+            percent_change_max: percent_change.max(),
+            percent_change_min: percent_change.min(),
+            percent_change_cnt: percent_change.cnt(),
+            percent_change_mean: percent_change.mean(),
+            percent_change_variance: percent_change.variance(),
+            percent_change_stddev: percent_change.stddev(),
+            percent_change_allowed,
+            passed,
         }
     }
 }
+
 impl Default for StatsRecord {
     fn default() -> Self {
         Self {
-            name: None,
+            metric: None,
+            stream_id: None,
             max: f64::min_value(),
             min: f64::max_value(),
             mean: 0.0,
@@ -137,10 +135,16 @@ impl Default for StatsRecord {
 }
 
 impl StatsRecord {
-    pub fn new<S: Into<String>, D: DescriptiveStats>(metric_name: S, desc: D) -> Self {
-        let metric_name = metric_name.into();
+    pub fn new<S: Into<Option<String>>, S2: Into<Option<String>>, D: DescriptiveStats>(
+        stream_id: S,
+        metric: S2,
+        desc: D,
+    ) -> Self {
+        let metric = metric.into();
+        let stream_id = stream_id.into();
         Self {
-            name: Some(metric_name),
+            metric,
+            stream_id,
             max: desc.max(),
             min: desc.min(),
             mean: desc.mean(),
@@ -150,6 +154,7 @@ impl StatsRecord {
         }
     }
 
+    /// Produces a hash map of descriptive statistics from `read` keyed by metric name.
     pub fn from_reader(
         read: &mut dyn std::io::Read,
     ) -> Result<HashMap<String, Box<dyn DescriptiveStats>>, Box<dyn Error>> {
@@ -158,7 +163,7 @@ impl StatsRecord {
         let mut stats_by_metric_name: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::new();
         for record in reader.deserialize() {
             let stat: StatsRecord = record?;
-            let stat_name = stat.name.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+            let stat_name = stat.metric.clone().map(|x| Ok(x)).unwrap_or_else(|| {
                 Err(Box::new(io::Error::new(
                     io::ErrorKind::Other,
                     "No stat name in stat record",
@@ -173,7 +178,8 @@ impl StatsRecord {
 impl From<OnlineStats> for StatsRecord {
     fn from(desc_stats: OnlineStats) -> Self {
         Self {
-            name: None,
+            metric: None,
+            stream_id: None,
             max: desc_stats.max(),
             min: desc_stats.min(),
             stddev: desc_stats.stddev(),
@@ -221,6 +227,7 @@ impl Display for DescriptiveStatType {
         write!(f, "{:?}", self)
     }
 }
+
 #[derive(Clone, Debug, Serialize)]
 pub struct StatFailure {
     expected: f64,
@@ -297,30 +304,31 @@ impl DescriptiveStats for OnlineStats {
 pub trait StatCheck {
     fn check(
         &self,
-        expected: &dyn DescriptiveStats,
+        expected: &StatsRecord,
         actual: &dyn DescriptiveStats,
-    ) -> Result<(), Vec<StatFailure>>;
+    ) -> Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>;
 
     fn check_all(
         &self,
-        expected: HashMap<String, Box<dyn DescriptiveStats>>,
-        actual: HashMap<String, Box<dyn DescriptiveStats>>,
+        expected: &StatsByMetric<StatsRecord>,
+        actual: &StatsByMetric<StatsRecord>,
     ) -> StatCheckResult {
         StatCheckResult(HashMap::from_iter(expected.iter().map(
-            |(stat_name, expected_stat)| {
-                let result = if let Some(actual_stat) = actual.get(stat_name) {
-                    self.check(expected_stat.as_ref(), actual_stat.as_ref())
+            |(grouping_key, expected_stat)| {
+                let result = if let Some(actual_stat) = actual.get(grouping_key) {
+                    self.check(expected_stat, actual_stat)
                 } else {
-                    Err(vec![])
+                    self.check(expected_stat, &StatsRecord::default())
                 };
-                (stat_name.clone(), result)
+                (grouping_key.clone(), result)
             },
         )))
     }
 }
 
-/// Computes percentage different between expected and actual
-pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
+/// Computes percentage change between expected and actual
+/// May produce `NaN`
+pub fn percent_change<N: Into<f64>>(expected: N, actual: N) -> f64 {
     let e = expected.into();
     let a = actual.into();
     f64::abs(e - a) / e
@@ -328,7 +336,7 @@ pub fn percent_diff<N: Into<f64>>(expected: N, actual: N) -> f64 {
 
 #[derive(Clone, Debug)]
 pub struct LessThanStatCheck {
-    percent_diff_allowed: f64,
+    percent_change_allowed: f64,
 }
 
 impl LessThanStatCheck {}
@@ -336,7 +344,7 @@ impl LessThanStatCheck {}
 impl Default for LessThanStatCheck {
     fn default() -> Self {
         LessThanStatCheck {
-            percent_diff_allowed: 0.05,
+            percent_change_allowed: 0.05,
         }
     }
 }
@@ -344,14 +352,16 @@ impl Default for LessThanStatCheck {
 impl StatCheck for LessThanStatCheck {
     fn check(
         &self,
-        expected: &dyn DescriptiveStats,
+        expected: &StatsRecord,
         actual: &dyn DescriptiveStats,
-    ) -> Result<(), Vec<StatFailure>> {
-        let percent_diff = expected.percent_diff(actual);
+    ) -> Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)> {
+        let percent_change = expected.percent_change(actual);
 
         let mut failures = Vec::new();
 
-        if percent_diff.mean() > self.percent_diff_allowed {
+        let mut checked_stats_record =
+            CheckedStatsRecord::new(expected, actual, self.percent_change_allowed, false);
+        if percent_change.mean() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.mean(),
                 actual: actual.mean(),
@@ -359,7 +369,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.stddev() > self.percent_diff_allowed {
+        if percent_change.stddev() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.stddev(),
                 actual: actual.stddev(),
@@ -367,7 +377,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.max() > self.percent_diff_allowed {
+        if percent_change.max() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.max(),
                 actual: actual.max(),
@@ -375,7 +385,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.min() > self.percent_diff_allowed {
+        if percent_change.min() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.min(),
                 actual: actual.min(),
@@ -383,7 +393,7 @@ impl StatCheck for LessThanStatCheck {
             })
         }
 
-        if percent_diff.cnt() > self.percent_diff_allowed {
+        if percent_change.cnt() > self.percent_change_allowed {
             failures.push(StatFailure {
                 expected: expected.cnt() as f64,
                 actual: actual.cnt() as f64,
@@ -392,24 +402,27 @@ impl StatCheck for LessThanStatCheck {
         }
 
         if failures.is_empty() {
-            Ok(())
+            checked_stats_record.passed = true;
+            Ok(checked_stats_record)
         } else {
-            Err(failures)
+            Err((checked_stats_record, failures))
         }
     }
 }
 
 #[derive(Shrinkwrap)]
-pub struct StatCheckResult(HashMap<String, Result<(), Vec<StatFailure>>>);
+pub struct StatCheckResult(
+    HashMap<GroupingKey, Result<CheckedStatsRecord, (CheckedStatsRecord, Vec<StatFailure>)>>,
+);
 
 impl Display for StatCheckResult {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for (stat_name, stat_result) in self.iter() {
             match stat_result {
-                Ok(_) => {
+                Ok(_checked_stat) => {
                     write!(f, "Checking {} metric... ok!\n", stat_name)?;
                 }
-                Err(stat_failures) => {
+                Err((_checked_stat, stat_failures)) => {
                     write!(f, "Checking {} metric... failed!\n", stat_name)?;
                     for stat_failure in stat_failures {
                         write!(f, "\t{}\n", stat_failure)?;
@@ -434,21 +447,41 @@ impl Commute for OnlineStats {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+/// (metric name, run name)
+pub struct GroupingKey(String, String);
+
+impl Display for GroupingKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}: {}", self.0, self.1)
+    }
+}
+
+impl GroupingKey {
+    pub fn new<S1: Into<String>, S2: Into<String>>(stream_id: S1, metric: S2) -> Self {
+        let stream_id = stream_id.into();
+        let metric = metric.into();
+
+        Self(stream_id, metric)
+    }
+}
+
 /// All combined descriptive statistics mapped by name of the metric
 #[derive(Shrinkwrap, Debug, Clone)]
-pub struct StatsByMetric(pub HashMap<String, OnlineStats>);
+#[shrinkwrap(mutable)]
+pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<GroupingKey, D>);
 
-impl StatsByMetric {
-    pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord>> {
+impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
+    pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();
         Box::new(
             me.into_iter()
-                .map(|(name, stat)| StatsRecord::new(name, stat)),
+                .map(|(key, stat)| StatsRecord::new(key.0, key.1, stat)),
         )
     }
 
-    pub fn print_csv(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut writer = csv::Writer::from_writer(std::io::stdout());
+    pub fn write_csv<W: std::io::Write>(&self, write: W) -> Result<(), Box<dyn std::error::Error>> {
+        let mut writer = csv::Writer::from_writer(write);
         let records = self.to_records();
         for record in records {
             writer.serialize(record)?;
@@ -456,14 +489,58 @@ impl StatsByMetric {
         writer.flush()?;
         Ok(())
     }
+
+    /// Produces a hash map of descriptive statistics from `read` keyed by metric name.
+    pub fn from_reader(
+        read: &mut dyn std::io::Read,
+    ) -> Result<StatsByMetric<StatsRecord>, Box<dyn Error>> {
+        let mut reader = csv::Reader::from_reader(read);
+
+        let mut data = HashMap::new();
+        for record in reader.deserialize() {
+            let stat: StatsRecord = record?;
+            let metric_name = stat.metric.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+                Err(Box::new(io::Error::new(
+                    io::ErrorKind::Other,
+                    "No metric name in stat record",
+                )))
+            })?;
+            let stream_id = stat.stream_id.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+                Err(Box::new(io::Error::new(
+                    io::ErrorKind::Other,
+                    "No stream id stat record",
+                )))
+            })?;
+            data.insert(GroupingKey::new(stream_id, metric_name), stat);
+        }
+
+        Ok(Self(data))
+    }
 }
 
-impl FromIterator<Metric> for StatsByMetric {
-    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric {
+impl<D: DescriptiveStats> StatsByMetric<D> {
+    pub fn empty() -> StatsByMetric<D> {
+        Self(HashMap::new())
+    }
+}
+
+impl<D: DescriptiveStats> Default for StatsByMetric<D> {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl StatsByMetric<StatsRecord> {
+    pub fn from_iter_with_stream_id<I: IntoIterator<Item = Metric>, S: Into<String>>(
+        source: I,
+        stream_id: S,
+    ) -> StatsByMetric<OnlineStats> {
+        let stream_id = stream_id.into();
         StatsByMetric(source.into_iter().fold(
             HashMap::new(),
             |mut stats_by_metric_name, metric| {
-                let entry = stats_by_metric_name.entry(metric.name);
+                let entry =
+                    stats_by_metric_name.entry(GroupingKey::new(stream_id.clone(), metric.name));
 
                 let online_stats = entry.or_insert_with(OnlineStats::empty);
                 online_stats.add(metric.value);
@@ -473,10 +550,22 @@ impl FromIterator<Metric> for StatsByMetric {
     }
 }
 
-impl Commute for StatsByMetric {
+impl<D: DescriptiveStats> FromIterator<(GroupingKey, D)> for StatsByMetric<D> {
+    fn from_iter<I: IntoIterator<Item = (GroupingKey, D)>>(source: I) -> StatsByMetric<D> {
+        StatsByMetric(source.into_iter().fold(
+            HashMap::new(),
+            |mut stats_by_metric_name, (s, d)| {
+                stats_by_metric_name.insert(s, d);
+                stats_by_metric_name
+            },
+        ))
+    }
+}
+
+impl Commute for StatsByMetric<OnlineStats> {
     fn merge(&mut self, rhs: Self) {
-        for (metric_name, online_stats_rhs) in rhs.iter() {
-            let entry = self.0.entry(metric_name.to_string());
+        for (key, online_stats_rhs) in rhs.iter() {
+            let entry = self.entry(key.clone());
             let online_stats = entry.or_insert_with(OnlineStats::empty);
             online_stats.merge(*online_stats_rhs);
         }
@@ -496,12 +585,16 @@ mod tests {
             .into_iter()
             .map(|x| Metric::new("size", x));
         let all_data = latency_data.chain(size_data);
-        let stats = StatsByMetric::from_iter(all_data);
+        let stats = StatsByMetric::from_iter_with_stream_id(all_data, "test");
 
-        let latency_stats = stats.get("latency").expect("latency stats to be present");
+        let latency_stats = stats
+            .get(&GroupingKey::new("test", "latency"))
+            .expect("latency stats to be present");
 
         assert_eq!(latency_stats.mean(), 100.0);
-        let size_stats = stats.get("size").expect("size stats to be present");
+        let size_stats = stats
+            .get(&GroupingKey::new("test", "size"))
+            .expect("size stats to be present");
 
         assert_eq!(size_stats.mean(), 37.0);
 
@@ -514,10 +607,10 @@ mod tests {
 
     #[test]
     fn can_perform_stat_check() {
-        let expected: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+        let expected: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(
             vec![(
-                "latency".to_string(),
-                Box::new(StatsRecord {
+                GroupingKey::new("test", "latency"),
+                StatsRecord {
                     mean: 50.0,
                     max: 100.0,
                     min: 25.0,
@@ -525,15 +618,15 @@ mod tests {
                     stddev: 10.0,
                     variance: 5.0,
                     ..Default::default()
-                }) as Box<dyn DescriptiveStats>,
+                },
             )]
             .into_iter(),
         );
 
-        let actual: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::from_iter(
+        let actual: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(
             vec![(
-                "latency".to_string(),
-                Box::new(StatsRecord {
+                GroupingKey::new("test", "latency"),
+                StatsRecord {
                     mean: 75.0,
                     max: 150.0,
                     min: 50.0,
@@ -541,23 +634,25 @@ mod tests {
                     stddev: 20.0,
                     variance: 8.0,
                     ..Default::default()
-                }) as Box<dyn DescriptiveStats>,
+                },
             )]
             .into_iter(),
         );
 
         let actual = format!(
             "{}",
-            LessThanStatCheck::default().check_all(expected, actual)
+            LessThanStatCheck::default().check_all(&expected, &actual)
         );
-        let expected = "Checking latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
+        let expected = "Checking test: latency metric... failed!\n\tMean: Expected 50, Actual was 75\n\tStdDev: Expected 10, Actual was 20\n\tMax: Expected 100, Actual was 150\n\tMin: Expected 25, Actual was 50\n";
 
         assert_eq!(expected, actual);
     }
 
     #[test]
-    fn percent_diff_works() {
-        assert_eq!(0.50, percent_diff(10.0, 15.0));
+    fn percent_change_works() {
+        assert_eq!(0.50, percent_change(10.0, 15.0));
+        assert_eq!(1. / 3., percent_change(15.0, 10.0));
+        assert!(f64::is_infinite(percent_change(0., 10.0)));
     }
 
     #[test]
@@ -581,14 +676,8 @@ mod tests {
             ..Default::default()
         };
 
-        let percent_diff_allowed = 0.05;
-        let checked = CheckedStatsRecord::new(
-            "direct message",
-            "zome_call.commit.latency",
-            &expected,
-            &actual,
-            percent_diff_allowed,
-        );
+        let percent_change_allowed = 0.05;
+        let checked = CheckedStatsRecord::new(&expected, &actual, percent_change_allowed, false);
 
         let mut writer = csv::Writer::from_writer(std::io::stdout());
         writer.serialize(checked).unwrap();

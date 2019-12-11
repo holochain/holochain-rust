@@ -16,6 +16,7 @@ use sim2h::{
     websocket::{streams::*, tls::TlsConfig},
     Sim2h, WireMessage,
 };
+use in_stream::*;
 use std::{
     collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
@@ -315,6 +316,7 @@ struct Job {
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     remote_url: Url2,
+    connection: InStreamWss<InStreamTls<InStreamTcp>>,
     stream_manager: StreamManager<std::net::TcpStream>,
     stress_config: OptStressRunConfig,
     next_ping: std::time::Instant,
@@ -340,6 +342,10 @@ impl Job {
         let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
         let agent_id = enc.encode(&*pub_key).unwrap();
         info!("GENERATED AGENTID {}", agent_id);
+
+        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        let connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
+
         let stream_manager = await_connection(connect_uri);
         let mut out = Self {
             agent_id,
@@ -347,6 +353,7 @@ impl Job {
             pub_key: Arc::new(Mutex::new(pub_key)),
             sec_key: Arc::new(Mutex::new(sec_key)),
             remote_url: Url2::parse(connect_uri.clone().to_string()),
+            connection,
             stream_manager,
             stress_config,
             next_ping: std::time::Instant::now(),
@@ -381,6 +388,7 @@ impl Job {
             payload,
         };
         let to_send: Opaque = signed_message.into();
+        self.connection.write(to_send.clone().as_bytes().into()).unwrap();
         self.stream_manager
             .send(
                 &self.remote_url.clone().into(),
@@ -483,11 +491,43 @@ impl Job {
 
         logger.log("publish_send_count", 1.0);
     }
+
+    fn priv_handle_msg(&mut self, logger: &mut StressJobMetricLogger, msg: WireMessage) {
+        match msg {
+            WireMessage::Pong => {
+                // with the current Ping/Pong structs
+                // there's no way to correlate specific messages
+                // if we switch to using the Websocket Ping/Pong
+                // we could put a message id in them.
+                let res = self.ping_sent_stack.pop_front();
+                if res.is_none() {
+                    panic!("spurious pong");
+                }
+                let res = res.unwrap();
+                logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
+            }
+            e @ _ => panic!("unexpected: {:?}", e),
+        }
+    }
 }
 
 impl StressJob for Job {
     /// check for any messages from sim2h and also send a ping
     fn tick(&mut self, logger: &mut StressJobMetricLogger) -> StressJobTickResult {
+        let mut frame = WsFrame::default();
+        match self.connection.read(&mut frame) {
+            Ok(_) => {
+                if let WsFrame::Binary(b) = frame {
+                    let msg: WireMessage = serde_json::from_slice(&b).unwrap();
+                    self.priv_handle_msg(logger, msg);
+                } else {
+                    panic!("unexpected {:?}", frame);
+                }
+            }
+            Err(e) if e.would_block() => (),
+            Err(e) => panic!(e),
+        }
+
         let (_, evs) = self.stream_manager.process().unwrap();
         for ev in evs {
             match ev {

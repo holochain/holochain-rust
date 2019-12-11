@@ -81,7 +81,7 @@ use lib3h::rrdht_util::Location;
 
 pub enum DhtAlgorithm {
     FullSync,
-    NaiveSharding,
+    NaiveSharding { redundant_count: u64 },
 }
 
 pub struct Sim2h {
@@ -748,9 +748,10 @@ impl Sim2h {
         // Calculate list of agents that should store new data:
         let maybe_dht_agents = match self.dht_algorithm {
             DhtAlgorithm::FullSync => self.all_agents(space_address.clone(), Some(&provider)),
-            DhtAlgorithm::NaiveSharding => self.agents_in_neighbourhood(
+            DhtAlgorithm::NaiveSharding { redundant_count } => self.agents_in_neighbourhood(
                 space_address.clone(),
                 entry_location(&self.crypto, entry_data.entry_address.clone()),
+                redundant_count,
             ),
         };
 
@@ -842,6 +843,7 @@ impl Sim2h {
         &mut self,
         space: SpaceHash,
         entry_location: Location,
+        redundant_count: u64,
     ) -> Sim2hResult<Vec<(AgentId, AgentInfo)>> {
         debug!(
             "Sharded broadcast for location {:?} in space: {:?}",
@@ -863,6 +865,7 @@ impl Sim2h {
                     anything_to_location(&self.crypto, &agent_id_string),
                     entry_location,
                     number_of_agents_in_space,
+                    redundant_count,
                 )
             })
             .collect::<Vec<(AgentId, AgentInfo)>>())

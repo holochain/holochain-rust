@@ -3,7 +3,7 @@ const { Orchestrator, tapeExecutor, singleConductor, localOnly, combine, callSyn
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
 // Try to keep this number as close as possible to the actual number of scenario tests.
 // (But never over)
-const MIN_EXPECTED_SCENARIOS = 30
+const MIN_EXPECTED_SCENARIOS = 32
 
 process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
@@ -41,6 +41,7 @@ require('./files/entry')(orchestrator.registerScenario)
 require('./files/links')(orchestrator.registerScenario)
 require('./files/memo')(orchestrator.registerScenario)
 require('./files/crypto')(orchestrator.registerScenario)
+require('./files/offline-validation')(orchestrator.registerScenario)
 require('./multi-dna')(orchestrator.registerScenario)
 // require('./validate-agent-test')(orchestrator.registerScenario)
 

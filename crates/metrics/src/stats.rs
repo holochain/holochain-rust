@@ -318,7 +318,7 @@ pub trait StatCheck {
                 let result = if let Some(actual_stat) = actual.get(grouping_key) {
                     self.check(expected_stat, actual_stat)
                 } else {
-                    panic!("No stat name") // TODO Better error handling
+                    self.check(expected_stat, &StatsRecord::default())
                 };
                 (grouping_key.clone(), result)
             },

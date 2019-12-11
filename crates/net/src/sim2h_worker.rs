@@ -470,3 +470,120 @@ impl NetWorker for Sim2hWorker {
         Some("".into())
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use super::*;
+    use sim2h::*;
+    use lib3h_sodium::SodiumCryptoSystem;
+    use lib3h_protocol::uri::Builder;
+    use test_utils::mock_signing::mock_conductor_api;
+    use std::sync::Arc;
+    use holochain_locksmith::RwLock as RwLock;
+    use holochain_core_types::{
+        agent::AgentId,
+    };
+    use holochain_persistence_api::cas::content::AddressableContent;
+    use tokio::runtime::current_thread::Runtime;
+    use netsim::{Network, node, spawn, Ipv4Range};
+    use futures::future;
+    use futures::sync::oneshot;
+    use futures::future::Future;
+    use void::ResultVoidExt;
+    use std::thread::sleep;
+    use crate::{
+        connection::net_connection_thread::NetConnectionThread,
+        connection::net_connection::NetSend,
+    };
+
+    #[test]
+    fn can_connect_to_server() {
+        let mut runtime = Runtime::new().unwrap();
+
+        runtime.block_on(futures::future::lazy(move || {
+            // create a channel to send the client the address of the server
+            let (server_addr_tx, server_addr_rx) = oneshot::channel();
+
+            let server_recipe = node::ipv4::machine(|ip| {
+                // start up a server node
+                let sim2h_url = format!("wss://{}", ip);
+                let uri = Builder::with_raw_url(Url::parse(&sim2h_url).unwrap())
+                    .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
+                    .with_port(9000)
+                    .build();
+                
+                println!("[server] listening on = {}", uri.to_string());
+                let _ = server_addr_tx.send(uri.to_string());
+
+
+                let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
+
+                loop {
+                    match sim2h.process() {
+                        Ok(_) => {
+                            println!("[server] tick");
+                        }
+                        Err(e) => {
+                            if e.to_string().contains("Bind error:") {
+                                println!("{:?}", e);
+                            } else {
+                                error!("{}", e.to_string())
+                            }
+                        }
+                    }
+                    if false { // keep the compiler happy
+                        break;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                }
+
+                future::ok(())
+            });
+
+            let client_recipe = node::ipv4::machine(|ip| {
+                // start up a client node
+                let handler = NetHandler::new(Box::new(|message| {
+                    println!("[client] got: {:?}", message);
+                    Ok(())
+                }));
+                let sim2h_url = server_addr_rx.wait().unwrap();
+                let client_config = Sim2hConfig{sim2h_url: sim2h_url.clone()};
+                println!("[client] Client server at {} connecting to sim2h server at {}", ip, sim2h_url.clone());
+                
+                let worker_factory = Box::new(move |h| {
+                    let agent_id = AgentId::generate_fake("loose unit");
+                    Ok(Box::new(Sim2hWorker::new(h, client_config.clone(), agent_id.address(), ConductorApi::new(Arc::new(RwLock::new(mock_conductor_api(agent_id)))))?) as Box<dyn NetWorker>)
+                });
+
+                let mut connection = NetConnectionThread::new(handler, worker_factory).expect("Could not connect");
+
+                // try and send something to the server to see what happens
+                connection.send(Lib3hClientProtocol::Shutdown).expect("Could not send");
+
+                loop {
+                    sleep(Duration::from_millis(1));
+                    if false { // keep the compiler happy
+                        break;
+                    }
+                }
+                future::ok(())
+            });
+
+            let network = Network::new();
+            let router_recipe = node::ipv4::router((server_recipe, client_recipe));
+            let (_spawn_complete, _ipv4_plug) =
+                spawn::ipv4_tree(&network.handle(), Ipv4Range::global(), router_recipe);
+
+            loop {
+                if false {
+                    break
+                }
+                sleep(Duration::from_millis(1));
+            }
+            future::ok(())
+        })).void_unwrap();
+
+
+    }
+} 

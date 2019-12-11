@@ -10,6 +10,11 @@ edition = "2018"
 
 [dev-dependencies]
 tempfile = "=3.0.7"
+test_utils = { version = "=0.0.40-alpha1", path = "../../test_utils" }
+netsim = { git = "https://github.com/holochain/netsim", branch = "hc-compatibility-fixes" }
+tokio = "=0.1.19"
+futures = "0.1.18"
+void = "1.0.2"
 
 [dependencies]
 failure = "=0.1.5"

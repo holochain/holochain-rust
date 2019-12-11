@@ -348,7 +348,7 @@ impl Conductor {
                                         interfaces
                                     }
 
-                                    Signal::Stats(_) => unreachable!(),
+                                    Signal::Stats(_) => panic!("Signal::Stats is a special case that should not get emitted from instances but gets created in the conductor to send stats for all instances in a single signal."),
                                 };
 
                             for interface in interfaces_with_instance {

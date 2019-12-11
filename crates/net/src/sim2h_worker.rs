@@ -6,10 +6,7 @@ use crate::connection::{
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
-use holochain_json_api::{
-    error::JsonError,
-    json::{JsonString, RawString},
-};
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
@@ -56,21 +53,6 @@ pub struct Sim2hWorker {
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     outgoing_failed_messages: Vec<WireMessage>,
-}
-
-fn wire_message_into_escaped_string(message: &WireMessage) -> String {
-    match message {
-        WireMessage::Ping => String::from("\\\"Ping\\\""),
-        WireMessage::Pong => String::from("\\\"Pong\\\""),
-        _ => {
-            let payload: String = message.clone().into();
-            let json_string: JsonString = RawString::from(payload).into();
-            let mut string: String = json_string.into();
-            string = String::from(string.trim_start_matches("\""));
-            string = String::from(string.trim_end_matches("\""));
-            string
-        }
-    }
 }
 
 impl Sim2hWorker {
@@ -158,7 +140,7 @@ impl Sim2hWorker {
 
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         self.time_of_last_sent = Instant::now();
-        let payload = wire_message_into_escaped_string(&message);
+        let payload: String = message.clone().into();
         let signature = self
             .conductor_api
             .execute(payload.clone(), CryptoMethod::Sign)

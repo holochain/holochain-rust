@@ -1,6 +1,6 @@
 [package]
 name = "blog"
-version = "0.0.39-alpha3"
+version = "0.0.40-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 

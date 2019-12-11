@@ -5,7 +5,6 @@
 //! crates, but that don't include Holochain itself.
 #![feature(try_trait)]
 #![feature(never_type)]
-#![feature(checked_duration_since)]
 #![warn(unused_extern_crates)]
 
 extern crate backtrace;
@@ -68,6 +67,7 @@ pub const HDK_HASH: &str = env!(
 // may be empty because code isn't always built from git repo
 pub const GIT_HASH: &str = env!("GIT_HASH", "");
 pub const GIT_BRANCH: &str = env!("GIT_BRANCH", "");
+pub const BUILD_DATE: &str = env!("BUILD_DATE", "");
 
 #[cfg(test)]
 mod test_hash {

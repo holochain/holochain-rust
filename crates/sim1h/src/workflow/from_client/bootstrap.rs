@@ -62,5 +62,4 @@ pub mod tests {
             }
         };
     }
-
 }

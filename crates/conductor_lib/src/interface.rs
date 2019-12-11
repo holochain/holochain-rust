@@ -149,9 +149,8 @@ impl ConductorApiBuilder {
             .get(id)
             .ok_or_else(|| jsonrpc_core::Error::invalid_params("unknown instance"))?;
         let hc_lock = instance.clone();
-        let hc_lock_inner = hc_lock.clone();
         let context = {
-            let hc = hc_lock_inner
+            let hc = hc_lock
                 .read()
                 .unwrap()
                 .annotate(format!("RPC method_call: {:?}", params_map));
@@ -197,14 +196,8 @@ impl ConductorApiBuilder {
             }
         };
 
-        Holochain::call_zome_function(
-            context.clone(),
-            &zome_name,
-            cap_request,
-            &func_name,
-            &args_string,
-        )
-        .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
+        Holochain::call_zome_function(context, &zome_name, cap_request, &func_name, &args_string)
+            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))
     }
 
     /// Adds a "call" method for making zome function calls
@@ -277,11 +270,10 @@ impl ConductorApiBuilder {
         instance_name: String,
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
-        self.instances
-            .insert(instance_name.clone(), instance.clone());
+        self.instances.insert(instance_name.clone(), instance);
         self.instance_ids_map.insert(
             PublicInstanceIdentifier::from(instance_name.clone()),
-            instance_name.clone(),
+            instance_name,
         );
         self
     }
@@ -311,6 +303,28 @@ impl ConductorApiBuilder {
                 ))
             })?
             .to_string())
+    }
+
+    fn get_as_crypto_string<T: Into<String> + Clone>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<String, jsonrpc_core::Error> {
+        // all data to be handled cryptographically is base64 encoded in the payload to avoid
+        // problems with JSON data handling if the client isn't setup to serialize things properly
+        let payload_string = Self::get_as_string(key.clone(), params_map)?;
+        match base64::decode(&payload_string) {
+            Ok(v) => match std::str::from_utf8(&v) {
+                Ok(s) => Ok(s.to_string()),
+                Err(_) => Err(jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` param is invalid utf8",
+                    &key.into()
+                ))),
+            },
+            Err(_) => Err(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param is invalid base64",
+                &key.into()
+            ))),
+        }
     }
 
     fn get_as_bool<T: Into<String>>(
@@ -498,7 +512,7 @@ impl ConductorApiBuilder {
                     .map(|v| v.to_string());
                 let dna_hash = conductor_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
-                    id.to_string(),
+                    id,
                     copy,
                     expected_hash,
                     properties,
@@ -620,7 +634,7 @@ impl ConductorApiBuilder {
             })?;
 
             let new_interface = InterfaceConfiguration {
-                id: id.to_string(),
+                id,
                 admin,
                 driver: match driver_type.as_ref() {
                     "websocket" => InterfaceDriver::Websocket { port },
@@ -632,6 +646,7 @@ impl ConductorApiBuilder {
                     }
                 },
                 instances: Vec::new(),
+                choose_free_port: None,
             };
 
             conductor_call!(|c| c.add_interface(new_interface))?;
@@ -935,9 +950,9 @@ impl ConductorApiBuilder {
     pub fn with_agent_signature_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -959,9 +974,9 @@ impl ConductorApiBuilder {
     pub fn with_agent_encryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             // Convert payload string into a SecBuf
-            let mut message = SecBuf::with_insecure_from_string(payload.clone());
+            let mut message = SecBuf::with_insecure_from_string(payload);
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
@@ -983,7 +998,7 @@ impl ConductorApiBuilder {
     pub fn with_agent_decryption_callback(mut self, keybundle: Arc<Mutex<KeyBundle>>) -> Self {
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
-            let payload = Self::get_as_string("payload", &params_map)?;
+            let payload = Self::get_as_crypto_string("payload", &params_map)?;
             //decoded base64 string
             let decoded_message = base64::decode(&payload)
                 .map_err(|_| jsonrpc_core::Error::new(jsonrpc_core::ErrorCode::InternalError))?;
@@ -1034,8 +1049,8 @@ impl ConductorApiBuilder {
         agent_id: AgentId,
         signing_service_uri: String,
     ) -> Self {
-        let agent_id = agent_id.clone();
-        let signing_service_uri = signing_service_uri.clone();
+        let agent_id = agent_id;
+        let signing_service_uri = signing_service_uri;
 
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
@@ -1058,7 +1073,7 @@ impl ConductorApiBuilder {
         agent_id: AgentId,
         encryption_service_uri: String,
     ) -> Self {
-        let agent_id = agent_id.clone();
+        let agent_id = agent_id;
         self.io.add_method("agent/encrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
@@ -1079,7 +1094,7 @@ impl ConductorApiBuilder {
         agent_id: AgentId,
         decryption_service_uri: String,
     ) -> Self {
-        let agent_id = agent_id.clone();
+        let agent_id = agent_id;
         self.io.add_method("agent/decrypt", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
@@ -1185,19 +1200,18 @@ impl ConductorApiBuilder {
             let signature = k
                 .lock()
                 .unwrap()
-                .sign(&src_id, payload.clone())
+                .sign(&src_id, payload)
                 .map_err(|_| jsonrpc_core::Error::internal_error())?;
 
             Ok(json!({ "signature": String::from(signature) }))
         });
 
-        let k = keystore.clone();
         self.io
             .add_method("agent/keystore/get_public_key", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let src_id = Self::get_as_string("src_id", &params_map)?;
 
-                let secret = k.lock().unwrap().get(&src_id).map_err(|err| {
+                let secret = keystore.lock().unwrap().get(&src_id).map_err(|err| {
                     jsonrpc_core::Error::invalid_params(format!(
                         r#"error getting "{}": {}"#,
                         src_id, err
@@ -1237,6 +1251,7 @@ pub trait Interface {
 pub mod tests {
     use super::*;
     use crate::{conductor::tests::test_conductor, config::Configuration};
+    use holochain_dpki::SEED_SIZE;
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let conductor = test_conductor(7777, 7778);
@@ -1260,6 +1275,32 @@ pub mod tests {
         let result = &serde_json::from_str::<serde_json::Value>(response_str)
             .expect("Response not valid JSON")["result"];
         result.to_string()
+    }
+
+    #[test]
+    fn test_agent_rpc_sign() {
+        let (config, instances) = example_config_and_instances();
+
+        let mut seed = SecBuf::with_insecure(SEED_SIZE);
+        let key_bundle = KeyBundle::new_from_seed_buf(&mut seed).unwrap();
+
+        let handler = ConductorApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .with_admin_dna_functions()
+            .with_agent_signature_callback(Arc::new(Mutex::new(key_bundle)))
+            .spawn();
+
+        // "dGVzdCAiIHBheWxvYWQ=" is r#"test " payload"# in base64
+        let response_str = handler
+            .handle_request_sync(r#"{"jsonrpc":"2.0","method":"agent/sign","params":{"payload":"dGVzdCAiIHBheWxvYWQ="},"id":"puid-0-1"}"#)
+            .expect("Invalid call to handler");
+
+        let result = unwrap_response_if_valid(&response_str);
+        assert_eq!(
+            result,
+            r#"{"signature":"645pchCrU6heLE6yULPigk7BGqcjE4balj7JGg/0mpneFS1oE7rO37ExUq/PY3zOclOwF9OjoLNPFjhgIdoqAg=="}"#
+        );
     }
 
     #[test]

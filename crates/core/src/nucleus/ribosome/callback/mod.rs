@@ -200,7 +200,7 @@ pub fn call(
             if wasm.code.is_empty() {
                 CallbackResult::NotImplemented("call/2".into())
             } else {
-                run_callback(context.clone(), call)
+                run_callback(context, call)
             }
         }
     }

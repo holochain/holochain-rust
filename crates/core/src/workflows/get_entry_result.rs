@@ -23,8 +23,8 @@ pub async fn get_entry_with_meta_workflow<'a>(
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
-    let method = QueryMethod::Entry(address.clone());
     // 2. No result, so try on the network
+    let method = QueryMethod::Entry(address.clone());
     if let None = maybe_entry_with_meta {
         let response =
             network::actions::query::query(context.clone(), method.clone(), timeout.clone())

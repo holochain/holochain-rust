@@ -24,6 +24,11 @@ impl From<Lib3hError> for Sim2hError {
         Sim2hError(format!("{:?}", err))
     }
 }
+impl From<std::io::Error> for Sim2hError {
+    fn from(err: std::io::Error) -> Self {
+        Sim2hError(format!("{:?}", err))
+    }
+}
 impl fmt::Display for Sim2hError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)

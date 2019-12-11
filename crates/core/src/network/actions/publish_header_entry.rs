@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::actions::ActionResponse,
+    network::actions::NetworkActionResponse,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
@@ -38,20 +38,28 @@ impl Future for PublishHeaderEntryFuture {
         {
             return Poll::Ready(Err(err));
         }
+
+        //
+        // TODO: connect the waker to state updates for performance reasons
+        // See: https://github.com/holochain/holochain-rust/issues/314
+        //
+        cx.waker().clone().wake();
+
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
                 return Poll::Ready(Err(error));
             }
-            //
-            // TODO: connect the waker to state updates for performance reasons
-            // See: https://github.com/holochain/holochain-rust/issues/314
-            //
-            cx.waker().clone().wake();
             match state.actions().get(&self.action) {
-                Some(ActionResponse::PublishHeaderEntry(result)) => match result {
-                    Ok(address) => Poll::Ready(Ok(address.to_owned())),
-                    Err(error) => Poll::Ready(Err(error.clone())),
+                Some(r) => match r.response() {
+                    NetworkActionResponse::PublishHeaderEntry(result) => {
+                        dispatch_action(
+                            self.context.action_channel(),
+                            ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),
+                        );
+                        Poll::Ready(result.clone())
+                    }
+                    _ => unreachable!(),
                 },
                 _ => Poll::Pending,
             }

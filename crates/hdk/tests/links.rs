@@ -252,7 +252,7 @@ pub fn test_links_with_immediate_timeout() {
             &result.clone().expect("err result").to_string(),
         )
         .expect("bad deserialize");
-    let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));;
+    let zome_internal_error = generate_zome_internal_error(String::from(r#""Timeout""#));
     assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error);
 }
 

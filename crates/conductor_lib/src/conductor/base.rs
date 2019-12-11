@@ -431,7 +431,7 @@ impl Conductor {
                 if kill_switch_rx.try_recv().is_ok() {
                     break;
                 }
-                thread::yield_now();
+                thread::sleep(Duration::from_millis(1));
             })
             .expect("Must be able to spawn thread")
     }

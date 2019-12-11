@@ -25,6 +25,7 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_metrics::MetricPublisher;
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -45,7 +46,6 @@ use std::{
     time::Duration,
 };
 
-use crate::signal::InstanceStats;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
@@ -66,6 +66,15 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
             None => Err(HolochainError::ErrorGeneric("no network".into())),
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
+pub struct InstanceStats {
+    pub number_held_entries: usize,
+    pub number_held_aspects: usize,
+    pub number_pending_validations: usize,
+    pub number_running_zome_calls: usize,
+    pub offline: bool,
 }
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.

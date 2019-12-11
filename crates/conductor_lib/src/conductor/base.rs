@@ -55,7 +55,7 @@ use crate::{
     static_server_impls::NickelStaticServer as StaticServer,
 };
 use boolinator::Boolinator;
-use holochain_core::signal::{InstanceStats, StatsSignal};
+use holochain_core::context::InstanceStats;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -119,7 +119,7 @@ pub struct Conductor {
     pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
     signal_multiplexer_kill_switch: Option<Sender<()>>,
     stats_thread_kill_switch: Option<Sender<()>>,
-    stats_signal_receiver: Option<Receiver<Signal>>,
+    stats_signal_receiver: Option<Receiver<HashMap<String, InstanceStats>>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -282,10 +282,7 @@ impl Conductor {
                     }
                 }
 
-                // Wrap stats in signal:
-                let stats_signal = Signal::Stats(StatsSignal { instance_stats });
-
-                if let Err(e) = stats_tx.send(stats_signal) {
+                if let Err(e) = stats_tx.send(instance_stats) {
                     error!("Could not send stats signal over channel: {:?}", e);
                 }
 
@@ -400,16 +397,16 @@ impl Conductor {
                                         println!("INTERFACEs for SIGNAL: {:?}", interfaces);
                                         interfaces
                                     }
-
-                                    Signal::Stats(_) => panic!("Signal::Stats is a special case that should not get emitted from instances but gets created in the conductor to send stats for all instances in a single signal."),
                                 };
 
                             for interface in interfaces_with_instance {
                                 if let Some(broadcaster) = broadcasters.get(&interface.id) {
-                                    if let Err(error) = broadcaster.send(SignalWrapper {
-                                        signal: signal.clone(),
-                                        instance_id: instance_id.clone(),
-                                    }) {
+                                    if let Err(error) =
+                                        broadcaster.send(SignalWrapper::InstanceSignal {
+                                            signal: signal.clone(),
+                                            instance_id: instance_id.clone(),
+                                        })
+                                    {
                                         notify(error.to_string());
                                     }
                                 };
@@ -419,12 +416,11 @@ impl Conductor {
                 }
 
                 // Process stats signals and send them over admin interfaces:
-                while let Ok(stats_signal) = stats_signal_receiver.try_recv() {
+                while let Ok(instance_stats) = stats_signal_receiver.try_recv() {
                     for interface in &admin_interfaces {
                         if let Some(broadcaster) = broadcasters.get(&interface.id) {
-                            if let Err(error) = broadcaster.send(SignalWrapper {
-                                signal: stats_signal.clone(),
-                                instance_id: String::new(),
+                            if let Err(error) = broadcaster.send(SignalWrapper::InstanceStats {
+                                instance_stats: instance_stats.clone(),
                             }) {
                                 notify(error.to_string());
                             }

@@ -4,7 +4,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
 use snowflake::ProcessUniqueId;
-use std::{collections::HashMap, thread};
+use std::thread;
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
 #[serde(tag = "signal_type")]
@@ -13,7 +13,6 @@ pub enum Signal {
     Trace(ActionWrapper),
     Consistency(ConsistencySignal<String>),
     User(UserSignal),
-    Stats(StatsSignal),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
@@ -29,20 +28,6 @@ impl From<EmitSignalArgs> for UserSignal {
             arguments: args.arguments,
         }
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
-pub struct StatsSignal {
-    pub instance_stats: HashMap<String, InstanceStats>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
-pub struct InstanceStats {
-    pub number_held_entries: usize,
-    pub number_held_aspects: usize,
-    pub number_pending_validations: usize,
-    pub number_running_zome_calls: usize,
-    pub offline: bool,
 }
 
 impl<'de> Deserialize<'de> for Signal {

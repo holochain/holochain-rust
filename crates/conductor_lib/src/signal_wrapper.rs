@@ -6,6 +6,7 @@ use std::collections::HashMap;
 /// an interface to the UI or other client.
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 #[allow(clippy::large_enum_variant)]
+#[serde(tag = "type")]
 pub enum SignalWrapper {
     InstanceSignal {
         signal: Signal,

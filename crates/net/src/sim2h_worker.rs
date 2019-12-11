@@ -507,15 +507,15 @@ pub mod tests {
 
             let server_recipe = node::ipv4::machine(|ip| {
                 // start up a server node
-                let sim2h_url = format!("wss://{}", ip);
-                let uri = Builder::with_raw_url(Url::parse(&sim2h_url).unwrap())
+                let port = 9000;
+                let sim2h_url = format!("wss://{}:{}", ip, port);
+                let uri = Builder::with_raw_url(Url::parse("wss://0.0.0.0").unwrap())
                     .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
-                    .with_port(9000)
+                    .with_port(port)
                     .build();
                 
                 println!("[server] listening on = {}", uri.to_string());
-                let _ = server_addr_tx.send(uri.to_string());
-
+                let _ = server_addr_tx.send(sim2h_url);
 
                 let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
 

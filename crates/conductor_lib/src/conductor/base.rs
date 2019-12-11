@@ -372,7 +372,7 @@ impl Conductor {
                         .filter(|interface_config| interface_config.admin)
                         .collect::<Vec<_>>();
 
-                    if admin_interfaces.len() > 0 {
+                    if !admin_interfaces.is_empty() {
                         // Get stats for all instances:
                         let mut instance_stats: HashMap<String, InstanceStats> = HashMap::new();
                         for (id, instance) in instances.iter() {

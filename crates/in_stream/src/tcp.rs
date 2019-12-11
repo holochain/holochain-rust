@@ -182,14 +182,11 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
                 url.clone(),
                 Some(TcpConnectingData {
                     addr,
-                    connect_timeout: match config.connect_timeout_ms {
-                        None => None,
-                        Some(ms) => Some(
-                            std::time::Instant::now()
-                                .checked_add(std::time::Duration::from_millis(ms))
-                                .unwrap(),
-                        ),
-                    },
+                    connect_timeout: config.connect_timeout_ms.map(|ms| {
+                        std::time::Instant::now()
+                            .checked_add(std::time::Duration::from_millis(ms))
+                            .unwrap()
+                    }),
                 }),
             ),
             Ok(_) => Self::priv_new(stream, url.clone(), None),

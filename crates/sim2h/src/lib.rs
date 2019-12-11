@@ -47,17 +47,29 @@ use std::{
 
 use holochain_locksmith::Mutex;
 
+/// if we can't acquire a lock in 20 seconds, panic!
+const MAX_LOCK_TIMEOUT: u64 = 20000;
+
+/// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {
+    /// will attempt to aquire a lock within a time-frame and panic after
+    /// this way deadlocks don't just lock forever
     fn f_lock(&self) -> holochain_locksmith::MutexGuard<T>;
 }
 
 impl<T> MutexExt<T> for Mutex<T> {
     fn f_lock(&self) -> holochain_locksmith::MutexGuard<T> {
-        self.try_lock_for(std::time::Duration::from_millis(1000))
+        // if we can't acquire a lock in 20 seconds, panic!
+        self.try_lock_for(std::time::Duration::from_millis(MAX_LOCK_TIMEOUT))
             .expect("failed to obtain mutex lock")
     }
 }
 
+/// if a channel send fails, it means it is disconnected
+/// this extension trait simplifies panic!ing in that case
+/// in a lot of places, we expect the channel to always be open
+/// and don't have the infrustructure to deal with degenerate cases
+/// this trait makes sending more readable when we want to panic! on disconnects
 pub(crate) trait SendExt<T> {
     fn f_send(&self, v: T);
 }

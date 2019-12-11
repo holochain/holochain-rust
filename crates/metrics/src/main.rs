@@ -30,36 +30,27 @@ enum Command {
         name = "print-cloudwatch-stats",
         about = "Prints descriptive stats in csv format over a time range in cloudwatch"
     )]
-    PrintCloudwatchStats {
-        #[structopt(
-            name = "region",
-            short = "r",
-            help = "The AWS region, defaults to eu-central-1."
-        )]
-        region: Option<Region>,
-        #[structopt(
-            name = "log_group_name",
-            short = "l",
-            help = "The AWS log group name to query over."
-        )]
-        log_group_name: Option<String>,
-        #[structopt(
-            name = "assume_role_arn",
-            short = "a",
-            help = "Optional override for the amazon role to assume when querying"
-        )]
-        assume_role_arn: Option<String>,
-        #[structopt(flatten)]
-        query_args: QueryArgs,
+    PrintCloudwatchStats(CloudwatchLogsOptions),
+    #[structopt(
+        name = "print-cloudwatch-metrics",
+        about = "Prints the metrics for a cloudwatch query in csv format"
+    )]
+    PrintCloudwatchMetrics(CloudwatchLogsOptions),
+    #[structopt(
+        name = "print-log-metrics",
+        about = "Prints descriptive stats in csv format over a log file"
+    )]
+    PrintLogMetrics {
+        #[structopt(name = "log_file", short = "f")]
+        log_file: PathBuf,
     },
-
     #[structopt(
         name = "print-log-stats",
         about = "Prints descriptive stats in csv format over a log file"
     )]
     PrintLogStats {
         #[structopt(name = "log_file", short = "f")]
-        log_file: String,
+        log_file: PathBuf,
     },
     #[structopt(
         name = "print-stat-check",
@@ -87,19 +78,32 @@ fn main() {
     let command = Command::from_args();
 
     match command {
-        Command::PrintCloudwatchStats {
+        Command::PrintCloudwatchMetrics(CloudwatchLogsOptions {
             region,
             log_group_name,
             query_args,
             assume_role_arn,
-        } => {
+        }) => {
             let region = region.unwrap_or_default();
             let log_group_name = log_group_name.unwrap_or_else(CloudWatchLogger::default_log_group);
             let assume_role_arn = assume_role_arn
                 .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
             print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
-        }
+        },
+        Command::PrintCloudwatchStats(CloudwatchLogsOptions {
+            region,
+            log_group_name,
+            query_args,
+            assume_role_arn,
+        }) => {
+            let region = region.unwrap_or_default();
+            let log_group_name = log_group_name.unwrap_or_else(CloudWatchLogger::default_log_group);
+            let assume_role_arn = assume_role_arn
+                .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
+            print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
+        },
         Command::PrintLogStats { log_file } => print_log_stats(log_file),
+        Command::PrintLogMetrics { log_file } => print_log_metrics(log_file),
         Command::StatCheck {
             expected_csv_file,
             actual_csv_file,
@@ -125,11 +129,18 @@ fn print_cloudwatch_stats(
     stats.write_csv(std::io::stdout()).unwrap();
 }
 
-fn print_log_stats(log_file: String) {
+fn print_log_stats(log_file: PathBuf) {
     let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
     let stats = StatsByMetric::from_iter_with_stream_id(metrics, log_file);
     stats.write_csv(std::io::stdout()).unwrap()
 }
+
+fn print_log_metrics(log_file: PathBuf) {
+    let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
+    let stats = StatsByMetric::from_iter_with_stream_id(metrics, log_file);
+    stats.write_csv(std::io::stdout()).unwrap()
+}
+
 
 /// Prints to stdout human readonly pass/fail info
 /// Saves to `result_csv_file` gradient info

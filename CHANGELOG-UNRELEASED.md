@@ -12,6 +12,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Adds parameters to conductor RPC function `debug/state_dump` to select portions of the state to be send instead of always receiving the full dump (which can get big if the instance holds many entries). [#1954](https://github.com/holochain/holochain-rust/pull/1954) 
 ### Changed
 
+- data sent via jsonrpc to the conductor interface for agent/sign, agent/encrypt and agent/decrypt must now be base64 encoded
+
 ### Deprecated
 
 ### Removed
@@ -19,4 +21,3 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 ### Security
-

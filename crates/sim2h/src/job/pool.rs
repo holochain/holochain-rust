@@ -7,30 +7,50 @@ pub(crate) struct Pool {
     job_send: crossbeam_channel::Sender<Box<dyn Job>>,
 }
 
+lazy_static! {
+    static ref SET_THREAD_PANIC_FATAL: bool = {
+        let orig_handler = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            // invoke the default handler and exit the process
+            orig_handler(panic_info);
+            std::process::exit(1);
+        }));
+        true
+    };
+}
+
 impl Pool {
     pub(crate) fn new() -> Self {
+        // make sure if a thread panics, the whole process exits
+        assert!(*SET_THREAD_PANIC_FATAL);
+
         let (job_send, job_recv) = crossbeam_channel::unbounded::<Box<dyn Job>>();
         let job_cont = Arc::new(Mutex::new(true));
         let mut job_threads = Vec::new();
-        for _ in 0..num_cpus::get() {
+        for cpu_index in 0..num_cpus::get() {
             let cont = job_cont.clone();
             let send = job_send.clone();
             let recv = job_recv.clone();
-            job_threads.push(std::thread::spawn(move || loop {
-                {
-                    if !*cont.f_lock() {
-                        return;
-                    }
-                }
+            job_threads.push(
+                std::thread::Builder::new()
+                    .name(format!("sim2h-pool-thread-{}", cpu_index))
+                    .spawn(move || loop {
+                        {
+                            if !*cont.f_lock() {
+                                return;
+                            }
+                        }
 
-                if let Ok(mut job) = recv.try_recv() {
-                    if job.run() {
-                        send.send(job).expect("failed to send job");
-                    }
-                }
+                        if let Ok(mut job) = recv.try_recv() {
+                            if job.run() {
+                                send.f_send(job);
+                            }
+                        }
 
-                std::thread::yield_now();
-            }));
+                        std::thread::yield_now();
+                    })
+                    .unwrap(),
+            );
         }
         Self {
             job_cont,

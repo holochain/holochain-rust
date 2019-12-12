@@ -6,7 +6,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -23,7 +23,7 @@ jobs:
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
    - run:
@@ -79,7 +79,7 @@ jobs:
 
  app-spec-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -97,7 +97,7 @@ jobs:
 
  app-spec-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest
+     - image: holochain/holochain-rust:latest.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -112,7 +112,7 @@ jobs:
          no_output_timeout: 20m
 # app-spec-tests-n3h:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -123,7 +123,7 @@ jobs:
 #
 # app-spec-tests-memory:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -134,7 +134,7 @@ jobs:
 #
 # app-spec-tests-websocket:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -156,7 +156,7 @@ jobs:
 
  cluster-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -172,7 +172,7 @@ jobs:
 
  stress-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -190,7 +190,7 @@ jobs:
 
  stress-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest
+     - image: holochain/holochain-rust:latest.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -206,7 +206,7 @@ jobs:
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
 
@@ -217,7 +217,7 @@ jobs:
 
  wasm-conductor-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
 

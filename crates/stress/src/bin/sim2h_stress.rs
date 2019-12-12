@@ -8,15 +8,14 @@ extern crate prettytable;
 extern crate serde_derive;
 
 use holochain_stress::*;
+use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    websocket::{streams::*, tls::TlsConfig},
     Sim2h, WireMessage,
 };
-use in_stream::*;
 use std::{
     collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
@@ -187,67 +186,39 @@ impl Opt {
     }
 }
 
-/// private wait for a websocket connection to connect && return it
-fn await_connection(connect_uri: &Lib3hUri) -> StreamManager<std::net::TcpStream> {
+fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(1000))
+        .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();
+
+    let mut read_frame = WsFrame::default();
 
     // keep trying to connect
     loop {
-        // StreamManager is dual sided, but we're only using the client side
-        // this tls config is for the not used server side, it can be fake
-        let tls_config = TlsConfig::FakeServer;
-        let mut stream_manager = StreamManager::with_std_tcp_stream(tls_config);
+        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        let mut connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
+        connection.write(WsFrame::Ping(b"".to_vec())).unwrap();
 
-        // TODO - wtf, we don't want a listening socket : (
-        //        but the logs are way too complainy
-        stream_manager
-            .bind(&Url2::parse("wss://127.0.0.1:0").into())
-            .unwrap();
+        loop {
+            let mut err = false;
 
-        // the actual connect request
-        if let Err(e) = stream_manager.connect(connect_uri) {
-            error!("e1 {:?}", e);
+            match connection.read(&mut read_frame) {
+                Ok(_) => return connection,
+                Err(e) if e.would_block() => (),
+                Err(_) => {
+                    err = true;
+                }
+            }
 
             if std::time::Instant::now() >= timeout {
                 panic!("could not connect within timeout");
             }
 
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            continue;
-        }
-
-        // now loop to see if we can communicate
-        loop {
-            let (_, evs) = match stream_manager.process() {
-                Err(e) => {
-                    error!("e2 {:?}", e);
-                    break;
-                }
-                Ok(s) => s,
-            };
-
-            let mut did_err = false;
-            for ev in evs {
-                match ev {
-                    StreamEvent::ConnectResult(_, _) => return stream_manager,
-                    StreamEvent::ErrorOccured(_, e) => {
-                        error!("e3 {:?}", e);
-                        did_err = true;
-                        break;
-                    }
-                    _ => (),
-                }
-            }
-
-            if did_err {
+            if err {
                 break;
             }
-        }
 
-        if std::time::Instant::now() >= timeout {
-            panic!("could not connect within timeout");
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
 
         std::thread::sleep(std::time::Duration::from_millis(100));
@@ -315,9 +286,7 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    remote_url: Url2,
     connection: InStreamWss<InStreamTls<InStreamTcp>>,
-    stream_manager: StreamManager<std::net::TcpStream>,
     stress_config: OptStressRunConfig,
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
@@ -343,18 +312,14 @@ impl Job {
         let agent_id = enc.encode(&*pub_key).unwrap();
         info!("GENERATED AGENTID {}", agent_id);
 
-        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
-        let connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
+        let connection = await_in_stream_connect(connect_uri);
 
-        let stream_manager = await_connection(connect_uri);
         let mut out = Self {
             agent_id,
             agent_ids,
             pub_key: Arc::new(Mutex::new(pub_key)),
             sec_key: Arc::new(Mutex::new(sec_key)),
-            remote_url: Url2::parse(connect_uri.clone().to_string()),
             connection,
-            stream_manager,
             stress_config,
             next_ping: std::time::Instant::now(),
             next_publish: std::time::Instant::now(),
@@ -388,13 +353,7 @@ impl Job {
             payload,
         };
         let to_send: Opaque = signed_message.into();
-        self.connection.write(to_send.clone().as_bytes().into()).unwrap();
-        self.stream_manager
-            .send(
-                &self.remote_url.clone().into(),
-                to_send.as_bytes().as_slice(),
-            )
-            .unwrap();
+        self.connection.write(to_send.as_bytes().into()).unwrap();
     }
 
     /// join the space "abcd" : )
@@ -501,10 +460,39 @@ impl Job {
                 // we could put a message id in them.
                 let res = self.ping_sent_stack.pop_front();
                 if res.is_none() {
-                    panic!("spurious pong");
+                    return;
                 }
                 let res = res.unwrap();
                 logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
+            }
+            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
+            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
+            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(aspect)) => {
+                let epoch_millis = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                let published = aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
+                let elapsed = epoch_millis - published;
+                logger.log("publish_received_aspect_in_ms", elapsed as f64);
+            }
+            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
+                let to_agent_id: String = dm_data.to_agent_id.clone().into();
+                assert_eq!(self.agent_id, to_agent_id);
+                let mut out_dm = dm_data.clone();
+                out_dm.to_agent_id = dm_data.from_agent_id;
+                out_dm.from_agent_id = dm_data.to_agent_id;
+                self.send_wire(WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
+                ));
+            }
+            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data)) => {
+                let res = self.pending_dms.remove(&dm_data.request_id);
+                if res.is_none() {
+                    panic!("invalid dm.request_id")
+                }
+                let res = res.unwrap();
+                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
             }
             e @ _ => panic!("unexpected: {:?}", e),
         }
@@ -526,87 +514,6 @@ impl StressJob for Job {
             }
             Err(e) if e.would_block() => (),
             Err(e) => panic!(e),
-        }
-
-        let (_, evs) = self.stream_manager.process().unwrap();
-        for ev in evs {
-            match ev {
-                StreamEvent::ErrorOccured(_, e) => panic!("{:?}", e),
-                StreamEvent::ConnectResult(_, _) => panic!("got ConnectResult"),
-                StreamEvent::IncomingConnectionEstablished(_) => unimplemented!(),
-                StreamEvent::ReceivedData(_, raw_data) => {
-                    let data = String::from_utf8_lossy(&raw_data).to_string();
-                    if &data == "\"Pong\"" {
-                        // with the current Ping/Pong structs
-                        // there's no way to correlate specific messages
-                        // if we switch to using the Websocket Ping/Pong
-                        // we could put a message id in them.
-                        let res = self.ping_sent_stack.pop_front();
-                        if res.is_none() {
-                            panic!("spurious pong");
-                        }
-                        let res = res.unwrap();
-                        logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
-                    } else if data.contains("HandleGetAuthoringEntryList")
-                        || data.contains("HandleGetGossipingEntryList")
-                    {
-                    } else if data.contains("HandleStoreEntryAspect") {
-                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
-                        match parsed {
-                            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
-                                aspect,
-                            )) => {
-                                let epoch_millis = std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_millis()
-                                    as u64;
-                                let published =
-                                    aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
-                                let elapsed = epoch_millis - published;
-                                logger.log("publish_received_aspect_in_ms", elapsed as f64);
-                            }
-                            e @ _ => panic!("unexpected: {:?}", e),
-                        }
-                    } else if data.contains("SendDirectMessageResult") {
-                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
-                        match parsed {
-                            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(
-                                dm_data,
-                            )) => {
-                                let res = self.pending_dms.remove(&dm_data.request_id);
-                                if res.is_none() {
-                                    panic!("invalid dm.request_id")
-                                }
-                                let res = res.unwrap();
-                                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
-                            }
-                            e @ _ => panic!("unexpected: {:?}", e),
-                        }
-                    } else if data.contains("HandleSendDirectMessage") {
-                        logger.log("dm_handle_count", 1.0);
-                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
-                        match parsed {
-                            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(
-                                dm_data,
-                            )) => {
-                                let to_agent_id: String = dm_data.to_agent_id.clone().into();
-                                assert_eq!(self.agent_id, to_agent_id);
-                                let mut out_dm = dm_data.clone();
-                                out_dm.to_agent_id = dm_data.from_agent_id;
-                                out_dm.from_agent_id = dm_data.to_agent_id;
-                                self.send_wire(WireMessage::Lib3hToClientResponse(
-                                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
-                                ));
-                            }
-                            e @ _ => panic!("unexpected: {:?}", e),
-                        }
-                    } else {
-                        panic!(data);
-                    }
-                }
-                StreamEvent::ConnectionClosed(_) => panic!("connection cloned"),
-            }
         }
 
         let now = std::time::Instant::now();
@@ -698,7 +605,7 @@ impl Suite {
 
         // wait 'till server is accepting connections.
         // let this one get dropped
-        await_connection(&bound_uri);
+        await_in_stream_connect(&bound_uri);
 
         Self {
             sim2h_cont,

@@ -89,7 +89,7 @@ fn main() {
             let assume_role_arn = assume_role_arn
                 .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
             print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
-        },
+        }
         Command::PrintCloudwatchStats(CloudwatchLogsOptions {
             region,
             log_group_name,
@@ -101,7 +101,7 @@ fn main() {
             let assume_role_arn = assume_role_arn
                 .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
             print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
-        },
+        }
         Command::PrintLogStats { log_file } => print_log_stats(log_file),
         Command::PrintLogMetrics { log_file } => print_log_metrics(log_file),
         Command::StatCheck {
@@ -131,16 +131,21 @@ fn print_cloudwatch_stats(
 
 fn print_log_stats(log_file: PathBuf) {
     let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
-    let stats = StatsByMetric::from_iter_with_stream_id(metrics, log_file);
+    let stats = StatsByMetric::from_iter_with_stream_id(
+        metrics,
+        log_file.to_str().unwrap_or_else(|| "unknown"),
+    );
     stats.write_csv(std::io::stdout()).unwrap()
 }
 
 fn print_log_metrics(log_file: PathBuf) {
     let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
-    let stats = StatsByMetric::from_iter_with_stream_id(metrics, log_file);
+    let stats = StatsByMetric::from_iter_with_stream_id(
+        metrics,
+        log_file.to_str().unwrap_or_else(|| "unknown"),
+    );
     stats.write_csv(std::io::stdout()).unwrap()
 }
-
 
 /// Prints to stdout human readonly pass/fail info
 /// Saves to `result_csv_file` gradient info

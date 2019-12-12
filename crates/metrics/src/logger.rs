@@ -3,6 +3,7 @@ use regex::Regex;
 use std::{
     convert::{TryFrom, TryInto},
     io::{BufRead, BufReader},
+    path::PathBuf,
 };
 
 /// A metric publisher that just logs to the debug level logger
@@ -92,7 +93,7 @@ impl TryFrom<LogLine> for Metric {
 }
 
 /// Produces an iterator of metric data given a log file name.
-pub fn metrics_from_file(log_file: String) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
+pub fn metrics_from_file(log_file: PathBuf) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
     let file = std::fs::File::open(log_file)?;
     let reader = BufReader::new(file);
     let metrics = reader.lines().filter_map(|line| {

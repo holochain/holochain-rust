@@ -82,26 +82,26 @@ pub struct QueryArgs {
 
 #[derive(Clone, Debug, Default, StructOpt)]
 pub struct CloudwatchLogsOptions {
-        #[structopt(
-            name = "region",
-            short = "r",
-            help = "The AWS region, defaults to eu-central-1."
-        )]
-        pub region: Option<Region>,
-        #[structopt(
-            name = "log_group_name",
-            short = "l",
-            help = "The AWS log group name to query over."
-        )]
-        pub log_group_name: Option<String>,
-        #[structopt(
-            name = "assume_role_arn",
-            short = "a",
-            help = "Optional override for the amazon role to assume when querying"
-        )]
-        pub assume_role_arn: Option<String>,
-        #[structopt(flatten)]
-        pub query_args: QueryArgs,
+    #[structopt(
+        name = "region",
+        short = "r",
+        help = "The AWS region, defaults to eu-central-1."
+    )]
+    pub region: Option<Region>,
+    #[structopt(
+        name = "log_group_name",
+        short = "l",
+        help = "The AWS log group name to query over."
+    )]
+    pub log_group_name: Option<String>,
+    #[structopt(
+        name = "assume_role_arn",
+        short = "a",
+        help = "Optional override for the amazon role to assume when querying"
+    )]
+    pub assume_role_arn: Option<String>,
+    #[structopt(flatten)]
+    pub query_args: QueryArgs,
 }
 
 impl CloudWatchLogger {

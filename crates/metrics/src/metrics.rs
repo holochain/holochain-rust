@@ -1,19 +1,23 @@
+use crossbeam_channel::*;
 use holochain_locksmith::RwLock;
 /// Metric suppport for holochain. Provides metric representations to
 /// sample, publish, aggregate, and analyze metric data.
 use std::sync::Arc;
-use crossbeam_channel::*;
 
 /// Represents a single sample of a numerical metric determined by `name`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Metric {
-   pub name: String,
-   pub stream_id: Option<String>,
-   pub value: f64,
+    pub name: String,
+    pub stream_id: Option<String>,
+    pub value: f64,
 }
 
 impl Metric {
-    pub fn new<S:Into<String>, S2:Into<Option<String>>>(name: S, stream_id: S2, value: f64) -> Self {
+    pub fn new<S: Into<String>, S2: Into<Option<String>>>(
+        name: S,
+        stream_id: S2,
+        value: f64,
+    ) -> Self {
         Self {
             name: name.into(),
             stream_id: stream_id.into(),
@@ -28,17 +32,28 @@ pub trait MetricPublisher: Sync + Send {
     fn publish(&mut self, metric: &Metric);
 }
 
-
-pub struct QueuedPublisher<M:MetricPublisher> {
-    metric_publisher: M,
+pub struct QueuedPublisher {
     sender: Sender<Metric>,
-    receiver: Receiver<Metric>
 }
 
-impl<M:MetricPublisher> MetricPublisher for QueuedPublisher<M> {
+impl QueuedPublisher {
+    pub fn new(mut metric_publisher: Box<dyn MetricPublisher>) -> Self {
+        let (sender, receiver) = unbounded();
+        let _join_handle: std::thread::JoinHandle<()> = std::thread::spawn(move || loop {
+            match receiver.try_recv() {
+                Ok(metric) => metric_publisher.publish(&metric),
+                Err(TryRecvError::Disconnected) => break,
+                Err(_) => (),
+            }
+        });
 
-    fn publish(&mut self, metric:&Metric) {
-       self.sender.send(*metric).unwrap();
+        Self { sender }
+    }
+}
+
+impl MetricPublisher for QueuedPublisher {
+    fn publish(&mut self, metric: &Metric) {
+        self.sender.send(metric.clone()).unwrap();
     }
 }
 

@@ -33,11 +33,9 @@ pub async fn run_validation_callback(
         |_address, call: CallbackFnCall, context: &Arc<Context>| {
             let cloned_context = context.clone();
 
-            let call2 = call.clone();
-
             match ribosome::run_dna(
-                Some(call2.clone().parameters.to_bytes()),
-                WasmCallData::new_callback_call(cloned_context, call2),
+                Some(call.clone().parameters.to_bytes()),
+                WasmCallData::new_callback_call(cloned_context, call),
             ) {
                 Ok(call_result) => {
                     if call_result.is_null() {

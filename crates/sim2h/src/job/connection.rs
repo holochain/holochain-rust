@@ -41,9 +41,9 @@ impl ConnectionJob {
         self.msg_send.f_send((self.wss.remote_url(), msg));
     }
 
-    fn run(&mut self) -> JobContinue {
+    fn run(&mut self) -> JobResult {
         if !self.cont {
-            return false;
+            return JobResult::done();
         }
         if self.frame.is_none() {
             self.frame = Some(WsFrame::default());
@@ -52,27 +52,30 @@ impl ConnectionJob {
             if let Err(e) = self.wss.write(frame) {
                 error!("WEBSOCKET ERROR: {:?}", e);
                 self.report_msg(Err(e.into()));
-                return false;
+                return JobResult::done();
             }
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
                 let frame = self.frame.take().unwrap();
                 self.report_msg(Ok(frame));
+                // we got data this time, check again right away
+                return JobResult::default();
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
                 error!("WEBSOCKET ERROR: {:?}", e);
                 self.report_msg(Err(e.into()));
-                return false;
+                return JobResult::done();
             }
         }
-        true
+        // no data this round, wait 5ms before checking again
+        JobResult::default().wait_ms(5)
     }
 }
 
 impl Job for Arc<Mutex<ConnectionJob>> {
-    fn run(&mut self) -> JobContinue {
+    fn run(&mut self) -> JobResult {
         self.f_lock().run()
     }
 }

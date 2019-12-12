@@ -10,16 +10,16 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   # - run:
-   #     name: DynamoDB
-   #     command: nix-shell --run dynamodb-memory
-   #     background: true
-   # - run:
-   #    name: wait for dynamodb
-   #    command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
-   # - run:
-   #    command: nix-shell --run hc-rust-test
-   #    no_output_timeout: 20m
+   - run:
+       name: DynamoDB
+       command: nix-shell --run dynamodb-memory
+       background: true
+   - run:
+      name: wait for dynamodb
+      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
+   - run:
+      command: nix-shell --run hc-rust-test
+      no_output_timeout: 20m
 
  fmt:
   docker:

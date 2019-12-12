@@ -33,15 +33,6 @@ with holonix.pkgs;
     RUST_LOG=sim1h=trace
     ''
     holonix.shell.shellHook
-    ''
-    if [[ ! -z $CIRCLECI ]]
-    then
-     export NIX_ENV_PREFIX=/holochain-rust/build
-     export CARGO_HOME="$NIX_ENV_PREFIX/.cargo"
-     export CARGO_INSTALL_ROOT="$NIX_ENV_PREFIX/.cargo"
-     export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
-    fi
-    ''
     ];
 
   buildInputs = [ holonix.pkgs.libiconv ]

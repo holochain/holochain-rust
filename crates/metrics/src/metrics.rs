@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use crossbeam_channel::*;
 use holochain_locksmith::RwLock;
 /// Metric suppport for holochain. Provides metric representations to
@@ -9,6 +10,7 @@ use std::sync::Arc;
 pub struct Metric {
     pub name: String,
     pub stream_id: Option<String>,
+    pub timestamp: Option<DateTime<Utc>>,
     pub value: f64,
 }
 
@@ -16,11 +18,13 @@ impl Metric {
     pub fn new<S: Into<String>, S2: Into<Option<String>>>(
         name: S,
         stream_id: S2,
+        timestamp: Option<DateTime<Utc>>,
         value: f64,
     ) -> Self {
         Self {
             name: name.into(),
             stream_id: stream_id.into(),
+            timestamp,
             value,
         }
     }
@@ -74,7 +78,8 @@ macro_rules! with_latency_publishing {
         let metric_name = format!("{}.latency", $metric_prefix);
 
         // TODO pass in stream id or not?
-        let metric = $crate::Metric::new(metric_name.as_str(), None, latency as f64);
+        let metric = $crate::Metric::new(metric_name.as_str(), None,
+            Some(clock.into()), latency as f64);
         $publisher.write().unwrap().publish(&metric);
         ret
     }}
@@ -121,7 +126,8 @@ mod test {
     #[test]
     fn can_publish_to_logger() {
         let mut publisher = crate::logger::LoggerMetricPublisher;
-        let metric = Metric::new("latency", None, 100.0);
+        let timestamp = Utc.timestamp(1_500_000_000, 0);
+        let metric = Metric::new("latency", None, timestamp, 100.0);
 
         publisher.publish(&metric);
     }

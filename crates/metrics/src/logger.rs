@@ -87,7 +87,7 @@ impl TryFrom<LogLine> for Metric {
         let metric_name: String = cap[1].to_string();
         let value_str = cap[2].to_string();
         let metric_value: f64 = value_str.as_str().parse()?;
-        let metric = Metric::new(&metric_name, None, metric_value);
+        let metric = Metric::new(&metric_name, None, None, metric_value);
         return Ok(metric);
     }
 }

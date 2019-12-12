@@ -51,3 +51,4 @@ pub mod p2p_config;
 pub mod p2p_network;
 pub mod sim1h_worker;
 pub mod sim2h_worker;
+mod integration_tests;

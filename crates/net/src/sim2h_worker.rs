@@ -482,25 +482,20 @@ pub mod tests {
     use test_utils::mock_signing::mock_conductor_api;
     use std::sync::Arc;
     use holochain_locksmith::RwLock as RwLock;
-    use holochain_core_types::{
-        agent::AgentId,
-    };
     use holochain_persistence_api::cas::content::AddressableContent;
     use tokio::runtime::current_thread::Runtime;
-    use netsim::{Network, node, spawn, Ipv4Range};
+    use netsim::{Network, node, Ipv4Range};
     use futures::future;
     use futures::sync::oneshot;
     use futures::future::Future;
-    use void::ResultVoidExt;
+    // use void::ResultVoidExt;
     use std::thread::sleep;
-    use crate::{
-        connection::net_connection_thread::NetConnectionThread,
-        connection::net_connection::NetSend,
-    };
 
     #[test]
     fn can_connect_to_server() {
         let mut runtime = Runtime::new().unwrap();
+        let network = Network::new();
+        let network_handle = network.handle();
 
         runtime.block_on(futures::future::lazy(move || {
             // create a channel to send the client the address of the server
@@ -544,26 +539,49 @@ pub mod tests {
 
             let client_recipe = node::ipv4::machine(|ip| {
                 // start up a client node
-                let handler = NetHandler::new(Box::new(|message| {
-                    println!("[client] got: {:?}", message);
-                    Ok(())
-                }));
                 let sim2h_url = server_addr_rx.wait().unwrap();
                 let client_config = Sim2hConfig{sim2h_url: sim2h_url.clone()};
                 println!("[client] Client server at {} connecting to sim2h server at {}", ip, sim2h_url.clone());
                 
-                let worker_factory = Box::new(move |h| {
-                    let agent_id = AgentId::generate_fake("loose unit");
-                    Ok(Box::new(Sim2hWorker::new(h, client_config.clone(), agent_id.address(), ConductorApi::new(Arc::new(RwLock::new(mock_conductor_api(agent_id)))))?) as Box<dyn NetWorker>)
-                });
+                let agent_id = test_utils::mock_signing::registered_test_agent("loose unit");
 
-                let mut connection = NetConnectionThread::new(handler, worker_factory).expect("Could not connect");
-
-                // try and send something to the server to see what happens
-                connection.send(Lib3hClientProtocol::Shutdown).expect("Could not send");
-
+                let handler = NetHandler::new(Box::new(|message| {
+                    println!("[client] got: {:?}", message);
+                    Ok(())
+                }));
+                
+                let mut worker = loop {
+                    match Sim2hWorker::new(handler.clone(), client_config.clone(), agent_id.clone().address().clone(), ConductorApi::new(Arc::new(RwLock::new(mock_conductor_api(agent_id.clone()))))) {
+                        Ok(worker) => {
+                            println!("[client] Worker successfully started up");
+                            break worker;
+                        }
+                        Err(e) => {
+                            println!("[client] Error occured in p2p network module, on startup: {:?}", e);
+                            println!(
+                                "[client] Waiting {} milliseconds to retry",
+                                1000
+                            );
+                        }
+                    }
+                    sleep(Duration::from_millis(1000));
+                };
+                
                 loop {
-                    sleep(Duration::from_millis(1));
+                    match worker.tick() {
+                        Err(e) => println!("[client] Error occured in p2p network module, on tick: {:?}", e),
+                        Ok(_) => println!("[client] tick")
+                    }
+                    sleep(Duration::from_millis(500));
+
+                    let space_data = SpaceData {
+                        /// Identifier of this request
+                        request_id: String::from("hi"),
+                        space_address: SpaceHash::from("SpaceAddress"),
+                        agent_id: AgentPubKey::from(agent_id.address().clone()),
+                    };
+
+                    worker.receive(Lib3hClientProtocol::JoinSpace(space_data)).unwrap();
                     if false { // keep the compiler happy
                         break;
                     }
@@ -571,20 +589,10 @@ pub mod tests {
                 future::ok(())
             });
 
-            let network = Network::new();
             let router_recipe = node::ipv4::router((server_recipe, client_recipe));
-            let (_spawn_complete, _ipv4_plug) =
-                spawn::ipv4_tree(&network.handle(), Ipv4Range::global(), router_recipe);
+            let (spawn_complete, _ipv4_plug) = network_handle.spawn_ipv4_tree(Ipv4Range::global(), router_recipe);
+            spawn_complete.map(|_| ())
 
-            loop {
-                if false {
-                    break
-                }
-                sleep(Duration::from_millis(1));
-            }
-            future::ok(())
-        })).void_unwrap();
-
-
+        })).unwrap();
     }
 } 

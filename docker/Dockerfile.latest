@@ -1,6 +1,7 @@
 FROM holochain/holonix:latest
 
 WORKDIR /holochain-rust/build
+ENV NIX_ENV_PREFIX /holochain-rust/build
 
 ARG DOCKER_BRANCH=develop
 

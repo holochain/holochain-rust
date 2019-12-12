@@ -29,7 +29,7 @@ pub async fn run_validation_callback(
 
     let validation_result: ValidationResult = match ribosome::run_dna(
         Some(call2.clone().parameters.to_bytes()),
-        WasmCallData::new_callback_call(cloned_context.clone(), call2),
+        WasmCallData::new_callback_call(cloned_context, call2),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
@@ -53,7 +53,10 @@ pub async fn run_validation_callback(
         Err(error) => panic!(error.to_string()), // same here
     };
 
-    let metric_name = format!("{}.{}.latency", call.zome_name, call.fn_name);
+    let metric_name = format!(
+        "run_validation_callback.{}.{}.latency",
+        call.zome_name, call.fn_name
+    );
     let latency = clock.elapsed().unwrap().as_millis();
     let metric = Metric::new(metric_name.as_str(), latency as f64);
     context.metric_publisher.write().unwrap().publish(&metric);

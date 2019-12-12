@@ -55,7 +55,7 @@ pub async fn query(
                 LinksStatusRequestKind::Live => Some(CrudStatus::Live),
             };
             (
-                QueryKey::Links(key.clone()),
+                QueryKey::Links(key),
                 QueryPayload::Links((crud_status, query)),
             )
         }

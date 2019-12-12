@@ -1,12 +1,13 @@
 version: 2
 
+
 jobs:
  # must be called build for local circle cli to work
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:latest
-  resource_class: large
+   - image: holochain/holochain-rust:latest.develop
+  resource_class: xlarge
   steps:
    - checkout
    - run:
@@ -16,15 +17,21 @@ jobs:
    - run:
       name: wait for dynamodb
       command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
-   - run: nix-shell --run hc-rust-test
+   - run:
+      command: nix-shell --run hc-rust-test
+      no_output_timeout: 20m
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
-   - run: nix-shell --run hc-test-fmt
-   - run: nix-shell --run hn-rust-clippy
+   - run:
+      command: nix-shell --run hc-test-fmt
+      no_output_timeout: 20m
+   - run:
+      command: nix-shell --run hn-rust-clippy
+      no_output_timeout: 20m
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
@@ -72,7 +79,7 @@ jobs:
 
  app-spec-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -86,10 +93,11 @@ jobs:
    - run:
        name: app spec tests
        command: nix-shell --run hc-app-spec-test-sim1h
+       no_output_timeout: 20m
 
  app-spec-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest
+     - image: holochain/holochain-rust:latest.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -97,12 +105,14 @@ jobs:
          name: sim2h server
          command: nix-shell --run hc-sim2h-server
          background: true
+         no_output_timeout: 20m
      - run:
          name: app spec tests
          command: nix-shell --run hc-app-spec-test-sim2h
+         no_output_timeout: 20m
 # app-spec-tests-n3h:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -113,7 +123,7 @@ jobs:
 #
 # app-spec-tests-memory:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -124,7 +134,7 @@ jobs:
 #
 # app-spec-tests-websocket:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -146,7 +156,7 @@ jobs:
 
  cluster-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -154,13 +164,15 @@ jobs:
        name: sim2h server
        command: nix-shell --run "hc-sim2h-server -p 9001"
        background: true
+       no_output_timeout: 20m
    - run:
        name: app spec cluster tests
        command: nix-shell --run hc-app-spec-cluster-test
+       no_output_timeout: 20m
 
  stress-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -174,10 +186,11 @@ jobs:
    - run:
        name: stress tests
        command: nix-shell --run hc-stress-test-sim1h
+       no_output_timeout: 20m
 
  stress-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest
+     - image: holochain/holochain-rust:latest.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -185,29 +198,33 @@ jobs:
          name: sim2h server
          command: nix-shell --run "hc-sim2h-server -p 9002"
          background: true
+         no_output_timeout: 20m
      - run:
          name: stress tests
          command: nix-shell --run hc-stress-test-sim2h
+         no_output_timeout: 20m
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
 
    - run:
       name: test cli
       command: nix-shell --run hc-cli-test
+      no_output_timeout: 20m
 
  wasm-conductor-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
 
    - run:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
+       no_output_timeout: 20m
 
  cold.mac.10.nix:
   macos:
@@ -257,11 +274,14 @@ jobs:
       command: nix-shell --run hc-release-hook-publish
 
  docker.build.latest:
+  resource_class: large
   machine: true
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build latest $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build latest $CIRCLE_BRANCH
    - run: ./docker/push latest $CIRCLE_BRANCH
 
  docker.build.sim2h_server:
@@ -269,7 +289,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build sim2h_server $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build sim2h_server $CIRCLE_BRANCH
    - run: ./docker/push sim2h_server $CIRCLE_BRANCH
 
  docker.build.trycp_server:
@@ -277,7 +299,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build trycp_server $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build trycp_server $CIRCLE_BRANCH
    - run: ./docker/push trycp_server $CIRCLE_BRANCH
 
  docker.build.minimal:
@@ -285,7 +309,9 @@ jobs:
   steps:
    - checkout
    - run: ./docker/login
-   - run: ./docker/build minimal $CIRCLE_BRANCH
+   - run:
+      no_output_timout: 20m
+      command: ./docker/build minimal $CIRCLE_BRANCH
    - run: ./docker/push minimal $CIRCLE_BRANCH
 
 workflows:
@@ -312,18 +338,22 @@ workflows:
       filters:
        branches:
         only:
-         - 2019-11-22-path-for-docker
+         - 2019-12-04-docker-timeouts
          - develop
          - final-exam
-         - assume-role
    - docker.build.trycp_server:
       requires:
        - docker.build.minimal
    - docker.build.sim2h_server:
       requires:
        - docker.build.minimal
-   # @todo this fails because the tests don't pass without a git repo
-   # - docker.build.latest
+   - docker.build.latest:
+      filters:
+       branches:
+        only:
+         - develop
+         - final-exam
+         - 2019-12-07-docker-latest
 
  cold.mac:
   jobs:
@@ -332,6 +362,7 @@ workflows:
        branches:
         only:
          - develop
+
 
  deploy:
   jobs:

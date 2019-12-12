@@ -47,7 +47,7 @@ pub fn definition() -> ValidatingEntryType {
         sharing: Sharing::Private,
 
         validation_package: || {
-            hdk::ValidationPackageDefinition::ChainFull
+            hdk::ValidationPackageDefinition::Entry
         },
 
         validation: |_validation_data: hdk::EntryValidationData<Memo>| {
@@ -106,7 +106,7 @@ mod tests {
             memo_definition.entry_type_definition.clone(),
         );
 
-        let expected_validation_package_definition = hdk::ValidationPackageDefinition::ChainFull;
+        let expected_validation_package_definition = hdk::ValidationPackageDefinition::Entry;
         assert_eq!(
             expected_validation_package_definition,
             (memo_definition.package_creator)(),

@@ -10,13 +10,12 @@ pub fn hash_dna(
     properties: Option<Vec<String>>,
 ) -> DefaultResult<Address> {
     let mut dna = Conductor::load_dna(dna_file_path)?;
-    let mut map = if let serde_json::Value::Object(map) = dna.properties {
-        map.clone()
-    } else {
-        Map::new()
-    };
-
     if let Some(properties) = properties {
+        let mut map = if let serde_json::Value::Object(map) = dna.properties {
+            map
+        } else {
+            Map::new()
+        };
         for property_string in properties {
             let mut parts = property_string
                 .split('=')
@@ -32,8 +31,8 @@ pub fn hash_dna(
             let name = parts.pop().unwrap();
             map.insert(name, serde_json::Value::String(value));
         }
+        dna.properties = serde_json::Value::Object(map);
     }
 
-    dna.properties = serde_json::Value::Object(map);
     Ok(dna.address())
 }

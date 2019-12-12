@@ -25,7 +25,7 @@ pub fn get_validation_package_definition(
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     let dna = context.get_dna().expect("Callback called without DNA set!");
-    let result = match entry.entry_type().clone() {
+    let result = match entry.entry_type() {
         EntryType::App(app_entry_type) => {
             let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
             if zome_name.is_none() {
@@ -73,7 +73,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 Some(call.parameters.to_bytes()),
-                WasmCallData::new_callback_call(context.clone(), call),
+                WasmCallData::new_callback_call(context, call),
             )?
         }
         EntryType::LinkRemove => {
@@ -105,7 +105,7 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 Some(call.parameters.to_bytes()),
-                WasmCallData::new_callback_call(context.clone(), call),
+                WasmCallData::new_callback_call(context, call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

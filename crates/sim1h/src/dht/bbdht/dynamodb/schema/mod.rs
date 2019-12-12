@@ -122,5 +122,4 @@ pub mod test {
             result,
         );
     }
-
 }

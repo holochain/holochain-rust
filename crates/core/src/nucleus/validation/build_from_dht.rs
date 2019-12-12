@@ -204,7 +204,7 @@ pub mod tests {
             .next()
             .expect("Must be able to get header for just published entry");
 
-        let chain_pair = ChainPair::try_from_header_and_entry(header, entry);
+        let chain_pair = ChainPair::try_from_header_and_entry(header, entry)?;
 
         // jack (the author) retrieves a local validation package
         let local_validation_package = context2

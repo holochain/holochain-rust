@@ -47,7 +47,7 @@ impl ValidationDependencies for ChainPair {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::chain_pair::ChainPair;
+    use crate::network::chain_pair::ChainPair;
     use holochain_core_types::{
         agent::AgentId, chain_header::ChainHeader, error::HolochainError,link::link_data::LinkData, time::Iso8601,
     };
@@ -67,18 +67,19 @@ pub mod tests {
 
     fn try_chain_pair_from_entry(entry: Entry) -> Result<ChainPair, HolochainError> {
         let header = test_header_for_entry(&entry);
-        ChainPair::try_from_header_and_entry(entry, header)
+        ChainPair::try_from_header_and_entry(header, entry)
     }
 
     #[test]
-    fn test_get_validation_dependencies_app_entry() {
+    fn test_get_validation_dependencies_app_entry() -> Result<(), HolochainError> {
         let entry = Entry::App("entry_type".into(), "content".into());
-        let Ok(chain_pair) = try_chain_pair_from_entry(entry)?;
-        assert_eq!(chain_pair.get_validation_dependencies(), Vec::new(),)
+        try_chain_pair_from_entry(entry).map(|chain_pair| {
+            assert_eq!(chain_pair.get_validation_dependencies(), Vec::new())
+        })
     }
 
     #[test]
-    fn test_get_validation_dependencies_link_add_entry() {
+    fn test_get_validation_dependencies_link_add_entry() -> Result<(), HolochainError> {
         let entry = Entry::LinkAdd(LinkData::new_add(
             &Address::from("QmBaseAddress"),
             &Address::from("QmTargetAddress"),
@@ -87,18 +88,19 @@ pub mod tests {
             test_header_for_entry(&Entry::App("".into(), "".into())),
             AgentId::new("HcAgentId", "key".into()),
         ));
-        let Ok(chain_pair) = try_chain_pair_from_entry(entry)?;
-        assert_eq!(
-            chain_pair.get_validation_dependencies(),
-            vec![
-                Address::from("QmBaseAddress"),
-                Address::from("QmTargetAddress")
-            ],
-        )
+        try_chain_pair_from_entry(entry).map(|chain_pair| {
+            assert_eq!(
+                chain_pair.get_validation_dependencies(),
+                vec![
+                    Address::from("QmBaseAddress"),
+                    Address::from("QmTargetAddress")
+                ],
+            )
+        })
     }
 
     #[test]
-    fn test_get_validation_dependencies_header_entry() {
+    fn test_get_validation_dependencies_header_entry() -> Result<(), HolochainError> {
         let header_entry_content = ChainHeader::new(
             &"some type".into(),
             &Address::from("QmAddressOfEntry"),
@@ -109,10 +111,11 @@ pub mod tests {
             &Iso8601::from(0),
         );
         let entry = Entry::ChainHeader(header_entry_content);
-        let Ok(chain_pair) = try_chain_pair_from_entry(entry)?;
-        assert_eq!(
-            chain_pair.get_validation_dependencies(),
-            vec![Address::from("QmPreviousHeaderAddress")],
-        )
+        try_chain_pair_from_entry(entry).map(|chain_pair| {
+            assert_eq!(
+                chain_pair.get_validation_dependencies(),
+                vec![Address::from("QmPreviousHeaderAddress")],
+            )
+        });
     }
 }

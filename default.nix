@@ -31,6 +31,14 @@ with holonix.pkgs;
     # config file used by aws cli tool
     export AWS_CONFIG_FILE=`pwd`/.aws/config
     RUST_LOG=sim1h=trace
+
+    if [[ ! -z $CIRCLECI ]]
+    then
+     export NIX_ENV_PREFIX=/holochain-rust/build
+     export CARGO_HOME="$NIX_ENV_PREFIX/.cargo"
+     export CARGO_INSTALL_ROOT="$NIX_ENV_PREFIX/.cargo"
+     export PATH="$CARGO_INSTALL_ROOT/bin:$PATH"
+    fi
     ''
     holonix.shell.shellHook
     ];

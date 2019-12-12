@@ -100,6 +100,10 @@ pub enum QueryPayload {
 #[serde(tag = "action_type", content = "data")]
 #[allow(clippy::large_enum_variant)]
 pub enum Action {
+    /// Get rid of stale information that we should drop to not have the state grow infinitely.
+    Prune,
+    ClearActionResponse(snowflake::ProcessUniqueId),
+
     // ----------------
     // Agent actions:
     // ----------------
@@ -144,10 +148,11 @@ pub enum Action {
     /// Note that the given address is that of the entry NOT the address of the header itself
     PublishHeaderEntry(Address),
 
-    ///Performs a Network Query Action based on the key and payload, used for links and Entries
-    Query((QueryKey, QueryPayload)),
+    /// Performs a Network Query Action based on the key and payload, used for links and Entries.
+    /// Includes the timeout information: system time of dispatch and duration until it timeouts.
+    Query((QueryKey, QueryPayload, Option<(SystemTime, Duration)>)),
 
-    ///Performs a Query Timeout Action which times out based the values given
+    ///Performs a Query Timeout Action which times out the query given by the key.
     QueryTimeout(QueryKey),
 
     /// Lets the network module respond to a Query request.
@@ -159,11 +164,15 @@ pub enum Action {
     /// Triggered from the network handler.
     HandleQuery((NetworkQueryResult, QueryKey)),
 
+    /// Clean up the query result so the state doesn't grow indefinitely.
+    ClearQueryResult(QueryKey),
+
     RespondFetch((FetchEntryData, Vec<EntryAspect>)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
-    SendDirectMessage(DirectMessageData),
+    /// Includes the timeout information: system time of dispatch and duration until it timeouts.
+    SendDirectMessage((DirectMessageData, Option<(SystemTime, Duration)>)),
 
     /// Makes the direct message connection with the given ID timeout by adding an
     /// Err(HolochainError::Timeout) to NetworkState::custom_direct_message_replys.
@@ -178,15 +187,25 @@ pub enum Action {
     /// and prepare for receiveing an answer
     GetValidationPackage(ChainHeader),
 
+    /// Makes the get validation request with the given ID timeout by adding an
+    /// Err(HolochainError::Timeout) to NetworkState::get_validation_package_results.
+    GetValidationPackageTimeout(Address),
+
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
     /// Triggered from the network handler when we get the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
 
+    /// Clean up the validation package result so the state doesn't grow indefinitely.
+    ClearValidationPackageResult(Address),
+
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
     /// Triggered from the network handler when we get the response.
     HandleCustomSendResponse((String, Result<String, String>)),
+
+    /// Clean up the custom send response result so the state doesn't grow indefinitely.
+    ClearCustomSendResponse(String),
 
     /// Sends the given data as JsonProtocol::HandleGetAuthoringEntryListResult
     RespondAuthoringList(EntryListData),
@@ -216,6 +235,9 @@ pub enum Action {
 
     /// Let the State track that an HDK function called by a zome call has returned
     TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
+
+    /// Remove all traces of the given call from state (mainly the result)
+    ClearZomeFunctionCall(ZomeFnCall),
 
     /// No-op, used to check if an action channel is still open
     Ping,
@@ -314,6 +336,7 @@ pub mod tests {
                 id: String::from("test-id"),
             }),
             QueryPayload::Entry,
+            None,
         ))
     }
 
@@ -335,6 +358,7 @@ pub mod tests {
                 id: snowflake::ProcessUniqueId::new().to_string(),
             }),
             QueryPayload::Entry,
+            None,
         )))
     }
 

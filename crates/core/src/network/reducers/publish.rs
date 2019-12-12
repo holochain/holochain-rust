@@ -1,7 +1,7 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse,
+        actions::NetworkActionResponse,
         entry_aspect::EntryAspect,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
         reducers::send,
@@ -21,6 +21,7 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
+use crate::network::actions::Response;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
@@ -47,7 +48,7 @@ fn publish_entry(
             space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
-                entry_address: entry_with_header.entry.address().clone().into(),
+                entry_address: entry_with_header.entry.address().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
                     entry_with_header.entry.clone(),
                     entry_with_header.header.clone(),
@@ -188,10 +189,10 @@ pub fn reduce_publish(
     let result = reduce_publish_inner(network_state, root_state, &address);
     network_state.actions.insert(
         action_wrapper.clone(),
-        ActionResponse::Publish(match result {
+        Response::from(NetworkActionResponse::Publish(match result {
             Ok(_) => Ok(address.clone()),
             Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
+        })),
     );
 }
 

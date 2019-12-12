@@ -27,7 +27,7 @@ use holochain_conductor_lib::{
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::{
-    error::HolochainError, hdk_version::HDK_VERSION, GIT_BRANCH, GIT_HASH, HDK_HASH,
+    error::HolochainError, hdk_version::HDK_VERSION, BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
 #[cfg(unix)]
@@ -60,7 +60,8 @@ impl Default for SignalConfiguration {
     }
 }
 
-const MAGIC_STRING: &str = "Done. All interfaces started.";
+// NOTE: don't change without also changing in crates/trycp_server/src/main.rs
+const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
@@ -78,6 +79,9 @@ fn main() {
         }
         if GIT_BRANCH != "" {
             println!("GIT_BRANCH: {}", GIT_BRANCH);
+        }
+        if BUILD_DATE != "" {
+            println!("BUILD_DATE: {}", BUILD_DATE);
         }
         return;
     }

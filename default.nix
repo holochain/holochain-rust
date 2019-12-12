@@ -36,7 +36,6 @@ let
       RUST_SODIUM_SHARED = "1";
     });
 in
-
 {
   holochain-cli = buildHolochain {
     name = "holochain-cli";

@@ -1,8 +1,16 @@
 extern crate structopt;
 use crate::structopt::StructOpt;
-use holochain_metrics::{cloudwatch::*, stats::StatsByMetric, *};
+use holochain_metrics::{
+    cloudwatch::*,
+    stats::{StatCheck, StatsByMetric, StatsRecord},
+    *,
+};
 use rusoto_core::Region;
-use std::iter::FromIterator;
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter},
+    path::PathBuf,
+};
 
 fn enable_logging() {
     if std::env::var("RUST_LOG").is_err() {
@@ -19,38 +27,51 @@ fn enable_logging() {
 #[structopt(name = "metrics", about = "Holochain metric utilities")]
 enum Command {
     #[structopt(
-        name = "cloudwatch-test",
-        about = "Runs a simple smoke test of cloudwatch publishing features"
-    )]
-    CloudwatchTest,
-    #[structopt(
         name = "print-cloudwatch-stats",
-        about = "Prints descriptive stats in csv form over a time range from a cloudwatch datasource"
+        about = "Prints descriptive stats in csv format over a time range in cloudwatch"
     )]
     PrintCloudwatchStats {
         #[structopt(
             name = "region",
             short = "r",
-            about = "The AWS region, defaults to eu-central-1."
+            help = "The AWS region, defaults to eu-central-1."
         )]
         region: Option<Region>,
         #[structopt(
             name = "log_group_name",
             short = "l",
-            about = "The AWS log group name to query over."
+            help = "The AWS log group name to query over."
         )]
         log_group_name: Option<String>,
+        #[structopt(
+            name = "assume_role_arn",
+            short = "a",
+            help = "Optional override for the amazon role to assume when querying"
+        )]
+        assume_role_arn: Option<String>,
         #[structopt(flatten)]
         query_args: QueryArgs,
     },
 
     #[structopt(
         name = "print-log-stats",
-        about = "Prints descriptive stats in csv form over a time range"
+        about = "Prints descriptive stats in csv format over a log file"
     )]
     PrintLogStats {
         #[structopt(name = "log_file", short = "f")]
         log_file: String,
+    },
+    #[structopt(
+        name = "print-stat-check",
+        about = "Prints stat checks and save results in csv format"
+    )]
+    StatCheck {
+        #[structopt(name = "expected_csv_file", short = "ef")]
+        expected_csv_file: PathBuf,
+        #[structopt(name = "acual_csv_file", short = "af")]
+        actual_csv_file: PathBuf,
+        #[structopt(name = "result_csv_file", short = "rf")]
+        result_csv_file: PathBuf,
     },
 }
 
@@ -66,61 +87,90 @@ fn main() {
     let command = Command::from_args();
 
     match command {
-        Command::CloudwatchTest => cloudwatch_test(),
         Command::PrintCloudwatchStats {
             region,
             log_group_name,
             query_args,
+            assume_role_arn,
         } => {
             let region = region.unwrap_or_default();
             let log_group_name = log_group_name.unwrap_or_else(CloudWatchLogger::default_log_group);
-            print_cloudwatch_stats(&query_args, log_group_name, &region);
+            let assume_role_arn = assume_role_arn
+                .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
+            print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn);
         }
         Command::PrintLogStats { log_file } => print_log_stats(log_file),
+        Command::StatCheck {
+            expected_csv_file,
+            actual_csv_file,
+            result_csv_file,
+        } => print_stat_check(expected_csv_file, actual_csv_file, result_csv_file),
     }
 }
 
-fn cloudwatch_test() {
-    let mut cloudwatch = CloudWatchLogger::default();
-
-    let latency = Metric::new("latency", 100.0);
-    cloudwatch.publish(&latency);
-    let latency = Metric::new("latency", 200.0);
-    cloudwatch.publish(&latency);
-
-    let size = Metric::new("size", 1000.0);
-    cloudwatch.publish(&size);
-
-    let size = Metric::new("size", 1.0);
-    cloudwatch.publish(&size);
-
-    let query = cloudwatch.query(&Default::default());
-
-    println!("query: {:?}", query);
-    let metrics = CloudWatchLogger::metrics_of_query(query);
-    let vec = Vec::from_iter(metrics);
-    println!("metrics: {:?}", vec);
-
-    let stats = StatsByMetric::from_iter(vec.into_iter());
-    println!("stats: {:?}", stats);
-
-    stats.print_csv().unwrap()
-}
-
-fn print_cloudwatch_stats(query_args: &QueryArgs, log_group_name: String, region: &Region) {
+fn print_cloudwatch_stats(
+    query_args: &QueryArgs,
+    log_group_name: String,
+    region: &Region,
+    assume_role_arn: &str,
+) {
     let cloudwatch = CloudWatchLogger::with_log_group(
         log_group_name,
-        crate::cloudwatch::assume_role(&region),
+        crate::cloudwatch::assume_role(&region, assume_role_arn),
         region,
     );
 
-    let stats: StatsByMetric = cloudwatch.query_and_aggregate(query_args);
+    let stats: StatsByMetric<_> = cloudwatch.query_and_aggregate(query_args);
 
-    stats.print_csv().unwrap()
+    stats.write_csv(std::io::stdout()).unwrap();
 }
 
 fn print_log_stats(log_file: String) {
-    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
-    let stats = StatsByMetric::from_iter(metrics);
-    stats.print_csv().unwrap()
+    let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
+    let stats = StatsByMetric::from_iter_with_stream_id(metrics, log_file);
+    stats.write_csv(std::io::stdout()).unwrap()
+}
+
+/// Prints to stdout human readonly pass/fail info
+/// Saves to `result_csv_file` gradient info
+fn print_stat_check(
+    expected_csv_file: PathBuf, // StatsByMetric
+    actual_csv_file: PathBuf,   // StatsByMetric
+    result_csv_file: PathBuf,   // A collection of CheckedStatRecords
+) {
+    let mut actual_reader = BufReader::new(File::open(actual_csv_file.clone()).unwrap());
+    let actual_csv_data = StatsByMetric::<StatsRecord>::from_reader(&mut actual_reader).unwrap();
+
+    let expected_csv_data = File::open(expected_csv_file.clone()).map(|expected_csv_reader| {
+        let mut expected_reader = BufReader::new(expected_csv_reader);
+        let expected_csv_data =
+            StatsByMetric::<StatsRecord>::from_reader(&mut expected_reader).unwrap();
+        expected_csv_data
+    }).unwrap_or_else(|e| {
+        println!("Expected data not found for path {:?} because error {:?}, bootstrapping from actual {:?}",
+            expected_csv_file.clone(), e, actual_csv_file);
+        std::fs::copy(actual_csv_file.clone(), expected_csv_file).unwrap();
+        actual_csv_data.clone()
+    });
+
+    let checked =
+        crate::stats::LessThanStatCheck::default().check_all(&expected_csv_data, &actual_csv_data);
+
+    let file = BufWriter::new(File::create(result_csv_file).unwrap());
+    let mut writer = csv::Writer::from_writer(file);
+    for (key, record) in checked.iter() {
+        match record {
+            Ok(record) => {
+                writer.serialize(record).unwrap();
+            }
+            Err((record, errors)) => {
+                writer.serialize(record).unwrap();
+                println!("{}", key);
+                for e in errors {
+                    println!("\t{}", e);
+                }
+            }
+        }
+    }
+    writer.flush().unwrap();
 }

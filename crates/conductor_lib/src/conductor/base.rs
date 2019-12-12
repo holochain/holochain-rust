@@ -9,6 +9,7 @@ use crate::{
     error::HolochainInstanceError,
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
     Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -48,11 +49,13 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
+    port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
 };
 use boolinator::Boolinator;
+use holochain_core::context::InstanceStats;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -61,8 +64,17 @@ use holochain_net::{
     p2p_network::P2pNetwork,
 };
 
-const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;
-const INTERFACE_CONNECT_INTERVAL: Duration = Duration::from_secs(1);
+pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
+
+/// Special string to be printed on stdout, which clients must parse
+/// in order to discover which port the interface bound to.
+/// DO NOT CHANGE!
+fn magic_port_binding_string(interface_config_id: &str, port: u16) -> String {
+    format!(
+        "*** Bound interface '{}' to port: {}",
+        interface_config_id, port
+    )
+}
 
 lazy_static! {
     /// This is a global and mutable Conductor singleton.
@@ -106,6 +118,8 @@ pub struct Conductor {
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
     signal_multiplexer_kill_switch: Option<Sender<()>>,
+    stats_thread_kill_switch: Option<Sender<()>>,
+    stats_signal_receiver: Option<Receiver<HashMap<String, InstanceStats>>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -218,6 +232,8 @@ impl Conductor {
             static_servers: HashMap::new(),
             interface_broadcasters: Arc::new(RwLock::new(HashMap::new())),
             signal_multiplexer_kill_switch: None,
+            stats_thread_kill_switch: None,
+            stats_signal_receiver: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -230,6 +246,52 @@ impl Conductor {
             hash_config: None,
             n3h_keepalive_network: None,
         }
+    }
+
+    pub fn spawn_stats_thread(&mut self) {
+        self.stop_stats_thread();
+        let instances = self.instances.clone();
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        let (stats_tx, stats_rx) = unbounded();
+        self.stats_thread_kill_switch = Some(kill_switch_tx);
+        self.stats_signal_receiver = Some(stats_rx);
+        thread::Builder::new()
+            .name("stats".to_string())
+            .spawn(move || loop {
+                // Get stats for all instances:
+                let mut instance_stats: HashMap<String, InstanceStats> = HashMap::new();
+                for (id, instance) in instances.iter() {
+                    if let Err(error) = instance
+                        .read()
+                        .map_err(|_| {
+                            HolochainInstanceError::InternalFailure(HolochainError::new(
+                                "Could not get lock on instance",
+                            ))
+                        })
+                        .and_then(|instance| instance.context())
+                        .and_then(|context| context.get_stats().map_err(|e| e.into()))
+                        .and_then(|stats| {
+                            instance_stats.insert(id.clone(), stats);
+                            Ok(())
+                        })
+                    {
+                        error!(
+                            "Could not get stats for instance '{}'. Error: {:?}",
+                            id, error
+                        );
+                    }
+                }
+
+                if let Err(e) = stats_tx.send(instance_stats) {
+                    error!("Could not send stats signal over channel: {:?}", e);
+                }
+
+                if kill_switch_rx.try_recv().is_ok() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(500));
+            })
+            .expect("");
     }
 
     pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
@@ -268,27 +330,32 @@ impl Conductor {
         let config = self.config.clone();
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
+        self.spawn_stats_thread();
+        let stats_signal_receiver = self.stats_signal_receiver.clone().expect(
+            "Receiver must be Some after calling spawn_stats_thread() above which should set it",
+        );
 
         debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
+                let broadcasters = broadcasters.read().unwrap();
+                let admin_interfaces = config
+                    .interfaces
+                    .iter()
+                    .filter(|interface_config| interface_config.admin)
+                    .collect::<Vec<_>>();
                 {
                     for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter()
                     {
                         if let Ok(signal) = receiver.try_recv() {
                             signal_tx.clone().map(|s| s.send(signal.clone()));
-                            let broadcasters = broadcasters.read().unwrap();
                             let interfaces_with_instance: Vec<&InterfaceConfiguration> =
                                 match signal {
                                     // Send internal signals only to admin interfaces, if signals.trace is set:
                                     Signal::Trace(_) => {
                                         if config.signals.trace {
-                                            config
-                                                .interfaces
-                                                .iter()
-                                                .filter(|interface_config| interface_config.admin)
-                                                .collect()
+                                            admin_interfaces.clone()
                                         } else {
                                             Vec::new()
                                         }
@@ -334,10 +401,12 @@ impl Conductor {
 
                             for interface in interfaces_with_instance {
                                 if let Some(broadcaster) = broadcasters.get(&interface.id) {
-                                    if let Err(error) = broadcaster.send(SignalWrapper {
-                                        signal: signal.clone(),
-                                        instance_id: instance_id.clone(),
-                                    }) {
+                                    if let Err(error) =
+                                        broadcaster.send(SignalWrapper::InstanceSignal {
+                                            signal: signal.clone(),
+                                            instance_id: instance_id.clone(),
+                                        })
+                                    {
                                         notify(error.to_string());
                                     }
                                 };
@@ -345,12 +414,32 @@ impl Conductor {
                         }
                     }
                 }
+
+                // Process stats signals and send them over admin interfaces:
+                while let Ok(instance_stats) = stats_signal_receiver.try_recv() {
+                    for interface in &admin_interfaces {
+                        if let Some(broadcaster) = broadcasters.get(&interface.id) {
+                            if let Err(error) = broadcaster.send(SignalWrapper::InstanceStats {
+                                instance_stats: instance_stats.clone(),
+                            }) {
+                                notify(error.to_string());
+                            }
+                        };
+                    }
+                }
+
                 if kill_switch_rx.try_recv().is_ok() {
                     break;
                 }
                 thread::sleep(Duration::from_millis(1));
             })
             .expect("Must be able to spawn thread")
+    }
+
+    pub fn stop_stats_thread(&self) {
+        self.stats_thread_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn stop_signal_multiplexer(&self) {
@@ -373,7 +462,7 @@ impl Conductor {
             notify(format!("Stopping interface {}", id));
             kill_switch.send(()).unwrap_or_else(|err| {
                 let message = format!("Error stopping interface: {}", err);
-                notify(message.clone());
+                notify(message);
             });
         }
     }
@@ -614,11 +703,11 @@ impl Conductor {
                         { vec![urls[0].clone().into()] }
                         else
                         { config.bootstrap_nodes.clone() };
-                    let mut p2p_config = p2p_config.clone();
+                    let mut p2p_config = p2p_config;
                     p2p_config.backend_config = BackendConfig::Memory(config);
                     p2p_config
                 },
-                _ => p2p_config.clone()
+                _ => p2p_config
             }
         }).unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
@@ -704,7 +793,6 @@ impl Conductor {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
 
-        self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 
         for id in self.config.instance_ids_sorted_by_bridge_dependencies()? {
@@ -723,6 +811,8 @@ impl Conductor {
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }
         }
+
+        self.start_signal_multiplexer();
 
         for ui_interface_config in self.config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));
@@ -778,7 +868,7 @@ impl Conductor {
                     self.save_config()?;
                 }
 
-                context_builder = context_builder.with_agent(agent_address.clone());
+                context_builder = context_builder.with_agent(agent_address);
 
                 context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
@@ -829,6 +919,7 @@ impl Conductor {
                 }
 
                 if let Some(metric_publisher_config) = &self.config.metric_publisher {
+                    debug!("Setting metric publisher in context_builder to: {:?}", metric_publisher_config);
                     context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
                 };
 
@@ -905,7 +996,7 @@ impl Conductor {
 
                 let mut context_clone = context.clone();
                 let context = Arc::new(context);
-                               Holochain::load(context.clone())
+                               Holochain::load(context)
                     .and_then(|hc| {
                        notify(format!(
                             "Successfully loaded instance {} from storage",
@@ -988,7 +1079,7 @@ impl Conductor {
         }
 
         // Bridges:
-        let id = instance_config.id.clone();
+        let id = instance_config.id;
         for bridge in self.config.bridge_dependencies(id.clone()) {
             assert_eq!(bridge.caller_id, id.clone());
             let callee_config = self
@@ -1300,7 +1391,7 @@ impl Conductor {
             self.interface_broadcasters
                 .write()
                 .unwrap()
-                .insert(interface_config.id.clone(), broadcaster);
+                .insert(interface_config.id, broadcaster);
         }
 
         kill_switch_tx
@@ -1403,7 +1494,7 @@ impl Conductor {
 
             let instance = self.instances.get(&dpki_instance_id)?;
             let hc_lock = instance.clone();
-            let hc_lock_inner = hc_lock.clone();
+            let hc_lock_inner = hc_lock;
             let mut hc = hc_lock_inner.write().unwrap();
 
             if !hc.dpki_is_initialized()? {
@@ -1416,27 +1507,6 @@ impl Conductor {
     }
 }
 
-fn try_with_port<T, F: FnOnce() -> T>(port: u16, f: F) -> T {
-    let mut attempts = 0;
-    while attempts <= INTERFACE_CONNECT_ATTEMPTS_MAX {
-        if port_is_available(port) {
-            return f();
-        }
-        warn!(
-            "Waiting for port {} to be available, sleeping (attempt #{})",
-            port, attempts
-        );
-        thread::sleep(INTERFACE_CONNECT_INTERVAL);
-        attempts += 1;
-    }
-    f()
-}
-
-fn port_is_available(port: u16) -> bool {
-    use std::net::TcpListener;
-    TcpListener::bind(format!("0.0.0.0:{}", port)).is_ok()
-}
-
 /// This can eventually be dependency injected for third party Interface definitions
 fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interface> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
@@ -1447,6 +1517,21 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
     }
 }
 
+fn with_port_heuristic<T, F: FnOnce() -> T>(
+    wanted_port: u16,
+    find_free_port: bool,
+    f: F,
+) -> Result<T, HolochainError> {
+    let port = if find_free_port {
+        get_free_port(wanted_port..MAX_DYNAMIC_PORT).ok_or_else(|| {
+            HolochainError::InitializationFailed(String::from("Couldn't find free port"))
+        })?
+    } else {
+        wanted_port
+    };
+    Ok(try_with_port(port, f))
+}
+
 fn run_interface(
     interface_config: &InterfaceConfiguration,
     handler: IoHandler,
@@ -1454,14 +1539,28 @@ fn run_interface(
 ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
-        InterfaceDriver::Websocket { port } => try_with_port(port, || {
-            WebsocketInterface::new(port).run(handler, kill_switch)
-        }),
-        InterfaceDriver::Http { port } => {
-            try_with_port(port, || HttpInterface::new(port).run(handler, kill_switch))
-        }
+        InterfaceDriver::Websocket { port } => with_port_heuristic(
+            port,
+            interface_config.choose_free_port.unwrap_or(false),
+            || {
+                let r = WebsocketInterface::new(port).run(handler, kill_switch);
+                println!("{}", magic_port_binding_string(&interface_config.id, port));
+                r
+            },
+        ),
+        InterfaceDriver::Http { port } => with_port_heuristic(
+            port,
+            interface_config.choose_free_port.unwrap_or(false),
+            || {
+                let r = HttpInterface::new(port).run(handler, kill_switch);
+                println!("{}", magic_port_binding_string(&interface_config.id, port));
+                r
+            },
+        ),
+
         _ => unimplemented!(),
     }
+    .expect("Couldn't spawn conductor interface!")
 }
 
 #[derive(Clone, Debug)]

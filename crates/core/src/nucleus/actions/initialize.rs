@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     agent::actions::commit::commit_entry,
     context::Context,
-    instance::dispatch_action_and_wait,
     nucleus::state::NucleusStatus,
 };
 use futures::{future::Future, task::Poll};
@@ -16,6 +15,7 @@ use holochain_core_types::{
 };
 use holochain_persistence_api::cas::content::Address;
 
+use crate::instance::dispatch_action;
 use std::{pin::Pin, sync::Arc, time::*};
 
 /// Initialization is the value returned by successful initialization of a DNA instance
@@ -60,7 +60,11 @@ pub async fn initialize_chain(
     }
 
     let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna.clone()));
-    dispatch_action_and_wait(context.clone(), action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+    let _ = InitializingFuture {
+        context: context.clone(),
+    }
+    .await;
 
     let context_clone = context.clone();
 
@@ -114,8 +118,8 @@ pub async fn initialize_chain(
             .traits
             .iter()
             .find(|(cap_name, _)| *cap_name == ReservedTraitNames::Public.as_str());
-        if maybe_public.is_some() {
-            let (_, cap) = maybe_public.unwrap();
+        if let Some(public) = maybe_public {
+            let (_, cap) = public;
             cap_functions.insert(zome_name, cap.functions.clone());
         }
     }
@@ -177,6 +181,41 @@ pub async fn initialize_chain(
         created_at: Instant::now(),
     }
     .await
+}
+
+/// Tracks if the initialization has started and the DNA is set in the nucleus.
+pub struct InitializingFuture {
+    context: Arc<Context>,
+}
+
+impl Future for InitializingFuture {
+    type Output = Result<NucleusStatus, HolochainError>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        if let Some(err) = self.context.action_channel_error("InitializingFuture") {
+            return Poll::Ready(Err(err));
+        }
+        //
+        // TODO: connect the waker to state updates for performance reasons
+        // See: https://github.com/holochain/holochain-rust/issues/314
+        //
+        cx.waker().clone().wake();
+
+        if let Some(state) = self.context.try_state() {
+            match state.nucleus().status {
+                NucleusStatus::New => Poll::Pending,
+                NucleusStatus::Initializing => Poll::Ready(Ok(NucleusStatus::Initializing)),
+                NucleusStatus::Initialized(ref init) => {
+                    Poll::Ready(Ok(NucleusStatus::Initialized(init.clone())))
+                }
+                NucleusStatus::InitializationFailed(ref error) => {
+                    Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
+                }
+            }
+        } else {
+            Poll::Pending
+        }
+    }
 }
 
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).

@@ -137,7 +137,7 @@ impl ConductorAdmin for Conductor {
         };
 
         let mut new_config = self.config.clone();
-        new_config.dnas.push(new_dna.clone());
+        new_config.dnas.push(new_dna);
         new_config.check_consistency(&mut self.dna_loader)?;
         self.config = new_config;
         self.save_config()?;
@@ -452,7 +452,7 @@ impl ConductorAdmin for Conductor {
                 {
                     let instance = self.instances.get(&dpki_instance_id)?;
                     let hc_lock = instance.clone();
-                    let hc_lock_inner = hc_lock.clone();
+                    let hc_lock_inner = hc_lock;
                     let mut hc = hc_lock_inner.write().unwrap();
                     hc.dpki_create_agent_key(id.clone())?;
                 }
@@ -557,7 +557,7 @@ impl ConductorAdmin for Conductor {
         }
         new_config.bridges.push(new_bridge.clone());
         new_config.check_consistency(&mut self.dna_loader)?;
-        self.config = new_config.clone();
+        self.config = new_config;
         self.save_config()?;
 
         // Rebuild and reset caller's conductor api so it sees the bridge handle
@@ -1314,6 +1314,7 @@ type = 'websocket'"#,
             driver: InterfaceDriver::Http { port: 8080 },
             admin: false,
             instances: Vec::new(),
+            choose_free_port: None,
         };
 
         assert_eq!(conductor.add_interface(interface_config), Ok(()),);

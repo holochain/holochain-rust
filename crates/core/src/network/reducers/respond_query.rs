@@ -1,7 +1,10 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::ActionResponse, query::NetworkQueryResult, reducers::send, state::NetworkState,
+        actions::{NetworkActionResponse, Response},
+        query::NetworkQueryResult,
+        reducers::send,
+        state::NetworkState,
     },
     state::State,
 };
@@ -44,7 +47,8 @@ pub fn reduce_respond_query(
         .map(|_| Ok(()))
         .unwrap_or_else(|e| Err(HolochainError::ErrorGeneric(e.to_string())));
 
-    network_state
-        .actions
-        .insert(action_wrapper.clone(), ActionResponse::Respond(result));
+    network_state.actions.insert(
+        action_wrapper.clone(),
+        Response::from(NetworkActionResponse::Respond(result)),
+    );
 }

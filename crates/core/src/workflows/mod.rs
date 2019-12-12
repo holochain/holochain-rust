@@ -80,7 +80,7 @@ async fn validation_package(
     // 0. Call into the DNA to get the validation package definition for this entry
     // e.g. what data is needed to validate it (chain, entry, headers, etc)
     let entry = chain_pair.entry();
-    let validation_package_definition = get_validation_package_definition(entry, context.clone())
+    let validation_package_definition = get_validation_package_definition(&entry, context.clone())
         .and_then(|callback_result| match callback_result {
         CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),

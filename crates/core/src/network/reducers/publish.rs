@@ -47,8 +47,8 @@ fn publish_entry(
             entry: EntryData {
                 entry_address: chain_pair.entry().address().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
-                    chain_pair.entry().clone(),
-                    chain_pair.header().clone(),
+                    chain_pair.entry(),
+                    chain_pair.header(),
                 ))],
             },
         }),
@@ -66,9 +66,9 @@ fn publish_update_delete_meta(
 
     let aspect = match crud_status {
         CrudStatus::Modified => {
-            EntryAspect::Update(chain_pair.entry().clone(), chain_pair.header().clone())
+            EntryAspect::Update(chain_pair.entry(), chain_pair.header())
         }
-        CrudStatus::Deleted => EntryAspect::Deletion(chain_pair.header().clone()),
+        CrudStatus::Deleted => EntryAspect::Deletion(chain_pair.header()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Unexpeced CRUD variant {:?}",
@@ -98,14 +98,14 @@ fn publish_link_meta(
     network_state: &mut NetworkState,
     chain_pair: &ChainPair,
 ) -> Result<(), HolochainError> {
-    let (base, aspect) = match chain_pair.entry().clone() {
+    let (base, aspect) = match chain_pair.entry() {
         Entry::LinkAdd(link_data) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkAdd(link_data, chain_pair.header().clone()),
+            EntryAspect::LinkAdd(link_data, chain_pair.header()),
         ),
         Entry::LinkRemove((link_data, links_to_remove)) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkRemove((link_data, links_to_remove), chain_pair.header().clone()),
+            EntryAspect::LinkRemove((link_data, links_to_remove), chain_pair.header()),
         ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(

@@ -53,7 +53,7 @@ pub async fn remove_link_workflow(
     // 3. Validate the entry
     log_debug!(context, "workflow/remove_link: validate...");
     validate_entry(
-        chain_pair.entry().clone(),
+        chain_pair.entry(),
         None,
         validation_data,
         &context
@@ -77,7 +77,7 @@ pub async fn remove_link_workflow(
     // 3. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::LinkRemove(
         (link_data.clone(), links_to_remove.clone()),
-        chain_pair.header().clone(),
+        chain_pair.header(),
     );
     hold_aspect(aspect, context.clone()).await?;
     log_debug!(context, "workflow/remove_link: added! {:?}", link);

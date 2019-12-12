@@ -64,7 +64,7 @@ pub async fn hold_update_workflow(
     })?;
 
     // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Update(chain_pair.entry().clone(), chain_pair.header().clone());
+    let aspect = EntryAspect::Update(chain_pair.entry(), chain_pair.header());
     hold_aspect(aspect, context.clone()).await?;
 
     Ok(())

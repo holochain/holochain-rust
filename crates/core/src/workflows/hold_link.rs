@@ -55,7 +55,7 @@ pub async fn hold_link_workflow(
     // 3. Validate the entry
     log_debug!(context, "workflow/hold_link: validate...");
     validate_entry(
-        chain_pair.entry().clone(),
+        chain_pair.entry(),
         None,
         validation_data,
         &context
@@ -76,7 +76,7 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::LinkAdd(link_add.clone(), chain_pair.header().clone());
+    let aspect = EntryAspect::LinkAdd(link_add.clone(), chain_pair.header());
     hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(context, "workflow/hold_link: added! {:?}", link);

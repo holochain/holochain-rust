@@ -35,7 +35,7 @@ pub async fn hold_remove_workflow(
 
     // 3. Validate the entry
     validate_entry(
-        chain_pair.entry().clone(),
+        chain_pair.entry(),
         None,
         validation_data,
         &context
@@ -55,7 +55,7 @@ pub async fn hold_remove_workflow(
     })?;
 
     // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Deletion(chain_pair.header().clone());
+    let aspect = EntryAspect::Deletion(chain_pair.header());
     hold_aspect(aspect, context.clone()).await?;
     Ok(())
 }

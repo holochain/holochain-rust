@@ -3,13 +3,12 @@ use crate::*;
 
 use crate::{
     logger::{LogLine, ParseError},
-    stats::StatsByMetric,
+    stats::{GroupingKey, OnlineStats, StatsByMetric},
 };
 use rusoto_core::region::Region;
 use rusoto_logs::*;
 use std::{
     convert::{TryFrom, TryInto},
-    iter::FromIterator,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -92,7 +91,7 @@ impl CloudWatchLogger {
         if let Some(log_stream_pat) = &query_args.log_stream_pat {
             query_string =
                 format!(
-                "fields @message, @logStream | filter @message like '{}' and @logStream like '{}'",
+                "fields @message, @logStream | filter @message like '{}' and @logStream like /{}/",
                 logger::METRIC_TAG, log_stream_pat);
         } else {
             query_string = format!(
@@ -150,36 +149,51 @@ impl CloudWatchLogger {
     /// Converts raw result fields to in iterator over metric samples
     pub fn metrics_of_query<'a>(
         query: Vec<Vec<ResultField>>,
-    ) -> Box<dyn Iterator<Item = Metric> + 'a> {
-        let iterator = query
-            .into_iter()
-            .map(|result_vec| {
-                result_vec.into_iter().filter_map(|result_field| {
-                    result_field.clone().field.and_then(|field| {
-                        if field == "@message" {
-                            let metric: Metric = result_field.try_into().unwrap();
-                            Some(metric)
-                        } else {
-                            None
-                        }
-                    })
-                })
-            })
-            .flatten();
+    ) -> Box<dyn Iterator<Item = (String, Metric)> + 'a> {
+        let iterator = query.into_iter().filter_map(|result_vec| {
+            let (log_stream_name, metric) = result_vec.into_iter().fold(
+                (None, None),
+                |(log_stream_name, metric), result_field| {
+                    let field = result_field.clone().field.unwrap_or_default();
+                    if field == "@message" {
+                        let metric: Metric = result_field.try_into().unwrap();
+                        (log_stream_name, Some(metric))
+                    } else if field == "@logStream" {
+                        (result_field.value, metric)
+                    } else {
+                        (log_stream_name, metric)
+                    }
+                },
+            );
+
+            log_stream_name
+                .and_then(|log_stream_name| metric.map(|metric| (log_stream_name, metric)))
+        });
         Box::new(iterator)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// all metric samples observed during the interval
-    pub fn query_metrics(&self, query_args: &QueryArgs) -> Box<dyn Iterator<Item = Metric>> {
+    pub fn query_metrics(
+        &self,
+        query_args: &QueryArgs,
+    ) -> Box<dyn Iterator<Item = (String, Metric)>> {
         let query = self.query(query_args);
         Self::metrics_of_query(query)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// aggregate statistics of metrics from the results.
-    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric {
-        StatsByMetric::from_iter(self.query_metrics(query_args))
+    pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric<OnlineStats> {
+        let mut hash_map = HashMap::new();
+
+        for (log_stream, metric) in self.query_metrics(query_args) {
+            let entry = hash_map.entry(GroupingKey::new(log_stream, metric.name));
+
+            let stats = entry.or_insert_with(OnlineStats::empty);
+            stats.add(metric.value);
+        }
+        StatsByMetric(hash_map)
     }
 
     pub fn default_log_stream() -> String {
@@ -319,7 +333,7 @@ impl CloudWatchLogger {
             .map(|metric| {
                 let log_line: LogLine = metric.into();
                 InputLogEvent {
-                    message: format!("metrics.rs: {}", log_line.to_string()),
+                    message: log_line.to_string(),
                     timestamp: std::time::SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
@@ -327,6 +341,10 @@ impl CloudWatchLogger {
                 }
             })
             .collect::<Vec<InputLogEvent>>();
+
+        if log_events.is_empty() {
+            return;
+        }
 
         let put_log_events_request = PutLogEventsRequest {
             log_events,
@@ -404,16 +422,25 @@ const LOG_STREAM_SEPARATOR: &str = ".";
 pub struct ScenarioData {
     run_name: String,
     net_name: String,
+    dna_name: String,
     scenario_name: String,
-    conductor_id: String,
-    log_stream_name: String,
+    player_name: String,
+}
+
+impl Into<String> for ScenarioData {
+    fn into(self: Self) -> String {
+        let s = self;
+        format!(
+            "{}.{}.{}.{}.{}",
+            s.run_name, s.net_name, s.dna_name, s.scenario_name, s.player_name
+        )
+    }
 }
 
 impl TryFrom<String> for ScenarioData {
     type Error = String;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        let log_stream_name = s.clone();
         let split = s.split(LOG_STREAM_SEPARATOR).collect::<Vec<_>>();
         if split.len() < 4 {
             return Err(format!(
@@ -424,15 +451,31 @@ impl TryFrom<String> for ScenarioData {
         Ok(Self {
             run_name: split[0].into(),
             net_name: split[1].into(),
-            scenario_name: split[2].into(),
-            conductor_id: split[3].into(),
-            log_stream_name,
+            dna_name: split[2].into(),
+            scenario_name: split[3].into(),
+            player_name: split[4].into(),
         })
     }
 }
+
+impl TryFrom<LogStream> for ScenarioData {
+    type Error = String;
+    fn try_from(log_stream: LogStream) -> Result<Self, Self::Error> {
+        let result: Result<Self, Self::Error> = log_stream
+            .log_stream_name
+            .map(|x| Ok(x))
+            .unwrap_or_else(|| Err("Log stream name missing".into()))
+            .and_then(TryFrom::try_from);
+        result
+    }
+}
 impl ScenarioData {
-    fn grouping_key(&self) -> String {
-        format!("{}.{}.{}", self.run_name, self.net_name, self.scenario_name)
+    /// Groups by everything _but_ the player name
+    fn without_player_name(&self) -> String {
+        format!(
+            "{}.{}.{}.{}",
+            self.run_name, self.net_name, self.dna_name, self.scenario_name
+        )
     }
 }
 
@@ -445,7 +488,7 @@ pub fn group_by_scenario(
         let scenario_data: Result<ScenarioData, _> = log_stream_name.try_into();
         if let Ok(scenario_data) = scenario_data {
             grouped
-                .entry(scenario_data.grouping_key())
+                .entry(scenario_data.without_player_name())
                 .or_insert_with(HashSet::new)
                 .insert(scenario_data);
         }

@@ -580,10 +580,10 @@ mod tests {
     fn can_aggregate_stats_from_iterator() {
         let latency_data = vec![50.0, 100.0, 150.0]
             .into_iter()
-            .map(|x| Metric::new("latency", None, x));
+            .map(|x| Metric::new("latency", None, None, x));
         let size_data = vec![1.0, 10.0, 100.0]
             .into_iter()
-            .map(|x| Metric::new("size", None, x));
+            .map(|x| Metric::new("size", None, None, x));
         let all_data = latency_data.chain(size_data);
         let stats = StatsByMetric::from_iter_with_stream_id(all_data, "test");
 

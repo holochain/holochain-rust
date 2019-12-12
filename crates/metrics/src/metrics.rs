@@ -127,7 +127,7 @@ mod test {
     fn can_publish_to_logger() {
         let mut publisher = crate::logger::LoggerMetricPublisher;
         let timestamp = Utc.timestamp(1_500_000_000, 0);
-        let metric = Metric::new("latency", None, timestamp, 100.0);
+        let metric = Metric::new("latency", None, Some(timestamp), 100.0);
 
         publisher.publish(&metric);
     }

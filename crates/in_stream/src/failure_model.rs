@@ -8,6 +8,9 @@ use rand::{
 	Rng,
 };
 use rand_distr::{Exp};
+use scan_fmt::scan_fmt;
+
+const WS_FAILURE_MODEL_ENV_KEY: &str = "WS_FAILURE_MODEL";
 
 #[derive(Clone, Debug)]
 pub enum FailureState {
@@ -42,6 +45,17 @@ impl FailureModel {
 			time_between_failures_dist: Exp::new(1.0 / mean_time_between_failures.as_secs_f64()).unwrap(),
 			failure_duration_dist: Exp::new(1.0 / mean_failure_duration.as_secs_f64()).unwrap(),
 		}
+	}
+
+	pub fn new_from_env_vars() -> Result<Self, String> {
+        match std::env::var(WS_FAILURE_MODEL_ENV_KEY) {
+            Ok(s) => {
+                let (seed, mtbf, mfd) = scan_fmt!(&s, "({f}, {f}, {f})", u64, u64, u64)
+                .map_err(|_| String::from("Invalid value for WS_FAILURE_MODEL. Must be 3-tuple of (seed, mean_ms_between_error_bursts, mean_ms_burst_length"))?;
+                Ok(FailureModel::new(seed, Duration::from_millis(mtbf), Duration::from_millis(mfd)))
+            }
+            Err(_) => Err(String::from("No env var provided")),
+        }
 	}
 
 	// returns the state of the model at the current moment in time

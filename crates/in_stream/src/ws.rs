@@ -1,12 +1,10 @@
 use crate::{
     failure_model::{FailureModel, FailureState},
-    *,
+    *
 };
 
 use std::io::{Error, ErrorKind, Result};
 use url2::prelude::*;
-use std::time::Duration;
-use scan_fmt::scan_fmt;
 
 mod frame;
 pub use frame::*;
@@ -162,20 +160,11 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
     }
 
     fn priv_new(connect_url: Url2) -> Self {
-
-        let failure_model = match std::env::var("WS_FAILURE_RATE") {
-            Ok(s) => {
-                let (seed, mtbf, mfd) = scan_fmt!(&s, "({f}, {f}, {f})", u64, u64, u64).unwrap();
-                Some(FailureModel::new(seed, Duration::from_millis(mtbf), Duration::from_millis(mfd)))
-            }
-            Err(_) => None,
-        };
-
         Self {
             state: None,
             connect_url,
             write_buf: std::collections::VecDeque::new(),
-            failure_model,
+            failure_model: FailureModel::new_from_env_vars().ok(),
         }
     }
 

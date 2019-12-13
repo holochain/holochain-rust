@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::Exp;
 use scan_fmt::scan_fmt;
@@ -22,6 +20,7 @@ impl FailureState {
     }
 }
 
+#[derive(Debug)]
 pub struct FailureModel {
     rng: StdRng,
     state: FailureState,

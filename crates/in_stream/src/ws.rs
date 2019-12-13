@@ -118,22 +118,12 @@ enum WssState<Sub: InStreamStd> {
 }
 
 /// websocket stream
+#[derive(Debug)]
 pub struct InStreamWss<Sub: InStreamStd> {
     state: Option<WssState<Sub>>,
     connect_url: Url2,
     write_buf: std::collections::VecDeque<WsFrame>,
     failure_model: Option<FailureModel>,
-}
-
-// need to manually implement as can't derive with a function field (failure_model)
-impl<Sub: InStreamStd> std::fmt::Debug for InStreamWss<Sub> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
-        f.debug_struct("InStreamWss")
-            .field("state", &self.state)
-            .field("connect_url", &self.connect_url)
-            .field("write_buf", &self.write_buf)
-            .finish()
-    }
 }
 
 type TungsteniteCliHandshakeResult<S> = std::result::Result<

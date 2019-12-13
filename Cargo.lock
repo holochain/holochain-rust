@@ -1212,6 +1212,7 @@ dependencies = [
 name = "holochain_conductor_lib_api"
 version = "0.0.40-alpha1"
 dependencies = [
+ "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_core_types 0.0.40-alpha1",
  "holochain_locksmith 0.0.40-alpha1",
  "holochain_wasm_utils 0.0.40-alpha1",

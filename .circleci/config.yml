@@ -1,11 +1,12 @@
 version: 2
 
+
 jobs:
  # must be called build for local circle cli to work
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -22,7 +23,7 @@ jobs:
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
    - run:
@@ -78,7 +79,7 @@ jobs:
 
  app-spec-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -96,7 +97,7 @@ jobs:
 
  app-spec-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest
+     - image: holochain/holochain-rust:latest.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -111,7 +112,7 @@ jobs:
          no_output_timeout: 20m
 # app-spec-tests-n3h:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -122,7 +123,7 @@ jobs:
 #
 # app-spec-tests-memory:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -133,7 +134,7 @@ jobs:
 #
 # app-spec-tests-websocket:
 #  docker:
-#   - image: holochain/holochain-rust:latest
+#   - image: holochain/holochain-rust:latest.develop
 #  resource_class: xlarge
 #  steps:
 #   - checkout
@@ -155,7 +156,7 @@ jobs:
 
  cluster-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -171,7 +172,7 @@ jobs:
 
  stress-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -189,7 +190,7 @@ jobs:
 
  stress-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest
+     - image: holochain/holochain-rust:latest.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -205,17 +206,18 @@ jobs:
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
 
    - run:
       name: test cli
       command: nix-shell --run hc-cli-test
+      no_output_timeout: 20m
 
  wasm-conductor-tests:
   docker:
-   - image: holochain/holochain-rust:latest
+   - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
 
@@ -272,6 +274,7 @@ jobs:
       command: nix-shell --run hc-release-hook-publish
 
  docker.build.latest:
+  resource_class: large
   machine: true
   steps:
    - checkout
@@ -344,8 +347,13 @@ workflows:
    - docker.build.sim2h_server:
       requires:
        - docker.build.minimal
-   # @todo this fails because the tests don't pass without a git repo
-   # - docker.build.latest
+   - docker.build.latest:
+      filters:
+       branches:
+        only:
+         - develop
+         - final-exam
+         - 2019-12-07-docker-latest
 
  cold.mac:
   jobs:
@@ -354,6 +362,7 @@ workflows:
        branches:
         only:
          - develop
+
 
  deploy:
   jobs:

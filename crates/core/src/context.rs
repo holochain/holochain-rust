@@ -25,6 +25,7 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_metrics::MetricPublisher;
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -65,6 +66,15 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
             None => Err(HolochainError::ErrorGeneric("no network".into())),
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
+pub struct InstanceStats {
+    pub number_held_entries: usize,
+    pub number_held_aspects: usize,
+    pub number_pending_validations: usize,
+    pub number_running_zome_calls: usize,
+    pub offline: bool,
 }
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
@@ -388,6 +398,23 @@ impl Context {
         Err(HolochainError::ErrorGeneric(
             "No public CapTokenGrant entry type in chain".into(),
         ))
+    }
+
+    pub fn get_stats(&self) -> HcResult<InstanceStats> {
+        let state = self
+            .state()
+            .ok_or_else(|| "Couldn't get instance state".to_string())?;
+        let dht_store = state.dht();
+        let holding_map = dht_store.get_holding_map().bare();
+        Ok(InstanceStats {
+            number_held_entries: holding_map.keys().count(),
+            number_held_aspects: holding_map
+                .values()
+                .fold(0, |acc, aspect_set| acc + aspect_set.len()),
+            number_pending_validations: dht_store.queued_holding_workflows().len(),
+            number_running_zome_calls: state.nucleus().running_zome_calls.len(),
+            offline: false,
+        })
     }
 }
 

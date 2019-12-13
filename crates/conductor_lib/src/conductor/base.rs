@@ -1539,21 +1539,32 @@ fn run_interface(
     kill_switch: Receiver<()>,
 ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
+
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => {
             let mut interface = WebsocketInterface::new(port);
             let r = interface.run(handler, kill_switch);
-            let addr = interface.bound_address().expect("Could not bind interface to address");
-            println!("{}", magic_port_binding_string(&interface_config.id, addr.port()));
+            let addr = interface
+                .bound_address()
+                .expect("Could not bind interface to address");
+            println!(
+                "{}",
+                magic_port_binding_string(&interface_config.id, addr.port())
+            );
             r
-        },
+        }
         InterfaceDriver::Http { port } => {
             let mut interface = HttpInterface::new(port);
             let r = interface.run(handler, kill_switch);
-            let addr = interface.bound_address().expect("Could not bind interface to address");
-            println!("{}", magic_port_binding_string(&interface_config.id, addr.port()));
+            let addr = interface
+                .bound_address()
+                .expect("Could not bind interface to address");
+            println!(
+                "{}",
+                magic_port_binding_string(&interface_config.id, addr.port())
+            );
             r
-        },
+        }
         _ => unimplemented!(),
     }
 }

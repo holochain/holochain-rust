@@ -2,8 +2,7 @@ use crate::{conductor::broadcaster::Broadcaster, interface::Interface};
 use crossbeam_channel::Receiver;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
-use std::thread;
-use std::net::SocketAddr;
+use std::{net::SocketAddr, thread};
 
 pub struct HttpInterface {
     port: u16,
@@ -12,7 +11,10 @@ pub struct HttpInterface {
 
 impl HttpInterface {
     pub fn new(port: u16) -> Self {
-        HttpInterface { port, bound_address: None }
+        HttpInterface {
+            port,
+            bound_address: None,
+        }
     }
 
     pub fn bound_address(&self) -> Option<SocketAddr> {

@@ -2,8 +2,7 @@ use crate::{conductor::broadcaster::Broadcaster, interface::Interface};
 use crossbeam_channel::Receiver;
 use jsonrpc_core::IoHandler;
 use jsonrpc_ws_server::ServerBuilder;
-use std::thread;
-use std::net::SocketAddr;
+use std::{net::SocketAddr, thread};
 
 pub struct WebsocketInterface {
     port: u16,
@@ -12,7 +11,10 @@ pub struct WebsocketInterface {
 
 impl WebsocketInterface {
     pub fn new(port: u16) -> Self {
-        WebsocketInterface { port, bound_address: None }
+        WebsocketInterface {
+            port,
+            bound_address: None,
+        }
     }
 
     pub fn bound_address(&self) -> Option<SocketAddr> {

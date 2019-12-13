@@ -183,7 +183,7 @@ pub mod tests {
     use std::{thread, time};
 
     #[test]
-    fn test_simulate_packge_direct_from_author() {
+    fn test_simulate_packge_direct_from_author() -> Result<(), HolochainError> {
         let mut dna = test_dna();
         dna.uuid = "test_simulate_packge_direct_from_author".to_string();
         let netname = Some("test_simulate_packge_direct_from_author, the network");
@@ -211,20 +211,20 @@ pub mod tests {
             .next()
             .expect("Must be able to get header for just published entry");
 
-        let chain_pair = ChainPair::try_from_header_and_entry(header, entry);
+        ChainPair::try_from_header_and_entry(header, entry).map(|chain_pair| {
+            let validation_package = context1
+                .block_on(validation_package(&chain_pair, context1.clone()))
+                .expect("Could not recover a validation package as the non-author");
 
-        let validation_package = context1
-            .block_on(validation_package(&chain_pair, context1.clone()))
-            .expect("Could not recover a validation package as the non-author");
-
-        assert_eq!(
-            validation_package
-                .unwrap()
-                .source_chain_headers
-                .unwrap()
-                .len(),
-            2
-        );
+            assert_eq!(
+                validation_package
+                    .unwrap()
+                    .source_chain_headers
+                    .unwrap()
+                    .len(),
+                2
+            );
+        })
     }
 }
 

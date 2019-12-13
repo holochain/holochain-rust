@@ -14,7 +14,7 @@ use std::{
 
 use std::collections::HashMap;
 use structopt::StructOpt;
-
+use chrono::prelude::*;
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 
 pub const DEFAULT_REGION: Region = Region::EuCentral1;
@@ -43,6 +43,57 @@ impl TryFrom<&ResultField> for Metric {
     fn try_from(result_field: &ResultField) -> Result<Self, Self::Error> {
         let r: Result<Self, Self::Error> = result_field.clone().try_into();
         r
+    }
+}
+
+impl TryFrom<Vec<ResultField>> for Metric {
+
+    type Error = ParseError;
+    fn try_from(result_fields: Vec<ResultField>) -> Result<Self, Self::Error> {
+
+        let mut stream_id: Option<String> = None;
+        let mut timestamp: Option<String> = None;
+        let mut metric = None;
+        for result_field in result_fields {
+            let r: Result<Self, Self::Error> = result_field.clone().try_into();
+
+            match r {
+                Ok(m) => { metric.replace(m); },
+                Err(e) => {
+                    let field = result_field.field.unwrap_or_else(String::new);
+
+                    if field == "@message" {
+                        return Err(e)
+                    }
+
+                    if field == "@logStream" {
+                        stream_id = stream_id.or(result_field.value);
+                    }
+
+                    if field == "@timestamp" {
+                        timestamp = timestamp.or(result_field.value);
+                    }
+                }
+            }
+        }
+        metric
+            .map(|m| { m.stream_id = stream_id; m.timestamp = timestamp; Ok(m) })
+            .unwrap_or_else(||
+                Err(ParseError::new("@message field not present in query results")))
+    }
+}
+
+
+#[derive(Debug, Clone, Shrinkwrap)]
+struct AwsDate(DateTime<Utc>);
+    
+impl TryFrom<String> for AwsDate {
+    //2019-12-13T17:00:41.559-05:00
+
+    type Error = String;
+    fn try_from(s:String) -> Self {
+        DateTime::parse_from_str.from(s,
+            "%Y-%m-%dT%H:%M:%S%.3f-TODO")
     }
 }
 
@@ -172,16 +223,16 @@ impl CloudWatchLogger {
 
     /// Converts raw result fields to in iterator over metric samples
     pub fn metrics_of_query<'a>(
-        query: Vec<Vec<ResultField>>,
-    ) -> Box<dyn Iterator<Item = (String, Metric)> + 'a> {
-        let iterator = query.into_iter().filter_map(|result_vec| {
-            let (log_stream_name, metric) = result_vec.into_iter().fold(
-                (None, None),
-                |(log_stream_name, metric), result_field| {
+        query: &dyn Iterator<Item = Vec<ResultField>>,
+    ) -> Box<dyn Iterator<Item = Metric> + 'a> {
+        let iterator = query.filter_map(|result_vec| {
+            let metric = result_vec.into_iter().fold(
+                None,
+                |metric, result_field| {
                     let field = result_field.clone().field.unwrap_or_default();
                     if field == "@message" {
                         let metric: Metric = result_field.try_into().unwrap();
-                        (log_stream_name, Some(metric))
+                        Some(metric)
                     } else if field == "@logStream" {
                         (result_field.value, metric)
                     } else {

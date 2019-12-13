@@ -40,6 +40,13 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct ParseError(pub String);
 
+impl ParseError {
+
+    pub fn new<S:Into<String>>(s:S) -> Self{
+        Self(s.into())
+    }
+}
+
 impl From<std::num::ParseFloatError> for ParseError {
     fn from(f: std::num::ParseFloatError) -> Self {
         ParseError(format!("Couldn't convert metric value to f64: {:?}", f))

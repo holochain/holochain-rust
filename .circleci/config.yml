@@ -199,7 +199,7 @@ jobs:
        command: nix-shell --run hc-conductor-wasm-test
        no_output_timeout: 20m
 
- cold.mac.10.nix:
+ cold-mac-10-nix:
   macos:
    xcode: "10.2.0"
   steps:
@@ -211,7 +211,7 @@ jobs:
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-test
 
- deploy.mac:
+ deploy-mac:
   macos:
    xcode: "10.2.0"
   steps:
@@ -224,7 +224,7 @@ jobs:
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
- deploy.linux:
+ deploy-linux:
   docker:
    - image: holochain/holonix:ubuntu
   steps:
@@ -237,7 +237,7 @@ jobs:
        . /home/docker/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
- deploy.crates:
+ deploy-crates:
   docker:
    - image: holochain/holonix:latest
   steps:
@@ -246,35 +246,40 @@ jobs:
       no_output_timeout: 20m
       command: nix-shell --run hc-release-hook-publish
 
- docker.build.latest:
+ docker-build-latest:
   resource_class: large
   machine: true
-  build-docker:
-   box: latest
+  steps:
+   - build-docker:
+      box: latest
 
- docker.build.circle.build:
+ docker-build-circle-build:
   resource_class: large
   machine: true
-  build-docker:
-   box: circle.build
+  steps:
+   - build-docker:
+      box: circle.build
 
- docker.build.sim2h_server:
+ docker-build-sim2h-server:
   resource_class: large
   machine: true
-  build-docker:
-   box: sim2h_server
+  steps:
+  - build-docker:
+     box: sim2h_server
 
- docker.build.trycp_server:
+ docker-build-trycp-server:
   resource_class: large
   machine: true
-  build-docker:
-   box: trycp_server
+  steps:
+   - build-docker:
+      box: trycp_server
 
- docker.build.minimal:
+ docker-build-minimal:
   resource_class: large
   machine: true
-  build-docker:
-   box: minimal
+  steps:
+   - build-docker:
+      box: minimal
 
 workflows:
  version: 2
@@ -296,55 +301,54 @@ workflows:
    # - stress-tests-sim1h
    - stress-tests-sim2h
 
-   - docker.build.minimal:
+   - docker-build-minimal:
       filters:
        branches:
         only:
          - 2019-12-04-docker-timeouts
          - develop
          - final-exam
-   - docker.build.trycp_server:
+   - docker-build-trycp-server:
       requires:
-       - docker.build.minimal
-   - docker.build.sim2h_server:
+       - docker-build-minimal
+   - docker-build-sim2h-server:
       requires:
-       - docker.build.minimal
+       - docker-build-minimal
 
-   - docker.build.latest:
+   - docker-build-latest:
       filters:
        branches:
         only:
          - develop
          - final-exam
          - 2019-12-12-holonix-bump
-   - docker.build.circle.build:
+   - docker-build-circle-build:
       requires:
-       - docker.build.latest
+       - docker-build-latest
 
- cold.mac:
+ cold-mac:
   jobs:
-   - cold.mac.10.nix:
+   - cold-mac-10-nix:
       filters:
        branches:
         only:
          - develop
 
-
  deploy:
   jobs:
-   - deploy.mac:
+   - deploy-mac:
       filters:
        branches:
         ignore: /.*/
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
-   - deploy.linux:
+   - deploy-linux:
       filters:
        branches:
         ignore: /.*/
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
-   - deploy.crates:
+   - deploy-crates:
       filters:
        branches:
         ignore: /.*/

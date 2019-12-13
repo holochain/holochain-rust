@@ -7,8 +7,6 @@ commands:
    box:
     type: string
     default: "minimal"
-  resource_class: large
-  machine: true
   steps:
    - checkout
    - run: ./docker/login
@@ -249,22 +247,32 @@ jobs:
       command: nix-shell --run hc-release-hook-publish
 
  docker.build.latest:
+  resource_class: large
+  machine: true
   build-docker:
    box: latest
 
  docker.build.circle.build:
+  resource_class: large
+  machine: true
   build-docker:
    box: circle.build
 
  docker.build.sim2h_server:
+  resource_class: large
+  machine: true
   build-docker:
    box: sim2h_server
 
  docker.build.trycp_server:
+  resource_class: large
+  machine: true
   build-docker:
    box: trycp_server
 
  docker.build.minimal:
+  resource_class: large
+  machine: true
   build-docker:
    box: minimal
 

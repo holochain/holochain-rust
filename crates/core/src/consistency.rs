@@ -104,7 +104,7 @@ impl ConsistencyModel {
         }
     }
 
-    pub fn process_action(&mut self, action: &Action) -> Option<ConsistencySignalE> {
+    pub fn process_action(&mut self, action: &Action) -> Vec<ConsistencySignalE> {
         use ConsistencyEvent::*;
         use ConsistencyGroup::*;
         match action {
@@ -146,7 +146,7 @@ impl ConsistencyModel {
                     );
                     self.commit_cache.insert(address, signal);
                 }
-                None
+                vec![]
             }
             Action::Publish(address) => {
                 // Emit the signal that was created when observing the corresponding Commit
@@ -157,10 +157,10 @@ impl ConsistencyModel {
                         "consistency: Publishing address that was not previously committed"
                     );
                     None
-                })
+                }).into_iter().collect()
             }
             Action::HoldAspect(aspect) => match aspect {
-                EntryAspect::Content(entry, _) => Some(ConsistencySignal::new_terminal(Hold(entry.address()))),
+                EntryAspect::Content(entry, _) => vec!(ConsistencySignal::new_terminal(Hold(entry.address()))),
                 EntryAspect::Update(_, header) => {
                     header.link_update_delete().map(|old| {
                         let new = header.entry_address().clone();
@@ -170,7 +170,7 @@ impl ConsistencyModel {
                     }).or_else(|| {
                         error!("Got header without link_update_delete associated with EntryAspect::Update");
                         None
-                    })
+                    }).into_iter().collect()
                 },
                 EntryAspect::Deletion(header) => {
                     header.link_update_delete().map(|old| {
@@ -181,21 +181,21 @@ impl ConsistencyModel {
                     }).or_else(|| {
                         error!("Got header without link_update_delete associated with EntryAspect::Deletion");
                         None
-                    })
+                    }).into_iter().collect()
                 },
-                EntryAspect::LinkAdd(data, _) => Some(ConsistencySignal::new_terminal(
+                EntryAspect::LinkAdd(data, _) => vec!(ConsistencySignal::new_terminal(
                     ConsistencyEvent::AddLink(data.clone()),
                 )),
-                EntryAspect::LinkRemove(_, header) => Some(ConsistencySignal::new_terminal(
+                EntryAspect::LinkRemove(_, header) => vec!(ConsistencySignal::new_terminal(
                     ConsistencyEvent::RemoveLink(header.entry_address().clone()),
                 )),
                 EntryAspect::Header(_) => {
                     error!("Got EntryAspect::Header type, unexpectedly");
-                    None
+                    vec![]
                 }
             }
 
-            Action::QueueZomeFunctionCall(call) => Some(ConsistencySignal::new_pending(
+            Action::QueueZomeFunctionCall(call) => vec!(ConsistencySignal::new_pending(
                 SignalZomeFunctionCall(display_zome_fn_call(call), call.id()),
                 Source,
                 vec![ReturnZomeFunctionResult(
@@ -203,7 +203,7 @@ impl ConsistencyModel {
                     call.id(),
                 )],
             )),
-            Action::ReturnZomeFunctionResult(result) => Some(ConsistencySignal::new_terminal(
+            Action::ReturnZomeFunctionResult(result) => vec!(ConsistencySignal::new_terminal(
                 ReturnZomeFunctionResult(display_zome_fn_call(&result.call()), result.call().id()),
             )),
             Action::InitNetwork(settings) => {
@@ -211,20 +211,20 @@ impl ConsistencyModel {
                 // committed the agent and so we should be able to wait for the agent id
                 // to propagate
                 if self.chain_initialized {
-                    Some(ConsistencySignal::new_pending(
+                    vec!(ConsistencySignal::new_pending(
                         InitializeChain,
                         Validators,
                         vec![Hold(Address::from(settings.agent_id.clone()))],
                     ))
                 } else {
-                    None
+                    vec![]
                 }
             }
             Action::InitializeChain(_) => {
                 self.chain_initialized = true;
-                None
+                vec![]
             }
-            _ => None,
+            _ => vec![],
         }
     }
 }

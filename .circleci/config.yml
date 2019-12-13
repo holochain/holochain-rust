@@ -1,5 +1,22 @@
 version: 2
 
+commands:
+ build-docker:
+  description: "Build and deploy a docker box"
+  parameters:
+   box:
+    type: string
+    default: "minimal"
+  resource_class: large
+  machine: true
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build << parameters.box >> $CIRCLE_BRANCH
+   - run: ./docker/push << parameters.box >> $CIRCLE_BRANCH
+
 jobs:
  # must be called build for local circle cli to work
  # is actually unit tests
@@ -102,38 +119,6 @@ jobs:
          name: app spec tests
          command: nix-shell --run hc-app-spec-test-sim2h
          no_output_timeout: 20m
-# app-spec-tests-n3h:
-#  docker:
-#   - image: holochain/holochain-rust:latest.develop
-#  resource_class: xlarge
-#  steps:
-#   - checkout
-#
-#   - run:
-#       name: app spec tests
-#       command: nix-shell --run "hc-app-spec-test n3h"
-#
-# app-spec-tests-memory:
-#  docker:
-#   - image: holochain/holochain-rust:latest.develop
-#  resource_class: xlarge
-#  steps:
-#   - checkout
-#
-#   - run:
-#       name: app spec tests
-#       command: nix-shell --run "hc-app-spec-test memory"
-#
-# app-spec-tests-websocket:
-#  docker:
-#   - image: holochain/holochain-rust:latest.develop
-#  resource_class: xlarge
-#  steps:
-#   - checkout
-#
-#   - run:
-#       name: app spec tests
-#       command: nix-shell --run "hc-app-spec-test websocket"
 
  app-spec-proc-tests:
   docker:
@@ -141,7 +126,6 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-
    - run:
        name: proc macro app spec tests
        command: nix-shell --run hc-app-spec-test-proc
@@ -212,7 +196,6 @@ jobs:
    - image: holochain/holochain-rust:latest.develop
   steps:
    - checkout
-
    - run:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
@@ -266,45 +249,24 @@ jobs:
       command: nix-shell --run hc-release-hook-publish
 
  docker.build.latest:
-  resource_class: large
-  machine: true
-  steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timeout: 20m
-      command: ./docker/build latest $CIRCLE_BRANCH
-   - run: ./docker/push latest $CIRCLE_BRANCH
+  build-docker:
+   box: latest
+
+ docker.build.circle.build:
+  build-docker:
+   box: circle.build
 
  docker.build.sim2h_server:
-  machine: true
-  steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timeout: 20m
-      command: ./docker/build sim2h_server $CIRCLE_BRANCH
-   - run: ./docker/push sim2h_server $CIRCLE_BRANCH
+  build-docker:
+   box: sim2h_server
 
  docker.build.trycp_server:
-  machine: true
-  steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timeout: 20m
-      command: ./docker/build trycp_server $CIRCLE_BRANCH
-   - run: ./docker/push trycp_server $CIRCLE_BRANCH
+  build-docker:
+   box: trycp_server
 
  docker.build.minimal:
-  machine: true
-  steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timout: 20m
-      command: ./docker/build minimal $CIRCLE_BRANCH
-   - run: ./docker/push minimal $CIRCLE_BRANCH
+  build-docker:
+   box: minimal
 
 workflows:
  version: 2
@@ -339,13 +301,17 @@ workflows:
    - docker.build.sim2h_server:
       requires:
        - docker.build.minimal
+
    - docker.build.latest:
       filters:
        branches:
         only:
          - develop
          - final-exam
-         - 2019-12-07-docker-latest
+         - 2019-12-12-holonix-bump
+    - docker.build.circle.build:
+       requires:
+        - docker.build.latest
 
  cold.mac:
   jobs:

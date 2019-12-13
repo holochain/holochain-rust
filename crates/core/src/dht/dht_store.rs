@@ -306,44 +306,30 @@ impl DhtStore {
     }
 }
 
-use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
 where
     I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
 {
-    let mut graph = DiGraph::<(), ()>::new();
-    let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
-    let mut index_reverse_map: HashMap<NodeIndex, PendingValidationWithTimeout> = HashMap::new();
+    // collect up the address of everything we have in the pending queue
+    let unique_pending: HashSet<Address> = pending
+        .clone()
+        .into_iter()
+        .map(|p| p.pending.entry_with_header.entry.address())
+        .collect();
 
-    // add the nodes
-    for p in pending.clone() {
-        let node_index = graph.add_node(());
-        index_map.insert(p.pending.entry_with_header.entry.address(), node_index);
-        index_reverse_map.insert(node_index, p);
-    }
-
-    // add the edges
-    for p in pending.clone() {
-        let from = index_map
-            .get(&p.pending.entry_with_header.entry.address())
-            .expect("we literally just added this");
-        for to_addr in p.pending.dependencies.clone() {
-            // only add the dependencies that are also in the pending validation list
-            if let Some(to) = index_map.get(&to_addr) {
-                graph.add_edge(*from, *to, ());
-            }
-        }
-    }
-
-    // TODO: Check for cyles in the graph and remove those pending entries
-
-    // return only the pending valiations that don't have dependencies that are also pending
-    // i.e. the leaf nodes or 'sinks' of the graph
-    graph
-        .externals(Outgoing)
-        .map(|i| index_reverse_map.get(&i).unwrap().clone())
+    // only return those that don't have anything also pending as a dependency
+    // as we know these will always fail
+    pending
+        .clone()
+        .into_iter()
+        .filter(|p| {
+            p.pending
+                .dependencies
+                .iter()
+                .all(|dep_addr| !unique_pending.contains(dep_addr))
+        })
         .collect()
 }
 

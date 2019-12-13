@@ -20,7 +20,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.build
   resource_class: xlarge
   steps:
    - checkout
@@ -30,7 +30,7 @@ jobs:
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.fmt
   steps:
    - checkout
    - run:
@@ -86,7 +86,7 @@ jobs:
 
  app-spec-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.sim1h
   resource_class: xlarge
   steps:
    - checkout
@@ -104,7 +104,7 @@ jobs:
 
  app-spec-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest.develop
+     - image: holochain/holochain-rust:circle.sim2h
    resource_class: xlarge
    steps:
      - checkout
@@ -118,19 +118,9 @@ jobs:
          command: nix-shell --run hc-app-spec-test-sim2h
          no_output_timeout: 20m
 
- app-spec-proc-tests:
-  docker:
-   - image: holochain/holonix:latest
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run:
-       name: proc macro app spec tests
-       command: nix-shell --run hc-app-spec-test-proc
-
  cluster-tests:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.sim2h
   resource_class: xlarge
   steps:
    - checkout
@@ -146,7 +136,7 @@ jobs:
 
  stress-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.sim1h
   resource_class: xlarge
   steps:
    - checkout
@@ -164,7 +154,7 @@ jobs:
 
  stress-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest.develop
+     - image: holochain/holochain-rust:circle.sim2h
    resource_class: xlarge
    steps:
      - checkout
@@ -180,7 +170,7 @@ jobs:
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.cli-tests
   steps:
    - checkout
 
@@ -191,25 +181,13 @@ jobs:
 
  wasm-conductor-tests:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.wasm-conductor-tests
   steps:
    - checkout
    - run:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
        no_output_timeout: 20m
-
- cold-mac-10-nix:
-  macos:
-   xcode: "10.2.0"
-  steps:
-   - checkout
-   - run:
-      name: Install and run all tests via nix
-      command: |
-       curl https://nixos.org/nix/install | sh
-       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run hc-test
 
  deploy-mac:
   macos:
@@ -259,6 +237,41 @@ jobs:
   steps:
    - build-docker:
       box: circle.build
+
+ docker-build-circle-sim1h:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.sim1h
+
+ docker-build-circle-sim2h:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.sim2h
+
+ docker-build-circle-cli-tests:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.cli-tests
+
+ docker-build-circle-fmt:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.fmt
+
+ docker-build-circle-wasm-conductor-tests:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.wasm-conductor-tests
 
  docker-build-sim2h-server:
   resource_class: large
@@ -323,6 +336,21 @@ workflows:
          - final-exam
          - 2019-12-12-holonix-bump
    - docker-build-circle-build:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-sim1h:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-sim2h:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-cli-tests:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-fmt:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-wasm-conductor-tests:
       requires:
        - docker-build-latest
 

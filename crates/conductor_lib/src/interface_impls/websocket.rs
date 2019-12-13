@@ -32,7 +32,7 @@ impl Interface for WebsocketInterface {
         let server = ServerBuilder::new(handler)
             .start(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
-        self.bound_address = Some(server.addr().clone());
+        self.bound_address = Some(*server.addr());
         let broadcaster = Broadcaster::Ws(server.broadcaster());
         let handle = thread::Builder::new()
             .name(format!("websocket_interface/{}", url))

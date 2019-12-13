@@ -33,7 +33,7 @@ impl Interface for HttpInterface {
         let server = ServerBuilder::new(handler)
             .start_http(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
-        self.bound_address = Some(server.address().clone());
+        self.bound_address = Some(*server.address());
         let broadcaster = Broadcaster::Noop;
         let handle = thread::Builder::new()
             .name(format!("http_interface/{}", url))

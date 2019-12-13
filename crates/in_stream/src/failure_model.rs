@@ -70,17 +70,17 @@ impl FailureModel {
 
 #[cfg(test)]
 pub mod tests {
-	use super::*;
-	use std::thread::sleep;
+	// use super::*;
+	// use std::thread::sleep;
 
-	#[test]
-	fn test_failure_model_can_poll() {
-		let mut model = FailureModel::new(0, Duration::from_millis(1000), Duration::from_millis(100));
-		loop {
-			model.poll();
-			println!("{:?}", model.state);
-			sleep(Duration::from_millis(100));
-		}
-	}
+	// #[test]
+	// fn test_failure_model_can_poll() {
+	// 	let mut model = FailureModel::new(0, Duration::from_millis(1000), Duration::from_millis(100));
+	// 	loop {
+	// 		model.poll();
+	// 		println!("{:?}", model.state);
+	// 		sleep(Duration::from_millis(100));
+	// 	}
+	// }
 }
 

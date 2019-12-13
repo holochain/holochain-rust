@@ -1517,6 +1517,7 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
     }
 }
 
+#[allow(dead_code)]
 fn with_port_heuristic<T, F: FnOnce() -> T>(
     wanted_port: u16,
     find_free_port: bool,
@@ -1539,28 +1540,22 @@ fn run_interface(
 ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
-        InterfaceDriver::Websocket { port } => with_port_heuristic(
-            port,
-            interface_config.choose_free_port.unwrap_or(false),
-            || {
-                let r = WebsocketInterface::new(port).run(handler, kill_switch);
-                println!("{}", magic_port_binding_string(&interface_config.id, port));
-                r
-            },
-        ),
-        InterfaceDriver::Http { port } => with_port_heuristic(
-            port,
-            interface_config.choose_free_port.unwrap_or(false),
-            || {
-                let r = HttpInterface::new(port).run(handler, kill_switch);
-                println!("{}", magic_port_binding_string(&interface_config.id, port));
-                r
-            },
-        ),
-
+        InterfaceDriver::Websocket { port } => {
+            let mut interface = WebsocketInterface::new(port);
+            let r = interface.run(handler, kill_switch);
+            let addr = interface.bound_address().expect("Could not bind interface to address");
+            println!("{}", magic_port_binding_string(&interface_config.id, addr.port()));
+            r
+        },
+        InterfaceDriver::Http { port } => {
+            let mut interface = HttpInterface::new(port);
+            let r = interface.run(handler, kill_switch);
+            let addr = interface.bound_address().expect("Could not bind interface to address");
+            println!("{}", magic_port_binding_string(&interface_config.id, addr.port()));
+            r
+        },
         _ => unimplemented!(),
     }
-    .expect("Couldn't spawn conductor interface!")
 }
 
 #[derive(Clone, Debug)]

@@ -3,20 +3,26 @@ use crossbeam_channel::Receiver;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use std::thread;
+use std::net::SocketAddr;
 
 pub struct HttpInterface {
     port: u16,
+    bound_address: Option<SocketAddr>,
 }
 
 impl HttpInterface {
     pub fn new(port: u16) -> Self {
-        HttpInterface { port }
+        HttpInterface { port, bound_address: None }
+    }
+
+    pub fn bound_address(&self) -> Option<SocketAddr> {
+        self.bound_address
     }
 }
 
 impl Interface for HttpInterface {
     fn run(
-        &self,
+        &mut self,
         handler: IoHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
@@ -25,6 +31,7 @@ impl Interface for HttpInterface {
         let server = ServerBuilder::new(handler)
             .start_http(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
+        self.bound_address = Some(server.address().clone());
         let broadcaster = Broadcaster::Noop;
         let handle = thread::Builder::new()
             .name(format!("http_interface/{}", url))

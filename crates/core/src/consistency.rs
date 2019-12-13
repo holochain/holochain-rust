@@ -56,17 +56,19 @@ type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
 #[allow(clippy::large_enum_variant)]
 pub enum ConsistencyEvent {
     // CAUSES
-    Publish(Address),                                           // -> Hold
-    InitializeNetwork, // -> Hold (the AgentId if initialize chain happend)
+    PublishEntry(Address),                                      // -> HoldEntry
+    PublishHeader(Address),                                     // -> HoldHeader
+    InitializeNetwork, // -> HoldEntry (the AgentId if initialize chain happend)
     InitializeChain,   // -> prepare to hold AgentId
     SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
-    Hold(Address),                                                // <- Publish
-    UpdateEntry(Address, Address),                                // <- Publish, entry_type=Update
-    RemoveEntry(Address, Address),                                // <- Publish, entry_type=Deletion
-    AddLink(LinkData),                                            // <- Publish, entry_type=LinkAdd
-    RemoveLink(Address), // <- Publish, entry_type=LinkRemove
+    HoldEntry(Address),            // <- PublishEntry
+    HoldHeader(Address),           // <- PublishHeader
+    UpdateEntry(Address, Address), // <- PublishEntry, entry_type=Update
+    RemoveEntry(Address, Address), // <- PublishEntry, entry_type=Deletion
+    AddLink(LinkData),             // <- PublishEntry, entry_type=LinkAdd
+    RemoveLink(Address),           // <- PublishEntry, entry_type=LinkRemove
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
@@ -121,7 +123,7 @@ impl ConsistencyModel {
                 // when the entry is finally published, and save it for later
                 if do_cache {
                     let address = entry.address();
-                    let hold = Hold(address.clone());
+                    let hold = HoldEntry(address.clone());
                     let meta = match entry {
                         Entry::App(_, _) => crud_link
                             .clone()
@@ -140,7 +142,7 @@ impl ConsistencyModel {
                         pending.push(m)
                     }
                     let signal = ConsistencySignal::new_pending(
-                        Publish(address.clone()),
+                        PublishEntry(address.clone()),
                         Validators,
                         pending,
                     );
@@ -159,8 +161,14 @@ impl ConsistencyModel {
                     None
                 }).into_iter().collect()
             }
+            Action::PublishHeaderEntry(address) => {
+                vec![ConsistencySignal::new_pending(PublishHeader(address.clone()), Validators, vec![HoldHeader(address.clone())])]
+            }
             Action::HoldAspect(aspect) => match aspect {
-                EntryAspect::Content(entry, _) => vec!(ConsistencySignal::new_terminal(Hold(entry.address()))),
+                EntryAspect::Content(entry, _) => match entry {
+                    Entry::ChainHeader(header) => vec!(ConsistencySignal::new_terminal(HoldHeader(header.entry_address().clone()))),
+                    other_entry => vec!(ConsistencySignal::new_terminal(HoldEntry(other_entry.address()))),
+                }
                 EntryAspect::Update(_, header) => {
                     header.link_update_delete().map(|old| {
                         let new = header.entry_address().clone();
@@ -206,24 +214,24 @@ impl ConsistencyModel {
             Action::ReturnZomeFunctionResult(result) => vec!(ConsistencySignal::new_terminal(
                 ReturnZomeFunctionResult(display_zome_fn_call(&result.call()), result.call().id()),
             )),
-            Action::InitNetwork(settings) => {
-                // If the chain was initialized earlier than we also should have
-                // committed the agent and so we should be able to wait for the agent id
-                // to propagate
-                if self.chain_initialized {
-                    vec!(ConsistencySignal::new_pending(
-                        InitializeChain,
-                        Validators,
-                        vec![Hold(Address::from(settings.agent_id.clone()))],
-                    ))
-                } else {
-                    vec![]
-                }
-            }
-            Action::InitializeChain(_) => {
-                self.chain_initialized = true;
-                vec![]
-            }
+            // Action::InitNetwork(settings) => {
+            //     // If the chain was initialized earlier than we also should have
+            //     // committed the agent and so we should be able to wait for the agent id
+            //     // to propagate
+            //     if self.chain_initialized {
+            //         vec!(ConsistencySignal::new_pending(
+            //             InitializeChain,
+            //             Validators,
+            //             vec![Hold(Address::from(settings.agent_id.clone()))],
+            //         ))
+            //     } else {
+            //         vec![]
+            //     }
+            // }
+            // Action::InitializeChain(_) => {
+            //     self.chain_initialized = true;
+            //     vec![]
+            // }
             _ => vec![],
         }
     }

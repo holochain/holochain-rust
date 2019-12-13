@@ -42,35 +42,51 @@ impl ConnectionJob {
     }
 
     fn run(&mut self) -> JobResult {
+        match self.run_result() {
+            Ok(job_result) => job_result,
+            Err(e) => {
+                self.report_msg(Err(e));
+                // got connection error - stop this job
+                JobResult::done()
+            }
+        }
+    }
+
+    fn run_result(&mut self) -> Result<JobResult, Sim2hError> {
         if !self.cont {
-            return JobResult::done();
+            return Ok(JobResult::done());
         }
         if self.frame.is_none() {
             self.frame = Some(WsFrame::default());
         }
-        if let Ok(frame) = self.outgoing_recv.try_recv() {
-            if let Err(e) = self.wss.write(frame) {
-                error!("WEBSOCKET ERROR: {:?}", e);
-                self.report_msg(Err(e.into()));
-                return JobResult::done();
+        match self.outgoing_recv.try_recv() {
+            Ok(frame) => {
+                if let Err(e) = self.wss.write(frame) {
+                    error!("WEBSOCKET ERROR: {:?}", e);
+                    return Err(e.into());
+                }
             }
+            Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                error!("parent channel disconnect");
+                return Err("parent channel disconnect".into());
+            }
+            Err(crossbeam_channel::TryRecvError::Empty) => (),
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
                 let frame = self.frame.take().unwrap();
                 self.report_msg(Ok(frame));
                 // we got data this time, check again right away
-                return JobResult::default();
+                return Ok(JobResult::default());
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
                 error!("WEBSOCKET ERROR: {:?}", e);
-                self.report_msg(Err(e.into()));
-                return JobResult::done();
+                return Err(e.into());
             }
         }
         // no data this round, wait 5ms before checking again
-        JobResult::default().wait_ms(5)
+        Ok(JobResult::default().wait_ms(5))
     }
 }
 

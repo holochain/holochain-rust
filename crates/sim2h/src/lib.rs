@@ -831,6 +831,7 @@ impl Sim2h {
                     .log_out(agent, uri.clone(), msg.clone());
             }
         }
+
         let payload: Opaque = msg.clone().into();
 
         match self.open_connections.get_mut(&uri) {
@@ -838,7 +839,11 @@ impl Sim2h {
                 error!("FAILED TO SEND, NO ROUTE: {}", uri);
                 return;
             }
-            Some((_con, outgoing_send)) => outgoing_send.f_send(payload.as_bytes().into()),
+            Some((_con, outgoing_send)) => {
+                if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                    self.disconnect(&uri);
+                }
+            }
         }
 
         match msg {

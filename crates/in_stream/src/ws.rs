@@ -1,6 +1,6 @@
 use crate::{
     failure_model::{FailureModel, FailureState},
-    *
+    *,
 };
 
 use std::io::{Error, ErrorKind, Result};

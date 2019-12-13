@@ -91,3 +91,5 @@ pub use tls::*;
 
 mod ws;
 pub use ws::*;
+
+mod failure_model;

@@ -1,6 +1,11 @@
-use crate::*;
+use crate::{
+    failure_model::{FailureModel, FailureState},
+    *,
+};
+
 use std::io::{Error, ErrorKind, Result};
 use url2::prelude::*;
+use std::time::Duration;
 
 mod frame;
 pub use frame::*;
@@ -114,11 +119,22 @@ enum WssState<Sub: InStreamStd> {
 }
 
 /// websocket stream
-#[derive(Debug)]
 pub struct InStreamWss<Sub: InStreamStd> {
     state: Option<WssState<Sub>>,
     connect_url: Url2,
     write_buf: std::collections::VecDeque<WsFrame>,
+    failure_model: Option<FailureModel>,
+}
+
+// need to manually implement as can't derive with a function field (failure_model)
+impl<Sub: InStreamStd> std::fmt::Debug for InStreamWss<Sub> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
+        f.debug_struct("InStreamWss")
+            .field("state", &self.state)
+            .field("connect_url", &self.connect_url)
+            .field("write_buf", &self.write_buf)
+            .finish()
+    }
 }
 
 type TungsteniteCliHandshakeResult<S> = std::result::Result<
@@ -149,6 +165,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
             state: None,
             connect_url,
             write_buf: std::collections::VecDeque::new(),
+            failure_model: Some(FailureModel::new(0, Duration::from_millis(1000), Duration::from_millis(1000))),
         }
     }
 
@@ -244,6 +261,17 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
             }
         }
     }
+
+    fn is_in_failure(&mut self) -> bool {
+        if let Some(ref mut failure_model) = self.failure_model {
+            match failure_model.poll() {
+                FailureState::Failing => true,
+                FailureState::NotFailing => false,
+            }
+        } else {
+            false
+        }
+    }
 }
 
 impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
@@ -281,6 +309,10 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn read(&mut self, data: &mut WsFrame) -> Result<usize> {
+        if self.is_in_failure() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+
         self.priv_process()?;
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
@@ -302,6 +334,10 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn write(&mut self, data: WsFrame) -> Result<usize> {
+        if self.is_in_failure() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+
         self.priv_process()?;
         self.write_buf.push_back(data);
         self.priv_write_pending()?;
@@ -309,6 +345,10 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn flush(&mut self) -> Result<()> {
+        if self.is_in_failure() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+
         loop {
             self.priv_process()?;
             self.priv_write_pending()?;

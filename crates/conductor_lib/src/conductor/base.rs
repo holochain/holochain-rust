@@ -1542,6 +1542,11 @@ fn run_interface(
 
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => {
+            let port = if interface_config.choose_free_port.unwrap_or(false) {
+                0
+            } else {
+                port
+            };
             let mut interface = WebsocketInterface::new(port);
             let r = interface.run(handler, kill_switch);
             let addr = interface
@@ -1554,6 +1559,11 @@ fn run_interface(
             r
         }
         InterfaceDriver::Http { port } => {
+            let port = if interface_config.choose_free_port.unwrap_or(false) {
+                0
+            } else {
+                port
+            };
             let mut interface = HttpInterface::new(port);
             let r = interface.run(handler, kill_switch);
             let addr = interface

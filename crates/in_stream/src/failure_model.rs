@@ -65,8 +65,7 @@ impl FailureModel {
     pub fn poll(&mut self) -> FailureState {
         let now = SystemTime::now();
         while self.next_switch_time < now {
-            let ttns = self.time_to_next_switch();
-            self.next_switch_time = self.next_switch_time + ttns;
+            self.next_switch_time = self.next_switch_time + self.time_to_next_switch();
             self.state = self.state.clone().invert();
         }
         self.state.clone()

@@ -260,6 +260,20 @@ impl Sim2h {
         self.send(provider_agent_id, uri, &wire_message);
     }
 
+    fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &RwLock<Space> {
+        if !self.spaces.contains_key(space_address) {
+            self.spaces.insert(
+                space_address.clone(),
+                RwLock::new(Space::new(self.crypto.box_clone())),
+            );
+            info!(
+                "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
+                space_address
+            );
+        }
+        self.spaces.get(space_address).unwrap()
+    }
+
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         trace!("join entered");
@@ -269,19 +283,8 @@ impl Sim2h {
                     uri.clone(),
                     ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
                 );
-                if !self.spaces.contains_key(&data.space_address) {
-                    self.spaces.insert(
-                        data.space_address.clone(),
-                        RwLock::new(Space::new(self.crypto.box_clone())),
-                    );
-                    info!(
-                        "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
-                        data.space_address
-                    );
-                }
-                self.spaces
-                    .get(&data.space_address)
-                    .unwrap()
+
+                self.get_or_create_space(&data.space_address)
                     .write()
                     .join_agent(data.agent_id.clone(), uri.clone())?;
                 info!(
@@ -556,9 +559,8 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let unseen_aspects = AspectList::from(list_data.address_map)
-                    .diff(self.spaces
-                        .get(space_address)
-                        .expect("This function should not get called if we don't have this space")
+                    .diff(self
+                        .get_or_create_space(&space_address)
                         .read()
                         .all_aspects()
                     );
@@ -585,9 +587,8 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let (mut agents_in_space, aspects_missing_at_node) = {
-                    let space = self.spaces
-                        .get(space_address)
-                        .expect("This function should not get called if we don't have this space")
+                    let space = self
+                        .get_or_create_space(&space_address)
                         .read();
                     let aspects_missing_at_node = space
                         .all_aspects()
@@ -606,9 +607,8 @@ impl Sim2h {
 
                 let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
                 if missing_hashes.len() > 0 {
-                    let mut space = self.spaces
-                        .get(space_address)
-                        .expect("This function should not get called if we don't have this space")
+                    let mut space = self
+                        .get_or_create_space(&space_address)
                         .write();
                     for (entry_hash, aspect_hash) in missing_hashes {
                         space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
@@ -643,9 +643,8 @@ impl Sim2h {
                     }
                     let url = maybe_url.unwrap();
                     for aspect in fetch_result.entry.aspect_list {
-                        self.spaces
-                            .get(space_address)
-                            .expect("This function should not get called if we don't have this space")
+                        self
+                            .get_or_create_space(&space_address)
                             .write()
                             .remove_missing_aspect(&to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
                         let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
@@ -758,11 +757,7 @@ impl Sim2h {
         for aspect in entry_data.aspect_list {
             // 1. Add hashes to our global list of all aspects in this space:
             {
-                let mut space = self
-                    .spaces
-                    .get(&space_address)
-                    .expect("This function should not get called if we don't have this space")
-                    .write();
+                let mut space = self.get_or_create_space(&space_address).write();
                 space.add_aspect(
                     entry_data.entry_address.clone(),
                     aspect.aspect_address.clone(),

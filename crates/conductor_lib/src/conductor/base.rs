@@ -918,13 +918,15 @@ impl Conductor {
                     context_builder = context_builder.with_state_dump_logging();
                 }
 
+                context_builder = context_builder.with_instance_name(&instance_name);
+
                 if let Some(metric_publisher_config) = &self.config.metric_publisher {
                     debug!("Setting metric publisher in context_builder to: {:?}", metric_publisher_config);
                     context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
                 };
 
                 // Spawn context
-                let context = context_builder.with_instance_name(&instance_name).spawn();
+                let context = context_builder.spawn();
 
                 // Get DNA
 

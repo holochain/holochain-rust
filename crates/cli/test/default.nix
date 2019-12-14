@@ -5,7 +5,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  ( cd crates/cli && cargo test )
+  ( cd crates/cli && cargo test --target-dir "$HC_TARGET_PREFIX"/target/cli-test )
   bats crates/cli/test/hc.bats
   '';
 in

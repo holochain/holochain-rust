@@ -344,9 +344,9 @@ workflows:
    - docker-build-circle-sim2h:
       requires:
        - docker-build-latest
-   - docker-build-circle-cli-tests:
-      requires:
-       - docker-build-latest
+   - docker-build-circle-cli-tests
+      # requires:
+      #  - docker-build-latest
    - docker-build-circle-fmt:
       requires:
        - docker-build-latest

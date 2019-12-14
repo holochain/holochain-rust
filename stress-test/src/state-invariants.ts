@@ -1,6 +1,6 @@
 import * as R from 'ramda'
 import { Batch } from '@holochain/tryorama-stress-utils'
-import {configBatchSimple} from './config'
+import { configBatch } from './config'
 
 const trace = R.tap(x => console.log('{T}', x))
 const delay = ms => new Promise(r => setTimeout(r, ms))
@@ -8,7 +8,7 @@ const delay = ms => new Promise(r => setTimeout(r, ms))
 module.exports = (scenario, N, M) => {
 
   scenario('all instances hold the same aspects after a smooth startup', async (s, t) => {
-    const players = R.values(await s.players(configBatchSimple(N, M), true))
+    const players = R.values(await s.players(configBatch(N, M), true))
     const batch = new Batch(players).iteration('series')
 
     // Ensure that everyone holds the same number of nonzero entries
@@ -32,6 +32,9 @@ module.exports = (scenario, N, M) => {
     // and headers for each of these
     const expected = (N * M) * 6
     t.deepEqual(holds2, R.repeat(expected, N * M))
+
+    const dumps = await batch.mapInstances(async instance => JSON.stringify(await instance.stateDump(), null, 2))
+    console.log('DUMPS', dumps)
   })
 
 }

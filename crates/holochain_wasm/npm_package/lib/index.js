@@ -1,2 +1,1 @@
-const hcTargetPrefix = process.env.HC_TARGET_PREFIX;
-module.exports = require(hcTargetPrefix + '/crates/holochain_wasm/npm_package/gen')
+module.exports = require('../gen/holochain_conductor_wasm')

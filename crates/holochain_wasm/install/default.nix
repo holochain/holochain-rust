@@ -6,6 +6,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
+  set -euxo pipefail
   # check if wasm-bindgen is already installed
   installed () { command -v wasm-bindgen &> /dev/null; };
 

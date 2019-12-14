@@ -31,6 +31,7 @@ with holonix.pkgs;
     # config file used by aws cli tool
     export AWS_CONFIG_FILE=`pwd`/.aws/config
     RUST_LOG=sim1h=trace
+    export HC_TARGET_PREFIX=$NIX_ENV_PREFIX
     ''
     holonix.shell.shellHook
     ];

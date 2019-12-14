@@ -1,6 +1,6 @@
 { pkgs }:
 let
-  name = "hc-conductor-wasm-install";
+  name = "hc-conductor-wasm-bindgen-install";
 
   version = "0.2.32";
 
@@ -15,7 +15,7 @@ let
   # drop the incorrect version of wasm-bindgen
   if installed && ! correct-version;
    then
-        hc-conductor-wasm-uninstall;
+        hc-conductor-wasm-bindgen-uninstall;
   fi;
 
   # install the correct version of wasm-bindgen

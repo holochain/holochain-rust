@@ -184,10 +184,10 @@ jobs:
    - image: holochain/holochain-rust:circle.wasm-conductor-tests.2019-12-12-holonix-bump
   steps:
    - checkout
-   - run:
-       name: wasm conductor tests
-       command: nix-shell --run hc-conductor-wasm-test
-       no_output_timeout: 20m
+   # - run:
+   #     name: wasm conductor tests
+   #     command: nix-shell --run hc-conductor-wasm-test
+   #     no_output_timeout: 20m
 
  deploy-mac:
   macos:

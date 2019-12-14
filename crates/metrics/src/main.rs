@@ -34,8 +34,12 @@ enum Command {
         #[structopt(flatten)]
         cloudwatch_options: CloudwatchLogsOptions,
 
-        #[structopt(name = "aggregation_pattern", long = "aggregation_pattern", short = "g")]
-        aggregation_pattern: Option<String>
+        #[structopt(
+            name = "aggregation_pattern",
+            long = "aggregation_pattern",
+            short = "g"
+        )]
+        aggregation_pattern: Option<String>,
     },
     #[structopt(
         name = "print-cloudwatch-metrics",
@@ -44,11 +48,25 @@ enum Command {
     PrintCloudwatchMetrics(CloudwatchLogsOptions),
     #[structopt(
         name = "print-log-metrics",
-        about = "Prints descriptive stats in csv format over a log file"
+        about = "Prints metrics in csv format over a log file"
     )]
     PrintLogMetrics {
         #[structopt(name = "log_file", short = "f")]
         log_file: PathBuf,
+    },
+    #[structopt(
+        name = "print-metric-stats",
+        about = "Prints descriptive stats in csv format over a metric csv file"
+    )]
+    PrintMetricStats {
+        #[structopt(name = "csv_file", short = "f")]
+        csv_file: PathBuf,
+        #[structopt(
+            name = "aggregation_pattern",
+            long = "aggregation_pattern",
+            short = "g"
+        )]
+        aggregation_pattern: Option<String>,
     },
     #[structopt(
         name = "print-log-stats",
@@ -57,8 +75,12 @@ enum Command {
     PrintLogStats {
         #[structopt(name = "log_file", short = "f")]
         log_file: PathBuf,
-        #[structopt(name = "aggregation_pattern", long = "aggregation_pattern", short = "g")]
-        aggregation_pattern: Option<String>
+        #[structopt(
+            name = "aggregation_pattern",
+            long = "aggregation_pattern",
+            short = "g"
+        )]
+        aggregation_pattern: Option<String>,
     },
     #[structopt(
         name = "print-stat-check",
@@ -100,20 +122,36 @@ fn main() {
                 .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
             print_cloudwatch_metrics(&query_args, log_group_name, &region, &assume_role_arn);
         }
-        Command::PrintCloudwatchStats{
-            cloudwatch_options: CloudwatchLogsOptions {
-            region,
-            log_group_name,
-            query_args,
-            assume_role_arn,
-        }, aggregation_pattern } => {
+        Command::PrintCloudwatchStats {
+            cloudwatch_options:
+                CloudwatchLogsOptions {
+                    region,
+                    log_group_name,
+                    query_args,
+                    assume_role_arn,
+                },
+            aggregation_pattern,
+        } => {
             let region = region.unwrap_or_default();
             let log_group_name = log_group_name.unwrap_or_else(CloudWatchLogger::default_log_group);
             let assume_role_arn = assume_role_arn
                 .unwrap_or_else(|| crate::cloudwatch::FINAL_EXAM_NODE_ROLE.to_string());
-            print_cloudwatch_stats(&query_args, log_group_name, &region, &assume_role_arn, aggregation_pattern);
+            print_cloudwatch_stats(
+                &query_args,
+                log_group_name,
+                &region,
+                &assume_role_arn,
+                aggregation_pattern,
+            );
         }
-        Command::PrintLogStats { log_file, aggregation_pattern } => print_log_stats(log_file, aggregation_pattern),
+        Command::PrintLogStats {
+            log_file,
+            aggregation_pattern,
+        } => print_log_stats(log_file, aggregation_pattern),
+        Command::PrintMetricStats {
+            csv_file,
+            aggregation_pattern,
+        } => print_metric_stats(csv_file, aggregation_pattern),
         Command::PrintLogMetrics { log_file } => print_log_metrics(log_file),
         Command::StatCheck {
             expected_csv_file,
@@ -128,7 +166,7 @@ fn print_cloudwatch_stats(
     log_group_name: String,
     region: &Region,
     assume_role_arn: &str,
-    aggregation_pattern: Option<String>
+    _aggregation_pattern: Option<String>,
 ) {
     let cloudwatch = CloudWatchLogger::with_log_group(
         log_group_name,
@@ -161,16 +199,14 @@ fn print_cloudwatch_metrics(
         writer.serialize(m).unwrap();
     }
     writer.flush().unwrap();
-
 }
 
-
-fn print_log_stats(log_file: PathBuf, aggregation_pattern: Option<String>) {
+fn print_log_stats(log_file: PathBuf, _aggregation_pattern: Option<String>) {
     let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
     let stats = StatsByMetric::from_iter_with_stream_id(
         metrics,
         log_file.to_str().unwrap_or_else(|| "unknown"),
-        aggregation_pattern
+        //        aggregation_pattern
     );
     stats.write_csv(std::io::stdout()).unwrap()
 }
@@ -229,4 +265,8 @@ fn print_stat_check(
         }
     }
     writer.flush().unwrap();
+}
+
+fn print_metric_stats(_csv_file: PathBuf, _aggregation_pattern: Option<String>) {
+    // TODO
 }

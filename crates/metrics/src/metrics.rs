@@ -36,7 +36,6 @@ pub trait MetricPublisher: Sync + Send {
     fn publish(&mut self, metric: &Metric);
 }
 
-
 /// WIP: Wraps another publisher and dedicates a processing thread to do actual publishing.
 pub struct ChannelPublisher {
     sender: Sender<Metric>,

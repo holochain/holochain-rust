@@ -1,4 +1,5 @@
 use crate::{Metric, MetricPublisher};
+use chrono::prelude::*;
 use regex::Regex;
 use std::{
     convert::{TryFrom, TryInto},
@@ -20,7 +21,7 @@ impl LoggerMetricPublisher {
 impl MetricPublisher for LoggerMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
         let log_line: LogLine = metric.into();
-        debug!("{}", log_line.to_string());
+        debug!("{}", log_line);
     }
 }
 
@@ -33,6 +34,7 @@ impl Default for LoggerMetricPublisher {
 pub const METRIC_TAG: &str = "METRIC";
 
 lazy_static! {
+    pub static ref LOG_HEADER_REGEX: Regex = Regex::new("[\\w]+ ([\\d\\-]+ [\\d\\:])+").unwrap();
     pub static ref PARSE_METRIC_REGEX: Regex =
         Regex::new((METRIC_TAG.to_string() + " ([\\w\\d~\\-\\._]+) ([\\d\\.]+)").as_str()).unwrap();
 }
@@ -41,8 +43,7 @@ lazy_static! {
 pub struct ParseError(pub String);
 
 impl ParseError {
-
-    pub fn new<S:Into<String>>(s:S) -> Self{
+    pub fn new<S: Into<String>>(s: S) -> Self {
         Self(s.into())
     }
 }
@@ -58,9 +59,21 @@ impl From<std::num::ParseFloatError> for ParseError {
 #[derive(Debug, Clone, Shrinkwrap)]
 pub struct LogLine(pub String);
 
+const RUST_LOG_DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
 impl From<Metric> for LogLine {
     fn from(metric: Metric) -> Self {
-        LogLine(format!("{} {} {}", METRIC_TAG, metric.name, metric.value))
+        LogLine(format!(
+            "{} {} {} {} {}",
+            metric
+                .timestamp
+                .map(|t| t.format(RUST_LOG_DATE_FORMAT).to_string())
+                .unwrap_or_else(String::new),
+            metric.stream_id.unwrap_or_else(String::new),
+            METRIC_TAG,
+            metric.name,
+            metric.value
+        ))
     }
 }
 
@@ -72,17 +85,23 @@ impl From<&Metric> for LogLine {
 
 impl Into<String> for LogLine {
     fn into(self) -> String {
-        self.0
+        self.0.clone()
+    }
+}
+
+impl std::fmt::Display for LogLine {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;
     fn try_from(source: LogLine) -> Result<Metric, ParseError> {
-        let stripped = strip_ansi_escapes::strip(source.0).unwrap();
+        let stripped = strip_ansi_escapes::strip(source.to_string()).unwrap();
         let stripped = std::str::from_utf8(stripped.as_slice()).unwrap();
         let cap = PARSE_METRIC_REGEX
-            .captures_iter(stripped)
+            .captures_iter(stripped.clone())
             .next()
             .map(|cap| Ok(cap))
             .unwrap_or_else(|| {
@@ -91,10 +110,16 @@ impl TryFrom<LogLine> for Metric {
                     stripped
                 )))
             })?;
+        let timestamp = LOG_HEADER_REGEX
+            .captures_iter(stripped)
+            .next()
+            .and_then(|s| DateTime::parse_from_str(&s[1], RUST_LOG_DATE_FORMAT).ok())
+            .map(|_t: DateTime<FixedOffset>| panic!("TODO"));
+
         let metric_name: String = cap[1].to_string();
         let value_str = cap[2].to_string();
         let metric_value: f64 = value_str.as_str().parse()?;
-        let metric = Metric::new(&metric_name, None, None, metric_value);
+        let metric = Metric::new(&metric_name, None, timestamp, metric_value);
         return Ok(metric);
     }
 }

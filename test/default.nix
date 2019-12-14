@@ -4,7 +4,7 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  set -euo pipefail
+  set -euxo pipefail
   hc-test-fmt
   hn-rust-clippy
   hc-rust-test

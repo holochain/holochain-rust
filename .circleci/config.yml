@@ -20,7 +20,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:circle.build
+   - image: holochain/holochain-rust:circle.build.2019-12-12-holonix-bump
   resource_class: xlarge
   steps:
    - checkout
@@ -30,7 +30,7 @@ jobs:
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:circle.fmt
+   - image: holochain/holochain-rust:circle.fmt.2019-12-12-holonix-bump
   steps:
    - checkout
    - run:
@@ -86,7 +86,7 @@ jobs:
 
  app-spec-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:circle.sim1h
+   - image: holochain/holochain-rust:circle.sim1h.2019-12-12-holonix-bump
   resource_class: xlarge
   steps:
    - checkout
@@ -104,7 +104,7 @@ jobs:
 
  app-spec-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:circle.sim2h
+     - image: holochain/holochain-rust:circle.sim2h.2019-12-12-holonix-bump
    resource_class: xlarge
    steps:
      - checkout
@@ -120,7 +120,7 @@ jobs:
 
  cluster-tests:
   docker:
-   - image: holochain/holochain-rust:circle.sim2h
+   - image: holochain/holochain-rust:circle.sim2h.2019-12-12-holonix-bump
   resource_class: xlarge
   steps:
    - checkout
@@ -136,7 +136,7 @@ jobs:
 
  stress-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:circle.sim1h
+   - image: holochain/holochain-rust:circle.sim1h.2019-12-12-holonix-bump
   resource_class: xlarge
   steps:
    - checkout
@@ -154,7 +154,7 @@ jobs:
 
  stress-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:circle.sim2h
+     - image: holochain/holochain-rust:circle.sim2h.2019-12-12-holonix-bump
    resource_class: xlarge
    steps:
      - checkout
@@ -170,7 +170,7 @@ jobs:
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:circle.cli-tests
+   - image: holochain/holochain-rust:circle.cli-tests.2019-12-12-holonix-bump
   steps:
    - checkout
 
@@ -181,7 +181,7 @@ jobs:
 
  wasm-conductor-tests:
   docker:
-   - image: holochain/holochain-rust:circle.wasm-conductor-tests
+   - image: holochain/holochain-rust:circle.wasm-conductor-tests.2019-12-12-holonix-bump
   steps:
    - checkout
    - run:

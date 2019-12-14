@@ -1,6 +1,5 @@
 use crate::{
-    entry::validation_dependencies::ValidationDependencies,
-    network::chain_pair::ChainPair,
+    entry::validation_dependencies::ValidationDependencies, network::chain_pair::ChainPair,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,

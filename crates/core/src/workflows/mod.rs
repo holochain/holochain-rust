@@ -82,15 +82,15 @@ async fn validation_package(
     let entry = chain_pair.entry();
     let validation_package_definition = get_validation_package_definition(&entry, context.clone())
         .and_then(|callback_result| match callback_result {
-        CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
-        CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-        CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
-            "ValidationPackage callback not implemented for {:?} ({})",
-            entry.entry_type(),
-            reason
-        ))),
-        _ => unreachable!(),
-    })?;
+            CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
+            CallbackResult::ValidationPackageDefinition(def) => Ok(def),
+            CallbackResult::NotImplemented(reason) => Err(HolochainError::ErrorGeneric(format!(
+                "ValidationPackage callback not implemented for {:?} ({})",
+                entry.entry_type(),
+                reason
+            ))),
+            _ => unreachable!(),
+        })?;
 
     // 1. Try to construct it locally.
     // This will work if the entry doesn't need a chain to validate or if this agent is the author:
@@ -178,7 +178,7 @@ pub mod tests {
         network::chain_pair::ChainPair, nucleus::actions::tests::*,
         workflows::author_entry::author_entry,
     };
-    use holochain_core_types::entry::Entry;
+    use holochain_core_types::{entry::Entry, error::HolochainError};
     use holochain_json_api::json::JsonString;
     use std::{thread, time};
 

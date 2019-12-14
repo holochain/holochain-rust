@@ -49,7 +49,8 @@ pub mod tests {
     use super::*;
     use crate::network::chain_pair::ChainPair;
     use holochain_core_types::{
-        agent::AgentId, chain_header::ChainHeader, error::HolochainError,link::link_data::LinkData, time::Iso8601,
+        agent::AgentId, chain_header::ChainHeader, error::HolochainError,
+        link::link_data::LinkData, time::Iso8601,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
 
@@ -73,9 +74,8 @@ pub mod tests {
     #[test]
     fn test_get_validation_dependencies_app_entry() -> Result<(), HolochainError> {
         let entry = Entry::App("entry_type".into(), "content".into());
-        try_chain_pair_from_entry(entry).map(|chain_pair| {
-            assert_eq!(chain_pair.get_validation_dependencies(), Vec::new())
-        })
+        try_chain_pair_from_entry(entry)
+            .map(|chain_pair| assert_eq!(chain_pair.get_validation_dependencies(), Vec::new()))
     }
 
     #[test]
@@ -116,6 +116,6 @@ pub mod tests {
                 chain_pair.get_validation_dependencies(),
                 vec![Address::from("QmPreviousHeaderAddress")],
             )
-        });
+        })
     }
 }

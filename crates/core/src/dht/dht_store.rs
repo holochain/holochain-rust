@@ -393,9 +393,7 @@ impl AddContent for DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
-    };
+    use crate::dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow};
     use holochain_core_types::{
         chain_header::test_chain_header_with_sig,
         entry::{test_entry, test_entry_a, test_entry_b, test_entry_c},
@@ -428,18 +426,22 @@ pub mod tests {
     ) -> Result<PendingValidationWithTimeout, HolochainError> {
         let header = test_chain_header_with_sig("sig1");
         match PendingValidationStruct::try_from_entry_and_header(
-            entry,
-            header,
+            entry.clone(),
+            header.clone(),
             EntryAspect::Content(entry, header),
             ValidatingWorkflow::HoldEntry,
         ) {
-            Ok(pending_struct) => {
+            Ok(mut pending_struct) => {
                 pending_struct.dependencies = dependencies;
-                Ok(PendingValidationWithTimeout::new(Arc::new(pending_struct.clone()), None))
-            },
+                Ok(PendingValidationWithTimeout::new(
+                    Arc::new(pending_struct.clone()),
+                    None,
+                ))
+            }
             Err(err) => {
                 let err_msg = format!(
-                    "Tried pending validation for entry from entry and header, got error: {}", err
+                    "Tried pending validation for entry from entry and header, got error: {}",
+                    err
                 );
                 Err(HolochainError::ErrorGeneric(err_msg))
             }
@@ -447,31 +449,33 @@ pub mod tests {
     }
 
     #[test]
-    fn test_dependency_resolution_no_dependencies() {
+    fn test_dependency_resolution_no_dependencies() -> Result<(), HolochainError> {
         // A and B have no dependencies. Both should be free
         let a = try_pending_validation_for_entry(test_entry_a(), Vec::new())?;
         let b = try_pending_validation_for_entry(test_entry_b(), Vec::new())?;
         assert_eq!(
             get_free_dependencies(&vec![a.clone(), b.clone()]),
-            vec![a, b]
+            vec![a, b],
         );
+        Ok(())
     }
 
     #[test]
-    fn test_dependency_resolution_chain() {
+    fn test_dependency_resolution_chain() -> Result<(), HolochainError> {
         // A depends on B and B depends on C. C should be free
-        let a = try_pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
+        let a = try_pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()])?;
         let b = try_pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()])?;
         let c = try_pending_validation_for_entry(test_entry_c(), vec![])?;
 
         assert_eq!(
             get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
-            vec![c]
+            vec![c],
         );
+        Ok(())
     }
 
     #[test]
-    fn test_dependency_resolution_tree() {
+    fn test_dependency_resolution_tree() -> Result<(), HolochainError> {
         // A depends on B and C. B and C should be free
         let a = try_pending_validation_for_entry(
             test_entry_a(),
@@ -484,5 +488,7 @@ pub mod tests {
             get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
             vec![b, c]
         );
+
+        Ok(())
     }
 }

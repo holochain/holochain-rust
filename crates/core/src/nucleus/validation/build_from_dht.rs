@@ -175,7 +175,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_validation_package_same_from_author_and_other_agent() {
+    fn test_validation_package_same_from_author_and_other_agent() -> Result<(), HolochainError> {
         let mut dna = test_dna();
         dna.uuid = "test_validation_package_same_from_author_and_other_agent".to_string();
         let netname = Some("test_validation_package_same_from_author_and_other_agent, the network");
@@ -242,6 +242,7 @@ pub mod tests {
             2
         );
 
-        assert_eq!(local_validation_package, dht_validation_package,)
+        assert_eq!(local_validation_package, dht_validation_package,);
+        Ok(())
     }
 }

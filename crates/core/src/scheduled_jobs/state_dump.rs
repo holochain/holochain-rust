@@ -59,7 +59,7 @@ pub fn state_dump(context: Arc<Context>) {
                     .dependencies
                     .iter()
                     .map(|addr| addr.to_string())
-                     .collect::<Vec<_>>(),
+                    .collect::<Vec<_>>(),
             )
         })
         .collect::<Vec<String>>();

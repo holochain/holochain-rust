@@ -4,7 +4,8 @@ let
 
   script = pkgs.writeShellScriptBin name
   ''
-  cd crates/cli && cargo build -p hc --release && cargo install -f
+  set -euxo pipefail
+  cargo install -f --path crates/cli
   '';
 in
 {

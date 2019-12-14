@@ -350,9 +350,9 @@ workflows:
    - docker-build-circle-fmt:
       requires:
        - docker-build-latest
-   - docker-build-circle-wasm-conductor-tests
-      # requires:
-      #  - docker-build-latest
+   - docker-build-circle-wasm-conductor-tests:
+      requires:
+       - docker-build-latest
 
  deploy:
   jobs:

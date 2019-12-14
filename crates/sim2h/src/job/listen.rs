@@ -12,10 +12,12 @@ impl ListenJob {
         Self { listen, wss_send }
     }
 
-    fn run(&mut self) -> JobContinue {
+    fn run(&mut self) -> JobResult {
         match self.listen.accept() {
             Ok(wss) => {
                 self.wss_send.f_send(wss);
+                // we got data this time, check again right away
+                return JobResult::default();
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
@@ -25,12 +27,13 @@ impl ListenJob {
                 panic!(e);
             }
         }
-        true
+        // no data this round, wait 5ms before checking again
+        JobResult::default().wait_ms(5)
     }
 }
 
 impl Job for Arc<Mutex<ListenJob>> {
-    fn run(&mut self) -> JobContinue {
+    fn run(&mut self) -> JobResult {
         self.f_lock().run()
     }
 }

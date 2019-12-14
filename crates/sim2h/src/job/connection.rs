@@ -41,38 +41,57 @@ impl ConnectionJob {
         self.msg_send.f_send((self.wss.remote_url(), msg));
     }
 
-    fn run(&mut self) -> JobContinue {
+    fn run(&mut self) -> JobResult {
+        match self.run_result() {
+            Ok(job_result) => job_result,
+            Err(e) => {
+                self.report_msg(Err(e));
+                // got connection error - stop this job
+                JobResult::done()
+            }
+        }
+    }
+
+    fn run_result(&mut self) -> Result<JobResult, Sim2hError> {
         if !self.cont {
-            return false;
+            return Ok(JobResult::done());
         }
         if self.frame.is_none() {
             self.frame = Some(WsFrame::default());
         }
-        if let Ok(frame) = self.outgoing_recv.try_recv() {
-            if let Err(e) = self.wss.write(frame) {
-                error!("WEBSOCKET ERROR: {:?}", e);
-                self.report_msg(Err(e.into()));
-                return false;
+        match self.outgoing_recv.try_recv() {
+            Ok(frame) => {
+                if let Err(e) = self.wss.write(frame) {
+                    error!("WEBSOCKET ERROR: {:?}", e);
+                    return Err(e.into());
+                }
             }
+            Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                error!("parent channel disconnect");
+                return Err("parent channel disconnect".into());
+            }
+            Err(crossbeam_channel::TryRecvError::Empty) => (),
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
                 let frame = self.frame.take().unwrap();
                 self.report_msg(Ok(frame));
+                // we got data this time, check again right away
+                return Ok(JobResult::default());
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
                 error!("WEBSOCKET ERROR: {:?}", e);
-                self.report_msg(Err(e.into()));
-                return false;
+                return Err(e.into());
             }
         }
-        true
+        // no data this round, wait 5ms before checking again
+        Ok(JobResult::default().wait_ms(5))
     }
 }
 
 impl Job for Arc<Mutex<ConnectionJob>> {
-    fn run(&mut self) -> JobContinue {
+    fn run(&mut self) -> JobResult {
         self.f_lock().run()
     }
 }

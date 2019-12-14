@@ -24,7 +24,9 @@ with holonix.pkgs;
  dev-shell = stdenv.mkDerivation (holonix.shell // {
   name = "dev-shell";
 
-    shellHook = holonix.pkgs.lib.concatStrings [''
+    shellHook = holonix.pkgs.lib.concatStrings [
+    holonix.shell.shellHook
+    ''
     # environment variables used by rust tests directly
     export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
     export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -33,7 +35,6 @@ with holonix.pkgs;
     RUST_LOG=sim1h=trace
     export HC_TARGET_PREFIX=$NIX_ENV_PREFIX
     ''
-    holonix.shell.shellHook
     ];
 
   buildInputs = [ holonix.pkgs.libiconv ]

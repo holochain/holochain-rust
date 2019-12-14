@@ -61,14 +61,18 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
     }
 
     fn binding(&self) -> Url2 {
-        let local = self.0.local_addr().expect("Couldn't unwrap local_addr() of TcpListener when trying to get binding URL");
+        let local = self
+            .0
+            .local_addr()
+            .expect("Couldn't unwrap local_addr() of TcpListener when trying to get binding URL");
         Url2::parse(&format!("{}://{}:{}", SCHEME, local.ip(), local.port()))
     }
 
     fn accept(&mut self) -> Result<<Self as InStreamListener<&mut [u8], &[u8]>>::Stream> {
-        let (stream, _addr) = self.0.accept()?;
+        let (stream, addr) = self.0.accept()?;
         stream.set_nonblocking(true)?;
-        InStreamTcp::priv_new(stream, None)
+        let remote_url = url2!("{}://{}:{}", SCHEME, addr.ip(), addr.port());
+        InStreamTcp::priv_new(stream, remote_url, None)
     }
 }
 
@@ -108,6 +112,7 @@ struct TcpConnectingData {
 pub struct InStreamTcp {
     #[shrinkwrap(main_field)]
     pub stream: std::net::TcpStream,
+    url: Url2,
     connecting: Option<TcpConnectingData>,
     write_buf: Vec<u8>,
 }
@@ -119,10 +124,12 @@ impl InStreamTcp {
 
     fn priv_new(
         stream: std::net::TcpStream,
+        url: Url2,
         connecting: Option<TcpConnectingData>,
     ) -> Result<Self> {
         Ok(Self {
             stream,
+            url,
             connecting,
             write_buf: Vec::new(),
         })
@@ -172,20 +179,22 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
         match stream.connect(addr) {
             Err(_) => Self::priv_new(
                 stream,
+                url.clone(),
                 Some(TcpConnectingData {
                     addr,
-                    connect_timeout: match config.connect_timeout_ms {
-                        None => None,
-                        Some(ms) => Some(
-                            std::time::Instant::now()
-                                .checked_add(std::time::Duration::from_millis(ms))
-                                .unwrap(),
-                        ),
-                    },
+                    connect_timeout: config.connect_timeout_ms.map(|ms| {
+                        std::time::Instant::now()
+                            .checked_add(std::time::Duration::from_millis(ms))
+                            .unwrap()
+                    }),
                 }),
             ),
-            Ok(_) => Self::priv_new(stream, None),
+            Ok(_) => Self::priv_new(stream, url.clone(), None),
         }
+    }
+
+    fn remote_url(&self) -> Url2 {
+        self.url.clone()
     }
 
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {
@@ -274,6 +283,10 @@ mod tests {
             }
             .into_std_stream();
 
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
+
             srv.write(b"hello from server").unwrap();
             srv.flush().unwrap();
             srv.shutdown(std::net::Shutdown::Write).unwrap();
@@ -298,6 +311,8 @@ mod tests {
             let mut cli = InStreamTcp::connect(&binding, TcpConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
+
+            assert_eq!(binding.as_str(), cli.remote_url().as_str());
 
             cli.write(b"hello from client").unwrap();
             cli.flush().unwrap();

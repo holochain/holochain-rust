@@ -133,7 +133,10 @@ impl InStream<&mut [u8], &[u8]> for InStreamMem {
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
         let _ = MemConnectConfig::from_gen(config)?;
         get_mem_manager().connect(url)
-        //Ok(get_mem_manager().connect(url)?)
+    }
+
+    fn remote_url(&self) -> Url2 {
+        self.url.clone()
     }
 
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
@@ -370,8 +373,7 @@ mod tests {
 
         let server_thread = std::thread::spawn(move || {
             let mut listener =
-                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default())
-                    .unwrap();
+                InStreamListenerMem::bind(&random_url("test"), MemBindConfig::default()).unwrap();
             println!("bound to: {}", listener.binding());
             send_binding.send(listener.binding()).unwrap();
 
@@ -383,6 +385,10 @@ mod tests {
                 }
             }
             .into_std_stream();
+
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
 
             srv.write(b"hello from server").unwrap();
             srv.flush().unwrap();
@@ -406,6 +412,8 @@ mod tests {
             let mut cli = InStreamMem::connect(&binding, MemConnectConfig::default())
                 .unwrap()
                 .into_std_stream();
+
+            assert_eq!(binding.as_str(), cli.remote_url().as_str());
 
             cli.write(b"hello from client").unwrap();
             cli.flush().unwrap();

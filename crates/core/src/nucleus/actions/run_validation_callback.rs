@@ -53,7 +53,10 @@ pub async fn run_validation_callback(
         Err(error) => panic!(error.to_string()), // same here
     };
 
-    let metric_name = format!("{}.{}.latency", call.zome_name, call.fn_name);
+    let metric_name = format!(
+        "run_validation_callback.{}.{}.latency",
+        call.zome_name, call.fn_name
+    );
     let latency = clock.elapsed().unwrap().as_millis();
     let metric = Metric::new(metric_name.as_str(), latency as f64);
     context.metric_publisher.write().unwrap().publish(&metric);

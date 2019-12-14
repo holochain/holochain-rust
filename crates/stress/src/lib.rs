@@ -2,7 +2,7 @@ extern crate crossbeam_channel;
 extern crate num_cpus;
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::BTreeMap,
     sync::{Arc, Mutex},
 };
 
@@ -70,7 +70,7 @@ pub struct StressLogStats {
 #[derive(Debug, Clone)]
 pub struct StressStats {
     pub master_tick_count: u64,
-    pub log_stats: HashMap<String, StressLogStats>,
+    pub log_stats: BTreeMap<String, StressLogStats>,
 }
 
 /// internal job metric log struct
@@ -98,6 +98,8 @@ pub struct StressRunConfig<S: StressSuite, J: StressJob> {
     pub job_count: usize,
     /// the total runtime of the stress test run
     pub run_time_ms: u64,
+    /// the total warmup time before beginnig to collect stats
+    pub warm_time_ms: u64,
     /// how often should we report progress statistics
     pub progress_interval_ms: u64,
     /// the suite to execute
@@ -112,6 +114,7 @@ impl<S: StressSuite, J: StressJob> std::fmt::Debug for StressRunConfig<S, J> {
             .field("thread_pool_size", &self.thread_pool_size)
             .field("job_count", &self.job_count)
             .field("run_time_ms", &self.run_time_ms)
+            .field("warm_time_ms", &self.run_time_ms)
             .field("progress_interval_ms", &self.progress_interval_ms)
             .finish()
     }
@@ -133,7 +136,8 @@ struct StressRunner<S: StressSuite, J: StressJob> {
     thread_pool: Vec<std::thread::JoinHandle<()>>,
     should_continue: Arc<Mutex<bool>>,
     job_count: Arc<Mutex<usize>>,
-    job_queue: Arc<Mutex<VecDeque<StressJobInfo<J>>>>,
+    job_recv: crossbeam_channel::Receiver<StressJobInfo<J>>,
+    job_send: crossbeam_channel::Sender<StressJobInfo<J>>,
     job_last_index: usize,
     log_recv: crossbeam_channel::Receiver<StressJobLog>,
     log_send: crossbeam_channel::Sender<StressJobLog>,
@@ -144,19 +148,22 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     /// private stress runner constructor
     #[allow(clippy::mutex_atomic)]
     fn priv_new(config: StressRunConfig<S, J>) -> Self {
+        let (job_send, job_recv) = crossbeam_channel::unbounded();
         let (log_send, log_recv) = crossbeam_channel::unbounded();
 
         let warmup_target = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(5000))
+            .checked_add(std::time::Duration::from_millis(config.warm_time_ms))
             .unwrap();
 
         let run_until = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(5000 + config.run_time_ms))
+            .checked_add(std::time::Duration::from_millis(
+                config.warm_time_ms + config.run_time_ms,
+            ))
             .unwrap();
 
         let next_progress = std::time::Instant::now()
             .checked_add(std::time::Duration::from_millis(
-                5000 + config.progress_interval_ms,
+                config.warm_time_ms + config.progress_interval_ms,
             ))
             .unwrap();
 
@@ -169,13 +176,14 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             thread_pool: Vec::new(),
             should_continue: Arc::new(Mutex::new(true)),
             job_count: Arc::new(Mutex::new(0)),
-            job_queue: Arc::new(Mutex::new(VecDeque::new())),
+            job_recv,
+            job_send,
             job_last_index: 1,
             log_recv,
             log_send,
             stats: StressStats {
                 master_tick_count: 0,
-                log_stats: HashMap::new(),
+                log_stats: BTreeMap::new(),
             },
         };
 
@@ -204,7 +212,6 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         }
         {
             let mut cur_job_count = self.job_count.lock().unwrap();
-            let mut job_queue = self.job_queue.lock().unwrap();
             while *cur_job_count < self.config.job_count {
                 let logger =
                     StressJobMetricLogger::priv_new(self.job_last_index, self.log_send.clone());
@@ -212,7 +219,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                     job: (self.config.job_factory)(logger.clone()),
                     logger,
                 };
-                (*job_queue).push_front(job);
+                self.job_send.send(job).unwrap();
                 self.job_last_index += 1;
                 *cur_job_count += 1
             }
@@ -259,7 +266,15 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
             // let's reset our statistics
             self.is_warmup = false;
             self.stats.master_tick_count = 0;
-            self.stats.log_stats = HashMap::new();
+            self.stats.log_stats = BTreeMap::new();
+            self.run_until = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(self.config.run_time_ms))
+                .unwrap();
+            self.next_progress = std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(
+                    self.config.progress_interval_ms,
+                ))
+                .unwrap();
             self.config.suite.warmup_complete();
         }
 
@@ -290,24 +305,26 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     fn create_thread(&mut self) {
         let should_continue = self.should_continue.clone();
         let job_count = self.job_count.clone();
-        let job_queue = self.job_queue.clone();
+        let t_job_send = self.job_send.clone();
+        let t_job_recv = self.job_recv.clone();
         self.thread_pool.push(std::thread::spawn(move || loop {
             if !*should_continue.lock().unwrap() {
                 return;
             }
-            let mut job = match (*job_queue.lock().unwrap()).pop_front() {
-                Some(job) => job,
-                None => continue,
+            let mut job = match t_job_recv.recv_timeout(std::time::Duration::from_millis(10)) {
+                Ok(job) => job,
+                _ => continue,
             };
             let start = std::time::Instant::now();
             let result = job.job.tick(&mut job.logger);
             job.logger
-                .log("job_tick_elapsed_ms", start.elapsed().as_millis() as f64);
+                .log("tick_job_elapsed_ms", start.elapsed().as_millis() as f64);
             if result.should_continue {
-                (*job_queue.lock().unwrap()).push_back(job);
+                t_job_send.send(job).unwrap();
             } else {
                 *job_count.lock().unwrap() -= 1;
             }
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }));
     }
 }
@@ -364,6 +381,7 @@ mod tests {
             thread_pool_size: 10,
             job_count: 100,
             run_time_ms: 200,
+            warm_time_ms: 100,
             progress_interval_ms: 50,
             suite: Suite,
             job_factory: Box::new(move |_| Job {

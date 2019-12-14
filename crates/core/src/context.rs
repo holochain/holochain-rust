@@ -25,6 +25,7 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
+use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 use holochain_metrics::MetricPublisher;
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -67,6 +68,15 @@ impl<'a> P2pNetworkMutexGuardWrapper<'a> {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq)]
+pub struct InstanceStats {
+    pub number_held_entries: usize,
+    pub number_held_aspects: usize,
+    pub number_pending_validations: usize,
+    pub number_running_zome_calls: usize,
+    pub offline: bool,
+}
+
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like persister
 /// but also the store of the instance that gets injected before passing on the context
@@ -87,7 +97,7 @@ pub struct Context {
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
-    thread_pool: Arc<Mutex<ThreadPool>>,
+    thread_pool: ThreadPool,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
 }
@@ -151,9 +161,7 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(
-                ThreadPool::new().expect("Could not create thread pool for futures"),
-            )),
+            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         }
@@ -188,9 +196,7 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: Arc::new(Mutex::new(
-                ThreadPool::new().expect("Could not create thread pool for futures"),
-            )),
+            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         })
@@ -356,10 +362,7 @@ impl Context {
     where
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.thread_pool
-            .lock()
-            .expect("Couldn't get lock on Context::thread_pool")
-            .spawn_ok(f);
+        self.thread_pool.spawn_ok(f);
     }
 
     /// returns the public capability token (if any)
@@ -395,6 +398,23 @@ impl Context {
         Err(HolochainError::ErrorGeneric(
             "No public CapTokenGrant entry type in chain".into(),
         ))
+    }
+
+    pub fn get_stats(&self) -> HcResult<InstanceStats> {
+        let state = self
+            .state()
+            .ok_or_else(|| "Couldn't get instance state".to_string())?;
+        let dht_store = state.dht();
+        let holding_map = dht_store.get_holding_map().bare();
+        Ok(InstanceStats {
+            number_held_entries: holding_map.keys().count(),
+            number_held_aspects: holding_map
+                .values()
+                .fold(0, |acc, aspect_set| acc + aspect_set.len()),
+            number_pending_validations: dht_store.queued_holding_workflows().len(),
+            number_running_zome_calls: state.nucleus().running_zome_calls.len(),
+            offline: false,
+        })
     }
 }
 

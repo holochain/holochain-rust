@@ -37,6 +37,11 @@ impl TlsBindConfig {
         self.tls_certificate = Some(TlsCertificate::with_fake_certificate());
         self
     }
+
+    pub fn dev_certificate(mut self) -> Self {
+        self.tls_certificate = Some(TlsCertificate::generate_dev());
+        self
+    }
 }
 
 impl InStreamConfig for TlsBindConfig {}
@@ -248,6 +253,15 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         }
     }
 
+    fn remote_url(&self) -> Url2 {
+        let mut url = match self.state.as_ref().unwrap() {
+            TlsState::MidHandshake(s) => s.get_ref().remote_url(),
+            TlsState::Ready(s) => s.get_ref().remote_url(),
+        };
+        url.set_scheme(SCHEME).unwrap();
+        url
+    }
+
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {
         self.priv_process()?;
         self.priv_write_pending()?;
@@ -330,7 +344,10 @@ mod tests {
         }
     }
 
-    fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(mut listener: InStreamListenerTls<SubL>, c: C) {
+    fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(
+        mut listener: InStreamListenerTls<SubL>,
+        c: C,
+    ) {
         let (send_binding, recv_binding) = crossbeam_channel::unbounded();
 
         let server_thread = std::thread::spawn(move || {
@@ -346,6 +363,10 @@ mod tests {
             }
             .into_std_stream();
 
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
+
             srv.write(b"hello from server").unwrap();
             srv.flush().unwrap();
 
@@ -359,8 +380,10 @@ mod tests {
 
             let mut cli: StdStreamAdapter<InStreamTls<SubL::StreamStd>> =
                 InStreamTls::connect(&binding, TlsConnectConfig::new(c))
-                .unwrap()
-                .into_std_stream();
+                    .unwrap()
+                    .into_std_stream();
+
+            assert_eq!(binding.as_str(), cli.remote_url().as_str());
 
             cli.write(b"hello from client").unwrap();
             cli.flush().unwrap();

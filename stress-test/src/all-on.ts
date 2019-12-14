@@ -1,13 +1,13 @@
 import * as R from 'ramda'
 import { Batch } from '@holochain/tryorama-stress-utils'
-import {configBatchSimple} from './config'
+import {configBatch} from './config'
 
 const trace = R.tap(x => console.log('{T}', x))
 
 module.exports = (scenario, N, M) => {
 
   scenario('one at a time', async (s, t) => {
-    const players = R.values(await s.players(configBatchSimple(N, M), true))
+    const players = R.values(await s.players(configBatch(N, M), true))
     const batch = new Batch(players).iteration('series')
 
     // Make every instance of every conductor commit an entry
@@ -48,7 +48,7 @@ module.exports = (scenario, N, M) => {
   })
 
   scenario('all at once', async (s, t) => {
-    const players = R.values(await s.players(configBatchSimple(N, M), true))
+    const players = R.values(await s.players(configBatch(N, M), true))
     const batch = new Batch(players).iteration('parallel')
 
     const commitResults = await batch.mapInstances<any>(instance =>

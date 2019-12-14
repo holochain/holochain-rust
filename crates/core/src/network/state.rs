@@ -39,6 +39,7 @@ pub struct NetworkState {
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
     pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
+    pub get_validation_package_timeouts: HashMap<Address, (SystemTime, Duration)>,
 
     /// This stores every open (= waiting for response) node-to-node messages.
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
@@ -66,6 +67,7 @@ impl NetworkState {
             get_query_results: HashMap::new(),
             query_timeouts: HashMap::new(),
             get_validation_package_results: HashMap::new(),
+            get_validation_package_timeouts: HashMap::new(),
             direct_message_connections: HashMap::new(),
             direct_message_timeouts: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),

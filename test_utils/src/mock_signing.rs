@@ -80,6 +80,7 @@ pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
 /// This enables unit testing of core code that creates signatures without
 /// depending on the conductor or actual key files.
 pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String {
+    let payload = std::str::from_utf8(&base64::decode(&payload).unwrap()).unwrap().to_string();
     TEST_AGENT_KEYBUNDLES
         .lock()
         .unwrap()
@@ -115,6 +116,7 @@ pub fn mock_encrypt(payload: String, agent_id: &AgentId) -> String {
 /// This enables unit testing of core code that creates signatures without
 /// depending on the conductor or actual key files.
 pub fn mock_decrypt(payload: String, agent_id: &AgentId) -> String {
+    let payload = std::str::from_utf8(&base64::decode(&payload).unwrap()).unwrap().to_string();
     TEST_AGENT_KEYBUNDLES
         .lock()
         .unwrap()
@@ -171,8 +173,8 @@ pub fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
                 key
             )))?
             .to_string())?;
-
-        Ok(json!({"payload": payload, "signature": mock_signer(payload, &sign_agent)}))
+        let decoded_payload = std::str::from_utf8(&base64::decode(&payload).unwrap()).unwrap().to_string();
+        Ok(json!({"payload": payload, "signature": mock_signer(decoded_payload, &sign_agent)}))
     });
 
     let encrypt_agent = agent_id.clone();

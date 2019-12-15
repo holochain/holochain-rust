@@ -266,7 +266,8 @@ impl DhtStore {
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
         // calculate the leaf dependencies (the things we can validate right now)
-        let free_dependencies = get_free_dependencies(&Vec::from(self.queued_holding_workflows.clone()));
+        let free_dependencies =
+            get_free_dependencies(&Vec::from(self.queued_holding_workflows.clone()));
 
         // respect the delays on the leaf nodes
         free_dependencies
@@ -308,8 +309,9 @@ impl DhtStore {
 
 use im::HashSet;
 
-fn get_free_dependencies(pending: &[PendingValidationWithTimeout]) -> Vec<PendingValidationWithTimeout>
-{
+fn get_free_dependencies(
+    pending: &[PendingValidationWithTimeout],
+) -> Vec<PendingValidationWithTimeout> {
     // collect up the address of everything we have in the pending queue
     let unique_pending: HashSet<Address> = pending
         .iter()

@@ -5,7 +5,7 @@ let
   script = pkgs.writeShellScriptBin name
   ''
   set -euxo pipefail
-  CARGO_TARGET_DIR=$HC_TARGET_PREFIX/target/cli/install
+  CARGO_TARGET_DIR=$CARGO_TARGET_DIR/cli/install
   echo $CARGO_TARGET_DIR
   cargo install -f --path crates/cli
   '';

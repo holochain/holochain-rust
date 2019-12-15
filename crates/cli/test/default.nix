@@ -6,7 +6,7 @@ let
   script = pkgs.writeShellScriptBin name
   ''
   set -euxo pipefail
-  cargo test -p hc --target-dir "$HC_TARGET_PREFIX"/target/cli-test
+  cargo test -p hc --target-dir "$CARGO_TARGET_DIR"/cli-test
   bats crates/cli/test/hc.bats
   '';
 in

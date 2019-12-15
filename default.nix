@@ -34,7 +34,7 @@ with holonix.pkgs;
     export AWS_CONFIG_FILE=`pwd`/.aws/config
     RUST_LOG=sim1h=trace
     export HC_TARGET_PREFIX=$NIX_ENV_PREFIX
-    export CARGO_TARGET_DIR=$HC_TARGET_PREFIX
+    export CARGO_TARGET_DIR="$HC_TARGET_PREFIX/target"
     export CARGO_CACHE_RUSTC_INFO=1
     ''
     ];

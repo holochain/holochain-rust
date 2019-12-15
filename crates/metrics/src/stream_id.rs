@@ -1,26 +1,27 @@
 /// A stream id represents a unique entity which provided a metric.
 use chrono::prelude::*;
-use std::time::SystemTime;
+use std::convert::{TryInto, TryFrom};
+use std::collections::{HashMap, HashSet};
+
 #[derive(Shrinkwrap, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct StreamId(String);
+pub struct StreamId(pub String);
 
 impl StreamId {
-    
     pub fn new<S:Into<String>>(s:S) -> Self {
-        StreamId(s.into()) 
+        StreamId(s.into())
     }
 }
 
-impl TryInto<(SystemTime, String)> for StreamId {
+impl TryInto<(DateTime<FixedOffset>, String)> for StreamId {
 
-   type Error = ParseResult<DateTime<FixedOffset>>; 
+   type Error = chrono::ParseError;
 
-   fn try_into(&self) -> Result<(SystemTime, String), Self::Error> {
+   fn try_into(&self) -> Result<(DateTime<FixedOffset>, String), Self::Error> {
 
-       let date_str = self.0;
-       let date = DateTime::parse_from_str(date_str, "%Y-%m-%d_%H:%M:%S")?;
+       let date_str = self.0.clone();
+       let date = DateTime::parse_from_str(date_str.as_str(), "%Y-%m-%d_%H:%M:%S")?;
 
-       Ok((date.to_time(), date_str))
+       Ok((date, date_str))
    }
 }
 
@@ -33,6 +34,7 @@ pub struct ScenarioData {
     dna_name: String,
     scenario_name: String,
     player_name: String,
+    instance_id: String
 }
 
 impl Into<String> for ScenarioData {
@@ -62,13 +64,14 @@ impl TryFrom<String> for ScenarioData {
             dna_name: split[2].into(),
             scenario_name: split[3].into(),
             player_name: split[4].into(),
+            instance_id: split[5].into()
         })
     }
 }
 
-impl TryFrom<LogStream> for ScenarioData {
+impl TryFrom<rusoto_logs::LogStream> for ScenarioData {
     type Error = String;
-    fn try_from(log_stream: LogStream) -> Result<Self, Self::Error> {
+    fn try_from(log_stream: rusoto_logs::LogStream) -> Result<Self, Self::Error> {
         let result: Result<Self, Self::Error> = log_stream
             .log_stream_name
             .map(|x| Ok(x))
@@ -77,6 +80,21 @@ impl TryFrom<LogStream> for ScenarioData {
         result
     }
 }
+
+
+// Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
+// Default pattern agggregate by the entire stream id:
+// semantically: run_name.net_type.dna.scenario.conductor_id.instance_id
+// Define !p to indicate substitution of regex p into an expression
+// regex rule: p = [\\w\\d\\-_]+
+// regex: (!p\\.!p\\.!p\\.!p\\.!p\\.!p)
+// By conductor (over all instances)
+// run_name.net_type.dna.sceanrio.conductor_id.*
+// regex: (!p\\.!p\\.!p\\.!p\\.!p)\\.!p
+// By scenario (over all conductors and instances)
+// run_name.net_type.dna.scenario.*
+// regex: (!p\\.!p\\.!p\\.!p)\\.!p\\.!p
+
 
 impl ScenarioData {
     /// Groups by everything _but_ the player name

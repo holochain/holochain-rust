@@ -19,6 +19,7 @@ pub mod config;
 pub mod logger;
 pub mod metrics;
 pub mod stats;
+pub mod stream_id;
 
 pub use cloudwatch::*;
 pub use config::*;

@@ -1,9 +1,8 @@
 { pkgs }:
 let
-  name-cluster = "hc-app-spec-cluster-test";
-
-  script-cluster = pkgs.writeShellScriptBin name-cluster
+  script = pkgs.writeShellScriptBin "hc-app-spec-cluster-test"
   ''
+  set -euxo pipefail
   hc-cli-install
   hc-conductor-install
    ( cd hc_cluster_test && npm install && ./node_modules/.bin/tsc)
@@ -12,5 +11,5 @@ let
   '';
 in
 {
- buildInputs = [ script-cluster ];
+ buildInputs = [ script ];
 }

@@ -266,7 +266,7 @@ impl DhtStore {
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
         // calculate the leaf dependencies (the things we can validate right now)
-        let free_dependencies = get_free_dependencies(&self.queued_holding_workflows);
+        let free_dependencies = get_free_dependencies(&Vec::from(self.queued_holding_workflows.clone()));
 
         // respect the delays on the leaf nodes
         free_dependencies
@@ -306,30 +306,27 @@ impl DhtStore {
     }
 }
 
-use std::collections::HashSet;
+use im::HashSet;
 
-fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
-where
-    I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
+fn get_free_dependencies(pending: &[PendingValidationWithTimeout]) -> Vec<PendingValidationWithTimeout>
 {
     // collect up the address of everything we have in the pending queue
     let unique_pending: HashSet<Address> = pending
-        .clone()
-        .into_iter()
+        .iter()
         .map(|p| p.pending.entry_with_header.entry.address())
         .collect();
 
     // only return those that don't have anything also pending as a dependency
     // as we know these will always fail
     pending
-        .clone()
-        .into_iter()
+        .iter()
         .filter(|p| {
             p.pending
                 .dependencies
                 .iter()
                 .all(|dep_addr| !unique_pending.contains(dep_addr))
         })
+        .cloned()
         .collect()
 }
 

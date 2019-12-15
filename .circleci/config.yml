@@ -92,7 +92,7 @@ jobs:
    - checkout
    - run:
        name: DynamoDB
-       command: nix-shell --run dynamodb-memory
+       command: nix-shell --run dynamodb
        background: true
    - run:
       name: wait for dynamodb

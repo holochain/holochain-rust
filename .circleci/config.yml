@@ -329,7 +329,7 @@ workflows:
         only:
          - develop
          - final-exam
-         - 2019-12-12-holonix-bump
+         # - 2019-12-12-holonix-bump
    - docker-build-circle-build:
       requires:
        - docker-build-latest

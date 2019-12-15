@@ -35,6 +35,7 @@ with holonix.pkgs;
     RUST_LOG=sim1h=trace
     export HC_TARGET_PREFIX=$NIX_ENV_PREFIX
     export CARGO_TARGET_DIR=$HC_TARGET_PREFIX
+    export CARGO_CACHE_RUSTC_INFO=1
     ''
     ];
 

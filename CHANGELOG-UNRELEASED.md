@@ -20,4 +20,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Fixes a panic in the sim2h server that can happen if the last node of a space leaves just as a second node connects. [#1977](https://github.com/holochain/holochain-rust/pull/1977)
+
 ### Security

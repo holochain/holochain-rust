@@ -99,7 +99,7 @@ jobs:
       command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: app spec tests
-       command: nix-shell --run hc-app-spec-test-sim1h
+       command: nix-shell --run 'hc-test-app-spec app_spec sim1h'
        no_output_timeout: 20m
 
  app-spec-tests-sim2h:
@@ -115,7 +115,7 @@ jobs:
          no_output_timeout: 20m
      - run:
          name: app spec tests
-         command: nix-shell --run hc-app-spec-test-sim2h
+         command: nix-shell --run 'hc-test-app-spec app_spec sim2h'
          no_output_timeout: 20m
 
  cluster-tests:
@@ -302,16 +302,10 @@ workflows:
    - fmt
    - app-spec-tests-sim1h
    - app-spec-tests-sim2h
-   # - app-spec-tests-memory
-   # - app-spec-tests-websocket
-   # @todo reimplement proc tests properly
-   # i.e. don't copy and paste app spec and expec it to work with stale state
-   # - app-spec-proc-tests
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
-   # @todo this was flakey
-   # - stress-tests-sim1h
+   - stress-tests-sim1h
    - stress-tests-sim2h
 
    - docker-build-minimal:

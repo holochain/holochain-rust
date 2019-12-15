@@ -16,5 +16,9 @@ in
  ++ (pkgs.callPackage ./fmt {
   pkgs = pkgs;
  }).buildInputs
+
+ ++ (pkgs.callPackage ./app-spec {
+  pkgs = pkgs;
+ }).buildInputs
  ;
 }

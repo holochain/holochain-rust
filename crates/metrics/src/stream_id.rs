@@ -1,29 +1,30 @@
-/// A stream id represents a unique entity which provided a metric.
-use chrono::prelude::*;
-use std::convert::{TryInto, TryFrom};
 use std::collections::{HashMap, HashSet};
+/// A stream id represents a unique entity which provided a metric.
+//use chrono::prelude::*;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Shrinkwrap, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct StreamId(pub String);
 
 impl StreamId {
-    pub fn new<S:Into<String>>(s:S) -> Self {
+    pub fn new<S: Into<String>>(s: S) -> Self {
         StreamId(s.into())
     }
 }
-
+/*
 impl TryInto<(DateTime<FixedOffset>, String)> for StreamId {
 
    type Error = chrono::ParseError;
 
    fn try_into(&self) -> Result<(DateTime<FixedOffset>, String), Self::Error> {
 
-       let date_str = self.0.clone();
+       let date_str : String = self.0.clone();
        let date = DateTime::parse_from_str(date_str.as_str(), "%Y-%m-%d_%H:%M:%S")?;
 
        Ok((date, date_str))
    }
 }
+*/
 
 const LOG_STREAM_SEPARATOR: &str = ".";
 
@@ -34,7 +35,7 @@ pub struct ScenarioData {
     dna_name: String,
     scenario_name: String,
     player_name: String,
-    instance_id: String
+    instance_id: String,
 }
 
 impl Into<String> for ScenarioData {
@@ -64,7 +65,7 @@ impl TryFrom<String> for ScenarioData {
             dna_name: split[2].into(),
             scenario_name: split[3].into(),
             player_name: split[4].into(),
-            instance_id: split[5].into()
+            instance_id: split[5].into(),
         })
     }
 }
@@ -81,7 +82,6 @@ impl TryFrom<rusoto_logs::LogStream> for ScenarioData {
     }
 }
 
-
 // Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
 // Default pattern agggregate by the entire stream id:
 // semantically: run_name.net_type.dna.scenario.conductor_id.instance_id
@@ -95,7 +95,6 @@ impl TryFrom<rusoto_logs::LogStream> for ScenarioData {
 // run_name.net_type.dna.scenario.*
 // regex: (!p\\.!p\\.!p\\.!p)\\.!p\\.!p
 
-
 impl ScenarioData {
     /// Groups by everything _but_ the player name
     fn without_player_name(&self) -> String {
@@ -104,7 +103,6 @@ impl ScenarioData {
             self.run_name, self.net_name, self.dna_name, self.scenario_name
         )
     }
-
 
     /// Groups a log stream name by its scenario name, which is by convention is the 2nd to last field.
     /// Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
@@ -121,8 +119,5 @@ impl ScenarioData {
             }
             grouped
         })
+    }
 }
-
-
-}
-

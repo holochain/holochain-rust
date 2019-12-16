@@ -1,29 +1,36 @@
-version: 2
+version: 2.1
 
+commands:
+ build-docker:
+  description: "Build and deploy a docker box"
+  parameters:
+   box:
+    type: string
+    default: "minimal"
+  steps:
+   - checkout
+   - run: ./docker/login
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/build << parameters.box >> $CIRCLE_BRANCH
+   - run: ./docker/push << parameters.box >> $CIRCLE_BRANCH
 
 jobs:
  # must be called build for local circle cli to work
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.build.develop
   resource_class: xlarge
   steps:
    - checkout
-   - run:
-       name: DynamoDB
-       command: nix-shell --run dynamodb-memory
-       background: true
-   - run:
-      name: wait for dynamodb
-      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
       command: nix-shell --run hc-rust-test
       no_output_timeout: 20m
 
  fmt:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.fmt.develop
   steps:
    - checkout
    - run:
@@ -79,25 +86,25 @@ jobs:
 
  app-spec-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.sim1h.develop
   resource_class: xlarge
   steps:
    - checkout
    - run:
        name: DynamoDB
-       command: nix-shell --run dynamodb-memory
+       command: nix-shell --run dynamodb
        background: true
    - run:
       name: wait for dynamodb
       command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
    - run:
        name: app spec tests
-       command: nix-shell --run hc-app-spec-test-sim1h
+       command: nix-shell --run 'hc-test-app-spec app_spec sim1h'
        no_output_timeout: 20m
 
  app-spec-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest.develop
+     - image: holochain/holochain-rust:circle.sim2h.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -108,55 +115,12 @@ jobs:
          no_output_timeout: 20m
      - run:
          name: app spec tests
-         command: nix-shell --run hc-app-spec-test-sim2h
+         command: nix-shell --run 'hc-test-app-spec app_spec sim2h'
          no_output_timeout: 20m
-# app-spec-tests-n3h:
-#  docker:
-#   - image: holochain/holochain-rust:latest.develop
-#  resource_class: xlarge
-#  steps:
-#   - checkout
-#
-#   - run:
-#       name: app spec tests
-#       command: nix-shell --run "hc-app-spec-test n3h"
-#
-# app-spec-tests-memory:
-#  docker:
-#   - image: holochain/holochain-rust:latest.develop
-#  resource_class: xlarge
-#  steps:
-#   - checkout
-#
-#   - run:
-#       name: app spec tests
-#       command: nix-shell --run "hc-app-spec-test memory"
-#
-# app-spec-tests-websocket:
-#  docker:
-#   - image: holochain/holochain-rust:latest.develop
-#  resource_class: xlarge
-#  steps:
-#   - checkout
-#
-#   - run:
-#       name: app spec tests
-#       command: nix-shell --run "hc-app-spec-test websocket"
-
- app-spec-proc-tests:
-  docker:
-   - image: holochain/holonix:latest
-  resource_class: xlarge
-  steps:
-   - checkout
-
-   - run:
-       name: proc macro app spec tests
-       command: nix-shell --run hc-app-spec-test-proc
 
  cluster-tests:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.sim2h.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -172,7 +136,7 @@ jobs:
 
  stress-tests-sim1h:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.sim1h.develop
   resource_class: xlarge
   steps:
    - checkout
@@ -190,7 +154,7 @@ jobs:
 
  stress-tests-sim2h:
    docker:
-     - image: holochain/holochain-rust:latest.develop
+     - image: holochain/holochain-rust:circle.sim2h.develop
    resource_class: xlarge
    steps:
      - checkout
@@ -206,7 +170,7 @@ jobs:
 
  cli-tests:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.cli-tests.develop
   steps:
    - checkout
 
@@ -217,28 +181,15 @@ jobs:
 
  wasm-conductor-tests:
   docker:
-   - image: holochain/holochain-rust:latest.develop
+   - image: holochain/holochain-rust:circle.wasm-conductor-tests.develop
   steps:
    - checkout
-
    - run:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
        no_output_timeout: 20m
 
- cold.mac.10.nix:
-  macos:
-   xcode: "10.2.0"
-  steps:
-   - checkout
-   - run:
-      name: Install and run all tests via nix
-      command: |
-       curl https://nixos.org/nix/install | sh
-       . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
-       nix-shell --run hc-test
-
- deploy.mac:
+ deploy-mac:
   macos:
    xcode: "10.2.0"
   steps:
@@ -251,7 +202,7 @@ jobs:
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
- deploy.linux:
+ deploy-linux:
   docker:
    - image: holochain/holonix:ubuntu
   steps:
@@ -264,7 +215,7 @@ jobs:
        . /home/docker/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
- deploy.crates:
+ deploy-crates:
   docker:
    - image: holochain/holonix:latest
   steps:
@@ -273,46 +224,75 @@ jobs:
       no_output_timeout: 20m
       command: nix-shell --run hc-release-hook-publish
 
- docker.build.latest:
+ docker-build-latest:
   resource_class: large
   machine: true
   steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timeout: 20m
-      command: ./docker/build latest $CIRCLE_BRANCH
-   - run: ./docker/push latest $CIRCLE_BRANCH
+   - build-docker:
+      box: latest
 
- docker.build.sim2h_server:
+ docker-build-circle-build:
+  resource_class: large
   machine: true
   steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timeout: 20m
-      command: ./docker/build sim2h_server $CIRCLE_BRANCH
-   - run: ./docker/push sim2h_server $CIRCLE_BRANCH
+   - build-docker:
+      box: circle.build
 
- docker.build.trycp_server:
+ docker-build-circle-sim1h:
+  resource_class: large
   machine: true
   steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timeout: 20m
-      command: ./docker/build trycp_server $CIRCLE_BRANCH
-   - run: ./docker/push trycp_server $CIRCLE_BRANCH
+   - build-docker:
+      box: circle.sim1h
 
- docker.build.minimal:
+ docker-build-circle-sim2h:
+  resource_class: large
   machine: true
   steps:
-   - checkout
-   - run: ./docker/login
-   - run:
-      no_output_timout: 20m
-      command: ./docker/build minimal $CIRCLE_BRANCH
-   - run: ./docker/push minimal $CIRCLE_BRANCH
+   - build-docker:
+      box: circle.sim2h
+
+ docker-build-circle-cli-tests:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.cli-tests
+
+ docker-build-circle-fmt:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.fmt
+
+ docker-build-circle-wasm-conductor-tests:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: circle.wasm-conductor-tests
+
+ docker-build-sim2h-server:
+  resource_class: large
+  machine: true
+  steps:
+  - build-docker:
+     box: sim2h_server
+
+ docker-build-trycp-server:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: trycp_server
+
+ docker-build-minimal:
+  resource_class: large
+  machine: true
+  steps:
+   - build-docker:
+      box: minimal
 
 workflows:
  version: 2
@@ -320,65 +300,69 @@ workflows:
   jobs:
    - build
    - fmt
-   - app-spec-tests-sim1h
+   # @todo flakey websocket connections
+   # - app-spec-tests-sim1h
+   # - stress-tests-sim1h
    - app-spec-tests-sim2h
-   # - app-spec-tests-memory
-   # - app-spec-tests-websocket
-   # @todo reimplement proc tests properly
-   # i.e. don't copy and paste app spec and expec it to work with stale state
-   # - app-spec-proc-tests
+   - stress-tests-sim2h
    - cluster-tests
    - cli-tests
    - wasm-conductor-tests
-   # @todo this was flakey
-   # - stress-tests-sim1h
-   - stress-tests-sim2h
 
-   - docker.build.minimal:
+   - docker-build-minimal:
       filters:
        branches:
         only:
          - 2019-12-04-docker-timeouts
          - develop
          - final-exam
-   - docker.build.trycp_server:
+   - docker-build-trycp-server:
       requires:
-       - docker.build.minimal
-   - docker.build.sim2h_server:
+       - docker-build-minimal
+   - docker-build-sim2h-server:
       requires:
-       - docker.build.minimal
-   - docker.build.latest:
+       - docker-build-minimal
+
+   - docker-build-latest:
       filters:
        branches:
         only:
          - develop
          - final-exam
-         - 2019-12-07-docker-latest
-
- cold.mac:
-  jobs:
-   - cold.mac.10.nix:
-      filters:
-       branches:
-        only:
-         - develop
-
+   - docker-build-circle-build:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-sim1h:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-sim2h:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-cli-tests:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-fmt:
+      requires:
+       - docker-build-latest
+   - docker-build-circle-wasm-conductor-tests:
+      requires:
+       - docker-build-latest
 
  deploy:
   jobs:
-   - deploy.mac:
+   - deploy-mac:
       filters:
        branches:
         ignore: /.*/
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
-   - deploy.linux:
+   - deploy-linux:
       filters:
        branches:
         ignore: /.*/
        tags:
         only: /^v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$/
-   - deploy.crates:
+   - deploy-crates:
       filters:
        branches:
         ignore: /.*/

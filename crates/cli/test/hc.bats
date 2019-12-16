@@ -51,6 +51,8 @@ teardown () {
  run hc generate "zomes/$zome_name"
 
  echo '# hc test' >&3
+ export CARGO_TARGET_DIR="$CARGO_TARGET_DIR/cli/hc-test"
+ echo "# $CARGO_TARGET_DIR" >&3
  run hc test
 
 }

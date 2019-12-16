@@ -165,6 +165,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         match result {
             Ok((stream, _response)) => {
                 self.state = Some(WssState::Ready(stream));
+                self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {
@@ -182,6 +183,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         match result {
             Ok(stream) => {
                 self.state = Some(WssState::Ready(stream));
+                self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {
@@ -368,6 +370,14 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
 mod tests {
     use super::*;
 
+    fn get_ginormsg(size: usize) -> Vec<u8> {
+        let mut out = Vec::with_capacity(size);
+        for i in 0..size {
+            out.push((i % 256) as u8);
+        }
+        out
+    }
+
     fn wait_read<Sub: 'static + InStreamStd>(s: &mut InStreamWss<Sub>) -> WsFrame {
         let mut out = WsFrame::default();
         loop {
@@ -406,6 +416,9 @@ mod tests {
 
             let res = wait_read(&mut srv);
             assert_eq!("hello from client", res.as_str());
+
+            srv.write(get_ginormsg(20000).into()).unwrap();
+            srv.flush().unwrap();
         });
 
         let client_thread = std::thread::spawn(move || {
@@ -422,6 +435,27 @@ mod tests {
 
             let res = wait_read(&mut cli);
             assert_eq!("hello from server", res.as_str());
+
+            let res = wait_read(&mut cli).as_bytes().to_vec();
+            let ginormsg = get_ginormsg(20000);
+            if ginormsg != res {
+                let mut i = 0;
+                loop {
+                    if i >= res.len() || i >= ginormsg.len() {
+                        break;
+                    }
+                    if res.get(i) != ginormsg.get(i) {
+                        println!(
+                            "mismatch at byte {}: {:?} != {:?}",
+                            i,
+                            res.get(i),
+                            ginormsg.get(i),
+                        );
+                    }
+                    i += 1;
+                }
+                panic!("expected {} bytes, got {} bytes", ginormsg.len(), res.len());
+            }
         });
 
         server_thread.join().unwrap();
@@ -449,7 +483,6 @@ mod tests {
         let config = WssBindConfig::new(config);
         let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
             InStreamListenerWss::bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
-        //suite(l, TcpConnectConfig::default());
         suite(l, TlsConnectConfig::new(TcpConnectConfig::default()));
     }
 }

@@ -34,5 +34,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - paths in cluster test are no longer hardcoded in a way that breaks `$CARGO_TARGET_DIR`
 - `cli` and `conductor` are now both uninstalled again after running app spec tests
+- Fixes a panic in the sim2h server that can happen if the last node of a space leaves just as a second node connects. [#1977](https://github.com/holochain/holochain-rust/pull/1977)
 
 ### Security

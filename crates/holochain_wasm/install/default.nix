@@ -1,11 +1,12 @@
 { pkgs }:
 let
-  name = "hc-conductor-wasm-install";
+  name = "hc-conductor-wasm-bindgen-install";
 
   version = "0.2.32";
 
   script = pkgs.writeShellScriptBin name
   ''
+  set -euxo pipefail
   # check if wasm-bindgen is already installed
   installed () { command -v wasm-bindgen &> /dev/null; };
 
@@ -15,7 +16,7 @@ let
   # drop the incorrect version of wasm-bindgen
   if installed && ! correct-version;
    then
-        hc-conductor-wasm-uninstall;
+        hc-conductor-wasm-bindgen-uninstall;
   fi;
 
   # install the correct version of wasm-bindgen

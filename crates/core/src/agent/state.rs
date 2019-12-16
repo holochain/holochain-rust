@@ -269,27 +269,23 @@ fn reduce_commit_entry(
     // Only make a new header and link it if the entry isn't already in the chain
     let entry_addres = entry.address();
     let result = match agent_state.chain_store().contains(&entry_addres) {
-        Ok(false) => {
-            create_new_chain_header(
-                &entry,
-                agent_state,
-                &StateWrapper::from(root_state.clone()),
-                &maybe_link_update_delete,
-                provenances,
-            )
-            .and_then(|chain_header| {
-                agent_state.chain_store.add(entry)?;
-                agent_state.chain_store.add(&chain_header)?;
-                Ok(chain_header)
-            })
-            .and_then(|chain_header| {
-                agent_state.top_chain_header = Some(chain_header);
-                Ok(entry_addres)
-            })
-        },
-        Ok(true) => {
+        Ok(false) => create_new_chain_header(
+            &entry,
+            agent_state,
+            &StateWrapper::from(root_state.clone()),
+            &maybe_link_update_delete,
+            provenances,
+        )
+        .and_then(|chain_header| {
+            agent_state.chain_store.add(entry)?;
+            agent_state.chain_store.add(&chain_header)?;
+            Ok(chain_header)
+        })
+        .and_then(|chain_header| {
+            agent_state.top_chain_header = Some(chain_header);
             Ok(entry_addres)
-        },
+        }),
+        Ok(true) => Ok(entry_addres),
         Err(e) => Err(e),
     };
 

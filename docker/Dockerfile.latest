@@ -10,6 +10,3 @@ RUN tar --strip-components=1 -zxvf $DOCKER_BRANCH.tar.gz
 
 # warm things
 RUN nix-shell --run echo
-RUN nix-shell --run hc-sim2h-server-install
-# @todo this fails because the tests don't pass without a git repo
-RUN nix-shell --run hc-test

@@ -159,6 +159,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         match result {
             Ok((stream, _response)) => {
                 self.state = Some(WssState::Ready(stream));
+                self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {
@@ -176,6 +177,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         match result {
             Ok(stream) => {
                 self.state = Some(WssState::Ready(stream));
+                self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {

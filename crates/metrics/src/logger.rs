@@ -85,7 +85,7 @@ impl From<&Metric> for LogLine {
 
 impl Into<String> for LogLine {
     fn into(self) -> String {
-        self.0.clone()
+        self.0
     }
 }
 
@@ -98,23 +98,20 @@ impl std::fmt::Display for LogLine {
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;
     fn try_from(source: LogLine) -> Result<Metric, ParseError> {
-        println!("TRY FROM0");
         let stripped = strip_ansi_escapes::strip(source.0).unwrap();
-        println!("TRY FROM1");
-        let stripped2 = std::str::from_utf8(stripped.as_slice()).unwrap();
-        println!("TRY FROM2");
+        let stripped = std::str::from_utf8(stripped.as_slice()).unwrap();
         let cap = PARSE_METRIC_REGEX
-            .captures_iter(stripped2.clone())
+            .captures_iter(stripped)
             .next()
             .map(|cap| Ok(cap))
             .unwrap_or_else(|| {
                 Err(ParseError(format!(
                     "expected at least one capture group for a metric value: {:?}",
-                    stripped2
+                    stripped
                 )))
             })?;
         let timestamp = LOG_HEADER_REGEX
-            .captures_iter(stripped2)
+            .captures_iter(stripped)
             .next()
             .and_then(|s| {
                 let to_parse = &s[1];
@@ -123,7 +120,7 @@ impl TryFrom<LogLine> for Metric {
                     .ok()
             })
             .map(|t: NaiveDateTime| {
-                let dt: DateTime<_> = DateTime::from_utc(t, Utc.clone());
+                let dt: DateTime<_> = DateTime::from_utc(t, Utc);
                 dt
             });
         let metric_name: String = cap[1].to_string();

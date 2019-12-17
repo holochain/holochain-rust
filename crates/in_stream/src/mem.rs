@@ -135,6 +135,10 @@ impl InStream<&mut [u8], &[u8]> for InStreamMem {
         get_mem_manager().connect(url)
     }
 
+    fn is_ready(&self) -> bool {
+        true
+    }
+
     fn remote_url(&self) -> Url2 {
         self.url.clone()
     }

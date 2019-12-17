@@ -18,6 +18,7 @@ use lib3h_protocol::{
     Address,
 };
 use log::*;
+use in_stream::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     websocket::{
@@ -28,8 +29,14 @@ use sim2h::{
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
+use url2::prelude::*;
 
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
+
+fn connect(url: Lib3hUri) -> NetResult<InStreamWss<InStreamTls<InStreamTcp>>> {
+    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+    Ok(InStreamWss::connect(&url::Url::from(url).into(), config)?)
+}
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -40,7 +47,7 @@ pub struct Sim2hConfig {
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
     handler: NetHandler,
-    stream_manager: StreamManager<std::net::TcpStream>,
+    connection: Option<InStreamWss<InStreamTls<InStreamTcp>>>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
     stream_events: Vec<StreamEvent>,
@@ -48,11 +55,11 @@ pub struct Sim2hWorker {
     space_data: Option<SpaceData>,
     agent_id: Address,
     conductor_api: ConductorApi,
-    time_of_last_sent: Instant,
+    //time_of_last_sent: Instant,
     connection_status: ConnectionStatus,
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
-    outgoing_failed_messages: Vec<WireMessage>,
+    outgoing_message_buffer: Vec<WireMessage>,
 }
 
 impl Sim2hWorker {
@@ -67,105 +74,103 @@ impl Sim2hWorker {
         agent_id: Address,
         conductor_api: ConductorApi,
     ) -> NetResult<Self> {
-        // NB: Switched to FakeServer for now as a quick fix, because the random port binding here is
-        // interfering with the conductor interface port which must be chosen explicitly as part of config.
-        // Since we don't need this now, let's disable that port binding for now.
-        // TODO: if needed, revert the commit containing this change to get back the real certificate
-        // and port binding.
-        let stream_manager = StreamManager::with_std_tcp_stream(TlsConfig::FakeServer);
-
         let mut instance = Self {
             handler,
-            stream_manager,
+            connection: None,
             inbox: Vec::new(),
             to_core: Vec::new(),
             stream_events: Vec::new(),
-            server_url: Url::parse(&config.sim2h_url)
-                .expect("Sim2h URL can't be parsed")
-                .into(),
+            server_url: url::Url::from(url2!("{}", config.sim2h_url)).into(),
             space_data: None,
             agent_id,
             conductor_api,
-            time_of_last_sent: Instant::now(),
+            //time_of_last_sent: Instant::now(),
             connection_status: ConnectionStatus::None,
-            time_of_last_connection_attempt: Instant::now(),
+            time_of_last_connection_attempt: Instant::now()
+                .checked_sub(RECONNECT_INTERVAL)
+                .unwrap(),
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
                 DefaultMetricPublisher::default(),
             )),
-            outgoing_failed_messages: Vec::new(),
+            outgoing_message_buffer: Vec::new(),
         };
 
-        instance.connection_status = instance
-            .try_connect(Duration::from_millis(5000))
-            .unwrap_or_else(|_| ConnectionStatus::None);
-
-        match instance.connection_status {
-            ConnectionStatus::Ready => info!("Connected to sim2h server!"),
-            ConnectionStatus::None => error!("Could not connect to sim2h server!"),
-            ConnectionStatus::Initializing => {
-                warn!("Still initializing connection to sim2h after 5 seconds of waiting")
-            }
-        };
+        instance.check_reconnect();
 
         Ok(instance)
     }
 
-    fn try_connect(&mut self, timeout: Duration) -> NetResult<ConnectionStatus> {
-        let url: url::Url = self.server_url.clone().into();
-        let clock = std::time::SystemTime::now();
-        let mut status: NetResult<ConnectionStatus> = Ok(ConnectionStatus::None);
-        loop {
-            match self.stream_manager.connection_status(&url) {
-                ConnectionStatus::Ready => return Ok(ConnectionStatus::Ready),
-                ConnectionStatus::None => {
-                    let url = self.server_url.clone().into();
-                    if let Err(e) = self.stream_manager.connect(&url) {
-                        status = Err(e.into());
-                    }
-                }
-                s => {
-                    status = Ok(s);
-                    let (_did_work, mut events) = self.stream_manager.process()?;
-                    self.stream_events.append(&mut events);
-                    std::thread::sleep(std::time::Duration::from_millis(10))
-                }
-            };
-            if clock.elapsed().unwrap() > timeout {
-                error!("Timed out waiting for connection for url {:?}", url);
-                return status;
+    /// check to see if we need to re-connect
+    /// if we don't have a ready connection within RECONNECT_INTERVAL
+    fn check_reconnect(&mut self) {
+        if let Some(c) = &self.connection {
+            if c.is_ready() {
+                return;
             }
-            std::thread::sleep(RECONNECT_INTERVAL);
+        }
+
+        if self.time_of_last_connection_attempt.elapsed() < RECONNECT_INTERVAL {
+            return;
+        }
+
+        self.time_of_last_connection_attempt = Instant::now();
+        self.connection = None;
+        if let Ok(connection) = connect(self.server_url.clone()) {
+            self.connection = Some(connection);
         }
     }
 
-    fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
-        self.time_of_last_sent = Instant::now();
-        let payload: String = message.clone().into();
-        let signature = self
-            .conductor_api
-            .execute(payload.clone(), CryptoMethod::Sign)
-            .unwrap_or_else(|e| {
-                panic!(
-                    "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
-                    payload, e
-                )
-            });
-
-        let signed_wire_message = SignedWireMessage::new(
-            message.clone(),
-            Provenance::new(self.agent_id.clone(), signature.into()),
-        );
-        let to_send: Opaque = signed_wire_message.into();
-        if let Err(e) = self.stream_manager.send(
-            &self.server_url.clone().into(),
-            to_send.as_bytes().as_slice(),
-        ) {
-            error!(
-                "TransportError trying to send message to sim2h server: {:?}",
-                e
-            );
-            self.outgoing_failed_messages.push(message);
+    fn connection_ready(&self) -> bool {
+        match &self.connection {
+            Some(c) if c.is_ready() => true,
+            _ => false,
         }
+    }
+
+    /// if we have queued wire messages and our connection is ready,
+    /// try to send them
+    fn try_send_from_outgoing_buffer(&mut self) {
+        loop {
+            if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
+                return;
+            }
+            let message = self.outgoing_message_buffer.get(0).unwrap();
+            let payload: String = message.clone().into();
+            let signature = self
+                .conductor_api
+                .execute(payload.clone(), CryptoMethod::Sign)
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
+                        payload, e
+                    )
+                });
+            let signed_wire_message = SignedWireMessage::new(
+                message.clone(),
+                Provenance::new(self.agent_id.clone(), signature.into()),
+            );
+            let to_send: Opaque = signed_wire_message.into();
+            // safe to unwrap because we check connection_ready() above
+            if let Err(e) = self.connection.as_mut().unwrap().write(to_send.to_vec().into()) {
+                error!(
+                    "TransportError trying to send message to sim2h server: {:?}",
+                    e
+                );
+                self.connection = None;
+                self.check_reconnect();
+                return;
+            }
+            // if we made it here, we successfully sent the first message
+            // we can remove it from the outgoing buffer queue
+            self.outgoing_message_buffer.remove(0);
+        }
+    }
+
+    /// queue a wire message for send
+    fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
+        // we always put messages in the outgoing buffer,
+        // they'll be sent when the connection is ready
+        self.outgoing_message_buffer.push(message);
         Ok(())
     }
 
@@ -356,36 +361,51 @@ impl NetWorker for Sim2hWorker {
 
         let mut did_something = false;
 
-        match self
-            .stream_manager
-            .connection_status(&self.server_url.clone().into())
-        {
-            ConnectionStatus::None => {
-                if self.time_of_last_connection_attempt.elapsed() > RECONNECT_INTERVAL {
-                    self.time_of_last_connection_attempt = Instant::now();
-                    warn!("No connection to sim2h server. Trying to reconnect...");
-                    if let Err(e) = self.stream_manager.connect(&self.server_url.clone().into()) {
-                        error!("TransportError trying to connect to sim2h server: {:?}", e);
+        let mut frame = WsFrame::default();
+
+        if self.connection_ready() {
+            self.try_send_from_outgoing_buffer();
+            // safe to unwrap because we check connection_ready()
+            match self.connection.as_mut().unwrap().read(&mut frame) {
+                Ok(_) => {
+                    did_something = true;
+                    if let WsFrame::Binary(payload) = frame {
+                        let payload : Opaque = payload.into();
+                        match WireMessage::try_from(&payload) {
+                            Ok(wire_message) =>
+                                if let Err(error) = self.handle_server_message(wire_message) {
+                                    error!("Error handling server message in Sim2hWorker: {:?}", error);
+                                },
+                            Err(error) =>
+                                error!(
+                                    "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
+                                    error,
+                                    payload
+                                )
+                        }
+                    } else {
+                        trace!("unhandled websocket message type: {:?}", frame);
                     }
                 }
-            }
-            ConnectionStatus::Initializing => debug!("connecting..."),
-            ConnectionStatus::Ready => {
-                let previously_failed_messages =
-                    self.outgoing_failed_messages.drain(..).collect::<Vec<_>>();
-                for message in previously_failed_messages {
-                    // Ignore error here since send_wire_message logs TransportErrors during send
-                    // and puts back the failed message into self.outgoing_failed_messages
-                    let _ = self.send_wire_message(message);
+                Err(e) if e.would_block() => (),
+                Err(e) => {
+                    error!(
+                        "TransportError trying to read message from sim2h server: {:?}",
+                        e
+                    );
+                    self.connection = None;
+                    self.check_reconnect();
                 }
             }
+        } else {
+            self.check_reconnect();
         }
 
         let client_messages = self.inbox.drain(..).collect::<Vec<_>>();
         for data in client_messages {
             debug!("CORE >> Sim2h: {:?}", data);
             // outgoing messages triggered by `self.hand_client_message` that fail because of
-            // connection status, will automatically be re-sent via `self.outgoing_failed_messages`
+            // connection status, will automatically be re-sent via `self.outgoing_message_buffer`
             if let Err(error) = self.handle_client_message(data) {
                 error!("Error handling client message in Sim2hWorker: {:?}", error);
             }
@@ -404,54 +424,6 @@ impl NetWorker for Sim2hWorker {
             did_something = true;
         }
 
-        let (_did_work, mut events) = match self.stream_manager.process() {
-            Ok((did_work, events)) => (did_work, events),
-            Err(e) => {
-                error!("Transport error: {:?}", e);
-                (false.into(), vec![])
-            }
-        };
-        self.stream_events.append(&mut events);
-        for transport_message in self.stream_events.drain(..).collect::<Vec<StreamEvent>>() {
-            match transport_message {
-                StreamEvent::ReceivedData(uri, payload) => {
-                    let uri : Lib3hUri = uri.into();
-                    if uri != self.server_url {
-                        warn!("Received data from unknown remote {:?} - ignoring", uri);
-                    } else {
-                        let payload : Opaque = payload.into();
-                        match WireMessage::try_from(&payload) {
-                            Ok(wire_message) =>
-                                if let Err(error) = self.handle_server_message(wire_message) {
-                                    error!("Error handling server message in Sim2hWorker: {:?}", error);
-                                },
-                            Err(error) =>
-                                error!(
-                                    "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
-                                    error,
-                                    payload
-                                )
-                        }
-
-
-                    }
-                }
-                StreamEvent::IncomingConnectionEstablished(uri) =>
-                    warn!("Got incoming connection from {:?} in Sim2hWorker - This should not happen and is ignored.", uri),
-                StreamEvent::ErrorOccured(uri, error) =>
-                    error!("Transport error occurred on connection to {:?}: {:?}", uri, error),
-                StreamEvent::ConnectionClosed(uri) => {
-                    warn!("Got connection close! Will try to reconnect.");
-                    if let Err(error) = self.stream_manager.close(&uri) {
-                        error!("Error when trying to close dead stream: {:?}", error);
-                    }
-                },
-                StreamEvent::ConnectResult(url, net_id) => {
-                    info!("got connect result for url: {:?}, net_id: {:?}", url, net_id)
-                }
-            }
-            did_something = true;
-        }
         if did_something {
             let latency = clock.elapsed().unwrap().as_millis();
             let metric_name = "sim2h_worker.tick.latency";

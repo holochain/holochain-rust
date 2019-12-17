@@ -193,6 +193,10 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
         }
     }
 
+    fn is_ready(&self) -> bool {
+        self.connecting.is_none()
+    }
+
     fn remote_url(&self) -> Url2 {
         self.url.clone()
     }

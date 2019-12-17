@@ -93,6 +93,11 @@ pub trait InStream<R: Sized + Debug + Send + Sync, W: Sized + Debug + Send + Syn
     /// your struct provide a wrapper with a concrete config type
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self>;
 
+    /// `true` if the stream is set-up and ready to send/receive
+    /// note that you can write before this function returns true
+    /// but your messages may be buffered / sent later
+    fn is_ready(&self) -> bool;
+
     /// access the remote url this connection represents
     fn remote_url(&self) -> Url2;
 

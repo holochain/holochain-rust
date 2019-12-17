@@ -272,6 +272,13 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
         }
     }
 
+    fn is_ready(&self) -> bool {
+        match self.state {
+            Some(WssState::Ready(_)) => true,
+            _ => false,
+        }
+    }
+
     fn remote_url(&self) -> Url2 {
         let mut url = match self.state.as_ref().unwrap() {
             WssState::MidCliHandshake(s) => s.get_ref().get_ref().remote_url(),

@@ -253,6 +253,13 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         }
     }
 
+    fn is_ready(&self) -> bool {
+        match self.state {
+            Some(TlsState::Ready(_)) => true,
+            _ => false,
+        }
+    }
+
     fn remote_url(&self) -> Url2 {
         let mut url = match self.state.as_ref().unwrap() {
             TlsState::MidHandshake(s) => s.get_ref().remote_url(),

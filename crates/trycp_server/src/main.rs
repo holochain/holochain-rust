@@ -372,12 +372,7 @@ fn main() {
     io.add_method("spawn", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
-        let failure_params: Option<(u64, u64)> = params_map.get("failureModel").and_then(|value| {
-            let sub_obj = value.as_object()?;
-            let mtbf = sub_obj.get("MTBF")?.as_u64()?;
-            let mfd = sub_obj.get("MFD")?.as_u64()?;
-            Some((mtbf, mfd))
-        });
+        let failure_params = params_map.get("failureModel");
 
         let state = state_spawn.read().unwrap();
         check_player_config(&state, &id)?;
@@ -397,7 +392,12 @@ fn main() {
             .to_string();
 
         let mut conductor = match failure_params {
-            Some((mtbf, mfd)) => {
+            Some(value) => {
+                let err = jsonrpc_core::Error::invalid_params("failureModel must be an object with integer fields MTBF and MFD in milliseconds");
+                let sub_obj = value.as_object().ok_or(err.clone())?;
+                let mtbf = sub_obj.get("MTBF").ok_or(err.clone())?.as_u64().ok_or(err.clone())?;
+                let mfd = sub_obj.get("MFD").ok_or(err.clone())?.as_u64().ok_or(err.clone())?;
+
                 Command::new("holochain")
                     .args(&["-c", &config_path])
                     .env("RUST_BACKTRACE", "full")

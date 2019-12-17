@@ -265,11 +265,11 @@ impl DhtStore {
     pub(crate) fn next_queued_holding_workflow(
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
-
-        self.queued_holding_workflows.clone()
+        self.queued_holding_workflows
+            .clone()
             .into_iter()
             // filter so only free pending (those without dependencies also pending) are considered
-            .filter(free_dependency_filter(&self.queued_holding_workflows))
+            .filter(free_pending_filter(&self.queued_holding_workflows))
             // skip those for which the sleep delay has not elapsed
             .skip_while(|PendingValidationWithTimeout { timeout, .. }| {
                 if let Some(ValidationTimeout {
@@ -307,17 +307,18 @@ impl DhtStore {
 
 use im::HashSet;
 
-fn free_dependency_filter<I>(pending: &I) -> Box<dyn Fn(&PendingValidationWithTimeout) -> bool>
+fn free_pending_filter<I>(pending: &I) -> Box<dyn Fn(&PendingValidationWithTimeout) -> bool>
 where
     I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
 {
     // collect up the address of everything we have in the pending queue
-    let unique_pending: HashSet<Address> = pending.clone()
+    let unique_pending: HashSet<Address> = pending
+        .clone()
         .into_iter()
         .map(|p| p.pending.entry_with_header.entry.address())
         .collect();
 
-   Box::new(move |p| {
+    Box::new(move |p| {
         p.pending
             .dependencies
             .iter()
@@ -392,7 +393,11 @@ pub mod tests {
         let b = pending_validation_for_entry(test_entry_b(), Vec::new());
         let pending_list = vec![a.clone(), b.clone()];
         assert_eq!(
-            pending_list.clone().into_iter().filter(free_dependency_filter(&pending_list)).collect::<Vec<_>>(),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![a, b]
         );
     }
@@ -405,7 +410,11 @@ pub mod tests {
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
         let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
-            pending_list.clone().into_iter().filter(free_dependency_filter(&pending_list)).collect::<Vec<_>>(),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![c]
         );
     }
@@ -421,7 +430,11 @@ pub mod tests {
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
         let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
-            pending_list.clone().into_iter().filter(free_dependency_filter(&pending_list)).collect::<Vec<_>>(),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![b, c]
         );
     }

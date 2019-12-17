@@ -1256,7 +1256,7 @@ impl ConductorApiBuilder {
 /// Then, if the Conductor is set up for it, it will start a new thread which continually consumes the signal channel and sends each signal over every interface via its Broadcaster.
 pub trait Interface {
     fn run(
-        &self,
+        &mut self,
         handler: IoHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;

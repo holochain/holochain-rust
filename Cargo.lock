@@ -1591,6 +1591,7 @@ dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "in_stream 0.0.40-alpha1",
  "lib3h_crypto_api 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_protocol 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",

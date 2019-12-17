@@ -260,10 +260,7 @@ pub mod tests {
     #[test]
     /// show From<Entry> for JsonString
     fn json_string_from_entry_test() {
-        assert_eq!(
-            test_entry().content(),
-            JsonString::from(test_entry())
-        );
+        assert_eq!(test_entry().content(), JsonString::from(test_entry()));
     }
 
     #[test]
@@ -300,10 +297,7 @@ pub mod tests {
             crate::agent::GOOD_ID,
         ));
         assert_eq!(expected, JsonString::from(sys_entry.clone()));
-        assert_eq!(
-            &sys_entry,
-            &Entry::try_from(expected).unwrap()
-        );
+        assert_eq!(&sys_entry, &Entry::try_from(expected).unwrap());
         assert_eq!(&sys_entry, &sys_entry.clone(),);
     }
 

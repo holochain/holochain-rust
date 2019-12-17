@@ -24,11 +24,9 @@ fn main() {
         .ok()
         .or_else(|| {
             env::var("out").ok().and_then(|out| {
-                out.split('/').last().and_then(|basename| {
-                    basename
-                        .split('-')
-                        .nth(0).map(|hash| hash.to_string())
-                })
+                out.split('/')
+                    .last()
+                    .and_then(|basename| basename.split('-').nth(0).map(|hash| hash.to_string()))
             })
         })
         .unwrap_or_else(|| "00000000000000000000000000000000".to_string());

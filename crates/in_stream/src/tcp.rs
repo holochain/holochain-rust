@@ -140,10 +140,10 @@ impl InStreamTcp {
             if let Ok(_) = self.stream.connect(&cdata.addr) {
                 self.connecting = None;
             } else if let Some(timeout) = cdata.connect_timeout {
-    if std::time::Instant::now() >= timeout {
-        return Err(ErrorKind::TimedOut.into());
-    }
-}
+                if std::time::Instant::now() >= timeout {
+                    return Err(ErrorKind::TimedOut.into());
+                }
+            }
         }
         Ok(())
     }

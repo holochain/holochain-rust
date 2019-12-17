@@ -480,8 +480,7 @@ fn show_env() {
     );
     let result = make_test_call(&mut hc, "get_version", r#"{"hash": true}"#);
     let hash_result: ZomeApiResult<String> =
-        serde_json::from_str::<ZomeApiResult<String>>(&result.unwrap().to_string())
-            .unwrap();
+        serde_json::from_str::<ZomeApiResult<String>>(&result.unwrap().to_string()).unwrap();
     assert!(hash_result.is_ok() && hash_result.unwrap().len() == 32);
 }
 

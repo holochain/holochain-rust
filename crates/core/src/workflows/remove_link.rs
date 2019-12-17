@@ -19,9 +19,11 @@ pub async fn remove_link_workflow(
 ) -> Result<(), HolochainError> {
     let (link_data, links_to_remove) = match &entry_with_header.entry {
         Entry::LinkRemove(data) => data,
-        _ => return Err(HolochainError::ErrorGeneric(
-            "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
-        )),
+        _ => {
+            return Err(HolochainError::ErrorGeneric(
+                "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
+            ))
+        }
     };
     let link = link_data.link().clone();
 

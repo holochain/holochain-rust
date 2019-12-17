@@ -56,7 +56,8 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         .filter(|e| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
-        .collect::<BTreeSet<EntityAttributeValueIndex>>().is_empty();
+        .collect::<BTreeSet<EntityAttributeValueIndex>>()
+        .is_empty();
     if has_deleted {
         crud_status = CrudStatus::Deleted;
     } else {
@@ -65,7 +66,8 @@ pub(crate) fn get_entry_crud_meta_from_dht(
             .filter(|e| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })
-            .collect::<BTreeSet<EntityAttributeValueIndex>>().is_empty();
+            .collect::<BTreeSet<EntityAttributeValueIndex>>()
+            .is_empty();
         if has_modified {
             crud_status = CrudStatus::Modified;
         }

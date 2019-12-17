@@ -112,9 +112,11 @@ pub fn get_validation_package_definition(
         EntryType::CapTokenGrant => JsonString::from(ValidationPackageDefinition::Entry),
         EntryType::AgentId => JsonString::from(ValidationPackageDefinition::Entry),
         EntryType::ChainHeader => JsonString::from(ValidationPackageDefinition::Entry),
-        _ => return Err(HolochainError::NotImplemented(
-            "get_validation_package_definition/3".into(),
-        )),
+        _ => {
+            return Err(HolochainError::NotImplemented(
+                "get_validation_package_definition/3".into(),
+            ))
+        }
     };
 
     if result.is_null() {

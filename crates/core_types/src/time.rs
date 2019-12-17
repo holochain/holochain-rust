@@ -726,7 +726,10 @@ pub mod tests {
     fn test_period_basic() {
         assert_eq!(format!("{}", Period(Duration::from_millis(0))), "0s");
         assert_eq!(format!("{}", Period(Duration::from_millis(123))), "123ms");
-        assert_eq!(format!("{}", Period(Duration::from_nanos(120_000))), "120us");
+        assert_eq!(
+            format!("{}", Period(Duration::from_nanos(120_000))),
+            "120us"
+        );
         assert_eq!(format!("{}", Period(Duration::from_nanos(100))), "100ns");
         assert_eq!(
             format!("{}", Period(Duration::from_millis(1000 * 604_800 + 1123))),

@@ -11,8 +11,6 @@ pub fn reduce_handle_custom_send_response(
 
     network_state.custom_direct_message_replys.insert(
         msg_id.clone(),
-        response
-            .clone()
-            .map_err(HolochainError::ErrorGeneric),
+        response.clone().map_err(HolochainError::ErrorGeneric),
     );
 }

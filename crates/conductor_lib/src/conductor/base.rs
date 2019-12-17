@@ -49,6 +49,7 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
+    keystore::test_hash_config,
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
@@ -243,7 +244,7 @@ impl Conductor {
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
-            hash_config: None,
+            hash_config: test_hash_config(),
             n3h_keepalive_network: None,
         }
     }

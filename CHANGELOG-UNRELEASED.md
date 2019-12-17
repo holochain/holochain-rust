@@ -25,6 +25,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - renamed `hc-conductor-wasm-install` to `hc-conductor-wasm-bindgen-install`
 - core `shellHook` can now override holonix `shellHook`
 - several `--target-dir` flags are removed in favour of `$CARGO_TARGET_DIR`
+- the passphrase hashing config is now set to faster and less secure parameters to reduce the start-up time of conductors a lot, esp. on slow devices. (will become a setting the user can choose in the future - faster and less secure config is fine for now and throughout alpha and beta) [#1986](https://github.com/holochain/holochain-rust/pull/1986)
 
 ### Deprecated
 

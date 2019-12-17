@@ -139,9 +139,7 @@ pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>)
         let state = context
             .state()
             .expect("No state present when trying to respond with gossip list");
-        let authoring_map = create_authoring_map(context.clone());
-        let holding_map = state.dht().get_holding_map().clone();
-        let address_map = AspectMap::merge(authoring_map, holding_map);
+        let address_map = state.dht().get_holding_map().clone();
 
         let action = Action::RespondGossipList(EntryListData {
             space_address: get_list_data.space_address,

@@ -28,6 +28,7 @@ use sim2h::{
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
+use lib3h_protocol::data_types::FetchEntryData;
 
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -230,9 +231,23 @@ impl Sim2hWorker {
             // Successful data response for a `HandleFetchEntryData` request
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 //let log_context = "ClientToLib3h::HandleFetchEntryResult";
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
-                ))
+                if fetch_entry_result_data.request_id == "SIM2H_WORKER" {
+                    for aspect in fetch_entry_result_data.entry.aspect_list {
+                        self.to_core.push(Lib3hServerProtocol::HandleStoreEntryAspect(
+                            StoreEntryAspectData {
+                                request_id: "".into(),
+                                space_address: fetch_entry_result_data.space_address.clone(),
+                                provider_agent_id: fetch_entry_result_data.provider_agent_id.clone(),
+                                entry_address: fetch_entry_result_data.entry.entry_address.clone(),
+                                entry_aspect: aspect,
+                            }));
+                    }
+                    Ok(())
+                } else {
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                        Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
+                    ))
+                }
             }
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
@@ -282,6 +297,17 @@ impl Sim2hWorker {
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
+                for (entry_hash, aspect_hashes) in &entry_list_data.address_map {
+                    self.to_core.push(Lib3hServerProtocol::HandleFetchEntry(
+                        FetchEntryData {
+                            space_address: entry_list_data.space_address.clone(),
+                            entry_address: entry_hash.clone(),
+                            request_id: String::from("SIM2H_WORKER"),
+                            provider_agent_id: entry_list_data.provider_agent_id.clone(),
+                            aspect_address_list: Some(aspect_hashes.clone()),
+                        }
+                    ))
+                }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
                 ))

@@ -8,6 +8,7 @@ use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
+use in_stream::*;
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
@@ -18,13 +19,8 @@ use lib3h_protocol::{
     Address,
 };
 use log::*;
-use in_stream::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    websocket::{
-        streams::{ConnectionStatus, StreamEvent, StreamManager},
-        tls::TlsConfig,
-    },
     WireError, WireMessage,
 };
 use std::{convert::TryFrom, time::Instant};
@@ -50,13 +46,10 @@ pub struct Sim2hWorker {
     connection: Option<InStreamWss<InStreamTls<InStreamTcp>>>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
-    stream_events: Vec<StreamEvent>,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
     agent_id: Address,
     conductor_api: ConductorApi,
-    //time_of_last_sent: Instant,
-    connection_status: ConnectionStatus,
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     outgoing_message_buffer: Vec<WireMessage>,
@@ -79,13 +72,10 @@ impl Sim2hWorker {
             connection: None,
             inbox: Vec::new(),
             to_core: Vec::new(),
-            stream_events: Vec::new(),
             server_url: url::Url::from(url2!("{}", config.sim2h_url)).into(),
             space_data: None,
             agent_id,
             conductor_api,
-            //time_of_last_sent: Instant::now(),
-            connection_status: ConnectionStatus::None,
             time_of_last_connection_attempt: Instant::now()
                 .checked_sub(RECONNECT_INTERVAL)
                 .unwrap(),
@@ -151,7 +141,12 @@ impl Sim2hWorker {
             );
             let to_send: Opaque = signed_wire_message.into();
             // safe to unwrap because we check connection_ready() above
-            if let Err(e) = self.connection.as_mut().unwrap().write(to_send.to_vec().into()) {
+            if let Err(e) = self
+                .connection
+                .as_mut()
+                .unwrap()
+                .write(to_send.to_vec().into())
+            {
                 error!(
                     "TransportError trying to send message to sim2h server: {:?}",
                     e
@@ -370,7 +365,7 @@ impl NetWorker for Sim2hWorker {
                 Ok(_) => {
                     did_something = true;
                     if let WsFrame::Binary(payload) = frame {
-                        let payload : Opaque = payload.into();
+                        let payload: Opaque = payload.into();
                         match WireMessage::try_from(&payload) {
                             Ok(wire_message) =>
                                 if let Err(error) = self.handle_server_message(wire_message) {

@@ -455,7 +455,9 @@ impl Conductor {
             .interfaces
             .iter()
             .map(|ic| (ic.id.clone(), self.spawn_interface_thread(ic.clone())))
-            .collect()
+            .collect();
+
+        self.start_signal_multiplexer();
     }
 
     pub fn stop_all_interfaces(&mut self) {
@@ -812,8 +814,6 @@ impl Conductor {
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }
         }
-
-        self.start_signal_multiplexer();
 
         for ui_interface_config in self.config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));

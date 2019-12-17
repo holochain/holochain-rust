@@ -79,7 +79,7 @@ impl TryFrom<Vec<ResultField>> for Metric {
                                 .ok();
                             aws_date.map(|x| *x)
                         });
-                        timestamp = timestamp2.map(|_x| panic!("TODO"));
+                        timestamp = timestamp2.map(|x| DateTime::from_utc(x, Utc));
                     }
                 }
             }
@@ -99,20 +99,18 @@ impl TryFrom<Vec<ResultField>> for Metric {
 }
 
 #[derive(Debug, Clone, Shrinkwrap)]
-struct AwsDate(DateTime<FixedOffset>);
+struct AwsDate(NaiveDateTime);
 
 impl AwsDate {
-    pub fn new(dt: DateTime<FixedOffset>) -> Self {
+    pub fn new(dt: NaiveDateTime) -> Self {
         Self(dt)
     }
 }
 
 impl TryFrom<String> for AwsDate {
-    //2019-12-13T17:00:41.559-05:00
-
     type Error = chrono::format::ParseError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        DateTime::parse_from_str(s.as_str(), "%Y-%m-%dT%H:%M:%S%.3f-%:z").map(AwsDate::new)
+        NaiveDateTime::parse_from_str(s.as_str(), "%Y-%m-%dT%H:%M:%S%.3f").map(AwsDate::new)
     }
 }
 
@@ -518,4 +516,13 @@ pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCrede
         None,
     );
     provider
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn can_parse_aws_timestamp() {
+        let raw = "2019-12-13 05:47:07.318";
+    }
 }

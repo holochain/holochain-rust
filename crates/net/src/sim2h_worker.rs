@@ -53,6 +53,7 @@ pub struct Sim2hWorker {
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     outgoing_message_buffer: Vec<WireMessage>,
+    ws_frame: Option<WsFrame>,
 }
 
 impl Sim2hWorker {
@@ -83,6 +84,7 @@ impl Sim2hWorker {
                 DefaultMetricPublisher::default(),
             )),
             outgoing_message_buffer: Vec::new(),
+            ws_frame: None,
         };
 
         instance.check_reconnect();
@@ -356,14 +358,22 @@ impl NetWorker for Sim2hWorker {
 
         let mut did_something = false;
 
-        let mut frame = WsFrame::default();
+        if self.ws_frame.is_none() {
+            self.ws_frame = Some(WsFrame::default());
+        }
 
         if self.connection_ready() {
             self.try_send_from_outgoing_buffer();
             // safe to unwrap because we check connection_ready()
-            match self.connection.as_mut().unwrap().read(&mut frame) {
+            match self
+                .connection
+                .as_mut()
+                .unwrap()
+                .read(&mut self.ws_frame.as_mut().unwrap())
+            {
                 Ok(_) => {
                     did_something = true;
+                    let frame = self.ws_frame.take().unwrap();
                     if let WsFrame::Binary(payload) = frame {
                         let payload: Opaque = payload.into();
                         match WireMessage::try_from(&payload) {
@@ -428,6 +438,7 @@ impl NetWorker for Sim2hWorker {
         }
         Ok(did_something)
     }
+
     /// Set the advertise as worker's endpoint
     fn p2p_endpoint(&self) -> Option<url::Url> {
         Some(self.server_url.clone().into())

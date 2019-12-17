@@ -49,6 +49,7 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
+    keystore::test_hash_config,
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
@@ -243,7 +244,7 @@ impl Conductor {
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
-            hash_config: None,
+            hash_config: test_hash_config(),
             n3h_keepalive_network: None,
         }
     }
@@ -1517,6 +1518,7 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
     }
 }
 
+#[allow(dead_code)]
 fn with_port_heuristic<T, F: FnOnce() -> T>(
     wanted_port: u16,
     find_free_port: bool,
@@ -1538,29 +1540,44 @@ fn run_interface(
     kill_switch: Receiver<()>,
 ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
-    match interface_config.driver {
-        InterfaceDriver::Websocket { port } => with_port_heuristic(
-            port,
-            interface_config.choose_free_port.unwrap_or(false),
-            || {
-                let r = WebsocketInterface::new(port).run(handler, kill_switch);
-                println!("{}", magic_port_binding_string(&interface_config.id, port));
-                r
-            },
-        ),
-        InterfaceDriver::Http { port } => with_port_heuristic(
-            port,
-            interface_config.choose_free_port.unwrap_or(false),
-            || {
-                let r = HttpInterface::new(port).run(handler, kill_switch);
-                println!("{}", magic_port_binding_string(&interface_config.id, port));
-                r
-            },
-        ),
 
+    match interface_config.driver {
+        InterfaceDriver::Websocket { port } => {
+            let port = if interface_config.choose_free_port.unwrap_or(false) {
+                0
+            } else {
+                port
+            };
+            let mut interface = WebsocketInterface::new(port);
+            let r = interface.run(handler, kill_switch);
+            let addr = interface
+                .bound_address()
+                .expect("Could not bind interface to address");
+            println!(
+                "{}",
+                magic_port_binding_string(&interface_config.id, addr.port())
+            );
+            r
+        }
+        InterfaceDriver::Http { port } => {
+            let port = if interface_config.choose_free_port.unwrap_or(false) {
+                0
+            } else {
+                port
+            };
+            let mut interface = HttpInterface::new(port);
+            let r = interface.run(handler, kill_switch);
+            let addr = interface
+                .bound_address()
+                .expect("Could not bind interface to address");
+            println!(
+                "{}",
+                magic_port_binding_string(&interface_config.id, addr.port())
+            );
+            r
+        }
         _ => unimplemented!(),
     }
-    .expect("Couldn't spawn conductor interface!")
 }
 
 #[derive(Clone, Debug)]

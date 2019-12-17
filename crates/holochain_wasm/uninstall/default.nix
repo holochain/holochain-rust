@@ -1,6 +1,6 @@
 { pkgs }:
 let
-  name = "hc-conductor-wasm-uninstall";
+  name = "hc-conductor-wasm-bindgen-uninstall";
 
   script = pkgs.writeShellScriptBin name
   ''

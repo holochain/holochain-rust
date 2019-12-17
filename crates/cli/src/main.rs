@@ -36,8 +36,7 @@ mod util;
 use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
-use structopt::clap::arg_enum;
-use structopt::StructOpt;
+use structopt::{clap::arg_enum, StructOpt};
 
 #[derive(StructOpt)]
 /// A command line for Holochain

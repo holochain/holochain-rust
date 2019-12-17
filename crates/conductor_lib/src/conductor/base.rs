@@ -63,6 +63,7 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
+use crate::keystore::test_hash_config;
 
 pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
 
@@ -243,7 +244,7 @@ impl Conductor {
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
-            hash_config: None,
+            hash_config: test_hash_config(),
             n3h_keepalive_network: None,
         }
     }

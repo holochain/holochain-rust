@@ -350,7 +350,7 @@ fn get_content_aspect(
 
     let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
 
-    let _ = entry_with_header
+    entry_with_header
         .entry
         .entry_type()
         .can_publish(&context)

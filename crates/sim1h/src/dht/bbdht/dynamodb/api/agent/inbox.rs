@@ -191,7 +191,7 @@ pub fn get_inbox_request_ids(
         .get_item(GetItemInput {
             consistent_read: Some(true),
             table_name: table_name.into(),
-            key: key,
+            key,
             ..Default::default()
         })
         .sync()?
@@ -274,7 +274,7 @@ pub fn item_to_direct_message_data(item: &Item) -> BbDhtResult<(DirectMessageDat
             content: content.into(),
             from_agent_id: from_agent_id.into(),
             to_agent_id: to_agent_id.into(),
-            request_id: request_id,
+            request_id,
             space_address: HashString::from(space_address).into(),
         },
         is_response,
@@ -302,7 +302,7 @@ pub fn request_ids_to_messages(
             .get_item(GetItemInput {
                 consistent_read: Some(true),
                 table_name: table_name.into(),
-                key: key,
+                key,
                 ..Default::default()
             })
             .sync()?
@@ -524,7 +524,7 @@ pub mod tests {
             &REQUEST_IDS_KEY.to_string(),
             &to,
         ) {
-            Ok(request_ids) => assert_eq!(vec![request_id.clone()], request_ids),
+            Ok(request_ids) => assert_eq!(vec![request_id], request_ids),
             Err(err) => panic!("incorrect request id {:?}", err),
         };
     }
@@ -558,7 +558,7 @@ pub mod tests {
             &log_context,
             &local_client,
             &table_name,
-            &request_id.clone(),
+            &request_id,
             &from,
             &to,
             &content,
@@ -568,7 +568,7 @@ pub mod tests {
 
         // check inbox
         match check_inbox(&log_context, &local_client, &table_name, &to) {
-            Ok(messages) => assert_eq!(vec![(direct_message_data.clone(), is_response)], messages),
+            Ok(messages) => assert_eq!(vec![(direct_message_data, is_response)], messages),
             Err(err) => panic!("incorrect request id {:?}", err),
         };
 

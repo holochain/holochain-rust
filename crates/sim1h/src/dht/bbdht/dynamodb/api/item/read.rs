@@ -30,7 +30,7 @@ pub fn get_item_by_address(
         .get_item(GetItemInput {
             consistent_read: Some(true),
             table_name: table_name.into(),
-            key: key,
+            key,
             ..Default::default()
         })
         .sync()?

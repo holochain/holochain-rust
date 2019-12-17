@@ -76,7 +76,7 @@ impl TryFrom<LogLine> for Metric {
         let cap = PARSE_METRIC_REGEX
             .captures_iter(stripped)
             .next()
-            .map(|cap| Ok(cap))
+            .map(Ok)
             .unwrap_or_else(|| {
                 Err(ParseError(format!(
                     "expected at least one capture group for a metric value: {:?}",
@@ -87,7 +87,7 @@ impl TryFrom<LogLine> for Metric {
         let value_str = cap[2].to_string();
         let metric_value: f64 = value_str.as_str().parse()?;
         let metric = Metric::new(&metric_name, metric_value);
-        return Ok(metric);
+        Ok(metric)
     }
 }
 
@@ -99,7 +99,7 @@ pub fn metrics_from_file(log_file: String) -> std::io::Result<Box<dyn Iterator<I
         let result: Result<Metric, _> = line
             .map_err(|e| ParseError(format!("{}", e)))
             .and_then(|line| LogLine(line).try_into());
-        result.map(|x| Some(x)).unwrap_or_else(|e| {
+        result.map(Some).unwrap_or_else(|e| {
             warn!("Unparsable log line: {:?}", e);
             None
         })
@@ -116,7 +116,7 @@ mod tests {
     fn can_convert_log_line_to_metric() {
         let line = format!(
             "DEBUG 2019-10-30 10:34:44 [holochain_metrics::metrics] net_worker_thread/puid-4-2e crates/metrics/src/logger.rs:33 {} sim2h_worker.tick.latency 123", METRIC_TAG);
-        let log_line = LogLine(line.to_string());
+        let log_line = LogLine(line);
         let metric: Metric = log_line.try_into().unwrap();
         assert_eq!("sim2h_worker.tick.latency", metric.name);
         assert_eq!(123.0, metric.value);
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn can_convert_cloudwatch_log_line_to_metric() {
         let line = format!("{} sim2h_worker.tick.latency 123", METRIC_TAG);
-        let log_line = LogLine(line.to_string());
+        let log_line = LogLine(line);
         let metric: Metric = log_line.try_into().unwrap();
         assert_eq!("sim2h_worker.tick.latency", metric.name);
         assert_eq!(123.0, metric.value);

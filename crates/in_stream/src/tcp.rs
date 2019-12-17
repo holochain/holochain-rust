@@ -3,7 +3,7 @@ use net2::TcpStreamExt;
 use std::io::{Error, ErrorKind, Read, Result, Write};
 use url2::prelude::*;
 
-const SCHEME: &'static str = "tcp";
+const SCHEME: &str = "tcp";
 
 /// internal helper convert urls to socket addrs for binding / connection
 fn tcp_url_to_socket_addr(url: &Url2) -> Result<std::net::SocketAddr> {
@@ -139,13 +139,11 @@ impl InStreamTcp {
         if let Some(cdata) = &mut self.connecting {
             if let Ok(_) = self.stream.connect(&cdata.addr) {
                 self.connecting = None;
-            } else {
-                if let Some(timeout) = cdata.connect_timeout {
-                    if std::time::Instant::now() >= timeout {
-                        return Err(ErrorKind::TimedOut.into());
-                    }
-                }
-            }
+            } else if let Some(timeout) = cdata.connect_timeout {
+    if std::time::Instant::now() >= timeout {
+        return Err(ErrorKind::TimedOut.into());
+    }
+}
         }
         Ok(())
     }

@@ -76,9 +76,9 @@ fn try_aspect_from_item(item: Item) -> BbDhtResult<EntryAspectData> {
 
     Ok(EntryAspectData {
         aspect_address: aspect_hash,
-        aspect: aspect,
-        publish_ts: publish_ts,
-        type_hint: type_hint,
+        aspect,
+        publish_ts,
+        type_hint,
     })
 }
 
@@ -317,7 +317,7 @@ pub mod tests {
         {
             let (items, _) = scan_aspects(&log_context, &local_client, &table_name, None)
                 .unwrap_or_else(|err| panic!("error while scanning: {:?}", err));
-            assert!(items.len() == 0);
+            assert!(items.is_empty());
         }
 
         append_aspect_list_to_entry(

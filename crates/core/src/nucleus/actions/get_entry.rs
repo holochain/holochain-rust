@@ -44,32 +44,28 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         IndexFilter::LatestByAttribute,
         None,
     ))?;
-    if status_eavs.len() == 0 {
+    if status_eavs.is_empty() {
         return Ok(None);
     }
     let mut crud_status = CrudStatus::Live;
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now look for crud-status by life-cycle order: Deleted, Modified, Live
-    let has_deleted = status_eavs
+    let has_deleted = !status_eavs
         .clone()
         .into_iter()
         .filter(|e| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
-        .collect::<BTreeSet<EntityAttributeValueIndex>>()
-        .len()
-        > 0;
+        .collect::<BTreeSet<EntityAttributeValueIndex>>().is_empty();
     if has_deleted {
         crud_status = CrudStatus::Deleted;
     } else {
-        let has_modified = status_eavs
+        let has_modified = !status_eavs
             .into_iter()
             .filter(|e| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })
-            .collect::<BTreeSet<EntityAttributeValueIndex>>()
-            .len()
-            > 0;
+            .collect::<BTreeSet<EntityAttributeValueIndex>>().is_empty();
         if has_modified {
             crud_status = CrudStatus::Modified;
         }

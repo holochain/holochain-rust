@@ -462,7 +462,7 @@ mod tests {
         let mut seed = Seed::new(seed_buf, SeedType::Root);
         let mnemonic = seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
-        assert_eq!(mnemonic.split(" ").count(), 24);
+        assert_eq!(mnemonic.split(' ').count(), 24);
 
         let mut seed_2 = Seed::new_with_mnemonic(mnemonic, SeedType::Root).unwrap();
         assert_eq!(seed.kind, seed_2.kind);
@@ -532,7 +532,7 @@ mod tests {
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
         assert_eq!(
-            mnemonic.split(" ").count(),
+            mnemonic.split(' ').count(),
             MnemonicType::Words24.word_count() * 2
         );
 

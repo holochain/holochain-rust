@@ -248,7 +248,7 @@ fn can_invalidate_invalid_commit() {
         "check_commit_entry_macro",
         &json!({"entry":
             Entry::App(
-                test_app_entry_type().into(),
+                test_app_entry_type(),
                 TestEntry {
                     stuff: "FAIL".into(),
                 }.into(),
@@ -480,7 +480,7 @@ fn show_env() {
     );
     let result = make_test_call(&mut hc, "get_version", r#"{"hash": true}"#);
     let hash_result: ZomeApiResult<String> =
-        serde_json::from_str::<ZomeApiResult<String>>(&result.clone().unwrap().to_string())
+        serde_json::from_str::<ZomeApiResult<String>>(&result.unwrap().to_string())
             .unwrap();
     assert!(hash_result.is_ok() && hash_result.unwrap().len() == 32);
 }

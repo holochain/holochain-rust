@@ -147,7 +147,7 @@ pub fn send_message(
         content: content.into(),
     };
 
-    let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;
+    send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

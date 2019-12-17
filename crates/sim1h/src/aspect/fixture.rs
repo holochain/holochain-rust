@@ -88,5 +88,5 @@ pub fn type_hint_fresh() -> String {
 }
 
 pub fn publish_ts_fresh() -> u64 {
-    1568858140
+    1_568_858_140
 }

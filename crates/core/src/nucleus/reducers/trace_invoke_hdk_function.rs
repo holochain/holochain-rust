@@ -17,5 +17,5 @@ pub fn reduce_trace_invoke_hdk_function(
         .hdk_function_calls
         .entry(zome_fn_call.clone())
         .and_modify(|zome_fn_call_state| zome_fn_call_state.begin_hdk_call(hdk_fn_call.clone()))
-        .or_insert_with(|| ZomeFnCallState::default());
+        .or_insert_with(ZomeFnCallState::default);
 }

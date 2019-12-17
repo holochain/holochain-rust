@@ -91,7 +91,7 @@ fn main() {
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
 
-    let _ = spawn_locksmith_guard_watcher();
+    spawn_locksmith_guard_watcher();
 
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
@@ -161,7 +161,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
-        .map_err(|string| HolochainError::ConfigError(string))?;
+        .map_err(HolochainError::ConfigError)?;
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
@@ -175,7 +175,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
             conductor.check_load_key_for_agent(&agent_config.id)
         })
         .collect::<Result<Vec<()>, String>>()
-        .map_err(|error| HolochainError::ConfigError(error))?;
+        .map_err(HolochainError::ConfigError)?;
     conductor.boot_from_config()?;
     Ok(())
 }

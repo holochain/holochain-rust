@@ -262,7 +262,7 @@ pub mod tests {
     fn json_string_from_entry_test() {
         assert_eq!(
             test_entry().content(),
-            JsonString::from(Entry::from(test_entry()))
+            JsonString::from(test_entry())
         );
     }
 
@@ -289,9 +289,9 @@ pub mod tests {
     fn json_round_trip() {
         let entry = test_entry();
         let expected = expected_serialized_entry_content();
-        assert_eq!(expected, JsonString::from(Entry::from(entry.clone())));
-        assert_eq!(entry, Entry::try_from(expected.clone()).unwrap());
-        assert_eq!(entry, Entry::from(entry.clone()));
+        assert_eq!(expected, JsonString::from(entry.clone()));
+        assert_eq!(entry, Entry::try_from(expected).unwrap());
+        assert_eq!(entry, entry.clone());
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from_json(&format!(
@@ -299,12 +299,12 @@ pub mod tests {
             "bob",
             crate::agent::GOOD_ID,
         ));
-        assert_eq!(expected, JsonString::from(Entry::from(sys_entry.clone())));
+        assert_eq!(expected, JsonString::from(sys_entry.clone()));
         assert_eq!(
             &sys_entry,
-            &Entry::from(Entry::try_from(expected.clone()).unwrap())
+            &Entry::try_from(expected).unwrap()
         );
-        assert_eq!(&sys_entry, &Entry::from(Entry::from(sys_entry.clone())),);
+        assert_eq!(&sys_entry, &sys_entry.clone(),);
     }
 
     #[test]

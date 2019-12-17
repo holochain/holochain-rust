@@ -13,6 +13,6 @@ pub fn reduce_handle_custom_send_response(
         msg_id.clone(),
         response
             .clone()
-            .map_err(|error| HolochainError::ErrorGeneric(error)),
+            .map_err(HolochainError::ErrorGeneric),
     );
 }

@@ -235,7 +235,7 @@ pub fn create_and_retrieve_private_entry() {
     );
 
     let expected_result: ZomeApiResult<Address> =
-        serde_json::from_str::<ZomeApiResult<Address>>(&result.clone().unwrap().to_string())
+        serde_json::from_str::<ZomeApiResult<Address>>(&result.unwrap().to_string())
             .unwrap();
     let zome_call = format!(r#"{{"address":"{}"}}"#, expected_result.unwrap());
 
@@ -259,7 +259,7 @@ pub fn test_bad_entry() {
     let result = make_test_call(&mut hc, "get_entry", r#"{"address":"aba"}"#);
 
     let expected_result: ZomeApiResult<Option<Entry>> =
-        serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.clone().unwrap().to_string())
+        serde_json::from_str::<ZomeApiResult<Option<Entry>>>(&result.unwrap().to_string())
             .unwrap();
     assert_eq!(expected_result.unwrap(), None)
 }

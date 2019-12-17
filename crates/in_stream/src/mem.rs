@@ -5,7 +5,7 @@ use std::{
 };
 use url2::prelude::*;
 
-const SCHEME: &'static str = "mem";
+const SCHEME: &str = "mem";
 const PORT: u16 = 4242;
 
 #[derive(Debug)]
@@ -157,7 +157,7 @@ impl InStream<&mut [u8], &[u8]> for InStreamMem {
                 }
             }
         }
-        if self.recv_buf.len() == 0 {
+        if self.recv_buf.is_empty() {
             if disconnected {
                 // nothing in our buffer, let the user know about the EOF
                 return Ok(0);

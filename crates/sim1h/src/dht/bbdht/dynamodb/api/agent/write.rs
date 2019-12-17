@@ -32,7 +32,7 @@ pub fn touch_agent(
         client
             .put_item(PutItemInput {
                 table_name: table_name.to_string(),
-                item: item,
+                item,
                 ..Default::default()
             })
             .sync(),

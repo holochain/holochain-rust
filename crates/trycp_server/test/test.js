@@ -98,7 +98,10 @@ sim2h_url = "wss://localhost:9001"
         console.log(result)
 
         console.log("making spawn call")
-        result = await ws.call('spawn', {"id": "my-player"})
+        result = await ws.call('spawn', {"id": "my-player", "failureModel": {
+            "mtbf": 100,
+            "mfd": 100,
+        }})
         console.log(result)
 
 /*        console.log("making kill call")

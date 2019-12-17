@@ -372,6 +372,12 @@ fn main() {
     io.add_method("spawn", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
+        let failure_params: Option<(u64, u64)> = params_map.get("failureModel").and_then(|value| {
+            let sub_obj = value.as_object()?;
+            let mtbf = sub_obj.get("MTBF")?.as_u64()?;
+            let mfd = sub_obj.get("MFD")?.as_u64()?;
+            Some((mtbf, mfd))
+        });
 
         let state = state_spawn.read().unwrap();
         check_player_config(&state, &id)?;
@@ -390,13 +396,27 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let mut conductor = Command::new("holochain")
-            .args(&["-c", &config_path])
-            .env("RUST_BACKTRACE", "full")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?;
+        let mut conductor = match failure_params {
+            Some((mtbf, mfd)) => {
+                Command::new("holochain")
+                    .args(&["-c", &config_path])
+                    .env("RUST_BACKTRACE", "full")
+                    .env("WS_FAILURE_MODEL", format!("({}, {})", mtbf, mfd))
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?
+            },
+            None => {
+                 Command::new("holochain")
+                    .args(&["-c", &config_path])
+                    .env("RUST_BACKTRACE", "full")
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?     
+            }
+        };
 
         let mut log_stdout = Command::new("tee")
             .arg(stdout_log_path)

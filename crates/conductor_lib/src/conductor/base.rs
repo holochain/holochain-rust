@@ -49,6 +49,7 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
+    keystore::test_hash_config,
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
@@ -63,7 +64,6 @@ use holochain_net::{
     p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
     p2p_network::P2pNetwork,
 };
-use crate::keystore::test_hash_config;
 
 pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
 

@@ -316,6 +316,7 @@ workflows:
          - 2019-12-04-docker-timeouts
          - develop
          - final-exam
+         - sim2h-docker-log
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal

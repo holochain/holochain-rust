@@ -114,7 +114,7 @@ impl TryFrom<LogLine> for Metric {
             .captures_iter(stripped)
             .next()
             .and_then(|s| DateTime::parse_from_str(&s[1], RUST_LOG_DATE_FORMAT).ok())
-            .map(|_t: DateTime<FixedOffset>| panic!("TODO"));
+            .map(|t: DateTime<FixedOffset>| t.with_timezone(&Utc.clone()));
 
         let metric_name: String = cap[1].to_string();
         let value_str = cap[2].to_string();

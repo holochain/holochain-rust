@@ -30,6 +30,7 @@ use std::{convert::TryFrom, time::Instant};
 use url::Url;
 
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
+const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
@@ -230,7 +231,7 @@ impl Sim2hWorker {
             // Successful data response for a `HandleFetchEntryData` request
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 //let log_context = "ClientToLib3h::HandleFetchEntryResult";
-                if fetch_entry_result_data.request_id == "SIM2H_WORKER" {
+                if fetch_entry_result_data.request_id == SIM2H_WORKER_INTERNAL_REQUEST_ID {
                     for aspect in fetch_entry_result_data.entry.aspect_list {
                         self.to_core
                             .push(Lib3hServerProtocol::HandleStoreEntryAspect(
@@ -308,7 +309,7 @@ impl Sim2hWorker {
                         .push(Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
                             space_address: entry_list_data.space_address.clone(),
                             entry_address: entry_hash.clone(),
-                            request_id: String::from("SIM2H_WORKER"),
+                            request_id: SIM2H_WORKER_INTERNAL_REQUEST_ID.to_string(),
                             provider_agent_id: entry_list_data.provider_agent_id.clone(),
                             aspect_address_list: Some(aspect_hashes.clone()),
                         }))

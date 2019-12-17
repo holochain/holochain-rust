@@ -3,9 +3,9 @@ extern crate holochain_common;
 extern crate holochain_conductor_lib;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_net;
 extern crate holochain_json_api;
 extern crate holochain_locksmith;
+extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
@@ -36,8 +36,8 @@ mod util;
 use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
-use structopt::StructOpt;
 use structopt::clap::arg_enum;
+use structopt::StructOpt;
 
 #[derive(StructOpt)]
 /// A command line for Holochain

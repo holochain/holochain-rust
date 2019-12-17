@@ -1,3 +1,4 @@
+use crate::NetworkingType;
 use cli;
 use colored::*;
 use error::DefaultResult;
@@ -10,15 +11,14 @@ use holochain_conductor_lib::{
     keystore::PRIMARY_KEYBUNDLE_ID,
     logger::LogRules,
 };
-use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_core_types::agent::AgentId;
+use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::{fs, path::PathBuf};
-use crate::NetworkingType;
 
 pub enum Networking {
     N3h,
-    Sim2h(String)
+    Sim2h(String),
 }
 
 /// Starts a minimal configuration Conductor with the current application running
@@ -269,9 +269,8 @@ fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConf
                 n3h_ipc_uri: Default::default(),
                 networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
             }))
-
         }
-        Networking::Sim2h(sim2h_url) => Some(NetworkConfig::Sim2h(Sim2hConfig{sim2h_url})),
+        Networking::Sim2h(sim2h_url) => Some(NetworkConfig::Sim2h(Sim2hConfig { sim2h_url })),
     }
 }
 
@@ -291,12 +290,12 @@ mod tests {
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
     use self::tempfile::tempdir;
+    use super::Networking;
     use holochain_conductor_lib::config::*;
-    use holochain_net::sim2h_worker::Sim2hConfig;
     use holochain_core_types::dna::Dna;
+    use holochain_net::sim2h_worker::Sim2hConfig;
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::fs::{create_dir, File};
-    use super::Networking;
 
     #[test]
     // flagged as broken for:
@@ -449,8 +448,9 @@ mod tests {
                 networking_config_file: None,
             }))
         );
-        
-        let networking = super::networking_configuration(Some(Networking::Sim2h("wss://localhost:9000".into())));
+
+        let networking =
+            super::networking_configuration(Some(Networking::Sim2h("wss://localhost:9000".into())));
         assert_eq!(
             networking,
             Some(NetworkConfig::Sim2h(Sim2hConfig {

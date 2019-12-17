@@ -139,6 +139,7 @@ enum TlsState<Sub: InStreamStd> {
 /// basic tls wrapper stream
 pub struct InStreamTls<Sub: InStreamStd> {
     state: Option<TlsState<Sub>>,
+    remote_url: Url2,
     write_buf: Vec<u8>,
 }
 
@@ -159,6 +160,7 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
     fn priv_new() -> Self {
         Self {
             state: None,
+            remote_url: Url2::default(),
             write_buf: Vec::new(),
         }
     }
@@ -172,11 +174,15 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
     ) -> Result<()> {
         match result {
             Ok(tls) => {
+                self.remote_url = tls.get_ref().remote_url();
+                self.remote_url.set_scheme(SCHEME).unwrap();
                 self.state = Some(TlsState::Ready(tls));
                 Ok(())
             }
             Err(e) => match e {
                 native_tls::HandshakeError::WouldBlock(mid) => {
+                    self.remote_url = mid.get_ref().remote_url();
+                    self.remote_url.set_scheme(SCHEME).unwrap();
                     self.state = Some(TlsState::MidHandshake(mid));
                     Err(Error::with_would_block())
                 }
@@ -239,6 +245,7 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         url.set_scheme(Sub::URL_SCHEME).unwrap();
         let sub = Sub::raw_connect(&url, config.sub_connect_config)?;
         let mut out = Self::priv_new();
+        out.remote_url = url;
         match out.priv_proc_tls_result(
             native_tls::TlsConnector::builder()
                 .danger_accept_invalid_certs(true)
@@ -254,12 +261,7 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
     }
 
     fn remote_url(&self) -> Url2 {
-        let mut url = match self.state.as_ref().unwrap() {
-            TlsState::MidHandshake(s) => s.get_ref().remote_url(),
-            TlsState::Ready(s) => s.get_ref().remote_url(),
-        };
-        url.set_scheme(SCHEME).unwrap();
-        url
+        self.remote_url.clone()
     }
 
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {

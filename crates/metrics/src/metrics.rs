@@ -30,6 +30,18 @@ impl Metric {
     }
 }
 
+#[macro_export]
+macro_rules! metrics_from_reader {
+    ($read: expr) => {{
+        //       let mut reader = csv::Reader::from_reader($read);
+
+        $read.deserialize().map(|record| {
+            let metric: Metric = record.unwrap();
+            metric
+        })
+    }};
+}
+
 /// An object capable of publishing metric data.
 pub trait MetricPublisher: Sync + Send {
     /// Publish a single metric.

@@ -1,3 +1,8 @@
+use crate::{
+    stats::{GroupingKey, OnlineStats, StatsByMetric},
+    Metric,
+};
+use regex::Regex;
 use std::collections::{HashMap, HashSet};
 /// A stream id represents a unique entity which provided a metric.
 //use chrono::prelude::*;
@@ -9,6 +14,27 @@ pub struct StreamId(pub String);
 impl StreamId {
     pub fn new<S: Into<String>>(s: S) -> Self {
         StreamId(s.into())
+    }
+
+    pub fn group_by_regex<I: IntoIterator<Item = Metric>>(
+        re: &Regex,
+        metrics: I,
+    ) -> StatsByMetric<OnlineStats> {
+        StatsByMetric(metrics.into_iter().fold(HashMap::new(), |mut map, metric| {
+            let metric_name = metric.name.clone();
+            let stream_id = metric.stream_id.clone();
+            stream_id
+                .and_then(|stream_id| {
+                    re.captures_iter(stream_id.as_str()).next().map(|captured| {
+                        let key = GroupingKey::new(captured[1].to_string(), metric_name);
+                        let entry = map.entry(key);
+                        let stats: &mut OnlineStats = entry.or_insert_with(OnlineStats::empty);
+                        stats.add(metric.value)
+                    })
+                })
+                .unwrap_or_else(|| {});
+            map
+        }))
     }
 }
 /*

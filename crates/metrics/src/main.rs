@@ -201,6 +201,7 @@ fn print_cloudwatch_metrics(
     writer.flush().unwrap();
 }
 
+// TODO use aggregation patern
 fn print_log_stats(log_file: PathBuf, _aggregation_pattern: Option<String>) {
     let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
     let stats = StatsByMetric::from_iter_with_stream_id(
@@ -267,6 +268,12 @@ fn print_stat_check(
     writer.flush().unwrap();
 }
 
-fn print_metric_stats(_csv_file: PathBuf, _aggregation_pattern: Option<String>) {
-    // TODO
+fn print_metric_stats(csv_file: PathBuf, aggregation_pattern: Option<String>) {
+    let reader = BufReader::new(File::open(csv_file.clone()).unwrap());
+    let mut reader = csv::Reader::from_reader(reader);
+    let metrics = crate::metrics_from_reader!(reader);
+    let aggregation_pattern = aggregation_pattern.unwrap_or_else(|| "([.]*)".into());
+    let re = regex::Regex::new(aggregation_pattern.as_str()).unwrap();
+    let stats_by_metric = crate::stream_id::StreamId::group_by_regex(&re, metrics);
+    stats_by_metric.write_csv(std::io::stdout()).unwrap();
 }

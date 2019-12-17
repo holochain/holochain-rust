@@ -274,6 +274,6 @@ fn print_metric_stats(csv_file: PathBuf, aggregation_pattern: Option<String>) {
     let metrics = crate::metrics_from_reader!(reader);
     let aggregation_pattern = aggregation_pattern.unwrap_or_else(|| "([.]*)".into());
     let re = regex::Regex::new(aggregation_pattern.as_str()).unwrap();
-    let stats_by_metric = crate::stream_id::StreamId::group_by_regex(&re, metrics);
+    let stats_by_metric = StatsByMetric::group_by_regex(&re, metrics);
     stats_by_metric.write_csv(std::io::stdout()).unwrap();
 }

@@ -5,8 +5,8 @@ let
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";
- holonix-version = "v0.0.52";
- holonix-sha256 = "02x16zyspx8as65z5glmqsana4gmrkvjm9q8ws1f6l1wip87h2ql";
+ holonix-version = "v0.0.54";
+ holonix-sha256 = "1z2pp6ba73f6n8svs0aql98d63v3prybw09rjf856xzzc34lhjga";
 in
 rec {
 

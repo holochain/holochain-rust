@@ -11,6 +11,7 @@ lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {
         let orig_handler = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |panic_info| {
+            eprintln!("THREAD PANIC {:#?}", panic_info);
             // invoke the default handler and exit the process
             orig_handler(panic_info);
             std::process::exit(1);

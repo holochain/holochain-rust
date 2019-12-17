@@ -103,7 +103,7 @@ sim2h_url = "wss://localhost:9001"
 
         console.log("making spawn call with failure model params")
         await ws.call('player', {"id": "my-player-failure", "config": config})
-        result = await ws.call('spawn', {"id": "my-player-failure", "failureModel": {"MTBF": 100, "MFD": 100}})
+        result = await ws.call('spawn', {"id": "my-player-failure", "failureModel": {"seed": 420, "MTBF": 100, "MFD": 100}})
         console.log(result)
 
         console.log("making spawn call with error failure model params")

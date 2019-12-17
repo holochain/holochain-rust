@@ -393,15 +393,16 @@ fn main() {
 
         let mut conductor = match failure_params {
             Some(value) => {
-                let err = jsonrpc_core::Error::invalid_params("failureModel must be an object with integer fields MTBF and MFD in milliseconds");
+                let err = jsonrpc_core::Error::invalid_params("failureModel must be an object with integer fields MTBF and MFD in milliseconds and seed (an integer)");
                 let sub_obj = value.as_object().ok_or(err.clone())?;
+                let seed = sub_obj.get("seed").ok_or(err.clone())?.as_u64().ok_or(err.clone())?;
                 let mtbf = sub_obj.get("MTBF").ok_or(err.clone())?.as_u64().ok_or(err.clone())?;
                 let mfd = sub_obj.get("MFD").ok_or(err.clone())?.as_u64().ok_or(err.clone())?;
 
                 Command::new("holochain")
                     .args(&["-c", &config_path])
                     .env("RUST_BACKTRACE", "full")
-                    .env("WS_FAILURE_MODEL", format!("({}, {})", mtbf, mfd))
+                    .env("WS_FAILURE_MODEL", format!("({}, {}, {})", seed, mtbf, mfd))
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())
                     .spawn()

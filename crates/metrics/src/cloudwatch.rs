@@ -12,10 +12,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use chrono::prelude::*;
+use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 use std::collections::HashMap;
 use structopt::StructOpt;
-
-use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 
 pub const DEFAULT_REGION: Region = Region::EuCentral1;
 
@@ -43,6 +43,76 @@ impl TryFrom<&ResultField> for Metric {
     fn try_from(result_field: &ResultField) -> Result<Self, Self::Error> {
         let r: Result<Self, Self::Error> = result_field.clone().try_into();
         r
+    }
+}
+
+impl TryFrom<Vec<ResultField>> for Metric {
+    type Error = ParseError;
+    fn try_from(result_fields: Vec<ResultField>) -> Result<Self, Self::Error> {
+        let mut stream_id: Option<String> = None;
+        let mut timestamp: Option<DateTime<Utc>> = None;
+        let mut metric = None;
+        for result_field in result_fields {
+            let r: Result<Self, Self::Error> = result_field.clone().try_into();
+
+            match r {
+                Ok(m) => {
+                    metric.replace(m);
+                }
+                Err(e) => {
+                    let field = result_field.field.clone().unwrap_or_else(String::new);
+
+                    if field == "@message" {
+                        return Err(e);
+                    } else if field == "@logStream" {
+                        stream_id = result_field.value;
+                    } else if field == "@timestamp" {
+                        let timestamp2 = result_field.clone().value.and_then(|x| {
+                            let aws_date: Option<AwsDate> = x
+                                .try_into()
+                                .map_err(|e| {
+                                    warn!(
+                                        "Couldn't parse aws date from field {:?}: {:?}",
+                                        result_field, e
+                                    )
+                                })
+                                .ok();
+                            aws_date.map(|x| *x)
+                        });
+                        timestamp = timestamp2.map(|_x| panic!("TODO"));
+                    }
+                }
+            }
+        }
+        metric
+            .map(|mut m| {
+                m.stream_id = stream_id;
+                m.timestamp = timestamp;
+                Ok(m)
+            })
+            .unwrap_or_else(|| {
+                Err(ParseError::new(
+                    "@message field not present in query results",
+                ))
+            })
+    }
+}
+
+#[derive(Debug, Clone, Shrinkwrap)]
+struct AwsDate(DateTime<FixedOffset>);
+
+impl AwsDate {
+    pub fn new(dt: DateTime<FixedOffset>) -> Self {
+        Self(dt)
+    }
+}
+
+impl TryFrom<String> for AwsDate {
+    //2019-12-13T17:00:41.559-05:00
+
+    type Error = chrono::format::ParseError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        DateTime::parse_from_str(s.as_str(), "%Y-%m-%dT%H:%M:%S%.3f-%:z").map(AwsDate::new)
     }
 }
 
@@ -171,37 +241,19 @@ impl CloudWatchLogger {
     }
 
     /// Converts raw result fields to in iterator over metric samples
-    pub fn metrics_of_query<'a>(
-        query: Vec<Vec<ResultField>>,
-    ) -> Box<dyn Iterator<Item = (String, Metric)> + 'a> {
+    pub fn metrics_of_query<'a, I: IntoIterator<Item = Vec<ResultField>> + 'a>(
+        query: I,
+    ) -> Box<dyn Iterator<Item = Metric> + 'a> {
         let iterator = query.into_iter().filter_map(|result_vec| {
-            let (log_stream_name, metric) = result_vec.into_iter().fold(
-                (None, None),
-                |(log_stream_name, metric), result_field| {
-                    let field = result_field.clone().field.unwrap_or_default();
-                    if field == "@message" {
-                        let metric: Metric = result_field.try_into().unwrap();
-                        (log_stream_name, Some(metric))
-                    } else if field == "@logStream" {
-                        (result_field.value, metric)
-                    } else {
-                        (log_stream_name, metric)
-                    }
-                },
-            );
-
-            log_stream_name
-                .and_then(|log_stream_name| metric.map(|metric| (log_stream_name, metric)))
+            let metric = result_vec.try_into();
+            metric.ok()
         });
         Box::new(iterator)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// all metric samples observed during the interval
-    pub fn query_metrics(
-        &self,
-        query_args: &QueryArgs,
-    ) -> Box<dyn Iterator<Item = (String, Metric)>> {
+    pub fn query_metrics(&self, query_args: &QueryArgs) -> Box<dyn Iterator<Item = Metric>> {
         let query = self.query(query_args);
         Self::metrics_of_query(query)
     }
@@ -211,8 +263,11 @@ impl CloudWatchLogger {
     pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric<OnlineStats> {
         let mut hash_map = HashMap::new();
 
-        for (log_stream, metric) in self.query_metrics(query_args) {
-            let entry = hash_map.entry(GroupingKey::new(log_stream, metric.name));
+        for metric in self.query_metrics(query_args) {
+            let entry = hash_map.entry(GroupingKey::new(
+                metric.stream_id.unwrap_or_else(String::new),
+                metric.name,
+            ));
 
             let stats = entry.or_insert_with(OnlineStats::empty);
             stats.add(metric.value);

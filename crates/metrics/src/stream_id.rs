@@ -1,28 +1,56 @@
+use crate::{
+    stats::{GroupingKey, OnlineStats, StatsByMetric},
+    Metric,
+};
+use regex::Regex;
+use std::collections::{HashMap, HashSet};
 /// A stream id represents a unique entity which provided a metric.
-use chrono::prelude::*;
-use std::time::SystemTime;
+//use chrono::prelude::*;
+use std::convert::{TryFrom, TryInto};
+
 #[derive(Shrinkwrap, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct StreamId(String);
+pub struct StreamId(pub String);
 
 impl StreamId {
-    
-    pub fn new<S:Into<String>>(s:S) -> Self {
-        StreamId(s.into()) 
+    pub fn new<S: Into<String>>(s: S) -> Self {
+        StreamId(s.into())
+    }
+
+    pub fn group_by_regex<I: IntoIterator<Item = Metric>>(
+        re: &Regex,
+        metrics: I,
+    ) -> StatsByMetric<OnlineStats> {
+        StatsByMetric(metrics.into_iter().fold(HashMap::new(), |mut map, metric| {
+            let metric_name = metric.name.clone();
+            let stream_id = metric.stream_id.clone();
+            stream_id
+                .and_then(|stream_id| {
+                    re.captures_iter(stream_id.as_str()).next().map(|captured| {
+                        let key = GroupingKey::new(captured[1].to_string(), metric_name);
+                        let entry = map.entry(key);
+                        let stats: &mut OnlineStats = entry.or_insert_with(OnlineStats::empty);
+                        stats.add(metric.value)
+                    })
+                })
+                .unwrap_or_else(|| {});
+            map
+        }))
     }
 }
+/*
+impl TryInto<(DateTime<FixedOffset>, String)> for StreamId {
 
-impl TryInto<(SystemTime, String)> for StreamId {
+   type Error = chrono::ParseError;
 
-   type Error = ParseResult<DateTime<FixedOffset>>; 
+   fn try_into(&self) -> Result<(DateTime<FixedOffset>, String), Self::Error> {
 
-   fn try_into(&self) -> Result<(SystemTime, String), Self::Error> {
+       let date_str : String = self.0.clone();
+       let date = DateTime::parse_from_str(date_str.as_str(), "%Y-%m-%d_%H:%M:%S")?;
 
-       let date_str = self.0;
-       let date = DateTime::parse_from_str(date_str, "%Y-%m-%d_%H:%M:%S")?;
-
-       Ok((date.to_time(), date_str))
+       Ok((date, date_str))
    }
 }
+*/
 
 const LOG_STREAM_SEPARATOR: &str = ".";
 
@@ -33,6 +61,7 @@ pub struct ScenarioData {
     dna_name: String,
     scenario_name: String,
     player_name: String,
+    instance_id: String,
 }
 
 impl Into<String> for ScenarioData {
@@ -62,13 +91,14 @@ impl TryFrom<String> for ScenarioData {
             dna_name: split[2].into(),
             scenario_name: split[3].into(),
             player_name: split[4].into(),
+            instance_id: split[5].into(),
         })
     }
 }
 
-impl TryFrom<LogStream> for ScenarioData {
+impl TryFrom<rusoto_logs::LogStream> for ScenarioData {
     type Error = String;
-    fn try_from(log_stream: LogStream) -> Result<Self, Self::Error> {
+    fn try_from(log_stream: rusoto_logs::LogStream) -> Result<Self, Self::Error> {
         let result: Result<Self, Self::Error> = log_stream
             .log_stream_name
             .map(|x| Ok(x))
@@ -78,6 +108,19 @@ impl TryFrom<LogStream> for ScenarioData {
     }
 }
 
+// Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
+// Default pattern agggregate by the entire stream id:
+// semantically: run_name.net_type.dna.scenario.conductor_id.instance_id
+// Define !p to indicate substitution of regex p into an expression
+// regex rule: p = [\\w\\d\\-_]+
+// regex: (!p\\.!p\\.!p\\.!p\\.!p\\.!p)
+// By conductor (over all instances)
+// run_name.net_type.dna.sceanrio.conductor_id.*
+// regex: (!p\\.!p\\.!p\\.!p\\.!p)\\.!p
+// By scenario (over all conductors and instances)
+// run_name.net_type.dna.scenario.*
+// regex: (!p\\.!p\\.!p\\.!p)\\.!p\\.!p
+
 impl ScenarioData {
     /// Groups by everything _but_ the player name
     fn without_player_name(&self) -> String {
@@ -86,7 +129,6 @@ impl ScenarioData {
             self.run_name, self.net_name, self.dna_name, self.scenario_name
         )
     }
-
 
     /// Groups a log stream name by its scenario name, which is by convention is the 2nd to last field.
     /// Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
@@ -103,8 +145,5 @@ impl ScenarioData {
             }
             grouped
         })
+    }
 }
-
-
-}
-

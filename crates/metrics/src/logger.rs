@@ -1,4 +1,5 @@
 use crate::{Metric, MetricPublisher};
+use chrono::prelude::*;
 use regex::Regex;
 use std::{
     convert::{TryFrom, TryInto},
@@ -20,7 +21,7 @@ impl LoggerMetricPublisher {
 impl MetricPublisher for LoggerMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
         let log_line: LogLine = metric.into();
-        debug!("{}", log_line.to_string());
+        debug!("{}", log_line);
     }
 }
 
@@ -33,12 +34,19 @@ impl Default for LoggerMetricPublisher {
 pub const METRIC_TAG: &str = "METRIC";
 
 lazy_static! {
+    pub static ref LOG_HEADER_REGEX: Regex = Regex::new("[\\w]+ ([\\d\\-]+ [\\d:]+)").unwrap();
     pub static ref PARSE_METRIC_REGEX: Regex =
         Regex::new((METRIC_TAG.to_string() + " ([\\w\\d~\\-\\._]+) ([\\d\\.]+)").as_str()).unwrap();
 }
 
 #[derive(Debug, Clone)]
 pub struct ParseError(pub String);
+
+impl ParseError {
+    pub fn new<S: Into<String>>(s: S) -> Self {
+        Self(s.into())
+    }
+}
 
 impl From<std::num::ParseFloatError> for ParseError {
     fn from(f: std::num::ParseFloatError) -> Self {
@@ -51,9 +59,21 @@ impl From<std::num::ParseFloatError> for ParseError {
 #[derive(Debug, Clone, Shrinkwrap)]
 pub struct LogLine(pub String);
 
+const RUST_LOG_DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
 impl From<Metric> for LogLine {
     fn from(metric: Metric) -> Self {
-        LogLine(format!("{} {} {}", METRIC_TAG, metric.name, metric.value))
+        LogLine(format!(
+            "{} {} {} {} {}",
+            metric
+                .timestamp
+                .map(|t| t.format(RUST_LOG_DATE_FORMAT).to_string())
+                .unwrap_or_else(String::new),
+            metric.stream_id.unwrap_or_else(String::new),
+            METRIC_TAG,
+            metric.name,
+            metric.value
+        ))
     }
 }
 
@@ -65,29 +85,51 @@ impl From<&Metric> for LogLine {
 
 impl Into<String> for LogLine {
     fn into(self) -> String {
-        self.0
+        self.0.clone()
+    }
+}
+
+impl std::fmt::Display for LogLine {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
 impl TryFrom<LogLine> for Metric {
     type Error = ParseError;
     fn try_from(source: LogLine) -> Result<Metric, ParseError> {
+        println!("TRY FROM0");
         let stripped = strip_ansi_escapes::strip(source.0).unwrap();
-        let stripped = std::str::from_utf8(stripped.as_slice()).unwrap();
+        println!("TRY FROM1");
+        let stripped2 = std::str::from_utf8(stripped.as_slice()).unwrap();
+        println!("TRY FROM2");
         let cap = PARSE_METRIC_REGEX
-            .captures_iter(stripped)
+            .captures_iter(stripped2.clone())
             .next()
             .map(|cap| Ok(cap))
             .unwrap_or_else(|| {
                 Err(ParseError(format!(
                     "expected at least one capture group for a metric value: {:?}",
-                    stripped
+                    stripped2
                 )))
             })?;
+        let timestamp = LOG_HEADER_REGEX
+            .captures_iter(stripped2)
+            .next()
+            .and_then(|s| {
+                let to_parse = &s[1];
+                NaiveDateTime::parse_from_str(to_parse, RUST_LOG_DATE_FORMAT)
+                    .map_err(|e| println!("Invalid date string {:?} from log: {:?}", to_parse, e))
+                    .ok()
+            })
+            .map(|t: NaiveDateTime| {
+                let dt: DateTime<_> = DateTime::from_utc(t, Utc.clone());
+                dt
+            });
         let metric_name: String = cap[1].to_string();
         let value_str = cap[2].to_string();
         let metric_value: f64 = value_str.as_str().parse()?;
-        let metric = Metric::new(&metric_name, None, None, metric_value);
+        let metric = Metric::new(&metric_name, None, timestamp, metric_value);
         return Ok(metric);
     }
 }
@@ -118,9 +160,20 @@ mod tests {
         let line = format!(
             "DEBUG 2019-10-30 10:34:44 [holochain_metrics::metrics] net_worker_thread/puid-4-2e crates/metrics/src/logger.rs:33 {} sim2h_worker.tick.latency 123", METRIC_TAG);
         let log_line = LogLine(line.to_string());
-        let metric: Metric = log_line.try_into().unwrap();
+        let metric: Result<Metric, _> = log_line.try_into();
+
+        assert!(metric.is_ok());
+
+        let metric = metric.unwrap();
         assert_eq!("sim2h_worker.tick.latency", metric.name);
         assert_eq!(123.0, metric.value);
+        assert_eq!(
+            "2019-10-30 10:34:44",
+            metric
+                .timestamp
+                .map(|x| x.format(RUST_LOG_DATE_FORMAT).to_string())
+                .unwrap_or_else(|| "None".into())
+        );
     }
 
     #[test]

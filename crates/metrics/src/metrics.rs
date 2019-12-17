@@ -30,17 +30,30 @@ impl Metric {
     }
 }
 
+#[macro_export]
+macro_rules! metrics_from_reader {
+    ($read: expr) => {{
+        //       let mut reader = csv::Reader::from_reader($read);
+
+        $read.deserialize().map(|record| {
+            let metric: Metric = record.unwrap();
+            metric
+        })
+    }};
+}
+
 /// An object capable of publishing metric data.
 pub trait MetricPublisher: Sync + Send {
     /// Publish a single metric.
     fn publish(&mut self, metric: &Metric);
 }
 
-pub struct QueuedPublisher {
+/// WIP: Wraps another publisher and dedicates a processing thread to do actual publishing.
+pub struct ChannelPublisher {
     sender: Sender<Metric>,
 }
 
-impl QueuedPublisher {
+impl ChannelPublisher {
     pub fn new(mut metric_publisher: Box<dyn MetricPublisher>) -> Self {
         let (sender, receiver) = unbounded();
         let _join_handle: std::thread::JoinHandle<()> = std::thread::spawn(move || loop {
@@ -55,7 +68,7 @@ impl QueuedPublisher {
     }
 }
 
-impl MetricPublisher for QueuedPublisher {
+impl MetricPublisher for ChannelPublisher {
     fn publish(&mut self, metric: &Metric) {
         self.sender.send(metric.clone()).unwrap();
     }

@@ -235,7 +235,7 @@ fn run() -> HolochainResult<()> {
                     &dna_path,
                     port,
                     persist,
-                    networked.into(),
+                    networked,
                     &interface_type,
                     logging,
                 )

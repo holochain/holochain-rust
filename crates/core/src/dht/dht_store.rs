@@ -293,11 +293,23 @@ impl DhtStore {
             .next()
     }
 
-    pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
+    pub(crate) fn has_exact_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
         self.queued_holding_workflows.iter().any(
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| current == pending,
+        )
+    }
+
+    pub(crate) fn has_same_queued_holding_worfkow(&self, pending: &PendingValidation) -> bool {
+        self.queued_holding_workflows.iter().any(
+            |PendingValidationWithTimeout {
+                 pending: current, ..
+             }| {
+                current.entry_with_header.header.entry_address()
+                    == pending.entry_with_header.header.entry_address()
+                    && current.workflow == pending.workflow
+            },
         )
     }
 

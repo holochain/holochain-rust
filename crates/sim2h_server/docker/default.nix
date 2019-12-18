@@ -1,13 +1,23 @@
 { pkgs }:
 let
+  git-branch = "`git rev-parse --abbrev-ref HEAD`";
+
   docker-build = pkgs.writeShellScriptBin "hc-sim2h-docker-build"
   ''
-  ./docker/build sim2h_server `git rev-parse --abbrev-ref HEAD`
+  set -euxo pipefail
+  for image in minimal sim2h_server
+  do
+  ./docker/build $image ${git-branch}
+  done
   '';
 
   docker-push = pkgs.writeShellScriptBin "hc-sim2h-docker-push"
   ''
-  ./docker/push sim2h_server `git rev-parse --abbrev-ref HEAD`
+  set -euxo pipefail
+  for image in minimal sim2h_server
+  do
+  ./docker/push $image ${git-branch}
+  done
   '';
 
   docker-run = pkgs.writeShellScriptBin "hc-sim2h-docker-run"

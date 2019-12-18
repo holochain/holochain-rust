@@ -108,9 +108,10 @@ impl AwsDate {
 }
 
 impl TryFrom<String> for AwsDate {
+
     type Error = chrono::format::ParseError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        NaiveDateTime::parse_from_str(s.as_str(), "%Y-%m-%dT%H:%M:%S%.3f").map(AwsDate::new)
+        NaiveDateTime::parse_from_str(s.as_str(), "%Y-%m-%d %H:%M:%S%.3f").map(AwsDate::new)
     }
 }
 
@@ -521,8 +522,14 @@ pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCrede
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     #[test]
     fn can_parse_aws_timestamp() {
-        let raw = "2019-12-13 05:47:07.318";
+        let raw = "2019-12-13 05:47:07.318".to_string();
+
+        let aws_date : Result<AwsDate, _> = raw.try_into();
+
+        assert!(aws_date.is_ok(), format!("{:?}", aws_date));
     }
+
 }

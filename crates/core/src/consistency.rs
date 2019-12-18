@@ -1,6 +1,9 @@
-use crate::{action::Action, context::Context, entry::CanPublish, nucleus::ZomeFnCall};
-use holochain_core_types::{
-    entry::Entry, link::link_data::LinkData, network::entry_aspect::EntryAspect,
+use crate::{
+    action::Action,
+    context::Context,
+    entry::CanPublish,
+    network::handler::{get_content_aspect, lists::get_base_address_and_meta_aspect},
+    nucleus::ZomeFnCall,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde::Serialize;
@@ -56,19 +59,13 @@ type ConsistencySignalE = ConsistencySignal<ConsistencyEvent>;
 #[allow(clippy::large_enum_variant)]
 pub enum ConsistencyEvent {
     // CAUSES
-    PublishEntry(Address),                                      // -> HoldEntry
-    PublishHeader(Address),                                     // -> HoldHeader
-    InitializeNetwork, // -> HoldEntry (the AgentId if initialize chain happend)
-    InitializeChain,   // -> prepare to hold AgentId
+    PublishAspect(Address, Address), // -> Hold
+    InitializeNetwork,               // -> Hold (the AgentId if initialize chain happend)
+    InitializeChain,                 // -> prepare to hold AgentId
     SignalZomeFunctionCall(String, snowflake::ProcessUniqueId), // -> ReturnZomeFunctionResult
 
     // EFFECTS
-    HoldEntry(Address),            // <- PublishEntry
-    HoldHeader(Address),           // <- PublishHeader
-    UpdateEntry(Address, Address), // <- PublishEntry, entry_type=Update
-    RemoveEntry(Address, Address), // <- PublishEntry, entry_type=Deletion
-    AddLink(LinkData),             // <- PublishEntry, entry_type=LinkAdd
-    RemoveLink(Address),           // <- PublishEntry, entry_type=LinkRemove
+    HoldAspect(Address, Address), // <- Publish
     ReturnZomeFunctionResult(String, snowflake::ProcessUniqueId), // <- SignalZomeFunctionCall
 }
 
@@ -88,7 +85,7 @@ pub enum ConsistencyGroup {
 pub struct ConsistencyModel {
     // upon Commit, caches the corresponding ConsistencySignal which will only be emitted
     // later, when the corresponding Publish has been processed
-    commit_cache: HashMap<Address, ConsistencySignalE>,
+    commit_cache: HashMap<Address, Vec<ConsistencySignalE>>,
 
     // store whether we have initialized the chain
     chain_initialized: bool,
@@ -110,7 +107,7 @@ impl ConsistencyModel {
         use ConsistencyEvent::*;
         use ConsistencyGroup::*;
         match action {
-            Action::Commit((entry, crud_link, _)) => {
+            Action::Commit((entry, _crud_link, _)) => {
                 // XXX: Since can_publish relies on a properly initialized Context, there are a few ways
                 // can_publish can fail. If we hit the possiblity of failure, just add the commit to the cache
                 // anyway. The only reason to check is to avoid filling up the cache unnecessarily with
@@ -123,97 +120,74 @@ impl ConsistencyModel {
                 // when the entry is finally published, and save it for later
                 if do_cache {
                     let address = entry.address();
-                    let hold = HoldEntry(address.clone());
-                    let meta = match entry {
-                        Entry::App(_, _) => crud_link
-                            .clone()
-                            .map(|crud| UpdateEntry(crud, address.clone())),
-                        Entry::Deletion(_) => crud_link
-                            .clone()
-                            .map(|crud| RemoveEntry(crud, address.clone())),
-                        Entry::LinkAdd(link_data) => Some(AddLink(link_data.clone())),
-                        Entry::LinkRemove(_) => Some(RemoveLink(address.clone())),
-                        // Question: Why does Entry::LinkAdd take LinkData instead of Link?
-                        // as of now, link data contains more information than just the link
-                        _ => None,
-                    };
-                    let mut pending = vec![hold];
-                    if let Some(m) = meta {
-                        pending.push(m)
-                    }
-                    let signal = ConsistencySignal::new_pending(
-                        PublishEntry(address.clone()),
+                    let content_aspect = get_content_aspect(&address, &self.context)
+                        .expect("Must be able to get content aspect for own entry");
+                    let header = content_aspect.header();
+                    let mut signals = vec![];
+                    signals.push(ConsistencySignal::new_pending(
+                        PublishAspect(
+                            content_aspect.entry_address().clone(),
+                            content_aspect.address().clone(),
+                        ),
                         Validators,
-                        pending,
-                    );
-                    self.commit_cache.insert(address, signal);
+                        vec![HoldAspect(
+                            content_aspect.entry_address().clone(),
+                            content_aspect.address().clone(),
+                        )],
+                    ));
+                    if let Some((_, meta_aspect)) =
+                        get_base_address_and_meta_aspect(entry.clone(), header.clone())
+                    {
+                        signals.push(ConsistencySignal::new_pending(
+                            PublishAspect(
+                                meta_aspect.entry_address().clone(),
+                                meta_aspect.address().clone(),
+                            ),
+                            Validators,
+                            vec![HoldAspect(
+                                meta_aspect.entry_address().clone(),
+                                meta_aspect.address().clone(),
+                            )],
+                        ));
+                    }
+
+                    self.commit_cache.insert(address, signals);
                 }
                 vec![]
             }
             Action::Publish(address) => {
                 // Emit the signal that was created when observing the corresponding Commit
-                let maybe_signal = self.commit_cache.remove(address);
-                maybe_signal.or_else(|| {
+                let maybe_signals = self.commit_cache.remove(address);
+                maybe_signals.unwrap_or_else(|| {
                     log_warn!(
                         self.context,
                         "consistency: Publishing address that was not previously committed"
                     );
-                    None
-                }).into_iter().collect()
-            }
-            Action::PublishHeaderEntry(address) => {
-                vec![ConsistencySignal::new_pending(PublishHeader(address.clone()), Validators, vec![HoldHeader(address.clone())])]
-            }
-            Action::HoldAspect(aspect) => match aspect {
-                EntryAspect::Content(entry, _) => match entry {
-                    Entry::ChainHeader(header) => vec!(ConsistencySignal::new_terminal(HoldHeader(header.entry_address().clone()))),
-                    other_entry => vec!(ConsistencySignal::new_terminal(HoldEntry(other_entry.address()))),
-                }
-                EntryAspect::Update(_, header) => {
-                    header.link_update_delete().map(|old| {
-                        let new = header.entry_address().clone();
-                        ConsistencySignal::new_terminal(
-                            ConsistencyEvent::UpdateEntry(old, new),
-                        )
-                    }).or_else(|| {
-                        error!("Got header without link_update_delete associated with EntryAspect::Update");
-                        None
-                    }).into_iter().collect()
-                },
-                EntryAspect::Deletion(header) => {
-                    header.link_update_delete().map(|old| {
-                        let new = header.entry_address().clone();
-                        ConsistencySignal::new_terminal(
-                            ConsistencyEvent::RemoveEntry(old, new),
-                        )
-                    }).or_else(|| {
-                        error!("Got header without link_update_delete associated with EntryAspect::Deletion");
-                        None
-                    }).into_iter().collect()
-                },
-                EntryAspect::LinkAdd(data, _) => vec!(ConsistencySignal::new_terminal(
-                    ConsistencyEvent::AddLink(data.clone()),
-                )),
-                EntryAspect::LinkRemove(_, header) => vec!(ConsistencySignal::new_terminal(
-                    ConsistencyEvent::RemoveLink(header.entry_address().clone()),
-                )),
-                EntryAspect::Header(_) => {
-                    error!("Got EntryAspect::Header type, unexpectedly");
                     vec![]
-                }
+                })
             }
 
-            Action::QueueZomeFunctionCall(call) => vec!(ConsistencySignal::new_pending(
+            // TODO: how to deal with header publishing, in terms of aspects?
+            // Action::PublishHeaderEntry(address) => {
+            //     if let Some(header) = self.context.state().unwrap().get_most_recent_header_for_entry_address(address);
+            //     vec![ConsistencySignal::new_pending(PublishHeader(address.clone()), Validators, vec![HoldHeader(address.clone())])]
+            // }
+            Action::HoldAspect(aspect) => vec![ConsistencySignal::new_terminal(HoldAspect(
+                aspect.entry_address().clone(),
+                aspect.address(),
+            ))],
+
+            Action::QueueZomeFunctionCall(call) => vec![ConsistencySignal::new_pending(
                 SignalZomeFunctionCall(display_zome_fn_call(call), call.id()),
                 Source,
                 vec![ReturnZomeFunctionResult(
                     display_zome_fn_call(call),
                     call.id(),
                 )],
-            )),
-            Action::ReturnZomeFunctionResult(result) => vec!(ConsistencySignal::new_terminal(
+            )],
+            Action::ReturnZomeFunctionResult(result) => vec![ConsistencySignal::new_terminal(
                 ReturnZomeFunctionResult(display_zome_fn_call(&result.call()), result.call().id()),
-            )),
+            )],
             // Action::InitNetwork(settings) => {
             //     // If the chain was initialized earlier than we also should have
             //     // committed the agent and so we should be able to wait for the agent id

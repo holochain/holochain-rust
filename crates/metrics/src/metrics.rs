@@ -30,11 +30,11 @@ impl Metric {
     }
 }
 
+/// Give a csv reader produce an iterator over metric.
+/// Panics if any records are invalid from the csv source.
 #[macro_export]
 macro_rules! metrics_from_reader {
     ($read: expr) => {{
-        //       let mut reader = csv::Reader::from_reader($read);
-
         $read.deserialize().map(|record| {
             let metric: Metric = record.unwrap();
             metric

@@ -1,7 +1,7 @@
-use crate::metrics::Metric;
 /// Provides statistical features over metric data.
-use num_traits::float::Float;
 /// Extends the metric api with statistical aggregation functions
+use crate::metrics::Metric;
+use num_traits::float::Float;
 use stats::Commute;
 use std::{
     collections::HashMap,
@@ -14,6 +14,7 @@ use std::{
 
 use regex::Regex;
 
+/// Generic representation of descriptive statistics.
 pub trait DescriptiveStats {
     fn max(&self) -> f64;
     fn min(&self) -> f64;
@@ -22,6 +23,7 @@ pub trait DescriptiveStats {
     fn stddev(&self) -> f64;
     fn variance(&self) -> f64;
 
+    /// Computes percent change between two descriptive statistics
     fn percent_change(&self, other: &dyn DescriptiveStats) -> StatsRecord {
         StatsRecord {
             mean: percent_change(self.mean(), other.mean()),
@@ -46,6 +48,7 @@ pub struct OnlineStats {
     cnt: u64,
 }
 
+/// A statistical record, useful for serialization and display purposes.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StatsRecord {
     pub metric: Option<String>,
@@ -58,6 +61,7 @@ pub struct StatsRecord {
     pub stddev: f64,
 }
 
+/// A checked statistical record to indicate differences between two statistics.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckedStatsRecord {
     metric: String,
@@ -230,6 +234,7 @@ impl Display for DescriptiveStatType {
     }
 }
 
+/// Represents a checked statistic that deviated too far.
 #[derive(Clone, Debug, Serialize)]
 pub struct StatFailure {
     expected: f64,

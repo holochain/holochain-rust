@@ -98,6 +98,7 @@ impl TryFrom<Vec<ResultField>> for Metric {
     }
 }
 
+/// A date sourced from an AWS logs query
 #[derive(Debug, Clone, Shrinkwrap)]
 struct AwsDate(NaiveDateTime);
 
@@ -107,8 +108,8 @@ impl AwsDate {
     }
 }
 
+/// Converts an raw aws log timeestamp to a `NaiveDateTime`.
 impl TryFrom<String> for AwsDate {
-
     type Error = chrono::format::ParseError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         NaiveDateTime::parse_from_str(s.as_str(), "%Y-%m-%d %H:%M:%S%.3f").map(AwsDate::new)
@@ -135,6 +136,7 @@ impl Drop for CloudWatchLogger {
     }
 }
 
+/// Arguments specific to a cloudwatch query
 #[derive(Clone, Debug, Default, StructOpt)]
 pub struct QueryArgs {
     #[structopt(name = "start_time")]
@@ -149,6 +151,7 @@ pub struct QueryArgs {
     pub log_stream_pat: Option<String>,
 }
 
+/// Commonly used options for cloudwatch related services
 #[derive(Clone, Debug, Default, StructOpt)]
 pub struct CloudwatchLogsOptions {
     #[structopt(
@@ -497,6 +500,8 @@ impl Default for CloudWatchLogger {
 pub const FINAL_EXAM_NODE_ROLE: &str =
     "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
 
+/// Calls the AWS assume role service to obtain credentials
+/// for cloudwatch related queries
 pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCredentialsProvider {
     let sts = StsClient::new_with(
         rusoto_core::request::HttpClient::new().unwrap(),
@@ -527,9 +532,8 @@ mod tests {
     fn can_parse_aws_timestamp() {
         let raw = "2019-12-13 05:47:07.318".to_string();
 
-        let aws_date : Result<AwsDate, _> = raw.try_into();
+        let aws_date: Result<AwsDate, _> = raw.try_into();
 
         assert!(aws_date.is_ok(), format!("{:?}", aws_date));
     }
-
 }

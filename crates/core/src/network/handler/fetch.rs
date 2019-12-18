@@ -16,7 +16,7 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     // XXX: NB: we seem to be ignoring aspect_address_list and just attempting to get all aspects.
     // Is that right?
 
-    match get_content_aspect(&address, context.clone()) {
+    match get_content_aspect(&address, &context) {
         Ok(content_aspect) => {
             aspects.push(content_aspect);
             match get_meta_aspects(&address, context.clone()) {

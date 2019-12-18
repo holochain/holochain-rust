@@ -371,7 +371,7 @@ impl Instance {
                 );
             });
 
-            if let Some(signal) = self
+            for signal in self
                 .consistency_model
                 .process_action(action_wrapper.action())
             {

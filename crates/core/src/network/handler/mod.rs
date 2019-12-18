@@ -276,9 +276,9 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 /// NB: this can be optimized by starting with a CAS lookup for the entry directly,
 /// to avoid traversing the chain unnecessarily in the case of a miss
 /// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
-fn get_content_aspect(
+pub(crate) fn get_content_aspect(
     entry_address: &Address,
-    context: Arc<Context>,
+    context: &Context,
 ) -> Result<EntryAspect, HolochainError> {
     let state = context.state().ok_or_else(|| {
         HolochainError::InitializationFailed(String::from("In get_content_aspect: no state found"))
@@ -353,7 +353,7 @@ fn get_content_aspect(
     let _ = entry_with_header
         .entry
         .entry_type()
-        .can_publish(&context)
+        .can_publish(context)
         .ok_or(HolochainError::EntryIsPrivate)?;
 
     Ok(EntryAspect::Content(

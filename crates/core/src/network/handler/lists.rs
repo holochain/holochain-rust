@@ -7,7 +7,7 @@ use crate::{
     instance::dispatch_action,
     network::{entry_aspect::EntryAspect, handler::get_content_aspect},
 };
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;
 use lib3h_protocol::{
@@ -38,7 +38,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     let mut address_map: AspectMapBare = AspectMapBare::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
         // 1. For every public chain entry we definitely add the content aspect:
-        let content_aspect = get_content_aspect(&entry_address, context.clone())
+        let content_aspect = get_content_aspect(&entry_address, &context)
             .expect("Must be able to get content aspect of entry that is in our source chain");
 
         address_map
@@ -57,27 +57,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
 
         // And then we deduce the according base entry and meta aspect from that entry
         // and its header:
-        let maybe_meta_aspect = match entry {
-            Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
-                (
-                    updated_entry,
-                    EntryAspect::Update(Entry::App(app_type, app_value), header),
-                )
-            }),
-            Entry::LinkAdd(link_data) => Some((
-                link_data.link.base().clone(),
-                EntryAspect::LinkAdd(link_data, header),
-            )),
-            Entry::LinkRemove((link_data, addresses)) => Some((
-                link_data.link.base().clone(),
-                EntryAspect::LinkRemove((link_data, addresses), header),
-            )),
-            Entry::Deletion(_) => Some((
-                header.link_update_delete().expect(""),
-                EntryAspect::Deletion(header),
-            )),
-            _ => None,
-        };
+        let maybe_meta_aspect = get_base_address_and_meta_aspect(entry, header);
 
         if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
             address_map
@@ -131,6 +111,33 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .filter(|ref chain_header| chain_header.entry_type().can_publish(&context))
         .map(|chain_header| chain_header.entry_address().clone())
         .collect()
+}
+
+pub(crate) fn get_base_address_and_meta_aspect(
+    entry: Entry,
+    header: ChainHeader,
+) -> Option<(Address, EntryAspect)> {
+    match entry {
+        Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
+            (
+                updated_entry,
+                EntryAspect::Update(Entry::App(app_type, app_value), header),
+            )
+        }),
+        Entry::LinkAdd(link_data) => Some((
+            link_data.link.base().clone(),
+            EntryAspect::LinkAdd(link_data, header),
+        )),
+        Entry::LinkRemove((link_data, addresses)) => Some((
+            link_data.link.base().clone(),
+            EntryAspect::LinkRemove((link_data, addresses), header),
+        )),
+        Entry::Deletion(_) => Some((
+            header.link_update_delete().expect(""),
+            EntryAspect::Deletion(header),
+        )),
+        _ => None,
+    }
 }
 
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {

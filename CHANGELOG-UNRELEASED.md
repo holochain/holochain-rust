@@ -13,7 +13,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Adds parameters to conductor RPC function `debug/state_dump` to select portions of the state to be send instead of always receiving the full dump (which can get big if the instance holds many entries). [#1954](https://github.com/holochain/holochain-rust/pull/1954)
 - Added new docker boxes dedicated to faster CI tasks through incremental compilation
 - Added `CARGO_CACHE_RUSTC_INFO=1` to nix shell
-
+- Added `print-metric-stats` and `print-cloudwatch-metrics` commands to `holochain_metrics` [#1972](https://github.com/holochain/holochain-rust/pull/1972).
 ### Changed
 
 - data sent via jsonrpc to the conductor interface for agent/sign, agent/encrypt and agent/decrypt must now be base64 encoded

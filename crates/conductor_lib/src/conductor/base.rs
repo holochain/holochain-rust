@@ -2076,7 +2076,8 @@ pub mod tests {
     #[test]
     fn test_conductor_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
-        let _conductor = test_conductor_with_signals(signal_tx);
+        let mut conductor = test_conductor_with_signals(signal_tx);
+        conductor.start_signal_multiplexer();
 
         test_utils::expect_action(&signal_rx, |action| match action {
             Action::InitializeChain(_) => true,

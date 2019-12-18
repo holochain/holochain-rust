@@ -9,6 +9,10 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dev-dependencies]
+lib3h_crypto_api = "=0.0.25"
+base64 = "=0.10.1"
+hcid = "=0.0.6"
+jsonrpc-core = "=14.0.1"
 tempfile = "=3.0.7"
 
 [dependencies]

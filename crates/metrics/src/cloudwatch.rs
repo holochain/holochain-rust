@@ -286,7 +286,7 @@ impl CloudWatchLogger {
     }
 
     pub fn default_log_group() -> String {
-        "/aws/ec2/holochain/performance/".to_string()
+        "/holochain/trycp/".to_string()
     }
 
     pub fn default_start_time() -> i64 {

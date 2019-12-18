@@ -48,10 +48,14 @@ fn run_app() -> Result<(), String> {
         println!("resolved to: {}", ips[0]);
         format!("{}", ips[0])
     };
-    let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, url.port().unwrap()));
+    let maybe_port = url.port();
+    if maybe_port.is_none() {
+        return Err(format!("expecting port in url, got: {}",url))
+    }
+    let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, maybe_port.unwrap()));
 
     println!("connecting to: {}", url);
-    let mut job = Job::new(&url);
+    let mut job = Job::new(&url)?;
     job.send_wire(WireMessage::Status);
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(500))
@@ -73,7 +77,7 @@ fn run_app() -> Result<(), String> {
             Err(e) => Err(format!("{}", e))?,
         }
         if std::time::Instant::now() >= timeout {
-            Err("timeout waiting for status response".to_string())?;
+            Err(format!("timeout waiting for status response from {}", host))?;
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
@@ -92,17 +96,17 @@ struct Job {
 }
 
 impl Job {
-    pub fn new(connect_uri: &Url2) -> Self {
+    pub fn new(connect_uri: &Url2) -> Result<Self,String> {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
             let mut sec_key = crypto.buf_new_secure(crypto.sign_secret_key_bytes());
             crypto.sign_keypair(&mut pub_key, &mut sec_key).unwrap();
             (pub_key, sec_key)
         });
-        let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
+        let enc = hcid::HcidEncoding::with_kind("hcs0").map_err(|e| format!("{}",e))?;
         let agent_id = enc.encode(&*pub_key).unwrap();
         println!("Generated agent id: {}", agent_id);
-        let connection = await_in_stream_connect(connect_uri).unwrap();
+        let connection = await_in_stream_connect(connect_uri).map_err(|e| format!("Error awaiting connection: {}",e))?;
 
         let out = Self {
             agent_id,
@@ -113,7 +117,7 @@ impl Job {
 
         //        out.join_space();
 
-        out
+        Ok(out)
     }
 
     /// sign a message and send it to sim2h

@@ -455,7 +455,9 @@ impl Conductor {
             .interfaces
             .iter()
             .map(|ic| (ic.id.clone(), self.spawn_interface_thread(ic.clone())))
-            .collect()
+            .collect();
+
+        self.start_signal_multiplexer();
     }
 
     pub fn stop_all_interfaces(&mut self) {
@@ -812,8 +814,6 @@ impl Conductor {
                     .insert(id.clone(), Arc::new(RwLock::new(instance)));
             }
         }
-
-        self.start_signal_multiplexer();
 
         for ui_interface_config in self.config.ui_interfaces.clone() {
             notify(format!("adding ui interface {}", &ui_interface_config.id));
@@ -2076,7 +2076,8 @@ pub mod tests {
     #[test]
     fn test_conductor_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
-        let _conductor = test_conductor_with_signals(signal_tx);
+        let mut conductor = test_conductor_with_signals(signal_tx);
+        conductor.start_signal_multiplexer();
 
         test_utils::expect_action(&signal_rx, |action| match action {
             Action::InitializeChain(_) => true,

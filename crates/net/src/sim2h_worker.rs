@@ -361,6 +361,10 @@ impl Sim2hWorker {
                 }
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
             },
+            WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
+            WireMessage::StatusResponse(_) => {
+                error!("Got a StatusResponse from the Sim2h server, weird! Ignoring")
+            }
         };
         Ok(())
     }

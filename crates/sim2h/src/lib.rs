@@ -33,7 +33,7 @@ use lib3h_protocol::{
 };
 use url2::prelude::*;
 
-pub use wire_message::{WireError, WireMessage, StatusData};
+pub use wire_message::{StatusData, WireError, WireMessage};
 
 use in_stream::*;
 use log::*;
@@ -395,11 +395,14 @@ impl Sim2h {
         }
         if message == WireMessage::Status {
             trace!("Status -> StatusResponse");
-            self.send(signer.clone(), uri.clone(), &WireMessage::StatusResponse(
-                StatusData{
+            self.send(
+                signer.clone(),
+                uri.clone(),
+                &WireMessage::StatusResponse(StatusData {
                     spaces: self.spaces.len(),
-                    connections: self.open_connections.len()
-                }));
+                    connections: self.open_connections.len(),
+                }),
+            );
             return Ok(());
         }
         MESSAGE_LOGGER

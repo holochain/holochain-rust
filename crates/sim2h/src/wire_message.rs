@@ -25,7 +25,7 @@ pub enum WireMessage {
     Ping,
     Pong,
     Status,
-    StatusResponse(StatusData)
+    StatusResponse(StatusData),
 }
 
 impl WireMessage {

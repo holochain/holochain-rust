@@ -63,7 +63,7 @@ fn run_app() -> Result<(), String> {
             Ok(_) => {
                 if let WsFrame::Binary(b) = frame {
                     let msg: WireMessage = serde_json::from_slice(&b).unwrap();
-                    println!("MSG: {:?}", msg);
+                    println!("{:?}", msg);
                     break;
                 } else {
                     Err(format!("unexpected {:?}", frame))?;
@@ -101,7 +101,7 @@ impl Job {
         });
         let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
         let agent_id = enc.encode(&*pub_key).unwrap();
-        println!("GENERATED AGENTID {}", agent_id);
+        println!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri).unwrap();
 
         let out = Self {

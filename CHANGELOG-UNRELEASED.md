@@ -5,7 +5,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
-
+- Adds support for setting the agent name and id via a parameter with hc run by calling `hc run --agent-name MyAgentName`. The `%agent_id` is generated from the name. This allows multiple hc run conductors to be used on the same machine. It will be overwritten by the `HC_AGENT` environment variable.
+- Adds support for sim2h with hc run by calling `hc run --networked sim2h --sim2h-server wss://localhost:9000`.
 - Adds support for [hApp-bundles](https://github.com/holochain/holoscape/tree/master/example-bundles) to `hc run`. This enables complex hApp setups with multiple DNAs and bridges to be easily run during development without having to write/maintain a conductor config file. [#1939](https://github.com/holochain/holochain-rust/pull/1939)
 - Adds ability to validate entries with full chain validation when author is offline [#1932](https://github.com/holochain/holochain-rust/pull/1932)
 - Adds a conductor level stats-signal that sends an overview of instance data (number of held entries etc.) over admin interfaces. [#1954](https://github.com/holochain/holochain-rust/pull/1954)
@@ -25,6 +26,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - renamed `hc-conductor-wasm-install` to `hc-conductor-wasm-bindgen-install`
 - core `shellHook` can now override holonix `shellHook`
 - several `--target-dir` flags are removed in favour of `$CARGO_TARGET_DIR`
+- the passphrase hashing config is now set to faster and less secure parameters to reduce the start-up time of conductors a lot, esp. on slow devices. (will become a setting the user can choose in the future - faster and less secure config is fine for now and throughout alpha and beta) [#1986](https://github.com/holochain/holochain-rust/pull/1986)
 
 ### Deprecated
 

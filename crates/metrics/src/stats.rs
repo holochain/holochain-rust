@@ -555,7 +555,9 @@ impl StatsByMetric<StatsRecord> {
             },
         ))
     }
+}
 
+impl StatsByMetric<OnlineStats> {
     pub fn group_by_regex<I: IntoIterator<Item = Metric>>(
         re: &Regex,
         metrics: I,

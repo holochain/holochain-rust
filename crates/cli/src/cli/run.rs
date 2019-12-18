@@ -87,9 +87,10 @@ pub fn hc_run_configuration(
     networked: Option<Networking>,
     interface_type: &String,
     logging: bool,
+    agent_name: String,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
-        agents: vec![agent_configuration()],
+        agents: vec![agent_configuration(agent_name)],
         dnas: vec![dna_configuration(&dna_path)],
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
@@ -105,11 +106,12 @@ pub fn hc_run_bundle_configuration(
     persist: bool,
     networked: Option<Networking>,
     logging: bool,
+    agent_name: String,
 ) -> DefaultResult<Configuration> {
     bundle
         .build_conductor_config(
             port,
-            agent_configuration(),
+            agent_configuration(agent_name),
             storage_configuration(persist)?,
             networking_configuration(networked),
             logger_configuration(logging),
@@ -118,17 +120,14 @@ pub fn hc_run_bundle_configuration(
 }
 
 // AGENT
-const AGENT_NAME_DEFAULT: &str = "testAgent";
+pub(crate) const AGENT_NAME_DEFAULT: &str = "testAgent";
 const AGENT_CONFIG_ID: &str = "hc-run-agent";
 
-fn agent_configuration() -> AgentConfiguration {
+fn agent_configuration(agent_name: String) -> AgentConfiguration {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let agent_name = EnvVar::Agent
-        .value()
-        .ok()
-        .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
+    let agent_name = EnvVar::Agent.value().ok().unwrap_or_else(|| agent_name);
     let mut keystore = test_keystore(&agent_name);
     let pub_key = keystore
         .get_keybundle(PRIMARY_KEYBUNDLE_ID)

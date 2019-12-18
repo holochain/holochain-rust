@@ -92,6 +92,9 @@ enum Cli {
         #[structopt(long, short, default_value = "websocket")]
         /// Specify interface type to use: websocket/http
         interface: String,
+        #[structopt(long, short, default_value = cli::run::AGENT_NAME_DEFAULT)]
+        /// Specify agent name which will be used to generate the %agent_id.
+        agent_name: String,
     },
     #[structopt(alias = "t")]
     /// Runs tests written in the test folder
@@ -212,6 +215,7 @@ fn run() -> HolochainResult<()> {
             sim2h_server,
             interface,
             logging,
+            agent_name,
         } => {
             let dna_path = dna_path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
@@ -228,8 +232,15 @@ fn run() -> HolochainResult<()> {
                 let happ_bundle =
                     toml::from_str::<HappBundle>(&contents).expect("Error loading bundle.");
 
-                cli::hc_run_bundle_configuration(&happ_bundle, port, persist, networked, logging)
-                    .map_err(HolochainError::Default)?
+                cli::hc_run_bundle_configuration(
+                    &happ_bundle,
+                    port,
+                    persist,
+                    networked,
+                    logging,
+                    agent_name,
+                )
+                .map_err(HolochainError::Default)?
             } else {
                 cli::hc_run_configuration(
                     &dna_path,
@@ -238,6 +249,7 @@ fn run() -> HolochainResult<()> {
                     networked,
                     &interface_type,
                     logging,
+                    agent_name,
                 )
                 .map_err(HolochainError::Default)?
             };

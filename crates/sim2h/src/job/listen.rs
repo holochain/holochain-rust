@@ -22,9 +22,8 @@ impl ListenJob {
             Err(e) if e.would_block() => (),
             Err(e) => {
                 error!("LISTEN ACCEPT FAIL: {:?}", e);
-                //return false;
-                // uhh... this is fatal for now
-                panic!(e);
+                // don't panic : )
+                // we just want to drop this connection, so do nothing
             }
         }
         // no data this round, wait 5ms before checking again

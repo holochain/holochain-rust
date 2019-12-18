@@ -5,6 +5,7 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_json_api;
 extern crate holochain_locksmith;
+extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
@@ -35,7 +36,7 @@ mod util;
 use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
-use structopt::StructOpt;
+use structopt::{clap::arg_enum, StructOpt};
 
 #[derive(StructOpt)]
 /// A command line for Holochain
@@ -82,9 +83,12 @@ enum Cli {
         #[structopt(long)]
         /// Save generated data to file system
         persist: bool,
-        #[structopt(long)]
-        /// Use real networking
-        networked: bool,
+        #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
+        /// Use real networking use: n3h/sim2h
+        networked: Option<NetworkingType>,
+        #[structopt(long, default_value = "wss://localhost:9000")]
+        /// Set the sim2h server url if you are using real networking.
+        sim2h_server: String,
         #[structopt(long, short, default_value = "websocket")]
         /// Specify interface type to use: websocket/http
         interface: String,
@@ -142,6 +146,13 @@ enum Cli {
         property: Option<Vec<String>>,
     },
 }
+arg_enum! {
+    #[derive(Debug)]
+    pub enum NetworkingType {
+        N3h,
+        Sim2h,
+    }
+}
 
 fn main() {
     lib3h_sodium::check_init();
@@ -198,6 +209,7 @@ fn run() -> HolochainResult<()> {
             dna_path,
             persist,
             networked,
+            sim2h_server,
             interface,
             logging,
         } => {
@@ -206,6 +218,7 @@ fn run() -> HolochainResult<()> {
             let interface_type = cli::get_interface_type_string(interface);
 
             let bundle_path = project_path.join("bundle.toml");
+            let networked = networked.map(|n| cli::run::Networking::new(n, sim2h_server));
             let conductor_config = if bundle_path.exists() {
                 let mut f = File::open(bundle_path)
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;

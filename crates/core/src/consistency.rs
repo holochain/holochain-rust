@@ -120,8 +120,18 @@ impl ConsistencyModel {
                 // when the entry is finally published, and save it for later
                 if do_cache {
                     let address = entry.address();
-                    let content_aspect = get_content_aspect(&address, &self.context)
-                        .expect("Must be able to get content aspect for own entry");
+                    let content_aspect = match get_content_aspect(&address, &self.context) {
+                        Ok(a) => a,
+                        Err(err) => {
+                            log_error!(
+                                self.context,
+                                "Could not get content aspect for consistency signal: {}",
+                                err
+                            );
+                            return vec![];
+                        }
+                    };
+
                     let header = content_aspect.header();
                     let mut signals = vec![];
                     signals.push(ConsistencySignal::new_pending(

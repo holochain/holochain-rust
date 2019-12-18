@@ -127,12 +127,12 @@ impl ConsistencyModel {
                     signals.push(ConsistencySignal::new_pending(
                         PublishAspect(
                             content_aspect.entry_address().clone(),
-                            content_aspect.address().clone(),
+                            content_aspect.address(),
                         ),
                         Validators,
                         vec![HoldAspect(
                             content_aspect.entry_address().clone(),
-                            content_aspect.address().clone(),
+                            content_aspect.address(),
                         )],
                     ));
                     if let Some((_, meta_aspect)) =
@@ -141,12 +141,12 @@ impl ConsistencyModel {
                         signals.push(ConsistencySignal::new_pending(
                             PublishAspect(
                                 meta_aspect.entry_address().clone(),
-                                meta_aspect.address().clone(),
+                                meta_aspect.address(),
                             ),
                             Validators,
                             vec![HoldAspect(
                                 meta_aspect.entry_address().clone(),
-                                meta_aspect.address().clone(),
+                                meta_aspect.address(),
                             )],
                         ));
                     }

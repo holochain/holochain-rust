@@ -103,7 +103,10 @@ impl AgentState {
         }
     }
 
-    pub fn get_most_recent_header_for_entry_address(&self, address: &Address) -> Option<ChainHeader> {
+    pub fn get_most_recent_header_for_entry_address(
+        &self,
+        address: &Address,
+    ) -> Option<ChainHeader> {
         self.chain_store()
             .iter(&self.top_chain_header())
             .find(|h| h.entry_address() == address)

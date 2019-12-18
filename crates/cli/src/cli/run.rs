@@ -329,7 +329,7 @@ mod tests {
 
     #[test]
     fn test_agent_configuration() {
-        let agent = super::agent_configuration();
+        let agent = super::agent_configuration(super::AGENT_NAME_DEFAULT.to_string());
         assert_eq!(
             agent,
             AgentConfiguration {

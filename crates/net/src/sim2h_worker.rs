@@ -10,7 +10,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use in_stream::*;
 use lib3h_protocol::{
-    data_types::{GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
+    data_types::{FetchEntryData, GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
     protocol::*,
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
@@ -28,6 +28,7 @@ use url::Url;
 use url2::prelude::*;
 
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
+const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
 fn connect(url: Lib3hUri) -> NetResult<InStreamWss<InStreamTls<InStreamTcp>>> {
     let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
@@ -232,9 +233,30 @@ impl Sim2hWorker {
             // Successful data response for a `HandleFetchEntryData` request
             Lib3hClientProtocol::HandleFetchEntryResult(fetch_entry_result_data) => {
                 //let log_context = "ClientToLib3h::HandleFetchEntryResult";
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
-                ))
+                if fetch_entry_result_data.request_id == SIM2H_WORKER_INTERNAL_REQUEST_ID {
+                    for aspect in fetch_entry_result_data.entry.aspect_list {
+                        self.to_core
+                            .push(Lib3hServerProtocol::HandleStoreEntryAspect(
+                                StoreEntryAspectData {
+                                    request_id: "".into(),
+                                    space_address: fetch_entry_result_data.space_address.clone(),
+                                    provider_agent_id: fetch_entry_result_data
+                                        .provider_agent_id
+                                        .clone(),
+                                    entry_address: fetch_entry_result_data
+                                        .entry
+                                        .entry_address
+                                        .clone(),
+                                    entry_aspect: aspect,
+                                },
+                            ));
+                    }
+                    Ok(())
+                } else {
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                        Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
+                    ))
+                }
             }
             // Publish data to the dht.
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
@@ -284,6 +306,16 @@ impl Sim2hWorker {
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
+                for (entry_hash, aspect_hashes) in &entry_list_data.address_map {
+                    self.to_core
+                        .push(Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
+                            space_address: entry_list_data.space_address.clone(),
+                            entry_address: entry_hash.clone(),
+                            request_id: SIM2H_WORKER_INTERNAL_REQUEST_ID.to_string(),
+                            provider_agent_id: entry_list_data.provider_agent_id.clone(),
+                            aspect_address_list: Some(aspect_hashes.clone()),
+                        }))
+                }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
                 ))

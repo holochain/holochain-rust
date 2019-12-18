@@ -117,7 +117,7 @@ enum WssState<Sub: InStreamStd> {
 #[derive(Debug)]
 pub struct InStreamWss<Sub: InStreamStd> {
     state: Option<WssState<Sub>>,
-    connect_url: Url2,
+    remote_url: Url2,
     write_buf: std::collections::VecDeque<WsFrame>,
 }
 
@@ -144,10 +144,10 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         InStreamWss::raw_connect(url, config)
     }
 
-    fn priv_new(connect_url: Url2) -> Self {
+    fn priv_new(remote_url: Url2) -> Self {
         Self {
             state: None,
-            connect_url,
+            remote_url,
             write_buf: std::collections::VecDeque::new(),
         }
     }
@@ -176,11 +176,15 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
     ) -> Result<()> {
         match result {
             Ok(stream) => {
+                self.remote_url = stream.get_ref().remote_url();
+                self.remote_url.set_scheme(SCHEME).unwrap();
                 self.state = Some(WssState::Ready(stream));
                 self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {
+                self.remote_url = mid.get_ref().get_ref().remote_url();
+                self.remote_url.set_scheme(SCHEME).unwrap();
                 self.state = Some(WssState::MidSrvHandshake(mid));
                 Err(Error::with_would_block())
             }
@@ -254,14 +258,14 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
         let config = WssConnectConfig::from_gen(config)?;
         validate_url_scheme(url)?;
-        let connect_url = url.clone();
+        let remote_url = url.clone();
         let mut url = url.clone();
         url.set_scheme(Sub::URL_SCHEME).unwrap();
         let sub = Sub::raw_connect(&url, config.sub_connect_config)?;
-        let mut out = Self::priv_new(connect_url.clone());
+        let mut out = Self::priv_new(remote_url.clone());
         match out.priv_proc_wss_cli_result(tungstenite::client(
             tungstenite::handshake::client::Request {
-                url: connect_url.into(),
+                url: remote_url.into(),
                 extra_headers: None,
             },
             sub.into_std_stream(),
@@ -280,13 +284,7 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn remote_url(&self) -> Url2 {
-        let mut url = match self.state.as_ref().unwrap() {
-            WssState::MidCliHandshake(s) => s.get_ref().get_ref().remote_url(),
-            WssState::MidSrvHandshake(s) => s.get_ref().get_ref().remote_url(),
-            WssState::Ready(s) => s.get_ref().remote_url(),
-        };
-        url.set_scheme(SCHEME).unwrap();
-        url
+        self.remote_url.clone()
     }
 
     fn read(&mut self, data: &mut WsFrame) -> Result<usize> {

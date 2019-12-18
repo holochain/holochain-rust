@@ -1,6 +1,7 @@
+//! Metric suppport for holochain. Provides metric representations to
+//! sample, publish, aggregate, and analyze metric data.
 use holochain_locksmith::RwLock;
-/// Metric suppport for holochain. Provides metric representations to
-/// sample, publish, aggregate, and analyze metric data.
+use lazy_static;
 use std::sync::Arc;
 
 /// Represents a single sample of a numerical metric determined by `name`.
@@ -28,6 +29,11 @@ pub trait MetricPublisher: Sync + Send {
 
 /// The default metric publisher trait implementation
 pub type DefaultMetricPublisher = crate::logger::LoggerMetricPublisher;
+
+lazy_static! {
+    pub static ref PUBLISHER: Arc<RwLock<crate::logger::LoggerMetricPublisher>> =
+        Arc::new(RwLock::new(crate::logger::LoggerMetricPublisher));
+}
 
 /// Wraps a standard rust function with latency timing that is published to
 /// $publisher upon completion of $f($args,*). The latency metric name will

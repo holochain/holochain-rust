@@ -53,6 +53,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "attribute-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1411,6 +1420,7 @@ dependencies = [
 name = "holochain_metrics"
 version = "0.0.40-alpha1"
 dependencies = [
+ "attribute-macros 0.1.0",
  "csv 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_locksmith 0.0.40-alpha1",

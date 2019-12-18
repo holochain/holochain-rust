@@ -19,8 +19,6 @@ use holochain_net::{
     },
 };
 
-static AGENT_ID: &'static str = "HcScJHPS545yc8xohmrKgKCxUN8t3qeyk3VFgF4rTy954UmyCpwn4jFt8t4jmsz";
-
 #[test]
 fn sim2h_worker_talks_to_sim2h() {
     let crypto = Box::new(SodiumCryptoSystem::new());
@@ -59,6 +57,7 @@ fn sim2h_worker_talks_to_sim2h() {
 
     let io = std::sync::Arc::new(holochain_locksmith::RwLock::new(IoHandler::new()));
 
+    let sec_key = std::sync::Arc::new(holochain_locksmith::Mutex::new(sec_key.box_clone()));
     io.write().unwrap().add_method("agent/sign", move |params: jsonrpc_core::types::params::Params| {
         let params = match params {
             jsonrpc_core::types::params::Params::Map(m) => m,
@@ -66,14 +65,13 @@ fn sim2h_worker_talks_to_sim2h() {
         };
         let payload = Box::new(base64::decode(params.get("payload").unwrap().as_str().unwrap()).unwrap());
         let mut payload2 = crypto.buf_new_insecure(payload.len());
-        payload2.write(0, &payload);
+        payload2.write(0, &payload).unwrap();
 
-        println!("SIGN THIS DATA: {:?}", payload);
         let mut sig = crypto.buf_new_insecure(crypto.sign_bytes());
+        crypto.randombytes_buf(&mut sig).unwrap();
 
-        crypto.sign(&mut sig, &payload2, &sec_key).unwrap();
+        crypto.sign(&mut sig, &payload2, &*sec_key.lock().unwrap()).unwrap();
         let signature = base64::encode(&*sig.read_lock());
-        println!("GOT THIS SIGNATURE: {:?}", signature);
         Ok(serde_json::json!({ "signature": signature }))
     });
 
@@ -85,12 +83,12 @@ fn sim2h_worker_talks_to_sim2h() {
         Sim2hConfig {
             sim2h_url: bound_uri.as_str().to_string(),
         },
-        AGENT_ID.to_string().into(),
+        agent_id.clone().into(),
         ConductorApi::new(io.clone()),
     ).unwrap();
 
     worker.receive(Lib3hClientProtocol::JoinSpace(SpaceData {
-        agent_id: AGENT_ID.to_string().into(),
+        agent_id: agent_id.clone().into(),
         request_id: "".to_string(),
         space_address: "BLA".to_string().into(),
     })).unwrap();

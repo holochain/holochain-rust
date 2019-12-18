@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euxo pipefail
 mkdir -p dist
 
 echo "===================================================================================="
 echo "RUNNING cargo test for zomes"
-echo "Using conductor binary: `which holochain`"
-echo "Using cli binary:       `which hc`"
+echo "Using conductor binary: `command -v holochain`"
+echo "Using cli binary:       `command -v hc`"
 echo "------------------------------------------------------------------------------------"
 
 cargo test --manifest-path zomes/blog/code/Cargo.toml
@@ -29,4 +29,6 @@ cd test
 # more precisely symlinks are not supported without additional work on the host
 # e.g. https://superuser.com/questions/1115329/vagrant-shared-folder-and-symbolic-links-under-windows-10
 npm install --no-bin-links
-npm run test-ci
+if [[ -z ${HC_APP_SPEC_BUILD_RUN:-} ]]
+ then npm run test-ci
+fi

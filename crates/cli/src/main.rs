@@ -5,6 +5,7 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_json_api;
 extern crate holochain_locksmith;
+extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
@@ -34,7 +35,7 @@ mod util;
 use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
-use structopt::StructOpt;
+use structopt::{clap::arg_enum, StructOpt};
 
 #[derive(StructOpt)]
 /// A command line for Holochain
@@ -81,12 +82,18 @@ enum Cli {
         #[structopt(long)]
         /// Save generated data to file system
         persist: bool,
-        #[structopt(long)]
-        /// Use real networking
-        networked: bool,
+        #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
+        /// Use real networking use: n3h/sim2h
+        networked: Option<NetworkingType>,
+        #[structopt(long, default_value = "wss://localhost:9000")]
+        /// Set the sim2h server url if you are using real networking.
+        sim2h_server: String,
         #[structopt(long, short, default_value = "websocket")]
         /// Specify interface type to use: websocket/http
         interface: String,
+        #[structopt(long, short, default_value = cli::run::AGENT_NAME_DEFAULT)]
+        /// Specify agent name which will be used to generate the %agent_id.
+        agent_name: String,
     },
     #[structopt(alias = "t")]
     /// Runs tests written in the test folder
@@ -140,6 +147,13 @@ enum Cli {
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
     },
+}
+arg_enum! {
+    #[derive(Debug)]
+    pub enum NetworkingType {
+        N3h,
+        Sim2h,
+    }
 }
 
 fn main() {
@@ -197,14 +211,17 @@ fn run() -> HolochainResult<()> {
             dna_path,
             persist,
             networked,
+            sim2h_server,
             interface,
             logging,
+            agent_name,
         } => {
             let dna_path = dna_path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
             let interface_type = cli::get_interface_type_string(interface);
 
             let bundle_path = project_path.join("bundle.toml");
+            let networked = networked.map(|n| cli::run::Networking::new(n, sim2h_server));
             let conductor_config = if bundle_path.exists() {
                 let mut f = File::open(bundle_path)
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
@@ -214,8 +231,15 @@ fn run() -> HolochainResult<()> {
                 let happ_bundle =
                     toml::from_str::<HappBundle>(&contents).expect("Error loading bundle.");
 
-                cli::hc_run_bundle_configuration(&happ_bundle, port, persist, networked, logging)
-                    .map_err(HolochainError::Default)?
+                cli::hc_run_bundle_configuration(
+                    &happ_bundle,
+                    port,
+                    persist,
+                    networked,
+                    logging,
+                    agent_name,
+                )
+                .map_err(HolochainError::Default)?
             } else {
                 cli::hc_run_configuration(
                     &dna_path,
@@ -224,6 +248,7 @@ fn run() -> HolochainResult<()> {
                     networked,
                     &interface_type,
                     logging,
+                    agent_name,
                 )
                 .map_err(HolochainError::Default)?
             };

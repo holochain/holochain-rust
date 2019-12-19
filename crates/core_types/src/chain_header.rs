@@ -27,7 +27,7 @@ use std::convert::TryInto;
 // @TODO - serialize properties as defined in ChainHeadersEntrySchema from golang alpha 1
 // @see https://github.com/holochain/holochain-proto/blob/4d1b8c8a926e79dfe8deaa7d759f930b66a5314f/entry_headers.go#L7
 // @see https://github.com/holochain/holochain-rust/issues/75
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, Eq)]
 pub struct ChainHeader {
     /// the type of this entry
     /// system types may have associated "subconscious" behavior

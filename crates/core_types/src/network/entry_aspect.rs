@@ -4,6 +4,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent, Conte
 use std::{
     convert::{Into, TryFrom},
     fmt,
+    hash::{Hash, Hasher},
 };
 
 impl AddressableContent for EntryAspect {
@@ -16,7 +17,7 @@ impl AddressableContent for EntryAspect {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, DefaultJson, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum EntryAspect {
     // Basic case: entry content is communicated
@@ -144,5 +145,12 @@ impl fmt::Debug for EntryAspect {
                 write!(f, "EntryAspect::Deletion({})", format_header(header))
             }
         }
+    }
+}
+
+impl Hash for EntryAspect {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let address: String = self.header().entry_address().to_owned().into();
+        state.write(address.as_bytes());
     }
 }

@@ -7,7 +7,6 @@ use crate::{
     instance::dispatch_action,
     network::{entry_aspect::EntryAspect, handler::get_content_aspect},
 };
-use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;
 use lib3h_protocol::{
@@ -15,6 +14,7 @@ use lib3h_protocol::{
     types::{AspectHash, EntryHash},
 };
 use std::sync::Arc;
+use crate::network::handler::entry_to_meta_aspect;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
@@ -57,27 +57,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
 
         // And then we deduce the according base entry and meta aspect from that entry
         // and its header:
-        let maybe_meta_aspect = match entry {
-            Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
-                (
-                    updated_entry,
-                    EntryAspect::Update(Entry::App(app_type, app_value), header),
-                )
-            }),
-            Entry::LinkAdd(link_data) => Some((
-                link_data.link.base().clone(),
-                EntryAspect::LinkAdd(link_data, header),
-            )),
-            Entry::LinkRemove((link_data, addresses)) => Some((
-                link_data.link.base().clone(),
-                EntryAspect::LinkRemove((link_data, addresses), header),
-            )),
-            Entry::Deletion(_) => Some((
-                header.link_update_delete().expect(""),
-                EntryAspect::Deletion(header),
-            )),
-            _ => None,
-        };
+        let maybe_meta_aspect = entry_to_meta_aspect(entry, header);
 
         if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
             address_map

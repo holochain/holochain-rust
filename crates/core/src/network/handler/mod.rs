@@ -33,6 +33,7 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
+use holochain_core_types::chain_header::ChainHeader;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -360,6 +361,63 @@ fn get_content_aspect(
         entry_with_header.entry,
         entry_with_header.header,
     ))
+}
+
+fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)>{
+    match entry {
+        Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
+            (
+                updated_entry,
+                EntryAspect::Update(Entry::App(app_type, app_value), header),
+            )
+        }),
+        Entry::LinkAdd(link_data) => Some((
+            link_data.link.base().clone(),
+            EntryAspect::LinkAdd(link_data, header),
+        )),
+        Entry::LinkRemove((link_data, addresses)) => Some((
+            link_data.link.base().clone(),
+            EntryAspect::LinkRemove((link_data, addresses), header),
+        )),
+        Entry::Deletion(_) => Some((
+            header.link_update_delete().expect(""),
+            EntryAspect::Deletion(header),
+        )),
+        _ => None,
+    }
+}
+
+fn get_meta_aspects_from_chain(
+    entry_address: &Address,
+    context: Arc<Context>,
+) -> Result<Vec<EntryAspect>, HolochainError> {
+    let state = context.state().ok_or_else(|| {
+        HolochainError::InitializationFailed(String::from("In get_meta_aspects_from_chain: no state found"))
+    })?;
+
+    Ok(state
+        .agent()
+        .iter_chain()
+        .filter_map(|header| {
+            match state
+                .agent()
+                .chain_store()
+                .get(&header.entry_address()) {
+                Ok(maybe_entry) => {
+                    let entry = maybe_entry.expect("Could not find entry in chain CAS, but header is chain");
+                    entry_to_meta_aspect(entry, header)
+                },
+                Err(_) => None
+            }
+        })
+        .filter_map(|(base_address, aspect)| {
+            if base_address == *entry_address {
+                Some(aspect)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<EntryAspect>>())
 }
 
 fn get_meta_aspects(

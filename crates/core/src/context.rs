@@ -73,6 +73,7 @@ pub struct InstanceStats {
     pub number_held_entries: usize,
     pub number_held_aspects: usize,
     pub number_pending_validations: usize,
+    pub number_delayed_validations: usize,
     pub number_running_zome_calls: usize,
     pub offline: bool,
 }
@@ -412,6 +413,11 @@ impl Context {
                 .values()
                 .fold(0, |acc, aspect_set| acc + aspect_set.len()),
             number_pending_validations: dht_store.queued_holding_workflows().len(),
+            number_delayed_validations: dht_store
+                .queued_holding_workflows
+                .iter()
+                .filter(|p| p.timeout.is_some())
+                .count(),
             number_running_zome_calls: state.nucleus().running_zome_calls.len(),
             offline: false,
         })

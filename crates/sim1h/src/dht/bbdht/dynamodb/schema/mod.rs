@@ -78,7 +78,7 @@ pub mod test {
 
         assert_eq!(
             KeySchemaElement {
-                attribute_name: attribute_name.to_string(),
+                attribute_name: attribute_name,
                 key_type: String::from("HASH"),
             },
             result,
@@ -93,7 +93,7 @@ pub mod test {
 
         assert_eq!(
             AttributeDefinition {
-                attribute_name: attribute_name.into(),
+                attribute_name: attribute_name,
                 attribute_type: "S".into(),
             },
             result,
@@ -116,7 +116,7 @@ pub mod test {
                 n: None,
                 ns: None,
                 null: None,
-                s: Some(value.clone()),
+                s: Some(value),
                 ss: None,
             },
             result,

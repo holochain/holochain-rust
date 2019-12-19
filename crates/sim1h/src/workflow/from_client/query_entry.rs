@@ -33,12 +33,12 @@ pub fn query_entry_aspects(
     let utf8_result = std::str::from_utf8(&(*query_raw));
     let query_str = match utf8_result {
         Ok(v) => v,
-        Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
+        Err(err) => return Err(BbDhtError::CorruptData(err.to_string())),
     };
     let query_json = JsonString::from_json(&query_str.to_string());
     let _query = match NetworkQuery::try_from(query_json) {
         Ok(v) => v,
-        Err(err) => Err(BbDhtError::CorruptData(err.to_string()))?,
+        Err(err) => return Err(BbDhtError::CorruptData(err.to_string())),
     };
 
     let entry_aspects = get_entry_aspects(log_context, client, &table_name, &entry_address)?;

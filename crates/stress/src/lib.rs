@@ -243,7 +243,7 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
                                 max: std::f64::MIN,
                                 avg: 0.0,
                             });
-                    r.avg = r.avg * r.count as f64;
+                    r.avg *= r.count as f64;
                     r.avg += log.value;
                     r.count += 1;
                     r.avg /= r.count as f64;

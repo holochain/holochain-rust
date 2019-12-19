@@ -106,7 +106,7 @@ pub fn spawn_locksmith_guard_watcher() {
                         .filter_map(|gt| gt.report_and_update())
                         .collect()
                 };
-                if reports.len() > 0 {
+                if !reports.is_empty() {
                     inactive_for = Duration::from_millis(0);
                     reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
                     let num_active = reports.len();

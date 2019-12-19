@@ -472,7 +472,7 @@ pub mod tests {
         assert!(dna.verify().is_err())
     }
 
-    static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
+    static UNIT_UUID: &str = "00000000-0000-0000-0000-000000000000";
 
     fn test_empty_dna() -> Dna {
         Dna::new()
@@ -485,8 +485,7 @@ pub mod tests {
         let entry_type = EntryType::App(AppEntryType::from("bar"));
         let entry_type_def = EntryTypeDef::new();
 
-        zome.entry_types
-            .insert(entry_type.into(), entry_type_def.clone());
+        zome.entry_types.insert(entry_type, entry_type_def.clone());
         dna.zomes.insert("zome".to_string(), zome);
 
         assert_eq!(None, dna.get_entry_type_def("foo"));
@@ -629,7 +628,7 @@ pub mod tests {
         ))
         .unwrap();
 
-        assert!(dna.uuid.len() > 0);
+        assert!(!dna.uuid.is_empty());
     }
 
     #[test]

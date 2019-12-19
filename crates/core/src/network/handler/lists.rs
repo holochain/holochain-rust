@@ -43,7 +43,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
 
         address_map
             .entry(EntryHash::from(entry_address.clone()))
-            .or_insert_with(|| HashSet::new())
+            .or_insert_with(HashSet::new)
             .insert(AspectHash::from(content_aspect.address()));
 
         // 2. Then we might need to add a meta aspect as well depending on what kind of
@@ -82,7 +82,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
         if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
             address_map
                 .entry(EntryHash::from(base_address.clone()))
-                .or_insert_with(|| HashSet::new())
+                .or_insert_with(HashSet::new)
                 .insert(AspectHash::from(meta_aspect.address()));
         }
     }

@@ -60,11 +60,11 @@ impl Space {
         if let Some(map_for_agent) = maybe_map_for_agent {
             if let Some(hash_set_for_entry) = map_for_agent.get_mut(entry_hash) {
                 hash_set_for_entry.remove(aspect_hash);
-                if hash_set_for_entry.len() == 0 {
+                if hash_set_for_entry.is_empty() {
                     map_for_agent.remove(entry_hash);
                 }
             }
-            if map_for_agent.len() == 0 {
+            if map_for_agent.is_empty() {
                 self.missing_aspects.remove(agent);
             }
         }
@@ -292,7 +292,7 @@ mod tests {
         assert_eq!(space.agents.len(), 1);
         let entry_hash_1 = EntryHash::from("entry_hash_1");
         let aspect_hash_1 = AspectHash::from("aspect_hash_1");
-        space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1.clone());
+        space.add_missing_aspect(agent.clone(), entry_hash_1, aspect_hash_1);
         assert_eq!(space.agents_with_missing_aspects(), vec![agent.clone()]);
 
         assert_eq!(space.remove_agent(&agent), 0);
@@ -366,7 +366,7 @@ mod tests {
             &entry_hash_1,
             &vec![aspect_hash_1_1.clone()]
         ));
-        space.add_missing_aspect(agent.clone(), entry_hash_2.clone(), aspect_hash_2_1.clone());
+        space.add_missing_aspect(agent.clone(), entry_hash_2, aspect_hash_2_1);
         assert!(space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
@@ -382,7 +382,7 @@ mod tests {
         assert!(space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
-            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+            &vec![aspect_hash_1_1, aspect_hash_1_2]
         ));
     }
 }

@@ -28,7 +28,7 @@ impl TryFrom<ResultField> for Metric {
                 result_field.field
             )));
         }
-        let message = result_field.value.map(|m| Ok(m)).unwrap_or_else(|| {
+        let message = result_field.value.map(Ok).unwrap_or_else(|| {
             Err(ParseError(
                 "Expected message value but got none".to_string(),
             ))
@@ -304,8 +304,8 @@ impl CloudWatchLogger {
 
         Self {
             client,
-            log_stream_name: log_stream_name,
-            log_group_name: log_group_name,
+            log_stream_name,
+            log_group_name,
             sequence_token: None,
             metrics_to_publish: vec![],
         }
@@ -463,7 +463,7 @@ impl TryFrom<LogStream> for ScenarioData {
     fn try_from(log_stream: LogStream) -> Result<Self, Self::Error> {
         let result: Result<Self, Self::Error> = log_stream
             .log_stream_name
-            .map(|x| Ok(x))
+            .map(Ok)
             .unwrap_or_else(|| Err("Log stream name missing".into()))
             .and_then(TryFrom::try_from);
         result

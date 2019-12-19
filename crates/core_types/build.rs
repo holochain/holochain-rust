@@ -24,12 +24,9 @@ fn main() {
         .ok()
         .or_else(|| {
             env::var("out").ok().and_then(|out| {
-                out.split('/').last().and_then(|basename| {
-                    basename
-                        .split('-')
-                        .nth(0)
-                        .and_then(|hash| Some(hash.to_string()))
-                })
+                out.split('/')
+                    .last()
+                    .and_then(|basename| basename.split('-').nth(0).map(|hash| hash.to_string()))
             })
         })
         .unwrap_or_else(|| "00000000000000000000000000000000".to_string());
@@ -39,7 +36,7 @@ fn main() {
         .or_else(|_| env::var("CARGO_PKG_VERSION"))
         .expect("Cannot deduce HDK_VERSION; ensure HDK_VERSION or CARGO_PKG_VERSION (via Cargo.toml [package] version) is set");
     assert!(
-        hdk_version.len() > 0,
+        !hdk_version.is_empty(),
         "Invalid HDK_VERSION: {:?}",
         &hdk_version
     );

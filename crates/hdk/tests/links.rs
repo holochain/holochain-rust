@@ -217,7 +217,7 @@ pub fn test_invalid_target_link() {
         r#"{"stuff1" : "first","stuff2":"second","tag":"muffins"}"#,
     );
     let expected_result: ZomeApiResult<()> =
-        serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
+        serde_json::from_str::<ZomeApiResult<()>>(&result.unwrap().to_string()).unwrap();
     let zome_internal_error =
         generate_zome_internal_error(String::from(r#"{"ValidationFailed":"invalid tag"}"#));
     assert_zome_internal_errors_equivalent(&expected_result.unwrap_err(), &zome_internal_error)
@@ -233,7 +233,7 @@ pub fn test_bad_links() {
     );
 
     let expected_result: ZomeApiResult<()> =
-        serde_json::from_str::<ZomeApiResult<()>>(&result.clone().unwrap().to_string()).unwrap();
+        serde_json::from_str::<ZomeApiResult<()>>(&result.unwrap().to_string()).unwrap();
     let zome_internal_error = generate_zome_internal_error(String::from(
         r#"{"ErrorGeneric":"Base for link not found"}"#,
     ));
@@ -292,7 +292,7 @@ pub fn test_links_with_load() {
         |cond| cond.links().len() == 1,
         12,
     );
-    let expected_links = expected_result.unwrap().clone();
+    let expected_links = expected_result.unwrap();
     assert_eq!(expected_links.links().len(), 1);
 
     //try get links and load with nothing, not sure of necessary more of a type system check
@@ -300,10 +300,10 @@ pub fn test_links_with_load() {
         &mut hc,
         "my_entries_with_load",
         r#"{}"#,
-        |cond| cond.len() == 0,
+        |cond| cond.is_empty(),
         12,
     );
-    let expected_links = expected_result.unwrap().clone();
+    let expected_links = expected_result.unwrap();
 
     assert_eq!(expected_links.len(), 0);
 }
@@ -360,7 +360,7 @@ fn create_tag_and_retrieve() {
         |cond| cond.links().len() == 1,
         6,
     );
-    let expected_links = expected_result.unwrap().clone();
+    let expected_links = expected_result.unwrap();
     assert!(expected_links
         .links()
         .iter()
@@ -377,7 +377,7 @@ fn create_tag_and_retrieve() {
         |cond| cond.links().len() == 1,
         6,
     );
-    let expected_links = expected_result.unwrap().clone();
+    let expected_links = expected_result.unwrap();
     assert!(expected_links.links().iter().any(|s| s.tag == "tag me"));
     assert!(expected_links
         .links()
@@ -391,7 +391,7 @@ fn create_tag_and_retrieve() {
         |cond| cond.links().len() == 2,
         6,
     );
-    let expected_links = expected_result.unwrap().clone();
+    let expected_links = expected_result.unwrap();
     assert!(expected_links
         .links()
         .iter()
@@ -457,13 +457,13 @@ fn can_roundtrip_links() {
     let expected_links_reversed: Result<GetLinksResult, HolochainError> =
         Ok(GetLinksResult::new(vec![
             LinksResult {
-                address: entry_address_3.clone(),
+                address: entry_address_3,
                 headers: Vec::new(),
                 tag: "test-tag".into(),
                 status: CrudStatus::Live,
             },
             LinksResult {
-                address: entry_address_2.clone(),
+                address: entry_address_2,
                 headers: Vec::new(),
                 tag: "test-tag".into(),
                 status: CrudStatus::Live,
@@ -472,7 +472,7 @@ fn can_roundtrip_links() {
     let expected_links_reversed = JsonString::from(expected_links_reversed);
 
     let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-        Ok(vec![Ok(entry_3.clone()), Ok(entry_2.clone())]);
+        Ok(vec![Ok(entry_3), Ok(entry_2)]);
 
     // Polling loop because the links have to get pushed over the in-memory network and then validated
     // which includes requesting a validation package and receiving it over the in-memory network.
@@ -482,7 +482,7 @@ fn can_roundtrip_links() {
     let mut tries = 0;
     let mut result_of_get = JsonString::from_json("{}");
     while !both_links_present && tries < 10 {
-        tries = tries + 1;
+        tries += 1;
         // Now get_links on the base and expect both to be there
         let maybe_result_of_get = make_test_call(
             &mut hc,

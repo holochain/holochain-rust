@@ -141,6 +141,6 @@ mod tests {
         };
 
         test_either(s.clone());
-        test_either(s.clone().to_any());
+        test_either(s.to_any());
     }
 }

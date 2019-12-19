@@ -494,7 +494,7 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
             }
-            e @ _ => panic!("unexpected: {:?}", e),
+            e => panic!("unexpected: {:?}", e),
         }
     }
 }
@@ -709,7 +709,7 @@ mod tests {
             warm_time_ms: 100,
             progress_interval_ms: 2000,
             suite,
-            job_factory: Box::new(move |_| std::mem::replace(&mut job, None).unwrap()),
+            job_factory: Box::new(move |_| job.take().unwrap()),
         });
     }
 }

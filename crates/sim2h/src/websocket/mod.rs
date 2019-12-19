@@ -19,8 +19,8 @@ use lib3h::transport::error::TransportResult;
 use lib3h_protocol::uri::Lib3hUri;
 use wss_info::WssInfo;
 
-static FAKE_PKCS12: &'static [u8] = include_bytes!("fake_key.p12");
-static FAKE_PASS: &'static str = "hello";
+static FAKE_PKCS12: &[u8] = include_bytes!("fake_key.p12");
+static FAKE_PASS: &str = "hello";
 
 // -- some internal types for readability -- //
 

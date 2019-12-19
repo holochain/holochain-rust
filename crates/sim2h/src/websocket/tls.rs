@@ -145,7 +145,7 @@ mod tests {
         fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
             println!("{} got read", self.name);
 
-            if self.recv_bytes.len() == 0 {
+            if self.recv_bytes.is_empty() {
                 if self.should_end {
                     return Ok(0);
                 } else {
@@ -316,12 +316,12 @@ mod tests {
                     MockTlsStream::Ready(cli) => cli.get_mut(),
                 };
                 let data = srv.drain_send();
-                if data.len() > 0 {
+                if !data.is_empty() {
                     self.srv_send.extend_from_slice(&data);
                     cli.inject_recv(data);
                 }
                 let data = cli.drain_send();
-                if data.len() > 0 {
+                if !data.is_empty() {
                     self.cli_send.extend_from_slice(&data);
                     srv.inject_recv(data);
                 }
@@ -345,7 +345,7 @@ mod tests {
         let mut con = MockConnection::new(tls_config);
         con.flush();
 
-        const TO_SERVER: &'static [u8] = b"test-message-to-server";
+        const TO_SERVER: &[u8] = b"test-message-to-server";
         con.cli_write(TO_SERVER);
 
         con.process();
@@ -361,7 +361,7 @@ mod tests {
 
         con.flush();
 
-        const TO_CLIENT: &'static [u8] = b"test-message-to-client";
+        const TO_CLIENT: &[u8] = b"test-message-to-client";
         con.srv_write(TO_CLIENT);
 
         con.process();
@@ -437,7 +437,7 @@ mod tests {
                     StreamEvent::ConnectResult(_url, _id) => {
                         got_out = true;
                     }
-                    e @ _ => panic!("unexpected {:?}", e),
+                    e => panic!("unexpected {:?}", e),
                 }
             }
             if got_in.is_none() || !got_out {
@@ -462,7 +462,7 @@ mod tests {
                         );
                         got = true
                     }
-                    e @ _ => panic!("unexpected {:?}", e),
+                    e => panic!("unexpected {:?}", e),
                 }
             }
             if !got {

@@ -124,10 +124,10 @@ pub fn validate_call(
             .ok_or_else(|| HolochainError::DnaMissing)?;
         let zome = dna
             .get_zome(&fn_call.zome_name)
-            .map_err(|e| HolochainError::Dna(e))?;
+            .map_err(HolochainError::Dna)?;
         let _ = dna
             .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
-            .map_err(|e| HolochainError::Dna(e))?;
+            .map_err(HolochainError::Dna)?;
         (dna.name.clone(), zome.code.clone())
     };
 

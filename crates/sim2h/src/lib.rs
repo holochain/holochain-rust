@@ -606,7 +606,7 @@ impl Sim2h {
                 };
 
                 let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
-                if missing_hashes.len() > 0 {
+                if !missing_hashes.is_empty() {
                     let mut space = self
                         .get_or_create_space(&space_address)
                         .write();
@@ -727,7 +727,7 @@ impl Sim2h {
     ) -> Option<AgentId> {
         let space_lock = self.spaces.get(space_address)?.read();
         agent_pool
-            .into_iter()
+            .iter()
             // We ignore all agents that are missing all of the same aspects as well since
             // they can't help us.
             .find(|a| {

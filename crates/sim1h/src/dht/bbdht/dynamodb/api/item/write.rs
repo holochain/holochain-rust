@@ -158,7 +158,7 @@ pub mod tests {
                     },
                     TransactWriteItem {
                         put: Some(Put {
-                            table_name: table_name.clone(),
+                            table_name: table_name,
                             item: content_to_item(&content_b),
                             ..Default::default()
                         }),

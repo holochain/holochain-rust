@@ -493,7 +493,6 @@ impl NetWorker for Sim2hWorker {
                 Some(clock.into()),
                 latency as f64,
             );
-            trace!("publishing: {}", latency);
             self.metric_publisher.write().unwrap().publish(&metric);
         }
         Ok(did_something)

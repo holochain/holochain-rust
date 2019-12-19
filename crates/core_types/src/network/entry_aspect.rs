@@ -148,6 +148,12 @@ impl fmt::Debug for EntryAspect {
     }
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
+// This clippy lint stresses the point that impls of Hash and PartialEq have to agree,
+// that is ensure that: k1 == k2 ⇒ hash(k1) == hash(k2).
+// In this custom Hash impl I'm just taking the entry address into account.
+// The derived PartialEq takes all fields into account. If all fields are the same, so must
+// the entry addresses which is part of all. QED.
 impl Hash for EntryAspect {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let address: String = self.header().entry_address().to_owned().into();

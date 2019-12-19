@@ -4,6 +4,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent, Conte
 use std::{
     convert::{Into, TryFrom},
     fmt,
+    hash::{Hash, Hasher},
 };
 
 impl AddressableContent for EntryAspect {
@@ -16,7 +17,7 @@ impl AddressableContent for EntryAspect {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, DefaultJson, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum EntryAspect {
     // Basic case: entry content is communicated
@@ -144,5 +145,18 @@ impl fmt::Debug for EntryAspect {
                 write!(f, "EntryAspect::Deletion({})", format_header(header))
             }
         }
+    }
+}
+
+#[allow(clippy::derive_hash_xor_eq)]
+// This clippy lint stresses the point that impls of Hash and PartialEq have to agree,
+// that is ensure that: k1 == k2 ⇒ hash(k1) == hash(k2).
+// In this custom Hash impl I'm just taking the entry address into account.
+// The derived PartialEq takes all fields into account. If all fields are the same, so must
+// the entry addresses which is part of all. QED.
+impl Hash for EntryAspect {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let address: String = self.header().entry_address().to_owned().into();
+        state.write(address.as_bytes());
     }
 }

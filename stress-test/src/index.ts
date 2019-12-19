@@ -5,7 +5,7 @@ process.on('unhandledRejection', error => {
   console.error('got unhandledRejection:', error);
 });
 
-const middleware = 
+const middleware =
   ( networkType === 'sim1h'
   ? combine(tapeExecutor(require('tape')), localOnly)
 
@@ -23,6 +23,7 @@ const orchestrator = new Orchestrator({
   waiter: {
     softTimeout: 10000,
     hardTimeout: 20000,
+    strict: true,
   },
 })
 

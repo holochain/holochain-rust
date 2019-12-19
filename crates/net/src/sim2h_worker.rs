@@ -96,10 +96,8 @@ impl Sim2hWorker {
     /// check to see if we need to re-connect
     /// if we don't have a ready connection within RECONNECT_INTERVAL
     fn check_reconnect(&mut self) {
-        if let Some(c) = &self.connection {
-            if c.is_ready() {
-                return;
-            }
+        if self.connection_ready() {
+            return;
         }
 
         if self.time_of_last_connection_attempt.elapsed() < RECONNECT_INTERVAL {
@@ -113,9 +111,17 @@ impl Sim2hWorker {
         }
     }
 
-    fn connection_ready(&self) -> bool {
-        match &self.connection {
-            Some(c) if c.is_ready() => true,
+    fn connection_ready(&mut self) -> bool {
+        match &mut self.connection {
+            Some(c) => match c.check_ready() {
+                Ok(true) => true,
+                Ok(false) => false,
+                Err(e) => {
+                    error!("connection handshake error: {:?}", e);
+                    self.connection = None;
+                    false
+                }
+            },
             _ => false,
         }
     }

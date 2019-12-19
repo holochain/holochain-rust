@@ -135,8 +135,8 @@ impl InStream<&mut [u8], &[u8]> for InStreamMem {
         get_mem_manager().connect(url)
     }
 
-    fn is_ready(&self) -> bool {
-        true
+    fn check_ready(&mut self) -> Result<bool> {
+        Ok(true)
     }
 
     fn remote_url(&self) -> Url2 {

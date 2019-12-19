@@ -276,10 +276,11 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
         }
     }
 
-    fn is_ready(&self) -> bool {
+    fn check_ready(&mut self) -> Result<bool> {
+        self.priv_process()?;
         match self.state {
-            Some(WssState::Ready(_)) => true,
-            _ => false,
+            Some(WssState::Ready(_)) => Ok(true),
+            _ => Ok(false),
         }
     }
 

@@ -110,6 +110,8 @@ impl AddressableContent for Dna {
     }
 }
 
+impl Eq for Dna {}
+
 impl Default for Dna {
     /// Provide defaults for a dna object.
     fn default() -> Self {

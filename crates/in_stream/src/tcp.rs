@@ -390,6 +390,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // our CI doesn't support v6 loopback : (
     fn tcp_v6_works() {
         suite("tcp://[::1]:0", None);
     }

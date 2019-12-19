@@ -420,7 +420,7 @@ fn get_meta_aspects_from_chain(
         .collect::<Vec<EntryAspect>>())
 }
 
-fn get_meta_aspects(
+fn get_meta_aspects_from_dht_eav(
     entry_address: &Address,
     context: Arc<Context>,
 ) -> Result<Vec<EntryAspect>, HolochainError> {

@@ -364,6 +364,10 @@ fn get_content_aspect(
     ))
 }
 
+/// This function converts an entry into the right "meta" EntryAspect and the according
+/// base address to which it is meta, if the entry is the source entry of a meta aspect,
+/// i.e. a CRUD or link entry.
+/// If the entry is not that it returns None.
 fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
     match entry {
         Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {

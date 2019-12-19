@@ -405,6 +405,7 @@ fn get_meta_aspects_from_chain(
     Ok(state
         .agent()
         .iter_chain()
+        .filter(|header| header.entry_type().can_publish(&context))
         .filter_map(
             |header| match state.agent().chain_store().get(&header.entry_address()) {
                 Ok(maybe_entry) => {

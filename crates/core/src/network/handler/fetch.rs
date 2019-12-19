@@ -2,13 +2,13 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::handler::{get_content_aspect, get_meta_aspects_from_dht_eav},
+    network::handler::{
+        get_content_aspect, get_meta_aspects_from_chain, get_meta_aspects_from_dht_eav,
+    },
 };
-use lib3h_protocol::data_types::FetchEntryData;
-use std::sync::Arc;
-use std::collections::HashSet;
 use holochain_core_types::network::entry_aspect::EntryAspect;
-use crate::network::handler::get_meta_aspects_from_chain;
+use lib3h_protocol::data_types::FetchEntryData;
+use std::{collections::HashSet, sync::Arc};
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
@@ -22,7 +22,10 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     match get_content_aspect(&address, context.clone()) {
         Ok(content_aspect) => {
             aspects.insert(content_aspect);
-            for result in &[get_meta_aspects_from_chain(&address, context.clone()), get_meta_aspects_from_dht_eav(&address, context.clone())] {
+            for result in &[
+                get_meta_aspects_from_chain(&address, context.clone()),
+                get_meta_aspects_from_dht_eav(&address, context.clone()),
+            ] {
                 match result {
                     Ok(meta_aspects) => meta_aspects.into_iter().for_each(|a| {
                         aspects.insert(a.clone());

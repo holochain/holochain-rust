@@ -5,7 +5,10 @@ use crate::{
     dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
     instance::dispatch_action,
-    network::{entry_aspect::EntryAspect, handler::get_content_aspect},
+    network::{
+        entry_aspect::EntryAspect,
+        handler::{entry_to_meta_aspect, get_content_aspect},
+    },
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;
@@ -14,7 +17,6 @@ use lib3h_protocol::{
     types::{AspectHash, EntryHash},
 };
 use std::sync::Arc;
-use crate::network::handler::entry_to_meta_aspect;
 
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();

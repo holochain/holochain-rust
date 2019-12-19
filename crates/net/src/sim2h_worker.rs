@@ -9,7 +9,9 @@ use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
-    data_types::{FetchEntryData, GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
+    data_types::{
+        EntryListData, FetchEntryData, GenericResultData, Opaque, SpaceData, StoreEntryAspectData,
+    },
     protocol::*,
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
@@ -28,7 +30,6 @@ use sim2h::{
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
-use lib3h_protocol::data_types::EntryListData;
 
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
@@ -335,7 +336,10 @@ impl Sim2hWorker {
     }
 
     fn self_store_authored_aspects(&mut self) {
-        if !self.has_self_stored_authored_aspects && self.initial_gossiping_list.is_some() && self.initial_authoring_list.is_some() {
+        if !self.has_self_stored_authored_aspects
+            && self.initial_gossiping_list.is_some()
+            && self.initial_authoring_list.is_some()
+        {
             let authoring_list = self.initial_authoring_list.take().unwrap();
             let gossiping_list = self.initial_gossiping_list.take().unwrap();
 
@@ -350,7 +354,7 @@ impl Sim2hWorker {
                     }
                     // ...and checking if we are left with anything to hold.
                     if authoring_aspects.is_empty() {
-                        continue
+                        continue;
                     }
                 }
 
@@ -365,7 +369,6 @@ impl Sim2hWorker {
             }
             self.has_self_stored_authored_aspects = true;
         }
-
     }
 
     fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {

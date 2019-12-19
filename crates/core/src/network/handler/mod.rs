@@ -24,7 +24,9 @@ use crate::{
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::Boolinator;
-use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
+use holochain_core_types::{
+    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
+};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -33,7 +35,6 @@ use lib3h_protocol::{
     protocol_server::Lib3hServerProtocol,
 };
 use std::{convert::TryFrom, sync::Arc};
-use holochain_core_types::chain_header::ChainHeader;
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
@@ -363,7 +364,7 @@ fn get_content_aspect(
     ))
 }
 
-fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)>{
+fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
     match entry {
         Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
             (
@@ -392,24 +393,24 @@ fn get_meta_aspects_from_chain(
     context: Arc<Context>,
 ) -> Result<Vec<EntryAspect>, HolochainError> {
     let state = context.state().ok_or_else(|| {
-        HolochainError::InitializationFailed(String::from("In get_meta_aspects_from_chain: no state found"))
+        HolochainError::InitializationFailed(String::from(
+            "In get_meta_aspects_from_chain: no state found",
+        ))
     })?;
 
     Ok(state
         .agent()
         .iter_chain()
-        .filter_map(|header| {
-            match state
-                .agent()
-                .chain_store()
-                .get(&header.entry_address()) {
+        .filter_map(
+            |header| match state.agent().chain_store().get(&header.entry_address()) {
                 Ok(maybe_entry) => {
-                    let entry = maybe_entry.expect("Could not find entry in chain CAS, but header is chain");
+                    let entry = maybe_entry
+                        .expect("Could not find entry in chain CAS, but header is chain");
                     entry_to_meta_aspect(entry, header)
-                },
-                Err(_) => None
-            }
-        })
+                }
+                Err(_) => None,
+            },
+        )
         .filter_map(|(base_address, aspect)| {
             if base_address == *entry_address {
                 Some(aspect)

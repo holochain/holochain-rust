@@ -116,21 +116,6 @@ impl Sim2hWorker {
         self.connection = None;
         if let Ok(connection) = connect(self.server_url.clone()) {
             self.connection = Some(connection);
-
-            // TODO - XXX - HACK
-            // blocking on connections for now
-            loop {
-                if self.connection_ready() {
-                    break;
-                }
-
-                if self.connection.is_none() {
-                    error!("failed to connect, will try again later");
-                    break;
-                }
-
-                std::thread::sleep(std::time::Duration::from_millis(10));
-            }
         }
     }
 

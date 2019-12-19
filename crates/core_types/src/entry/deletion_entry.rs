@@ -5,7 +5,7 @@ use holochain_persistence_api::cas::content::Address;
 // DeletionEntry
 //-------------------------------------------------------------------------------------------------
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson, Eq)]
 pub struct DeletionEntry {
     deleted_entry_address: Address,
 }

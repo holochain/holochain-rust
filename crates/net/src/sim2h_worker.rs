@@ -9,7 +9,9 @@ use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
 use lib3h_protocol::{
-    data_types::{FetchEntryData, GenericResultData, Opaque, SpaceData, StoreEntryAspectData},
+    data_types::{
+        EntryListData, FetchEntryData, GenericResultData, Opaque, SpaceData, StoreEntryAspectData,
+    },
     protocol::*,
     protocol_client::Lib3hClientProtocol,
     protocol_server::Lib3hServerProtocol,
@@ -54,6 +56,9 @@ pub struct Sim2hWorker {
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     outgoing_failed_messages: Vec<WireMessage>,
+    initial_authoring_list: Option<EntryListData>,
+    initial_gossiping_list: Option<EntryListData>,
+    has_self_stored_authored_aspects: bool,
 }
 
 impl Sim2hWorker {
@@ -94,6 +99,9 @@ impl Sim2hWorker {
                 DefaultMetricPublisher::default(),
             )),
             outgoing_failed_messages: Vec::new(),
+            initial_authoring_list: None,
+            initial_gossiping_list: None,
+            has_self_stored_authored_aspects: false,
         };
 
         instance.connection_status = instance
@@ -304,22 +312,16 @@ impl Sim2hWorker {
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
-                for (entry_hash, aspect_hashes) in &entry_list_data.address_map {
-                    self.to_core
-                        .push(Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
-                            space_address: entry_list_data.space_address.clone(),
-                            entry_address: entry_hash.clone(),
-                            request_id: SIM2H_WORKER_INTERNAL_REQUEST_ID.to_string(),
-                            provider_agent_id: entry_list_data.provider_agent_id.clone(),
-                            aspect_address_list: Some(aspect_hashes.clone()),
-                        }))
-                }
+                self.initial_authoring_list = Some(entry_list_data.clone());
+                self.self_store_authored_aspects();
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
                 ))
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
+                self.initial_gossiping_list = Some(entry_list_data.clone());
+                self.self_store_authored_aspects();
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data),
                 ))
@@ -330,6 +332,42 @@ impl Sim2hWorker {
                 debug!("Got Lib3hClientProtocol::Shutdown from core in sim2h worker");
                 Ok(())
             }
+        }
+    }
+
+    fn self_store_authored_aspects(&mut self) {
+        if !self.has_self_stored_authored_aspects
+            && self.initial_gossiping_list.is_some()
+            && self.initial_authoring_list.is_some()
+        {
+            let authoring_list = self.initial_authoring_list.take().unwrap();
+            let gossiping_list = self.initial_gossiping_list.take().unwrap();
+
+            for (entry_hash, aspect_hashes) in &authoring_list.address_map {
+                // Check if we have that entry in the gossip list already:
+                if let Some(gossiping_aspects) = gossiping_list.address_map.get(entry_hash) {
+                    // If it's in, check if we are holding all aspects...
+                    let mut authoring_aspects = aspect_hashes.clone();
+                    // ...by removing all we are holding...
+                    for aspect in gossiping_aspects {
+                        authoring_aspects.remove_item(aspect);
+                    }
+                    // ...and checking if we are left with anything to hold.
+                    if authoring_aspects.is_empty() {
+                        continue;
+                    }
+                }
+
+                self.to_core
+                    .push(Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
+                        space_address: authoring_list.space_address.clone(),
+                        entry_address: entry_hash.clone(),
+                        request_id: SIM2H_WORKER_INTERNAL_REQUEST_ID.to_string(),
+                        provider_agent_id: authoring_list.provider_agent_id.clone(),
+                        aspect_address_list: Some(aspect_hashes.clone()),
+                    }))
+            }
+            self.has_self_stored_authored_aspects = true;
         }
     }
 

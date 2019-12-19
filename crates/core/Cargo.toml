@@ -55,7 +55,6 @@ url = { version = "=2.1.0", features = ["serde"] }
 rand = "0.7.2"
 threadpool = "=1.7.1"
 im = { version = "=14.0.0", features = ["serde"] }
-petgraph = "=0.4.13"
 itertools = "0.8.2"
 
 [dev-dependencies]

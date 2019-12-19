@@ -265,14 +265,13 @@ impl DhtStore {
     pub(crate) fn next_queued_holding_workflow(
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
-        // calculate the leaf dependencies (the things we can validate right now)
-        let free_dependencies = get_free_dependencies(&self.queued_holding_workflows);
-
-        // respect the delays on the leaf nodes
-        free_dependencies
+        self.queued_holding_workflows
+            .clone()
             .into_iter()
+            // filter so only free pending (those without dependencies also pending) are considered
+            .filter(free_pending_filter(&self.queued_holding_workflows))
+            // skip those for which the sleep delay has not elapsed
             .skip_while(|PendingValidationWithTimeout { timeout, .. }| {
-                // skip pending validation with an unelapsed delay
                 if let Some(ValidationTimeout {
                     time_of_dispatch,
                     delay,
@@ -318,45 +317,25 @@ impl DhtStore {
     }
 }
 
-use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
-use std::collections::HashMap;
+use im::HashSet;
 
-fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
+fn free_pending_filter<I>(pending: &I) -> Box<dyn Fn(&PendingValidationWithTimeout) -> bool>
 where
     I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
 {
-    let mut graph = DiGraph::<(), ()>::new();
-    let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
-    let mut index_reverse_map: HashMap<NodeIndex, PendingValidationWithTimeout> = HashMap::new();
+    // collect up the address of everything we have in the pending queue
+    let unique_pending: HashSet<Address> = pending
+        .clone()
+        .into_iter()
+        .map(|p| p.pending.entry_with_header.entry.address())
+        .collect();
 
-    // add the nodes
-    for p in pending.clone() {
-        let node_index = graph.add_node(());
-        index_map.insert(p.pending.entry_with_header.entry.address(), node_index);
-        index_reverse_map.insert(node_index, p);
-    }
-
-    // add the edges
-    for p in pending.clone() {
-        let from = index_map
-            .get(&p.pending.entry_with_header.entry.address())
-            .expect("we literally just added this");
-        for to_addr in p.pending.dependencies.clone() {
-            // only add the dependencies that are also in the pending validation list
-            if let Some(to) = index_map.get(&to_addr) {
-                graph.add_edge(*from, *to, ());
-            }
-        }
-    }
-
-    // TODO: Check for cyles in the graph and remove those pending entries
-
-    // return only the pending valiations that don't have dependencies that are also pending
-    // i.e. the leaf nodes or 'sinks' of the graph
-    graph
-        .externals(Outgoing)
-        .map(|i| index_reverse_map.get(&i).unwrap().clone())
-        .collect()
+    Box::new(move |p| {
+        p.pending
+            .dependencies
+            .iter()
+            .all(|dep_addr| !unique_pending.contains(dep_addr))
+    })
 }
 
 impl GetContent for DhtStore {
@@ -424,8 +403,13 @@ pub mod tests {
         // A and B have no dependencies. Both should be free
         let a = pending_validation_for_entry(test_entry_a(), Vec::new());
         let b = pending_validation_for_entry(test_entry_b(), Vec::new());
+        let pending_list = vec![a.clone(), b.clone()];
         assert_eq!(
-            get_free_dependencies(&vec![a.clone(), b.clone()]),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![a, b]
         );
     }
@@ -436,9 +420,13 @@ pub mod tests {
         let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
         let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()]);
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
-
+        let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
-            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![c]
         );
     }
@@ -452,9 +440,13 @@ pub mod tests {
         );
         let b = pending_validation_for_entry(test_entry_b(), vec![]);
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
-
+        let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
-            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![b, c]
         );
     }

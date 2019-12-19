@@ -63,7 +63,7 @@ enum Command {
         csv_file: PathBuf,
         #[structopt(
             name = "aggregation_pattern",
-            long = "aggregation_pattern",
+            long = "aggregation-pattern",
             short = "g"
         )]
         aggregation_pattern: Option<String>,
@@ -77,7 +77,7 @@ enum Command {
         log_file: PathBuf,
         #[structopt(
             name = "aggregation_pattern",
-            long = "aggregation_pattern",
+            long = "aggregation-pattern",
             short = "g"
         )]
         aggregation_pattern: Option<String>,

@@ -63,7 +63,7 @@ pub type CapTokenValue = Address;
 pub type CapFunctions = BTreeMap<String, Vec<String>>;
 
 /// System entry to hold a capability token claim for use as a caller
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson, Eq)]
 pub struct CapTokenClaim {
     id: String,
     grantor: Address,
@@ -86,7 +86,7 @@ impl CapTokenClaim {
 }
 
 /// System entry to hold a capabilities granted by the callee
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson, Eq)]
 pub struct CapTokenGrant {
     id: String,
     assignees: Option<Vec<Address>>,

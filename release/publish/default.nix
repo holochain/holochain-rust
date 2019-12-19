@@ -62,6 +62,7 @@ cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Ca
 
 # order is important here due to dependencies
 for crate in \
+ in_stream \
  locksmith \
  common \
  metrics \

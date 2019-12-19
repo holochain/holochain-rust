@@ -525,8 +525,12 @@ impl NetWorker for Sim2hWorker {
         if did_something {
             let latency = clock.elapsed().unwrap().as_millis();
             let metric_name = "sim2h_worker.tick.latency";
-            let metric = holochain_metrics::Metric::new(metric_name, latency as f64);
-            trace!("publishing: {}", latency);
+            let metric = holochain_metrics::Metric::new(
+                metric_name,
+                None,
+                Some(clock.into()),
+                latency as f64,
+            );
             self.metric_publisher.write().unwrap().publish(&metric);
         }
         Ok(did_something)

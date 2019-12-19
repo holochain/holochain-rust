@@ -1412,6 +1412,8 @@ dependencies = [
 name = "holochain_metrics"
 version = "0.0.41-alpha3"
 dependencies = [
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "csv 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_locksmith 0.0.41-alpha3",

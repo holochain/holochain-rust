@@ -51,9 +51,12 @@ impl fmt::Debug for ModuleArc {
     }
 }
 
+const DNA_LINE_LEN: usize = 132;
+
 /// Private helper for converting binary WebAssembly into base64 serialized string sequence.
 /// Encodes to Gzip compressed, base-64 encoded String, or [String, ...].  Will load historical
-/// large single-String WASMs, but will *not* correctly compute `hc hash`.
+/// large single-String WASMs, but will *not* correctly compute `hc hash`.  Output the base-64
+/// encoded compressed WASM in 99-byte*4/3 == 132-symbol chunks
 fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -63,17 +66,16 @@ where
     let mut buf = Vec::new();
     gz.read_to_end(&mut buf).map_err(S::Error::custom)?;
     let b64 = base64::encode(&buf);
-    let cnt = (b64.len() + 127) / 128;
+    let cnt = (b64.len() + DNA_LINE_LEN - 1) / DNA_LINE_LEN;
     if cnt <= 1 {
         // For small WASMs (eg. tests, and for backward-compatibility) emit them as a simple *un-compressed* String
         let b64_uncompressed = base64::encode(data.as_ref());
         s.serialize_str(&b64_uncompressed)
     } else {
-        // Output the base-64 encoded compressed WASM in (1024*5/4)/10 == 128-symbol chunks
         let mut seq = s.serialize_seq(Some(cnt)).map_err(S::Error::custom)?;
         let mut cur: &str = b64.as_ref();
         while !cur.is_empty() {
-            let (chunk, rest) = cur.split_at(cmp::min(128, cur.len()));
+            let (chunk, rest) = cur.split_at(cmp::min(DNA_LINE_LEN, cur.len()));
             seq.serialize_element(chunk).map_err(S::Error::custom)?;
             cur = rest;
         }

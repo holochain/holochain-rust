@@ -49,12 +49,14 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
+    keystore::test_hash_config,
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
 };
 use boolinator::Boolinator;
+use holochain_core::context::InstanceStats;
 use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::{
     connection::net_connection::NetHandler,
@@ -117,6 +119,8 @@ pub struct Conductor {
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::conductor) interface_broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
     signal_multiplexer_kill_switch: Option<Sender<()>>,
+    stats_thread_kill_switch: Option<Sender<()>>,
+    stats_signal_receiver: Option<Receiver<HashMap<String, InstanceStats>>>,
     pub key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
@@ -229,6 +233,8 @@ impl Conductor {
             static_servers: HashMap::new(),
             interface_broadcasters: Arc::new(RwLock::new(HashMap::new())),
             signal_multiplexer_kill_switch: None,
+            stats_thread_kill_switch: None,
+            stats_signal_receiver: None,
             config,
             key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -238,9 +244,55 @@ impl Conductor {
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
-            hash_config: None,
+            hash_config: test_hash_config(),
             n3h_keepalive_network: None,
         }
+    }
+
+    pub fn spawn_stats_thread(&mut self) {
+        self.stop_stats_thread();
+        let instances = self.instances.clone();
+        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        let (stats_tx, stats_rx) = unbounded();
+        self.stats_thread_kill_switch = Some(kill_switch_tx);
+        self.stats_signal_receiver = Some(stats_rx);
+        thread::Builder::new()
+            .name("stats".to_string())
+            .spawn(move || loop {
+                // Get stats for all instances:
+                let mut instance_stats: HashMap<String, InstanceStats> = HashMap::new();
+                for (id, instance) in instances.iter() {
+                    if let Err(error) = instance
+                        .read()
+                        .map_err(|_| {
+                            HolochainInstanceError::InternalFailure(HolochainError::new(
+                                "Could not get lock on instance",
+                            ))
+                        })
+                        .and_then(|instance| instance.context())
+                        .and_then(|context| context.get_stats().map_err(|e| e.into()))
+                        .and_then(|stats| {
+                            instance_stats.insert(id.clone(), stats);
+                            Ok(())
+                        })
+                    {
+                        error!(
+                            "Could not get stats for instance '{}'. Error: {:?}",
+                            id, error
+                        );
+                    }
+                }
+
+                if let Err(e) = stats_tx.send(instance_stats) {
+                    error!("Could not send stats signal over channel: {:?}", e);
+                }
+
+                if kill_switch_rx.try_recv().is_ok() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(500));
+            })
+            .expect("");
     }
 
     pub fn add_agent_keystore(&mut self, agent_id: String, keystore: Keystore) {
@@ -279,27 +331,32 @@ impl Conductor {
         let config = self.config.clone();
         let (kill_switch_tx, kill_switch_rx) = unbounded();
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
+        self.spawn_stats_thread();
+        let stats_signal_receiver = self.stats_signal_receiver.clone().expect(
+            "Receiver must be Some after calling spawn_stats_thread() above which should set it",
+        );
 
         debug!("starting signal loop");
         thread::Builder::new()
             .name("signal_multiplexer".to_string())
             .spawn(move || loop {
+                let broadcasters = broadcasters.read().unwrap();
+                let admin_interfaces = config
+                    .interfaces
+                    .iter()
+                    .filter(|interface_config| interface_config.admin)
+                    .collect::<Vec<_>>();
                 {
                     for (instance_id, receiver) in instance_signal_receivers.read().unwrap().iter()
                     {
                         if let Ok(signal) = receiver.try_recv() {
                             signal_tx.clone().map(|s| s.send(signal.clone()));
-                            let broadcasters = broadcasters.read().unwrap();
                             let interfaces_with_instance: Vec<&InterfaceConfiguration> =
                                 match signal {
                                     // Send internal signals only to admin interfaces, if signals.trace is set:
                                     Signal::Trace(_) => {
                                         if config.signals.trace {
-                                            config
-                                                .interfaces
-                                                .iter()
-                                                .filter(|interface_config| interface_config.admin)
-                                                .collect()
+                                            admin_interfaces.clone()
                                         } else {
                                             Vec::new()
                                         }
@@ -345,10 +402,12 @@ impl Conductor {
 
                             for interface in interfaces_with_instance {
                                 if let Some(broadcaster) = broadcasters.get(&interface.id) {
-                                    if let Err(error) = broadcaster.send(SignalWrapper {
-                                        signal: signal.clone(),
-                                        instance_id: instance_id.clone(),
-                                    }) {
+                                    if let Err(error) =
+                                        broadcaster.send(SignalWrapper::InstanceSignal {
+                                            signal: signal.clone(),
+                                            instance_id: instance_id.clone(),
+                                        })
+                                    {
                                         notify(error.to_string());
                                     }
                                 };
@@ -356,12 +415,32 @@ impl Conductor {
                         }
                     }
                 }
+
+                // Process stats signals and send them over admin interfaces:
+                while let Ok(instance_stats) = stats_signal_receiver.try_recv() {
+                    for interface in &admin_interfaces {
+                        if let Some(broadcaster) = broadcasters.get(&interface.id) {
+                            if let Err(error) = broadcaster.send(SignalWrapper::InstanceStats {
+                                instance_stats: instance_stats.clone(),
+                            }) {
+                                notify(error.to_string());
+                            }
+                        };
+                    }
+                }
+
                 if kill_switch_rx.try_recv().is_ok() {
                     break;
                 }
                 thread::sleep(Duration::from_millis(1));
             })
             .expect("Must be able to spawn thread")
+    }
+
+    pub fn stop_stats_thread(&self) {
+        self.stats_thread_kill_switch
+            .as_ref()
+            .map(|kill_switch| kill_switch.send(()));
     }
 
     pub fn stop_signal_multiplexer(&self) {
@@ -376,7 +455,9 @@ impl Conductor {
             .interfaces
             .iter()
             .map(|ic| (ic.id.clone(), self.spawn_interface_thread(ic.clone())))
-            .collect()
+            .collect();
+
+        self.start_signal_multiplexer();
     }
 
     pub fn stop_all_interfaces(&mut self) {
@@ -715,7 +796,6 @@ impl Conductor {
             self.p2p_config = Some(self.initialize_p2p_config());
         }
 
-        self.start_signal_multiplexer();
         self.dpki_bootstrap()?;
 
         for id in self.config.instance_ids_sorted_by_bridge_dependencies()? {
@@ -839,13 +919,15 @@ impl Conductor {
                     context_builder = context_builder.with_state_dump_logging();
                 }
 
+                context_builder = context_builder.with_instance_name(&instance_name);
+
                 if let Some(metric_publisher_config) = &self.config.metric_publisher {
                     debug!("Setting metric publisher in context_builder to: {:?}", metric_publisher_config);
                     context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
                 };
 
                 // Spawn context
-                let context = context_builder.with_instance_name(&instance_name).spawn();
+                let context = context_builder.spawn();
 
                 // Get DNA
 
@@ -1438,6 +1520,7 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
     }
 }
 
+#[allow(dead_code)]
 fn with_port_heuristic<T, F: FnOnce() -> T>(
     wanted_port: u16,
     find_free_port: bool,
@@ -1459,29 +1542,44 @@ fn run_interface(
     kill_switch: Receiver<()>,
 ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
     use crate::interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
-    match interface_config.driver {
-        InterfaceDriver::Websocket { port } => with_port_heuristic(
-            port,
-            interface_config.choose_free_port.unwrap_or(false),
-            || {
-                let r = WebsocketInterface::new(port).run(handler, kill_switch);
-                println!("{}", magic_port_binding_string(&interface_config.id, port));
-                r
-            },
-        ),
-        InterfaceDriver::Http { port } => with_port_heuristic(
-            port,
-            interface_config.choose_free_port.unwrap_or(false),
-            || {
-                let r = HttpInterface::new(port).run(handler, kill_switch);
-                println!("{}", magic_port_binding_string(&interface_config.id, port));
-                r
-            },
-        ),
 
+    match interface_config.driver {
+        InterfaceDriver::Websocket { port } => {
+            let port = if interface_config.choose_free_port.unwrap_or(false) {
+                0
+            } else {
+                port
+            };
+            let mut interface = WebsocketInterface::new(port);
+            let r = interface.run(handler, kill_switch);
+            let addr = interface
+                .bound_address()
+                .expect("Could not bind interface to address");
+            println!(
+                "{}",
+                magic_port_binding_string(&interface_config.id, addr.port())
+            );
+            r
+        }
+        InterfaceDriver::Http { port } => {
+            let port = if interface_config.choose_free_port.unwrap_or(false) {
+                0
+            } else {
+                port
+            };
+            let mut interface = HttpInterface::new(port);
+            let r = interface.run(handler, kill_switch);
+            let addr = interface
+                .bound_address()
+                .expect("Could not bind interface to address");
+            println!(
+                "{}",
+                magic_port_binding_string(&interface_config.id, addr.port())
+            );
+            r
+        }
         _ => unimplemented!(),
     }
-    .expect("Couldn't spawn conductor interface!")
 }
 
 #[derive(Clone, Debug)]
@@ -1980,7 +2078,8 @@ pub mod tests {
     #[test]
     fn test_conductor_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
-        let _conductor = test_conductor_with_signals(signal_tx);
+        let mut conductor = test_conductor_with_signals(signal_tx);
+        conductor.start_signal_multiplexer();
 
         test_utils::expect_action(&signal_rx, |action| match action {
             Action::InitializeChain(_) => true,

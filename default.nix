@@ -24,15 +24,19 @@ with holonix.pkgs;
  dev-shell = stdenv.mkDerivation (holonix.shell // {
   name = "dev-shell";
 
-    shellHook = holonix.pkgs.lib.concatStrings [''
+    shellHook = holonix.pkgs.lib.concatStrings [
+    holonix.shell.shellHook
+    ''
     # environment variables used by rust tests directly
     export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
     export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     # config file used by aws cli tool
     export AWS_CONFIG_FILE=`pwd`/.aws/config
     RUST_LOG=sim1h=trace
+    export HC_TARGET_PREFIX=$NIX_ENV_PREFIX
+    export CARGO_TARGET_DIR="$HC_TARGET_PREFIX/target"
+    export CARGO_CACHE_RUSTC_INFO=1
     ''
-    holonix.shell.shellHook
     ];
 
   buildInputs = [ holonix.pkgs.libiconv ]

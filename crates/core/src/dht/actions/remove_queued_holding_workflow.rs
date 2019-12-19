@@ -29,7 +29,7 @@ impl Future for RemoveQueuedHoldingWorkflowFuture {
         cx.waker().clone().wake();
 
         if let Some(state) = self.context.try_state() {
-            if state.dht().has_queued_holding_workflow(&self.pending) {
+            if state.dht().has_exact_queued_holding_workflow(&self.pending) {
                 Poll::Pending
             } else {
                 Poll::Ready(())

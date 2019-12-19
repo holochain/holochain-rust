@@ -11,6 +11,7 @@ lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {
         let orig_handler = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |panic_info| {
+            eprintln!("THREAD PANIC {:#?}", panic_info);
             // invoke the default handler and exit the process
             orig_handler(panic_info);
             std::process::exit(1);
@@ -34,20 +35,47 @@ impl Pool {
             job_threads.push(
                 std::thread::Builder::new()
                     .name(format!("sim2h-pool-thread-{}", cpu_index))
-                    .spawn(move || loop {
-                        {
-                            if !*cont.f_lock() {
-                                return;
+                    .spawn(move || {
+                        let mut parked_jobs = Vec::new();
+                        loop {
+                            {
+                                if !*cont.f_lock() {
+                                    return;
+                                }
                             }
-                        }
 
-                        if let Ok(mut job) = recv.try_recv() {
-                            if job.run() {
-                                send.f_send(job);
+                            let now = std::time::Instant::now();
+                            let chk = parked_jobs.drain(..).collect::<Vec<_>>();
+                            for (t, job) in chk {
+                                if now >= t {
+                                    send.f_send(job);
+                                } else {
+                                    parked_jobs.push((t, job));
+                                }
                             }
-                        }
 
-                        std::thread::yield_now();
+                            if let Ok(mut job) =
+                                recv.recv_timeout(std::time::Duration::from_millis(5))
+                            {
+                                let r = job.run();
+                                if r.cont {
+                                    if r.wait_ms == 0 {
+                                        send.f_send(job);
+                                    } else {
+                                        parked_jobs.push((
+                                            std::time::Instant::now()
+                                                .checked_add(std::time::Duration::from_millis(
+                                                    r.wait_ms,
+                                                ))
+                                                .unwrap(),
+                                            job,
+                                        ));
+                                    }
+                                }
+                            }
+
+                            std::thread::sleep(std::time::Duration::from_millis(5));
+                        }
                     })
                     .unwrap(),
             );

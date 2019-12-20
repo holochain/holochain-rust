@@ -168,14 +168,11 @@ impl ContextBuilder {
     pub fn with_metric_publisher(mut self, config: &MetricPublisherConfig) -> Self {
         let config = match &config {
             MetricPublisherConfig::CloudWatchLogs(config) => {
-                let log_stream_name = config.log_stream_name.clone().map(|log_stream_name| {
-                    format!(
-                        "{}.{}",
-                        log_stream_name,
-                        self.instance_name
-                            .clone()
-                            .unwrap_or_else(|| format!("{}", snowflake::ProcessUniqueId::new()))
-                    )
+                let log_stream_name = config.clone().log_stream_name.map(|log_stream_name| {
+                    self.instance_name
+                        .clone()
+                        .map(|instance_name| format!("{}.{}", log_stream_name, instance_name))
+                        .unwrap_or_else(|| log_stream_name)
                 });
                 MetricPublisherConfig::CloudWatchLogs(
                     holochain_metrics::config::CloudWatchLogsConfig {

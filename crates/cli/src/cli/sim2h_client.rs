@@ -35,7 +35,7 @@ pub fn sim2h_client(url_string: String) -> Result<(), String> {
 
     println!("connecting to: {}", url);
     let mut job = Job::new(&url)?;
-    job.send_wire(WireMessage::Status);
+    job.send_wire(WireMessage::Ping);
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(500))
         .unwrap();

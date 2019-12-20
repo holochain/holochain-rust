@@ -136,11 +136,13 @@ impl Sim2hWorker {
 
     /// if we have queued wire messages and our connection is ready,
     /// try to send them
-    fn try_send_from_outgoing_buffer(&mut self) {
+    fn try_send_from_outgoing_buffer(&mut self) -> bool {
+        let mut did_something = false;
         loop {
             if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
-                return;
+                return did_something;
             }
+            did_something = true;
             let message = self.outgoing_message_buffer.get(0).unwrap();
             let payload: String = message.clone().into();
             let signature = self
@@ -170,7 +172,7 @@ impl Sim2hWorker {
                 );
                 self.connection = None;
                 self.check_reconnect();
-                return;
+                return did_something;
             }
             // if we made it here, we successfully sent the first message
             // we can remove it from the outgoing buffer queue
@@ -439,7 +441,10 @@ impl NetWorker for Sim2hWorker {
         }
 
         if self.connection_ready() {
-            self.try_send_from_outgoing_buffer();
+            if self.try_send_from_outgoing_buffer() {
+                did_something = true;
+            }
+
             // safe to unwrap because we check connection_ready()
             match self
                 .connection

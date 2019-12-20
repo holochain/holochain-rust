@@ -4,7 +4,7 @@ extern crate structopt;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::error;
-use sim2h::{Sim2h, MESSAGE_LOGGER};
+use sim2h::{Sim2h, MESSAGE_LOGGER, DhtAlgorithm};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
 
@@ -41,6 +41,7 @@ fn main() {
     }
 
     let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
+    sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding { redundant_count: 50 });
 
     loop {
         let result = sim2h.process();

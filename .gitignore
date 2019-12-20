@@ -44,3 +44,5 @@ Cargo.lock
 !/Cargo.lock
 
 stress-test/passthrough-dna.dna.json
+
+.vscode/

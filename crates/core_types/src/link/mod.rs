@@ -66,7 +66,7 @@ impl Link {
 }
 
 // HC.LinkAction sync with hdk-rust
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum LinkActionKind {
     ADD,
     REMOVE,

@@ -8,6 +8,7 @@ use lib3h_protocol::{
 };
 use log::*;
 use std::collections::{HashMap, HashSet};
+use crate::naive_sharding::{naive_sharding_should_store, anything_to_location, entry_location};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {
@@ -166,8 +167,42 @@ impl Space {
         &self.agents
     }
 
+    pub(crate) fn agents_supposed_to_hold_entry(&self, entry_hash: EntryHash, redundant_count: u64)
+        -> HashMap<AgentId, AgentInfo>
+    {
+        self.agents
+            .iter()
+            .filter(|(agent, _)| {
+                let agent_id_string: String = (*agent).clone().into();
+                naive_sharding_should_store(
+                    anything_to_location(&self.crypto, &agent_id_string),
+                    entry_location(&self.crypto, entry_hash.clone()),
+                    self.agents.len() as u64,
+                    redundant_count,
+                )
+            })
+            .map(|(e,v)|(e.clone(), v.clone()))
+            .collect()
+    }
+
     pub fn all_aspects(&self) -> &AspectList {
         &self.all_aspects_hashes
+    }
+
+    pub fn aspects_in_shard_for_agent(
+        &self,
+        agent: &AgentId,
+        redundant_count: u64,
+    ) -> AspectList {
+        self.all_aspects_hashes.filtered_by_entry_hash(|entry_hash| {
+            let agent_id_string: String = agent.clone().into();
+            naive_sharding_should_store(
+                anything_to_location(&self.crypto, &agent_id_string),
+                entry_location(&self.crypto, entry_hash.clone()),
+                self.agents.len() as u64,
+                redundant_count,
+            )
+        })
     }
 
     pub fn add_aspect(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
@@ -232,6 +267,14 @@ impl AspectList {
             })
             .collect::<Vec<String>>()
             .join("\n")
+    }
+
+    pub fn filtered_by_entry_hash<F: FnMut(&EntryHash)->bool>(&self, mut filter_fn: F) -> AspectList {
+        AspectList::from(self.0
+            .iter()
+            .filter(|(entry_hash, _)| filter_fn(*entry_hash))
+            .map(|(e,v)|(e.clone(), v.clone()))
+            .collect::<HashMap<EntryHash, Vec<AspectHash>>>())
     }
 }
 

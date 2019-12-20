@@ -91,6 +91,7 @@ use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding
 use job::*;
 use lib3h::rrdht_util::Location;
 
+#[derive(Clone)]
 pub enum DhtAlgorithm {
     FullSync,
     NaiveSharding { redundant_count: u64 },
@@ -599,42 +600,79 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                let (mut agents_in_space, aspects_missing_at_node) = {
-                    let space = self
+
+                let dht_algorithm = self.dht_algorithm.clone();
+
+                // Check if the node is missing any aspects
+                let aspects_missing_at_node = match dht_algorithm {
+                    DhtAlgorithm::FullSync => self
                         .get_or_create_space(&space_address)
-                        .read();
-                    let aspects_missing_at_node = space
+                        .read()
                         .all_aspects()
-                        .diff(&AspectList::from(list_data.address_map));
-
-                    warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
-
-                    // NB: agents_in_space may be randomly shuffled later, do not depend on ordering!
-                    let agents_in_space = space
-                        .all_agents()
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<AgentPubKey>>();
-                    (agents_in_space, aspects_missing_at_node)
+                        .diff(&AspectList::from(list_data.address_map)),
+                    DhtAlgorithm::NaiveSharding {redundant_count} => self
+                        .get_or_create_space(&space_address)
+                        .read()
+                        .aspects_in_shard_for_agent(agent_id, redundant_count)
+                        .diff(&AspectList::from(list_data.address_map))
                 };
 
-                let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
-                if missing_hashes.len() > 0 {
-                    let mut space = self
-                        .get_or_create_space(&space_address)
-                        .write();
-                    for (entry_hash, aspect_hash) in missing_hashes {
-                        space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
+                if aspects_missing_at_node.entry_addresses().count() > 0 {
+                    warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
+
+                    // Cache info about what this agent is missing so we can make sure it got it
+                    let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
+                    if missing_hashes.len() > 0 {
+                        let mut space = self
+                            .get_or_create_space(&space_address)
+                            .write();
+                        for (entry_hash, aspect_hash) in missing_hashes {
+                            space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
+                        }
+                    }
+
+                    match dht_algorithm {
+
+                        DhtAlgorithm::FullSync => {
+                            let all_agents_in_space = self
+                                .get_or_create_space(&space_address)
+                                .read()
+                                .all_agents()
+                                .keys()
+                                .cloned()
+                                .collect::<Vec<AgentPubKey>>();
+                            if all_agents_in_space.len() == 1 {
+                                error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
+                            } else {
+                                self.fetch_aspects_from_arbitrary_agent(
+                                    aspects_missing_at_node,
+                                    agent_id.clone(),
+                                    all_agents_in_space,
+                                    space_address.clone()
+                                );
+                            }
+                        },
+
+                        DhtAlgorithm::NaiveSharding {redundant_count} => {
+                            for entry_address in aspects_missing_at_node.entry_addresses() {
+                                let agent_pool = self
+                                    .get_or_create_space(&space_address)
+                                    .read()
+                                    .agents_supposed_to_hold_entry(entry_address.clone(), redundant_count)
+                                    .keys()
+                                    .cloned()
+                                    .collect::<Vec<AgentPubKey>>();
+                                self.fetch_aspects_from_arbitrary_agent(
+                                    aspects_missing_at_node.filtered_by_entry_hash(|e| e == entry_address),
+                                    agent_id.clone(),
+                                    agent_pool,
+                                    space_address.clone()
+                                );
+                            }
+                        }
                     }
                 }
 
-                if agents_in_space.len() == 1 {
-                    error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
-                } else {
-                    let agents_slice = &mut agents_in_space[..];
-                    agents_slice.shuffle(&mut thread_rng());
-                    self.fetch_aspects_from_arbitrary_agent(aspects_missing_at_node, agent_id.clone(), agents_slice, space_address.clone());
-                }
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(
@@ -686,9 +724,11 @@ impl Sim2h {
         &mut self,
         aspects_to_fetch: AspectList,
         for_agent_id: AgentId,
-        agent_pool: &[AgentId],
+        mut agent_pool: Vec<AgentId>,
         space_address: SpaceHash,
     ) {
+        let agent_pool = &mut agent_pool[..];
+        agent_pool.shuffle(&mut thread_rng());
         for entry_address in aspects_to_fetch.entry_addresses() {
             if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
                 if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(

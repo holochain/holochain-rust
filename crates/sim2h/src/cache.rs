@@ -113,6 +113,18 @@ impl Space {
         true
     }
 
+    pub fn agent_is_missing_some_aspect_for_entry(
+        &self,
+        agent_id: &AgentId,
+        entry_hash: &EntryHash,
+    ) -> bool {
+        let maybe_agent_map = self.missing_aspects.get(agent_id);
+        if maybe_agent_map.is_none() {
+            return false;
+        }
+        maybe_agent_map.unwrap().get(entry_hash).is_some()
+    }
+
     pub(crate) fn recalc_rrdht_arc_radius(&mut self) {
         let mut peer_record_set = RValuePeerRecordSet::default()
             // sim2h is currently omniscient

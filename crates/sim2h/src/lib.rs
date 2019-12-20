@@ -713,6 +713,72 @@ impl Sim2h {
 
                 Ok(())
             }
+            WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
+                if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
+                    let agent_pool = self
+                        .get_or_create_space(&space_address)
+                        .read()
+                        .agents_supposed_to_hold_entry(query_data.entry_address.clone(), redundant_count)
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<_>>();
+
+                    let query_target = if agent_pool.is_empty() {
+                        // If there is nobody we could ask, just send the query back
+                        query_data.requester_agent_id.clone()
+                    } else {
+                        let agents_with_all_aspects_for_entry = agent_pool.iter()
+                            .filter(|agent|{
+                                !self
+                                    .get_or_create_space(&space_address)
+                                    .read()
+                                    .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
+                            })
+                            .cloned()
+                            .collect::<Vec<AgentId>>();
+
+                        let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
+                            // If there is nobody who as all aspects of an entry, just
+                            // ask somebody of that shard:
+                            agents_with_all_aspects_for_entry
+                        } else {
+                            agent_pool
+                        };
+
+                        let agent_slice = &mut agents_to_sample_from[..];
+                        agent_slice.shuffle(&mut thread_rng());
+                        agent_slice[0].clone()
+                    };
+
+
+                    let maybe_url = self.lookup_joined(space_address, &query_target);
+                    if maybe_url.is_none() {
+                        error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
+                        return Ok(())
+                    }
+                    let url = maybe_url.unwrap();
+                    let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
+                    self.send(query_target, url.clone(), &query_message);
+                    Ok(())
+                } else {
+                    Err(format!("Got ClientToLib3h::QueryEntry in full-sync mode").into())
+                }
+            }
+            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result)) => {
+                if (query_result.responder_agent_id != *agent_id) || (query_result.space_address != *space_address)
+                {
+                    return Err(SPACE_MISMATCH_ERR_STR.into());
+                }
+                let to_url = self
+                    .lookup_joined(space_address, &query_result.requester_agent_id)
+                    .ok_or_else(|| format!("unvalidated proxy agent {}", &query_result.requester_agent_id))?;
+                self.send(
+                    query_result.requester_agent_id.clone(),
+                    to_url,
+                    &WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result))
+                );
+                Ok(())
+            }
             _ => {
                 warn!("Ignoring unimplemented message: {:?}", message );
                 Err(format!("Message not implemented: {:?}", message).into())

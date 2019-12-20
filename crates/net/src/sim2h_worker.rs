@@ -59,6 +59,7 @@ pub struct Sim2hWorker {
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
     has_self_stored_authored_aspects: bool,
+    is_full_sync_DHT: bool,
 }
 
 impl Sim2hWorker {
@@ -102,6 +103,7 @@ impl Sim2hWorker {
             initial_authoring_list: None,
             initial_gossiping_list: None,
             has_self_stored_authored_aspects: false,
+            is_full_sync_DHT: false,
         };
 
         instance.connection_status = instance
@@ -268,52 +270,70 @@ impl Sim2hWorker {
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
                 //let log_context = "ClientToLib3h::PublishEntry";
 
-                // As with QueryEntry, we assume a mirror DHT being implemented by Sim2h.
-                // This means that we can play back PublishEntry messages already locally
-                // as HandleStoreEntryAspects.
-                // This makes instances with Sim2hWorker work even if offline,
-                // i.e. not connected to the sim2h node.
-                for aspect in &provided_entry_data.entry.aspect_list {
-                    self.to_core
-                        .push(Lib3hServerProtocol::HandleStoreEntryAspect(
-                            StoreEntryAspectData {
-                                request_id: "".into(),
-                                space_address: provided_entry_data.space_address.clone(),
-                                provider_agent_id: provided_entry_data.provider_agent_id.clone(),
-                                entry_address: provided_entry_data.entry.entry_address.clone(),
-                                entry_aspect: aspect.clone(),
-                            },
-                        ));
+                if self.is_full_sync_DHT {
+                    // As with QueryEntry, if we are in full-sync DHT mode,
+                    // this means that we can play back PublishEntry messages already locally
+                    // as HandleStoreEntryAspects.
+                    // This makes instances with Sim2hWorker work even if offline,
+                    // i.e. not connected to the sim2h node.
+                    for aspect in &provided_entry_data.entry.aspect_list {
+                        self.to_core
+                            .push(Lib3hServerProtocol::HandleStoreEntryAspect(
+                                StoreEntryAspectData {
+                                    request_id: "".into(),
+                                    space_address: provided_entry_data.space_address.clone(),
+                                    provider_agent_id: provided_entry_data
+                                        .provider_agent_id
+                                        .clone(),
+                                    entry_address: provided_entry_data.entry.entry_address.clone(),
+                                    entry_aspect: aspect.clone(),
+                                },
+                            ));
+                    }
                 }
+
                 self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(
                     provided_entry_data,
                 )))
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
-                // For now, sim2h implements a full-sync mirror DHT
-                // which means queries should always be handled locally.
-                // Thus, we don't even need to ask the central sim2h instance
-                // to handle a query - we just send it back to core directly.
-                self.to_core
-                    .push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
-                Ok(())
+                if self.is_full_sync_DHT {
+                    // In a full-sync DHT queries should always be handled locally.
+                    // Thus, we don't even need to ask the central sim2h instance
+                    // to handle a query - we just send it back to core directly.
+                    self.to_core
+                        .push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
+                    Ok(())
+                } else {
+                    self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(
+                        query_entry_data,
+                    )))
+                }
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
-                // See above QueryEntry implementation.
-                // All queries are handled locally - we just reflect them back to core:
-                self.to_core.push(Lib3hServerProtocol::QueryEntryResult(
-                    query_entry_result_data,
-                ));
-                Ok(())
+                if self.is_full_sync_DHT {
+                    // See above QueryEntry implementation.
+                    // All queries are handled locally - we just reflect them back to core:
+                    self.to_core.push(Lib3hServerProtocol::QueryEntryResult(
+                        query_entry_result_data,
+                    ));
+                    Ok(())
+                } else {
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                        Lib3hToClientResponse::HandleQueryEntryResult(query_entry_result_data),
+                    ))
+                }
             }
 
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 self.initial_authoring_list = Some(entry_list_data.clone());
-                self.self_store_authored_aspects();
+                if self.is_full_sync_DHT {
+                    self.self_store_authored_aspects();
+                }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
                 ))
@@ -321,7 +341,9 @@ impl Sim2hWorker {
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
                 self.initial_gossiping_list = Some(entry_list_data.clone());
-                self.self_store_authored_aspects();
+                if self.is_full_sync_DHT {
+                    self.self_store_authored_aspects();
+                }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data),
                 ))

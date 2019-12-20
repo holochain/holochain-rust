@@ -15,8 +15,8 @@
     "typescript": "^3.6.3"
   },
   "dependencies": {
-    "@holochain/tryorama": "^0.3.0-rc.3",
-    "@holochain/tryorama-stress-utils": "0.0.4",
+    "@holochain/tryorama": "^0.3.0",
+    "@holochain/tryorama-stress-utils": "0.0.6",
     "ramda": "^0.26.1",
     "tape": "^4.11.0",
     "sleep": "^6.1.0"

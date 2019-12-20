@@ -87,9 +87,9 @@ pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamL
 pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
 
 mod job;
-use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};
+//use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};
 use job::*;
-use lib3h::rrdht_util::Location;
+//use lib3h::rrdht_util::Location;
 
 #[derive(Clone)]
 pub enum DhtAlgorithm {
@@ -797,22 +797,16 @@ impl Sim2h {
         provider: AgentPubKey,
     ) {
         // Calculate list of agents that should store new data:
-        let maybe_dht_agents = match self.dht_algorithm {
-            DhtAlgorithm::FullSync => self.all_agents(space_address.clone(), Some(&provider)),
+        let dht_agents = match self.dht_algorithm {
+            DhtAlgorithm::FullSync => {
+                self.all_agents_except_one(space_address.clone(), Some(&provider))
+            }
             DhtAlgorithm::NaiveSharding { redundant_count } => self.agents_in_neighbourhood(
                 space_address.clone(),
-                entry_location(&self.crypto, entry_data.entry_address.clone()),
+                entry_data.entry_address.clone(),
                 redundant_count,
             ),
         };
-
-        // Abort if couldn't get list of agents to store
-        if let Err(e) = &maybe_dht_agents {
-            error!("Could not calculate list of agents to send new entry data to! Aborting and ignoring new data. Error was: {:?}", e);
-            return;
-        }
-
-        let dht_agents = maybe_dht_agents.unwrap();
 
         let aspect_addresses = entry_data
             .aspect_list
@@ -863,15 +857,12 @@ impl Sim2h {
         }
     }
 
-    fn all_agents(
+    fn all_agents_except_one(
         &mut self,
         space: SpaceHash,
         except: Option<&AgentId>,
-    ) -> Sim2hResult<Vec<(AgentId, AgentInfo)>> {
-        Ok(self
-            .spaces
-            .get(&space)
-            .ok_or("No such space")?
+    ) -> Vec<(AgentId, AgentInfo)> {
+        self.get_or_create_space(&space)
             .read()
             .all_agents()
             .clone()
@@ -883,39 +874,20 @@ impl Sim2h {
                     true
                 }
             })
-            .collect::<Vec<(AgentId, AgentInfo)>>())
+            .collect::<Vec<(AgentId, AgentInfo)>>()
     }
 
     fn agents_in_neighbourhood(
         &mut self,
         space: SpaceHash,
-        entry_location: Location,
+        entry_hash: EntryHash,
         redundant_count: u64,
-    ) -> Sim2hResult<Vec<(AgentId, AgentInfo)>> {
-        debug!(
-            "Sharded broadcast for location {:?} in space: {:?}",
-            entry_location, space
-        );
-        let all_agents = self
-            .spaces
-            .get(&space)
-            .ok_or("No such space")?
+    ) -> Vec<(AgentId, AgentInfo)> {
+        self.get_or_create_space(&space)
             .read()
-            .all_agents()
-            .clone();
-        let number_of_agents_in_space = all_agents.len() as u64;
-        Ok(all_agents
+            .agents_supposed_to_hold_entry(entry_hash, redundant_count)
             .into_iter()
-            .filter(|(a, _)| {
-                let agent_id_string: String = (**a).clone().into();
-                naive_sharding_should_store(
-                    anything_to_location(&self.crypto, &agent_id_string),
-                    entry_location,
-                    number_of_agents_in_space,
-                    redundant_count,
-                )
-            })
-            .collect::<Vec<(AgentId, AgentInfo)>>())
+            .collect::<Vec<(AgentId, AgentInfo)>>()
     }
 
     fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {

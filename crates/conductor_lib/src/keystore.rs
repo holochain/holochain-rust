@@ -296,12 +296,17 @@ impl Keystore {
 
     /// adds a random root seed into the keystore
     pub fn add_random_seed(&mut self, dst_id_str: &str, size: usize) -> HcResult<()> {
-        let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
-        self.cache.insert(dst_id.clone(), secret);
-        self.encrypt(&dst_id)?;
-        Ok(())
+        self.add(dst_id_str, secret)
+    }
+
+    /// adds a provided root seed into the keystore
+    pub fn add_seed(&mut self, dst_id_str: &str, seed: &[u8]) -> HcResult<()> {
+        let mut seed_buf = SecBuf::with_secure(seed.len());
+        seed_buf.from_array(seed)?;
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
+        self.add(dst_id_str, secret)
     }
 
     fn check_dst_identifier(&self, dst_id_str: &str) -> HcResult<String> {
@@ -576,8 +581,17 @@ pub mod tests {
     fn test_save_load_roundtrip() {
         let random_passphrase = random_test_passphrase();
         let mut keystore = new_test_keystore(random_passphrase.clone());
+        let zero = [
+            0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0,
+        ];
+        assert_eq!(keystore.add_seed("my_zero_seed", &zero), Ok(()));
+        assert_eq!(keystore.list(), vec!["my_zero_seed".to_string()]);
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
-        assert_eq!(keystore.list(), vec!["my_root_seed".to_string()]);
+        assert_eq!(
+            keystore.list(),
+            vec!["my_root_seed".to_string(), "my_zero_seed".to_string()]
+        );
 
         let mut path = PathBuf::new();
         path.push("tmp-test/test-keystore");
@@ -589,7 +603,10 @@ pub mod tests {
             test_hash_config(),
         )
         .unwrap();
-        assert_eq!(loaded_keystore.list(), vec!["my_root_seed".to_string()]);
+        assert_eq!(
+            loaded_keystore.list(),
+            vec!["my_root_seed".to_string(), "my_zero_seed".to_string()]
+        );
 
         let secret1 = keystore.get("my_root_seed").unwrap();
         let expected_seed = match *secret1.lock().unwrap() {
@@ -610,6 +627,16 @@ pub mod tests {
         };
 
         assert_eq!(expected_seed, loaded_seed);
+
+        let secret_zero = loaded_keystore.get("my_zero_seed").unwrap();
+        let loaded_zero = match *secret_zero.lock().unwrap() {
+            Secret::Seed(ref mut buf) => {
+                let lock = buf.read_lock();
+                (&**lock).to_owned()
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(&zero, &loaded_zero[..])
     }
 
     #[test]

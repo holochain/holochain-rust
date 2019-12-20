@@ -60,7 +60,7 @@ where
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, Eq)]
 #[allow(clippy::large_enum_variant)]
 pub enum Entry {
     #[serde(serialize_with = "serialize_app_entry")]

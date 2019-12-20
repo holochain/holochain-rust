@@ -26,7 +26,10 @@ use cache::*;
 use connection_state::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
-    data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
+    data_types::{
+        EntryData, EntryListData, FetchEntryData, GetListData, Opaque, SpaceData,
+        StoreEntryAspectData,
+    },
     protocol::*,
     types::SpaceHash,
     uri::Lib3hUri,
@@ -496,7 +499,33 @@ impl Sim2h {
         Ok(())
     }
 
+    fn handle_unseen_aspects(
+        &mut self,
+        uri: &Lib3hUri,
+        space_address: &SpaceHash,
+        agent_id: &AgentId,
+        list_data: &EntryListData,
+    ) {
+        let unseen_aspects = AspectList::from(list_data.address_map.clone())
+            .diff(self.get_or_create_space(space_address).read().all_aspects());
+        debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+        for entry_address in unseen_aspects.entry_addresses() {
+            if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".into(),
+                        space_address: space_address.clone(),
+                        provider_agent_id: agent_id.clone(),
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(aspect_address_list.clone()),
+                    }));
+                self.send(agent_id.clone(), uri.clone(), &wire_message);
+            }
+        }
+    }
+
     // given an incoming messages, prepare a proxy message and whether it's an publish or request
+    #[allow(clippy::cognitive_complexity)]
     fn handle_joined(
         &mut self,
         uri: &Lib3hUri,
@@ -572,27 +601,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                let unseen_aspects = AspectList::from(list_data.address_map)
-                    .diff(self
-                        .get_or_create_space(&space_address)
-                        .read()
-                        .all_aspects()
-                    );
-                debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-                for entry_address in unseen_aspects.entry_addresses() {
-                    if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                        let wire_message = WireMessage::Lib3hToClient(
-                            Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                request_id: "".into(),
-                                space_address: space_address.clone(),
-                                provider_agent_id: agent_id.clone(),
-                                entry_address: entry_address.clone(),
-                                aspect_address_list: Some(aspect_address_list.clone())
-                            })
-                        );
-                        self.send(agent_id.clone(), uri.clone(), &wire_message);
-                    }
-                }
+                self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data)) => {
@@ -600,6 +609,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
+                self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
 
                 let dht_algorithm = self.dht_algorithm.clone();
 
@@ -758,10 +768,10 @@ impl Sim2h {
                     }
                     let url = maybe_url.unwrap();
                     let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
-                    self.send(query_target, url.clone(), &query_message);
+                    self.send(query_target, url, &query_message);
                     Ok(())
                 } else {
-                    Err(format!("Got ClientToLib3h::QueryEntry in full-sync mode").into())
+                    Err("Got ClientToLib3h::QueryEntry in full-sync mode".into())
                 }
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result)) => {

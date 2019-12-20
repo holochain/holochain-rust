@@ -64,7 +64,7 @@ const network =
 
 const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
 
-const configCommon = {
+export const configCommon = {
   logger,
   network,
 }

@@ -22,7 +22,7 @@ log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"
 url2 = "=0.0.4"
-in_stream = { version = "=0.0.40-alpha1", path = "../in_stream" }
+in_stream = { version = "=0.0.41-alpha4", path = "../in_stream" }
 dns-lookup = "1.0.1"
 hcid = "=0.0.6"
 base64 = "=0.10.1"

@@ -221,7 +221,7 @@ pub fn create_new_chain_header(
     ))
 }
 
-/// Creates a `EntryHeaderPair` for a `ChainHeader`.
+/// Creates an `EntryHeaderPair` for a `ChainHeader`.
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
 pub fn create_entry_header_pair_for_header(

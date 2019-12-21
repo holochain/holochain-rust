@@ -52,7 +52,7 @@ const network =
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
-    sim2h_url: 'wss://localhost:9002'
+      sim2h_url: 'wss://localhost:9002',
   }
 
   : networkType === 'memory'
@@ -69,6 +69,16 @@ export const configCommon = {
 }
 
 /** Generates a bunch of identical conductor configs with multiple identical instances */
-export const configBatch = (numConductors, numInstances) => (
-  configBatchSimple(numConductors, numInstances, dna, configCommon)
-)
+export const configBatch = (numConductors, numInstances, redundancy) => {
+    if (redundancy > 0) {
+        configCommon.network["algorithm"] = {
+            type: "naiveSharding",
+            redundant_count: redundancy,
+        }
+    } else {
+        configCommon.network["algorithm"] = {
+            type: "fullSync",
+        }
+    }
+    return configBatchSimple(numConductors, numInstances, dna, configCommon)
+}

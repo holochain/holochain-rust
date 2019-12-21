@@ -161,7 +161,7 @@ pub mod test {
 
     #[test]
     pub fn should_set_sim2h_url() {
-        let p2p_config = P2pConfig::new_with_sim2h_backend("wss://0.0.0.0:9999");
+        let p2p_config = P2pConfig::new_with_sim2h_backend("wss://0.0.0.0:9999", None);
         let context: Arc<Context> = test_context(p2p_config);
         let dna_address: Address = context.agent_id.address();
         let agent_id = context.agent_id.content().to_string();

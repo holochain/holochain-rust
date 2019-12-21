@@ -2,9 +2,9 @@ use crate::{
     agent::state::AgentState,
     dht::pending_validations::PendingValidation,
     network::{
-        header_with_its_entry::HeaderWithItsEntry,
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
+        header_with_its_entry::HeaderWithItsEntry,
         query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },

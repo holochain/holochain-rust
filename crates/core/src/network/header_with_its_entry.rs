@@ -6,24 +6,24 @@ use crate::{
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-/// A `EntryHeaderPair` cannot be constructed unless the entry address in the
-/// `ChainHeader` that is within the `EntryHeaderPair` is the same as the address
-/// of the `Entry` that is also within the `EntryHeaderPair`.
+/// A `HeaderWithItsEntry` cannot be constructed unless the entry address in the
+/// `ChainHeader` that is within the `HeaderWithItsEntry` is the same as the address
+/// of the `Entry` that is also within the `HeaderWithItsEntry`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct EntryHeaderPair(ChainHeader, Entry);
+pub struct HeaderWithItsEntry(ChainHeader, Entry);
 
-impl EntryHeaderPair {
+impl HeaderWithItsEntry {
     // It seems best to not have a new method, since stylistically it is expected to return Self, whereas constructing could fail.
     pub fn try_from_header_and_entry(
         header: ChainHeader,
         entry: Entry,
-    ) -> Result<EntryHeaderPair, HolochainError> {
+    ) -> Result<HeaderWithItsEntry, HolochainError> {
         let header_entry_address = header.entry_address();
         let entry_address = entry.address();
         if header_entry_address.clone() == entry_address {
-            Ok(EntryHeaderPair(header, entry))
+            Ok(HeaderWithItsEntry(header, entry))
         } else {
-            let basic_error_msg = "Tried to create a EntryHeaderPair, but got a
+            let basic_error_msg = "Tried to create a HeaderWithItsEntry, but got a
             mismatch with the header's entry address and the entry's
             address.";
             let error_msg = format!(
@@ -50,10 +50,10 @@ impl EntryHeaderPair {
         self.1.clone()
     }
 
-    pub fn fetch_entry_header_pair(
+    pub fn fetch_header_with_its_entry(
         address: &Address,
         state: &State,
-    ) -> Result<EntryHeaderPair, HolochainError> {
+    ) -> Result<HeaderWithItsEntry, HolochainError> {
         let entry = state
             .agent()
             .chain_store()
@@ -68,6 +68,6 @@ impl EntryHeaderPair {
                 );
                 HolochainError::from(error_msg)
             })?;
-        EntryHeaderPair::try_from_header_and_entry(header, entry)
+        HeaderWithItsEntry::try_from_header_and_entry(header, entry)
     }
 }

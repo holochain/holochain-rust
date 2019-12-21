@@ -1,4 +1,4 @@
-use crate::network::entry_header_pair::EntryHeaderPair;
+use crate::network::header_with_its_entry::HeaderWithItsEntry;
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 
@@ -6,7 +6,7 @@ pub trait ValidationDependencies {
     fn get_validation_dependencies(&self) -> Vec<Address>;
 }
 
-impl ValidationDependencies for EntryHeaderPair {
+impl ValidationDependencies for HeaderWithItsEntry {
     fn get_validation_dependencies(&self) -> Vec<Address> {
         match &self.entry() {
             Entry::App(_, _) => {
@@ -47,7 +47,7 @@ impl ValidationDependencies for EntryHeaderPair {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::network::entry_header_pair::EntryHeaderPair;
+    use crate::network::header_with_its_entry::HeaderWithItsEntry;
     use holochain_core_types::{
         agent::AgentId, chain_header::ChainHeader, error::HolochainError,
         link::link_data::LinkData, time::Iso8601,
@@ -66,16 +66,21 @@ pub mod tests {
         )
     }
 
-    fn try_entry_header_pair_from_entry(entry: Entry) -> Result<EntryHeaderPair, HolochainError> {
+    fn try_header_with_its_entry_from_entry(
+        entry: Entry,
+    ) -> Result<HeaderWithItsEntry, HolochainError> {
         let header = test_header_for_entry(&entry);
-        EntryHeaderPair::try_from_header_and_entry(header, entry)
+        HeaderWithItsEntry::try_from_header_and_entry(header, entry)
     }
 
     #[test]
     fn test_get_validation_dependencies_app_entry() -> Result<(), HolochainError> {
         let entry = Entry::App("entry_type".into(), "content".into());
-        try_entry_header_pair_from_entry(entry).map(|entry_header_pair| {
-            assert_eq!(entry_header_pair.get_validation_dependencies(), Vec::new())
+        try_header_with_its_entry_from_entry(entry).map(|header_with_its_entry| {
+            assert_eq!(
+                header_with_its_entry.get_validation_dependencies(),
+                Vec::new()
+            )
         })
     }
 
@@ -89,9 +94,9 @@ pub mod tests {
             test_header_for_entry(&Entry::App("".into(), "".into())),
             AgentId::new("HcAgentId", "key".into()),
         ));
-        try_entry_header_pair_from_entry(entry).map(|entry_header_pair| {
+        try_header_with_its_entry_from_entry(entry).map(|header_with_its_entry| {
             assert_eq!(
-                entry_header_pair.get_validation_dependencies(),
+                header_with_its_entry.get_validation_dependencies(),
                 vec![
                     Address::from("QmBaseAddress"),
                     Address::from("QmTargetAddress")
@@ -112,9 +117,9 @@ pub mod tests {
             &Iso8601::from(0),
         );
         let entry = Entry::ChainHeader(header_entry_content);
-        try_entry_header_pair_from_entry(entry).map(|entry_header_pair| {
+        try_header_with_its_entry_from_entry(entry).map(|header_with_its_entry| {
             assert_eq!(
-                entry_header_pair.get_validation_dependencies(),
+                header_with_its_entry.get_validation_dependencies(),
                 vec![Address::from("QmPreviousHeaderAddress")],
             )
         })

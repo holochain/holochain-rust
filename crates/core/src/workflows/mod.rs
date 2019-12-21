@@ -15,7 +15,8 @@ use crate::{
     context::Context,
     dht::pending_validations::{PendingValidation, ValidatingWorkflow},
     network::{
-        actions::get_validation_package::get_validation_package, entry_header_pair::EntryHeaderPair,
+        actions::get_validation_package::get_validation_package,
+        header_with_its_entry::HeaderWithItsEntry,
     },
     nucleus::{
         actions::build_validation_package::build_validation_package,
@@ -43,11 +44,11 @@ use std::sync::Arc;
 /// Checks the DNA's validation package definition for the given entry type.
 /// Fails if this entry type needs more than just the header for validation.
 pub(crate) async fn try_make_local_validation_package(
-    entry_header_pair: &EntryHeaderPair,
+    header_with_its_entry: &HeaderWithItsEntry,
     validation_package_definition: &ValidationPackageDefinition,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
-    let entry_header = &entry_header_pair.header();
+    let entry_header = &header_with_its_entry.header();
 
     match validation_package_definition {
         ValidationPackageDefinition::Entry => {
@@ -55,8 +56,8 @@ pub(crate) async fn try_make_local_validation_package(
         }
         _ => {
             let agent = context.state()?.agent().get_agent()?;
-            let entry = &entry_header_pair.entry();
-            let header = entry_header_pair.header();
+            let entry = &header_with_its_entry.entry();
+            let header = header_with_its_entry.header();
             let overlapping_provenance = header
                 .provenances()
                 .iter()
@@ -76,12 +77,12 @@ pub(crate) async fn try_make_local_validation_package(
 
 /// Gets hold of the validation package for the given entry by trying several different methods.
 async fn validation_package(
-    entry_header_pair: &EntryHeaderPair,
+    header_with_its_entry: &HeaderWithItsEntry,
     context: Arc<Context>,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 0. Call into the DNA to get the validation package definition for this entry
     // e.g. what data is needed to validate it (chain, entry, headers, etc)
-    let entry = entry_header_pair.entry();
+    let entry = header_with_its_entry.entry();
     let validation_package_definition = get_validation_package_definition(&entry, context.clone())
         .and_then(|callback_result| match callback_result {
             CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
@@ -99,10 +100,10 @@ async fn validation_package(
     log_debug!(
         context,
         "validation_package:{} - Trying to build locally",
-        entry_header_pair.entry().address()
+        header_with_its_entry.entry().address()
     );
     if let Ok(package) = try_make_local_validation_package(
-        &entry_header_pair,
+        &header_with_its_entry,
         &validation_package_definition,
         context.clone(),
     )
@@ -111,7 +112,7 @@ async fn validation_package(
         log_debug!(
             context,
             "validation_package:{} - Successfully built locally",
-            entry_header_pair.entry().address()
+            header_with_its_entry.entry().address()
         );
         return Ok(Some(package));
     }
@@ -120,22 +121,22 @@ async fn validation_package(
     log_debug!(
         context,
         "validation_package:{} - Could not build locally. Trying to retrieve from author",
-        entry_header_pair.entry().address()
+        header_with_its_entry.entry().address()
     );
 
-    match get_validation_package(entry_header_pair.header(), &context).await {
+    match get_validation_package(header_with_its_entry.header(), &context).await {
         Ok(Some(package)) => {
             log_debug!(
                 context,
                 "validation_package:{} - Successfully retrieved from author",
-                entry_header_pair.entry().address()
+                header_with_its_entry.entry().address()
             );
             return Ok(Some(package));
         }
         response => log_debug!(
             context,
             "validation_package:{} - Direct message to author responded: {:?}",
-            entry_header_pair.entry().address(),
+            header_with_its_entry.entry().address(),
             response,
         ),
     }
@@ -144,10 +145,10 @@ async fn validation_package(
     log_debug!(
         context,
         "validation_package:{} - Could not retrieve from author. Trying to build from published headers",
-        entry_header_pair.entry().address()
+        header_with_its_entry.entry().address()
     );
     if let Ok(package) = try_make_validation_package_dht(
-        &entry_header_pair,
+        &header_with_its_entry,
         &validation_package_definition,
         context.clone(),
     )
@@ -156,7 +157,7 @@ async fn validation_package(
         log_debug!(
             context,
             "validation_package:{} - Successfully built from published headers",
-            entry_header_pair.entry().address()
+            header_with_its_entry.entry().address()
         );
         return Ok(Some(package));
     }
@@ -166,7 +167,7 @@ async fn validation_package(
     log_debug!(
         context,
         "validation_package:{} - Could not get validation package!!!",
-        entry_header_pair.entry().address()
+        header_with_its_entry.entry().address()
     );
     Err(HolochainError::ErrorGeneric(
         "Could not get validation package".to_string(),
@@ -177,7 +178,7 @@ async fn validation_package(
 pub mod tests {
     use super::validation_package;
     use crate::{
-        network::entry_header_pair::EntryHeaderPair, nucleus::actions::tests::*,
+        network::header_with_its_entry::HeaderWithItsEntry, nucleus::actions::tests::*,
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{entry::Entry, error::HolochainError};
@@ -213,9 +214,9 @@ pub mod tests {
             .next()
             .expect("Must be able to get header for just published entry");
 
-        EntryHeaderPair::try_from_header_and_entry(header, entry).map(|entry_header_pair| {
+        HeaderWithItsEntry::try_from_header_and_entry(header, entry).map(|header_with_its_entry| {
             let validation_package = context1
-                .block_on(validation_package(&entry_header_pair, context1.clone()))
+                .block_on(validation_package(&header_with_its_entry, context1.clone()))
                 .expect("Could not recover a validation package as the non-author");
 
             assert_eq!(
@@ -238,19 +239,19 @@ pub async fn run_holding_workflow(
 ) -> Result<(), HolochainError> {
     match pending.workflow {
         ValidatingWorkflow::HoldLink => {
-            hold_link_workflow(&pending.entry_header_pair, context.clone()).await
+            hold_link_workflow(&pending.header_with_its_entry, context.clone()).await
         }
         ValidatingWorkflow::HoldEntry => {
-            hold_entry_workflow(&pending.entry_header_pair, context.clone()).await
+            hold_entry_workflow(&pending.header_with_its_entry, context.clone()).await
         }
         ValidatingWorkflow::RemoveLink => {
-            remove_link_workflow(&pending.entry_header_pair, context.clone()).await
+            remove_link_workflow(&pending.header_with_its_entry, context.clone()).await
         }
         ValidatingWorkflow::UpdateEntry => {
-            hold_update_workflow(&pending.entry_header_pair, context.clone()).await
+            hold_update_workflow(&pending.header_with_its_entry, context.clone()).await
         }
         ValidatingWorkflow::RemoveEntry => {
-            hold_remove_workflow(&pending.entry_header_pair, context.clone()).await
+            hold_remove_workflow(&pending.header_with_its_entry, context.clone()).await
         }
     }
 }

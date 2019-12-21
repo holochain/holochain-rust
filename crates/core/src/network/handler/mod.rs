@@ -10,7 +10,6 @@ use crate::{
     context::Context,
     entry::CanPublish,
     network::{
-        header_with_its_entry::HeaderWithItsEntry,
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
         handler::{
@@ -20,6 +19,7 @@ use crate::{
             send::*,
             store::*,
         },
+        header_with_its_entry::HeaderWithItsEntry,
     },
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
@@ -354,7 +354,8 @@ fn get_content_aspect(
         }
     };
 
-    let header_with_its_entry = maybe_header_with_its_entry.ok_or(HolochainError::EntryNotFoundLocally)?;
+    let header_with_its_entry =
+        maybe_header_with_its_entry.ok_or(HolochainError::EntryNotFoundLocally)?;
 
     let _ = header_with_its_entry
         .entry()

@@ -1,6 +1,6 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_header_pair::EntryHeaderPair, nucleus::validation::validate_entry,
+    network::header_with_its_entry::HeaderWithItsEntry, nucleus::validation::validate_entry,
 };
 
 use crate::{
@@ -16,10 +16,10 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_link_workflow(
-    entry_header_pair: &EntryHeaderPair,
+    header_with_its_entry: &HeaderWithItsEntry,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let entry = &entry_header_pair.entry();
+    let entry = &header_with_its_entry.entry();
     let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
         _ => Err(HolochainError::ErrorGeneric(
@@ -31,7 +31,7 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: {:?}", link);
     log_debug!(context, "workflow/hold_link: getting validation package...");
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(&entry_header_pair, context.clone())
+    let maybe_validation_package = validation_package(&header_with_its_entry, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -55,7 +55,7 @@ pub async fn hold_link_workflow(
     // 3. Validate the entry
     log_debug!(context, "workflow/hold_link: validate...");
     validate_entry(
-        entry_header_pair.entry(),
+        header_with_its_entry.entry(),
         None,
         validation_data,
         &context
@@ -66,7 +66,7 @@ pub async fn hold_link_workflow(
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
-                entry_header_pair.entry(),
+                header_with_its_entry.entry(),
                 err,
             );
             HolochainError::from(err)
@@ -76,17 +76,17 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::LinkAdd(link_add.clone(), entry_header_pair.header());
+    let aspect = EntryAspect::LinkAdd(link_add.clone(), header_with_its_entry.header());
     hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
-    hold_entry_workflow(&entry_header_pair, context.clone()).await?;
+    hold_entry_workflow(&header_with_its_entry, context.clone()).await?;
     log_debug!(
         context,
         "workflow/hold_entry: added! {:?}",
-        entry_header_pair
+        header_with_its_entry
     );
 
     //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
@@ -151,10 +151,12 @@ pub mod tests {
         let header = agent1_state
             .get_most_recent_header_for_entry(&link_entry)
             .expect("There must be a header in the author's source chain after commit");
-        let entry_header_pair = EntryHeaderPair::try_from_entry_and_header(header, link_entry)?;
+        let header_with_its_entry =
+            HeaderWithItsEntry::try_from_entry_and_header(header, link_entry)?;
 
         // Call hold_entry_workflow on victim DHT node
-        let result = context2.block_on(hold_link_workflow(&entry_header_pair, context2.clone()));
+        let result =
+            context2.block_on(hold_link_workflow(&header_with_its_entry, context2.clone()));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());

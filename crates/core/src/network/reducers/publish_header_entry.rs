@@ -3,8 +3,8 @@ use crate::{
     agent::state::create_header_with_its_entry_for_header,
     network::{
         actions::NetworkActionResponse,
-        header_with_its_entry::HeaderWithItsEntry,
         entry_aspect::EntryAspect,
+        header_with_its_entry::HeaderWithItsEntry,
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
     },
@@ -26,8 +26,10 @@ fn publish_header(
     root_state: &State,
     chain_header: ChainHeader,
 ) -> Result<(), HolochainError> {
-    let header_with_its_entry =
-        create_header_with_its_entry_for_header(&StateWrapper::from(root_state.clone()), chain_header)?;
+    let header_with_its_entry = create_header_with_its_entry_for_header(
+        &StateWrapper::from(root_state.clone()),
+        chain_header,
+    )?;
     let entry = header_with_its_entry.entry();
     send(
         network_state,
@@ -51,7 +53,8 @@ fn reduce_publish_header_entry_inner(
     address: &Address,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-    let header_with_its_entry = HeaderWithItsEntry::fetch_header_with_its_entry(&address, root_state)?;
+    let header_with_its_entry =
+        HeaderWithItsEntry::fetch_header_with_its_entry(&address, root_state)?;
     publish_header(network_state, root_state, header_with_its_entry.header())
 }
 

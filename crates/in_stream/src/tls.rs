@@ -260,6 +260,14 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         }
     }
 
+    fn check_ready(&mut self) -> Result<bool> {
+        self.priv_process()?;
+        match self.state {
+            Some(TlsState::Ready(_)) => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
     fn remote_url(&self) -> Url2 {
         self.remote_url.clone()
     }

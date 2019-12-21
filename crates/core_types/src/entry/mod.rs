@@ -221,8 +221,8 @@ pub fn test_link_entry() -> Entry {
     let link = Link::new(
         &test_entry.address(),
         &test_entry.address(),
-        &test_link.clone(),
-        &test_tag.clone(),
+        &test_link,
+        &test_tag,
     );
     let link_data = LinkData::from_link(
         &link,
@@ -231,7 +231,7 @@ pub fn test_link_entry() -> Entry {
         test_agent_id(),
     );
 
-    let link_entry = Entry::LinkAdd(link_data.clone());
+    let link_entry = Entry::LinkAdd(link_data);
 
     link_entry
 }

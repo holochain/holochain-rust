@@ -191,10 +191,10 @@ impl From<PendingValidationStruct> for EntryAspect {
             }
             ValidatingWorkflow::RemoveLink => {
                 let link_data = unwrap_to!(entry => Entry::LinkRemove);
-                EntryAspect::LinkRemove(link_data.clone(), header.clone())
+                EntryAspect::LinkRemove(link_data.clone(), header)
             }
-            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(entry.clone(), header),
-            ValidatingWorkflow::RemoveEntry => EntryAspect::Deletion(header.clone()),
+            ValidatingWorkflow::UpdateEntry => EntryAspect::Update(entry, header),
+            ValidatingWorkflow::RemoveEntry => EntryAspect::Deletion(header),
         }
     }
 }

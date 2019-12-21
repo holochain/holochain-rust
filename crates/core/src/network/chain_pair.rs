@@ -35,7 +35,7 @@ impl ChainPair {
                 basic_error_msg, header, entry
             );
             Err(HolochainError::HeaderEntryMismatch(
-                error_msg.to_string(),
+                error_msg,
                 header_entry_address.clone(),
                 entry_address,
             ))

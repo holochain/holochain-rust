@@ -1,8 +1,8 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::NetworkActionResponse, entry_header_pair::EntryHeaderPair, entry_aspect::EntryAspect,
-        reducers::send, state::NetworkState,
+        actions::NetworkActionResponse, entry_aspect::EntryAspect,
+        entry_header_pair::EntryHeaderPair, reducers::send, state::NetworkState,
     },
     state::State,
 };
@@ -65,7 +65,9 @@ fn publish_update_delete_meta(
     // publish crud-status
 
     let aspect = match crud_status {
-        CrudStatus::Modified => EntryAspect::Update(entry_header_pair.entry(), entry_header_pair.header()),
+        CrudStatus::Modified => {
+            EntryAspect::Update(entry_header_pair.entry(), entry_header_pair.header())
+        }
         CrudStatus::Deleted => EntryAspect::Deletion(entry_header_pair.header()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(
@@ -136,19 +138,17 @@ fn reduce_publish_inner(
 
     match entry_header_pair.entry().entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_header_pair),
-        EntryType::App(_) => {
-            publish_entry(network_state, &entry_header_pair).and_then(|_| {
-                match entry_header_pair.header().link_update_delete() {
-                    Some(modified_entry) => publish_update_delete_meta(
-                        network_state,
-                        modified_entry,
-                        CrudStatus::Modified,
-                        &entry_header_pair.clone(),
-                    ),
-                    None => Ok(()),
-                }
-            })
-        }
+        EntryType::App(_) => publish_entry(network_state, &entry_header_pair).and_then(|_| {
+            match entry_header_pair.header().link_update_delete() {
+                Some(modified_entry) => publish_update_delete_meta(
+                    network_state,
+                    modified_entry,
+                    CrudStatus::Modified,
+                    &entry_header_pair.clone(),
+                ),
+                None => Ok(()),
+            }
+        }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_header_pair)
             .and_then(|_| publish_link_meta(network_state, &entry_header_pair)),
         EntryType::LinkRemove => publish_entry(network_state, &entry_header_pair)

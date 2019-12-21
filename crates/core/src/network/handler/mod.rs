@@ -10,9 +10,9 @@ use crate::{
     context::Context,
     entry::CanPublish,
     network::{
-        entry_header_pair::EntryHeaderPair,
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
+        entry_header_pair::EntryHeaderPair,
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},

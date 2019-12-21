@@ -1,6 +1,7 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect, network::entry_header_pair::EntryHeaderPair,
-    nucleus::validation::validate_entry, workflows::hold_entry::hold_entry_workflow,
+    context::Context, dht::actions::hold_aspect::hold_aspect,
+    network::entry_header_pair::EntryHeaderPair, nucleus::validation::validate_entry,
+    workflows::hold_entry::hold_entry_workflow,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
@@ -84,7 +85,11 @@ pub async fn remove_link_workflow(
 
     //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
     hold_entry_workflow(&entry_header_pair, context.clone()).await?;
-    log_debug!(context, "workflow/hold_entry: added! {:?}", entry_header_pair);
+    log_debug!(
+        context,
+        "workflow/hold_entry: added! {:?}",
+        entry_header_pair
+    );
 
     Ok(())
 }

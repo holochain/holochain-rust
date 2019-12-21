@@ -74,8 +74,9 @@ pub mod tests {
     #[test]
     fn test_get_validation_dependencies_app_entry() -> Result<(), HolochainError> {
         let entry = Entry::App("entry_type".into(), "content".into());
-        try_entry_header_pair_from_entry(entry)
-            .map(|entry_header_pair| assert_eq!(entry_header_pair.get_validation_dependencies(), Vec::new()))
+        try_entry_header_pair_from_entry(entry).map(|entry_header_pair| {
+            assert_eq!(entry_header_pair.get_validation_dependencies(), Vec::new())
+        })
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect, network::entry_header_pair::EntryHeaderPair,
-    nucleus::validation::validate_entry,
+    context::Context, dht::actions::hold_aspect::hold_aspect,
+    network::entry_header_pair::EntryHeaderPair, nucleus::validation::validate_entry,
 };
 
 use crate::{
@@ -83,7 +83,11 @@ pub async fn hold_link_workflow(
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
     hold_entry_workflow(&entry_header_pair, context.clone()).await?;
-    log_debug!(context, "workflow/hold_entry: added! {:?}", entry_header_pair);
+    log_debug!(
+        context,
+        "workflow/hold_entry: added! {:?}",
+        entry_header_pair
+    );
 
     //5. Link has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())

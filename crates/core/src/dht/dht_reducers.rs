@@ -563,7 +563,9 @@ pub mod tests {
         workflow: ValidatingWorkflow,
     ) -> PendingValidation {
         match EntryHeaderPair::try_from_header_and_entry(header.clone(), entry.clone()) {
-            Ok(entry_header_pair) => Arc::new(PendingValidationStruct::new(entry_header_pair, workflow)),
+            Ok(entry_header_pair) => {
+                Arc::new(PendingValidationStruct::new(entry_header_pair, workflow))
+            }
             Err(err) => {
                 let err_msg = format!(
                     "Tried to create a pending validation, got an error: {}",

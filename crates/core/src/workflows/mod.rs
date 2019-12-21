@@ -14,7 +14,9 @@ pub mod respond_validation_package_request;
 use crate::{
     context::Context,
     dht::pending_validations::{PendingValidation, ValidatingWorkflow},
-    network::{actions::get_validation_package::get_validation_package, entry_header_pair::EntryHeaderPair},
+    network::{
+        actions::get_validation_package::get_validation_package, entry_header_pair::EntryHeaderPair,
+    },
     nucleus::{
         actions::build_validation_package::build_validation_package,
         ribosome::callback::{

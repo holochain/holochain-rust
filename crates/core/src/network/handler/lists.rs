@@ -88,7 +88,8 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
             }
             Ok(entry_header_pair) => {
                 let entry_hash = entry_header_pair.entry().address();
-                let content_aspect = EntryAspect::Content(entry_header_pair.entry(), entry_header_pair.header());
+                let content_aspect =
+                    EntryAspect::Content(entry_header_pair.entry(), entry_header_pair.header());
                 let aspect_hash = AspectHash::from(content_aspect.address());
                 address_map
                     .entry(entry_hash.into())

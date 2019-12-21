@@ -1,6 +1,6 @@
 pub mod actions;
-pub mod entry_header_pair;
 pub mod direct_message;
+pub mod entry_header_pair;
 pub mod handler;
 pub mod reducers;
 pub mod state;
@@ -133,6 +133,7 @@ pub mod tests {
                 dht1.add(&entry).unwrap();
                 dht1.add_header_for_entry(&entry, &header2).unwrap();
             }
+            cf
         }
 
         // Get it.

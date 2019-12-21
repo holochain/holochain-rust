@@ -387,15 +387,10 @@ pub mod tests {
     use crate::dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow};
     use holochain_core_types::{
         chain_header::{
-            test_chain_header_with_sig,
-            test_chain_header_from_entry_with_sig_default_provs_time
+            test_chain_header_from_entry_with_sig_default_provs_time, test_chain_header_with_sig,
         },
         entry::{
-            entry_type::test_entry_type,
-            test_entry,
-            test_entry_a,
-            test_entry_b,
-            test_entry_c
+            entry_type::test_entry_type, test_entry, test_entry_a, test_entry_b, test_entry_c,
         },
     };
 
@@ -450,15 +445,13 @@ pub mod tests {
 
     // Convenience function
     fn test_chain_header_for_entry_app(entry: Entry) -> ChainHeader {
-        test_chain_header_from_entry_with_sig_default_provs_time(
-            entry,
-            test_entry_type(),
-            "sig1"
-        )
+        test_chain_header_from_entry_with_sig_default_provs_time(entry, test_entry_type(), "sig1")
     }
 
     // Convenience function, creates a header from the entry, no dependencies for app entry
-    fn try_pending_validation_for_app_entry_no_deps(entry: Entry) ->  Result<PendingValidationWithTimeout, HolochainError> {
+    fn try_pending_validation_for_app_entry_no_deps(
+        entry: Entry,
+    ) -> Result<PendingValidationWithTimeout, HolochainError> {
         try_pending_validation_for_entry_header_and_deps(
             entry.clone(),
             test_chain_header_for_entry_app(entry),
@@ -467,7 +460,10 @@ pub mod tests {
     }
 
     // Convenience function, creates a header from the entry, with dependencies for app entry
-    fn try_pending_validation_for_app_entry_with_deps(entry: Entry, deps: Vec<Address>) -> Result<PendingValidationWithTimeout, HolochainError> {
+    fn try_pending_validation_for_app_entry_with_deps(
+        entry: Entry,
+        deps: Vec<Address>,
+    ) -> Result<PendingValidationWithTimeout, HolochainError> {
         try_pending_validation_for_entry_header_and_deps(
             entry.clone(),
             test_chain_header_for_entry_app(entry),
@@ -495,8 +491,14 @@ pub mod tests {
     #[test]
     fn test_dependency_resolution_chain() -> Result<(), HolochainError> {
         // A depends on B and B depends on C. C should be free
-        let a = try_pending_validation_for_app_entry_with_deps(test_entry_a(), vec![test_entry_b().address()])?;
-        let b = try_pending_validation_for_app_entry_with_deps(test_entry_b(), vec![test_entry_c().address()])?;
+        let a = try_pending_validation_for_app_entry_with_deps(
+            test_entry_a(),
+            vec![test_entry_b().address()],
+        )?;
+        let b = try_pending_validation_for_app_entry_with_deps(
+            test_entry_b(),
+            vec![test_entry_c().address()],
+        )?;
         let c = try_pending_validation_for_app_entry_no_deps(test_entry_c())?;
 
         let pending_list = vec![a.clone(), b.clone(), c.clone()];

@@ -5,9 +5,8 @@
 use crate::{
     agent::test_agent_id,
     entry::{
-        Entry,
         entry_type::{test_entry_type, test_link_entry_type, test_sys_entry_type, EntryType},
-        test_entry, test_link_entry, test_sys_entry,
+        test_entry, test_link_entry, test_sys_entry, Entry,
     },
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
@@ -162,9 +161,7 @@ pub fn test_chain_header_from_entry_with_sig(
 }
 
 /// returns a dummy header for use in tests
-pub fn test_chain_header_with_sig(
-    sig: &'static str
-) -> ChainHeader {
+pub fn test_chain_header_with_sig(sig: &'static str) -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),
@@ -180,14 +177,9 @@ pub fn test_chain_header_with_sig(
 pub fn test_chain_header_from_entry_with_sig_default_provs_time(
     entry: Entry,
     entry_type: EntryType,
-    sig: &'static str
+    sig: &'static str,
 ) -> ChainHeader {
-    test_chain_header_from_entry_with_sig(
-        entry,
-        entry_type,
-        test_provenances(sig),
-        test_iso_8601(),
-    )
+    test_chain_header_from_entry_with_sig(entry, entry_type, test_provenances(sig), test_iso_8601())
 }
 
 /// returns a sys header for use in tests.

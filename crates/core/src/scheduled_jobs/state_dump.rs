@@ -53,8 +53,8 @@ pub fn state_dump(context: Arc<Context>) {
             format!(
                 "<{}({})> {}: depends on : {:?}",
                 pending.workflow.to_string(),
-                pending.entry_header_pair.header().entry_type(),
-                pending.entry_header_pair.entry().address(),
+                pending.header_with_its_entry.header().entry_type(),
+                pending.header_with_its_entry.entry().address(),
                 pending
                     .dependencies
                     .iter()

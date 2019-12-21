@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, entry::CanPublish, network::entry_header_pair::EntryHeaderPair,
+    context::Context, entry::CanPublish, network::header_with_its_entry::HeaderWithItsEntry,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use holochain_core_types::{
@@ -85,11 +85,11 @@ async fn public_chain_entries_from_headers_dht(
 }
 
 pub(crate) async fn try_make_validation_package_dht(
-    entry_header_pair: &EntryHeaderPair,
+    header_with_its_entry: &HeaderWithItsEntry,
     validation_package_definition: &ValidationPackageDefinition,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
-    let entry_header = entry_header_pair.header();
+    let entry_header = header_with_its_entry.header();
     log_debug!(
         context,
         "Constructing validation package from DHT for entry with address: {}",
@@ -204,12 +204,12 @@ pub mod tests {
             .next()
             .expect("Must be able to get header for just published entry");
 
-        let entry_header_pair = EntryHeaderPair::try_from_header_and_entry(header, entry)?;
+        let header_with_its_entry = HeaderWithItsEntry::try_from_header_and_entry(header, entry)?;
 
         // jack (the author) retrieves a local validation package
         let local_validation_package = context2
             .block_on(try_make_local_validation_package(
-                &entry_header_pair,
+                &header_with_its_entry,
                 &ValidationPackageDefinition::ChainFull,
                 context2.clone(),
             ))
@@ -218,7 +218,7 @@ pub mod tests {
         // jill reconstructs one from published headers
         let dht_validation_package = context1
             .block_on(try_make_validation_package_dht(
-                &entry_header_pair,
+                &header_with_its_entry,
                 &ValidationPackageDefinition::ChainFull,
                 context1.clone(),
             ))

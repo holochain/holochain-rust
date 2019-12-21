@@ -1,6 +1,6 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_header_pair::EntryHeaderPair, nucleus::validation::validate_entry,
+    context::Context, dht::actions::hold_aspect::hold_aspect, network::header_with_its_entry::HeaderWithItsEntry,
+    nucleus::validation::validate_entry,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
@@ -15,11 +15,11 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow(
-    entry_header_pair: &EntryHeaderPair,
+    header_with_its_entry: &HeaderWithItsEntry,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(&entry_header_pair, context.clone())
+    let maybe_validation_package = validation_package(&header_with_its_entry, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -43,7 +43,7 @@ pub async fn hold_entry_workflow(
 
     // 3. Validate the entry
     validate_entry(
-        entry_header_pair.entry(),
+        header_with_its_entry.entry(),
         None,
         validation_data,
         &context
@@ -51,13 +51,13 @@ pub async fn hold_entry_workflow(
     .map_err(|err| {
         if let ValidationError::UnresolvedDependencies(dependencies) = &err {
             log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
-                entry_header_pair.entry().address(),
+                header_with_its_entry.entry().address(),
                 dependencies,
             );
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
-                entry_header_pair.entry().address(),
+                header_with_its_entry.entry().address(),
                 err,
             );
             HolochainError::from(err)
@@ -67,17 +67,17 @@ pub async fn hold_entry_workflow(
     log_debug!(
         context,
         "workflow/hold_entry: is valid! {}",
-        entry_header_pair.entry().address()
+        header_with_its_entry.entry().address()
     );
 
     // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Content(entry_header_pair.entry(), entry_header_pair.header());
+    let aspect = EntryAspect::Content(header_with_its_entry.entry(), header_with_its_entry.header());
     hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(
         context,
         "workflow/hold_entry: HOLDING: {}",
-        entry_header_pair.entry().address()
+        header_with_its_entry.entry().address()
     );
 
     Ok(())
@@ -127,10 +127,10 @@ pub mod tests {
         let header = agent1_state
             .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
-        let entry_header_pair = EntryHeaderPair::try_from_header_and_entry(header, entry)?;
+        let header_with_its_entry = HeaderWithItsEntry::try_from_header_and_entry(header, entry)?;
 
         // Call hold_entry_workflow on victim DHT node
-        let result = context2.block_on(hold_entry_workflow(&entry_header_pair, &context2));
+        let result = context2.block_on(hold_entry_workflow(&header_with_its_entry, &context2));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());

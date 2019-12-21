@@ -14,34 +14,7 @@ process.on('unhandledRejection', error => {
 
 const dnaPath = path.join(__dirname, "../dist/<<DNA_NAME>>.dna.json")
 
-const orchestrator = new Orchestrator({
-  middleware: combine(
-    // use the tape harness to run the tests, injects the tape API into each scenario
-    // as the second argument
-    tapeExecutor(require('tape')),
-
-    localOnly,
-
-    // squash all instances from all conductors down into a single conductor,
-    // for in-memory testing purposes.
-    // Remove this middleware for other "real" network types which can actually
-    // send messages across conductors
-    singleConductor
-
-  ),
-
-  globalConfig: {
-    logger: true,
-    network: 'memory',  // must use singleConductor middleware if using in-memory network
-  },
-
-  // the following are optional:
-
-  waiter: {
-    softTimeout: 5000,
-    hardTimeout: 10000,
-  },
-})
+const orchestrator = new Orchestrator()
 
 const dna = Config.dna(dnaPath, 'scaffold-test')
 const conductorConfig = Config.gen({myInstanceName: dna})

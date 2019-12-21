@@ -104,8 +104,6 @@ impl Job {
             connection,
         };
 
-        //        out.join_space();
-
         Ok(out)
     }
 

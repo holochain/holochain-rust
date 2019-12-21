@@ -3,9 +3,8 @@
 /// for a potentially more accurate example
 
 const path = require('path')
-const tape = require('tape')
 
-const { Orchestrator, Config, tapeExecutor, singleConductor, localOnly, combine  } = require('@holochain/tryorama')
+const { Orchestrator, Config } = require('@holochain/tryorama')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -27,10 +26,10 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   // indicating the function, and passing it an input
   const addr = await alice.call("myInstanceName", "my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
 
-  // Wait for all network activity to
+  // Wait for all network activity to settle
   await s.consistency()
 
-  const result = await alice.call("myInstanceName", "my_zome", "get_my_entry", {"address": addr.Ok})
+  const result = await bob.call("myInstanceName", "my_zome", "get_my_entry", {"address": addr.Ok})
 
   // check for equality of the actual and expected results
   t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })

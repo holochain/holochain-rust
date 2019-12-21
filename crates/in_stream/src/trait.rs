@@ -84,7 +84,7 @@ pub trait InStream<R: Sized + Debug + Send + Sync, W: Sized + Debug + Send + Syn
     Sized + Debug + Send + Sync
 {
     /// your implementation should work with a single url scheme/protocol
-    /// if you need to support multiple (i.e. ws:// vs wss://) consider
+    /// if you need to support multiple (e.g. ws:// vs wss://) consider
     /// using macros/code generation to DRY
     const URL_SCHEME: &'static str;
 

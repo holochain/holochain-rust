@@ -162,6 +162,14 @@ enum Cli {
         /// message to send to the sim2h server ('ping' or 'status')
         message: String,
     },
+    TrycpClient {
+        #[structopt(long, short = "u")]
+        /// url of the trycp server
+        url: String,
+        #[structopt(long, short = "m", default_value = "ping")]
+        /// message to send to the trycp server ('ping')
+        message: String,
+    }
 }
 arg_enum! {
     #[derive(Debug)]
@@ -329,6 +337,12 @@ fn run() -> HolochainResult<()> {
             println!("url: {}", &url);
             println!("message: {}", &message);
             cli::sim2h_client(url, message)?;
+        }
+
+        Cli::TrycpClient { url, message } => {
+            println!("url: {}", &url);
+            println!("message: {}", &message);
+            cli::trycp_client(url, message)?;
         }
     }
 

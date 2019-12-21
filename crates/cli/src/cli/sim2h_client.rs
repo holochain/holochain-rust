@@ -1,5 +1,3 @@
-//! `cargo run --bin sim2h_admin -- --help`
-
 use dns_lookup::lookup_host;
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;

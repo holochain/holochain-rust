@@ -2,7 +2,7 @@ use crate::{
     agent::state::AgentState,
     dht::pending_validations::PendingValidation,
     network::{
-        chain_pair::ChainPair,
+        entry_header_pair::EntryHeaderPair,
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
         query::{GetLinksNetworkQuery, NetworkQueryResult},
@@ -127,7 +127,7 @@ pub enum Action {
     HoldAspect(EntryAspect),
 
     //action for updating crudstatus
-    CrudStatus((ChainPair, CrudStatus)),
+    CrudStatus((EntryHeaderPair, CrudStatus)),
 
     // ----------------
     // Network actions:

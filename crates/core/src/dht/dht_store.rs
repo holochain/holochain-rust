@@ -4,7 +4,7 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
-    network::chain_pair::ChainPair,
+    network::entry_header_pair::EntryHeaderPair,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -231,8 +231,8 @@ impl DhtStore {
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
-        match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {
-            Ok(_chain_pair) => {
+        match EntryHeaderPair::try_from_header_and_entry(header.clone(), entry.clone()) {
+            Ok(_entry_header_pair) => {
                 let eavi = EntityAttributeValueIndex::new(
                     &entry.address(),
                     &Attribute::EntryHeader,
@@ -334,8 +334,8 @@ impl DhtStore {
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| {
-                current.chain_pair.header().entry_address()
-                    == pending.chain_pair.header().entry_address()
+                current.entry_header_pair.header().entry_address()
+                    == pending.entry_header_pair.header().entry_address()
                     && current.workflow == pending.workflow
             },
         )
@@ -356,7 +356,7 @@ where
     let unique_pending: HashSet<Address> = pending
         .clone()
         .into_iter()
-        .map(|p| p.pending.chain_pair.entry().address())
+        .map(|p| p.pending.entry_header_pair.entry().address())
         .collect();
 
     Box::new(move |p| {

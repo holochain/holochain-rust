@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    agent::state::create_chain_pair_for_header,
+    agent::state::create_entry_header_pair_for_header,
     context::Context,
     dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
@@ -77,7 +77,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     // So we iterate over all our source chain headers
     for chain_header in context.state().unwrap().agent().iter_chain() {
         // Create an entry that represents the header
-        match create_chain_pair_for_header(&state, chain_header.clone()) {
+        match create_entry_header_pair_for_header(&state, chain_header.clone()) {
             Err(e) => {
                 log_error!(
                     context,
@@ -86,9 +86,9 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
                 );
                 continue;
             }
-            Ok(chain_pair) => {
-                let entry_hash = chain_pair.entry().address();
-                let content_aspect = EntryAspect::Content(chain_pair.entry(), chain_pair.header());
+            Ok(entry_header_pair) => {
+                let entry_hash = entry_header_pair.entry().address();
+                let content_aspect = EntryAspect::Content(entry_header_pair.entry(), entry_header_pair.header());
                 let aspect_hash = AspectHash::from(content_aspect.address());
                 address_map
                     .entry(entry_hash.into())

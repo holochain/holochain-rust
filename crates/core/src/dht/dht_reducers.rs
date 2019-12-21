@@ -203,7 +203,7 @@ pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Op
         .unique_by(|p| {
             (
                 p.pending.workflow.clone(),
-                p.pending.chain_pair.header().entry_address().clone(),
+                p.pending.entry_header_pair.header().entry_address().clone(),
             )
         })
         .cloned()
@@ -263,7 +263,7 @@ pub mod tests {
             pending_validations::{PendingValidation, PendingValidationStruct, ValidatingWorkflow},
         },
         instance::tests::test_context,
-        network::chain_pair::ChainPair,
+        network::entry_header_pair::EntryHeaderPair,
         state::test_store,
     };
     use bitflags::_core::time::Duration;
@@ -562,8 +562,8 @@ pub mod tests {
         header: ChainHeader,
         workflow: ValidatingWorkflow,
     ) -> PendingValidation {
-        match ChainPair::try_from_header_and_entry(header.clone(), entry.clone()) {
-            Ok(chain_pair) => Arc::new(PendingValidationStruct::new(chain_pair, workflow)),
+        match EntryHeaderPair::try_from_header_and_entry(header.clone(), entry.clone()) {
+            Ok(entry_header_pair) => Arc::new(PendingValidationStruct::new(entry_header_pair, workflow)),
             Err(err) => {
                 let err_msg = format!(
                     "Tried to create a pending validation, got an error: {}",

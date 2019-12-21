@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::{ChainStore, ChainStoreIterator},
-    network::chain_pair::ChainPair,
+    network::entry_header_pair::EntryHeaderPair,
     state::State,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
@@ -221,13 +221,13 @@ pub fn create_new_chain_header(
     ))
 }
 
-/// Creates a `ChainPair` for a `ChainHeader`.
+/// Creates a `EntryHeaderPair` for a `ChainHeader`.
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
-pub fn create_chain_pair_for_header(
+pub fn create_entry_header_pair_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
-) -> Result<ChainPair, HolochainError> {
+) -> Result<EntryHeaderPair, HolochainError> {
     let timestamp = chain_header.timestamp().clone();
     let entry = Entry::ChainHeader(chain_header);
     // This header entry needs its own header so we can publish it.
@@ -251,7 +251,7 @@ pub fn create_chain_pair_for_header(
         &None,
         &timestamp,
     );
-    ChainPair::try_from_header_and_entry(header, entry)
+    EntryHeaderPair::try_from_header_and_entry(header, entry)
 }
 
 /// Do a Commit Action against an agent state.

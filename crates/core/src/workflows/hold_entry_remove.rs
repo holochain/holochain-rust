@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect, network::chain_pair::ChainPair,
+    context::Context, dht::actions::hold_aspect::hold_aspect, network::entry_header_pair::EntryHeaderPair,
     nucleus::validation::validate_entry,
 };
 
@@ -12,11 +12,11 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_remove_workflow(
-    chain_pair: &ChainPair,
+    entry_header_pair: &EntryHeaderPair,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(chain_pair, context.clone())
+    let maybe_validation_package = validation_package(entry_header_pair, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -35,7 +35,7 @@ pub async fn hold_remove_workflow(
 
     // 3. Validate the entry
     validate_entry(
-        chain_pair.entry(),
+        entry_header_pair.entry(),
         None,
         validation_data,
         &context
@@ -46,7 +46,7 @@ pub async fn hold_remove_workflow(
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/hold_remove: Entry removal {:?} is NOT valid! Validation error: {:?}",
-                chain_pair.entry(),
+                entry_header_pair.entry(),
                 err,
             );
             HolochainError::from(err)
@@ -55,7 +55,7 @@ pub async fn hold_remove_workflow(
     })?;
 
     // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Deletion(chain_pair.header());
+    let aspect = EntryAspect::Deletion(entry_header_pair.header());
     hold_aspect(aspect, context.clone()).await?;
     Ok(())
 }

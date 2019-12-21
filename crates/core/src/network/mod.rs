@@ -1,5 +1,5 @@
 pub mod actions;
-pub mod chain_pair;
+pub mod entry_header_pair;
 pub mod direct_message;
 pub mod handler;
 pub mod reducers;

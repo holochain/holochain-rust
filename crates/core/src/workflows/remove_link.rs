@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect, network::chain_pair::ChainPair,
+    context::Context, dht::actions::hold_aspect::hold_aspect, network::entry_header_pair::EntryHeaderPair,
     nucleus::validation::validate_entry, workflows::hold_entry::hold_entry_workflow,
 };
 
@@ -13,10 +13,10 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn remove_link_workflow(
-    chain_pair: &ChainPair,
+    entry_header_pair: &EntryHeaderPair,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let entry = &chain_pair.entry();
+    let entry = &entry_header_pair.entry();
     let (link_data, links_to_remove) = match entry {
         Entry::LinkRemove(data) => data,
         _ => Err(HolochainError::ErrorGeneric(
@@ -31,7 +31,7 @@ pub async fn remove_link_workflow(
         context,
         "workflow/remove_link: getting validation package..."
     );
-    let maybe_validation_package = validation_package(&chain_pair, context.clone())
+    let maybe_validation_package = validation_package(&entry_header_pair, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -53,7 +53,7 @@ pub async fn remove_link_workflow(
     // 3. Validate the entry
     log_debug!(context, "workflow/remove_link: validate...");
     validate_entry(
-        chain_pair.entry(),
+        entry_header_pair.entry(),
         None,
         validation_data,
         &context
@@ -64,7 +64,7 @@ pub async fn remove_link_workflow(
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
-                chain_pair.entry(),
+                entry_header_pair.entry(),
                 err,
             );
             HolochainError::from(err)
@@ -77,14 +77,14 @@ pub async fn remove_link_workflow(
     // 3. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::LinkRemove(
         (link_data.clone(), links_to_remove.clone()),
-        chain_pair.header(),
+        entry_header_pair.header(),
     );
     hold_aspect(aspect, context.clone()).await?;
     log_debug!(context, "workflow/remove_link: added! {:?}", link);
 
     //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
-    hold_entry_workflow(&chain_pair, context.clone()).await?;
-    log_debug!(context, "workflow/hold_entry: added! {:?}", chain_pair);
+    hold_entry_workflow(&entry_header_pair, context.clone()).await?;
+    log_debug!(context, "workflow/hold_entry: added! {:?}", entry_header_pair);
 
     Ok(())
 }

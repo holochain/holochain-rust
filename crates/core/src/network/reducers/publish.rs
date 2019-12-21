@@ -1,7 +1,7 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::NetworkActionResponse, chain_pair::ChainPair, entry_aspect::EntryAspect,
+        actions::NetworkActionResponse, entry_header_pair::EntryHeaderPair, entry_aspect::EntryAspect,
         reducers::send, state::NetworkState,
     },
     state::State,
@@ -37,7 +37,7 @@ pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
 /// Send to network a PublishDhtData message
 fn publish_entry(
     network_state: &mut NetworkState,
-    chain_pair: &ChainPair,
+    entry_header_pair: &EntryHeaderPair,
 ) -> Result<(), HolochainError> {
     send(
         network_state,
@@ -45,10 +45,10 @@ fn publish_entry(
             space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
-                entry_address: chain_pair.entry().address().into(),
+                entry_address: entry_header_pair.entry().address().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
-                    chain_pair.entry(),
-                    chain_pair.header(),
+                    entry_header_pair.entry(),
+                    entry_header_pair.header(),
                 ))],
             },
         }),
@@ -60,13 +60,13 @@ fn publish_update_delete_meta(
     network_state: &mut NetworkState,
     orig_entry_address: Address,
     crud_status: CrudStatus,
-    chain_pair: &ChainPair,
+    entry_header_pair: &EntryHeaderPair,
 ) -> Result<(), HolochainError> {
     // publish crud-status
 
     let aspect = match crud_status {
-        CrudStatus::Modified => EntryAspect::Update(chain_pair.entry(), chain_pair.header()),
-        CrudStatus::Deleted => EntryAspect::Deletion(chain_pair.header()),
+        CrudStatus::Modified => EntryAspect::Update(entry_header_pair.entry(), entry_header_pair.header()),
+        CrudStatus::Deleted => EntryAspect::Deletion(entry_header_pair.header()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Unexpeced CRUD variant {:?}",
@@ -91,24 +91,24 @@ fn publish_update_delete_meta(
     Ok(())
 }
 
-/// Send to network a PublishMeta message holding a link metadata to `chain_pair`
+/// Send to network a PublishMeta message holding a link metadata to `entry_header_pair`
 fn publish_link_meta(
     network_state: &mut NetworkState,
-    chain_pair: &ChainPair,
+    entry_header_pair: &EntryHeaderPair,
 ) -> Result<(), HolochainError> {
-    let (base, aspect) = match chain_pair.entry() {
+    let (base, aspect) = match entry_header_pair.entry() {
         Entry::LinkAdd(link_data) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkAdd(link_data, chain_pair.header()),
+            EntryAspect::LinkAdd(link_data, entry_header_pair.header()),
         ),
         Entry::LinkRemove((link_data, links_to_remove)) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkRemove((link_data, links_to_remove), chain_pair.header()),
+            EntryAspect::LinkRemove((link_data, links_to_remove), entry_header_pair.header()),
         ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd/Remove received {:?}",
-                chain_pair.entry(),
+                entry_header_pair.entry(),
             )));
         }
     };
@@ -132,41 +132,41 @@ fn reduce_publish_inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let chain_pair = ChainPair::fetch_chain_pair(&address, root_state)?;
+    let entry_header_pair = EntryHeaderPair::fetch_entry_header_pair(&address, root_state)?;
 
-    match chain_pair.entry().entry_type() {
-        EntryType::AgentId => publish_entry(network_state, &chain_pair),
+    match entry_header_pair.entry().entry_type() {
+        EntryType::AgentId => publish_entry(network_state, &entry_header_pair),
         EntryType::App(_) => {
-            publish_entry(network_state, &chain_pair).and_then(|_| {
-                match chain_pair.header().link_update_delete() {
+            publish_entry(network_state, &entry_header_pair).and_then(|_| {
+                match entry_header_pair.header().link_update_delete() {
                     Some(modified_entry) => publish_update_delete_meta(
                         network_state,
                         modified_entry,
                         CrudStatus::Modified,
-                        &chain_pair.clone(),
+                        &entry_header_pair.clone(),
                     ),
                     None => Ok(()),
                 }
             })
         }
-        EntryType::LinkAdd => publish_entry(network_state, &chain_pair)
-            .and_then(|_| publish_link_meta(network_state, &chain_pair)),
-        EntryType::LinkRemove => publish_entry(network_state, &chain_pair)
-            .and_then(|_| publish_link_meta(network_state, &chain_pair)),
-        EntryType::Deletion => publish_entry(network_state, &chain_pair).and_then(|_| {
-            match chain_pair.header().link_update_delete() {
+        EntryType::LinkAdd => publish_entry(network_state, &entry_header_pair)
+            .and_then(|_| publish_link_meta(network_state, &entry_header_pair)),
+        EntryType::LinkRemove => publish_entry(network_state, &entry_header_pair)
+            .and_then(|_| publish_link_meta(network_state, &entry_header_pair)),
+        EntryType::Deletion => publish_entry(network_state, &entry_header_pair).and_then(|_| {
+            match entry_header_pair.header().link_update_delete() {
                 Some(modified_entry) => publish_update_delete_meta(
                     network_state,
                     modified_entry,
                     CrudStatus::Deleted,
-                    &chain_pair.clone(),
+                    &entry_header_pair.clone(),
                 ),
                 None => Ok(()),
             }
         }),
         _ => Err(HolochainError::NotImplemented(format!(
             "reduce_publish_inner not implemented for {}",
-            chain_pair.entry().entry_type()
+            entry_header_pair.entry().entry_type()
         ))),
     }
 }

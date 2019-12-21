@@ -1,5 +1,5 @@
 use crate::{
-    entry::validation_dependencies::ValidationDependencies, network::chain_pair::ChainPair,
+    entry::validation_dependencies::ValidationDependencies, network::entry_header_pair::EntryHeaderPair,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -70,17 +70,17 @@ impl fmt::Display for ValidatingWorkflow {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub struct PendingValidationStruct {
-    pub chain_pair: ChainPair,
+    pub entry_header_pair: EntryHeaderPair,
     pub dependencies: Vec<Address>,
     pub workflow: ValidatingWorkflow,
     uuid: ProcessUniqueId,
 }
 
 impl PendingValidationStruct {
-    pub fn new(chain_pair: ChainPair, workflow: ValidatingWorkflow) -> Self {
-        let dependencies = chain_pair.get_validation_dependencies();
+    pub fn new(entry_header_pair: EntryHeaderPair, workflow: ValidatingWorkflow) -> Self {
+        let dependencies = entry_header_pair.get_validation_dependencies();
         Self {
-            chain_pair,
+            entry_header_pair,
             dependencies,
             workflow,
             uuid: ProcessUniqueId::new(),
@@ -100,9 +100,9 @@ impl PendingValidationStruct {
         entry_aspect: EntryAspect,
         validating_workflow: ValidatingWorkflow,
     ) -> Result<PendingValidationStruct, HolochainError> {
-        match ChainPair::try_from_header_and_entry(header, entry) {
-            Ok(chain_pair) => Ok(PendingValidationStruct::new(
-                chain_pair,
+        match EntryHeaderPair::try_from_header_and_entry(header, entry) {
+            Ok(entry_header_pair) => Ok(PendingValidationStruct::new(
+                entry_header_pair,
                 validating_workflow,
             )),
             Err(error) => {
@@ -181,8 +181,8 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
 
 impl From<PendingValidationStruct> for EntryAspect {
     fn from(pending: PendingValidationStruct) -> EntryAspect {
-        let entry = pending.chain_pair.entry();
-        let header = pending.chain_pair.header();
+        let entry = pending.entry_header_pair.entry();
+        let header = pending.entry_header_pair.header();
         match pending.workflow {
             ValidatingWorkflow::HoldEntry => EntryAspect::Content(entry, header),
             ValidatingWorkflow::HoldLink => {

@@ -313,8 +313,7 @@ workflows:
       filters:
        branches:
         only:
-         - 2019-12-04-docker-timeouts
-         - develop
+         - master
          - final-exam
    - docker-build-trycp-server:
       requires:
@@ -327,7 +326,7 @@ workflows:
       filters:
        branches:
         only:
-         - develop
+         - master
          - final-exam
    - docker-build-circle-build:
       requires:

@@ -10,7 +10,7 @@ use sim2h::{
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
 
-pub fn sim2h_client(url_string: String) -> Result<(), String> {
+pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {
     let url = match Url2::try_parse(url_string.clone()) {
         Err(e) => Err(format!(
             "unable to parse url:{} got error: {}",
@@ -18,7 +18,6 @@ pub fn sim2h_client(url_string: String) -> Result<(), String> {
         ))?,
         Ok(url) => url,
     };
-    //let uri = Lib3hUri(url.into());
     let host = format!("{}", url.host().unwrap());
     let ip = if host == "localhost" {
         "127.0.0.1".to_string()
@@ -36,7 +35,16 @@ pub fn sim2h_client(url_string: String) -> Result<(), String> {
 
     println!("connecting to: {}", url);
     let mut job = Job::new(&url)?;
-    job.send_wire(WireMessage::Ping);
+    job.send_wire(match message_string.as_ref() {
+        "ping" => WireMessage::Ping,
+        "status" => WireMessage::Status,
+        _ => {
+            return Err(format!(
+                "expecting 'ping' or 'status' for message, got: {}",
+                message_string
+            ))
+        }
+    });
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(1000))
         .unwrap();

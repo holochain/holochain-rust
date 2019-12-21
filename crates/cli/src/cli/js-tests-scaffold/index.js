@@ -1,11 +1,11 @@
-/// NB: The try-o-rama config patterns are still not quite stabilized.
-/// See the try-o-rama README [https://github.com/holochain/try-o-rama]
+/// NB: The tryorama config patterns are still not quite stabilized.
+/// See the tryorama README [https://github.com/holochain/tryorama]
 /// for a potentially more accurate example
 
 const path = require('path')
 const tape = require('tape')
 
-const { Orchestrator, Config, tapeExecutor, singleConductor, combine  } = require('@holochain/tryorama')
+const { Orchestrator, Config, tapeExecutor, singleConductor, localOnly, combine  } = require('@holochain/tryorama')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -16,15 +16,18 @@ const dnaPath = path.join(__dirname, "../dist/<<DNA_NAME>>.dna.json")
 
 const orchestrator = new Orchestrator({
   middleware: combine(
+    // use the tape harness to run the tests, injects the tape API into each scenario
+    // as the second argument
+    tapeExecutor(require('tape')),
+
+    localOnly,
+
     // squash all instances from all conductors down into a single conductor,
     // for in-memory testing purposes.
     // Remove this middleware for other "real" network types which can actually
     // send messages across conductors
-    singleConductor,
+    singleConductor
 
-    // use the tape harness to run the tests, injects the tape API into each scenario
-    // as the second argument
-    tapeExecutor(require('tape'))
   ),
 
   globalConfig: {
@@ -40,11 +43,8 @@ const orchestrator = new Orchestrator({
   },
 })
 
-const conductorConfig = {
-  instances: {
-    myInstanceName: Config.dna(dnaPath, 'scaffold-test')
-  }
-}
+const dna = Config.dna(dnaPath, 'scaffold-test')
+const conductorConfig = Config.gen({myInstanceName: dna})
 
 orchestrator.registerScenario("description of example test", async (s, t) => {
 

@@ -203,7 +203,7 @@ pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Op
         .unique_by(|p| {
             (
                 p.pending.workflow.clone(),
-                p.pending.entry_with_header.header.entry_address(),
+                p.pending.chain_pair.header().entry_address().clone(),
             )
         })
         .cloned()

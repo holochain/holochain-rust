@@ -172,7 +172,7 @@ pub fn entry_to_validation_data(
                         "Could not find Entry".to_string(),
                     ))
                 })
-        },
+        }
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {
             entry: entry.clone(),
             validation_data,

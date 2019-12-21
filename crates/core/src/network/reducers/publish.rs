@@ -65,9 +65,7 @@ fn publish_update_delete_meta(
     // publish crud-status
 
     let aspect = match crud_status {
-        CrudStatus::Modified => {
-            EntryAspect::Update(chain_pair.entry(), chain_pair.header())
-        }
+        CrudStatus::Modified => EntryAspect::Update(chain_pair.entry(), chain_pair.header()),
         CrudStatus::Deleted => EntryAspect::Deletion(chain_pair.header()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(

@@ -12,7 +12,10 @@ use url2::prelude::*;
 
 pub fn sim2h_client(url_string: String) -> Result<(), String> {
     let url = match Url2::try_parse(url_string.clone()) {
-        Err(e) => Err(format!("unable to parse url:{} got error: {}", url_string, e))?,
+        Err(e) => Err(format!(
+            "unable to parse url:{} got error: {}",
+            url_string, e
+        ))?,
         Ok(url) => url,
     };
     //let uri = Lib3hUri(url.into());
@@ -35,7 +38,7 @@ pub fn sim2h_client(url_string: String) -> Result<(), String> {
     let mut job = Job::new(&url)?;
     job.send_wire(WireMessage::Ping);
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(500))
+        .checked_add(std::time::Duration::from_millis(1000))
         .unwrap();
     loop {
         std::thread::sleep(std::time::Duration::from_millis(10));

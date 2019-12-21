@@ -385,6 +385,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // our CI doesn't support "localhost" dns resolution : (
     fn tcp_v4_local_works() {
         suite("tcp://127.0.0.1:0", Some("tcp://localhost:0"));
     }

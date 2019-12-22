@@ -16,6 +16,13 @@ struct Cli {
         help = "The port to run the websocket server at",
         default_value = "9000"
     )]
+    sharding: u64,
+    #[structopt(
+        long,
+        short,
+        help = "Sharding redundancy count; use 0 for fullsync",
+        default_value = "50"
+    )]
     port: u16,
     #[structopt(
         long,
@@ -41,9 +48,11 @@ fn main() {
     }
 
     let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
-    sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
-        redundant_count: 50,
-    });
+    if args.sharding > 0 {
+        sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
+            redundant_count: args.sharding,
+        });
+    }
 
     loop {
         let result = sim2h.process();

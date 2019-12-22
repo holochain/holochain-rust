@@ -46,7 +46,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
         }
     });
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(1000))
+        .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();
     loop {
         std::thread::sleep(std::time::Duration::from_millis(10));

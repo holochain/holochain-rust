@@ -99,13 +99,13 @@ const MN: u64 = 60_u64;
 /// Outputs the human-readable form of the Period's Duration, eg. "1y2w3d4h56m7.89s", "456ms".
 /// Debug output of Period specifier instead of underlying Duration seconds.
 impl fmt::Debug for Period {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Period({})", self)
     }
 }
 
 impl fmt::Display for Period {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let secs = self.0.as_secs();
         let years = secs / YR;
         if years > 0 {
@@ -568,7 +568,7 @@ impl<'d> Deserialize<'d> for Iso8601 {
 
 /// Outputs the canonicalized ISO 8601 / RFC 3339 form for a valid timestamp.
 impl fmt::Display for Iso8601 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.to_rfc3339())
     }
 }

@@ -155,7 +155,7 @@ impl From<&'static str> for EntryType {
 }
 
 impl Display for EntryType {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", String::from(self.to_owned()))
     }
 }

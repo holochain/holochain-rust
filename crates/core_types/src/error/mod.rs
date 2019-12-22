@@ -79,7 +79,7 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
 }
 
 impl fmt::Display for CoreError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Holochain Core error: {}\n  --> {}:{}\n",
@@ -137,7 +137,7 @@ impl From<rust_base58::base58::FromBase58Error> for HolochainError {
 }
 
 impl fmt::Display for HolochainError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ErrorGeneric(err_msg) => write!(f, "{}", err_msg),
             CryptoError(crypto_error) => write!(f, "{}", crypto_error),

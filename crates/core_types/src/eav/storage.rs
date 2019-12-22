@@ -27,7 +27,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// - Some(Value) = requires the given value (e.g. all entities referencing an Address)
     fn fetch_eavi(
         &self,
-        query: &EaviQuery,
+        query: &EaviQuery<'_>,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
 
     // @TODO: would like to do this, but can't because of the generic type param
@@ -62,7 +62,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
     fn fetch_eavi(
         &self,
-        query: &EaviQuery,
+        query: &EaviQuery<'_>,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let lock = self.storage.read()?;
         let set = (*lock).clone();

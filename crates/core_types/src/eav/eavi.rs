@@ -74,7 +74,7 @@ impl From<AttributeError> for HolochainError {
 }
 
 impl fmt::Display for Attribute {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Attribute::CrudStatus => write!(f, "crud-status"),
             Attribute::CrudLink => write!(f, "crud-link"),

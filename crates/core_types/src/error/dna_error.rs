@@ -11,7 +11,7 @@ pub enum DnaError {
 impl Error for DnaError {}
 
 impl fmt::Display for DnaError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let msg = match self {
             DnaError::ZomeNotFound(err_msg) => err_msg,
             DnaError::TraitNotFound(err_msg) => err_msg,

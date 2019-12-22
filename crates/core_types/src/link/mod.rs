@@ -11,11 +11,10 @@ use holochain_persistence_api::cas::content::Address;
 use crate::{
     agent::AgentId,
     chain_header::ChainHeader,
-    entry::{test_entry_a, test_entry_b},
+    entry::{test_entry_a, test_entry_b, Entry},
+    link::link_data::LinkData,
 };
-use entry::Entry;
 use holochain_persistence_api::cas::content::AddressableContent;
-use link::link_data::LinkData;
 use regex::Regex;
 
 type LinkType = String;

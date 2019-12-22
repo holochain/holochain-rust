@@ -15,7 +15,7 @@ use crate::{
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
 
-use chain_header::test_chain_header;
+use crate::chain_header::test_chain_header;
 
 use std::convert::TryFrom;
 

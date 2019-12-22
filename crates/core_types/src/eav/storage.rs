@@ -1,5 +1,7 @@
-use eav::{eavi::EntityAttributeValueIndex, query::EaviQuery};
-use error::{HcResult, HolochainError};
+use crate::{
+    eav::{eavi::EntityAttributeValueIndex, query::EaviQuery},
+    error::{HcResult, HolochainError},
+};
 use objekt;
 use std::{
     collections::BTreeSet,

@@ -5,7 +5,7 @@
 
 use crate::eav::EntityAttributeValueIndex;
 
-use eav::Attribute;
+use crate::eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
 use holochain_persistence_api::{

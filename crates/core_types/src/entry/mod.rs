@@ -11,18 +11,20 @@ use self::{
     cap_entries::{CapTokenClaim, CapTokenGrant},
     deletion_entry::DeletionEntry,
 };
-use agent::{test_agent_id, AgentId};
-use chain_header::ChainHeader;
-use chain_migrate::ChainMigrate;
-use crud_status::CrudStatus;
-use dna::Dna;
-use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
+use crate::{
+    agent::{test_agent_id, AgentId},
+    chain_header::ChainHeader,
+    chain_migrate::ChainMigrate,
+    crud_status::CrudStatus,
+    dna::Dna,
+    entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType},
+    link::{link_data::LinkData, link_list::LinkList},
+};
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::{JsonString, RawString},
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-use link::{link_data::LinkData, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;

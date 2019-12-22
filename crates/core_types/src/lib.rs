@@ -7,34 +7,24 @@
 #![feature(never_type)]
 #![warn(unused_extern_crates)]
 
-extern crate backtrace;
-extern crate base64;
-extern crate chrono;
-extern crate futures;
 #[macro_use]
 extern crate lazy_static;
-extern crate multihash;
-extern crate serde;
+
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-extern crate snowflake;
+
 // #[macro_use] extern crate shrinkwraprs;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate holochain_json_api;
-extern crate holochain_locksmith;
-extern crate holochain_persistence_api;
-extern crate lib3h_crypto_api;
-extern crate regex;
+
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
 // #[macro_use]
 // extern crate shrinkwraprs;
-extern crate hcid;
-extern crate wasmi;
+
 #[macro_use]
 extern crate log;
 

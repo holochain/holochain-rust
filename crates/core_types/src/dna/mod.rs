@@ -49,7 +49,7 @@ use holochain_json_api::{
     json::JsonString,
 };
 
-use entry::entry_type::AppEntryType;
+use crate::entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
 use std::{
@@ -307,7 +307,6 @@ impl PartialEq for Dna {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    extern crate base64;
     use crate::{
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
@@ -317,6 +316,7 @@ pub mod tests {
         },
         entry::entry_type::{AppEntryType, EntryType},
     };
+    use base64;
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::Address;
     use std::convert::TryFrom;

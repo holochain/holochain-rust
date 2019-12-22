@@ -2,7 +2,7 @@ use self::{RibosomeEncodedValue::*, RibosomeErrorCode::*};
 use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 
-use bits_n_pieces::u64_split_bits;
+use crate::bits_n_pieces::u64_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
 

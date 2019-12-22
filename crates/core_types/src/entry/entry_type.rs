@@ -1,4 +1,4 @@
-use error::HolochainError;
+use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use std::{
     convert::TryFrom,

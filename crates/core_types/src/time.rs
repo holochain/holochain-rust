@@ -1,8 +1,8 @@
 //! The Iso8601 type is defined here. It is used in particular within ChainHeader to enforce that
 //! their timestamps are defined in a useful and consistent way.
 
+use crate::error::HolochainError;
 use chrono::{offset::FixedOffset, DateTime, TimeZone};
-use error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 
 use regex::Regex;

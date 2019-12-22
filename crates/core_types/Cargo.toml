@@ -9,6 +9,7 @@ license = "GPL-3.0-only"
 readme = "README.md"
 documentation = "https://github.com/holochain/holochain-rust"
 repository = "https://github.com/holochain/holochain-rust"
+edition = "2018"
 
 [dependencies]
 futures = "=0.3.1"

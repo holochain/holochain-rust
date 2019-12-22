@@ -8,7 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-- Changed `hc generate` to use the `rust-proc` template by default [PR#0000](https://github.com/holochain/holochain-rust/pull/0000)
+- Changed `hc generate` to use the `rust-proc` template by default [PR#2009](https://github.com/holochain/holochain-rust/pull/2009)
 
 ### Deprecated
 

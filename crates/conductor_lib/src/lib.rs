@@ -1,7 +1,3 @@
-//! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
-//!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
-//!     file_system.clone(),
-
 #![feature(try_trait)]
 #![warn(unused_extern_crates)]
 /// Holochain Conductor API

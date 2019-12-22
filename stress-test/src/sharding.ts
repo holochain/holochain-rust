@@ -19,32 +19,35 @@ module.exports = (scenario, configBatch, N, C, I) => {
         const getWait = 100
 
         await Promise.all(players.map(async player => {
-            await delay(Math.random()*startupSpacing)
+//            await delay(Math.random()*startupSpacing)
             return player.spawn()
         }))
 
-        console.log("all nodes have started, now waiting 10 seconds for settling")
-        await delay(10000)
+     //   console.log("all nodes have started, now waiting 10 seconds for settling")
+   //     await delay(10000)
 
         const batch = new Batch(players).iteration('parallel')
 
         const agentIds = await batch.mapInstances(async instance => instance.agentAddress)
         let results = []
-        let i = 0
-        await batch.mapInstances(async instance => {
-            i += 1
-            console.log(`\n-------------------------------------------\n${i}: getting ${totalInstances} entries for ${instance.agentAddress}\n---------------------------\n`)
-            for (const id of agentIds) {
-                if (instance.agentAddress != id) {
-                    console.log(`\n==== getting ${id}`)
-//                    await delay(getWait)
-                    const result = await instance.call('main', 'get_entry', {address: instance.agentAddress})
-                    results.push( Boolean(result.Ok) )
-                }
+        //        await bath.mapInstances(async instance => {
+
+        // get the first instance
+        let instance = players[0].instances()[0]
+        console.log(`\n-------------------------------------------\ngetting ${totalInstances} entries for ${instance.agentAddress}\n---------------------------\n`)
+        for (const id of agentIds) {
+            if (instance.agentAddress != id) {
+                console.log(`\n==== getting ${id}`)
+                //                    await delay(getWait)
+                const result = await instance.call('main', 'get_entry', {address: instance.agentAddress})
+                results.push( Boolean(result.Ok) )
             }
-        })
+        }
+        //        })
         console.log("RESULTS:", results)
         // All results contain the full set of other nodes
-        t.deepEqual(results , R.repeat(true,totalInstances*(totalInstances-1)))
+        t.deepEqual(results , R.repeat(true,totalInstances-1))
+        //t.deepEqual(results , R.repeat(true,totalInstances*(totalInstances-1)))
+
     })
 }

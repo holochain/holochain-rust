@@ -20,7 +20,7 @@ const conductorConfig = Config.gen({myInstanceName: dna})
 
 orchestrator.registerScenario("description of example test", async (s, t) => {
 
-  const {alice, bob} = await s.players({alice: conductorConfig, bob: conductorConfig})
+  const {alice, bob} = await s.players({alice: conductorConfig, bob: conductorConfig}, true)
 
   // Make a call to a Zome function
   // indicating the function, and passing it an input

@@ -52,7 +52,7 @@ const network =
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
-    sim2h_url: 'wss://0.0.0.0:9002'
+    sim2h_url: 'wss://totally.nonexistant.com:1'
   }
 
   : networkType === 'memory'

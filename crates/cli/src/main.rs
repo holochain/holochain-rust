@@ -1,20 +1,16 @@
-use holochain_common;
-
-use lib3h_sodium;
-
+use crate::error::{HolochainError, HolochainResult};
 use failure::format_err;
-
+use holochain_common;
+use holochain_conductor_lib::happ_bundle::HappBundle;
+use lib3h_sodium;
 use serde_json::json;
+use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
+use structopt::{clap::arg_enum, StructOpt};
 
 mod cli;
 mod config_files;
 mod error;
 mod util;
-
-use crate::error::{HolochainError, HolochainResult};
-use holochain_conductor_lib::happ_bundle::HappBundle;
-use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
-use structopt::{clap::arg_enum, StructOpt};
 
 #[derive(StructOpt)]
 /// A command line for Holochain

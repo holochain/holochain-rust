@@ -1,4 +1,3 @@
-#![warn(unused_extern_crates)]
 use holochain_common;
 
 use lib3h_sodium;

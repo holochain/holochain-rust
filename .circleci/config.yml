@@ -11,7 +11,7 @@ commands:
    - checkout
    - run: ./docker/login
    - run:
-      no_output_timeout: 20m
+      no_output_timeout: 30m
       command: ./docker/build << parameters.box >> $CIRCLE_BRANCH
    - run: ./docker/push << parameters.box >> $CIRCLE_BRANCH
 

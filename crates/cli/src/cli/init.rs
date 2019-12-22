@@ -138,9 +138,9 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::{Builder, TempDir};
+    use super::*;
+    use tempfile;
 
     const HOLOCHAIN_TEST_PREFIX: &str = "org_holochain_test";
 

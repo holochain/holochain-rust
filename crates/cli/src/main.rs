@@ -1,38 +1,15 @@
 #![warn(unused_extern_crates)]
-extern crate holochain_common;
-extern crate holochain_conductor_lib;
-extern crate holochain_core;
-extern crate holochain_core_types;
-extern crate holochain_json_api;
-extern crate holochain_locksmith;
-extern crate holochain_net;
-extern crate holochain_persistence_api;
-extern crate holochain_persistence_file;
-extern crate json_patch;
-extern crate lib3h_crypto_api;
-extern crate lib3h_protocol;
-extern crate lib3h_sodium;
-extern crate sim2h;
-extern crate structopt;
+use holochain_common;
+
+use lib3h_sodium;
+
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate serde_derive;
-extern crate base64;
-extern crate colored;
-extern crate semver;
+
 #[macro_use]
 extern crate serde_json;
-extern crate dns_lookup;
-extern crate flate2;
-extern crate glob;
-extern crate ignore;
-extern crate in_stream;
-extern crate rpassword;
-extern crate tar;
-extern crate tempfile;
-extern crate tera;
-extern crate url2;
 
 mod cli;
 mod config_files;

@@ -1,7 +1,5 @@
-use crate::NetworkingType;
-use cli;
+use crate::{cli, error::DefaultResult, NetworkingType};
 use colored::*;
-use error::DefaultResult;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -284,7 +282,7 @@ impl Networking {
 
 #[cfg(test)]
 mod tests {
-    extern crate tempfile;
+    use tempfile;
     // use crate::cli::init::{init, tests::gen_dir};
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};

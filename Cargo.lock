@@ -555,6 +555,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dns-lookup"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
+ "socket2 0.3.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "dtoa"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1019,9 +1029,11 @@ dependencies = [
  "assert_cmd 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dns-lookup 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_common 0.0.41-alpha4",
  "holochain_conductor_lib 0.0.41-alpha4",
  "holochain_core 0.0.41-alpha4",
@@ -1034,7 +1046,10 @@ dependencies = [
  "holochain_persistence_file 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.41-alpha4",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "in_stream 0.0.41-alpha4",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_crypto_api 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_protocol 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "rpassword 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1043,11 +1058,13 @@ dependencies = [
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sim2h 0.0.41-alpha4",
  "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tar 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tera 0.11.20 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "url2 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4969,6 +4986,7 @@ dependencies = [
 "checksum dirs 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)" = "3fd78930633bd1c6e35c4b42b1df7b0cbc6bc191146e512bb3bedf243fcc3901"
 "checksum dirs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "13aea89a5c93364a98e9b37b2fa237effbb694d5cfe01c5b70941f7eb087d5e3"
 "checksum dirs-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "afa0b23de8fd801745c471deffa6e12d248f962c9fd4b4c33787b055599bde7b"
+"checksum dns-lookup 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "13988670860b076248c74e1b54444efc4f1dec70c8bb25da4b7c0024396b72bf"
 "checksum dtoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ea57b42383d091c85abcc2706240b94ab2a8fa1fc81c10ff23c4de06e2a90b5e"
 "checksum dynomite 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9c576fb311131fa07a83bd6609ae2a239e15a22f413742c3d983a491c5e0f68f"
 "checksum dynomite-derive 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "bffe7d062538a8b3fef5f25de87ddd32537da778294dac2350b943c11dff37e2"

@@ -95,7 +95,7 @@ impl Sim2hWorker {
             initial_authoring_list: None,
             initial_gossiping_list: None,
             has_self_stored_authored_aspects: false,
-            is_full_sync_DHT: true,
+            is_full_sync_DHT: false,
         };
 
         instance.check_reconnect();

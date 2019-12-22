@@ -3,6 +3,8 @@ use crate::error::Sim2hError;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
 
+pub const WIRE_VERSION: u32 = 1;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {
     MessageWhileInLimbo,
@@ -13,6 +15,8 @@ pub enum WireError {
 pub struct StatusData {
     pub spaces: usize,
     pub connections: usize,
+    pub redundant_count: u64,
+    pub version: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -36,7 +36,7 @@ use lib3h_protocol::{
 };
 use url2::prelude::*;
 
-pub use wire_message::{StatusData, WireError, WireMessage};
+pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
 use in_stream::*;
 use log::*;
@@ -418,6 +418,11 @@ impl Sim2h {
                 &WireMessage::StatusResponse(StatusData {
                     spaces: self.spaces.len(),
                     connections: self.open_connections.len(),
+                    redundant_count: match self.dht_algorithm {
+                        DhtAlgorithm::FullSync => 0,
+                        DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                    },
+                    version: WIRE_VERSION,
                 }),
             );
             return Ok(());

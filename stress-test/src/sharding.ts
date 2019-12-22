@@ -6,11 +6,11 @@ import { Batch } from '@holochain/tryorama-stress-utils'
 const trace = R.tap(x => console.log('{T}', x))
 const delay = ms => new Promise(r => setTimeout(r, ms))
 
-module.exports = (scenario, configBatch, N, C, I) => {
+module.exports = (scenario, configBatch, N, C, I, sampleSize) => {
     const totalInstances = N*C*I
     const totalConductors = N*C
 
-    scenario('all agents exists', async (s, t) => {
+    scenario('agents can get other agents on sharded network', async (s, t) => {
         const players = R.sortBy(p => parseInt(p.name, 10), R.values(await s.players(configBatch(totalConductors, I), false)))
 
         // range of random number of milliseconds to wait before startup
@@ -23,31 +23,33 @@ module.exports = (scenario, configBatch, N, C, I) => {
             return player.spawn()
         }))
 
-     //   console.log("all nodes have started, now waiting 10 seconds for settling")
-   //     await delay(10000)
+        console.log("============================================\nall nodes have started\n============================================")
+//       await delay(10000)
 
         const batch = new Batch(players).iteration('parallel')
 
         const agentIds = await batch.mapInstances(async instance => instance.agentAddress)
         let results = []
-        //        await bath.mapInstances(async instance => {
-
-        // get the first instance
-        let instance = players[0].instances()[0]
-        console.log(`\n-------------------------------------------\ngetting ${totalInstances} entries for ${instance.agentAddress}\n---------------------------\n`)
-        for (const id of agentIds) {
-            if (instance.agentAddress != id) {
-                console.log(`\n==== getting ${id}`)
-                //                    await delay(getWait)
-                const result = await instance.call('main', 'get_entry', {address: instance.agentAddress})
-                results.push( Boolean(result.Ok) )
+        let i = 0
+        let checkedCount = 0;
+        let mod = Math.floor(totalInstances/sampleSize)
+        await batch.mapInstances(async instance => {
+            if  ( i % mod == 0) {
+                checkedCount += 1
+                console.log(`\n-------------------------------------------\ngetting ${totalInstances} entries for ${i} (${instance.agentAddress})\n---------------------------\n`)
+                for (const id of agentIds) {
+                    if (instance.agentAddress != id) {
+                        console.log(`\n==== getting ${id}`)
+                        //                    await delay(getWait)
+                        const result = await instance.call('main', 'get_entry', {address: instance.agentAddress})
+                        results.push( Boolean(result.Ok) )
+                    }
+                }
             }
-        }
-        //        })
-        console.log("RESULTS:", results)
+            i+=1
+        })
         // All results contain the full set of other nodes
-        t.deepEqual(results , R.repeat(true,totalInstances-1))
-        //t.deepEqual(results , R.repeat(true,totalInstances*(totalInstances-1)))
+        t.deepEqual(results , R.repeat(true,checkedCount*(totalInstances-1)))
 
     })
 }

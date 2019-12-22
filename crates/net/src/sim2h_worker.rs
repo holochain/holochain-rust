@@ -98,8 +98,8 @@ impl Sim2hWorker {
             is_full_sync_DHT: false,
         };
 
+        instance.send_wire_message(WireMessage::Status)?;
         instance.check_reconnect();
-
         Ok(instance)
     }
 
@@ -432,8 +432,10 @@ impl Sim2hWorker {
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
             },
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
-            WireMessage::StatusResponse(_) => {
-                error!("Got a StatusResponse from the Sim2h server, weird! Ignoring")
+            WireMessage::StatusResponse(response) => {
+                debug!("StatusResponse {:?}", response);
+                // TODO: negotiate version mesmatch
+                self.is_full_sync_DHT = response.redundant_count == 0;
             }
         };
         Ok(())

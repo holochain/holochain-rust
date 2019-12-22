@@ -1,14 +1,15 @@
 //! holochain_core_types::dna::wasm is a module for managing webassembly code
 //!  - within the in-memory dna struct
 //!  - and serialized to json
-use backtrace::Backtrace;
-
 use crate::error::HolochainError;
+use backtrace::Backtrace;
 use base64;
+use log::debug;
 use serde::{
     self,
     de::{Deserializer, Visitor},
     ser::Serializer,
+    Deserialize, Serialize,
 };
 use std::{
     fmt,

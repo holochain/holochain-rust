@@ -1,6 +1,8 @@
 use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom},
     fmt,

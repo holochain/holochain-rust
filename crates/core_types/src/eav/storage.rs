@@ -36,7 +36,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     //     I: Iterator<Item = EntityAttributeValueIndex>;
 }
 
-clone_trait_object!(EntityAttributeValueStorage);
+objekt::clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug, Default)]
 pub struct ExampleEntityAttributeValueStorage {

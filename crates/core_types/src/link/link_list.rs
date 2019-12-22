@@ -1,5 +1,7 @@
 use crate::link::Link;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

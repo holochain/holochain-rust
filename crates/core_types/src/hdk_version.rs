@@ -1,4 +1,5 @@
 use crate::error::{HcResult, HolochainError};
+use lazy_static::lazy_static;
 
 lazy_static! {
     pub static ref HDK_VERSION: HDKVersion = {

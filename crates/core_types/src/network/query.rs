@@ -1,6 +1,8 @@
 use crate::{chain_header::ChainHeader, crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::{cas::content::Address, eav::Value};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub struct GetLinksQueryConfiguration {

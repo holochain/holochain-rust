@@ -1,5 +1,7 @@
 use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 use std::{
     convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},

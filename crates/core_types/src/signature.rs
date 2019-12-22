@@ -2,7 +2,9 @@
 //! a way of providing cryptographically verifiable proof of a given agent
 //! as having been the author of a given data entry.
 
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::cas::content::Address;
+use serde::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 

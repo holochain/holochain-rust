@@ -41,6 +41,9 @@ use crate::{
     entry::entry_type::EntryType,
     error::{DnaError, HcResult, HolochainError},
 };
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use holochain_persistence_api::cas::content::{AddressableContent, Content};
 
@@ -319,6 +322,7 @@ pub mod tests {
     use base64;
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::Address;
+    use maplit::btreemap;
     use std::convert::TryFrom;
 
     pub fn test_dna() -> Dna {

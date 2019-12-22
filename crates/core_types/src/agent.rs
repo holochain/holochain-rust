@@ -1,4 +1,6 @@
 use crate::{entry::Entry, error::HcResult};
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 

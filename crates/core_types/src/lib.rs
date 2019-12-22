@@ -5,40 +5,16 @@
 //! crates, but that don't include Holochain itself.
 #![feature(try_trait)]
 #![feature(never_type)]
-#![warn(unused_extern_crates)]
 
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-
-// #[macro_use] extern crate shrinkwraprs;
-#[macro_use]
-extern crate holochain_json_derive;
-
-#[cfg(test)]
-#[macro_use]
-extern crate maplit;
-// #[macro_use]
-// extern crate shrinkwraprs;
-
-#[macro_use]
-extern crate log;
-
+pub mod agent;
+pub mod bits_n_pieces;
 pub mod chain_header;
+pub mod chain_migrate;
 pub mod crud_status;
+pub mod dna;
 pub mod eav;
 pub mod entry;
 pub mod error;
-#[macro_use]
-extern crate objekt;
-pub mod agent;
-pub mod bits_n_pieces;
-pub mod chain_migrate;
-pub mod dna;
 pub mod hdk_version;
 pub mod link;
 pub mod network;
@@ -46,8 +22,6 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
-#[macro_use]
-extern crate holochain_logging;
 
 pub const HDK_HASH: &str = env!(
     "HDK_HASH",

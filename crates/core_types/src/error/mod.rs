@@ -11,9 +11,11 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
+use holochain_json_derive::DefaultJson;
 use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
+use serde::{Deserialize, Serialize};
 
 use serde_json::Error as SerdeError;
 use std::{

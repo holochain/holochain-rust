@@ -1,5 +1,7 @@
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::cas::content::Address;
+use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------
 // DeletionEntry

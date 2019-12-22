@@ -11,6 +11,8 @@ use crate::{
     error::HolochainError,
     link::link_data::LinkData,
 };
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;

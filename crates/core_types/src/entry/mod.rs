@@ -24,9 +24,10 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::{JsonString, RawString},
 };
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use multihash::Hash;
-use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
+use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serialize, Serializer};
 use snowflake;
 use std::convert::TryFrom;
 

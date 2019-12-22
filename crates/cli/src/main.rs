@@ -61,8 +61,8 @@ enum Cli {
         #[structopt(parse(from_os_str))]
         /// The path to the zome that should be generated (usually in ./zomes/)
         zome: PathBuf,
-        #[structopt(default_value = "rust")]
-        /// Either the name of a built-in template (rust, rust-proc) or the url to a git repo containing a Zome template.
+        #[structopt(default_value = "rust-proc")]
+        /// Either the name of a built-in template (rust-proc, rust) or the url to a git repo containing a Zome template.
         template: String,
     },
     #[structopt(alias = "r")]

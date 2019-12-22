@@ -3,13 +3,9 @@ use holochain_common;
 
 use lib3h_sodium;
 
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate serde_derive;
+use failure::format_err;
 
-#[macro_use]
-extern crate serde_json;
+use serde_json::json;
 
 mod cli;
 mod config_files;

@@ -1,4 +1,5 @@
 use crate::error::DefaultResult;
+use failure::format_err;
 use flate2::read::GzDecoder;
 use glob::glob;
 use std::{

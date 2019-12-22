@@ -1,4 +1,4 @@
-use failure::Error;
+use failure::{format_err, Error, Fail};
 
 #[derive(Debug, Fail)]
 pub enum HolochainError {

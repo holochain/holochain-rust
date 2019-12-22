@@ -1,5 +1,6 @@
 use crate::config_files::Dht;
 use semver::Version;
+use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Clone)]

@@ -8,6 +8,7 @@ use crate::{
     util::DIST_DIR_NAME,
 };
 use colored::*;
+use failure::bail;
 use serde_json;
 use std::{
     collections::HashMap,

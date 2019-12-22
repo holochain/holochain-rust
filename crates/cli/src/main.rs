@@ -62,7 +62,10 @@ enum Cli {
         /// The path to the zome that should be generated (usually in ./zomes/)
         zome: PathBuf,
         #[structopt(default_value = "rust-proc")]
-        /// Either the name of a built-in template (rust-proc, rust) or the url to a `tar.gz` containing a Zome template.
+        /// The template from which to generate the zome
+        ///
+        /// This should either be the name of a built-in template (rust-proc, rust) or
+        /// the url to a `tar.gz` containing a Zome template.
         template: String,
     },
     #[structopt(alias = "r")]

@@ -58,7 +58,7 @@ ${debugging ? '': 'pattern = "^debug"'}
 
 [network]
 type = "sim2h"
-sim2h_url = "wss://localhost:9001"
+sim2h_url = "wss://0.0.0.0:9001"
     `
 
   return { config, adminPort, instancePort }

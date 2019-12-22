@@ -9,7 +9,10 @@ extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
+extern crate lib3h_crypto_api;
+extern crate lib3h_protocol;
 extern crate lib3h_sodium;
+extern crate sim2h;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
@@ -20,13 +23,16 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
+extern crate dns_lookup;
 extern crate flate2;
 extern crate glob;
 extern crate ignore;
+extern crate in_stream;
 extern crate rpassword;
 extern crate tar;
 extern crate tempfile;
 extern crate tera;
+extern crate url2;
 
 mod cli;
 mod config_files;
@@ -147,6 +153,14 @@ enum Cli {
         #[structopt(long, short = "x")]
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
+    },
+    Sim2hClient {
+        #[structopt(long, short = "u")]
+        /// url of the sim2h server
+        url: String,
+        #[structopt(long, short = "m", default_value = "ping")]
+        /// message to send to the sim2h server ('ping' or 'status')
+        message: String,
     },
 }
 arg_enum! {
@@ -309,6 +323,12 @@ fn run() -> HolochainResult<()> {
             let dna_hash = cli::hash_dna(&dna_path, property)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
+        }
+
+        Cli::Sim2hClient { url, message } => {
+            println!("url: {}", &url);
+            println!("message: {}", &message);
+            cli::sim2h_client(url, message)?;
         }
     }
 

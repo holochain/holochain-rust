@@ -53,7 +53,7 @@ use holochain_locksmith::Mutex;
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
-/// extension trait for making sure deadlocks are fatal
+/// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {
     /// will attempt to aquire a lock within a time-frame and panic after
     /// this way deadlocks don't just lock forever
@@ -94,18 +94,10 @@ mod job;
 use job::*;
 //use lib3h::rrdht_util::Location;
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
-#[serde(tag = "type")]
+#[derive(Clone)]
 pub enum DhtAlgorithm {
     FullSync,
     NaiveSharding { redundant_count: u64 },
-}
-
-impl Default for DhtAlgorithm {
-    fn default() -> Self {
-        DhtAlgorithm::FullSync
-    }
 }
 
 pub struct Sim2h {

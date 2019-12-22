@@ -269,10 +269,7 @@ fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConf
                 networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
             }))
         }
-        Networking::Sim2h(sim2h_url) => Some(NetworkConfig::Sim2h(Sim2hConfig {
-            sim2h_url,
-            algorithm: Default::default(),
-        })),
+        Networking::Sim2h(sim2h_url) => Some(NetworkConfig::Sim2h(Sim2hConfig { sim2h_url })),
     }
 }
 
@@ -456,8 +453,7 @@ mod tests {
         assert_eq!(
             networking,
             Some(NetworkConfig::Sim2h(Sim2hConfig {
-                sim2h_url: "wss://localhost:9000".into(),
-                algorithm: Default::default(),
+                sim2h_url: "wss://localhost:9000".into()
             }))
         );
 

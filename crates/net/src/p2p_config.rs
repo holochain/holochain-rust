@@ -2,7 +2,6 @@ use crate::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
-use sim2h::DhtAlgorithm;
 use snowflake;
 use std::{fs::File, io::prelude::*, str::FromStr};
 use url::Url;
@@ -182,15 +181,11 @@ impl P2pConfig {
         )
     }
 
-    pub fn new_with_sim2h_backend(sim2h_url: &str, sharding: Option<u64>) -> Self {
+    pub fn new_with_sim2h_backend(sim2h_url: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::SIM2H,
             BackendConfig::Sim2h(Sim2hConfig {
                 sim2h_url: sim2h_url.into(),
-                algorithm: match sharding {
-                    Some(redundant_count) => DhtAlgorithm::NaiveSharding { redundant_count },
-                    None => DhtAlgorithm::FullSync,
-                },
             }),
             None,
         )

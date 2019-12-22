@@ -23,7 +23,7 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    DhtAlgorithm, WireError, WireMessage,
+    WireError, WireMessage,
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
@@ -40,16 +40,6 @@ fn connect(url: Lib3hUri) -> NetResult<InStreamWss<InStreamTls<InStreamTcp>>> {
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
     pub sim2h_url: String,
-    pub algorithm: DhtAlgorithm,
-}
-
-impl Default for Sim2hConfig {
-    fn default() -> Self {
-        Sim2hConfig {
-            sim2h_url: "wss:://localhost:9000".into(),
-            algorithm: DhtAlgorithm::FullSync,
-        }
-    }
 }
 
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically

@@ -140,7 +140,6 @@ fn sim2h_worker_talks_to_sim2h() {
         })),
         Sim2hConfig {
             sim2h_url: bound_uri.as_str().to_string(),
-            algorithm: Default::default(),
         },
         agent_id.clone().into(),
         ConductorApi::new(io.clone()),

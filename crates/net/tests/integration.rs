@@ -146,6 +146,7 @@ fn sim2h_worker_talks_to_sim2h() {
         ConductorApi::new(io.clone()),
     )
     .unwrap();
+    worker.set_full_sync(true);
 
     worker
         .receive(Lib3hClientProtocol::JoinSpace(SpaceData {

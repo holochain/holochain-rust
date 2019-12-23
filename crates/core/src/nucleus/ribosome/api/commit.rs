@@ -68,7 +68,7 @@ pub mod tests {
         let agent_id = test_utils::mock_signing::registered_test_agent(agent_nick);
 
         let signature = Signature::from(test_utils::mock_signing::mock_signer(
-            address.clone().into(),
+            String::from(address.clone()),
             &agent_id,
         ));
 

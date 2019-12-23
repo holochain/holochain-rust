@@ -9,6 +9,7 @@ members = [
   "crates/conductor_api",
   "crates/holochain_wasm",
   "crates/core",
+  "crates/core_types",
   "crates/dpki",
   "crates/hdk_v2",
   "crates/hdk",
@@ -19,7 +20,8 @@ members = [
   "crates/trycp_server",
   "crates/sim1h",
   "crates/sim2h",
-  "crates/sim2h_server"
+  "crates/sim2h_server",
+  "crates/wasm_utils"
 ]
 exclude = [
   "test_utils",

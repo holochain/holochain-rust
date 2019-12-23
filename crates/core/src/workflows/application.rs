@@ -69,5 +69,6 @@ pub async fn initialize(
     if first_initialization {
         call_init(dna, &instance_context).await?;
     }
+
     Ok(instance_context)
 }

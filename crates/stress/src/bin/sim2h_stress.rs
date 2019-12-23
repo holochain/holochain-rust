@@ -1,32 +1,25 @@
 //! `cargo run --bin sim2h_stress -- --help`
 
-extern crate base64;
-extern crate env_logger;
-extern crate hcid;
-extern crate holochain_stress;
-extern crate lib3h_crypto_api;
-extern crate lib3h_protocol;
-extern crate lib3h_sodium;
 #[macro_use]
 extern crate log;
-extern crate serde;
+#[macro_use]
+extern crate prettytable;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate sim2h;
-extern crate structopt;
-extern crate url2;
 
 use holochain_stress::*;
+use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    websocket::{streams::*, tls::TlsConfig},
     Sim2h, WireMessage,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
+};
 use structopt::StructOpt;
 use url2::prelude::*;
 
@@ -45,11 +38,15 @@ struct OptStressRunConfig {
     /// total runtime for the test
     run_time_ms: u64,
 
+    #[structopt(short, long, env = "STRESS_WARM_TIME_MS", default_value = "5000")]
+    /// total runtime for the test
+    warm_time_ms: u64,
+
     #[structopt(
         short,
         long,
         env = "STRESS_PROGRESS_INTERVAL_MS",
-        default_value = "5500"
+        default_value = "1000"
     )]
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
@@ -146,6 +143,7 @@ impl Opt {
                     thread_count,
                     job_count,
                     run_time_ms,
+                    warm_time_ms,
                     progress_interval_ms,
                     ping_freq_ms,
                     publish_freq_ms,
@@ -156,6 +154,7 @@ impl Opt {
                     cfg_def!(thread_count);
                     cfg_def!(job_count);
                     cfg_def!(run_time_ms);
+                    cfg_def!(warm_time_ms);
                     cfg_def!(progress_interval_ms);
                     cfg_def!(ping_freq_ms);
                     cfg_def!(publish_freq_ms);
@@ -179,6 +178,7 @@ impl Opt {
             thread_pool_size: self.stress.thread_count,
             job_count: self.stress.job_count,
             run_time_ms: self.stress.run_time_ms,
+            warm_time_ms: self.stress.warm_time_ms,
             progress_interval_ms: self.stress.progress_interval_ms,
             suite,
             job_factory,
@@ -186,67 +186,39 @@ impl Opt {
     }
 }
 
-/// private wait for a websocket connection to connect && return it
-fn await_connection(connect_uri: &Lib3hUri) -> StreamManager<std::net::TcpStream> {
+fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(1000))
+        .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();
+
+    let mut read_frame = WsFrame::default();
 
     // keep trying to connect
     loop {
-        // StreamManager is dual sided, but we're only using the client side
-        // this tls config is for the not used server side, it can be fake
-        let tls_config = TlsConfig::FakeServer;
-        let mut stream_manager = StreamManager::with_std_tcp_stream(tls_config);
+        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        let mut connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
+        connection.write(WsFrame::Ping(b"".to_vec())).unwrap();
 
-        // TODO - wtf, we don't want a listening socket : (
-        //        but the logs are way too complainy
-        stream_manager
-            .bind(&Url2::parse("wss://127.0.0.1:0").into())
-            .unwrap();
+        loop {
+            let mut err = false;
 
-        // the actual connect request
-        if let Err(e) = stream_manager.connect(connect_uri) {
-            error!("e1 {:?}", e);
+            match connection.read(&mut read_frame) {
+                Ok(_) => return connection,
+                Err(e) if e.would_block() => (),
+                Err(_) => {
+                    err = true;
+                }
+            }
 
             if std::time::Instant::now() >= timeout {
                 panic!("could not connect within timeout");
             }
 
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            continue;
-        }
-
-        // now loop to see if we can communicate
-        loop {
-            let (_, evs) = match stream_manager.process() {
-                Err(e) => {
-                    error!("e2 {:?}", e);
-                    break;
-                }
-                Ok(s) => s,
-            };
-
-            let mut did_err = false;
-            for ev in evs {
-                match ev {
-                    StreamEvent::ConnectResult(_, _) => return stream_manager,
-                    StreamEvent::ErrorOccured(_, e) => {
-                        error!("e3 {:?}", e);
-                        did_err = true;
-                        break;
-                    }
-                    _ => (),
-                }
-            }
-
-            if did_err {
+            if err {
                 break;
             }
-        }
 
-        if std::time::Instant::now() >= timeout {
-            panic!("could not connect within timeout");
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
 
         std::thread::sleep(std::time::Duration::from_millis(100));
@@ -314,12 +286,13 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    remote_url: Url2,
-    stream_manager: StreamManager<std::net::TcpStream>,
+    connection: InStreamWss<InStreamTls<InStreamTcp>>,
     stress_config: OptStressRunConfig,
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
     next_dm: std::time::Instant,
+    ping_sent_stack: VecDeque<std::time::Instant>,
+    pending_dms: HashMap<String, std::time::Instant>,
 }
 
 impl Job {
@@ -338,18 +311,21 @@ impl Job {
         let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
         let agent_id = enc.encode(&*pub_key).unwrap();
         info!("GENERATED AGENTID {}", agent_id);
-        let stream_manager = await_connection(connect_uri);
+
+        let connection = await_in_stream_connect(connect_uri);
+
         let mut out = Self {
             agent_id,
             agent_ids,
             pub_key: Arc::new(Mutex::new(pub_key)),
             sec_key: Arc::new(Mutex::new(sec_key)),
-            remote_url: Url2::parse(connect_uri.clone().to_string()),
-            stream_manager,
+            connection,
             stress_config,
             next_ping: std::time::Instant::now(),
             next_publish: std::time::Instant::now(),
             next_dm: std::time::Instant::now(),
+            ping_sent_stack: VecDeque::new(),
+            pending_dms: HashMap::new(),
         };
 
         out.join_space();
@@ -377,12 +353,7 @@ impl Job {
             payload,
         };
         let to_send: Opaque = signed_message.into();
-        self.stream_manager
-            .send(
-                &self.remote_url.clone().into(),
-                to_send.as_bytes().as_slice(),
-            )
-            .unwrap();
+        self.connection.write(to_send.as_bytes().into()).unwrap();
     }
 
     /// join the space "abcd" : )
@@ -398,8 +369,9 @@ impl Job {
 
     /// send a ping message to sim2h
     pub fn ping(&mut self, logger: &mut StressJobMetricLogger) {
+        self.ping_sent_stack.push_back(std::time::Instant::now());
         self.send_wire(WireMessage::Ping);
-        logger.log("send_ping_count", 1.0);
+        logger.log("ping_send_count", 1.0);
     }
 
     pub fn dm(&mut self, logger: &mut StressJobMetricLogger) {
@@ -411,17 +383,21 @@ impl Job {
                 content
             });
 
+            let rid = nanoid::simple();
+            self.pending_dms
+                .insert(rid.clone(), std::time::Instant::now());
+
             self.send_wire(WireMessage::ClientToLib3h(
                 ClientToLib3h::SendDirectMessage(DirectMessageData {
                     space_address: "abcd".to_string().into(),
-                    request_id: "".to_string(),
+                    request_id: rid,
                     to_agent_id: to_agent_id.into(),
                     from_agent_id: self.agent_id.clone().into(),
                     content,
                 }),
             ));
 
-            logger.log("send_dm_count", 1.0);
+            logger.log("dm_send_count", 1.0);
         }
     }
 
@@ -443,9 +419,17 @@ impl Job {
 
             let aspect_data: Opaque = (*aspect_data.read_lock()).to_vec().into();
 
+            let sent_epoch_millis = format!(
+                "{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+            );
+
             let aspect = EntryAspectData {
                 aspect_address: aspect_hash.into(),
-                type_hint: "stress-test".to_string(),
+                type_hint: sent_epoch_millis,
                 aspect: aspect_data,
                 publish_ts: 0,
             };
@@ -464,54 +448,72 @@ impl Job {
             },
         )));
 
-        logger.log("send_publish_count", 1.0);
+        logger.log("publish_send_count", 1.0);
+    }
+
+    fn priv_handle_msg(&mut self, logger: &mut StressJobMetricLogger, msg: WireMessage) {
+        match msg {
+            WireMessage::Pong => {
+                // with the current Ping/Pong structs
+                // there's no way to correlate specific messages
+                // if we switch to using the Websocket Ping/Pong
+                // we could put a message id in them.
+                let res = self.ping_sent_stack.pop_front();
+                if res.is_none() {
+                    return;
+                }
+                let res = res.unwrap();
+                logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
+            }
+            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
+            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
+            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(aspect)) => {
+                let epoch_millis = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                let published = aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
+                let elapsed = epoch_millis - published;
+                logger.log("publish_received_aspect_in_ms", elapsed as f64);
+            }
+            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
+                let to_agent_id: String = dm_data.to_agent_id.clone().into();
+                assert_eq!(self.agent_id, to_agent_id);
+                let mut out_dm = dm_data.clone();
+                out_dm.to_agent_id = dm_data.from_agent_id;
+                out_dm.from_agent_id = dm_data.to_agent_id;
+                self.send_wire(WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
+                ));
+            }
+            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data)) => {
+                let res = self.pending_dms.remove(&dm_data.request_id);
+                if res.is_none() {
+                    panic!("invalid dm.request_id")
+                }
+                let res = res.unwrap();
+                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
+            }
+            e @ _ => panic!("unexpected: {:?}", e),
+        }
     }
 }
 
 impl StressJob for Job {
     /// check for any messages from sim2h and also send a ping
     fn tick(&mut self, logger: &mut StressJobMetricLogger) -> StressJobTickResult {
-        let (_, evs) = self.stream_manager.process().unwrap();
-        for ev in evs {
-            match ev {
-                StreamEvent::ErrorOccured(_, e) => panic!("{:?}", e),
-                StreamEvent::ConnectResult(_, _) => panic!("got ConnectResult"),
-                StreamEvent::IncomingConnectionEstablished(_) => unimplemented!(),
-                StreamEvent::ReceivedData(_, raw_data) => {
-                    let data = String::from_utf8_lossy(&raw_data).to_string();
-                    if &data == "\"Pong\"" {
-                        logger.log("received_pong_count", 1.0);
-                    } else if data.contains("HandleGetAuthoringEntryList")
-                        || data.contains("HandleGetGossipingEntryList")
-                    {
-                    } else if data.contains("HandleStoreEntryAspect") {
-                        logger.log("received_handle_store_aspect", 1.0);
-                    } else if data.contains("SendDirectMessageResult") {
-                        logger.log("received_dm_result", 1.0);
-                    } else if data.contains("HandleSendDirectMessage") {
-                        logger.log("received_handle_send_dm", 1.0);
-                        let parsed: WireMessage = serde_json::from_slice(&raw_data).unwrap();
-                        match parsed {
-                            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(
-                                dm_data,
-                            )) => {
-                                let to_agent_id: String = dm_data.to_agent_id.clone().into();
-                                assert_eq!(self.agent_id, to_agent_id);
-                                let mut out_dm = dm_data.clone();
-                                out_dm.to_agent_id = dm_data.from_agent_id;
-                                out_dm.from_agent_id = dm_data.to_agent_id;
-                                self.send_wire(WireMessage::Lib3hToClientResponse(
-                                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
-                                ));
-                            }
-                            e @ _ => panic!("unexpected: {:?}", e),
-                        }
-                    } else {
-                        panic!(data);
-                    }
+        let mut frame = WsFrame::default();
+        match self.connection.read(&mut frame) {
+            Ok(_) => {
+                if let WsFrame::Binary(b) = frame {
+                    let msg: WireMessage = serde_json::from_slice(&b).unwrap();
+                    self.priv_handle_msg(logger, msg);
+                } else {
+                    panic!("unexpected {:?}", frame);
                 }
-                StreamEvent::ConnectionClosed(_) => panic!("connection cloned"),
             }
+            Err(e) if e.would_block() => (),
+            Err(e) => panic!(e),
         }
 
         let now = std::time::Instant::now();
@@ -568,15 +570,9 @@ impl Suite {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();
         let sim2h_join = Some(std::thread::spawn(move || {
-            let tls_config = TlsConfig::build_from_entropy();
-            let stream_manager = StreamManager::with_std_tcp_stream(tls_config);
             let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(
-                Box::new(SodiumCryptoSystem::new()),
-                stream_manager,
-                Lib3hUri(url.into()),
-            );
+            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);
@@ -597,7 +593,7 @@ impl Suite {
                 }
 
                 if let Some(logger) = &mut logger {
-                    logger.log("sim2h_tick_elapsed_ms", start.elapsed().as_millis() as f64);
+                    logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
                 }
             }
         }));
@@ -609,7 +605,7 @@ impl Suite {
 
         // wait 'till server is accepting connections.
         // let this one get dropped
-        await_connection(&bound_uri);
+        await_in_stream_connect(&bound_uri);
 
         Self {
             sim2h_cont,
@@ -618,6 +614,33 @@ impl Suite {
             snd_thread_logger: snd2,
         }
     }
+}
+
+fn print_stats(stats: StressStats) {
+    println!("\n== RUN COMPLETE - Results ==");
+    println!(" - master_tick_count: {}", stats.master_tick_count);
+
+    let mut table = prettytable::Table::new();
+    table.set_format(*prettytable::format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
+
+    table.set_titles(prettytable::row![
+        r -> "STAT",
+        l -> "COUNT",
+        l -> "MIN",
+        l -> "MAX",
+        l -> "MEAN",
+    ]);
+
+    for (k, v) in stats.log_stats.iter() {
+        table.add_row(prettytable::row![
+            r -> k,
+            l -> v.count,
+            l -> v.min,
+            l -> v.max,
+            l -> v.avg,
+        ]);
+    }
+    table.printstd();
 }
 
 impl StressSuite for Suite {
@@ -630,13 +653,14 @@ impl StressSuite for Suite {
     }
 
     fn progress(&mut self, stats: &StressStats) {
-        println!("PROGRESS: {:#?}", stats);
+        println!("PROGRESS - {}", stats.master_tick_count);
     }
 
     fn stop(&mut self, stats: StressStats) {
         *self.sim2h_cont.lock().unwrap() = false;
         self.sim2h_join.take().unwrap().join().unwrap();
-        println!("FINAL STATS: {:#?}", stats);
+        //println!("FINAL STATS: {:#?}", stats);
+        print_stats(stats);
     }
 }
 
@@ -682,6 +706,7 @@ mod tests {
             thread_pool_size: 1,
             job_count: 1,
             run_time_ms: 1000,
+            warm_time_ms: 100,
             progress_interval_ms: 2000,
             suite,
             job_factory: Box::new(move |_| std::mem::replace(&mut job, None).unwrap()),

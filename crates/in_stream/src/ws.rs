@@ -117,7 +117,7 @@ enum WssState<Sub: InStreamStd> {
 #[derive(Debug)]
 pub struct InStreamWss<Sub: InStreamStd> {
     state: Option<WssState<Sub>>,
-    connect_url: Url2,
+    remote_url: Url2,
     write_buf: std::collections::VecDeque<WsFrame>,
 }
 
@@ -144,10 +144,10 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         InStreamWss::raw_connect(url, config)
     }
 
-    fn priv_new(connect_url: Url2) -> Self {
+    fn priv_new(remote_url: Url2) -> Self {
         Self {
             state: None,
-            connect_url,
+            remote_url,
             write_buf: std::collections::VecDeque::new(),
         }
     }
@@ -159,6 +159,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
         match result {
             Ok((stream, _response)) => {
                 self.state = Some(WssState::Ready(stream));
+                self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {
@@ -175,10 +176,15 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
     ) -> Result<()> {
         match result {
             Ok(stream) => {
+                self.remote_url = stream.get_ref().remote_url();
+                self.remote_url.set_scheme(SCHEME).unwrap();
                 self.state = Some(WssState::Ready(stream));
+                self.priv_write_pending()?;
                 Ok(())
             }
             Err(tungstenite::HandshakeError::Interrupted(mid)) => {
+                self.remote_url = mid.get_ref().get_ref().remote_url();
+                self.remote_url.set_scheme(SCHEME).unwrap();
                 self.state = Some(WssState::MidSrvHandshake(mid));
                 Err(Error::with_would_block())
             }
@@ -252,14 +258,14 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     fn raw_connect<C: InStreamConfig>(url: &Url2, config: C) -> Result<Self> {
         let config = WssConnectConfig::from_gen(config)?;
         validate_url_scheme(url)?;
-        let connect_url = url.clone();
+        let remote_url = url.clone();
         let mut url = url.clone();
         url.set_scheme(Sub::URL_SCHEME).unwrap();
         let sub = Sub::raw_connect(&url, config.sub_connect_config)?;
-        let mut out = Self::priv_new(connect_url.clone());
+        let mut out = Self::priv_new(remote_url.clone());
         match out.priv_proc_wss_cli_result(tungstenite::client(
             tungstenite::handshake::client::Request {
-                url: connect_url.into(),
+                url: remote_url.into(),
                 extra_headers: None,
             },
             sub.into_std_stream(),
@@ -268,6 +274,18 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
             Err(e) if e.would_block() => Ok(out),
             Err(e) => Err(e),
         }
+    }
+
+    fn check_ready(&mut self) -> Result<bool> {
+        self.priv_process()?;
+        match self.state {
+            Some(WssState::Ready(_)) => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    fn remote_url(&self) -> Url2 {
+        self.remote_url.clone()
     }
 
     fn read(&mut self, data: &mut WsFrame) -> Result<usize> {
@@ -329,6 +347,14 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
 mod tests {
     use super::*;
 
+    fn get_ginormsg(size: usize) -> Vec<u8> {
+        let mut out = Vec::with_capacity(size);
+        for i in 0..size {
+            out.push((i % 256) as u8);
+        }
+        out
+    }
+
     fn wait_read<Sub: 'static + InStreamStd>(s: &mut InStreamWss<Sub>) -> WsFrame {
         let mut out = WsFrame::default();
         loop {
@@ -358,11 +384,18 @@ mod tests {
                 }
             };
 
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
+
             srv.write("hello from server".into()).unwrap();
             srv.flush().unwrap();
 
             let res = wait_read(&mut srv);
             assert_eq!("hello from client", res.as_str());
+
+            srv.write(get_ginormsg(20000).into()).unwrap();
+            srv.flush().unwrap();
         });
 
         let client_thread = std::thread::spawn(move || {
@@ -372,11 +405,34 @@ mod tests {
             let mut cli: InStreamWss<SubL::StreamStd> =
                 InStreamWss::connect(&binding, WssConnectConfig::new(c)).unwrap();
 
+            assert_eq!(binding.as_str(), cli.remote_url().as_str());
+
             cli.write("hello from client".into()).unwrap();
             cli.flush().unwrap();
 
             let res = wait_read(&mut cli);
             assert_eq!("hello from server", res.as_str());
+
+            let res = wait_read(&mut cli).as_bytes().to_vec();
+            let ginormsg = get_ginormsg(20000);
+            if ginormsg != res {
+                let mut i = 0;
+                loop {
+                    if i >= res.len() || i >= ginormsg.len() {
+                        break;
+                    }
+                    if res.get(i) != ginormsg.get(i) {
+                        println!(
+                            "mismatch at byte {}: {:?} != {:?}",
+                            i,
+                            res.get(i),
+                            ginormsg.get(i),
+                        );
+                    }
+                    i += 1;
+                }
+                panic!("expected {} bytes, got {} bytes", ginormsg.len(), res.len());
+            }
         });
 
         server_thread.join().unwrap();
@@ -404,7 +460,6 @@ mod tests {
         let config = WssBindConfig::new(config);
         let l: InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
             InStreamListenerWss::bind(&url2!("{}://127.0.0.1:0", SCHEME), config).unwrap();
-        //suite(l, TcpConnectConfig::default());
         suite(l, TlsConnectConfig::new(TcpConnectConfig::default()));
     }
 }

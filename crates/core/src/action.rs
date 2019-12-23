@@ -187,6 +187,10 @@ pub enum Action {
     /// and prepare for receiveing an answer
     GetValidationPackage(ChainHeader),
 
+    /// Makes the get validation request with the given ID timeout by adding an
+    /// Err(HolochainError::Timeout) to NetworkState::get_validation_package_results.
+    GetValidationPackageTimeout(Address),
+
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
     /// Triggered from the network handler when we get the response.

@@ -1,3 +1,4 @@
+use crate::NetworkingType;
 use cli;
 use colored::*;
 use error::DefaultResult;
@@ -11,8 +12,14 @@ use holochain_conductor_lib::{
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
+use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::{fs, path::PathBuf};
+
+pub enum Networking {
+    N3h,
+    Sim2h(String),
+}
 
 /// Starts a minimal configuration Conductor with the current application running
 pub fn run(
@@ -78,12 +85,13 @@ pub fn hc_run_configuration(
     dna_path: &PathBuf,
     port: u16,
     persist: bool,
-    networked: bool,
+    networked: Option<Networking>,
     interface_type: &String,
     logging: bool,
+    agent_name: String,
 ) -> DefaultResult<Configuration> {
     Ok(Configuration {
-        agents: vec![agent_configuration()],
+        agents: vec![agent_configuration(agent_name)],
         dnas: vec![dna_configuration(&dna_path)],
         instances: vec![instance_configuration(storage_configuration(persist)?)],
         interfaces: vec![interface_configuration(&interface_type, port)?],
@@ -97,13 +105,14 @@ pub fn hc_run_bundle_configuration(
     bundle: &HappBundle,
     port: u16,
     persist: bool,
-    networked: bool,
+    networked: Option<Networking>,
     logging: bool,
+    agent_name: String,
 ) -> DefaultResult<Configuration> {
     bundle
         .build_conductor_config(
             port,
-            agent_configuration(),
+            agent_configuration(agent_name),
             storage_configuration(persist)?,
             networking_configuration(networked),
             logger_configuration(logging),
@@ -112,17 +121,14 @@ pub fn hc_run_bundle_configuration(
 }
 
 // AGENT
-const AGENT_NAME_DEFAULT: &str = "testAgent";
+pub(crate) const AGENT_NAME_DEFAULT: &str = "testAgent";
 const AGENT_CONFIG_ID: &str = "hc-run-agent";
 
-fn agent_configuration() -> AgentConfiguration {
+fn agent_configuration(agent_name: String) -> AgentConfiguration {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
     // if this logic changes
-    let agent_name = EnvVar::Agent
-        .value()
-        .ok()
-        .unwrap_or_else(|| String::from(AGENT_NAME_DEFAULT));
+    let agent_name = EnvVar::Agent.value().ok().unwrap_or_else(|| agent_name);
     let mut keystore = test_keystore(&agent_name);
     let pub_key = keystore
         .get_keybundle(PRIMARY_KEYBUNDLE_ID)
@@ -210,6 +216,7 @@ fn interface_configuration(
             id: INSTANCE_CONFIG_ID.into(),
             alias: None,
         }],
+        choose_free_port: None,
     })
 }
 
@@ -228,37 +235,52 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
 }
 
 // NETWORKING
-fn networking_configuration(networked: bool) -> Option<NetworkConfig> {
+fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConfig> {
     // create an n3h network config if the --networked flag is set
-    if !networked {
-        return None;
-    }
-
-    // note that this behaviour is documented within
-    // holochain_common::env_vars module and should be updated
-    // if this logic changes
-    let mut bootstrap_nodes = Vec::new();
-    if let Ok(node) = EnvVar::N3hBootstrapNode.value() {
-        bootstrap_nodes.push(node);
+    let networked = match networked {
+        Some(n) => n,
+        None => return None,
     };
 
-    Some(NetworkConfig::N3h(N3hConfig {
-        bootstrap_nodes,
-        n3h_log_level: EnvVar::N3hLogLevel
-            .value()
-            .ok()
-            .unwrap_or_else(default_n3h_log_level),
-        n3h_mode: EnvVar::N3hMode
-            .value()
-            .ok()
-            .unwrap_or_else(default_n3h_mode),
-        n3h_persistence_path: EnvVar::N3hWorkDir
-            .value()
-            .ok()
-            .unwrap_or_else(default_n3h_persistence_path),
-        n3h_ipc_uri: Default::default(),
-        networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
-    }))
+    match networked {
+        Networking::N3h => {
+            // note that this behaviour is documented within
+            // holochain_common::env_vars module and should be updated
+            // if this logic changes
+            let mut bootstrap_nodes = Vec::new();
+            if let Ok(node) = EnvVar::N3hBootstrapNode.value() {
+                bootstrap_nodes.push(node);
+            };
+
+            Some(NetworkConfig::N3h(N3hConfig {
+                bootstrap_nodes,
+                n3h_log_level: EnvVar::N3hLogLevel
+                    .value()
+                    .ok()
+                    .unwrap_or_else(default_n3h_log_level),
+                n3h_mode: EnvVar::N3hMode
+                    .value()
+                    .ok()
+                    .unwrap_or_else(default_n3h_mode),
+                n3h_persistence_path: EnvVar::N3hWorkDir
+                    .value()
+                    .ok()
+                    .unwrap_or_else(default_n3h_persistence_path),
+                n3h_ipc_uri: Default::default(),
+                networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
+            }))
+        }
+        Networking::Sim2h(sim2h_url) => Some(NetworkConfig::Sim2h(Sim2hConfig { sim2h_url })),
+    }
+}
+
+impl Networking {
+    pub fn new(networking_type: NetworkingType, sim2h_url: String) -> Self {
+        match networking_type {
+            NetworkingType::N3h => Self::N3h,
+            NetworkingType::Sim2h => Self::Sim2h(sim2h_url),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -268,8 +290,10 @@ mod tests {
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};
     use self::tempfile::tempdir;
+    use super::Networking;
     use holochain_conductor_lib::config::*;
     use holochain_core_types::dna::Dna;
+    use holochain_net::sim2h_worker::Sim2hConfig;
     use holochain_persistence_api::cas::content::AddressableContent;
     use std::fs::{create_dir, File};
 
@@ -306,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_agent_configuration() {
-        let agent = super::agent_configuration();
+        let agent = super::agent_configuration(super::AGENT_NAME_DEFAULT.to_string());
         assert_eq!(
             agent,
             AgentConfiguration {
@@ -386,6 +410,7 @@ mod tests {
                     id: "test-instance".to_string(),
                     alias: None,
                 }],
+                choose_free_port: None,
             }
         );
 
@@ -401,6 +426,7 @@ mod tests {
                     id: "test-instance".to_string(),
                     alias: None,
                 }],
+                choose_free_port: None,
             }
         );
 
@@ -410,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_networking_configuration() {
-        let networking = super::networking_configuration(true);
+        let networking = super::networking_configuration(Some(Networking::N3h));
         assert_eq!(
             networking,
             Some(NetworkConfig::N3h(N3hConfig {
@@ -423,7 +449,16 @@ mod tests {
             }))
         );
 
-        let no_networking = super::networking_configuration(false);
+        let networking =
+            super::networking_configuration(Some(Networking::Sim2h("wss://localhost:9000".into())));
+        assert_eq!(
+            networking,
+            Some(NetworkConfig::Sim2h(Sim2hConfig {
+                sim2h_url: "wss://localhost:9000".into()
+            }))
+        );
+
+        let no_networking = super::networking_configuration(None);
         assert!(no_networking.is_none());
     }
 }

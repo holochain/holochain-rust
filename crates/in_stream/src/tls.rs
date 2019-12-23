@@ -37,6 +37,11 @@ impl TlsBindConfig {
         self.tls_certificate = Some(TlsCertificate::with_fake_certificate());
         self
     }
+
+    pub fn dev_certificate(mut self) -> Self {
+        self.tls_certificate = Some(TlsCertificate::generate_dev());
+        self
+    }
 }
 
 impl InStreamConfig for TlsBindConfig {}
@@ -134,6 +139,7 @@ enum TlsState<Sub: InStreamStd> {
 /// basic tls wrapper stream
 pub struct InStreamTls<Sub: InStreamStd> {
     state: Option<TlsState<Sub>>,
+    remote_url: Url2,
     write_buf: Vec<u8>,
 }
 
@@ -154,6 +160,7 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
     fn priv_new() -> Self {
         Self {
             state: None,
+            remote_url: Url2::default(),
             write_buf: Vec::new(),
         }
     }
@@ -167,11 +174,15 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
     ) -> Result<()> {
         match result {
             Ok(tls) => {
+                self.remote_url = tls.get_ref().remote_url();
+                self.remote_url.set_scheme(SCHEME).unwrap();
                 self.state = Some(TlsState::Ready(tls));
                 Ok(())
             }
             Err(e) => match e {
                 native_tls::HandshakeError::WouldBlock(mid) => {
+                    self.remote_url = mid.get_ref().remote_url();
+                    self.remote_url.set_scheme(SCHEME).unwrap();
                     self.state = Some(TlsState::MidHandshake(mid));
                     Err(Error::with_would_block())
                 }
@@ -234,6 +245,7 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
         url.set_scheme(Sub::URL_SCHEME).unwrap();
         let sub = Sub::raw_connect(&url, config.sub_connect_config)?;
         let mut out = Self::priv_new();
+        out.remote_url = url;
         match out.priv_proc_tls_result(
             native_tls::TlsConnector::builder()
                 .danger_accept_invalid_certs(true)
@@ -246,6 +258,18 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
             Err(e) if e.would_block() => Ok(out),
             Err(e) => Err(e),
         }
+    }
+
+    fn check_ready(&mut self) -> Result<bool> {
+        self.priv_process()?;
+        match self.state {
+            Some(TlsState::Ready(_)) => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    fn remote_url(&self) -> Url2 {
+        self.remote_url.clone()
     }
 
     fn read(&mut self, data: &mut [u8]) -> Result<usize> {
@@ -280,7 +304,7 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
                             Err(e) => return Err(e),
                         };
                         if written < data.len() {
-                            self.write_buf.extend_from_slice(&data[..written]);
+                            self.write_buf.extend_from_slice(&data[written..]);
                         }
                         Ok(data.len())
                     } else {
@@ -314,20 +338,33 @@ impl<Sub: InStreamStd> InStreamStd for InStreamTls<Sub> {}
 mod tests {
     use super::*;
 
-    fn read_count<S: 'static + InStreamStd>(s: &mut StdStreamAdapter<S>, c: usize) -> String {
+    fn get_ginormsg(size: usize) -> Vec<u8> {
+        let mut out = Vec::with_capacity(size);
+        for i in 0..size {
+            out.push((i % 256) as u8);
+        }
+        out
+    }
+
+    fn read_count<S: 'static + InStreamStd>(s: &mut StdStreamAdapter<S>, c: usize) -> Vec<u8> {
         let mut out: Vec<u8> = vec![];
         let mut buf: [u8; 32] = [0; 32];
 
         loop {
-            match s.read(&mut buf) {
+            match s.read(&mut buf[..std::cmp::min(c - out.len(), 32)]) {
                 Ok(read) => out.extend_from_slice(&buf[..read]),
                 Err(e) if e.would_block() => std::thread::yield_now(),
                 Err(e) => panic!("{:?}", e),
             }
             if out.len() >= c {
-                return String::from_utf8_lossy(&out).to_string();
+                return out;
             }
+            std::thread::yield_now();
         }
+    }
+
+    fn read_count_str<S: 'static + InStreamStd>(s: &mut StdStreamAdapter<S>, c: usize) -> String {
+        String::from_utf8_lossy(&read_count(s, c)).to_string()
     }
 
     fn suite<SubL: 'static + InStreamListenerStd, C: InStreamConfig>(
@@ -349,11 +386,18 @@ mod tests {
             }
             .into_std_stream();
 
+            let rurl = srv.remote_url();
+            assert_ne!(listener.binding(), rurl);
+            assert_eq!(SCHEME, rurl.scheme());
+
             srv.write(b"hello from server").unwrap();
             srv.flush().unwrap();
 
-            let res = read_count(&mut srv, 17);
+            let res = read_count_str(&mut srv, 17);
             assert_eq!("hello from client", &res);
+
+            srv.write(&get_ginormsg(35000)).unwrap();
+            srv.flush().unwrap();
         });
 
         let client_thread = std::thread::spawn(move || {
@@ -365,11 +409,34 @@ mod tests {
                     .unwrap()
                     .into_std_stream();
 
+            assert_eq!(binding.as_str(), cli.remote_url().as_str());
+
             cli.write(b"hello from client").unwrap();
             cli.flush().unwrap();
 
-            let res = read_count(&mut cli, 17);
+            let res = read_count_str(&mut cli, 17);
             assert_eq!("hello from server", &res);
+
+            let res = read_count(&mut cli, 35000);
+            let ginormsg = get_ginormsg(35000);
+            if ginormsg != res {
+                let mut i = 0;
+                loop {
+                    if i >= res.len() || i >= ginormsg.len() {
+                        break;
+                    }
+                    if res.get(i) != ginormsg.get(i) {
+                        println!(
+                            "mismatch at byte {}: {:?} != {:?}",
+                            i,
+                            res.get(i),
+                            ginormsg.get(i),
+                        );
+                    }
+                    i += 1;
+                }
+                panic!("expected {} bytes, got {} bytes", ginormsg.len(), res.len());
+            }
         });
 
         server_thread.join().unwrap();

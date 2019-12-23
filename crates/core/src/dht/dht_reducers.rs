@@ -16,7 +16,8 @@ use super::dht_inner_reducers::{
 
 use holochain_core_types::{entry::Entry, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::AddressableContent;
-
+use itertools::Itertools;
+use std::collections::VecDeque;
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
@@ -44,6 +45,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::HoldAspect(_) => Some(reduce_hold_aspect),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
         Action::RemoveQueuedHoldingWorkflow(_) => Some(reduce_remove_queued_holding_workflow),
+        Action::Prune => Some(reduce_prune),
         _ => None,
     }
 }
@@ -171,12 +173,41 @@ pub fn reduce_queue_holding_workflow(
         error!("Tried to add pending validation to queue which is already held!");
         None
     } else {
+        if old_store.has_same_queued_holding_worfkow(pending) {
+            warn!("Tried to add pending validation to queue which is already queued!");
+            None
+        } else {
+            let mut new_store = (*old_store).clone();
+            new_store
+                .queued_holding_workflows
+                .push_back(PendingValidationWithTimeout::new(
+                    pending.clone(),
+                    maybe_delay.map(ValidationTimeout::from),
+                ));
+            Some(new_store)
+        }
+    }
+}
+
+pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Option<DhtStore> {
+    let pruned_queue = old_store
+        .queued_holding_workflows
+        .iter()
+        .unique_by(|p| {
+            (
+                p.pending.workflow.clone(),
+                p.pending.entry_with_header.header.entry_address(),
+            )
+        })
+        .cloned()
+        .collect::<VecDeque<_>>();
+
+    if pruned_queue.len() < old_store.queued_holding_workflows.len() {
         let mut new_store = (*old_store).clone();
-        new_store.queue_holding_workflow(PendingValidationWithTimeout::new(
-            pending.clone(),
-            maybe_delay.map(ValidationTimeout::from),
-        ));
+        new_store.queued_holding_workflows = pruned_queue;
         Some(new_store)
+    } else {
+        None
     }
 }
 
@@ -525,7 +556,7 @@ pub mod tests {
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);
-        assert!(store.has_queued_holding_workflow(&hold));
+        assert!(store.has_exact_queued_holding_workflow(&hold));
 
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
@@ -548,7 +579,7 @@ pub mod tests {
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
-        assert!(store.has_queued_holding_workflow(&hold_link));
+        assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
         // the link won't validate while the entry is pending so we have to remove it
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
@@ -562,17 +593,17 @@ pub mod tests {
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
-        assert!(!store.has_queued_holding_workflow(&hold));
-        assert!(store.has_queued_holding_workflow(&update));
-        assert!(store.has_queued_holding_workflow(&hold_link));
+        assert!(!store.has_exact_queued_holding_workflow(&hold));
+        assert!(store.has_exact_queued_holding_workflow(&update));
+        assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);
-        assert!(!store.has_queued_holding_workflow(&hold));
-        assert!(!store.has_queued_holding_workflow(&hold_link));
-        assert!(store.has_queued_holding_workflow(&update));
+        assert!(!store.has_exact_queued_holding_workflow(&hold));
+        assert!(!store.has_exact_queued_holding_workflow(&hold_link));
+        assert!(store.has_exact_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
         assert_eq!(update, next_pending);

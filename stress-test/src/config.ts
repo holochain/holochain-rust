@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import { Config } from '@holochain/tryorama'
+import { configBatchSimple } from '@holochain/tryorama-stress-utils'
 
 
 export const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim1h'
@@ -41,7 +42,7 @@ const logger = {
   state_dump: false
 }
 
-const network = 
+const network =
   ( networkType === 'sim1h'
   ? {
     type: 'sim1h',
@@ -51,7 +52,7 @@ const network =
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
-    sim2h_url: 'ws://localhost:9002'
+    sim2h_url: 'wss://localhost:9002'
   }
 
   : networkType === 'memory'
@@ -60,20 +61,14 @@ const network =
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()
   )
 
-
 const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
 
-const configCommon = {
-  logger,
-  network,
+export const configCommon = {
+    logger,
+    network,
 }
 
 /** Generates a bunch of identical conductor configs with multiple identical instances */
-export const configBatchSimple = (numConductors, numInstances) => {
-  const conductor = R.pipe(
-    R.map(n => [`${n}`, dna]),
-    R.fromPairs,
-    x => (Config.gen(x, configCommon)),
-  )(R.range(0, numInstances))
-  return R.repeat(conductor, numConductors)
-}
+export const configBatch = (numConductors, numInstances) => (
+  configBatchSimple(numConductors, numInstances, dna, configCommon)
+)

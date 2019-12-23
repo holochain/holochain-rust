@@ -10,6 +10,7 @@ let
  # @see https://github.com/rust-lang/rustfmt/issues/3685
  script = pkgs.writeShellScriptBin name
  ''
+ set -euxo pipefail
  echo "checking rust formatting";
  __fmtexit=0
  for p in crates/*; do

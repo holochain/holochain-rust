@@ -1,13 +1,24 @@
 { pkgs }:
 let
+
+  git-branch = "`git rev-parse --abbrev-ref HEAD`";
+
   docker-build = pkgs.writeShellScriptBin "hc-trycp-docker-build"
   ''
-  ./docker/build trycp_server `git rev-parse --abbrev-ref HEAD`
+  set -euxo pipefail
+  for image in minimal trycp_server
+  do
+  ./docker/build $image ${git-branch}
+  done
   '';
 
   docker-push = pkgs.writeShellScriptBin "hc-trycp-docker-push"
   ''
-  ./docker/push trycp_server `git rev-parse --abbrev-ref HEAD`
+  set -euxo pipefail
+  for image in minimal trycp_server
+  do
+  ./docker/push $image ${git-branch}
+  done
   '';
 
   docker-run = pkgs.writeShellScriptBin "hc-trycp-docker-run"

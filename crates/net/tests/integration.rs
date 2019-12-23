@@ -17,9 +17,10 @@ use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::Sim2h;
 use std::sync::Arc;
 
-#[test]
+#[allow(dead_code)]
 fn sim2h_worker_talks_to_sim2h() {
     let crypto = Box::new(SodiumCryptoSystem::new());
+
 
     let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
     let mut sec_key = crypto.buf_new_secure(crypto.sign_secret_key_bytes());

@@ -41,7 +41,7 @@ module.exports = (scenario, configBatch, N, C, I, sampleSize) => {
                     if (instance.agentAddress != id) {
                         console.log(`\n==== getting ${id}`)
                         //                    await delay(getWait)
-                        const result = await instance.call('main', 'get_entry', {address: instance.agentAddress})
+                        const result = await instance.call('main', 'get_entry', {address: id})
                         results.push( Boolean(result.Ok) )
                     }
                 }

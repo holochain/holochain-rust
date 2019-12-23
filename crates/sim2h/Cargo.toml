@@ -16,7 +16,7 @@ hcid = "=0.0.6"
 holochain_persistence_api = "=0.0.11"
 holochain_json_api = "=0.0.17"
 detach = "=0.0.19"
-lib3h = "=0.0.25"
+lib3h = { path = "/home/michael/Holo/lib3h/crates/lib3h", version = "=0.0.25" }
 lib3h_crypto_api = "=0.0.25"
 lib3h_sodium = "=0.0.25"
 lib3h_protocol = "=0.0.25"

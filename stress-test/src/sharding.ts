@@ -24,6 +24,8 @@ module.exports = (scenario, configBatch, N, C, I, sampleSize) => {
         }))
 
         console.log("============================================\nall nodes have started\n============================================")
+        console.log(`beginning test with sample size: ${sampleSize}`)
+
 //       await delay(10000)
 
         const batch = new Batch(players).iteration('parallel')

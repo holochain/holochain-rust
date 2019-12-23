@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -euxo pipefail
+dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 owner=holochain
 repo=holochain-rust
@@ -13,4 +14,4 @@ docker push "holochain/holochain-rust:$box.$branch"
 while read region; do
  docker tag $tag "024992937548.dkr.ecr.$region.amazonaws.com/$tag"
  docker push "024992937548.dkr.ecr.$region.amazonaws.com/$tag"
-done < aws-regions.txt
+done < $dir/aws-regions.txt

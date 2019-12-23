@@ -187,7 +187,7 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
                     Err(Error::with_would_block())
                 }
                 native_tls::HandshakeError::Failure(e) => {
-                    Err(Error::new(ErrorKind::ConnectionRefused, format!("{:?}", e)))
+                    Err(Error::new(ErrorKind::ConnectionRefused, format!("tls: {:?}", e)))
                 }
             },
         }

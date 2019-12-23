@@ -166,7 +166,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                 self.state = Some(WssState::MidCliHandshake(mid));
                 Err(Error::with_would_block())
             }
-            Err(e) => Err(Error::new(ErrorKind::ConnectionRefused, format!("{:?}", e))),
+            Err(e) => Err(Error::new(ErrorKind::ConnectionRefused, format!("wss_cli: {:?}", e))),
         }
     }
 
@@ -188,7 +188,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                 self.state = Some(WssState::MidSrvHandshake(mid));
                 Err(Error::with_would_block())
             }
-            Err(e) => Err(Error::new(ErrorKind::ConnectionRefused, format!("{:?}", e))),
+            Err(e) => Err(Error::new(ErrorKind::ConnectionRefused, format!("ws_srv: {:?}", e))),
         }
     }
 

@@ -146,6 +146,7 @@ impl Sim2hWorker {
             }
             did_something = true;
             let message = self.outgoing_message_buffer.get(0).unwrap();
+            debug!("WireMessage: preparing to send {:?}", message);
             let payload: String = message.clone().into();
             let signature = self
                 .conductor_api
@@ -176,6 +177,7 @@ impl Sim2hWorker {
                 self.check_reconnect();
                 return did_something;
             }
+            debug!("WireMessage: dequeuing sent message {:?}", message);
             // if we made it here, we successfully sent the first message
             // we can remove it from the outgoing buffer queue
             self.outgoing_message_buffer.remove(0);
@@ -186,6 +188,7 @@ impl Sim2hWorker {
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
+        debug!("WireMessage: queueing {:?}", message);
         self.outgoing_message_buffer.push(message);
         Ok(())
     }

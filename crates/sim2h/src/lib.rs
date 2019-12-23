@@ -802,7 +802,7 @@ impl Sim2h {
                 self.send(
                     query_result.requester_agent_id.clone(),
                     to_url,
-                    &WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result))
+                    &WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::QueryEntryResult(query_result))
                 );
                 Ok(())
             }

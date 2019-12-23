@@ -41,6 +41,6 @@ console.log(`Running stress tests with N=${N}, M=${M} on ${networkType}`)
 
 //require('./gossip')(orchestrator.registerScenario)
 
-require('./sharding')(orchestrator.registerScenario, configBatch, 1, 10, 10, 1)
+require('./sharding')(orchestrator.registerScenario, configBatch, 1, 5, 5, 1)
 
 orchestrator.run()

@@ -16,17 +16,17 @@ module.exports = (scenario, configBatch, N, C, I, sampleSize) => {
         // range of random number of milliseconds to wait before startup
         const startupSpacing = 10000
         // number of milliseconds to wait between gets
-        const getWait = 100
+        const getWait = 50
 
         await Promise.all(players.map(async player => {
-//            await delay(Math.random()*startupSpacing)
+            await delay(Math.random()*startupSpacing)
             return player.spawn()
         }))
 
         console.log("============================================\nall nodes have started\n============================================")
         console.log(`beginning test with sample size: ${sampleSize}`)
 
-//       await delay(10000)
+       await delay(10000)
 
         const batch = new Batch(players).iteration('parallel')
 
@@ -42,7 +42,7 @@ module.exports = (scenario, configBatch, N, C, I, sampleSize) => {
                 for (const id of agentIds) {
                     if (instance.agentAddress != id) {
                         console.log(`\n==== getting ${id}`)
-                        //                    await delay(getWait)
+                        await delay(getWait)
                         const result = await instance.call('main', 'get_entry', {address: id})
                         results.push( Boolean(result.Ok) )
                     }

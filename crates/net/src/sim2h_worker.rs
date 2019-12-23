@@ -435,10 +435,14 @@ impl Sim2hWorker {
             WireMessage::StatusResponse(response) => {
                 debug!("StatusResponse {:?}", response);
                 // TODO: negotiate version mesmatch
-                self.is_full_sync_DHT = response.redundant_count == 0;
+                self.set_full_sync(response.redundant_count == 0);
             }
         };
         Ok(())
+    }
+
+    pub fn set_full_sync(&mut self, full_sync: bool) {
+        self.is_full_sync_DHT = full_sync;
     }
 
     #[allow(dead_code)]

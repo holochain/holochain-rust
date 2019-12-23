@@ -46,13 +46,13 @@ const network =
   ( networkType === 'sim1h'
   ? {
     type: 'sim1h',
-    dynamo_url: 'ws://0.0.0.0:8000'
+    dynamo_url: 'ws://127.0.0.1:8000'
   }
 
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
-    sim2h_url: 'wss://0.0.0.0:9002'
+    sim2h_url: 'wss://127.0.0.1:9002'
   }
 
   : networkType === 'memory'

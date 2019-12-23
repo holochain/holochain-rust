@@ -23,7 +23,7 @@ const network =
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
-    sim2h_url: 'wss://0.0.0.0:9000'
+    sim2h_url: 'wss://127.0.0.1:9000'
   }
 
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()

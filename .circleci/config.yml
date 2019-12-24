@@ -217,7 +217,7 @@ jobs:
 
  deploy-crates:
   docker:
-   - image: holochain/holonix:latest
+   - image: holochain/holonix:latest.love
   steps:
    - checkout
    - run:

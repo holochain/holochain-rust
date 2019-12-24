@@ -41,18 +41,19 @@ teardown () {
 
  echo '# steps adapted from quickstart 2019-09-11' >&3
 
- echo '# hc init "$TMP/$app_name"' >&3
+ echo "# hc init $TMP/$app_name" >&3
  run hc init "$TMP/$app_name"
 
- echo '# cd "$TMP/$app_name"' >&3
+ echo "# cd $TMP/$app_name" >&3
  cd "$TMP/$app_name"
 
- echo '# hc generate "zomes/$zome_name"' >&3
+ echo "# hc generate zomes/$zome_name" >&3
  run hc generate "zomes/$zome_name"
 
  echo '# hc test' >&3
  export CARGO_TARGET_DIR="$CARGO_TARGET_DIR/cli/hc-test"
  echo "# $CARGO_TARGET_DIR" >&3
  run hc test
-
+ echo "# output: $output" >&3
+ echo "# status: $status" >&3
 }

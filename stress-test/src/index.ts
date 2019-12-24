@@ -32,6 +32,7 @@ const M = parseInt(process.argv[3], 10) || 1
 
 console.log(`Running stress tests with N=${N}, M=${M} on ${networkType}`)
 
+require('./state-invariants')(orchestrator.registerScenario, N, M)
 require('./all-on')(orchestrator.registerScenario, N, M)
 //require('./telephone-games')(orchestrator.registerScenario, N, M)
 

@@ -440,13 +440,15 @@ impl CloudWatchLogger {
             sequence_token: self.sequence_token.clone(),
         };
 
-        let result = self
-            .client
-            .put_log_events(put_log_events_request)
-            .sync()
-            .unwrap();
-
-        self.sequence_token = result.next_sequence_token
+        let maybe_result = self.client.put_log_events(put_log_events_request).sync();
+        match maybe_result {
+            Ok(result) => {
+                self.sequence_token = result.next_sequence_token;
+            }
+            Err(err) => {
+                error!("got error when putting log event: {:?}", err);
+            }
+        }
     }
 
     pub fn get_log_stream_names<S: Into<String>>(

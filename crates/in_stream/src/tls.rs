@@ -186,9 +186,10 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
                     self.state = Some(TlsState::MidHandshake(mid));
                     Err(Error::with_would_block())
                 }
-                native_tls::HandshakeError::Failure(e) => {
-                    Err(Error::new(ErrorKind::ConnectionRefused, format!("tls: {:?}", e)))
-                }
+                native_tls::HandshakeError::Failure(e) => Err(Error::new(
+                    ErrorKind::ConnectionRefused,
+                    format!("tls: {:?}", e),
+                )),
             },
         }
     }

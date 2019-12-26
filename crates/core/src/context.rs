@@ -50,8 +50,8 @@ use std::{
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
-pub type ActionSender = ht::SpanSender<ActionWrapper>;
-pub type ActionReceiver = ht::SpanReceiver<ActionWrapper>;
+pub type ActionSender = ht::channel::SpanSender<ActionWrapper>;
+pub type ActionReceiver = ht::channel::SpanReceiver<ActionWrapper>;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 

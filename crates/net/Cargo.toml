@@ -19,12 +19,12 @@ tempfile = "=3.0.7"
 failure = "=0.1.5"
 sim1h = { version = "=0.0.41-alpha4", path = "../sim1h" }
 sim2h = { version = "=0.0.41-alpha4", path = "../sim2h" }
-lib3h_sodium = "=0.0.25"
-lib3h_protocol = "=0.0.25"
-lib3h = { path = "/home/michael/Holo/lib3h/crates/lib3h", version = "=0.0.25" }
-lib3h_zombie_actor = "=0.0.25"
+lib3h = { path = "/home/michael/Holo/lib3h/crates/lib3h" }
+lib3h_sodium = { path = "/home/michael/Holo/lib3h/crates/sodium" }
+lib3h_protocol = { path = "/home/michael/Holo/lib3h/crates/lib3h_protocol" }
+lib3h_zombie_actor = { path = "/home/michael/Holo/lib3h/crates/zombie_actor" }
 detach = "=0.0.19"
-holochain_tracing = { version = "=0.0.5" }
+holochain_tracing = { path = "/home/michael/Holo/tracing/crates/tracing" }
 holochain_metrics = { version = "=0.0.41-alpha4", path = "../metrics" }
 holochain_common = { version = "=0.0.41-alpha4", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.41-alpha4", path = "../conductor_api" }

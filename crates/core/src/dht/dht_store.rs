@@ -316,10 +316,6 @@ impl DhtStore {
         &self.queued_holding_workflows
     }
 
-    pub(crate) fn queue_holding_workflow(&mut self, v: PendingValidationWithTimeout) {
-        self.queued_holding_workflows.push_back(v);
-    }
-
     pub(crate) fn remove_holding_workflow(
         &mut self,
         item: &PendingValidation,

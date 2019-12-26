@@ -15,8 +15,8 @@ repository = "https://github.com/holochain/sim2h"
 sim2h = { version = "=0.0.41-alpha4", path = "../sim2h" }
 detach = "=0.0.19"
 lib3h = { path = "/home/michael/Holo/lib3h/crates/lib3h", version = "=0.0.25" }
-lib3h_protocol = "=0.0.25"
-lib3h_sodium = "=0.0.25"
+lib3h_protocol = { path = "/home/michael/Holo/lib3h/crates/lib3h_protocol" }
+lib3h_sodium = { path = "/home/michael/Holo/lib3h/crates/sodium" }
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"

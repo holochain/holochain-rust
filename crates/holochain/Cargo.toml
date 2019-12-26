@@ -8,13 +8,14 @@ documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
+crossbeam-channel = "=0.3.8"
 holochain_core_types = { version = "=0.0.41-alpha4", path = "../core_types" }
 holochain_conductor_lib = { version = "=0.0.41-alpha4", path = "../conductor_lib" }
-lib3h_sodium = "=0.0.25"
+lib3h_sodium = { path = "/home/michael/Holo/lib3h/crates/sodium" }
 holochain_common = { version = "=0.0.41-alpha4", path = "../common" }
 holochain_locksmith = { version = "=0.0.41-alpha4", path = "../locksmith" }
-holochain_tracing = "=0.0.5"
-holochain_tracing_macros = "=0.0.2"
+holochain_tracing = { path = "/home/michael/Holo/tracing/crates/tracing" }
+holochain_tracing_macros = { path = "/home/michael/Holo/tracing/crates/tracing_macros" }
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 ws = "=0.8.0"

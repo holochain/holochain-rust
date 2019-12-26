@@ -41,7 +41,7 @@ pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult
     //  "arguments": ["$CARGO_TARGET_DIR/wasm32-unknown-unknown/release/{{ name }}.wasm"]
     // },
     // note the implicit (in cargo) and explicit (in wasm-gc) use of $CARGO_TARGET_DIR!
-    // note also that the supported development environment is based on `nix-shell` so we at least
+    // note also that the supported development environment is based on `nix-shell` so we _already_
     // assume/expect that developers are using something bash-like for development already
     // e.g. we assume `cargo`, `wasm-gc`, `wasm-opt`, `wasm2wat`, `wat2wasm` all exist in the
     // default template (which we can't assume outside nix-shell in a portable way).

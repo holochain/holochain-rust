@@ -1,7 +1,7 @@
 ARG DOCKER_BRANCH=develop
 FROM holochain/holochain-rust:latest.${DOCKER_BRANCH}
 
-RUN cargo test -p hc --target-dir "$CARGO_TARGET_DIR"/cli-test
+RUN nix-shell --run 'cargo test -p hc --target-dir "$CARGO_TARGET_DIR"/cli-test'
 
 ENV USER="$(id -u -n)"
 ENV app_name=my_first_app

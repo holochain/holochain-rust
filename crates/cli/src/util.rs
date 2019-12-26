@@ -45,6 +45,11 @@ pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult
     // assume/expect that developers are using something bash-like for development already
     // e.g. we assume `cargo`, `wasm-gc`, `wasm-opt`, `wasm2wat`, `wat2wasm` all exist in the
     // default template (which we can't assume outside nix-shell in a portable way).
+    //
+    // @TODO - does it make more sense to push "execute arbitrary bash" style features down to the
+    // `nix-shell` layer where we have a better toolkit to handle environments/dependencies?
+    // e.g. @see `hn-release-cut` from holonix that implements conventions/hooks to standardise
+    // bash processes in an extensible way
     let status = Command::new("bash")
         .args(&["-c", &command_string])
         .current_dir(base_path)

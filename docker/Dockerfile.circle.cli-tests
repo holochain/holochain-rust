@@ -14,4 +14,5 @@ RUN nix-shell --run 'hc init "$TMP/$app_name" \
  && hc generate "zomes/$zome_name" \
  && export CARGO_TARGET_DIR="$CARGO_TARGET_DIR/cli/hc-test" \
  && hc package \
+ && cd test \
  && npm install'

@@ -23,7 +23,7 @@ pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult
     // i.e. the same binary should work across bash, powershell, CMD, etc.
     // to achieve this all the arg strings are built internally by the rust binary then run as-is
     // so e.g. Command::new("echo").args("$PWD") would literally print `"$PWD"` not the contents of
-    // the $PWD environment variable (e.g. this would be `%cd%` on Windows CMD)
+    // the $PWD environment variable (e.g. because Windows CMD would expect `%cd%` not `$PWD`)
     // what we want is for things to be "portable"
     // i.e. developers can configure their machines with environment variables and have `hc`
     // evaluate them to local values that fit their personal workflow/configurations

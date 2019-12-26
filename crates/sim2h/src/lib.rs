@@ -1,4 +1,6 @@
 #![feature(vec_remove_item)]
+
+extern crate backtrace;
 extern crate env_logger;
 extern crate lib3h_crypto_api;
 extern crate log;

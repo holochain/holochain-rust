@@ -8,6 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- `hc` now passes arguments to bash at runtime [#2019](https://github.com/holochain/holochain-rust/pull/2019).
+- `artifact` in `.hcbuild` now evaluates bash strings and does not force relative paths [#2020](https://github.com/holochain/holochain-rust/pull/2020)
+
 ### Deprecated
 
 ### Removed
@@ -15,4 +18,3 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 ### Security
-

@@ -23,6 +23,7 @@ const orchestrator = new Orchestrator({
   waiter: {
     softTimeout: 10000,
     hardTimeout: 20000,
+    strict: true,
   },
 })
 

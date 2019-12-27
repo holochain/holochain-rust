@@ -771,9 +771,9 @@ impl Sim2h {
                         let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
                             // If there is nobody who as all aspects of an entry, just
                             // ask somebody of that shard:
-                            agents_with_all_aspects_for_entry
-                        } else {
                             agent_pool
+                        } else {
+                            agents_with_all_aspects_for_entry
                         };
 
                         let agent_slice = &mut agents_to_sample_from[..];

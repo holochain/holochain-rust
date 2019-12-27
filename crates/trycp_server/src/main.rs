@@ -252,15 +252,21 @@ fn get_info_as_json() -> String {
 /// very dangerous, runs whatever strings come in from the internet directly in bash
 fn os_eval(arbitrary_command: &str) -> String {
     println!("running cmd {}", arbitrary_command);
-    // let arguments: Vec<&str> = args_str.split(",").collect();
     match Command::new("bash")
         .args(&["-c", arbitrary_command])
         .output()
     {
-        Ok(output) => String::from_utf8(output.stdout)
-            .unwrap()
-            .trim_end()
-            .to_string(),
+        Ok(output) => {
+            if output.status.success() {
+                String::from_utf8_lossy(&output.stdout)
+                    .trim_end()
+                    .to_string()
+            } else {
+                String::from_utf8_lossy(&output.stderr)
+                    .trim_end()
+                    .to_string()
+            }
+        }
         Err(err) => format!("cmd err: {:?}", err),
     }
 }
@@ -534,5 +540,6 @@ pub mod tests {
     #[test]
     fn os_eval_test() {
         assert_eq!("foo", os_eval("echo foo"));
+        assert_eq!("bash: zzz: command not found", os_eval("zzz yyy"));
     }
 }

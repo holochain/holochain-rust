@@ -37,8 +37,14 @@ function  doTest(url) {
              console.log(result)
         })
 
+      // test that we can run a command that should work
       await ws.call('cmd', {"cmd": "ls -l -a"}).then(function(result) {
         console.log(result)
+      })
+
+      // test that we can run a command that should fail
+      await ws.call('cmd', {'cmd': 'zzzzz'}).then(function(result) {
+       console.log('bad cmd', result)
       })
 
         console.log("making setup call")

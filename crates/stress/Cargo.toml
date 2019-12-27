@@ -13,9 +13,9 @@ base64 = "=0.10.1"
 crossbeam-channel = "=0.3.8"
 env_logger = "=0.6.1"
 hcid = "=0.0.6"
-lib3h_crypto_api = "=0.0.25"
-lib3h_protocol = "=0.0.25"
-lib3h_sodium = "=0.0.25"
+lib3h_crypto_api = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_protocol = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_sodium = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 log = "=0.4.8"
 nanoid = "=0.2.0"
 native-tls = "=0.2.3"

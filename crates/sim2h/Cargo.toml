@@ -16,12 +16,12 @@ hcid = "=0.0.6"
 holochain_persistence_api = "=0.0.11"
 holochain_json_api = "=0.0.17"
 detach = "=0.0.19"
-lib3h = "=0.0.25"
-lib3h_crypto_api = "=0.0.25"
-lib3h_sodium = "=0.0.25"
-lib3h_protocol = "=0.0.25"
-lib3h_zombie_actor = "=0.0.25"
-holochain_tracing = "=0.0.5"
+lib3h = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_crypto_api = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_sodium = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_protocol = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_zombie_actor = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+holochain_tracing = { version = "=0.0.6" }
 holochain_core_types = { version = "=0.0.41-alpha4", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.41-alpha4", path = "../locksmith" }
 in_stream = { version = "=0.0.41-alpha4", path = "../in_stream" }

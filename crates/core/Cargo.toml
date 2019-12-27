@@ -28,8 +28,8 @@ holochain_net = { version = "=0.0.41-alpha4", path = "../net" }
 holochain_wasm_utils = { version = "=0.0.41-alpha4", path = "../wasm_utils" }
 holochain_common = { version = "=0.0.41-alpha4", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.41-alpha4", path = "../conductor_api" }
-lib3h_protocol = "=0.0.25"
-lib3h_sodium = "=0.0.25"
+lib3h_protocol = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+lib3h_sodium = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.11"
@@ -39,8 +39,8 @@ holochain_core_types = { version = "=0.0.41-alpha4", path = "../core_types" }
 holochain_dpki = { version = "=0.0.41-alpha4", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.41-alpha4", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.41-alpha4", path = "../metrics" }
-holochain_tracing = "=0.0.5"
-holochain_tracing_macros = "=0.0.2"
+holochain_tracing = { version = "=0.0.6" }
+holochain_tracing_macros = { version = "=0.0.3" }
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
 boolinator = "=2.4.0"

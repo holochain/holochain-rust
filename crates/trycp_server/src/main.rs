@@ -306,9 +306,12 @@ fn main() {
             let result = match target_str.as_str() {
                 "sim2h" => os_eval("hc-sm2h-server-install"),
                 "conductor" => os_eval("hc-conductor-install"),
-                _ => format!("error: {} unknown target", target_str)
+                _ => format!("error: {} unknown target", target_str),
             };
-            Ok(Value::String(format!("rebuild result for {}:\n{}", target_str, result)))
+            Ok(Value::String(format!(
+                "rebuild result for {}:\n{}",
+                target_str, result
+            )))
         } else {
             println!("rebuild command not allowed");
             Ok(Value::String("rebuild not allowed".to_string()))

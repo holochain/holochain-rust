@@ -291,6 +291,7 @@ fn main() {
     io.add_method("ping", |_params: Params| {
         Ok(Value::String(get_info_as_json()))
     });
+
     let allow_cmd = args.allow_cmd;
     io.add_method("cmd", move |params: Params| {
         if allow_cmd {
@@ -299,8 +300,17 @@ fn main() {
                 &unwrap_params_map(params)?,
             )?)))
         } else {
-            println!("cmd command not allowed");
+            println!("cmd command not allowed (-a to enable)");
             Ok(Value::String("cmd not allowed".to_string()))
+        }
+    });
+
+    io.add_method("recompile", move |params: Params| {
+        if allow_cmd {
+            Ok(Value::String(os_eval(&format!("nix-shell --run 'git checkout -f {} && git pull && hc-trycp-server-install && hc-sim2h-server-install && hc-conductor-install'", get_as_string("branch", &unwrap_params_map(params)?)?))))
+        } else {
+            println!("recompile  not allowed (-a to enable)");
+            Ok(Value::String("recompile not allowed".to_string()))
         }
     });
 

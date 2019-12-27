@@ -1177,7 +1177,7 @@ dependencies = [
  "in_stream",
  "json-patch",
  "lib3h_crypto_api 0.0.26",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "log 0.4.8",
  "reqwest",
@@ -1287,6 +1287,7 @@ dependencies = [
 name = "holochain"
 version = "0.0.41-alpha4"
 dependencies = [
+ "crossbeam-channel",
  "holochain_common",
  "holochain_conductor_lib",
  "holochain_core_types",
@@ -1426,7 +1427,7 @@ dependencies = [
  "jsonrpc-core",
  "jsonrpc-lite",
  "lazy_static",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "log 0.4.8",
  "num-derive",
@@ -1627,7 +1628,7 @@ dependencies = [
  "lazy_static",
  "lib3h",
  "lib3h_crypto_api 0.0.26",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "lib3h_zombie_actor",
  "libc",
@@ -1768,7 +1769,7 @@ dependencies = [
  "hcid",
  "in_stream",
  "lib3h_crypto_api 0.0.26",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "log 0.4.8",
  "nanoid",
@@ -2188,7 +2189,7 @@ dependencies = [
  "lib3h_crypto_api 0.0.26",
  "lib3h_mdns",
  "lib3h_p2p_protocol",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "lib3h_zombie_actor",
  "log 0.4.8",
@@ -2234,7 +2235,7 @@ source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#fcc2b74540
 dependencies = [
  "byteorder",
  "hostname",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "log 0.4.8",
  "nanoid",
  "net2",
@@ -2252,23 +2253,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
-]
-
-[[package]]
-name = "lib3h_protocol"
-version = "0.0.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5431522207e8e5d47ad1513c06496d4d079a48b52b6ffdc6d2f1f596cb74ceec"
-dependencies = [
- "backtrace",
- "base64 0.10.1",
- "holochain_persistence_api",
- "rmp-serde",
- "serde",
- "serde_derive",
- "shrinkwraprs",
- "url 2.1.0",
- "url_serde",
 ]
 
 [[package]]
@@ -4138,7 +4122,7 @@ dependencies = [
  "holochain_persistence_api",
  "holochain_tracing",
  "lazy_static",
- "lib3h_protocol 0.0.25",
+ "lib3h_protocol",
  "log 0.4.8",
  "parking_lot 0.9.0",
  "rusoto_core",
@@ -4167,7 +4151,7 @@ dependencies = [
  "lazy_static",
  "lib3h",
  "lib3h_crypto_api 0.0.26",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "lib3h_zombie_actor",
  "log 0.4.8",
@@ -4194,7 +4178,7 @@ dependencies = [
  "detach 0.0.19",
  "env_logger 0.7.1",
  "lib3h",
- "lib3h_protocol 0.0.26",
+ "lib3h_protocol",
  "lib3h_sodium 0.0.26",
  "log 0.4.8",
  "sim2h",

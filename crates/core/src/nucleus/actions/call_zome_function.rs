@@ -17,9 +17,9 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
 };
 
+use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_tracing::channel::lax_send_wrapped;
-use holochain_json_api::json::JsonString;
 
 use holochain_dpki::utils::Verify;
 

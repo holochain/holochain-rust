@@ -292,8 +292,15 @@ fn run(tracer: Option<ht::Tracer>) -> HolochainResult<()> {
                 "Booting conductor with following configuration: {:?}",
                 conductor_config
             );
-            cli::run(dna_path, package, port, interface_type, conductor_config, tracer)
-                .map_err(HolochainError::Default)?
+            cli::run(
+                dna_path,
+                package,
+                port,
+                interface_type,
+                conductor_config,
+                tracer,
+            )
+            .map_err(HolochainError::Default)?
         }
 
         Cli::Test {

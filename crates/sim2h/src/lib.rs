@@ -168,7 +168,7 @@ impl Sim2h {
         wss_send: crossbeam_channel::Sender<TcpWss>,
     ) {
         let config = TcpBindConfig::default();
-//        let config = TlsBindConfig::new(config).dev_certificate();
+        //        let config = TlsBindConfig::new(config).dev_certificate();
         let config = WssBindConfig::new(config);
         let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());
@@ -771,9 +771,9 @@ impl Sim2h {
                         let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
                             // If there is nobody who as all aspects of an entry, just
                             // ask somebody of that shard:
-                            agents_with_all_aspects_for_entry
-                        } else {
                             agent_pool
+                        } else {
+                            agents_with_all_aspects_for_entry
                         };
 
                         let agent_slice = &mut agents_to_sample_from[..];

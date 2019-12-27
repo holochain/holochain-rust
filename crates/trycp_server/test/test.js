@@ -37,6 +37,10 @@ function  doTest(url) {
              console.log(result)
         })
 
+      await ws.call('cmd', {"cmd": "ls", "args": "-l,-a"}).then(function(result) {
+        console.log(result)
+      })
+
         console.log("making setup call")
         // call an RPC method with parameters
 

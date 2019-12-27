@@ -51,6 +51,10 @@ struct Cli {
         help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
     )]
     port_range_string: String,
+
+    #[structopt(long = "--allow-cmd", short = "a")]
+    /// allow execution of arbitrary shell command
+    allow_cmd: bool,
 }
 
 type PortRange = (u16, u16);
@@ -267,6 +271,25 @@ fn main() {
 
     io.add_method("ping", |_params: Params| {
         Ok(Value::String(get_info_as_json()))
+    });
+    let allow_cmd = args.allow_cmd;
+    io.add_method("cmd", move |params: Params| {
+        if allow_cmd {
+            let params_map = unwrap_params_map(params)?;
+            let command = get_as_string("cmd", &params_map)?;
+            let args_str = get_as_string("args", &params_map)?;
+            println!("running cmd {} with args: {}", command, args_str);
+            let arguments: Vec<&str> = args_str.split(",").collect();
+            /*            let envs_str = get_as_string("args", &params_map)?;
+            let envs = str2vec(args_str);*/
+            match Command::new(command).args(&arguments).output() {
+                Ok(output) => Ok(Value::String(String::from_utf8(output.stdout).unwrap())),
+                Err(err) => Ok(Value::String(format!("cmd err: {:?}", err))),
+            }
+        } else {
+            println!("cmd command not allowed");
+            Ok(Value::String("cmd not allowed".to_string()))
+        }
     });
 
     io.add_method("dna", move |params: Params| {

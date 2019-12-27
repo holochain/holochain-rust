@@ -80,7 +80,8 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    connection: InStreamWss<InStreamTls<InStreamTcp>>,
+    connection: InStreamWss<InStreamTcp>,
+//    wss_connection: InStreamWss<InStreamTls<InStreamTcp>>,
 }
 
 impl Job {
@@ -133,7 +134,7 @@ impl Job {
 
 fn await_in_stream_connect(
     connect_uri: &Url2,
-) -> Result<InStreamWss<InStreamTls<InStreamTcp>>, String> {
+) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();
@@ -142,7 +143,8 @@ fn await_in_stream_connect(
 
     // keep trying to connect
     loop {
-        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        //        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        let config = WssConnectConfig::new(TcpConnectConfig::default());
         let mut connection =
             InStreamWss::connect(connect_uri, config).map_err(|e| format!("{}", e))?;
         connection.write(WsFrame::Ping(b"".to_vec())).unwrap();

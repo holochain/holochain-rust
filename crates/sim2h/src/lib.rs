@@ -91,7 +91,7 @@ const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
 pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
-pub(crate) type TcpWss = InStreamWss<InStreamTcp>;
+pub type TcpWss = InStreamWss<InStreamTcp>;
 
 mod job;
 //use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};

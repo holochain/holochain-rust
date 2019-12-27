@@ -256,7 +256,6 @@ fn get_info_as_json() -> String {
 /// very dangerous, runs whatever strings come in from the internet directly in bash
 fn os_eval(arbitrary_command: &str) -> String {
     println!("running cmd {}", arbitrary_command);
-    // let arguments: Vec<&str> = args_str.split(",").collect();
     match Command::new("bash")
         .args(&["-c", arbitrary_command])
         .output()

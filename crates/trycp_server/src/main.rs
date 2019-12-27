@@ -56,7 +56,7 @@ struct Cli {
     /// allow execution of arbitrary shell command
     allow_cmd: bool,
 
-    #[structopt(long = "--allow-recompile", short = "b")]
+    #[structopt(long = "--allow-recompile", short = "r")]
     /// allow recompiling of conductor and sim2h
     allow_recompile: bool,
 }
@@ -314,7 +314,7 @@ fn main() {
         if allow_recompile {
             Ok(Value::String(os_eval(&format!("nix-shell --run 'git checkout -f {} && git pull && hc-sim2h-server-install && hc-conductor-install'", get_as_string("branch", &unwrap_params_map(params)?)?))))
         } else {
-            println!("recompile not allowed (-b to enable)");
+            println!("recompile not allowed (-r to enable)");
             Ok(Value::String("recompile not allowed".to_string()))
         }
     });

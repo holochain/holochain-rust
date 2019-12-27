@@ -485,7 +485,7 @@ impl Sim2h {
 
     // process transport and  incoming messages from it
     pub fn process(&mut self) -> Sim2hResult<()> {
-        trace!("process");
+//        trace!("process");
         self.num_ticks += 1;
         if self.num_ticks % 60000 == 0 {
             debug!(".");
@@ -516,7 +516,7 @@ impl Sim2h {
             self.retry_sync_missing_aspects();
         }
 
-        trace!("process done");
+  //      trace!("process done");
         Ok(())
     }
 

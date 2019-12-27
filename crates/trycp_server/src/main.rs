@@ -56,9 +56,9 @@ struct Cli {
     /// allow execution of arbitrary shell command
     allow_cmd: bool,
 
-    #[structopt(long = "--allow-rebuild", short = "b")]
-    /// allow rebuilding of conductor or sim2h
-    allow_rebuild: bool,
+    #[structopt(long = "--allow-recompile", short = "b")]
+    /// allow recompiling of conductor and sim2h
+    allow_recompile: bool,
 }
 
 type PortRange = (u16, u16);
@@ -297,27 +297,6 @@ fn main() {
         Ok(Value::String(get_info_as_json()))
     });
 
-    let allow_rebuild = args.allow_rebuild;
-    io.add_method("rebuild", move |params: Params| {
-        let params_map = unwrap_params_map(params)?;
-        let target_str = get_as_string("target", &params_map)?;
-
-        if allow_rebuild {
-            let result = match target_str.as_str() {
-                "sim2h" => os_eval("hc-sm2h-server-install"),
-                "conductor" => os_eval("hc-conductor-install"),
-                _ => format!("error: {} unknown target", target_str),
-            };
-            Ok(Value::String(format!(
-                "rebuild result for {}:\n{}",
-                target_str, result
-            )))
-        } else {
-            println!("rebuild command not allowed");
-            Ok(Value::String("rebuild not allowed".to_string()))
-        }
-    });
-
     let allow_cmd = args.allow_cmd;
     io.add_method("cmd", move |params: Params| {
         if allow_cmd {
@@ -331,11 +310,12 @@ fn main() {
         }
     });
 
+    let allow_recompile = args.allow_recompile;
     io.add_method("recompile", move |params: Params| {
-        if allow_cmd {
-            Ok(Value::String(os_eval(&format!("nix-shell --run 'git checkout -f {} && git pull && hc-trycp-server-install && hc-sim2h-server-install && hc-conductor-install'", get_as_string("branch", &unwrap_params_map(params)?)?))))
+        if allow_recompile {
+            Ok(Value::String(os_eval(&format!("nix-shell --run 'git checkout -f {} && git pull && hc-sim2h-server-install && hc-conductor-install'", get_as_string("branch", &unwrap_params_map(params)?)?))))
         } else {
-            println!("recompile  not allowed (-a to enable)");
+            println!("recompile not allowed (-b to enable)");
             Ok(Value::String("recompile not allowed".to_string()))
         }
     });

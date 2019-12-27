@@ -23,7 +23,7 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    WireError, WireMessage,
+    WireError, WireMessage, TcpWss,
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
@@ -32,8 +32,9 @@ use url2::prelude::*;
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
-fn connect(url: Lib3hUri) -> NetResult<InStreamWss<InStreamTls<InStreamTcp>>> {
-    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+fn connect(url: Lib3hUri) -> NetResult<TcpWss> {
+    //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+    let config = WssConnectConfig::new(TcpConnectConfig::default());
     Ok(InStreamWss::connect(&url::Url::from(url).into(), config)?)
 }
 
@@ -46,7 +47,7 @@ pub struct Sim2hConfig {
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
     handler: NetHandler,
-    connection: Option<InStreamWss<InStreamTls<InStreamTcp>>>,
+    connection: Option<TcpWss>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
     server_url: Lib3hUri,

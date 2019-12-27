@@ -37,7 +37,7 @@ fn main() {
 
     let args = Cli::from_args();
 
-    let host = "wss://0.0.0.0/";
+    let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
         .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
         .with_port(args.port)

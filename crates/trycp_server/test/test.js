@@ -47,6 +47,10 @@ function  doTest(url) {
        console.log('bad cmd', result)
       })
 
+      await ws.call('recompile', {'branch': 'trycp-eval'}).then(function(result) {
+       console.log('recompile', result)
+      })
+
         console.log("making setup call")
         // call an RPC method with parameters
 

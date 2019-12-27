@@ -55,6 +55,10 @@ struct Cli {
     #[structopt(long = "--allow-cmd", short = "a")]
     /// allow execution of arbitrary shell command
     allow_cmd: bool,
+
+    #[structopt(long = "--allow-rebuild", short = "b")]
+    /// allow rebuilding of conductor or sim2h
+    allow_rebuild: bool,
 }
 
 type PortRange = (u16, u16);
@@ -252,6 +256,7 @@ fn get_info_as_json() -> String {
 /// very dangerous, runs whatever strings come in from the internet directly in bash
 fn os_eval(arbitrary_command: &str) -> String {
     println!("running cmd {}", arbitrary_command);
+    // let arguments: Vec<&str> = args_str.split(",").collect();
     match Command::new("bash")
         .args(&["-c", arbitrary_command])
         .output()
@@ -291,6 +296,29 @@ fn main() {
     io.add_method("ping", |_params: Params| {
         Ok(Value::String(get_info_as_json()))
     });
+
+    let allow_rebuild = args.allow_rebuild;
+    io.add_method("rebuild", move |params: Params| {
+        let params_map = unwrap_params_map(params)?;
+        let target_str = get_as_string("target", &params_map)?;
+
+        if allow_rebuild {
+            match target_str.as_str() {
+                "sim2h" => os_eval("hc-sm2h-server-install"),
+                "conductor" => os_eval("hc-conductor-install"),
+                _ => {
+                    let err = format!("{} unknown target", target_str);
+                    println!("{}", err);
+                    return Ok(Value::String(err));
+                }
+            };
+            Ok(Value::String(format!("{} rebuilt", target_str)))
+        } else {
+            println!("rebuild command not allowed");
+            Ok(Value::String("rebuild not allowed".to_string()))
+        }
+    });
+
     let allow_cmd = args.allow_cmd;
     io.add_method("cmd", move |params: Params| {
         if allow_cmd {

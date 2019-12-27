@@ -257,15 +257,12 @@ fn os_eval(arbitrary_command: &str) -> String {
         .output()
     {
         Ok(output) => {
-            if output.status.success() {
-                String::from_utf8_lossy(&output.stdout)
-                    .trim_end()
-                    .to_string()
+            let response = if output.status.success() {
+                &output.stdout
             } else {
-                String::from_utf8_lossy(&output.stderr)
-                    .trim_end()
-                    .to_string()
-            }
+                &output.stderr
+            };
+            String::from_utf8_lossy(response).trim_end().to_string()
         }
         Err(err) => format!("cmd err: {:?}", err),
     }

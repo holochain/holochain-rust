@@ -292,7 +292,7 @@ impl InStreamStd for InStreamTcp {}
 
 impl Drop for InStreamTcp {
     fn drop(&mut self) {
-        log::trace!("dropping tcp stream {:?}", self.url)
+        log::warn!("dropping tcp stream {:?}", self.url)
     }
 }
 

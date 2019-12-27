@@ -88,8 +88,10 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
-pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
-pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
+//pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
+//pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
+pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
+pub(crate) type TcpWss = InStreamWss<InStreamTcp>;
 
 mod job;
 //use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};
@@ -166,7 +168,7 @@ impl Sim2h {
         wss_send: crossbeam_channel::Sender<TcpWss>,
     ) {
         let config = TcpBindConfig::default();
-        let config = TlsBindConfig::new(config).dev_certificate();
+//        let config = TlsBindConfig::new(config).dev_certificate();
         let config = WssBindConfig::new(config);
         let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());

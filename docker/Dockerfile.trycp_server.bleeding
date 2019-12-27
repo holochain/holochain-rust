@@ -17,4 +17,4 @@ RUN ls /holochain/.cargo/bin
 
 RUN mkdir /tmp/trycp/conductors -p
 
-CMD trycp_server -p 9000 --port-range 5050-5070
+CMD trycp_server -p 9000 --port-range 5050-5070 -a -c

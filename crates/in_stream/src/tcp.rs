@@ -133,10 +133,10 @@ struct TcpConnectingData {
 }
 
 /// basic tcp socket stream
-#[derive(Shrinkwrap, Debug)]
-#[shrinkwrap(mutable)]
+#[derive(Debug)]
+//#[shrinkwrap(mutable)]
 pub struct InStreamTcp {
-    #[shrinkwrap(main_field)]
+    //  #[shrinkwrap(main_field)]
     pub stream: std::net::TcpStream,
     url: Url2,
     connecting: Option<TcpConnectingData>,
@@ -289,6 +289,12 @@ impl InStream<&mut [u8], &[u8]> for InStreamTcp {
 }
 
 impl InStreamStd for InStreamTcp {}
+
+impl Drop for InStreamTcp {
+    fn drop(&mut self) {
+        log::trace!("dropping tcp stream {:?}", self.url)
+    }
+}
 
 #[cfg(test)]
 mod tests {

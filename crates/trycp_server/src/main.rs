@@ -48,7 +48,7 @@ struct Cli {
     #[structopt(
         long = "port-range",
         short = "r",
-        help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
+        help = "The port range to use for spawning new conductors (e.g. '9000-9150')"
     )]
     port_range_string: String,
 
@@ -56,7 +56,7 @@ struct Cli {
     /// allow execution of arbitrary shell command
     allow_cmd: bool,
 
-    #[structopt(long = "--allow-recompile", short = "r")]
+    #[structopt(long = "--allow-recompile", short = "c")]
     /// allow recompiling of conductor and sim2h
     allow_recompile: bool,
 }

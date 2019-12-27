@@ -249,6 +249,22 @@ fn get_info_as_json() -> String {
     format!("{{{}}}", result)
 }
 
+/// very dangerous, runs whatever strings come in from the internet directly in bash
+fn os_eval(arbitrary_command: &str) -> String {
+    println!("running cmd {}", arbitrary_command);
+    // let arguments: Vec<&str> = args_str.split(",").collect();
+    match Command::new("bash")
+        .args(&["-c", arbitrary_command])
+        .output()
+    {
+        Ok(output) => String::from_utf8(output.stdout)
+            .unwrap()
+            .trim_end()
+            .to_string(),
+        Err(err) => format!("cmd err: {:?}", err),
+    }
+}
+
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
@@ -275,17 +291,10 @@ fn main() {
     let allow_cmd = args.allow_cmd;
     io.add_method("cmd", move |params: Params| {
         if allow_cmd {
-            let params_map = unwrap_params_map(params)?;
-            let command = get_as_string("cmd", &params_map)?;
-            let args_str = get_as_string("args", &params_map)?;
-            println!("running cmd {} with args: {}", command, args_str);
-            let arguments: Vec<&str> = args_str.split(",").collect();
-            /*            let envs_str = get_as_string("args", &params_map)?;
-            let envs = str2vec(args_str);*/
-            match Command::new(command).args(&arguments).output() {
-                Ok(output) => Ok(Value::String(String::from_utf8(output.stdout).unwrap())),
-                Err(err) => Ok(Value::String(format!("cmd err: {:?}", err))),
-            }
+            Ok(Value::String(os_eval(&get_as_string(
+                "cmd",
+                &unwrap_params_map(params)?,
+            )?)))
         } else {
             println!("cmd command not allowed");
             Ok(Value::String("cmd not allowed".to_string()))
@@ -515,4 +524,15 @@ fn check_player_config(
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use crate::os_eval;
+
+    #[test]
+    fn os_eval_test() {
+        assert_eq!("foo", os_eval("echo foo"));
+    }
 }

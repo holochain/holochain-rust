@@ -48,9 +48,17 @@ struct Cli {
     #[structopt(
         long = "port-range",
         short = "r",
-        help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
+        help = "The port range to use for spawning new conductors (e.g. '9000-9150')"
     )]
     port_range_string: String,
+
+    #[structopt(long = "--allow-cmd", short = "a")]
+    /// allow execution of arbitrary shell command
+    allow_cmd: bool,
+
+    #[structopt(long = "--allow-recompile", short = "c")]
+    /// allow recompiling of conductor and sim2h
+    allow_recompile: bool,
 }
 
 type PortRange = (u16, u16);
@@ -245,6 +253,25 @@ fn get_info_as_json() -> String {
     format!("{{{}}}", result)
 }
 
+/// very dangerous, runs whatever strings come in from the internet directly in bash
+fn os_eval(arbitrary_command: &str) -> String {
+    println!("running cmd {}", arbitrary_command);
+    match Command::new("bash")
+        .args(&["-c", arbitrary_command])
+        .output()
+    {
+        Ok(output) => {
+            let response = if output.status.success() {
+                &output.stdout
+            } else {
+                &output.stderr
+            };
+            String::from_utf8_lossy(response).trim_end().to_string()
+        }
+        Err(err) => format!("cmd err: {:?}", err),
+    }
+}
+
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
@@ -267,6 +294,29 @@ fn main() {
 
     io.add_method("ping", |_params: Params| {
         Ok(Value::String(get_info_as_json()))
+    });
+
+    let allow_cmd = args.allow_cmd;
+    io.add_method("cmd", move |params: Params| {
+        if allow_cmd {
+            Ok(Value::String(os_eval(&get_as_string(
+                "cmd",
+                &unwrap_params_map(params)?,
+            )?)))
+        } else {
+            println!("cmd command not allowed (-a to enable)");
+            Ok(Value::String("cmd not allowed".to_string()))
+        }
+    });
+
+    let allow_recompile = args.allow_recompile;
+    io.add_method("recompile", move |params: Params| {
+        if allow_recompile {
+            Ok(Value::String(os_eval(&format!("nix-shell --run 'git checkout -f {} && git pull && hc-sim2h-server-install && hc-conductor-install'", get_as_string("branch", &unwrap_params_map(params)?)?))))
+        } else {
+            println!("recompile not allowed (-r to enable)");
+            Ok(Value::String("recompile not allowed".to_string()))
+        }
     });
 
     io.add_method("dna", move |params: Params| {
@@ -492,4 +542,16 @@ fn check_player_config(
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use crate::os_eval;
+
+    #[test]
+    fn os_eval_test() {
+        assert_eq!("foo", os_eval("echo foo"));
+        assert_eq!("bash: zzz: command not found", os_eval("zzz yyy"));
+    }
 }

@@ -37,7 +37,7 @@ function  doTest(url) {
              console.log(result)
         })
 
-      await ws.call('cmd', {"cmd": "ls", "args": "-l,-a"}).then(function(result) {
+      await ws.call('cmd', {"cmd": "ls -l -a"}).then(function(result) {
         console.log(result)
       })
 

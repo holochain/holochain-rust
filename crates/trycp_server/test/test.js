@@ -37,15 +37,18 @@ function  doTest(url) {
              console.log(result)
         })
 
-      // test that we can run a command that should work
-      await ws.call('cmd', {"cmd": "ls -l -a"}).then(function(result) {
-        console.log(result)
-      })
+        // test that we can run a command that should work
+        await ws.call('cmd', {"cmd": "ls -l -a"}).then(function(result) {
+             console.log(result)
+        })
+        // test that we can run a command that should fail
+        await ws.call('cmd', {'cmd': 'zzzzz'}).then(function(result) {
+            console.log('bad cmd', result)
+        })
 
-      // test that we can run a command that should fail
-      await ws.call('cmd', {'cmd': 'zzzzz'}).then(function(result) {
-       console.log('bad cmd', result)
-      })
+        await ws.call('rebuild', {"target": "sim2h"}).then(function(result) {
+             console.log(result)
+        })
 
       await ws.call('recompile', {'branch': 'trycp-eval'}).then(function(result) {
        console.log('recompile', result)

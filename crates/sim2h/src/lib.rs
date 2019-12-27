@@ -168,7 +168,7 @@ impl Sim2h {
         wss_send: crossbeam_channel::Sender<TcpWss>,
     ) {
         let config = TcpBindConfig::default();
-//        let config = TlsBindConfig::new(config).dev_certificate();
+        //        let config = TlsBindConfig::new(config).dev_certificate();
         let config = WssBindConfig::new(config);
         let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());

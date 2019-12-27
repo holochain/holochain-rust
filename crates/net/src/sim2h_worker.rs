@@ -23,7 +23,7 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    WireError, WireMessage, TcpWss,
+    TcpWss, WireError, WireMessage,
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;

@@ -81,7 +81,7 @@ struct Job {
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     connection: InStreamWss<InStreamTcp>,
-//    wss_connection: InStreamWss<InStreamTls<InStreamTcp>>,
+    //    wss_connection: InStreamWss<InStreamTls<InStreamTcp>>,
 }
 
 impl Job {
@@ -132,9 +132,7 @@ impl Job {
     }
 }
 
-fn await_in_stream_connect(
-    connect_uri: &Url2,
-) -> Result<InStreamWss<InStreamTcp>, String> {
+fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();

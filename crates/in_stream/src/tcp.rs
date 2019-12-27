@@ -119,7 +119,7 @@ pub struct TcpConnectConfig {
 impl Default for TcpConnectConfig {
     fn default() -> Self {
         Self {
-            connect_timeout_ms: Some(5000),
+            connect_timeout_ms: Some(20000),
         }
     }
 }

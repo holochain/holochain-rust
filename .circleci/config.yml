@@ -292,6 +292,18 @@ jobs:
   steps:
   - build-docker:
      box: sim2h_server.bleeding
+ docker-build-trycp-server-edge:
+  resource_class: large
+  machine: true
+  steps:
+  - build-docker:
+     box: trycp_server.edge
+ docker-build-trycp-server-bleeding:
+  resource_class: large
+  machine: true
+  steps:
+  - build-docker:
+     box: trycp_server.bleeding
 
  docker-build-trycp-server:
   resource_class: large
@@ -337,6 +349,8 @@ workflows:
        - docker-build-minimal
    - docker-build-sim2h-server-edge
    - docker-build-sim2h-server-bleeding
+   - docker-build-trycp-server-edge
+   - docker-build-trycp-server-bleeding
 
    - docker-build-latest:
       filters:

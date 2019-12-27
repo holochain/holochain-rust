@@ -7,13 +7,6 @@ RUN echo $CARGO_HOME
 
 RUN nix-shell $shellfile --run hc-sim2h-server-install
 
-# https://stackoverflow.com/questions/22713551/how-to-flatten-a-docker-image#22714556
-# FROM scratch
-# COPY --from=build / /
-# WORKDIR /holochain
-# ENV CARGO_HOME /holochain/.cargo
-# ENV PATH "${CARGO_HOME}/bin:${PATH}"
-# this should contain all our freshly built binaries
 RUN ls /holochain/.cargo/bin
 
 RUN mkdir /tmp/sim2h -p

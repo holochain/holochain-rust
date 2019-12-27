@@ -29,7 +29,7 @@ use std::{convert::TryFrom, time::Instant};
 use url::Url;
 use url2::prelude::*;
 
-const RECONNECT_INTERVAL: Duration = Duration::from_secs(5);
+const RECONNECT_INTERVAL: Duration = Duration::from_secs(20);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
 fn connect(url: Lib3hUri) -> NetResult<TcpWss> {

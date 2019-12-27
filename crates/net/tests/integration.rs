@@ -33,7 +33,7 @@ fn sim2h_worker_talks_to_sim2h() {
 
     let srv_cont = cont.clone();
     let sim2h_join = std::thread::spawn(move || {
-        let url = url2!("wss://127.0.0.1:0");
+        let url = url2!("ws://127.0.0.1:0");
         let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 
         snd.send(sim2h.bound_uri.clone().unwrap()).unwrap();

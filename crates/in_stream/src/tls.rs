@@ -96,7 +96,7 @@ impl<Sub: InStreamListenerStd> InStreamListener<&mut [u8], &[u8]> for InStreamLi
         // get e.g. an InStreamTcp
         let stream: Sub::StreamStd = self.sub.accept_std()?;
         let s = stream.into_std_stream();
-        println!("tls: calling accept on {:?}", s);
+        log::trace!("tls: calling accept on {:?}", s);
         let res = self.acceptor.accept(s);
         let mut out = InStreamTls::priv_new();
         match out.priv_proc_tls_result(res) {

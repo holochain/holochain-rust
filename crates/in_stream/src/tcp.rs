@@ -97,7 +97,7 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
         let (stream, addr) = self.0.accept()?;
         stream.set_nonblocking(true)?;
         let remote_url = url2!("{}://{}", SCHEME, addr);
-        println!("tcp: accepted from {}", remote_url);
+        log::trace!("tcp: accepted from {}", remote_url);
         InStreamTcp::priv_new(stream, remote_url, None)
     }
 }
@@ -134,9 +134,7 @@ struct TcpConnectingData {
 
 /// basic tcp socket stream
 #[derive(Debug)]
-//#[shrinkwrap(mutable)]
 pub struct InStreamTcp {
-    //  #[shrinkwrap(main_field)]
     pub stream: std::net::TcpStream,
     url: Url2,
     connecting: Option<TcpConnectingData>,
@@ -292,7 +290,21 @@ impl InStreamStd for InStreamTcp {}
 
 impl Drop for InStreamTcp {
     fn drop(&mut self) {
-        log::warn!("dropping tcp stream {:?}", self.url)
+        log::warn!("dropping tcp stream {:?}", &self.url)
+    }
+}
+
+impl std::ops::Deref for InStreamTcp {
+    type Target = std::net::TcpStream;
+
+    fn deref(&self) -> &Self::Target {
+        &self.stream
+    }
+}
+
+impl std::ops::DerefMut for InStreamTcp {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.stream
     }
 }
 

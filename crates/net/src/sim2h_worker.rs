@@ -114,7 +114,11 @@ impl Sim2hWorker {
         if self.time_of_last_connection_attempt.elapsed() < RECONNECT_INTERVAL {
             return;
         }
-        warn!("reconnect interval passed");
+
+        if self.connection.is_none() {
+            warn!("attempting reconnect");
+        }
+
         self.time_of_last_connection_attempt = Instant::now();
         self.connection = None;
         if let Ok(connection) = connect(self.server_url.clone()) {

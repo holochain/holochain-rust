@@ -1,5 +1,4 @@
 use crate::*;
-use backtrace::Backtrace;
 
 /// ConnectionJob periodically calls `read` on the underlying websocket stream
 /// if there is data or an error, will forward a FrameResult
@@ -58,16 +57,13 @@ impl ConnectionJob {
             return Ok(JobResult::done());
         }
         if self.frame.is_none() {
+            trace!("using default WsFrame");
             self.frame = Some(WsFrame::default());
         }
         match self.outgoing_recv.try_recv() {
             Ok(frame) => {
                 if let Err(e) = self.wss.write(frame) {
-                    error!(
-                        "WEBSOCKET ERROR: {:?}\nbacktrace: {:?}",
-                        e,
-                        Backtrace::new()
-                    );
+                    error!("WEBSOCKET ERROR-outgoing: {:?}", e);
                     return Err(e.into());
                 }
             }
@@ -80,17 +76,14 @@ impl ConnectionJob {
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
                 let frame = self.frame.take().unwrap();
+                trace!("frame read {:?}", frame);
                 self.report_msg(Ok(frame));
                 // we got data this time, check again right away
                 return Ok(JobResult::default());
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
-                error!(
-                    "WEBSOCKET ERROR: {:?}\nbacktrace: {:?}",
-                    e,
-                    Backtrace::new()
-                );
+                error!("WEBSOCKET ERROR-read: {:?}", e,);
                 return Err(e.into());
             }
         }

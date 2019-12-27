@@ -46,7 +46,7 @@ function  doTest(url) {
             console.log('bad cmd', result)
         })
 
-        await ws.call('rebuild', {"target": "fish"}).then(function(result) {
+        await ws.call('rebuild', {"target": "sim2h"}).then(function(result) {
              console.log(result)
         })
 

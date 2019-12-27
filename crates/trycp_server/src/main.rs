@@ -303,16 +303,12 @@ fn main() {
         let target_str = get_as_string("target", &params_map)?;
 
         if allow_rebuild {
-            match target_str.as_str() {
+            let result = match target_str.as_str() {
                 "sim2h" => os_eval("hc-sm2h-server-install"),
                 "conductor" => os_eval("hc-conductor-install"),
-                _ => {
-                    let err = format!("{} unknown target", target_str);
-                    println!("{}", err);
-                    return Ok(Value::String(err));
-                }
+                _ => format!("error: {} unknown target", target_str)
             };
-            Ok(Value::String(format!("{} rebuilt", target_str)))
+            Ok(Value::String(format!("rebuild result for {}:\n{}", target_str, result)))
         } else {
             println!("rebuild command not allowed");
             Ok(Value::String("rebuild not allowed".to_string()))

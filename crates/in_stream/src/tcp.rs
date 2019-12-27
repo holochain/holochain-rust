@@ -97,7 +97,7 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
         let (stream, addr) = self.0.accept()?;
         stream.set_nonblocking(true)?;
         let remote_url = url2!("{}://{}", SCHEME, addr);
-        println!("tls: accepted from {}", remote_url);
+        println!("tcp: accepted from {}", remote_url);
         InStreamTcp::priv_new(stream, remote_url, None)
     }
 }

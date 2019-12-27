@@ -57,7 +57,6 @@ impl ConnectionJob {
             return Ok(JobResult::done());
         }
         if self.frame.is_none() {
-            trace!("using default WsFrame");
             self.frame = Some(WsFrame::default());
         }
         match self.outgoing_recv.try_recv() {

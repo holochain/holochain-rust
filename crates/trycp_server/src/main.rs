@@ -390,13 +390,26 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let mut conductor = Command::new("holochain")
-            .args(&["-c", &config_path])
-            .env("RUST_BACKTRACE", "full")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?;
+        let perf = get_as_bool("perf", &params_map, Some(false))?;
+
+        let mut conductor = 
+            if perf {
+                Command::new("holochain")
+                    .args(&["-c", &config_path])
+                    .env("RUST_BACKTRACE", "full")
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?
+            } else {
+                Command::new("perf")
+                    .args(&["record", "--call-graph", "dwarf", "holochain", "-c", &config_path])
+                    .env("RUST_BACKTRACE", "full")
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| internal_error(format!("unable to spawn conductor with perf instrumentation: {:?}", e)))?
+            };
 
         let mut log_stdout = Command::new("tee")
             .arg(stdout_log_path)

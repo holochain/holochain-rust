@@ -23,17 +23,18 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    WireError, WireMessage,
+    TcpWss, WireError, WireMessage,
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
 use url2::prelude::*;
 
-const RECONNECT_INTERVAL: Duration = Duration::from_secs(1);
+const RECONNECT_INTERVAL: Duration = Duration::from_secs(20);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
-fn connect(url: Lib3hUri) -> NetResult<InStreamWss<InStreamTls<InStreamTcp>>> {
-    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+fn connect(url: Lib3hUri) -> NetResult<TcpWss> {
+    //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+    let config = WssConnectConfig::new(TcpConnectConfig::default());
     Ok(InStreamWss::connect(&url::Url::from(url).into(), config)?)
 }
 
@@ -46,7 +47,7 @@ pub struct Sim2hConfig {
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
     handler: NetHandler,
-    connection: Option<InStreamWss<InStreamTls<InStreamTcp>>>,
+    connection: Option<TcpWss>,
     inbox: Vec<Lib3hClientProtocol>,
     to_core: Vec<Lib3hServerProtocol>,
     server_url: Lib3hUri,
@@ -60,6 +61,7 @@ pub struct Sim2hWorker {
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
     has_self_stored_authored_aspects: bool,
+    is_full_sync_DHT: bool,
 }
 
 impl Sim2hWorker {
@@ -94,10 +96,11 @@ impl Sim2hWorker {
             initial_authoring_list: None,
             initial_gossiping_list: None,
             has_self_stored_authored_aspects: false,
+            is_full_sync_DHT: false,
         };
 
+        instance.send_wire_message(WireMessage::Status)?;
         instance.check_reconnect();
-
         Ok(instance)
     }
 
@@ -110,6 +113,10 @@ impl Sim2hWorker {
 
         if self.time_of_last_connection_attempt.elapsed() < RECONNECT_INTERVAL {
             return;
+        }
+
+        if self.connection.is_none() {
+            warn!("attempting reconnect");
         }
 
         self.time_of_last_connection_attempt = Instant::now();
@@ -144,6 +151,7 @@ impl Sim2hWorker {
             }
             did_something = true;
             let message = self.outgoing_message_buffer.get(0).unwrap();
+            debug!("WireMessage: preparing to send {:?}", message);
             let payload: String = message.clone().into();
             let signature = self
                 .conductor_api
@@ -174,6 +182,7 @@ impl Sim2hWorker {
                 self.check_reconnect();
                 return did_something;
             }
+            debug!("WireMessage: dequeuing sent message {:?}", message);
             // if we made it here, we successfully sent the first message
             // we can remove it from the outgoing buffer queue
             self.outgoing_message_buffer.remove(0);
@@ -184,6 +193,7 @@ impl Sim2hWorker {
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
+        debug!("WireMessage: queueing {:?}", message);
         self.outgoing_message_buffer.push(message);
         Ok(())
     }
@@ -278,52 +288,70 @@ impl Sim2hWorker {
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
                 //let log_context = "ClientToLib3h::PublishEntry";
 
-                // As with QueryEntry, we assume a mirror DHT being implemented by Sim2h.
-                // This means that we can play back PublishEntry messages already locally
-                // as HandleStoreEntryAspects.
-                // This makes instances with Sim2hWorker work even if offline,
-                // i.e. not connected to the sim2h node.
-                for aspect in &provided_entry_data.entry.aspect_list {
-                    self.to_core
-                        .push(Lib3hServerProtocol::HandleStoreEntryAspect(
-                            StoreEntryAspectData {
-                                request_id: "".into(),
-                                space_address: provided_entry_data.space_address.clone(),
-                                provider_agent_id: provided_entry_data.provider_agent_id.clone(),
-                                entry_address: provided_entry_data.entry.entry_address.clone(),
-                                entry_aspect: aspect.clone(),
-                            },
-                        ));
+                if self.is_full_sync_DHT {
+                    // As with QueryEntry, if we are in full-sync DHT mode,
+                    // this means that we can play back PublishEntry messages already locally
+                    // as HandleStoreEntryAspects.
+                    // This makes instances with Sim2hWorker work even if offline,
+                    // i.e. not connected to the sim2h node.
+                    for aspect in &provided_entry_data.entry.aspect_list {
+                        self.to_core
+                            .push(Lib3hServerProtocol::HandleStoreEntryAspect(
+                                StoreEntryAspectData {
+                                    request_id: "".into(),
+                                    space_address: provided_entry_data.space_address.clone(),
+                                    provider_agent_id: provided_entry_data
+                                        .provider_agent_id
+                                        .clone(),
+                                    entry_address: provided_entry_data.entry.entry_address.clone(),
+                                    entry_aspect: aspect.clone(),
+                                },
+                            ));
+                    }
                 }
+
                 self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(
                     provided_entry_data,
                 )))
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
-                // For now, sim2h implements a full-sync mirror DHT
-                // which means queries should always be handled locally.
-                // Thus, we don't even need to ask the central sim2h instance
-                // to handle a query - we just send it back to core directly.
-                self.to_core
-                    .push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
-                Ok(())
+                if self.is_full_sync_DHT {
+                    // In a full-sync DHT queries should always be handled locally.
+                    // Thus, we don't even need to ask the central sim2h instance
+                    // to handle a query - we just send it back to core directly.
+                    self.to_core
+                        .push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
+                    Ok(())
+                } else {
+                    self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(
+                        query_entry_data,
+                    )))
+                }
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
-                // See above QueryEntry implementation.
-                // All queries are handled locally - we just reflect them back to core:
-                self.to_core.push(Lib3hServerProtocol::QueryEntryResult(
-                    query_entry_result_data,
-                ));
-                Ok(())
+                if self.is_full_sync_DHT {
+                    // See above QueryEntry implementation.
+                    // All queries are handled locally - we just reflect them back to core:
+                    self.to_core.push(Lib3hServerProtocol::QueryEntryResult(
+                        query_entry_result_data,
+                    ));
+                    Ok(())
+                } else {
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                        Lib3hToClientResponse::HandleQueryEntryResult(query_entry_result_data),
+                    ))
+                }
             }
 
             // -- Entry lists -- //
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 self.initial_authoring_list = Some(entry_list_data.clone());
-                self.self_store_authored_aspects();
+                if self.is_full_sync_DHT {
+                    self.self_store_authored_aspects();
+                }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
                 ))
@@ -331,7 +359,9 @@ impl Sim2hWorker {
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
                 self.initial_gossiping_list = Some(entry_list_data.clone());
-                self.self_store_authored_aspects();
+                if self.is_full_sync_DHT {
+                    self.self_store_authored_aspects();
+                }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data),
                 ))
@@ -410,11 +440,17 @@ impl Sim2hWorker {
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
             },
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
-            WireMessage::StatusResponse(_) => {
-                error!("Got a StatusResponse from the Sim2h server, weird! Ignoring")
+            WireMessage::StatusResponse(response) => {
+                debug!("StatusResponse {:?}", response);
+                // TODO: negotiate version mesmatch
+                self.set_full_sync(response.redundant_count == 0);
             }
         };
         Ok(())
+    }
+
+    pub fn set_full_sync(&mut self, full_sync: bool) {
+        self.is_full_sync_DHT = full_sync;
     }
 
     #[allow(dead_code)]

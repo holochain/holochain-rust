@@ -1,0 +1,14 @@
+ARG DOCKER_BRANCH=develop
+FROM holochain/holochain-rust:sim2h_server.edge.${DOCKER_BRANCH} as build
+
+ENV shellfile ./docker/sim2h_server.default.nix
+
+RUN echo $CARGO_HOME
+
+RUN nix-shell $shellfile --run hc-sim2h-server-install
+
+RUN ls /holochain/.cargo/bin
+
+RUN mkdir /tmp/sim2h -p
+
+CMD RUST_LOG=debug sim2h_server -p 9000 -s 20 > /tmp/sim2h/log.txt 2>&1

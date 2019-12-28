@@ -66,7 +66,7 @@ impl StreamManager<std::net::TcpStream> {
                                 .and_then(|(tcp_stream, socket_address)| {
                                     tcp_stream.set_nonblocking(true)?;
                                     let v4_socket_address = format!(
-                                        "wss://{}:{}",
+                                        "ws://{}:{}",
                                         socket_address.ip(),
                                         socket_address.port()
                                     );

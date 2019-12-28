@@ -1,7 +1,6 @@
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
-
-const REDUNDANT_COUNT: u64 = 50;
+use lib3h_protocol::types::EntryHash;
 
 #[allow(clippy::borrowed_box)]
 /// ack - lib3h can only convert agent_ids to locations right now
@@ -25,20 +24,27 @@ pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> L
     }
 }
 
+#[allow(clippy::borrowed_box)]
+pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: EntryHash) -> Location {
+    let entry_hash_string: String = entry_hash.into();
+    anything_to_location(crypto, &entry_hash_string)
+}
+
 /// implement a super simple sharding algorithm
 /// to distribute data when node counts go > 50
 pub fn naive_sharding_should_store(
     agent_loc: Location,
     data_addr_loc: Location,
     node_count: u64,
+    redundant_count: u64,
 ) -> bool {
     // if there are < 50 nodes, everyone should store everything
-    if node_count <= REDUNDANT_COUNT {
+    if node_count <= redundant_count {
         return true;
     }
 
     // divide up the space so on average data will be stored by 50 nodes
-    let dist: f64 = ARC_LENGTH_MAX as f64 / (node_count as f64 / REDUNDANT_COUNT as f64);
+    let dist: f64 = ARC_LENGTH_MAX as f64 / (node_count as f64 / redundant_count as f64);
 
     // determine if this specific piece of data should be stored by this node
     agent_loc.forward_distance_to(data_addr_loc) < dist as u32
@@ -48,6 +54,7 @@ pub fn naive_sharding_should_store(
 mod tests {
     use super::*;
     use lib3h_sodium::SodiumCryptoSystem;
+    const REDUNDANT_COUNT: u64 = 50;
 
     // generate a test agent id (HcS)
     fn gen_id(crypto: &Box<dyn CryptoSystem>) -> String {
@@ -139,7 +146,12 @@ mod tests {
 
                 // go through all the nodes
                 for agent_loc in nodes.iter() {
-                    if naive_sharding_should_store(*agent_loc, data_loc, nodes.len() as u64) {
+                    if naive_sharding_should_store(
+                        *agent_loc,
+                        data_loc,
+                        nodes.len() as u64,
+                        REDUNDANT_COUNT,
+                    ) {
                         store_count += 1;
                     }
                 }
@@ -171,7 +183,8 @@ mod tests {
                                 naive_sharding_should_store(
                                     *agent_loc,
                                     data_loc,
-                                    nodes.len() as u64
+                                    nodes.len() as u64,
+                                    REDUNDANT_COUNT,
                                 )
                             );
                         }
@@ -197,7 +210,8 @@ mod tests {
                                 naive_sharding_should_store(
                                     *agent_loc,
                                     data_loc,
-                                    nodes.len() as u64
+                                    nodes.len() as u64,
+                                    REDUNDANT_COUNT,
                                 )
                             );
                         }

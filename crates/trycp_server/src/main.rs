@@ -17,7 +17,7 @@ use reqwest::{self, Url};
 use serde_json::map::Map;
 use std::{
     collections::HashMap,
-    fs::File,
+    env, fs,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
     process::{Child, Command, Stdio},
@@ -211,7 +211,7 @@ fn invalid_request(message: String) -> jsonrpc_core::types::error::Error {
 }
 
 fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::types::error::Error> {
-    File::create(file_path.clone())
+    fs::File::create(file_path.clone())
         .map_err(|e| {
             internal_error(format!(
                 "unable to create file: {:?} {}",
@@ -390,7 +390,7 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let perf = get_as_bool("perf", &params_map, Some(true))?;
+        let perf = is_program_in_path("perf") && get_as_bool("perf", &params_map, Some(true))?;
 
         let mut conductor = if perf {
             Command::new("holochain")
@@ -516,4 +516,16 @@ fn check_player_config(
         )));
     }
     Ok(())
+}
+
+fn is_program_in_path(program: &str) -> bool {
+    if let Ok(path) = env::var("PATH") {
+        for p in path.split(":") {
+            let p_str = format!("{}/{}", p, program);
+            if fs::metadata(p_str).is_ok() {
+                return true;
+            }
+        }
+    }
+    false
 }

@@ -62,6 +62,7 @@ cargo run --manifest-path crates/remove-dev-dependencies/Cargo.toml crates/**/Ca
 
 # order is important here due to dependencies
 for crate in \
+ in_stream \
  locksmith \
  common \
  metrics \
@@ -81,7 +82,14 @@ for crate in \
  sim2h_server
 do
  cargo publish --manifest-path "crates/$crate/Cargo.toml" --allow-dirty
- sleep 10
+ # need to wait 'long enough' for crates.io to finish processing the previous
+ # crate so that subsequent ones can see it
+ # there is no specific amount of time that crates.io guarantees but it is
+ # usually only a few seconds (have observed timeouts at 10 seconds)
+ # there is a registry API that can be hit to try and detect when the crate is
+ # ready but unfortunately it returns 'OK' for a crate before cargo can find the
+ # crate for subsequent publishing, so it is an unreliable test for our needs
+ sleep 30
 done
 
 git checkout -f

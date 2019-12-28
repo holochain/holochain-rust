@@ -31,7 +31,7 @@ pub async fn queue_holding_workflow(
         .state()
         .expect("Can't queue holding workflow without state")
         .dht()
-        .has_queued_holding_workflow(&pending)
+        .has_exact_queued_holding_workflow(&pending)
     {
         log_trace!(context, "Queueing holding workflow: {:?}", pending);
         dispatch_queue_holding_workflow(pending.clone(), delay, context.clone());
@@ -61,7 +61,7 @@ impl Future for QueueHoldingWorkflowFuture {
         cx.waker().clone().wake();
 
         if let Some(state) = self.context.try_state() {
-            if state.dht().has_queued_holding_workflow(&self.pending) {
+            if state.dht().has_exact_queued_holding_workflow(&self.pending) {
                 Poll::Ready(())
             } else {
                 Poll::Pending

@@ -10,6 +10,12 @@ pub enum WireError {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StatusData {
+    pub spaces: usize,
+    pub connections: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireMessage {
     ClientToLib3h(ClientToLib3h),
     ClientToLib3hResponse(ClientToLib3hResponse),
@@ -18,6 +24,8 @@ pub enum WireMessage {
     Err(WireError),
     Ping,
     Pong,
+    Status,
+    StatusResponse(StatusData),
 }
 
 impl WireMessage {
@@ -25,6 +33,8 @@ impl WireMessage {
         String::from(match self {
             WireMessage::Ping => "Ping",
             WireMessage::Pong => "Pong",
+            WireMessage::Status => "Status",
+            WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::ClientToLib3h(ClientToLib3h::Bootstrap(_)) => "[C>L]Bootstrap",
             WireMessage::ClientToLib3h(ClientToLib3h::FetchEntry(_)) => "[C>L]FetchEntry",
             WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => "[C>L]JoinSpace",

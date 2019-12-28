@@ -26,14 +26,17 @@ use cache::*;
 use connection_state::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
-    data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
+    data_types::{
+        EntryData, EntryListData, FetchEntryData, GetListData, Opaque, SpaceData,
+        StoreEntryAspectData,
+    },
     protocol::*,
     types::SpaceHash,
     uri::Lib3hUri,
 };
 use url2::prelude::*;
 
-pub use wire_message::{WireError, WireMessage};
+pub use wire_message::{StatusData, WireError, WireMessage};
 
 use in_stream::*;
 use log::*;
@@ -393,6 +396,18 @@ impl Sim2h {
             self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
             return Ok(());
         }
+        if message == WireMessage::Status {
+            trace!("Status -> StatusResponse");
+            self.send(
+                signer.clone(),
+                uri.clone(),
+                &WireMessage::StatusResponse(StatusData {
+                    spaces: self.spaces.len(),
+                    connections: self.open_connections.len(),
+                }),
+            );
+            return Ok(());
+        }
         MESSAGE_LOGGER
             .lock()
             .log_in(signer.clone(), uri.clone(), message.clone());
@@ -482,6 +497,31 @@ impl Sim2h {
         Ok(())
     }
 
+    fn handle_unseen_aspects(
+        &mut self,
+        uri: &Lib3hUri,
+        space_address: &SpaceHash,
+        agent_id: &AgentId,
+        list_data: &EntryListData,
+    ) {
+        let unseen_aspects = AspectList::from(list_data.address_map.clone())
+            .diff(self.get_or_create_space(space_address).read().all_aspects());
+        debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+        for entry_address in unseen_aspects.entry_addresses() {
+            if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".into(),
+                        space_address: space_address.clone(),
+                        provider_agent_id: agent_id.clone(),
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(aspect_address_list.clone()),
+                    }));
+                self.send(agent_id.clone(), uri.clone(), &wire_message);
+            }
+        }
+    }
+
     // given an incoming messages, prepare a proxy message and whether it's an publish or request
     fn handle_joined(
         &mut self,
@@ -558,27 +598,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                let unseen_aspects = AspectList::from(list_data.address_map)
-                    .diff(self
-                        .get_or_create_space(&space_address)
-                        .read()
-                        .all_aspects()
-                    );
-                debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-                for entry_address in unseen_aspects.entry_addresses() {
-                    if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                        let wire_message = WireMessage::Lib3hToClient(
-                            Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                request_id: "".into(),
-                                space_address: space_address.clone(),
-                                provider_agent_id: agent_id.clone(),
-                                entry_address: entry_address.clone(),
-                                aspect_address_list: Some(aspect_address_list.clone())
-                            })
-                        );
-                        self.send(agent_id.clone(), uri.clone(), &wire_message);
-                    }
-                }
+                self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data)) => {
@@ -586,6 +606,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
+                self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
                 let (mut agents_in_space, aspects_missing_at_node) = {
                     let space = self
                         .get_or_create_space(&space_address)

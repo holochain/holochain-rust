@@ -14,28 +14,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Added new docker boxes dedicated to faster CI tasks through incremental compilation
 - Added `CARGO_CACHE_RUSTC_INFO=1` to nix shell
 - Added `print-metric-stats` and `print-cloudwatch-metrics` commands to `holochain_metrics` [#1972](https://github.com/holochain/holochain-rust/pull/1972).
+
 ### Changed
 
-- data sent via jsonrpc to the conductor interface for agent/sign, agent/encrypt and agent/decrypt must now be base64 encoded
-- circleci config now uses version 2.1 syntax
-- added the `-x` flag to several nix-shell commands
-- using `command -v` instead of `which` in app spec `build_and_test.sh`
-- standardised all app (proc) spec commands into a single paramaterised command `hc-test-app-spec`
-- updated to holonix `v0.0.54`
-- `$CARGO_TARGET_DIR` is now set explicitly in the nix shell hook
-- renamed `hc-conductor-wasm-install` to `hc-conductor-wasm-bindgen-install`
-- core `shellHook` can now override holonix `shellHook`
-- several `--target-dir` flags are removed in favour of `$CARGO_TARGET_DIR`
-- the passphrase hashing config is now set to faster and less secure parameters to reduce the start-up time of conductors a lot, esp. on slow devices. (will become a setting the user can choose in the future - faster and less secure config is fine for now and throughout alpha and beta) [#1986](https://github.com/holochain/holochain-rust/pull/1986)
+- `hc` now passes arguments to bash at runtime [#2019](https://github.com/holochain/holochain-rust/pull/2019).
+- `artifact` in `.hcbuild` now evaluates bash strings and does not force relative paths [#2020](https://github.com/holochain/holochain-rust/pull/2020)
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
-
-- paths in cluster test are no longer hardcoded in a way that breaks `$CARGO_TARGET_DIR`
-- `cli` and `conductor` are now both uninstalled again after running app spec tests
-- Fixes a panic in the sim2h server that can happen if the last node of a space leaves just as a second node connects. [#1977](https://github.com/holochain/holochain-rust/pull/1977)
 
 ### Security

@@ -5,7 +5,7 @@ ENV shellfile ./docker/trycp_server.default.nix
 
 RUN echo $NIX_PATH
 
-RUN nix-env -i wget ps more killall gnugrep vim nano which
+RUN nix-env -i wget ps more killall gnugrep vim nano which perf-linux
 
 RUN echo $CARGO_HOME
 

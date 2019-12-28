@@ -13,7 +13,7 @@ use link::example_link;
 // LinkData
 //-------------------------------------------------------------------------------------------------
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, DefaultJson)]
 pub struct LinkData {
     pub action_kind: LinkActionKind,
     pub link: Link,

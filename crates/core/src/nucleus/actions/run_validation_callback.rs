@@ -18,7 +18,7 @@ use holochain_metrics::with_latency_publishing;
 /// Dispatches an `Action::ReturnValidationResult` after completion of the WASM call.
 /// Returns a future that waits for the result to appear in the nucleus state.
 pub async fn run_validation_callback(
-    address: Address,
+    _address: Address,
     call: CallbackFnCall,
     context: &Arc<Context>,
 ) -> ValidationResult {
@@ -30,7 +30,7 @@ pub async fn run_validation_callback(
     with_latency_publishing!(
         metric_name_prefix,
         context.metric_publisher,
-        |_address, call: CallbackFnCall, context: &Arc<Context>| {
+        |()| {
             let cloned_context = context.clone();
 
             match ribosome::run_dna(
@@ -59,8 +59,6 @@ pub async fn run_validation_callback(
                 Err(error) => panic!(error.to_string()), // same here
             }
         },
-        address,
-        call,
-        context
+        ()
     )
 }

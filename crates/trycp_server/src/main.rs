@@ -390,7 +390,7 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let perf = get_as_bool("perf", &params_map, Some(false))?;
+        let perf = get_as_bool("perf", &params_map, Some(true))?;
 
         let mut conductor = 
             if perf {

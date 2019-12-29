@@ -117,10 +117,10 @@ impl Sim2hWorker {
     /// if we don't have a ready connection within RECONNECT_INTERVAL
     fn check_reconnect(&mut self) {
         if self.connection_ready() {
-            // if the connection is ready and the backoff interval is max this
+            // if the connection is ready and the backoff interval is greater than initial
             // means we have actually succeed in connection after a backoff so
             // now we can reset the backoff
-            if self.connection_timeout_backoff > MAX_CONNECTION_TIMEOUT_MS {
+            if self.connection_timeout_backoff > INITIAL_CONNECTION_TIMEOUT_MS {
                 debug!(
                     "resetting reconnect interval to {}",
                     INITIAL_CONNECTION_TIMEOUT_MS

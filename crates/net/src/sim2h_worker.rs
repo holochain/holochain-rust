@@ -29,12 +29,16 @@ use std::{convert::TryFrom, time::Instant};
 use url::Url;
 use url2::prelude::*;
 
-const RECONNECT_INTERVAL: Duration = Duration::from_secs(20);
+const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 1000;
+const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
+//const RECONNECT_INTERVAL: Duration = Duration::from_secs(20);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
-fn connect(url: Lib3hUri) -> NetResult<TcpWss> {
+fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {
     //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
-    let config = WssConnectConfig::new(TcpConnectConfig::default());
+    let config = WssConnectConfig::new(TcpConnectConfig {
+        connect_timeout_ms: Some(timeout_ms),
+    });
     Ok(InStreamWss::connect(&url::Url::from(url).into(), config)?)
 }
 
@@ -55,6 +59,8 @@ pub struct Sim2hWorker {
     agent_id: Address,
     conductor_api: ConductorApi,
     time_of_last_connection_attempt: Instant,
+    connection_timeout_backoff: u64,
+    reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     outgoing_message_buffer: Vec<WireMessage>,
     ws_frame: Option<WsFrame>,
@@ -76,6 +82,7 @@ impl Sim2hWorker {
         agent_id: Address,
         conductor_api: ConductorApi,
     ) -> NetResult<Self> {
+        let reconnect_interval = Duration::from_secs(INITIAL_CONNECTION_TIMEOUT_MS);
         let mut instance = Self {
             handler,
             connection: None,
@@ -85,8 +92,10 @@ impl Sim2hWorker {
             space_data: None,
             agent_id,
             conductor_api,
+            connection_timeout_backoff: INITIAL_CONNECTION_TIMEOUT_MS,
+            reconnect_interval,
             time_of_last_connection_attempt: Instant::now()
-                .checked_sub(RECONNECT_INTERVAL)
+                .checked_sub(reconnect_interval)
                 .unwrap(),
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
                 DefaultMetricPublisher::default(),
@@ -108,20 +117,47 @@ impl Sim2hWorker {
     /// if we don't have a ready connection within RECONNECT_INTERVAL
     fn check_reconnect(&mut self) {
         if self.connection_ready() {
+            // if the connection is ready and the backoff interval is max this
+            // means we have actually succeed in connection after a backoff so
+            // now we can reset the backoff
+            if self.connection_timeout_backoff > MAX_CONNECTION_TIMEOUT_MS {
+                debug!(
+                    "resetting reconnect interval to {}",
+                    INITIAL_CONNECTION_TIMEOUT_MS
+                );
+                self.connection_timeout_backoff = INITIAL_CONNECTION_TIMEOUT_MS;
+                self.reconnect_interval = Duration::from_secs(self.connection_timeout_backoff)
+            }
             return;
         }
 
-        if self.time_of_last_connection_attempt.elapsed() < RECONNECT_INTERVAL {
+        if self.time_of_last_connection_attempt.elapsed() < self.reconnect_interval {
             return;
         }
 
         //if self.connection.is_none() {
-        warn!("attempting reconnect, connection state: {:?}", self.connection);
+        warn!(
+            "attempting reconnect, connection state: {:?}",
+            self.connection
+        );
         //}
+
+        if self.connection_timeout_backoff < MAX_CONNECTION_TIMEOUT_MS {
+            debug!(
+                "attempting reconnect, connection state: {:?}",
+                self.connection
+            );
+            self.connection_timeout_backoff *= 2;
+            debug!(
+                "increasing reconnect interval to {}",
+                self.connection_timeout_backoff
+            );
+            self.reconnect_interval = Duration::from_secs(self.connection_timeout_backoff)
+        }
 
         self.time_of_last_connection_attempt = Instant::now();
         self.connection = None;
-        if let Ok(connection) = connect(self.server_url.clone()) {
+        if let Ok(connection) = connect(self.server_url.clone(), self.connection_timeout_backoff) {
             self.connection = Some(connection);
         }
     }

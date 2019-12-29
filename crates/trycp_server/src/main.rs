@@ -390,7 +390,7 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let perf = is_program_in_path("perf") && get_as_bool("perf", &params_map, Some(true))?;
+        let perf = is_program_in_path("perf") && get_as_bool("perf", &params_map, Some(false))?;
 
         let mut conductor = if perf {
             Command::new("perf")

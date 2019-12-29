@@ -152,7 +152,7 @@ impl Sim2h {
             rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
-            metric_publisher: Default::default()
+            metric_publisher: Default::default(),
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);

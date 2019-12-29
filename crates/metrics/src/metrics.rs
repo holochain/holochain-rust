@@ -28,6 +28,19 @@ impl Metric {
             value,
         }
     }
+
+    pub fn new_timestamped_now<S: Into<String>, S2: Into<Option<String>>>(
+        name: S,
+        stream_id: S2,
+        value: f64,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            stream_id: stream_id.into(),
+            timestamp: Some(Utc::now()),
+            value,
+        }
+    }
 }
 
 /// Give a csv reader produce an iterator over metric.
@@ -82,10 +95,24 @@ pub type DefaultMetricPublisher = crate::logger::LoggerMetricPublisher;
 /// be "$metric_prefix.latency".
 #[macro_export]
 macro_rules! with_latency_publishing {
-    ($metric_prefix:expr, $publisher:expr, $f:expr, $($args:expr),* ) => {{
+    ($metric_prefix:expr, $publisher:expr, $f:expr) => {{
         let clock = std::time::SystemTime::now();
 
-        let ret = ($f)($($args),*);
+        let ret = $f();
+        let latency = clock.elapsed().unwrap().as_millis();
+
+        let metric_name = format!("{}.latency", $metric_prefix);
+
+        // TODO pass in stream id or not?
+        let metric = $crate::Metric::new(metric_name.as_str(), None,
+            Some(clock.into()), latency as f64);
+        $publisher.write().unwrap().publish(&metric);
+        ret
+    }};
+    ($metric_prefix:expr, $publisher:expr, $f:expr, $($args:expr),+ ) => {{
+        let clock = std::time::SystemTime::now();
+
+        let ret = ($f)($($args),+);
         let latency = clock.elapsed().unwrap().as_millis();
 
         let metric_name = format!("{}.latency", $metric_prefix);
@@ -107,7 +134,7 @@ macro_rules! self_with_latency_publishing {
         let clock = std::time::SystemTime::now();
 
         let ret = $self_.$f();
-        let latency = clock.elapsed().unwrap().as_millis(); 
+        let latency = clock.elapsed().unwrap().as_millis();
         let metric_name = format!("{}.latency", $metric_prefix);
 
         // TODO pass in stream id or not?
@@ -131,7 +158,6 @@ macro_rules! self_with_latency_publishing {
         ret
     }}
 }
-
 
 /// Composes a collection of publishers which are all called for one metric sample.
 pub struct MetricPublishers(Vec<Arc<RwLock<dyn MetricPublisher>>>);

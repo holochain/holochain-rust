@@ -116,7 +116,10 @@ impl Sim2hWorker {
         }
 
         //if self.connection.is_none() {
-        warn!("attempting reconnect, connection state: {:?}", self.connection);
+        warn!(
+            "attempting reconnect, connection state: {:?}",
+            self.connection
+        );
         //}
 
         self.time_of_last_connection_attempt = Instant::now();

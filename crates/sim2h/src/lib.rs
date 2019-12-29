@@ -165,6 +165,40 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) {
+        let limbo_cnt = self
+            .connection_states
+            .read()
+            .iter()
+            .filter(|(_k, v)| {
+                if let ConnectionState::Limbo(_) = v {
+                    true
+                } else {
+                    false
+                }
+            })
+            .count() as f64;
+
+        let limbo_states_metric = holochain_metrics::Metric::new_timestamped_now(
+            "sim2h.connection_states.limbo",
+            None,
+            limbo_cnt,
+        );
+
+        let joined_states_metric = holochain_metrics::Metric::new_timestamped_now(
+            "sim2h.connection_states.joined",
+            None,
+            self.connection_states.read().len() as f64 - limbo_cnt,
+        );
+
+        self.metric_publisher
+            .write()
+            .unwrap()
+            .publish(&limbo_states_metric);
+        self.metric_publisher
+            .write()
+            .unwrap()
+            .publish(&joined_states_metric);
+
         if let Ok(wss) = self.wss_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
             let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());

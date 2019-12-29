@@ -533,9 +533,8 @@ pub mod tests {
                 None,
                 None,
                 false,
-                Arc::new(RwLock::new(
-                    holochain_metrics::DefaultMetricPublisher::default(),
-                )),
+                holochain_metrics::config::MetricPublisherConfig::default()
+                    .create_metric_publisher(),
             )),
             logger,
         )

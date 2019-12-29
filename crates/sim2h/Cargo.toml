@@ -25,6 +25,7 @@ lib3h_zombie_actor = "=0.0.25"
 holochain_tracing = "=0.0.4"
 holochain_core_types = { version = "=0.0.41-alpha4", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.41-alpha4", path = "../locksmith" }
+holochain_metrics = { version = "=0.0.41-alpha4", path = "../metrics" }
 in_stream = { version = "=0.0.41-alpha4", path = "../in_stream" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "=0.4.8"

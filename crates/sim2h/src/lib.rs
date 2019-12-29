@@ -49,6 +49,7 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
+use holochain_metrics::{metrics::MetricPublisher, self_with_latency_publishing};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -113,6 +114,7 @@ pub struct Sim2h {
     rrdht_arc_radius_recalc: std::time::Instant,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
+    metric_publisher: Arc<std::sync::RwLock<holochain_metrics::logger::LoggerMetricPublisher>>,
 }
 
 impl Sim2h {
@@ -136,6 +138,7 @@ impl Sim2h {
             num_ticks: 0,
             rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
+            metric_publisher: Default::default(),
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -460,8 +463,17 @@ impl Sim2h {
         Ok((signed_message.provenance.source().into(), wire_message))
     }
 
-    // process transport and  incoming messages from it
     pub fn process(&mut self) -> Sim2hResult<()> {
+        self_with_latency_publishing!(
+            "sim2h.process",
+            self.metric_publisher,
+            process_internal,
+            self
+        )
+    }
+
+    // process transport and  incoming messages from it
+    fn process_internal(&mut self) -> Sim2hResult<()> {
         trace!("process");
         self.num_ticks += 1;
         if self.num_ticks % 60000 == 0 {

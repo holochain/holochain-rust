@@ -43,7 +43,7 @@ pub fn naive_sharding_should_store(
         return true;
     }
 
-     // divide up the space so on average data will be stored by `redundant_count` nodes
+    // divide up the space so on average data will be stored by `redundant_count` nodes
     let dist: f64 = ARC_LENGTH_MAX as f64 / (node_count as f64 / redundant_count as f64);
 
     // determine if this specific piece of data should be stored by this node

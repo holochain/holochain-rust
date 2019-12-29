@@ -186,7 +186,8 @@ impl Opt {
     }
 }
 
-fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
+//fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
+fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();
@@ -195,7 +196,8 @@ fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<In
 
     // keep trying to connect
     loop {
-        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        //let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        let config = WssConnectConfig::new(TcpConnectConfig::default());
         let mut connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
         connection.write(WsFrame::Ping(b"".to_vec())).unwrap();
 
@@ -286,7 +288,8 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    connection: InStreamWss<InStreamTls<InStreamTcp>>,
+    connection: InStreamWss<InStreamTcp>,
+    //connection: InStreamWss<InStreamTls<InStreamTcp>>,
     stress_config: OptStressRunConfig,
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
@@ -570,7 +573,8 @@ impl Suite {
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();
         let sim2h_join = Some(std::thread::spawn(move || {
-            let url = Url2::parse(&format!("wss://127.0.0.1:{}", port));
+            // changed to ws until we reactive TLS
+            let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
             let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 

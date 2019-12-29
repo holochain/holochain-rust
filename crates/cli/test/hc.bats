@@ -31,6 +31,8 @@ teardown () {
 
 @test "init, generate, test" {
 
+ set -euo pipefail
+
  export USER=$(id -u -n)
  export app_name=my_first_app
  export zome_name=my_zome

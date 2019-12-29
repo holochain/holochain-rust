@@ -143,10 +143,6 @@ impl Sim2hWorker {
         //}
 
         if self.connection_timeout_backoff < MAX_CONNECTION_TIMEOUT_MS {
-            debug!(
-                "attempting reconnect, connection state: {:?}",
-                self.connection
-            );
             self.connection_timeout_backoff *= 2;
             debug!(
                 "increasing reconnect interval to {}",

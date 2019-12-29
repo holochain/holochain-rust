@@ -533,7 +533,8 @@ pub mod tests {
                 None,
                 None,
                 false,
-                holochain_metrics::config::MetricPublisherConfig::default().create_metric_publisher()
+                holochain_metrics::config::MetricPublisherConfig::default()
+                    .create_metric_publisher(),
             )),
             logger,
         )

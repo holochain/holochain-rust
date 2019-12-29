@@ -38,12 +38,12 @@ pub fn naive_sharding_should_store(
     node_count: u64,
     redundant_count: u64,
 ) -> bool {
-    // if there are < 50 nodes, everyone should store everything
+    // if there are < `redundant_count` nodes, everyone should store everything
     if node_count <= redundant_count {
         return true;
     }
 
-    // divide up the space so on average data will be stored by 50 nodes
+    // divide up the space so on average data will be stored by `redundant_count` nodes
     let dist: f64 = ARC_LENGTH_MAX as f64 / (node_count as f64 / redundant_count as f64);
 
     // determine if this specific piece of data should be stored by this node

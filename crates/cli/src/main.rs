@@ -162,6 +162,11 @@ enum Cli {
         /// message to send to the sim2h server ('ping' or 'status')
         message: String,
     },
+    Walkman {
+        #[structopt]
+        /// Path to walkman cassette file for playback
+        cassette: PathBuf,
+    },
 }
 arg_enum! {
     #[derive(Debug)]
@@ -326,9 +331,11 @@ fn run() -> HolochainResult<()> {
         }
 
         Cli::Sim2hClient { url, message } => {
-            println!("url: {}", &url);
-            println!("message: {}", &message);
             cli::sim2h_client(url, message)?;
+        }
+
+        Cli::Walkman { cassette } => {
+            cli::walkman(cassette)?;
         }
     }
 

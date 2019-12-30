@@ -48,6 +48,8 @@ use rand::{seq::SliceRandom, thread_rng};
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
+    fs::File,
+    // io::Write,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -127,6 +129,7 @@ pub struct Sim2h {
     missing_aspects_resync: Instant,
     debug_dump_time: Option<Instant>,
     dht_algorithm: DhtAlgorithm,
+    walkman_cassette: Option<File>,
 }
 
 impl Sim2h {
@@ -136,6 +139,12 @@ impl Sim2h {
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
+
+        let walkman_cassette = std::env::var("WALKMAN_DUMP_SIM2H")
+            .map(|path| {
+                File::open(&path).expect(&format!("Could not open cassette path: {}", path))
+            })
+            .ok();
 
         let mut sim2h = Sim2h {
             crypto,
@@ -155,6 +164,7 @@ impl Sim2h {
             } else {
                 None
             },
+            walkman_cassette,
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -214,6 +224,16 @@ impl Sim2h {
     fn priv_check_incoming_messages(&mut self) {
         if let Ok((url, msg)) = self.msg_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(url).into();
+
+            // if let Some(cassette) = self.walkman_cassette {
+            //     write!(
+            //         cassette,
+            //         "{}",
+            //         serde_json::to_string(msg).expect("Can serialize WireMessage")
+            //     )
+            //     .expect("Can write to file");
+            // }
+
             match msg {
                 Ok(frame) => match frame {
                     WsFrame::Text(s) => self.priv_drop_connection_for_error(

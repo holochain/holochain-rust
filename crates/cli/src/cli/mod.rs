@@ -18,4 +18,5 @@ pub use self::{
     run::{get_interface_type_string, hc_run_bundle_configuration, hc_run_configuration, run},
     sim2h_client::sim2h_client,
     test::{test, TEST_DIR_NAME},
+    walkman::walkman,
 };

@@ -157,6 +157,7 @@ impl Sim2h {
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
 
+        sim2h.priv_check_incoming_connections();
         sim2h
     }
 
@@ -183,52 +184,60 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) {
-        let limbo_cnt = self
-            .connection_states
-            .read()
-            .iter()
-            .filter(|(_k, v)| {
-                if let ConnectionState::Limbo(_) = v {
-                    true
-                } else {
-                    false
+        let connection_states = self.connection_states;
+        let open_connections = self.open_connections;
+        let metric_publisher = self.metric_publisher;
+        let msg_send = self.msg_send;
+        let pool = self.pool;
+        let wss_recv = self.wss_recv;
+
+        std::thread::spawn(|| loop {
+            let limbo_cnt = connection_states
+                .read()
+                .iter()
+                .filter(|(_k, v)| {
+                    if let ConnectionState::Limbo(_) = v {
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .count() as f64;
+
+            let limbo_states_metric = holochain_metrics::Metric::new_timestamped_now(
+                "sim2h.connection_states.limbo",
+                None,
+                limbo_cnt,
+            );
+
+            let joined_states_metric = holochain_metrics::Metric::new_timestamped_now(
+                "sim2h.connection_states.joined",
+                None,
+                connection_states.read().len() as f64 - limbo_cnt,
+            );
+
+            metric_publisher
+                .write()
+                .unwrap()
+                .publish(&limbo_states_metric);
+            metric_publisher
+                .write()
+                .unwrap()
+                .publish(&joined_states_metric);
+
+            if let Ok(wss) = wss_recv.try_recv() {
+                let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+                let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
+                let job = Arc::new(Mutex::new(job));
+                if let Err(error) = Self::handle_incoming_connect(connection_states, url.clone()) {
+                    error!("Error handling incoming connection: {:?}", error);
+                    return;
                 }
-            })
-            .count() as f64;
-
-        let limbo_states_metric = holochain_metrics::Metric::new_timestamped_now(
-            "sim2h.connection_states.limbo",
-            None,
-            limbo_cnt,
-        );
-
-        let joined_states_metric = holochain_metrics::Metric::new_timestamped_now(
-            "sim2h.connection_states.joined",
-            None,
-            self.connection_states.read().len() as f64 - limbo_cnt,
-        );
-
-        self.metric_publisher
-            .write()
-            .unwrap()
-            .publish(&limbo_states_metric);
-        self.metric_publisher
-            .write()
-            .unwrap()
-            .publish(&joined_states_metric);
-
-        if let Ok(wss) = self.wss_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-            let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
-            let job = Arc::new(Mutex::new(job));
-            if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                error!("Error handling incoming connection: {:?}", error);
-                return;
+                open_connections.insert(url, (job.clone(), outgoing_send));
+                pool.push_job(Box::new(job));
             }
-            self.open_connections
-                .insert(url, (job.clone(), outgoing_send));
-            self.pool.push_job(Box::new(job));
-        }
+            std::thread::sleep(std::time::Duration::from_millis(1))
+        });
     }
 
     /// we received some kind of error related to a stream/socket
@@ -424,11 +433,13 @@ impl Sim2h {
     }
 
     // handler for incoming connections
-    fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
+    pub fn handle_incoming_connect(
+        connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
+        uri: Lib3hUri,
+    ) -> Sim2hResult<bool> {
         trace!("handle_incoming_connect entered");
         info!("New connection from {:?}", uri);
-        if let Some(_old) = self
-            .connection_states
+        if let Some(_old) = connection_states
             .write()
             .insert(uri.clone(), ConnectionState::new())
         {
@@ -538,7 +549,8 @@ impl Sim2h {
             self.num_ticks = 0;
         }
 
-        self.priv_check_incoming_connections();
+        // Now down in separate thread!
+        //self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
 
         if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {

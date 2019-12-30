@@ -32,7 +32,7 @@ use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{
-        EntryData, EntryListData, FetchEntryData, GetListData, Opaque, SpaceData,
+        EntryData, EntryListData, FetchEntryData, GetListData, Opaque, QueryEntryData, SpaceData,
         StoreEntryAspectData,
     },
     protocol::*,
@@ -334,6 +334,57 @@ impl Sim2hState {
                 **a != *for_agent_id && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
             })
             .cloned()
+    }
+
+    fn build_query(
+        &self,
+        space_address: SpaceHash,
+        query_data: QueryEntryData,
+        redundant_count: u64,
+    ) -> Vec<(AgentId, Lib3hUri, WireMessage)> {
+        let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
+        let agent_pool = self
+            .get_space(&space_address)
+            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let query_target = if agent_pool.is_empty() {
+            // If there is nobody we could ask, just send the query back
+            query_data.requester_agent_id.clone()
+        } else {
+            let agents_with_all_aspects_for_entry = agent_pool
+                .iter()
+                .filter(|agent| {
+                    !self
+                        .get_space(&space_address)
+                        .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
+                })
+                .cloned()
+                .collect::<Vec<AgentId>>();
+
+            let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
+                // If there is nobody who as all aspects of an entry, just
+                // ask somebody of that shard:
+                agent_pool
+            } else {
+                agents_with_all_aspects_for_entry
+            };
+
+            let agent_slice = &mut agents_to_sample_from[..];
+            agent_slice.shuffle(&mut thread_rng());
+            agent_slice[0].clone()
+        };
+
+        let maybe_url = self.lookup_joined(&space_address, &query_target);
+        if maybe_url.is_none() {
+            error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
+            return vec![];
+        }
+        let url = maybe_url.unwrap();
+        let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
+        vec![(query_target, url, query_message)]
     }
 
     fn build_aspects_from_arbitrary_agent(
@@ -1101,51 +1152,18 @@ impl Sim2h {
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
-                    let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
-                    let agent_pool = self
-                        .state.read()
-                        .get_space(&space_address)
-                        .agents_supposed_to_hold_entry(entry_loc, redundant_count)
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<_>>();
-
-                    let query_target = if agent_pool.is_empty() {
-                        // If there is nobody we could ask, just send the query back
-                        query_data.requester_agent_id.clone()
-                    } else {
-                        let agents_with_all_aspects_for_entry = agent_pool.iter()
-                            .filter(|agent|{
-                                !self
-                                    .state.read()
-                                    .get_space(&space_address)
-                                    .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
-                            })
-                            .cloned()
-                            .collect::<Vec<AgentId>>();
-
-                        let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
-                            // If there is nobody who as all aspects of an entry, just
-                            // ask somebody of that shard:
-                            agent_pool
-                        } else {
-                            agents_with_all_aspects_for_entry
-                        };
-
-                        let agent_slice = &mut agents_to_sample_from[..];
-                        agent_slice.shuffle(&mut thread_rng());
-                        agent_slice[0].clone()
-                    };
-
-
-                    let maybe_url = self.lookup_joined(space_address, &query_target);
-                    if maybe_url.is_none() {
-                        error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
-                        return Ok(())
-                    }
-                    let url = maybe_url.unwrap();
-                    let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
-                    self.send(query_target, url, &query_message);
+                    let state = self.state.clone();
+                    let tx = self.tp_send.clone();
+                    let space_address = space_address.clone();
+                       let query_data = query_data.clone();
+                    self.threadpool.execute(move || {
+                        let messages =
+                            state
+                            .read()
+                            .build_query(space_address,query_data,redundant_count);
+                        tx.send(PoolTask::BuildMessages(messages))
+                            .expect("should send");
+                    });
                     Ok(())
                 } else {
                     Err("Got ClientToLib3h::QueryEntry in full-sync mode".into())

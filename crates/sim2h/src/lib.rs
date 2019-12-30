@@ -179,7 +179,7 @@ impl Sim2h {
     }
 
     /// if our listening socket has accepted any new connections, set them up
-    fn priv_check_incoming_connections(&mut self) {
+    fn priv_check_incoming_connections(&mut self) -> bool {
         if let Ok(wss) = self.wss_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
             let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
@@ -191,6 +191,9 @@ impl Sim2h {
             self.open_connections
                 .insert(url, (job.clone(), outgoing_send));
             self.pool.push_job(Box::new(job));
+            true
+        } else {
+            false
         }
     }
 
@@ -206,7 +209,7 @@ impl Sim2h {
     }
 
     /// if our connections sent us any data, process it
-    fn priv_check_incoming_messages(&mut self) {
+    fn priv_check_incoming_messages(&mut self) -> bool {
         if let Ok((url, msg)) = self.msg_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(url).into();
             match msg {
@@ -241,6 +244,9 @@ impl Sim2h {
                 },
                 Err(e) => self.priv_drop_connection_for_error(url, e),
             }
+            true
+        } else {
+            false
         }
     }
 
@@ -484,15 +490,16 @@ impl Sim2h {
     }
 
     // process transport and  incoming messages from it
-    pub fn process(&mut self) -> Sim2hResult<()> {
+    pub fn process(&mut self) -> Sim2hResult<bool> {
         self.num_ticks += 1;
         if self.num_ticks % 60000 == 0 {
             debug!(".");
             self.num_ticks = 0;
         }
 
-        self.priv_check_incoming_connections();
-        self.priv_check_incoming_messages();
+        let did_work_1 = self.priv_check_incoming_connections();
+        let did_work_2 = self.priv_check_incoming_messages();
+        let did_work = did_work_1 || did_work_2;
 
         if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
             self.rrdht_arc_radius_recalc = std::time::Instant::now()
@@ -515,7 +522,7 @@ impl Sim2h {
             self.retry_sync_missing_aspects();
         }
 
-        Ok(())
+        Ok(did_work)
     }
 
     fn handle_unseen_aspects(

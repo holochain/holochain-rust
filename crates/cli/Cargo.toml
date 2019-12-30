@@ -4,20 +4,20 @@ description = "holochain app scaffolding tools"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.41-alpha4"
+version = "0.0.42-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.41-alpha4", path = "../core_types" }
-holochain_core = { version = "=0.0.41-alpha4", path = "../core" }
-holochain_common = { version = "=0.0.41-alpha4", path = "../common" }
-holochain_conductor_lib = { version = "=0.0.41-alpha4", path = "../conductor_lib" }
-holochain_net = { version = "=0.0.41-alpha4", path = "../net" }
-holochain_dpki = { version = "=0.0.41-alpha4", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.41-alpha4", path = "../locksmith" }
-sim2h = { version = "=0.0.41-alpha4", path = "../sim2h" }
+holochain_core_types = { version = "=0.0.42-alpha1", path = "../core_types" }
+holochain_core = { version = "=0.0.42-alpha1", path = "../core" }
+holochain_common = { version = "=0.0.42-alpha1", path = "../common" }
+holochain_conductor_lib = { version = "=0.0.42-alpha1", path = "../conductor_lib" }
+holochain_net = { version = "=0.0.42-alpha1", path = "../net" }
+holochain_dpki = { version = "=0.0.42-alpha1", path = "../dpki" }
+holochain_locksmith = { version = "=0.0.42-alpha1", path = "../locksmith" }
+sim2h = { version = "=0.0.42-alpha1", path = "../sim2h" }
 lib3h_crypto_api = "=0.0.25"
-in_stream = { version = "=0.0.41-alpha4", path = "../in_stream" }
+in_stream = { version = "=0.0.42-alpha1", path = "../in_stream" }
 url2 = "=0.0.4"
 lib3h_sodium = "=0.0.25"
 holochain_json_api = "=0.0.17"

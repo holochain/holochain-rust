@@ -220,8 +220,7 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) -> bool {
-        let v: Vec<_> = self.msg_recv.try_iter().collect();
-        for (url, msg) in v {
+        if let Ok((url, msg)) = self.msg_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(url).into();
             match msg {
                 Ok(frame) => match frame {
@@ -259,8 +258,10 @@ impl Sim2h {
                 },
                 Err(e) => self.priv_drop_connection_for_error(url, e),
             }
+            true
+        } else {
+            false
         }
-        false
     }
 
     /// recalculate arc radius for our connections

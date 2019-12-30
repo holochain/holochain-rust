@@ -390,12 +390,13 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let perf = false; //is_program_in_path("perf") && get_as_bool("perf", &params_map, Some(false))?;
+        let perf = is_program_in_path("perf") && get_as_bool("perf", &params_map, Some(true))?;
 
         println!("perf enabled: {:?}", perf);
         let mut conductor = if perf {
-            Command::new("perf")
+            Command::new("sudo")
                 .args(&[
+                    "perf",
                     "record",
                     "--call-graph",
                     "dwarf",

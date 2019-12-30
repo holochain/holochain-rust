@@ -76,7 +76,7 @@ impl Pool {
                                 recv.recv_timeout(std::time::Duration::from_millis(5))
                             {
                                 let r = with_latency_publishing!(
-                                    format!("{:?}.job", thread_name),
+                                    format!("{}.job", thread_name),
                                     metric_publisher,
                                     || job.run()
                                 );

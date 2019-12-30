@@ -5,6 +5,8 @@ extern crate env_logger;
 extern crate lib3h_crypto_api;
 extern crate log;
 extern crate nanoid;
+extern crate num_cpus;
+extern crate threadpool;
 #[macro_use]
 extern crate serde;
 #[macro_use]
@@ -51,6 +53,7 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
+use threadpool::ThreadPool;
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -126,6 +129,9 @@ pub struct Sim2h {
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
     dht_algorithm: DhtAlgorithm,
+    threadpool: ThreadPool,
+    tp_send: crossbeam_channel::Sender<Result<(Lib3hUri, WireMessage, AgentPubKey), ()>>,
+    tp_recv: crossbeam_channel::Receiver<Result<(Lib3hUri, WireMessage, AgentPubKey), ()>>,
 }
 
 impl Sim2h {
@@ -135,6 +141,7 @@ impl Sim2h {
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
+        let (tp_send, tp_recv) = crossbeam_channel::unbounded();
 
         let mut sim2h = Sim2h {
             crypto,
@@ -150,6 +157,9 @@ impl Sim2h {
             rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
+            threadpool: ThreadPool::new(num_cpus::get()),
+            tp_send,
+            tp_recv,
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -220,18 +230,22 @@ impl Sim2h {
                     ),
                     WsFrame::Binary(b) => {
                         let payload: Opaque = b.into();
-                        match Sim2h::verify_payload(payload.clone()) {
-                            Ok((source, wire_message)) => {
-                                if let Err(error) = self.handle_message(&url, wire_message, &source)
-                                {
-                                    error!("Error handling message: {:?}", error);
+                        let tx = self.tp_send.clone();
+                        self.threadpool.execute(move || {
+                            match Sim2h::verify_payload(payload.clone()) {
+                                Ok((source, wire_message)) => {
+                                    tx.send(Ok((url.clone(), wire_message, source.clone())))
+                                        .expect("Could not send !");
+                                }
+                                Err(error) => {
+                                    error!(
+                                        "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                        error, payload
+                                    );
+                                    tx.send(Err(())).expect("to be able to send");
                                 }
                             }
-                            Err(error) => error!(
-                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                error, payload
-                            ),
-                        }
+                        });
                     }
                     // TODO - we should use websocket ping/pong
                     //        instead of rolling our own on top of Binary
@@ -496,6 +510,15 @@ impl Sim2h {
             debug!(".");
             self.num_ticks = 0;
         }
+
+        match self.tp_recv.try_recv() {
+            Ok(Ok((url, wire_message, source))) => {
+                if let Err(error) = self.handle_message(&url, wire_message, &source) {
+                    error!("Error handling message: {:?}", error);
+                }
+            }
+            _ => (),
+        };
 
         let did_work_1 = self.priv_check_incoming_connections();
         let did_work_2 = self.priv_check_incoming_messages();

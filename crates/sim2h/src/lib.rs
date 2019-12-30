@@ -237,6 +237,10 @@ impl Sim2hState {
     }
 }
 
+enum PoolTask {
+    VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
+}
+
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
@@ -252,8 +256,8 @@ pub struct Sim2h {
     missing_aspects_resync: std::time::Instant,
     dht_algorithm: DhtAlgorithm,
     threadpool: ThreadPool,
-    tp_send: crossbeam_channel::Sender<Result<(Lib3hUri, WireMessage, AgentPubKey), ()>>,
-    tp_recv: crossbeam_channel::Receiver<Result<(Lib3hUri, WireMessage, AgentPubKey), ()>>,
+    tp_send: crossbeam_channel::Sender<PoolTask>,
+    tp_recv: crossbeam_channel::Receiver<PoolTask>,
 }
 
 impl Sim2h {
@@ -361,15 +365,20 @@ impl Sim2h {
                         self.threadpool.execute(move || {
                             match Sim2h::verify_payload(payload.clone()) {
                                 Ok((source, wire_message)) => {
-                                    tx.send(Ok((url.clone(), wire_message, source.clone())))
-                                        .expect("Could not send !");
+                                    tx.send(PoolTask::VerifyPayload(Ok((
+                                        url.clone(),
+                                        wire_message,
+                                        source.clone(),
+                                    ))))
+                                    .expect("Could not send !");
                                 }
                                 Err(error) => {
                                     error!(
                                         "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
                                         error, payload
                                     );
-                                    tx.send(Err(())).expect("to be able to send");
+                                    tx.send(PoolTask::VerifyPayload(Err(())))
+                                        .expect("to be able to send");
                                 }
                             }
                         });
@@ -620,7 +629,7 @@ impl Sim2h {
         }
 
         match self.tp_recv.try_recv() {
-            Ok(Ok((url, wire_message, source))) => {
+            Ok(PoolTask::VerifyPayload(Ok((url, wire_message, source)))) => {
                 if let Err(error) = self.handle_message(&url, wire_message, &source) {
                     error!("Error handling message: {:?}", error);
                 }

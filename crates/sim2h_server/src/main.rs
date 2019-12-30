@@ -56,17 +56,20 @@ fn main() {
 
     loop {
         let result = sim2h.process();
-        if let Err(e) = result {
-            if e.to_string().contains("Bind error:") {
-                println!("{:?}", e);
-                exit(1)
-            } else {
-                error!("{}", e.to_string())
+        match result {
+            Err(e) => {
+                if e.to_string().contains("Bind error:") {
+                    println!("{:?}", e);
+                    exit(1)
+                } else {
+                    error!("{}", e.to_string())
+                }
             }
-        }
-        // if no work sleep all
-        if let Ok(false) = result {
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            Ok(false) => {
+                // if no work sleep a little
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            _ => (),
         }
     }
 }

@@ -186,7 +186,7 @@ impl Sim2h {
             let job = Arc::new(Mutex::new(job));
             if let Err(error) = self.handle_incoming_connect(url.clone()) {
                 error!("Error handling incoming connection: {:?}", error);
-                return;
+                return true; //did work despite error.
             }
             self.open_connections
                 .insert(url, (job.clone(), outgoing_send));

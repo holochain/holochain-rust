@@ -25,9 +25,9 @@ pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> L
 }
 
 #[allow(clippy::borrowed_box)]
-pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: EntryHash) -> Location {
-    let entry_hash_string: String = entry_hash.into();
-    anything_to_location(crypto, &entry_hash_string)
+pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) -> Location {
+    let entry_hash_str: String = entry_hash.clone().into();
+    anything_to_location(crypto, &entry_hash_str)
 }
 
 /// implement a super simple sharding algorithm

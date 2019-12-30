@@ -25,9 +25,10 @@ pub mod websocket;
 pub mod wire_message;
 
 pub use crate::message_log::MESSAGE_LOGGER;
-use crate::{crypto::*, error::*};
+use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{
@@ -97,9 +98,7 @@ pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
 pub type TcpWss = InStreamWss<InStreamTcp>;
 
 mod job;
-//use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};
 use job::*;
-//use lib3h::rrdht_util::Location;
 
 #[derive(Clone)]
 pub enum DhtAlgorithm {
@@ -239,6 +238,7 @@ impl Sim2hState {
 }
 
 pub struct Sim2h {
+    crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     state: Arc<RwLock<Sim2hState>>,
     pool: Pool,
@@ -265,12 +265,13 @@ impl Sim2h {
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
         let (tp_send, tp_recv) = crossbeam_channel::unbounded();
         let state = Arc::new(RwLock::new(Sim2hState {
-            crypto,
+            crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
             open_connections: HashMap::new(),
             spaces: HashMap::new(),
         }));
         let mut sim2h = Sim2h {
+            crypto,
             state,
             bound_uri: None,
             pool,
@@ -817,10 +818,11 @@ impl Sim2h {
 
                         DhtAlgorithm::NaiveSharding {redundant_count} => {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
+                                let entry_loc = entry_location(&self.crypto, entry_address);
                                 let agent_pool = self
                                     .state.write()
                                     .get_or_create_space(&space_address)
-                                    .agents_supposed_to_hold_entry(entry_address.clone(), redundant_count)
+                                    .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                                     .keys()
                                     .cloned()
                                     .collect::<Vec<AgentPubKey>>();
@@ -876,10 +878,11 @@ impl Sim2h {
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
+                    let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
                     let agent_pool = self
                         .state.write()
                         .get_or_create_space(&space_address)
-                        .agents_supposed_to_hold_entry(query_data.entry_address.clone(), redundant_count)
+                        .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                         .keys()
                         .cloned()
                         .collect::<Vec<_>>();
@@ -1028,11 +1031,10 @@ impl Sim2h {
             DhtAlgorithm::FullSync => {
                 self.all_agents_except_one(space_address.clone(), Some(&provider))
             }
-            DhtAlgorithm::NaiveSharding { redundant_count } => self.agents_in_neighbourhood(
-                space_address.clone(),
-                entry_data.entry_address.clone(),
-                redundant_count,
-            ),
+            DhtAlgorithm::NaiveSharding { redundant_count } => {
+                let entry_loc = entry_location(&self.crypto, &entry_data.entry_address);
+                self.agents_in_neighbourhood(space_address.clone(), entry_loc, redundant_count)
+            }
         };
 
         let aspect_addresses = entry_data
@@ -1104,13 +1106,13 @@ impl Sim2h {
     fn agents_in_neighbourhood(
         &self,
         space: SpaceHash,
-        entry_hash: EntryHash,
+        entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
         self.state
             .write()
             .get_or_create_space(&space)
-            .agents_supposed_to_hold_entry(entry_hash, redundant_count)
+            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
             .into_iter()
             .collect::<Vec<(AgentId, AgentInfo)>>()
     }

@@ -1,7 +1,7 @@
 //! implements caching structures for spaces and aspects
 use crate::{
     error::*,
-    naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store},
+    naive_sharding::{entry_location, naive_sharding_should_store},
     AgentId,
 };
 use lib3h::rrdht_util::*;
@@ -184,16 +184,15 @@ impl Space {
 
     pub(crate) fn agents_supposed_to_hold_entry(
         &self,
-        entry_hash: EntryHash,
+        entry_location: Location,
         redundant_count: u64,
     ) -> HashMap<AgentId, AgentInfo> {
         self.agents
             .iter()
-            .filter(|(agent, _)| {
-                let agent_id_string: String = (*agent).clone().into();
+            .filter(|(_agent, info)| {
                 naive_sharding_should_store(
-                    anything_to_location(&self.crypto, &agent_id_string),
-                    entry_location(&self.crypto, entry_hash.clone()),
+                    info.location,
+                    entry_location,
                     self.agents.len() as u64,
                     redundant_count,
                 )
@@ -207,12 +206,16 @@ impl Space {
     }
 
     pub fn aspects_in_shard_for_agent(&self, agent: &AgentId, redundant_count: u64) -> AspectList {
+        let agent_loc = self
+            .agents
+            .get(agent)
+            .expect("cannot fetch aspects for unknown agent")
+            .location;
         self.all_aspects_hashes
             .filtered_by_entry_hash(|entry_hash| {
-                let agent_id_string: String = agent.clone().into();
                 naive_sharding_should_store(
-                    anything_to_location(&self.crypto, &agent_id_string),
-                    entry_location(&self.crypto, entry_hash.clone()),
+                    agent_loc,
+                    entry_location(&self.crypto, &entry_hash),
                     self.agents.len() as u64,
                     redundant_count,
                 )

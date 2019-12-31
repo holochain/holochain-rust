@@ -255,7 +255,7 @@ impl Sim2h {
                             ),
                         }
                     }
-                    // TODO - we should use websoc2612ket ping/pong
+                    // TODO - we should use websocket ping/pong
                     //        instead of rolling our own on top of Binary
                     WsFrame::Ping(_) => (),
                     WsFrame::Pong(_) => (),

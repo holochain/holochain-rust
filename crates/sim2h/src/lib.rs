@@ -688,7 +688,10 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) -> bool {
-        println!("Current messgage queue length: {}", self.msg_recv.len());
+        let len = self.msg_recv.len();
+        if len > 0 {
+            println!("Hanlding {} incoming messages", len);
+        }
         let v: Vec<_> = self.msg_recv.try_iter().collect();
         for (url, msg) in v {
             let url: Lib3hUri = url::Url::from(url).into();

@@ -706,6 +706,10 @@ impl Sim2h {
                         format!("unexpected text message: {:?}", s).into(),
                     ),
                     WsFrame::Binary(b) => {
+                        let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
+                        if debug {
+                            println!("receved a frame from zippy ({})", url);
+                        }
                         let payload: Opaque = b.into();
                         let tx = self.tp_send.clone();
                         self.threadpool.execute(move || {
@@ -945,6 +949,10 @@ impl Sim2h {
                 }
             }
             Ok(PoolTask::VerifyPayload(Ok((url, wire_message, source)))) => {
+                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
+                if debug {
+                    println!("payload verified from from zippy ({}) message is {:?}", url, wire_message);
+                }
                 if let Err(error) = self.handle_message(&url, wire_message, &source) {
                     error!("Error handling message: {:?}", error);
                 }

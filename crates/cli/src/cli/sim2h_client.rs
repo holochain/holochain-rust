@@ -46,7 +46,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
         }
     });
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(10000))
+        .checked_add(std::time::Duration::from_millis(60000))
         .unwrap();
     loop {
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -97,7 +97,7 @@ impl Job {
         println!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
-
+        println!("Await successfull");
         let out = Self {
             agent_id,
             pub_key: Arc::new(Mutex::new(pub_key)),

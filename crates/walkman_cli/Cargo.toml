@@ -1,0 +1,11 @@
+[package]
+name = "holochain_walkman"
+version = "0.0.42-alpha1"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+
+[dependencies]
+serde_derive = "=1.0.89"
+serde_millis = "0.1.1"
+serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+url = "=2.1.0"

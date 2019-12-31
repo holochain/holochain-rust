@@ -163,7 +163,7 @@ enum Cli {
         message: String,
     },
     Walkman {
-        #[structopt]
+        #[structopt()]
         /// Path to walkman cassette file for playback
         cassette: PathBuf,
     },
@@ -335,7 +335,7 @@ fn run() -> HolochainResult<()> {
         }
 
         Cli::Walkman { cassette } => {
-            cli::walkman(cassette)?;
+            cli::walkman(cassette);
         }
     }
 

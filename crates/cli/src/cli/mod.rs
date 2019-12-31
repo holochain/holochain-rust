@@ -7,6 +7,7 @@ pub mod package;
 pub mod run;
 mod sim2h_client;
 pub mod test;
+mod walkman;
 
 pub use self::{
     chain_log::{chain_list, chain_log},

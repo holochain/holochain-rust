@@ -21,6 +21,8 @@ members = [
   "crates/sim1h",
   "crates/sim2h",
   "crates/sim2h_server",
+  "crates/walkman_cli",
+  "crates/walkman_types",
   "crates/wasm_utils"
 ]
 exclude = [

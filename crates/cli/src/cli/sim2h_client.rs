@@ -34,7 +34,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
     let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, maybe_port.unwrap()));
 
     println!("connecting to: {}", url);
-    let mut client = Client::new(&url)?;
+    let mut client = Sim2hClient::new(&url)?;
     client.send_wire(match message_string.as_ref() {
         "ping" => WireMessage::Ping,
         "status" => WireMessage::Status,
@@ -75,7 +75,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
 thread_local! {
     pub static CRYPTO: Box<dyn CryptoSystem> = Box::new(SodiumCryptoSystem::new());
 }
-struct Client {
+pub struct Sim2hClient {
     agent_id: String,
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
@@ -84,7 +84,7 @@ struct Client {
     //    wss_connection: InStreamWss<InStreamTls<InStreamTcp>>,
 }
 
-impl Client {
+impl Sim2hClient {
     pub fn new(connect_uri: &Url2) -> Result<Self, String> {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());

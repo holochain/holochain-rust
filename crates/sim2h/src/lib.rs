@@ -664,6 +664,7 @@ impl Sim2h {
                 error!("Error handling incoming connection: {:?}", error);
                 return true; //did work despite error.
             }
+            println!("adding connection job for {}", url);
             self.state
                 .write()
                 .open_connections
@@ -764,7 +765,7 @@ impl Sim2h {
 
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        trace!("join entered");
+        println!("join entered for {} with {:?}", uri, data);
         let result =
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
                 let _ = self.state.write().connection_states.insert(
@@ -848,7 +849,7 @@ impl Sim2h {
             return Ok(());
         }
         if message == WireMessage::Status {
-            trace!("Status -> StatusResponse");
+            println!("Status -> StatusResponse");
             let (spaces_len, connection_count) = {
                 let state = self.state.read();
                 (state.spaces.len(), state.open_connections.len())
@@ -886,6 +887,7 @@ impl Sim2h {
                     }
                     self.join(uri, &data)
                 } else {
+                    println!("inserting into pending message while in limbo.");
                     // TODO: maybe have some upper limit on the number of messages
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);

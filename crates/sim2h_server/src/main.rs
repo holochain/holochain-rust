@@ -6,7 +6,7 @@ use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::error;
 use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
-use std::{path::PathBuf, process::exit};
+use std::{path::PathBuf, process::exit, sync::Arc};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -55,8 +55,10 @@ fn main() {
         });
     }
 
+    let sim2h = Arc::new(sim2h);
     for _i in 0..num_cpus::get() {
-        loop {
+        let sim2h = sim2h.clone();
+        let _result = std::thread::spawn(move || loop {
             let result = sim2h.process();
             if let Err(e) = result {
                 if e.to_string().contains("Bind error:") {
@@ -67,6 +69,6 @@ fn main() {
                 }
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
-        }
+        });
     }
 }

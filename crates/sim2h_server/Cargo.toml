@@ -13,9 +13,9 @@ repository = "https://github.com/holochain/sim2h"
 [dependencies]
 sim2h = { version = "=0.0.42-alpha1", path = "../sim2h" }
 detach = "=0.0.19"
-lib3h = "=0.0.25"
-lib3h_protocol = "=0.0.25"
-lib3h_sodium = "=0.0.25"
+lib3h = "=0.0.26"
+lib3h_protocol = "=0.0.26"
+lib3h_sodium = "=0.0.26"
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"

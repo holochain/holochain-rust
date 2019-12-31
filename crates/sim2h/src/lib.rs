@@ -52,7 +52,9 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
-use holochain_metrics::{metrics::MetricPublisher, self_with_latency_publishing};
+use holochain_metrics::{
+    metrics::MetricPublisher, self_with_latency_publishing, with_latency_publishing,
+};
 use parking_lot::RwLock;
 
 /// if we can't acquire a lock in 20 seconds, panic!
@@ -90,8 +92,9 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
         self.send(v).expect("failed to send on crossbeam_channel");
     }
 }
-
+#[allow(dead_code)]
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
+#[allow(dead_code)]
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -130,11 +133,10 @@ pub struct Sim2h {
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
     open_connections: OpenConnections,
-    num_ticks: u64,
     /// when should we eecalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: std::time::Instant,
+    rrdht_arc_radius_recalc: Arc<RwLock<std::time::Instant>>,
     /// when should we try to resync nodes that are still missing aspect data
-    missing_aspects_resync: std::time::Instant,
+    missing_aspects_resync: Arc<RwLock<std::time::Instant>>,
     metric_publisher: Arc<std::sync::RwLock<holochain_metrics::logger::LoggerMetricPublisher>>,
     dht_algorithm: DhtAlgorithm,
 }
@@ -157,9 +159,8 @@ impl Sim2h {
             msg_send,
             msg_recv,
             open_connections: Arc::new(CHashMap::new()),
-            num_ticks: 0,
-            rrdht_arc_radius_recalc: std::time::Instant::now(),
-            missing_aspects_resync: std::time::Instant::now(),
+            rrdht_arc_radius_recalc: Arc::new(RwLock::new(std::time::Instant::now())),
+            missing_aspects_resync: Arc::new(RwLock::new(std::time::Instant::now())),
             metric_publisher: Default::default(),
             dht_algorithm: DhtAlgorithm::FullSync,
         };
@@ -192,7 +193,7 @@ impl Sim2h {
     }
 
     /// if our listening socket has accepted any new connections, set them up
-    fn priv_check_incoming_connections(&mut self) {
+    fn priv_check_incoming_connections(&self) {
         for _i in 0..NUM_CONNECTION_THREADS {
             let connection_states = self.connection_states.clone();
             let open_connections = self.open_connections.clone();
@@ -221,7 +222,7 @@ impl Sim2h {
 
     /// we received some kind of error related to a stream/socket
     /// print some debugging and disconnect it
-    fn priv_drop_connection_for_error(&mut self, uri: Lib3hUri, error: Sim2hError) {
+    fn priv_drop_connection_for_error(&self, uri: Lib3hUri, error: Sim2hError) {
         error!(
             "Transport error occurred on connection to {}: {:?}",
             uri, error,
@@ -236,7 +237,7 @@ impl Sim2h {
     }
 
     /// if our connections sent us any data, process it
-    fn priv_check_incoming_messages(&mut self) {
+    fn priv_check_incoming_messages(&self) {
         if let Ok((url, msg)) = self.msg_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(url).into();
             debug!("Got msg {:?}", msg);
@@ -284,17 +285,23 @@ impl Sim2h {
     }
 
     /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&mut self) {
-        let mut spaces = self.spaces.write();
+    fn recalc_rrdht_arc_radius(&self) {
+        with_latency_publishing!(
+            "sim2h-recalc-rrdht-arc-radius",
+            self.metric_publisher,
+            || {
+                let mut spaces = self.spaces.write();
 
-        for (_, space) in spaces.iter_mut() {
-            space.write().recalc_rrdht_arc_radius();
-        }
+                for (_, space) in spaces.iter_mut() {
+                    space.write().recalc_rrdht_arc_radius();
+                }
+            }
+        );
         trace!("recalc arc radius: done")
     }
 
     fn request_authoring_list(
-        &mut self,
+        &self,
         uri: Lib3hUri,
         space_address: SpaceHash,
         provider_agent_id: AgentId,
@@ -316,7 +323,7 @@ impl Sim2h {
     }
 
     fn request_gossiping_list(
-        &mut self,
+        &self,
         uri: Lib3hUri,
         space_address: SpaceHash,
         provider_agent_id: AgentId,
@@ -357,7 +364,7 @@ impl Sim2h {
     }
 
     fn get_or_create_space_mut_result<F, E>(
-        &mut self,
+        &self,
         space_address: &SpaceHash,
         mut f: F,
     ) -> Result<(), E>
@@ -378,7 +385,7 @@ impl Sim2h {
         f(spaces.get_mut(space_address).unwrap().write())
     }
 
-    fn get_or_create_space_mut<F>(&mut self, space_address: &SpaceHash, mut f: F) -> ()
+    fn get_or_create_space_mut<F>(&self, space_address: &SpaceHash, mut f: F) -> ()
     where
         F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> (),
     {
@@ -397,7 +404,7 @@ impl Sim2h {
     }
 
     // adds an agent to a space
-    fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
+    fn join(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         trace!("join entered");
         let result =
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
@@ -440,7 +447,7 @@ impl Sim2h {
     }
 
     // removes an agent from a space
-    fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
+    fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
                 Err(SPACE_MISMATCH_ERR_STR.into())
@@ -513,7 +520,7 @@ impl Sim2h {
 
     // handler for messages sent to sim2h
     fn handle_message(
-        &mut self,
+        &self,
         uri: &Lib3hUri,
         message: WireMessage,
         signer: &AgentId,
@@ -606,7 +613,7 @@ impl Sim2h {
         Ok((signed_message.provenance.source().into(), wire_message))
     }
 
-    pub fn process(&mut self) -> Sim2hResult<()> {
+    pub fn process(&self) -> Sim2hResult<()> {
         self_with_latency_publishing!(
             "sim2h.process",
             self.metric_publisher,
@@ -616,22 +623,18 @@ impl Sim2h {
     }
 
     // process transport and  incoming messages from it
-    fn process_internal(&mut self) -> Sim2hResult<()> {
+    fn process_internal(&self) -> Sim2hResult<()> {
         trace!("process");
-        self.num_ticks += 1;
-        if self.num_ticks % 60000 == 0 {
-            debug!(".");
-            self.num_ticks = 0;
-        }
 
         // Now done in a separate thread!
         //self.priv_check_incoming_connections();
         trace!("check incoming messages");
         self.priv_check_incoming_messages();
 
-        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
+        let rrdht_arc_radius_recalc = self.rrdht_arc_radius_recalc.clone();
+        if std::time::Instant::now() >= *rrdht_arc_radius_recalc.read() {
             trace!("recalc arc");
-            self.rrdht_arc_radius_recalc = std::time::Instant::now()
+            *rrdht_arc_radius_recalc.write() = std::time::Instant::now()
                 .checked_add(std::time::Duration::from_millis(
                     RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
                 ))
@@ -641,9 +644,10 @@ impl Sim2h {
             //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
         }
 
-        if std::time::Instant::now() >= self.missing_aspects_resync {
+        let missing_aspects_resync = self.missing_aspects_resync.clone();
+        if std::time::Instant::now() >= *missing_aspects_resync.read() {
             trace!("missing aspects resync");
-            self.missing_aspects_resync = std::time::Instant::now()
+            *missing_aspects_resync.write() = std::time::Instant::now()
                 .checked_add(std::time::Duration::from_millis(
                     RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
                 ))
@@ -656,7 +660,7 @@ impl Sim2h {
     }
 
     fn handle_unseen_aspects(
-        &mut self,
+        &self,
         uri: &Lib3hUri,
         space_address: &SpaceHash,
         agent_id: &AgentId,
@@ -697,7 +701,7 @@ impl Sim2h {
     // given an incoming messages, prepare a proxy message and whether it's an publish or request
     #[allow(clippy::cognitive_complexity)]
     fn handle_joined(
-        &mut self,
+        &self,
         uri: &Lib3hUri,
         space_address: &SpaceHash,
         agent_id: &AgentId,
@@ -1053,7 +1057,7 @@ impl Sim2h {
     }
 
     fn handle_new_entry_data(
-        &mut self,
+        &self,
         entry_data: EntryData,
         space_address: SpaceHash,
         provider: AgentPubKey,
@@ -1112,7 +1116,7 @@ impl Sim2h {
         }
     }
 
-    fn broadcast(&mut self, msg: &WireMessage, agents: Vec<(AgentId, AgentInfo)>) {
+    fn broadcast(&self, msg: &WireMessage, agents: Vec<(AgentId, AgentInfo)>) {
         for (agent, info) in agents {
             debug!("Broadcast: Sending to {:?}", info.uri);
             Self::send(
@@ -1127,7 +1131,7 @@ impl Sim2h {
     }
 
     fn all_agents_except_one(
-        &mut self,
+        &self,
         space_hash: SpaceHash,
         except: Option<&AgentId>,
     ) -> Vec<(AgentId, AgentInfo)> {
@@ -1148,7 +1152,7 @@ impl Sim2h {
     }
 
     fn agents_in_neighbourhood(
-        &mut self,
+        &self,
         space_hash: SpaceHash,
         entry_loc: Location,
         redundant_count: u64,
@@ -1209,7 +1213,7 @@ impl Sim2h {
         }
     }
 
-    fn retry_sync_missing_aspects(&mut self) {
+    fn retry_sync_missing_aspects(&self) {
         debug!("Checking for nodes with missing aspects to retry sync...");
         // Extract all needed info for the call to self.request_gossiping_list() below
         // as copies so we don't have to keep a reference to self.

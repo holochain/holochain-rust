@@ -23,9 +23,10 @@ pub mod websocket;
 pub mod wire_message;
 
 pub use crate::message_log::MESSAGE_LOGGER;
-use crate::{crypto::*, error::*};
+use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{
@@ -96,9 +97,7 @@ pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
 pub type TcpWss = InStreamWss<InStreamTcp>;
 
 mod job;
-//use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};
 use job::*;
-//use lib3h::rrdht_util::Location;
 
 #[derive(Clone)]
 pub enum DhtAlgorithm {
@@ -106,8 +105,8 @@ pub enum DhtAlgorithm {
     NaiveSharding { redundant_count: u64 },
 }
 
-pub type ConnectionStates = Arc<CHashMap<Lib3hUri, ConnectionState>>;
-pub type Spaces = Arc<RwLock<HashMap<SpaceHash, RwLock<Space>>>>;
+type ConnectionStates = Arc<CHashMap<Lib3hUri, ConnectionState>>;
+type Spaces = Arc<RwLock<HashMap<SpaceHash, RwLock<Space>>>>;
 type OpenConnections = Arc<
     CHashMap<
         Lib3hUri,
@@ -824,9 +823,10 @@ impl Sim2h {
 
                         DhtAlgorithm::NaiveSharding {redundant_count} => {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
+                                let entry_loc = entry_location(&self.crypto, entry_address);
                                 self.get_or_create_space2(&space_address, |space| {
                                     let agent_pool = space
-                                        .agents_supposed_to_hold_entry(entry_address.clone(), redundant_count)
+                                        .agents_supposed_to_hold_entry(entry_loc.clone(), redundant_count)
                                         .keys()
                                         .cloned()
                                         .collect::<Vec<AgentPubKey>>();
@@ -889,9 +889,10 @@ impl Sim2h {
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
+                    let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
                     let agent_pool = self.get_or_create_space2(&space_address, |space| {
                         space
-                            .agents_supposed_to_hold_entry(query_data.entry_address.clone(), redundant_count)
+                            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                             .keys()
                             .cloned()
                             .collect::<Vec<_>>()
@@ -1049,11 +1050,10 @@ impl Sim2h {
             DhtAlgorithm::FullSync => {
                 self.all_agents_except_one(space_address.clone(), Some(&provider))
             }
-            DhtAlgorithm::NaiveSharding { redundant_count } => self.agents_in_neighbourhood(
-                space_address.clone(),
-                entry_data.entry_address.clone(),
-                redundant_count,
-            ),
+            DhtAlgorithm::NaiveSharding { redundant_count } => {
+                let entry_loc = entry_location(&self.crypto, &entry_data.entry_address);
+                self.agents_in_neighbourhood(space_address.clone(), entry_loc, redundant_count)
+            }
         };
 
         let aspect_addresses = entry_data
@@ -1137,12 +1137,12 @@ impl Sim2h {
     fn agents_in_neighbourhood(
         &mut self,
         space_hash: SpaceHash,
-        entry_hash: EntryHash,
+        entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
         self.get_or_create_space2(&space_hash, |space| {
             space
-                .agents_supposed_to_hold_entry(entry_hash.clone(), redundant_count)
+                .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                 .into_iter()
                 .collect::<Vec<(AgentId, AgentInfo)>>()
         })

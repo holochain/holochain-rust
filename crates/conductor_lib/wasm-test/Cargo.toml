@@ -1,6 +1,6 @@
 [package]
 name = "example_api_wasm"
-version = "0.0.41-alpha4"
+version = "0.0.42-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

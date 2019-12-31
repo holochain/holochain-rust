@@ -58,6 +58,9 @@ use parking_lot::RwLock;
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
+/// Number of threads dedicating to pulling connection requests off the channel and processing them.
+const NUM_CONNECTION_THREADS: u64 = 1;
+
 /// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {
     /// will attempt to aquire a lock within a time-frame and panic after
@@ -196,22 +199,24 @@ impl Sim2h {
         let pool = self.pool.clone();
         let wss_recv = self.wss_recv.clone();
 
-        std::thread::spawn(move || loop {
-            if let Ok(wss) = wss_recv.try_recv() {
-                let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-                let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
-                let job = Arc::new(Mutex::new(job));
-                if let Err(error) =
-                    Self::handle_incoming_connect(connection_states.clone(), url.clone())
-                {
-                    error!("Error handling incoming connection: {:?}", error);
-                    return;
+        for i in 0..NUM_CONNECTION_THREADS {
+            std::thread::spawn(move || loop {
+                if let Ok(wss) = wss_recv.try_recv() {
+                    let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+                    let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
+                    let job = Arc::new(Mutex::new(job));
+                    if let Err(error) =
+                        Self::handle_incoming_connect(connection_states.clone(), url.clone())
+                    {
+                        error!("Error handling incoming connection: {:?}", error);
+                        return;
+                    }
+                    open_connections.insert(url, (job.clone(), outgoing_send));
+                    pool.push_job(Box::new(job));
                 }
-                open_connections.insert(url, (job.clone(), outgoing_send));
-                pool.push_job(Box::new(job));
-            }
-            std::thread::sleep(std::time::Duration::from_millis(1))
-        });
+                std::thread::sleep(std::time::Duration::from_millis(1))
+            });
+        }
     }
 
     /// we received some kind of error related to a stream/socket
@@ -327,7 +332,7 @@ impl Sim2h {
         );
     }
 
-    fn get_or_create_space2<F, T>(&self, space_address: &SpaceHash, mut f: F) -> T
+    fn get_or_create_space<F, T>(&self, space_address: &SpaceHash, mut f: F) -> T
     where
         F: FnMut(parking_lot::RwLockReadGuard<'_, Space>) -> T,
     {
@@ -653,7 +658,7 @@ impl Sim2h {
         let open_connections = self.open_connections.clone();
         let connection_states = self.connection_states.clone();
 
-        self.get_or_create_space2(space_address, |space| {
+        self.get_or_create_space(space_address, |space| {
             let unseen_aspects =
                 AspectList::from(list_data.address_map.clone()).diff(space.all_aspects());
             debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
@@ -773,13 +778,13 @@ impl Sim2h {
                // Check if the node is missing any aspects
                 let aspects_missing_at_node = match dht_algorithm {
                     DhtAlgorithm::FullSync => {
-                        self.get_or_create_space2(&space_address, |space| {
+                        self.get_or_create_space(&space_address, |space| {
                             space.all_aspects()
                                 .diff(&AspectList::from(list_data.clone().address_map))
                         })
                     }
                     DhtAlgorithm::NaiveSharding {redundant_count} => {
-                        self.get_or_create_space2(&space_address, |space| {
+                        self.get_or_create_space(&space_address, |space| {
                             space.aspects_in_shard_for_agent(agent_id, redundant_count)
                             .diff(&AspectList::from(list_data.clone().address_map))
                         })
@@ -802,7 +807,7 @@ impl Sim2h {
                     match dht_algorithm {
 
                         DhtAlgorithm::FullSync => {
-                            self.get_or_create_space2(&space_address, |space| {
+                            self.get_or_create_space(&space_address, |space| {
                             let all_agents_in_space = space
                                 .all_agents()
                                 .keys()
@@ -824,7 +829,7 @@ impl Sim2h {
                         DhtAlgorithm::NaiveSharding {redundant_count} => {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
                                 let entry_loc = entry_location(&self.crypto, entry_address);
-                                self.get_or_create_space2(&space_address, |space| {
+                                self.get_or_create_space(&space_address, |space| {
                                     let agent_pool = space
                                         .agents_supposed_to_hold_entry(entry_loc.clone(), redundant_count)
                                         .keys()
@@ -890,7 +895,7 @@ impl Sim2h {
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
                     let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
-                    let agent_pool = self.get_or_create_space2(&space_address, |space| {
+                    let agent_pool = self.get_or_create_space(&space_address, |space| {
                         space
                             .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                             .keys()
@@ -903,7 +908,7 @@ impl Sim2h {
                     } else {
                         let agents_with_all_aspects_for_entry = agent_pool.iter()
                             .filter(|agent|{
-                                self.get_or_create_space2(&space_address, |space| {
+                                self.get_or_create_space(&space_address, |space| {
                                     !space
                                         .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
                                 })
@@ -1118,7 +1123,7 @@ impl Sim2h {
         space_hash: SpaceHash,
         except: Option<&AgentId>,
     ) -> Vec<(AgentId, AgentInfo)> {
-        self.get_or_create_space2(&space_hash, |space| {
+        self.get_or_create_space(&space_hash, |space| {
             space
                 .all_agents()
                 .clone()
@@ -1140,7 +1145,7 @@ impl Sim2h {
         entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
-        self.get_or_create_space2(&space_hash, |space| {
+        self.get_or_create_space(&space_hash, |space| {
             space
                 .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                 .into_iter()

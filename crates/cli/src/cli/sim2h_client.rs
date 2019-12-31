@@ -110,6 +110,7 @@ impl Job {
 
     /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
+        println!("Sending wire message to sim2h: {:?}", message);
         let payload: Opaque = message.into();
         let payload_buf: Box<dyn lib3h_crypto_api::Buffer> = Box::new(payload.clone().as_bytes());
         let sig = base64::encode(

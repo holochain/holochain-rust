@@ -249,6 +249,9 @@ impl Sim2hState {
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Option<Lib3hUri> {
         match msg {
             WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
+            WireMessage::StatusResponse(r) => {
+                println!("sending StatusResponse {:?} to {}", r, uri);
+            }
             _ => {
                 debug!(">>OUT>> {} to {}", msg.message_type(), uri);
                 MESSAGE_LOGGER
@@ -716,8 +719,9 @@ impl Sim2h {
                                     .expect("Could not send !");
                                 }
                                 Err(error) => {
-                                    error!(
-                                        "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                    println!(
+                                        "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
+                                        url,
                                         error, payload
                                     );
                                     tx.send(PoolTask::VerifyPayload(Err(())))
@@ -844,7 +848,7 @@ impl Sim2h {
     ) -> Sim2hResult<()> {
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
-            trace!("Ping -> Pong");
+            println!("Ping -> Pong");
             self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
             return Ok(());
         }

@@ -1,3 +1,4 @@
+extern crate lib3h_protocol;
 extern crate structopt;
 extern crate url2;
 
@@ -10,10 +11,10 @@ use structopt::StructOpt;
 
 pub fn main() {
     let args = PlaybackSim2h::from_args();
+    let sim2h_url = url2::Url2::try_parse(args.url).expect("Invalid sim2h url");
+    println!("Walkman: playback from {:?} on {}", args.path, sim2h_url);
     let file = File::open(args.path).expect("Couldn't open file for walkman");
     let cassette = Cassette::from_file(file);
-    let sim2h_url = url2::Url2::try_parse(args.url).expect("Invalid sim2h url");
-    println!("Walkman: playback from {} on {}", args.path, sim2h_url);
     Sim2hCassettePlayer::playback(&sim2h_url, cassette);
 }
 

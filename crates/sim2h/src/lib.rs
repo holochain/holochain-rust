@@ -62,9 +62,10 @@ const MAX_LOCK_TIMEOUT: u64 = 20000;
 
 fn walkman_log<F: FnOnce() -> WalkmanSim2hEvent>(event: F) {
     if std::env::var("HOLOCHAIN_WALKMAN_SIM2H").is_ok() {
+        let log_item = event();
         let json =
-            serde_json::to_string(&walkman_log_sim2h(event())).expect("Serialized walkman event");
-        debug!("<walkman>{}</walkman>", json);
+            serde_json::to_string(&walkman_log_sim2h(log_item)).expect("Serialized walkman event");
+        println!("<walkman>{}</walkman>", json);
     }
 }
 
@@ -237,8 +238,10 @@ impl Sim2h {
                         match Sim2h::verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
                                 walkman_log(|| {
-                                    let msg_serialized = serde_json::to_string(&wire_message)
-                                        .expect("WireMessage serialized");
+                                    let signed_message =
+                                        SignedWireMessage::try_from(payload.clone()).unwrap();
+                                    let msg_serialized = serde_json::to_string(&signed_message)
+                                        .expect("SignedWireMessage serialized");
                                     WalkmanSim2hEvent::Message(url.to_string(), msg_serialized)
                                 });
                                 if let Err(error) = self.handle_message(&url, wire_message, &source)
@@ -453,7 +456,11 @@ impl Sim2h {
             ConnectionState::Limbo(ref mut pending_messages) => {
                 if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
                     if &data.agent_id != signer {
-                        return Err(SIGNER_MISMATCH_ERR_STR.into());
+                        return Err(format!(
+                            "{}: agent_id={} != signer={}",
+                            SIGNER_MISMATCH_ERR_STR, data.agent_id, signer
+                        )
+                        .into());
                     }
                     self.join(uri, &data)
                 } else {
@@ -474,7 +481,11 @@ impl Sim2h {
             // then build a message to be proxied to the correct destination, and forward it
             ConnectionState::Joined(space_address, agent_id) => {
                 if &agent_id != signer {
-                    return Err(SIGNER_MISMATCH_ERR_STR.into());
+                    return Err(format!(
+                        "{}: agent_id={} != signer={}",
+                        SIGNER_MISMATCH_ERR_STR, agent_id, signer
+                    )
+                    .into());
                 }
                 self.handle_joined(uri, &space_address, &agent_id, message)
             }
@@ -770,7 +781,7 @@ impl Sim2h {
                 }
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {
-                    debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
+                    debug!("Got FetchEntry result from {} without request id - must be from authoring list", agent_id);
                     self.handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone());
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
@@ -842,7 +853,7 @@ impl Sim2h {
 
                     let maybe_url = self.lookup_joined(space_address, &query_target);
                     if maybe_url.is_none() {
-                        error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
+                        error!("Got QueryEntry with unknown agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())
                     }
                     let url = maybe_url.unwrap();

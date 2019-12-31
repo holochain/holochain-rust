@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::data_types::*;
@@ -34,7 +37,7 @@ impl Sim2hClient {
         });
         let enc = hcid::HcidEncoding::with_kind("hcs0").map_err(|e| format!("{}", e))?;
         let agent_id = enc.encode(&*pub_key).unwrap();
-        println!("Generated agent id: {}", agent_id);
+        info!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
 

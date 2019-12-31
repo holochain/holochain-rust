@@ -689,6 +689,7 @@ impl Sim2h {
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) -> bool {
         if let Ok((url, msg)) = self.msg_recv.try_recv() {
+            println!("Current messgage queue length: {}", self.msg_recv.len());
             let url: Lib3hUri = url::Url::from(url).into();
             match msg {
                 Ok(frame) => match frame {
@@ -788,6 +789,7 @@ impl Sim2h {
                     data.space_address.clone(),
                     data.agent_id.clone(),
                 );
+                println!("pending messages in join: {}",pending_messages.len());
                 for message in *pending_messages {
                     if let Err(err) = self.handle_message(uri, message.clone(), &data.agent_id) {
                         error!(

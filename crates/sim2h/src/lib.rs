@@ -619,7 +619,7 @@ impl Sim2h {
             self.num_ticks = 0;
         }
 
-        // Now down in separate thread!
+        // Now done in a separate thread!
         //self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
 

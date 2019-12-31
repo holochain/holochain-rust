@@ -79,7 +79,9 @@ impl ConnectionJob {
                     println!("from zippy ({}) in connection", self.wss.remote_url());
                 }
                 let frame = self.frame.take().unwrap();
-                println!("frame read {:?}", frame);
+                if debug {
+                    println!("frame read {:?}", frame);
+                }
                 self.report_msg(Ok(frame));
                 // we got data this time, check again right away
                 return Ok(JobResult::default());

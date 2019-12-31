@@ -246,7 +246,7 @@ impl Sim2hState {
         self.send(provider_agent_id, uri, &wire_message);
     }
 
-    fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+    fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Option<Lib3hUri> {
         match msg {
             WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
             _ => {
@@ -259,14 +259,15 @@ impl Sim2hState {
 
         let payload: Opaque = msg.clone().into();
 
-        match self.open_connections.get_mut(&uri) {
+        match self.open_connections.get(&uri) {
             None => {
                 error!("FAILED TO SEND, NO ROUTE: {}", uri);
-                return;
+                return None;
             }
             Some((_con, outgoing_send)) => {
                 if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                    self.disconnect(&uri);
+                    // pass the back out to be disconnected
+                    return Some(uri);
                 }
             }
         }
@@ -275,6 +276,7 @@ impl Sim2hState {
             WireMessage::Ping | WireMessage::Pong => {}
             _ => debug!("sent."),
         }
+        return None;
     }
 
     fn retry_sync_missing_aspects(&mut self) {
@@ -341,7 +343,7 @@ impl Sim2hState {
         space_address: SpaceHash,
         query_data: QueryEntryData,
         redundant_count: u64,
-    ) -> Vec<(AgentId, Lib3hUri, WireMessage)> {
+    ) -> Vec<Lib3hUri> {
         let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
         let agent_pool = self
             .get_space(&space_address)
@@ -384,7 +386,10 @@ impl Sim2hState {
         }
         let url = maybe_url.unwrap();
         let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
-        vec![(query_target, url, query_message)]
+        match self.send(query_target, url, &query_message) {
+            Some(uri) => vec![uri],
+            None => vec![],
+        }
     }
 
     fn build_aspects_from_arbitrary_agent(
@@ -393,10 +398,10 @@ impl Sim2hState {
         for_agent_id: AgentId,
         mut agent_pool: Vec<AgentId>,
         space_address: SpaceHash,
-    ) -> Vec<(AgentId, Lib3hUri, WireMessage)> {
+    ) -> Vec<Lib3hUri> {
         let agent_pool = &mut agent_pool[..];
         agent_pool.shuffle(&mut thread_rng());
-        let mut messages = Vec::new();
+        let mut disconnects = Vec::new();
         for entry_address in aspects_to_fetch.entry_addresses() {
             if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
                 if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
@@ -428,13 +433,17 @@ impl Sim2hState {
                         },
                     ));
                     debug!("SENDING fetch with request ID: {:?}", wire_message);
-                    messages.push((arbitrary_agent.clone(), random_url.clone(), wire_message));
+                    if let Some(uri) =
+                        self.send(arbitrary_agent.clone(), random_url.clone(), &wire_message)
+                    {
+                        disconnects.push(uri);
+                    }
                 } else {
                     warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
                 }
             }
         }
-        messages
+        disconnects
     }
 
     // get the connection status of an agent
@@ -448,11 +457,11 @@ impl Sim2hState {
         space_address: SpaceHash,
         agent_id: AgentId,
         list_data: EntryListData,
-    ) -> Vec<(AgentId, Lib3hUri, WireMessage)> {
+    ) -> Vec<Lib3hUri> {
         let unseen_aspects = AspectList::from(list_data.address_map.clone())
             .diff(self.get_space(&space_address).all_aspects());
         debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-        let mut messages = Vec::new();
+        let mut disconnects = Vec::new();
         for entry_address in unseen_aspects.entry_addresses() {
             if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
                 let wire_message =
@@ -463,10 +472,12 @@ impl Sim2hState {
                         entry_address: entry_address.clone(),
                         aspect_address_list: Some(aspect_address_list.clone()),
                     }));
-                messages.push((agent_id.clone(), uri.clone(), wire_message));
+                if let Some(uri) = self.send(agent_id.clone(), uri.clone(), &wire_message) {
+                    disconnects.push(uri);
+                }
             }
         }
-        messages
+        disconnects
     }
     fn handle_new_entry_data(
         &mut self,
@@ -564,7 +575,7 @@ impl Sim2hState {
 
 enum PoolTask {
     VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
-    BuildMessages(Vec<(AgentId, Lib3hUri, WireMessage)>),
+    Disconnect(Vec<Lib3hUri>),
 }
 
 pub struct Sim2h {
@@ -918,9 +929,9 @@ impl Sim2h {
         }
 
         match self.tp_recv.try_recv() {
-            Ok(PoolTask::BuildMessages(messages)) => {
-                for (agent, url, msg) in messages {
-                    self.state.write().send(agent, url, &msg)
+            Ok(PoolTask::Disconnect(disconnects)) => {
+                for url in disconnects {
+                    self.state.write().disconnect(&url)
                 }
             }
             Ok(PoolTask::VerifyPayload(Ok((url, wire_message, source)))) => {
@@ -1157,11 +1168,11 @@ impl Sim2h {
                     let space_address = space_address.clone();
                        let query_data = query_data.clone();
                     self.threadpool.execute(move || {
-                        let messages =
+                        let disconnects =
                             state
                             .read()
                             .build_query(space_address,query_data,redundant_count);
-                        tx.send(PoolTask::BuildMessages(messages))
+                        tx.send(PoolTask::Disconnect(disconnects))
                             .expect("should send");
                     });
                     Ok(())
@@ -1205,11 +1216,11 @@ impl Sim2h {
         let agent_id = agent_id.clone();
         let list_data = list_data.clone();
         self.threadpool.execute(move || {
-            let messages =
+            let disconnects =
                 state
                     .read()
                     .build_handle_unseen_aspects(uri, space_address, agent_id, list_data);
-            tx.send(PoolTask::BuildMessages(messages))
+            tx.send(PoolTask::Disconnect(disconnects))
                 .expect("should send");
         });
     }
@@ -1224,13 +1235,13 @@ impl Sim2h {
         let state = self.state.clone();
         let tx = self.tp_send.clone();
         self.threadpool.execute(move || {
-            let messages = state.read().build_aspects_from_arbitrary_agent(
+            let disconnects = state.read().build_aspects_from_arbitrary_agent(
                 aspects_to_fetch,
                 for_agent_id,
                 agent_pool,
                 space_address,
             );
-            tx.send(PoolTask::BuildMessages(messages))
+            tx.send(PoolTask::Disconnect(disconnects))
                 .expect("should send");
         });
     }

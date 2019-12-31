@@ -57,7 +57,7 @@ fn main() {
 
     let mut threads = Vec::new();
     let sim2h = Arc::new(sim2h);
-    for _i in 0..num_cpus::get() {
+    for _i in 0..std::cmp::min(1, num_cpus::get()) {
         let sim2h = sim2h.clone();
         let result = std::thread::spawn(move || loop {
             let result = sim2h.process();

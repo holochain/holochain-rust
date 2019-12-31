@@ -135,10 +135,9 @@ impl TryFrom<LogLine> for Metric {
 pub fn metrics_from_file(log_file: PathBuf) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
     let file = std::fs::File::open(log_file.clone())?;
     let reader = BufReader::new(file);
-    let stream_id = Some(format!(
-        "{}",
-        log_file.to_str().unwrap_or_else(|| "unknown")
-    ));
+    let log_file: String = log_file.to_str().unwrap_or_else(|| "unknown").to_string();
+    let stream_id = Some(log_file);
+
     let metrics = reader.lines().filter_map(move |line| {
         let result: Result<Metric, _> = line
             .map_err(|e| ParseError(format!("{}", e)))

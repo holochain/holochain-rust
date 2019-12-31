@@ -133,7 +133,7 @@ pub struct Sim2h {
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
     open_connections: OpenConnections,
-    /// when should we eecalculated the rrdht_arc_radius
+    /// when we should recalculate the rrdht_arc_radius
     rrdht_arc_radius_recalc: Arc<RwLock<std::time::Instant>>,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: Arc<RwLock<std::time::Instant>>,

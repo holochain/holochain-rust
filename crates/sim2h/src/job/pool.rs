@@ -21,6 +21,8 @@ lazy_static! {
     };
 }
 
+const JOB_RECV_REPORT_INTERVAL : u64 = 5;
+
 impl Pool {
     pub(crate) fn new() -> Self {
         // make sure if a thread panics, the whole process exits
@@ -52,7 +54,7 @@ impl Pool {
 
                             let thread = std::thread::current();
                             let thread_name = thread.name().unwrap_or_else(|| "sim2h-pool-thread");
-                            if epoch % 1 == 0 {
+                            if epoch % JOB_RECV_REPORT_INTERVAL == 0 {
                                 let num_jobs = recv.len();
                                 if num_jobs > 0 {
                                     let metric = holochain_metrics::Metric::new_timestamped_now(

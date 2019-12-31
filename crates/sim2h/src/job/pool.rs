@@ -51,17 +51,6 @@ impl Pool {
                             let thread = std::thread::current();
                             let thread_name = thread.name().unwrap_or_else(|| "sim2h-pool-thread");
 
-                            let parked_jobs_metric = holochain_metrics::Metric::new_timestamped_now(
-                                format!("{}.parked_jobs", thread_name),
-                                None,
-                                parked_jobs.len() as f64,
-                            );
-
-                            metric_publisher
-                                .write()
-                                .unwrap()
-                                .publish(&parked_jobs_metric);
-
                             let now = std::time::Instant::now();
                             let chk = parked_jobs.drain(..).collect::<Vec<_>>();
                             for (t, job) in chk {

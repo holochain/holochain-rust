@@ -239,6 +239,7 @@ impl Sim2h {
     fn priv_check_incoming_messages(&mut self) {
         if let Ok((url, msg)) = self.msg_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(url).into();
+            debug!("Got msg {:?}", msg);
             match msg {
                 Ok(frame) => match frame {
                     WsFrame::Text(s) => self.priv_drop_connection_for_error(
@@ -246,6 +247,8 @@ impl Sim2h {
                         format!("unexpected text message: {:?}", s).into(),
                     ),
                     WsFrame::Binary(b) => {
+                        trace!("priv_check_incoming_messages: got binary msg");
+
                         let payload: Opaque = b.into();
                         match Sim2h::verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
@@ -277,6 +280,7 @@ impl Sim2h {
                 Err(e) => self.priv_drop_connection_for_error(url, e),
             }
         }
+        trace!("priv_check_incoming_messages done");
     }
 
     /// recalculate arc radius for our connections
@@ -286,6 +290,7 @@ impl Sim2h {
         for (_, space) in spaces.iter_mut() {
             space.write().recalc_rrdht_arc_radius();
         }
+        trace!("recalc arc radius: done")
     }
 
     fn request_authoring_list(
@@ -337,9 +342,8 @@ impl Sim2h {
         F: FnMut(parking_lot::RwLockReadGuard<'_, Space>) -> T,
     {
         let spaces = self.spaces.clone();
-        let mut spaces = spaces.write();
-        if !spaces.contains_key(space_address) {
-            spaces.insert(
+        if !spaces.read().contains_key(space_address) {
+            spaces.write().insert(
                 space_address.clone(),
                 RwLock::new(Space::new(self.crypto.box_clone())),
             );
@@ -348,6 +352,7 @@ impl Sim2h {
                 space_address
             );
         }
+        let spaces = spaces.read();
         f(spaces.get(space_address).unwrap().read())
     }
 
@@ -621,9 +626,11 @@ impl Sim2h {
 
         // Now done in a separate thread!
         //self.priv_check_incoming_connections();
+        trace!("check incoming messages");
         self.priv_check_incoming_messages();
 
         if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
+            trace!("recalc arc");
             self.rrdht_arc_radius_recalc = std::time::Instant::now()
                 .checked_add(std::time::Duration::from_millis(
                     RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
@@ -635,6 +642,7 @@ impl Sim2h {
         }
 
         if std::time::Instant::now() >= self.missing_aspects_resync {
+            trace!("missing aspects resync");
             self.missing_aspects_resync = std::time::Instant::now()
                 .checked_add(std::time::Duration::from_millis(
                     RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,

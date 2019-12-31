@@ -1,4 +1,5 @@
 extern crate lib3h_sodium;
+extern crate num_cpus;
 extern crate structopt;
 
 use lib3h_protocol::uri::Builder;
@@ -54,16 +55,18 @@ fn main() {
         });
     }
 
-    loop {
-        let result = sim2h.process();
-        if let Err(e) = result {
-            if e.to_string().contains("Bind error:") {
-                println!("{:?}", e);
-                exit(1)
-            } else {
-                error!("{}", e.to_string())
+    for _i in 0..num_cpus::get() {
+        loop {
+            let result = sim2h.process();
+            if let Err(e) = result {
+                if e.to_string().contains("Bind error:") {
+                    println!("{:?}", e);
+                    exit(1)
+                } else {
+                    error!("{}", e.to_string())
+                }
             }
+            std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        std::thread::sleep(std::time::Duration::from_millis(1));
     }
 }

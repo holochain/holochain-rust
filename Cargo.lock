@@ -3828,6 +3828,7 @@ dependencies = [
  "lib3h_protocol 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sim2h 0.0.42-alpha1",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

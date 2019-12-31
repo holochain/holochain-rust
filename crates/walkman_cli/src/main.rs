@@ -9,15 +9,19 @@ use std::{fs::File, path::PathBuf};
 use structopt::StructOpt;
 
 pub fn main() {
-    let args = Opt::from_args();
+    let args = PlaybackSim2h::from_args();
     let file = File::open(args.path).expect("Couldn't open file for walkman");
     let cassette = Cassette::from_file(file);
-    let mut player = Sim2hCassettePlayer::default();
-    player.playback(cassette);
+    let sim2h_url = url2::Url2::try_parse(args.url).expect("Invalid sim2h url");
+    println!("Walkman: playback from {} on {}", args.path, sim2h_url);
+    Sim2hCassettePlayer::playback(&sim2h_url, cassette);
 }
 
 #[derive(StructOpt)]
-struct Opt {
+struct PlaybackSim2h {
     #[structopt(short, long)]
     path: PathBuf,
+
+    #[structopt(short, long)]
+    url: String,
 }

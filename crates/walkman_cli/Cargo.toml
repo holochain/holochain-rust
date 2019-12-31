@@ -9,7 +9,12 @@ structopt = "0.3.3"
 serde_derive = "=1.0.89"
 serde_millis = "0.1.1"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+sim2h = { path = "../sim2h" }
 sim2h_client = { path = "../sim2h_client" }
 holochain_walkman_types = { path = "../walkman_types" }
 url = "=2.1.0"
 url2 = "=0.0.4"
+
+[[bin]]
+name = "walkman"
+path = "src/main.rs"

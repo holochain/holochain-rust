@@ -29,6 +29,7 @@ impl Pool {
         let (job_send, job_recv) = crossbeam_channel::unbounded::<Box<dyn Job>>();
         let job_cont = Arc::new(Mutex::new(true));
         let mut job_threads = Vec::new();
+
         for cpu_index in 0..num_cpus::get() {
             let cont = job_cont.clone();
             let send = job_send.clone();
@@ -41,6 +42,7 @@ impl Pool {
                         let metric_publisher: std::sync::Arc<
                             std::sync::RwLock<holochain_metrics::logger::LoggerMetricPublisher>,
                         > = Default::default();
+                        let mut epoch = 0;
                         loop {
                             {
                                 if !*cont.f_lock() {
@@ -50,6 +52,18 @@ impl Pool {
 
                             let thread = std::thread::current();
                             let thread_name = thread.name().unwrap_or_else(|| "sim2h-pool-thread");
+                            if epoch % 1 == 0 {
+                                let num_jobs = recv.len();
+                                if num_jobs > 0 {
+                                    let metric = holochain_metrics::Metric::new_timestamped_now(
+                                        "sim2h-pool-recv-jobs",
+                                        None,
+                                        num_jobs as f64,
+                                    );
+                                    metric_publisher.write().unwrap().publish(&metric)
+                                }
+                            }
+                            epoch = epoch + 1;
 
                             let now = std::time::Instant::now();
                             let chk = parked_jobs.drain(..).collect::<Vec<_>>();

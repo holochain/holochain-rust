@@ -21,7 +21,7 @@ lazy_static! {
     };
 }
 
-const JOB_RECV_REPORT_INTERVAL : u64 = 5;
+const JOB_RECV_REPORT_INTERVAL: u64 = 5;
 
 impl Pool {
     pub(crate) fn new() -> Self {

@@ -55,10 +55,11 @@ fn main() {
         });
     }
 
+    let mut threads = Vec::new();
     let sim2h = Arc::new(sim2h);
     for _i in 0..num_cpus::get() {
         let sim2h = sim2h.clone();
-        let _result = std::thread::spawn(move || loop {
+        let result = std::thread::spawn(move || loop {
             let result = sim2h.process();
             if let Err(e) = result {
                 if e.to_string().contains("Bind error:") {
@@ -70,5 +71,10 @@ fn main() {
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
         });
+        threads.push(result);
+    }
+
+    for t in threads {
+        let _ = t.join();
     }
 }

@@ -251,18 +251,23 @@ impl Sim2h {
                         trace!("priv_check_incoming_messages: got binary msg");
 
                         let payload: Opaque = b.into();
+                        trace!("priv_check_incoming_messages: payload converted");
+
                         match Sim2h::verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
+                                trace!("priv_check_incoming_messages: verified message");
                                 if let Err(error) = self.handle_message(&url, wire_message, &source)
                                 {
                                     error!("Error handling message: {:?}", error);
                                 }
+                                trace!("priv_check_incoming_messages: handled verified message")
                             }
                             Err(error) => error!(
                                 "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
                                 error, payload
                             ),
                         }
+                        trace!("priv_check_incoming_messages: verified binary msg");
                     }
                     // TODO - we should use websocket ping/pong
                     //        instead of rolling our own on top of Binary
@@ -371,9 +376,9 @@ impl Sim2h {
     where
         F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> Result<(), E>,
     {
-        let mut spaces = self.spaces.write();
-        if !spaces.contains_key(space_address) {
-            spaces.insert(
+        let spaces = self.spaces.clone();
+        if !spaces.read().contains_key(space_address) {
+            spaces.write().insert(
                 space_address.clone(),
                 RwLock::new(Space::new(self.crypto.box_clone())),
             );
@@ -382,16 +387,17 @@ impl Sim2h {
                 space_address
             );
         }
-        f(spaces.get_mut(space_address).unwrap().write())
+        let spaces = spaces.read();
+        f(spaces.get(space_address).unwrap().write())
     }
 
     fn get_or_create_space_mut<F>(&self, space_address: &SpaceHash, mut f: F) -> ()
     where
         F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> (),
     {
-        let mut spaces = self.spaces.write();
-        if !spaces.contains_key(space_address) {
-            spaces.insert(
+        let spaces = self.spaces.clone();
+        if !spaces.read().contains_key(space_address) {
+            spaces.write().insert(
                 space_address.clone(),
                 RwLock::new(Space::new(self.crypto.box_clone())),
             );
@@ -400,7 +406,8 @@ impl Sim2h {
                 space_address
             );
         }
-        f(spaces.get_mut(space_address).unwrap().write())
+        let spaces = spaces.read();
+        f(spaces.get(space_address).unwrap().write())
     }
 
     // adds an agent to a space
@@ -900,6 +907,7 @@ impl Sim2h {
                                 open_connections.clone(), to_agent_id.clone(), url.clone(), &store_message)
                      })
                    }
+                   trace!("HandleFetchEntryResult processed")
                 }
 
                 Ok(())

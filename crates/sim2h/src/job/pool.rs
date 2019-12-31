@@ -21,7 +21,8 @@ lazy_static! {
     };
 }
 
-const JOB_RECV_REPORT_INTERVAL: u64 = 5;
+const JOB_RECV_REPORT_INTERVAL: u64 = 10;
+const THREADS_PER_CORE: usize = 2;
 
 impl Pool {
     pub(crate) fn new() -> Self {
@@ -32,7 +33,7 @@ impl Pool {
         let job_cont = Arc::new(Mutex::new(true));
         let mut job_threads = Vec::new();
 
-        for cpu_index in 0..num_cpus::get() {
+        for cpu_index in 0..THREADS_PER_CORE * num_cpus::get() {
             let cont = job_cont.clone();
             let send = job_send.clone();
             let recv = job_recv.clone();
@@ -101,7 +102,7 @@ impl Pool {
                                 }
                             }
 
-                            std::thread::sleep(std::time::Duration::from_millis(5));
+                            std::thread::sleep(std::time::Duration::from_millis(1));
                         }
                     })
                     .unwrap(),

@@ -3,8 +3,8 @@ use std::time::Instant;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WalkmanLogItem {
     #[serde(with = "serde_millis")]
-    time: Instant,
-    event: WalkmanEvent,
+    pub time: Instant,
+    pub event: WalkmanEvent,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

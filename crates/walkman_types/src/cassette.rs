@@ -1,5 +1,4 @@
 use crate::event::{WalkmanLogItem};
-use hc::sim2h_client::Sim2hClient;
 use regex::Regex;
 use std::{io::BufRead};
 
@@ -9,6 +8,11 @@ pub struct Cassette {
 }
 
 impl Cassette {
+
+    pub fn events(&self) -> &Vec<WalkmanLogItem> {
+        self.events.as_ref()
+    }
+
     pub fn from_file(file: std::fs::File) -> Cassette {
         let buf = std::io::BufReader::new(file);
         Cassette {
@@ -27,23 +31,3 @@ fn parse_line(line: String) -> Option<WalkmanLogItem> {
         })
     })
 }
-
-// struct Sim2hCassettePlayer {
-//     clients: HashMap<String, Sim2hClient>
-// }
-
-// impl Sim2hCassettePlayer {
-//     pub fn playback(&mut self, cassette: Cassette) {
-//         for event in cassette.events {
-//             match event {
-//                 Sim2hLogItem { timestamp: _, event } => {
-//                     match event {
-//                         Sim2hEvent::Connect(url) => match self.clients.entry(url) {
-
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }

@@ -9,10 +9,9 @@ extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
-extern crate lib3h_crypto_api;
-extern crate lib3h_protocol;
 extern crate lib3h_sodium;
 extern crate sim2h;
+extern crate sim2h_client;
 extern crate structopt;
 #[macro_use]
 extern crate failure;

@@ -5,7 +5,6 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-hc = { path = "../cli" }
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_millis = "=0.1.1"

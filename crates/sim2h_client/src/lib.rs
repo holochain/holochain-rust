@@ -1,4 +1,3 @@
-
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::data_types::*;

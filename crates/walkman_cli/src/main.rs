@@ -4,9 +4,9 @@ extern crate url2;
 mod player;
 
 use crate::player::Sim2hCassettePlayer;
-use structopt::StructOpt;
+use holochain_walkman_types::Cassette;
 use std::{fs::File, path::PathBuf};
-use holochain_walkman_types::{Cassette};
+use structopt::StructOpt;
 
 pub fn main() {
     let args = Opt::from_args();
@@ -19,5 +19,5 @@ pub fn main() {
 #[derive(StructOpt)]
 struct Opt {
     #[structopt(short, long)]
-    path: PathBuf
+    path: PathBuf,
 }

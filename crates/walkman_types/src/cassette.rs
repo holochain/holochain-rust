@@ -1,6 +1,6 @@
-use crate::event::{WalkmanLogItem};
+use crate::event::WalkmanLogItem;
 use regex::Regex;
-use std::{io::BufRead};
+use std::io::BufRead;
 
 #[derive(Debug)]
 pub struct Cassette {
@@ -8,7 +8,6 @@ pub struct Cassette {
 }
 
 impl Cassette {
-
     pub fn events(&self) -> &Vec<WalkmanLogItem> {
         self.events.as_ref()
     }
@@ -16,9 +15,11 @@ impl Cassette {
     pub fn from_file(file: std::fs::File) -> Cassette {
         let buf = std::io::BufReader::new(file);
         Cassette {
-            events: buf.lines()
+            events: buf
+                .lines()
                 .map(|line| line.expect("IO error while parsing log for walkman"))
-                .filter_map(parse_line).collect()
+                .filter_map(parse_line)
+                .collect(),
         }
     }
 }

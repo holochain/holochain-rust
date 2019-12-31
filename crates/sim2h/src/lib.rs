@@ -62,7 +62,8 @@ const MAX_LOCK_TIMEOUT: u64 = 20000;
 
 fn walkman_log<F: FnOnce() -> WalkmanSim2hEvent>(event: F) {
     if std::env::var("HOLOCHAIN_WALKMAN_SIM2H").is_ok() {
-        let json = serde_json::to_string(&walkman_log_sim2h(event())).expect("Serialized walkman event");
+        let json =
+            serde_json::to_string(&walkman_log_sim2h(event())).expect("Serialized walkman event");
         debug!("<walkman>{}</walkman>", json);
     }
 }
@@ -236,7 +237,8 @@ impl Sim2h {
                         match Sim2h::verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
                                 walkman_log(|| {
-                                    let msg_serialized = serde_json::to_string(&wire_message).expect("WireMessage serialized");
+                                    let msg_serialized = serde_json::to_string(&wire_message)
+                                        .expect("WireMessage serialized");
                                     WalkmanSim2hEvent::Message(url.to_string(), msg_serialized)
                                 });
                                 if let Err(error) = self.handle_message(&url, wire_message, &source)

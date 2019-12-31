@@ -1,8 +1,6 @@
 use dns_lookup::lookup_host;
 use in_stream::*;
-use sim2h::{
-    WireMessage,
-};
+use sim2h::WireMessage;
 use sim2h_client::Sim2hClient;
 use url2::prelude::*;
 

@@ -298,9 +298,9 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
 
     fn read(&mut self, data: &mut WsFrame) -> Result<usize> {
         self.priv_process()?;
-        let debug = self.remote_url.host().unwrap().to_string() == "68.237.138.100"; //"127.0.0.1";
+        let debug = self.remote_url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
         if debug {
-            println!("data from zippy ({}): {:?} connection state: {:?}", self.remote_url, data, self.state);
+            println!("from zippy ({}) connection state: {:?}", self.remote_url,  self.state);
         }
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),

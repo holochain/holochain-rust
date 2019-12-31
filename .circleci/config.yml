@@ -299,6 +299,7 @@ workflows:
          - 2019-12-23-docker-aws-push
          - develop
          - final-exam
+         - sim2h-autodocker
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -312,6 +313,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - sim2h-autodocker
          - 2019-12-26-debug-cli-docker
    - docker-build-circle-build:
       requires:

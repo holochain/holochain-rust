@@ -695,6 +695,7 @@ impl Sim2h {
         let len = self.msg_recv.len();
         if len > 0 {
             println!("Hanlding {} incoming messages", len);
+            println!("threadpool len {}", self.threadpool.queued_count());
         }
         let v: Vec<_> = self.msg_recv.try_iter().collect();
         for (url, msg) in v {

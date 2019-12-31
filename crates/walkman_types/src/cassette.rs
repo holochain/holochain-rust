@@ -1,61 +1,49 @@
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-    path::PathBuf,
-    time::Instant,
-};
+use crate::event::{WalkmanLogItem};
+use hc::sim2h_client::Sim2hClient;
+use regex::Regex;
+use std::{io::BufRead};
 
-pub type WalkmanNodeId = usize;
-pub type WalkmanNodeName = String;
-
-pub struct WalkmanData(String);
-
-const LOG_PREFIX: &'static str = "(walkman) ";
-
-pub struct WalkmanLogItem {
-    time: Instant,
-    event: WalkmanEvent,
+#[derive(Debug)]
+pub struct Cassette {
+    events: Vec<WalkmanLogItem>,
 }
 
-impl WalkmanLogItem {
-    pub fn from_data(data: WalkmanData) -> Self {
-        Self {
-            timestamp: Instant::now(),
-            data,
+impl Cassette {
+    pub fn from_file(file: std::fs::File) -> Cassette {
+        let buf = std::io::BufReader::new(file);
+        Cassette {
+            events: buf.lines()
+                .map(|line| line.expect("IO error while parsing log for walkman"))
+                .filter_map(parse_line).collect()
         }
     }
 }
 
-pub struct WalkmanEvent {
-    node_id: WalkmanNodeId,
-    timestamp: u32,
-    data: WalkmanData,
-}
-
-pub struct WalkmanCassette {
-    node_ids: Vec<WalkmanNodeName>,
-    events: Vec<WalkmanEvent>,
-}
-
-type WalkmanError = String;
-
-impl WalkmanCassette {
-    fn try_from_logs(
-        logs: Vec<(WalkmanNodeName, PathBuf)>,
-    ) -> Result<WalkmanCassette, WalkmanError> {
-        let mut events = Vec::new();
-        for (node_id, (name, file)) in logs.iter().enumerate() {
-            let mut f = File::open(file).map_err(|e| e.to_string())?;
-            let mut contents = String::new();
-            for line in BufReader::new(f).lines() {
-                if line.expect("IO error reading log").starts_with(LOG_PREFIX) {
-                    events.push(WalkmanEvent { node_id })
-                }
-            }
-        }
-        Ok(Self {
-            node_ids: logs.keys(),
-            events: Vec::new(), // TODO
+fn parse_line(line: String) -> Option<WalkmanLogItem> {
+    let re_tag = Regex::new(r"<walkman>(.*?)</walkman>").unwrap();
+    re_tag.captures(&line).and_then(|caps| {
+        caps.get(1).and_then(|m| {
+            serde_json::from_str(m.as_str()).expect("Couldn't parse serialized walkman log item")
         })
-    }
+    })
 }
+
+// struct Sim2hCassettePlayer {
+//     clients: HashMap<String, Sim2hClient>
+// }
+
+// impl Sim2hCassettePlayer {
+//     pub fn playback(&mut self, cassette: Cassette) {
+//         for event in cassette.events {
+//             match event {
+//                 Sim2hLogItem { timestamp: _, event } => {
+//                     match event {
+//                         Sim2hEvent::Connect(url) => match self.clients.entry(url) {
+
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }

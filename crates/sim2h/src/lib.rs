@@ -55,15 +55,15 @@ use std::{
 pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
 use holochain_locksmith::Mutex;
-use holochain_walkman_types::{WALKMAN_LOG_PREFIX, walkman_log_sim2h, WalkmanSim2hEvent};
+use holochain_walkman_types::{walkman_log_sim2h, WalkmanSim2hEvent};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
 fn walkman_log<F: FnOnce() -> WalkmanSim2hEvent>(event: F) {
-    if std::env::var("WALKMAN_DUMP_SIM2H").is_ok() {
+    if std::env::var("HOLOCHAIN_WALKMAN_SIM2H").is_ok() {
         let json = serde_json::to_string(&walkman_log_sim2h(event())).expect("Serialized walkman event");
-        debug!("{}{}", WALKMAN_LOG_PREFIX, json);
+        debug!("<walkman>{}</walkman>", json);
     }
 }
 

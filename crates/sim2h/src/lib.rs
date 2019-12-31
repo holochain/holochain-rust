@@ -193,13 +193,13 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) {
-        let connection_states = self.connection_states.clone();
-        let open_connections = self.open_connections.clone();
-        let msg_send = self.msg_send.clone();
-        let pool = self.pool.clone();
-        let wss_recv = self.wss_recv.clone();
-
         for i in 0..NUM_CONNECTION_THREADS {
+            let connection_states = self.connection_states.clone();
+            let open_connections = self.open_connections.clone();
+            let msg_send = self.msg_send.clone();
+            let pool = self.pool.clone();
+            let wss_recv = self.wss_recv.clone();
+
             std::thread::spawn(move || loop {
                 if let Ok(wss) = wss_recv.try_recv() {
                     let url: Lib3hUri = url::Url::from(wss.remote_url()).into();

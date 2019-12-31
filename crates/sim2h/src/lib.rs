@@ -193,7 +193,7 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) {
-        for i in 0..NUM_CONNECTION_THREADS {
+        for _i in 0..NUM_CONNECTION_THREADS {
             let connection_states = self.connection_states.clone();
             let open_connections = self.open_connections.clone();
             let msg_send = self.msg_send.clone();

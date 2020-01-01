@@ -349,37 +349,6 @@ impl Sim2h {
         );
     }
 
-    fn get_or_create_space<F, T>(&self, space_address: &SpaceHash, f: F) -> T
-    where
-        F: FnOnce(parking_lot::RwLockReadGuard<'_, Space>) -> T,
-    {
-        let thread_name = format!("[{:?}]", std::thread::current().name());
-
-        trace!("{} get_or_create_space START", thread_name);
-        let spaces = self.spaces.clone();
-        if !spaces.read_recursive().contains_key(space_address) {
-            spaces.write().insert(
-                space_address.clone(),
-                RwLock::new(Space::new(self.crypto.box_clone())),
-            );
-            info!(
-                "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
-                space_address
-            );
-        }
-        trace!("{} get_or_create_space.f START", thread_name);
-        let spaces = spaces.read_recursive();
-        trace!("{} get_or_create_space.f GOT READ", thread_name);
-        let ret = with_latency_publishing!(
-            "get_or_create_space.f",
-            self.metric_publisher,
-            f,
-            spaces.get(space_address).unwrap().read_recursive()
-        );
-        trace!("{} get_or_create_space.f END", thread_name);
-        ret
-    }
-
     fn get_or_create_space_mut_result<F, E>(
         &self,
         space_address: &SpaceHash,
@@ -635,8 +604,15 @@ impl Sim2h {
                 if &agent_id != signer {
                     return Err(SIGNER_MISMATCH_ERR_STR.into());
                 }
-                self.get_or_create_space(&space_address.clone(), move |space| {
-                    self.handle_joined(uri, &space_address.clone(), &space, &agent_id, message)
+                self.get_or_create_space_mut(&space_address.clone(), move |space| {
+                    // TODO REMOVE THIS MESSAGE CLONE!
+                    self.handle_joined(
+                        uri,
+                        &space_address.clone(),
+                        space,
+                        &agent_id,
+                        message.clone(),
+                    )
                 })
             }
         }
@@ -702,6 +678,7 @@ impl Sim2h {
         &self,
         uri: &Lib3hUri,
         space_address: &SpaceHash,
+        space: &Space,
         agent_id: &AgentId,
         list_data: &EntryListData,
     ) {
@@ -709,32 +686,29 @@ impl Sim2h {
         let open_connections = self.open_connections.clone();
         let connection_states = self.connection_states.clone();
 
-        self.get_or_create_space(space_address, |space| {
-            let unseen_aspects =
-                AspectList::from(list_data.address_map.clone()).diff(space.all_aspects());
-            debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-            for entry_address in unseen_aspects.entry_addresses() {
-                if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
-                        FetchEntryData {
-                            request_id: "".into(),
-                            space_address: space_address.clone(),
-                            provider_agent_id: agent_id.clone(),
-                            entry_address: entry_address.clone(),
-                            aspect_address_list: Some(aspect_address_list.clone()),
-                        },
-                    ));
-                    Self::send(
-                        connection_states.clone(),
-                        spaces.clone(),
-                        open_connections.clone(),
-                        agent_id.clone(),
-                        uri.clone(),
-                        &wire_message,
-                    );
-                }
+        let unseen_aspects =
+            AspectList::from(list_data.address_map.clone()).diff(space.all_aspects());
+        debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+        for entry_address in unseen_aspects.entry_addresses() {
+            if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".into(),
+                        space_address: space_address.clone(),
+                        provider_agent_id: agent_id.clone(),
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(aspect_address_list.clone()),
+                    }));
+                Self::send(
+                    connection_states.clone(),
+                    spaces.clone(),
+                    open_connections.clone(),
+                    agent_id.clone(),
+                    uri.clone(),
+                    &wire_message,
+                );
             }
-        })
+        }
     }
 
     // given an incoming messages, prepare a proxy message and whether it's an publish or request
@@ -743,7 +717,7 @@ impl Sim2h {
         &self,
         uri: &Lib3hUri,
         space_address: &SpaceHash,
-        space: &Space,
+        mut space: parking_lot::RwLockWriteGuard<'_, Space>,
         agent_id: &AgentId,
         message: WireMessage,
     ) -> Sim2hResult<()> {
@@ -776,7 +750,7 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let to_url = self
-                    .lookup_joined(space, &dm_data.to_agent_id)
+                    .lookup_joined(&space, &dm_data.to_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
                 Self::send(self.connection_states.clone(), self.spaces.clone(), self.open_connections.clone(),
                     dm_data.to_agent_id.clone(),
@@ -794,7 +768,7 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let to_url = self
-                    .lookup_joined(space, &dm_data.to_agent_id)
+                    .lookup_joined(&space, &dm_data.to_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
                 Self::send(self.connection_states.clone(), self.spaces.clone(), self.open_connections.clone(),
                     dm_data.to_agent_id.clone(),
@@ -807,7 +781,7 @@ impl Sim2h {
                 if (data.provider_agent_id != *agent_id) || (data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                self.handle_new_entry_data(data.entry, space_address.clone(), agent_id.clone());
+                self.handle_new_entry_data(data.entry, space_address.clone(), space, agent_id.clone());
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data)) => {
@@ -815,7 +789,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
+                self.handle_unseen_aspects(uri, space_address, &space, agent_id, &list_data);
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data)) => {
@@ -823,23 +797,18 @@ impl Sim2h {
                 if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
+                self.handle_unseen_aspects(uri, space_address, &space, agent_id, &list_data);
 
                 let dht_algorithm = self.dht_algorithm.clone();
 
                // Check if the node is missing any aspects
                 let aspects_missing_at_node = match dht_algorithm {
                     DhtAlgorithm::FullSync => {
-                        self.get_or_create_space(&space_address, |space| {
-                            space.all_aspects()
-                                .diff(&AspectList::from(list_data.clone().address_map))
-                        })
+                        space.all_aspects()
+                            .diff(&AspectList::from(list_data.address_map))
                     }
                     DhtAlgorithm::NaiveSharding {redundant_count} => {
-                        self.get_or_create_space(&space_address, |space| {
-                            space.aspects_in_shard_for_agent(agent_id, redundant_count)
-                            .diff(&AspectList::from(list_data.clone().address_map))
-                        })
+                        space.aspects_in_shard_for_agent(agent_id, redundant_count)
                     }
                 };
 
@@ -849,17 +818,15 @@ impl Sim2h {
                     // Cache info about what this agent is missing so we can make sure it got it
                     let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
                     if missing_hashes.len() > 0 {
-                        self.get_or_create_space_mut(&space_address, |mut space| {
-                            for (entry_hash, aspect_hash) in &missing_hashes {
-                                space.add_missing_aspect(agent_id.clone(), entry_hash.clone(), aspect_hash.clone());
-                            }
-                        })
+                        for (entry_hash, aspect_hash) in &missing_hashes {
+                            space.add_missing_aspect(agent_id.clone(), entry_hash.clone(), aspect_hash.clone());
+                        }
                     }
+
 
                     match dht_algorithm {
 
                         DhtAlgorithm::FullSync => {
-                            self.get_or_create_space(&space_address, |space| {
                             let all_agents_in_space = space
                                 .all_agents()
                                 .keys()
@@ -876,13 +843,11 @@ impl Sim2h {
                                     &space
                                 );
                             }
-                            });
                         },
 
                         DhtAlgorithm::NaiveSharding {redundant_count} => {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
                                 let entry_loc = entry_location(&self.crypto, entry_address);
-                                self.get_or_create_space(&space_address, |space| {
                                     let agent_pool = space
                                         .agents_supposed_to_hold_entry(entry_loc.clone(), redundant_count)
                                         .keys()
@@ -895,7 +860,6 @@ impl Sim2h {
                                         &space_address,
                                         &space
                                     );
-                                })
                             }
                         }
                     }
@@ -915,18 +879,17 @@ impl Sim2h {
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {
                     debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
-                    self.handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone());
+                    self.handle_new_entry_data(fetch_result.entry, space_address.clone(), space, agent_id.clone());
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
                     let to_agent_id = AgentPubKey::from(fetch_result.request_id.clone());
-                    let maybe_url = self.lookup_joined(space, &to_agent_id);
+                    let maybe_url = self.lookup_joined(&space, &to_agent_id);
                     if maybe_url.is_none() {
                         error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())
                     }
                     let url = maybe_url.unwrap();
                     for aspect in &fetch_result.entry.aspect_list {
-                        self.get_or_create_space_mut(&space_address, |mut space| {
                             space.remove_missing_aspect(&to_agent_id, &fetch_result.entry.clone().entry_address, &aspect.aspect_address);
                             let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
                                     StoreEntryAspectData {
@@ -940,7 +903,6 @@ impl Sim2h {
                             ));
                             Self::send(connection_states.clone(), spaces.clone(),
                                 open_connections.clone(), to_agent_id.clone(), url.clone(), &store_message)
-                     })
                    }
                    trace!("HandleFetchEntryResult processed")
                 }
@@ -950,23 +912,20 @@ impl Sim2h {
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
                     let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
-                    let agent_pool = self.get_or_create_space(&space_address, |space| {
+                    let agent_pool =
                         space
                             .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                             .keys()
                             .cloned()
-                            .collect::<Vec<_>>()
-                        });
+                            .collect::<Vec<_>>();
                     let query_target = if agent_pool.is_empty() {
                         // If there is nobody we could ask, just send the query back
                         query_data.requester_agent_id.clone()
                     } else {
                         let agents_with_all_aspects_for_entry = agent_pool.iter()
                             .filter(|agent|{
-                                self.get_or_create_space(&space_address, |space| {
                                     !space
                                         .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
-                                })
                             })
                         .cloned()
                             .collect::<Vec<AgentId>>();
@@ -985,7 +944,7 @@ impl Sim2h {
                     };
 
 
-                    let maybe_url = self.lookup_joined(space, &query_target);
+                    let maybe_url = self.lookup_joined(&space, &query_target);
                     if maybe_url.is_none() {
                         error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())
@@ -1005,7 +964,7 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let to_url = self
-                    .lookup_joined(space, &query_result.requester_agent_id)
+                    .lookup_joined(&space, &query_result.requester_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &query_result.requester_agent_id))?;
                 Self::send(self.connection_states.clone(), self.spaces.clone(), self.open_connections.clone(),
                     query_result.requester_agent_id.clone(),
@@ -1101,16 +1060,15 @@ impl Sim2h {
         &self,
         entry_data: EntryData,
         space_address: SpaceHash,
+        mut space: parking_lot::RwLockWriteGuard<'_, Space>,
         provider: AgentPubKey,
     ) {
         // Calculate list of agents that should store new data:
         let dht_agents = match self.dht_algorithm {
-            DhtAlgorithm::FullSync => {
-                self.all_agents_except_one(space_address.clone(), Some(&provider))
-            }
+            DhtAlgorithm::FullSync => self.all_agents_except_one(&space, Some(&provider)),
             DhtAlgorithm::NaiveSharding { redundant_count } => {
                 let entry_loc = entry_location(&self.crypto, &entry_data.entry_address);
-                self.agents_in_neighbourhood(space_address.clone(), entry_loc, redundant_count)
+                self.agents_in_neighbourhood(&space, entry_loc, redundant_count)
             }
         };
 
@@ -1127,19 +1085,15 @@ impl Sim2h {
 
         for aspect in &entry_data.aspect_list {
             // 1. Add hashes to our global list of all aspects in this space:
-            {
-                self.get_or_create_space_mut(&space_address, |mut space| {
-                    space.add_aspect(
-                        entry_data.entry_address.clone(),
-                        aspect.aspect_address.clone(),
-                    );
-                    debug!(
-                        "Space {} now knows about these aspects:\n{}",
-                        &space_address,
-                        space.all_aspects().pretty_string()
-                    );
-                })
-            }
+            space.add_aspect(
+                entry_data.entry_address.clone(),
+                aspect.aspect_address.clone(),
+            );
+            debug!(
+                "Space {} now knows about these aspects:\n{}",
+                &space_address,
+                space.all_aspects().pretty_string()
+            );
 
             // 2. Create store message
             let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
@@ -1173,37 +1127,33 @@ impl Sim2h {
 
     fn all_agents_except_one(
         &self,
-        space_hash: SpaceHash,
+        space: &Space,
         except: Option<&AgentId>,
     ) -> Vec<(AgentId, AgentInfo)> {
-        self.get_or_create_space(&space_hash, |space| {
-            space
-                .all_agents()
-                .clone()
-                .into_iter()
-                .filter(|(a, _)| {
-                    if let Some(exception) = except {
-                        *a != *exception
-                    } else {
-                        true
-                    }
-                })
-                .collect::<Vec<(AgentId, AgentInfo)>>()
-        })
+        space
+            .all_agents()
+            .clone()
+            .into_iter()
+            .filter(|(a, _)| {
+                if let Some(exception) = except {
+                    *a != *exception
+                } else {
+                    true
+                }
+            })
+            .collect::<Vec<(AgentId, AgentInfo)>>()
     }
 
     fn agents_in_neighbourhood(
         &self,
-        space_hash: SpaceHash,
+        space: &Space,
         entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
-        self.get_or_create_space(&space_hash, |space| {
-            space
-                .agents_supposed_to_hold_entry(entry_loc, redundant_count)
-                .into_iter()
-                .collect::<Vec<(AgentId, AgentInfo)>>()
-        })
+        space
+            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+            .into_iter()
+            .collect::<Vec<(AgentId, AgentInfo)>>()
     }
 
     fn send(

@@ -23,3 +23,9 @@ sim2h_server -p 9000 |& tee sim2h-playback.log
 # 7. Playback the cassette with the server you just started up as a target
 walkman playback sim2h --path sim2h.cassette --url ws://localhost:9002 |& tee cassette-playback.log
 ```
+
+## Installation
+
+```
+cargo install --force --path crates/walkman_cli
+```

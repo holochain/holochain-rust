@@ -349,12 +349,16 @@ impl Sim2h {
         );
     }
 
-    fn get_or_create_space<F, T>(&self, space_address: &SpaceHash, mut f: F) -> T
+    fn get_or_create_space<F, T>(&self, space_address: &SpaceHash, f: F) -> T
     where
-        F: FnMut(parking_lot::RwLockReadGuard<'_, Space>) -> T,
+        F: FnOnce(parking_lot::RwLockReadGuard<'_, Space>) -> T,
     {
+
+        let thread_name = format!("[{:?}]", std::thread::current().name());
+
+        trace!("{} get_or_create_space START", thread_name);
         let spaces = self.spaces.clone();
-        if !spaces.read().contains_key(space_address) {
+        if !spaces.read_recursive().contains_key(space_address) {
             spaces.write().insert(
                 space_address.clone(),
                 RwLock::new(Space::new(self.crypto.box_clone())),
@@ -364,9 +368,14 @@ impl Sim2h {
                 space_address
             );
         }
-        let spaces = spaces.read();
-        f(spaces.get(space_address).unwrap().read())
-    }
+        trace!("{} get_or_create_space.f START", thread_name);
+        let spaces = spaces.read_recursive();
+        trace!("{} get_or_create_space.f GOT READ", thread_name);
+         let ret = with_latency_publishing!("get_or_create_space.f", self.metric_publisher,
+            f, spaces.get(space_address).unwrap().read_recursive());
+        trace!("{} get_or_create_space.f END", thread_name);
+        ret
+     }
 
     fn get_or_create_space_mut_result<F, E>(
         &self,
@@ -376,8 +385,10 @@ impl Sim2h {
     where
         F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> Result<(), E>,
     {
+        let thread_name = format!("[{:?}]", std::thread::current().name());
+        trace!("{} get_or_create_space_mut_result START", thread_name);
         let spaces = self.spaces.clone();
-        if !spaces.read().contains_key(space_address) {
+        if !spaces.read_recursive().contains_key(space_address) {
             spaces.write().insert(
                 space_address.clone(),
                 RwLock::new(Space::new(self.crypto.box_clone())),
@@ -387,16 +398,23 @@ impl Sim2h {
                 space_address
             );
         }
-        let spaces = spaces.read();
-        f(spaces.get(space_address).unwrap().write())
-    }
+        trace!("{} get_or_create_space_mut_result.f START", thread_name);
+        let spaces = spaces.read_recursive();
+        trace!("{} get_or_create_space_mut_result.f GOT READ", thread_name);
+         let result = with_latency_publishing!("get_or_create_space_mut_result.f", 
+            self.metric_publisher, f, spaces.get(space_address).unwrap().write());
+        trace!("{} get_or_create_space_mut_result.f END", thread_name);
+        result
+     }
 
-    fn get_or_create_space_mut<F>(&self, space_address: &SpaceHash, mut f: F) -> ()
+    fn get_or_create_space_mut<F, T>(&self, space_address: &SpaceHash, mut f: F) -> T
     where
-        F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> (),
+        F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> T,
     {
+        let thread_name = format!("[{:?}]", std::thread::current().name());
+        trace!("{} get_or_create_space_mut START", thread_name);
         let spaces = self.spaces.clone();
-        if !spaces.read().contains_key(space_address) {
+        if !spaces.read_recursive().contains_key(space_address) {
             spaces.write().insert(
                 space_address.clone(),
                 RwLock::new(Space::new(self.crypto.box_clone())),
@@ -405,10 +423,15 @@ impl Sim2h {
                 "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                 space_address
             );
-        }
-        let spaces = spaces.read();
-        f(spaces.get(space_address).unwrap().write())
-    }
+        };
+        trace!("{} get_or_create_space_mut.f START", thread_name);
+        let spaces = spaces.read_recursive();
+        trace!("{} get_or_create_space_mut.f GOT READ", thread_name);
+        let ret = with_latency_publishing!("get_or_create_space_mut.f", 
+            self.metric_publisher, f, spaces.get(space_address).unwrap().write());
+        trace!("{} get_or_create_space_mut.f END", thread_name);
+        ret
+      }
 
     // adds an agent to a space
     fn join(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
@@ -503,12 +526,8 @@ impl Sim2h {
     }
 
     // find out if an agent is in a space or not and return its URI
-    fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        self.spaces
-            .read()
-            .get(space_address)?
-            .read()
-            .agent_id_to_uri(agent_id)
+    fn lookup_joined(&self, space: &Space, agent_id: &AgentId) -> Option<Lib3hUri> {
+        space.agent_id_to_uri(agent_id)
     }
 
     // handler for incoming connections
@@ -554,7 +573,7 @@ impl Sim2h {
                 signer.clone(),
                 uri.clone(),
                 &WireMessage::StatusResponse(StatusData {
-                    spaces: self.spaces.read().len(),
+                    spaces: self.spaces.read_recursive().len(),
                     connections: self.open_connections.len(),
                     redundant_count: match self.dht_algorithm {
                         DhtAlgorithm::FullSync => 0,
@@ -605,7 +624,9 @@ impl Sim2h {
                 if &agent_id != signer {
                     return Err(SIGNER_MISMATCH_ERR_STR.into());
                 }
-                self.handle_joined(uri, &space_address, &agent_id, message)
+                self.get_or_create_space(&space_address.clone(), move |space| {
+                    self.handle_joined(uri, &space_address.clone(), &space, &agent_id, message)
+                })
             }
         }
     }
@@ -711,6 +732,7 @@ impl Sim2h {
         &self,
         uri: &Lib3hUri,
         space_address: &SpaceHash,
+        space: &Space,
         agent_id: &AgentId,
         message: WireMessage,
     ) -> Sim2hResult<()> {
@@ -743,7 +765,7 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let to_url = self
-                    .lookup_joined(space_address, &dm_data.to_agent_id)
+                    .lookup_joined(space, &dm_data.to_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
                 Self::send(self.connection_states.clone(), self.spaces.clone(), self.open_connections.clone(),
                     dm_data.to_agent_id.clone(),
@@ -761,7 +783,7 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let to_url = self
-                    .lookup_joined(space_address, &dm_data.to_agent_id)
+                    .lookup_joined(space, &dm_data.to_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
                 Self::send(self.connection_states.clone(), self.spaces.clone(), self.open_connections.clone(),
                     dm_data.to_agent_id.clone(),
@@ -839,7 +861,8 @@ impl Sim2h {
                                     &aspects_missing_at_node,
                                     agent_id.clone(),
                                     all_agents_in_space,
-                                    space_address.clone()
+                                    &space_address,
+                                    &space
                                 );
                             }
                             });
@@ -858,7 +881,8 @@ impl Sim2h {
                                         &aspects_missing_at_node.filtered_by_entry_hash(|e| e == entry_address),
                                         agent_id.clone(),
                                         agent_pool,
-                                        space_address.clone()
+                                        &space_address,
+                                        &space
                                     );
                                 })
                             }
@@ -884,7 +908,7 @@ impl Sim2h {
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
                     let to_agent_id = AgentPubKey::from(fetch_result.request_id.clone());
-                    let maybe_url = self.lookup_joined(space_address, &to_agent_id);
+                    let maybe_url = self.lookup_joined(space, &to_agent_id);
                     if maybe_url.is_none() {
                         error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())
@@ -950,7 +974,7 @@ impl Sim2h {
                     };
 
 
-                    let maybe_url = self.lookup_joined(space_address, &query_target);
+                    let maybe_url = self.lookup_joined(space, &query_target);
                     if maybe_url.is_none() {
                         error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
                         return Ok(())
@@ -970,7 +994,7 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let to_url = self
-                    .lookup_joined(space_address, &query_result.requester_agent_id)
+                    .lookup_joined(space, &query_result.requester_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &query_result.requester_agent_id))?;
                 Self::send(self.connection_states.clone(), self.spaces.clone(), self.open_connections.clone(),
                     query_result.requester_agent_id.clone(),
@@ -991,7 +1015,8 @@ impl Sim2h {
         aspects_to_fetch: &AspectList,
         for_agent_id: AgentId,
         mut agent_pool: Vec<AgentId>,
-        space_address: SpaceHash,
+        space_address: &SpaceHash,
+        space: &Space,
     ) {
         let agent_pool = &mut agent_pool[..];
         agent_pool.shuffle(&mut thread_rng());
@@ -1002,14 +1027,14 @@ impl Sim2h {
                     aspect_address_list,
                     &for_agent_id,
                     agent_pool,
-                    &space_address,
+                    &space,
                 ) {
                     debug!(
                         "FETCHING missing contents from RANDOM AGENT: {}",
                         arbitrary_agent
                     );
 
-                    let maybe_url = self.lookup_joined(&space_address, &arbitrary_agent);
+                    let maybe_url = self.lookup_joined(space, &arbitrary_agent);
                     if maybe_url.is_none() {
                         error!("Could not find URL for randomly selected agent. This should not happen!");
                         return;
@@ -1049,17 +1074,15 @@ impl Sim2h {
         aspects: &Vec<AspectHash>,
         for_agent_id: &AgentId,
         agent_pool: &[AgentId],
-        space_address: &SpaceHash,
+        space: &Space,
     ) -> Option<AgentId> {
-        let spaces = self.spaces.read();
-        let space_lock = spaces.get(space_address)?.read();
         agent_pool
             .into_iter()
             // We ignore all agents that are missing all of the same aspects as well since
             // they can't help us.
             .find(|a| {
                 **a != *for_agent_id
-                    && !space_lock.agent_is_missing_all_aspects(*a, entry_hash, aspects)
+                    && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
             })
             .cloned()
     }
@@ -1227,10 +1250,10 @@ impl Sim2h {
         // as copies so we don't have to keep a reference to self.
         let spaces_with_agents_and_uris = self
             .spaces
-            .read()
+            .read_recursive()
             .iter()
             .filter_map(|(space_hash, space)| {
-                let agents = space.read().agents_with_missing_aspects();
+                let agents = space.read_recursive().agents_with_missing_aspects();
                 // If this space doesn't have any agents with missing aspects,
                 // ignore it:
                 if agents.is_empty() {
@@ -1242,7 +1265,7 @@ impl Sim2h {
                         .iter()
                         .filter_map(|agent_id| {
                             space
-                                .read()
+                                .read_recursive()
                                 .agent_id_to_uri(agent_id)
                                 .map(|uri| (agent_id.clone(), uri))
                         })

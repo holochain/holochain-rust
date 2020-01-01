@@ -35,7 +35,7 @@ struct Cli {
 
 /// By default will scale to number of cores.
 /// This forces it to *at most* this many threads.
-const MAX_PROCESSING_THREADS: usize = 1;
+const MAX_PROCESSING_THREADS: usize = 2;
 
 fn main() {
     env_logger::init();
@@ -61,9 +61,11 @@ fn main() {
 
     let mut threads = Vec::new();
     let sim2h = Arc::new(sim2h);
-    for _i in 0..std::cmp::min(MAX_PROCESSING_THREADS, num_cpus::get()) {
+    for cpu_index in 0..std::cmp::min(MAX_PROCESSING_THREADS, num_cpus::get()) {
         let sim2h = sim2h.clone();
-        let result = std::thread::spawn(move || loop {
+        let result = std::thread::Builder::new()
+            .name(format!("sim2h-processor-thread-{}", cpu_index))
+            .spawn(move || loop {
             let result = sim2h.process();
             if let Err(e) = result {
                 if e.to_string().contains("Bind error:") {
@@ -79,6 +81,6 @@ fn main() {
     }
 
     for t in threads {
-        let _ = t.join();
+        let _ = t.map(|t| t.join());
     }
 }

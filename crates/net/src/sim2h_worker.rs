@@ -82,7 +82,7 @@ impl Sim2hWorker {
         agent_id: Address,
         conductor_api: ConductorApi,
     ) -> NetResult<Self> {
-        let reconnect_interval = Duration::from_secs(INITIAL_CONNECTION_TIMEOUT_MS);
+        let reconnect_interval = Duration::from_millis(INITIAL_CONNECTION_TIMEOUT_MS);
         let mut instance = Self {
             handler,
             connection: None,
@@ -113,21 +113,33 @@ impl Sim2hWorker {
         Ok(instance)
     }
 
+    fn backoff(&mut self) {
+        if self.connection_timeout_backoff < MAX_CONNECTION_TIMEOUT_MS {
+            self.inner_set_backoff(self.connection_timeout_backoff*2);
+        }
+    }
+
+    fn inner_set_backoff(&mut self, backoff: u64) {
+        self.connection_timeout_backoff = backoff;
+        debug!(
+            "BACKOFF setting reconnect interval to {}",
+            self.connection_timeout_backoff
+        );
+        self.reconnect_interval = Duration::from_millis(self.connection_timeout_backoff)
+    }
+
+    fn reset_backoff(&mut self) {
+        if self.connection_timeout_backoff > INITIAL_CONNECTION_TIMEOUT_MS {
+            self.inner_set_backoff(INITIAL_CONNECTION_TIMEOUT_MS);
+        }
+    }
+
     /// check to see if we need to re-connect
     /// if we don't have a ready connection within RECONNECT_INTERVAL
     fn check_reconnect(&mut self) {
+
         if self.connection_ready() {
-            // if the connection is ready and the backoff interval is greater than initial
-            // means we have actually succeed in connection after a backoff so
-            // now we can reset the backoff
-            if self.connection_timeout_backoff > INITIAL_CONNECTION_TIMEOUT_MS {
-                debug!(
-                    "resetting reconnect interval to {}",
-                    INITIAL_CONNECTION_TIMEOUT_MS
-                );
-                self.connection_timeout_backoff = INITIAL_CONNECTION_TIMEOUT_MS;
-                self.reconnect_interval = Duration::from_secs(self.connection_timeout_backoff)
-            }
+            self.reset_backoff();
             return;
         }
 
@@ -137,19 +149,12 @@ impl Sim2hWorker {
 
         //if self.connection.is_none() {
         warn!(
-            "attempting reconnect, connection state: {:?}",
+            "BACKOFF attempting reconnect, connection state: {:?}",
             self.connection
         );
         //}
 
-        if self.connection_timeout_backoff < MAX_CONNECTION_TIMEOUT_MS {
-            self.connection_timeout_backoff *= 2;
-            debug!(
-                "increasing reconnect interval to {}",
-                self.connection_timeout_backoff
-            );
-            self.reconnect_interval = Duration::from_secs(self.connection_timeout_backoff)
-        }
+        self.backoff();
 
         self.time_of_last_connection_attempt = Instant::now();
         self.connection = None;
@@ -513,6 +518,7 @@ impl NetWorker for Sim2hWorker {
         }
 
         if self.connection_ready() {
+            self.reset_backoff();
             if self.try_send_from_outgoing_buffer() {
                 did_something = true;
             }

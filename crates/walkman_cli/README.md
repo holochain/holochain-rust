@@ -24,6 +24,8 @@ sim2h_server -p 9000 |& tee sim2h-playback.log
 walkman playback sim2h --path sim2h.cassette --url ws://localhost:9002 |& tee cassette-playback.log
 ```
 
+Steps 1-4 are the recording process, which only has to happen once. When iteratively testing, you can repeat the playback by running steps 6 and 7 (the last two steps) with the same cassette over and over.
+
 ## Installation
 
 ```

@@ -55,6 +55,31 @@ impl Sim2hClient {
         &mut self.connection
     }
 
+    pub fn await_msg<F>(&mut self, predicate: F) -> Result<WireMessage, String>
+    where
+        F: Fn(&WireMessage) -> bool,
+    {
+        let timeout = std::time::Instant::now()
+        .checked_add(std::time::Duration::from_millis(10000))
+        .unwrap();
+
+        loop {
+            if let Some(msg) = pull_message_from_stream(&mut self.connection) {
+                if predicate(&msg) {
+                    return Ok(msg)
+                } else {
+                    println!("await_msg skipping message: {:?}", msg);
+                }
+            }
+
+            if std::time::Instant::now() >= timeout {
+                Err("could not connect within timeout".to_string())?
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
+
     /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
         let payload: Opaque = message.into();
@@ -76,6 +101,22 @@ impl Sim2hClient {
         };
         let to_send: Opaque = signed_message.into();
         self.connection.write(to_send.as_bytes().into()).unwrap();
+    }
+}
+
+fn pull_message_from_stream(connection: &mut Connection) -> Option<WireMessage> {
+    let mut frame = WsFrame::default();
+    match connection.read(&mut frame) {
+        Ok(_) => {
+            if let WsFrame::Binary(b) = frame {
+                let msg: WireMessage = serde_json::from_slice(&b).unwrap();
+                Some(msg)
+            } else {
+                panic!("unexpected {:?}", frame);
+            }
+        }
+        Err(e) if e.would_block() => None,
+        Err(e) => panic!(e),
     }
 }
 

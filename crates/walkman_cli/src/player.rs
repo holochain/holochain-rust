@@ -1,6 +1,6 @@
 use holochain_walkman_types::{Cassette, WalkmanEvent, WalkmanLogItem, WalkmanSim2hEvent};
 use in_stream::InStream;
-use lib3h_protocol::data_types::Opaque;
+use lib3h_protocol::{data_types::Opaque, protocol::*};
 use sim2h::{crypto::SignedWireMessage, wire_message::WireMessage};
 use sim2h_client::Sim2hClient;
 use std::collections::{hash_map::Entry, HashMap};
@@ -47,15 +47,29 @@ impl Sim2hCassettePlayer {
                         .map(|client| {
                             // The Sim2hClient was created with a random keypair, but we are going to bypass that agent here
                             // and directly send a saved signed message from a different prior Agent
-                            let msg: SignedWireMessage = serde_json::from_str(message_str)
-                                .expect("Couldn't parse serialized SignedWireMessage");
-                            let wire_msg: WireMessage = msg.payload.clone().try_into().unwrap();
-                            println!("Playback WireMessage: {:?}", wire_msg);
+                            let msg: SignedWireMessage = deserialize_message_data(message_str);
+                            let wire_msg: WireMessage = get_wire_message(&msg);
+                            println!("Playback WireMessage from {} : {:?}", client_url, wire_msg);
                             let to_send: Opaque = msg.into();
                             client
                                 .connection()
                                 .write(to_send.as_bytes().into())
                                 .unwrap();
+
+                            if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) = wire_msg {
+                                // We need to wait for the JoinSpace to complete on the sim2h side,
+                                // but JoinSpaceResult is never sent by sim2h, so we do this hacky waiting
+                                println!("Awaiting Lib3hToClient::HandleGetGossipingEntryListResult after JoinSpace");
+                                let _ = client.await_msg(|msg| {
+                                    if let WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) = msg {
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                });
+                                println!("Now waiting 100ms because we don't know when the Join is actually done...");
+                                std::thread::sleep(std::time::Duration::from_millis(100));
+                            }
                         })
                         .unwrap_or_else(|| {
                             panic!("Trying to send message without a client connection")
@@ -64,4 +78,12 @@ impl Sim2hCassettePlayer {
             }
         }
     }
+}
+
+pub fn deserialize_message_data(data: &str) -> SignedWireMessage {
+    serde_json::from_str(data).expect("Couldn't parse serialized SignedWireMessage")
+}
+
+pub fn get_wire_message(signed: &SignedWireMessage) -> WireMessage {
+    signed.clone().payload.try_into().unwrap()
 }

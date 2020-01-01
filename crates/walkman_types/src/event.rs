@@ -1,9 +1,9 @@
-use std::time::Instant;
+use std::time::SystemTime;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WalkmanLogItem {
     #[serde(with = "serde_millis")]
-    pub time: Instant,
+    pub time: SystemTime,
     pub event: WalkmanEvent,
 }
 
@@ -15,7 +15,7 @@ pub enum WalkmanEvent {
 
 pub fn walkman_log_sim2h(data: WalkmanSim2hEvent) -> WalkmanLogItem {
     WalkmanLogItem {
-        time: Instant::now(),
+        time: SystemTime::now(),
         event: WalkmanEvent::Sim2hEvent(data),
     }
 }
@@ -31,7 +31,7 @@ pub fn walkman_log_sim2h(data: WalkmanSim2hEvent) -> WalkmanLogItem {
 // impl WalkmanLogger<WalkmanSim2hEvent> for WalkmanSim2hLogger {
 //     fn log(data: WalkmanSim2hEvent) -> WalkmanLogItem {
 //         WalkmanLogItem {
-//             time: Instant::now(),
+//             time: SystemTime::now(),
 //             event: WalkmanEvent::Sim2hEvent(data),
 //         }
 //     }

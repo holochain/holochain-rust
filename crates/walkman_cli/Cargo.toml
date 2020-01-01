@@ -16,6 +16,7 @@ sim2h_client = { path = "../sim2h_client" }
 holochain_walkman_types = { path = "../walkman_types" }
 url = "=2.1.0"
 url2 = "=0.0.4"
+chrono = "=0.4.6"
 
 [[bin]]
 name = "walkman"

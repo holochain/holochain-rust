@@ -1654,6 +1654,7 @@ dependencies = [
 name = "holochain_walkman"
 version = "0.0.42-alpha1"
 dependencies = [
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_walkman_types 0.0.42-alpha1",
  "in_stream 0.0.42-alpha1",
  "lib3h_protocol 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -461,7 +461,7 @@ impl Sim2hState {
         agent_id: AgentId,
         list_data: EntryListData,
     ) -> Vec<Lib3hUri> {
-        let unseen_aspects = AspectList::from(list_data.address_map.clone())
+        let unseen_aspects = AspectList::from(list_data.address_map)
             .diff(self.get_space(&space_address).all_aspects());
         debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
         let mut disconnects = Vec::new();
@@ -1178,7 +1178,6 @@ impl Sim2h {
                     let state = self.state.clone();
                     let tx = self.tp_send.clone();
                     let space_address = space_address.clone();
-                       let query_data = query_data.clone();
                     self.threadpool.execute(move || {
                         let disconnects =
                             state

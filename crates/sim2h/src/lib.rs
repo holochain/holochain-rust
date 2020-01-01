@@ -577,7 +577,7 @@ impl Sim2hState {
 }
 
 enum PoolTask {
-//    VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
+    //    VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
     Disconnect(Vec<Lib3hUri>),
 }
 
@@ -707,15 +707,15 @@ impl Sim2h {
                         format!("unexpected text message: {:?}", s).into(),
                     ),
                     WsFrame::Binary(b) => {
-                        let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
+                        let debug = url.host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
                         if debug {
                             println!("receved a frame from zippy ({})", url);
                         }
                         let payload: Opaque = b.into();
                         match Sim2h::verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
-
-                                if let Err(error) = self.handle_message(&url, wire_message, &source) {
+                                if let Err(error) = self.handle_message(&url, wire_message, &source)
+                                {
                                     println!("Error handling message: {:?}", error);
                                 }
                             }
@@ -920,7 +920,7 @@ impl Sim2h {
 
     fn verify_payload(payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
         let signed_message = SignedWireMessage::try_from(payload)?;
-/*        let result = signed_message.verify().unwrap();
+        /*        let result = signed_message.verify().unwrap();
         if !result {
             return Err(VERIFY_FAILED_ERR_STR.into());
         }*/
@@ -942,15 +942,15 @@ impl Sim2h {
                     self.state.write().disconnect(&url)
                 }
             }
-//            Ok(PoolTask::VerifyPayload(Ok(_))) => {
-/*/                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
-                if debug {
-                    println!("payload verified from from zippy ({}) message is {:?}", url, wire_message);
-                }
-                if let Err(error) = self.handle_message(&url, wire_message, &source) {
-                    error!("Error handling message: {:?}", error);
-                }*/
-      //      }
+            //            Ok(PoolTask::VerifyPayload(Ok(_))) => {
+            /*/                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
+                      if debug {
+                          println!("payload verified from from zippy ({}) message is {:?}", url, wire_message);
+                      }
+                      if let Err(error) = self.handle_message(&url, wire_message, &source) {
+                          error!("Error handling message: {:?}", error);
+                      }*/
+            //      }
             _ => (),
         };
 

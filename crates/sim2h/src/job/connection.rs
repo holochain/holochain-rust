@@ -74,7 +74,7 @@ impl ConnectionJob {
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
-                let debug = self.wss.remote_url().host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
+                let debug = self.wss.remote_url().host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
                 if debug {
                     println!("from zippy ({}) in connection", self.wss.remote_url());
                 }

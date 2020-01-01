@@ -920,10 +920,10 @@ impl Sim2h {
 
     fn verify_payload(payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
         let signed_message = SignedWireMessage::try_from(payload)?;
-        let result = signed_message.verify().unwrap();
+/*        let result = signed_message.verify().unwrap();
         if !result {
             return Err(VERIFY_FAILED_ERR_STR.into());
-        }
+        }*/
         let wire_message = WireMessage::try_from(signed_message.payload)?;
         Ok((signed_message.provenance.source().into(), wire_message))
     }

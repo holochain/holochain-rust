@@ -577,7 +577,7 @@ impl Sim2hState {
 }
 
 enum PoolTask {
-    VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
+//    VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
     Disconnect(Vec<Lib3hUri>),
 }
 
@@ -712,28 +712,21 @@ impl Sim2h {
                             println!("receved a frame from zippy ({})", url);
                         }
                         let payload: Opaque = b.into();
-                        let tx = self.tp_send.clone();
-                        self.threadpool.execute(move || {
-                            match Sim2h::verify_payload(payload.clone()) {
-                                Ok((source, wire_message)) => {
-                                    tx.send(PoolTask::VerifyPayload(Ok((
-                                        url.clone(),
-                                        wire_message,
-                                        source.clone(),
-                                    ))))
-                                    .expect("Could not send !");
-                                }
-                                Err(error) => {
-                                    println!(
-                                        "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
-                                        url,
-                                        error, payload
-                                    );
-                                    tx.send(PoolTask::VerifyPayload(Err(())))
-                                        .expect("to be able to send");
+                        match Sim2h::verify_payload(payload.clone()) {
+                            Ok((source, wire_message)) => {
+
+                                if let Err(error) = self.handle_message(&url, wire_message, &source) {
+                                    println!("Error handling message: {:?}", error);
                                 }
                             }
-                        });
+                            Err(error) => {
+                                println!(
+                                    "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
+                                    url,
+                                    error, payload
+                                );
+                            }
+                        }
                     }
                     // TODO - we should use websocket ping/pong
                     //        instead of rolling our own on top of Binary
@@ -949,15 +942,15 @@ impl Sim2h {
                     self.state.write().disconnect(&url)
                 }
             }
-            Ok(PoolTask::VerifyPayload(Ok((url, wire_message, source)))) => {
-                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
+//            Ok(PoolTask::VerifyPayload(Ok(_))) => {
+/*/                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
                 if debug {
                     println!("payload verified from from zippy ({}) message is {:?}", url, wire_message);
                 }
                 if let Err(error) = self.handle_message(&url, wire_message, &source) {
                     error!("Error handling message: {:?}", error);
-                }
-            }
+                }*/
+      //      }
             _ => (),
         };
 

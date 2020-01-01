@@ -353,7 +353,6 @@ impl Sim2h {
     where
         F: FnOnce(parking_lot::RwLockReadGuard<'_, Space>) -> T,
     {
-
         let thread_name = format!("[{:?}]", std::thread::current().name());
 
         trace!("{} get_or_create_space START", thread_name);
@@ -371,11 +370,15 @@ impl Sim2h {
         trace!("{} get_or_create_space.f START", thread_name);
         let spaces = spaces.read_recursive();
         trace!("{} get_or_create_space.f GOT READ", thread_name);
-         let ret = with_latency_publishing!("get_or_create_space.f", self.metric_publisher,
-            f, spaces.get(space_address).unwrap().read_recursive());
+        let ret = with_latency_publishing!(
+            "get_or_create_space.f",
+            self.metric_publisher,
+            f,
+            spaces.get(space_address).unwrap().read_recursive()
+        );
         trace!("{} get_or_create_space.f END", thread_name);
         ret
-     }
+    }
 
     fn get_or_create_space_mut_result<F, E>(
         &self,
@@ -401,11 +404,15 @@ impl Sim2h {
         trace!("{} get_or_create_space_mut_result.f START", thread_name);
         let spaces = spaces.read_recursive();
         trace!("{} get_or_create_space_mut_result.f GOT READ", thread_name);
-         let result = with_latency_publishing!("get_or_create_space_mut_result.f", 
-            self.metric_publisher, f, spaces.get(space_address).unwrap().write());
+        let result = with_latency_publishing!(
+            "get_or_create_space_mut_result.f",
+            self.metric_publisher,
+            f,
+            spaces.get(space_address).unwrap().write()
+        );
         trace!("{} get_or_create_space_mut_result.f END", thread_name);
         result
-     }
+    }
 
     fn get_or_create_space_mut<F, T>(&self, space_address: &SpaceHash, mut f: F) -> T
     where
@@ -427,11 +434,15 @@ impl Sim2h {
         trace!("{} get_or_create_space_mut.f START", thread_name);
         let spaces = spaces.read_recursive();
         trace!("{} get_or_create_space_mut.f GOT READ", thread_name);
-        let ret = with_latency_publishing!("get_or_create_space_mut.f", 
-            self.metric_publisher, f, spaces.get(space_address).unwrap().write());
+        let ret = with_latency_publishing!(
+            "get_or_create_space_mut.f",
+            self.metric_publisher,
+            f,
+            spaces.get(space_address).unwrap().write()
+        );
         trace!("{} get_or_create_space_mut.f END", thread_name);
         ret
-      }
+    }
 
     // adds an agent to a space
     fn join(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
@@ -1081,8 +1092,7 @@ impl Sim2h {
             // We ignore all agents that are missing all of the same aspects as well since
             // they can't help us.
             .find(|a| {
-                **a != *for_agent_id
-                    && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
+                **a != *for_agent_id && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
             })
             .cloned()
     }

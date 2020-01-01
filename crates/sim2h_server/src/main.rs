@@ -66,17 +66,17 @@ fn main() {
         let result = std::thread::Builder::new()
             .name(format!("sim2h-processor-thread-{}", cpu_index))
             .spawn(move || loop {
-            let result = sim2h.process();
-            if let Err(e) = result {
-                if e.to_string().contains("Bind error:") {
-                    println!("{:?}", e);
-                    exit(1)
-                } else {
-                    error!("{}", e.to_string())
+                let result = sim2h.process();
+                if let Err(e) = result {
+                    if e.to_string().contains("Bind error:") {
+                        println!("{:?}", e);
+                        exit(1)
+                    } else {
+                        error!("{}", e.to_string())
+                    }
                 }
-            }
-            std::thread::sleep(std::time::Duration::from_millis(1));
-        });
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            });
         threads.push(result);
     }
 

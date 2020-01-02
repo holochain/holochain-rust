@@ -194,14 +194,14 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&self) {
-        for _i in 0..NUM_CONNECTION_THREADS {
+        for _cpu_index in 0..NUM_CONNECTION_THREADS {
             let connection_states = self.connection_states.clone();
             let open_connections = self.open_connections.clone();
             let msg_send = self.msg_send.clone();
             let pool = self.pool.clone();
             let wss_recv = self.wss_recv.clone();
 
-            std::thread::spawn(move || loop {
+            let _result = std::thread::spawn(move || loop {
                 if let Ok(wss) = wss_recv.try_recv() {
                     let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
                     let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
@@ -295,9 +295,9 @@ impl Sim2h {
             "sim2h-recalc-rrdht-arc-radius",
             self.metric_publisher,
             || {
-                let mut spaces = self.spaces.write();
+                let spaces = self.spaces.read();
 
-                for (_, space) in spaces.iter_mut() {
+                for (_, space) in spaces.iter() {
                     space.write().recalc_rrdht_arc_radius();
                 }
             }
@@ -370,22 +370,53 @@ impl Sim2h {
                 .entry(space_address.clone())
                 .or_insert_with(|| RwLock::new(Space::new(self.crypto.box_clone())));
             drop(space_write);
+            trace!(
+                "{} get_or_create_space_mut_result inserting entry {:?}",
+                thread_name,
+                space_address
+            );
+            let spaces_read = spaces.read_recursive();
+
+            trace!(
+                "{} get_or_create_space_mut_result.f GOT READ (insert entry={:?})",
+                thread_name,
+                space_address
+            );
+            let result = with_latency_publishing!(
+                "get_or_create_space_mut_result.f",
+                self.metric_publisher,
+                f,
+                spaces_read.get(space_address).unwrap().write()
+            );
+            trace!(
+                "{} get_or_create_space_mut_result.f END (insert entry={:?})",
+                thread_name,
+                space_address
+            );
             info!(
                 "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                 space_address
-            )
+            );
+            result
+        } else {
+            trace!(
+                "{} get_or_create_space_mut_result.f GOT READ (entry={:?})",
+                thread_name,
+                space_address
+            );
+            let result = with_latency_publishing!(
+                "get_or_create_space_mut_result.f",
+                self.metric_publisher,
+                f,
+                spaces_read.get(space_address).unwrap().write()
+            );
+            trace!(
+                "{} get_or_create_space_mut_result.f END (entry={:?})",
+                thread_name,
+                space_address
+            );
+            result
         }
-
-        let spaces_read = spaces.read_recursive();
-        trace!("{} get_or_create_space_mut_result.f GOT READ", thread_name);
-        let result = with_latency_publishing!(
-            "get_or_create_space_mut_result.f",
-            self.metric_publisher,
-            f,
-            spaces_read.get(space_address).unwrap().write()
-        );
-        trace!("{} get_or_create_space_mut_result.f END", thread_name);
-        result
     }
 
     fn get_or_create_space_mut<F, T>(&self, space_address: &SpaceHash, mut f: F) -> T
@@ -441,22 +472,61 @@ impl Sim2h {
     }
 
     // removes an agent from a space
-    fn leave(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
+    fn leave(
+        &self,
+        uri: &Lib3hUri,
+        space: parking_lot::RwLockWriteGuard<'_, Space>,
+        data: &SpaceData,
+    ) -> Sim2hResult<()> {
+        trace!("leave START: {:?}", data);
         if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
             if (data.agent_id != agent_id) || (data.space_address != space_address) {
                 Err(SPACE_MISMATCH_ERR_STR.into())
             } else {
-                Self::disconnect(
+                Self::disconnect2(
                     self.connection_states.clone(),
                     self.spaces.clone(),
                     self.open_connections.clone(),
                     uri,
+                    space,
                 );
                 Ok(())
             }
         } else {
             Err(format!("no joined agent found at {} ", &uri).into())
         }
+    }
+
+    fn disconnect2(
+        connection_states: ConnectionStates,
+        spaces: Spaces,
+        open_connections: OpenConnections,
+        uri: &Lib3hUri,
+        mut space: parking_lot::RwLockWriteGuard<'_, Space>,
+    ) {
+        trace!("disconnect entered");
+
+        if let Some((con, _outgoing_send)) = open_connections.remove(uri) {
+            con.f_lock().stop();
+        }
+        trace!("disconnect: lock obtained");
+
+        if let Some(ConnectionState::Joined(space_address, agent_id)) =
+            connection_states.remove(uri)
+        {
+            if space.remove_agent(&agent_id) == 0 {
+                trace!("disconnect: Space write obtained");
+
+                // TODO write processing loop to walk spaces and clear these out,
+                // or alternatively switch to chashmap
+                //spaces.write().remove(&space_address);
+                trace!(
+                    "disconnect: Spaces cleared for space_address {:?}",
+                    space_address
+                );
+            }
+        }
+        trace!("disconnect done");
     }
 
     fn disconnect(
@@ -470,13 +540,20 @@ impl Sim2h {
         if let Some((con, _outgoing_send)) = open_connections.remove(uri) {
             con.f_lock().stop();
         }
+        trace!("disconnect: lock obtained");
 
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             connection_states.remove(uri)
         {
-            if let Some(space_lock) = spaces.write().get_mut(&space_address) {
+            let space_read = spaces.read();
+            if let Some(space_lock) = space_read.get(&space_address) {
                 if space_lock.write().remove_agent(&agent_id) == 0 {
+                    trace!("disconnect: Space write obtained");
                     spaces.write().remove(&space_address);
+                    trace!(
+                        "disconnect: Spaces cleared for space_address {:?}",
+                        space_address
+                    );
                 }
             }
         }
@@ -723,7 +800,7 @@ impl Sim2h {
                 Err("join message should have been processed elsewhere and can't be proxied".into())
             }
             WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(data)) => {
-                self.leave(uri, &data)
+                self.leave(uri, space, &data)
             }
 
             // -- Direct Messaging -- //
@@ -1141,8 +1218,8 @@ impl Sim2h {
     }
 
     fn send(
-        connection_states: ConnectionStates,
-        spaces: Spaces,
+        _connection_states: ConnectionStates,
+        _spaces: Spaces,
         open_connections: OpenConnections,
         agent: AgentId,
         uri: Lib3hUri,
@@ -1166,12 +1243,12 @@ impl Sim2h {
             .map(|x| {
                 let (_, outgoing_send) = x.clone();
                 if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                    Self::disconnect(
+                    /*                    Self::disconnect(
                         connection_states.clone(),
                         spaces.clone(),
                         open_connections.clone(),
                         &uri,
-                    );
+                    );*/
                 };
                 true
             })

@@ -327,7 +327,7 @@ impl Sim2h {
             trace!("{} get_or_create_space_mut_result START", thread_name);
             let spaces = self.spaces.clone();
 
-            if spaces.contains_key(&space_hash) {
+            if spaces.contains_key(&space_address) {
                 return;
             }
 

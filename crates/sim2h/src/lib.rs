@@ -1070,10 +1070,7 @@ impl Sim2h {
             .map(|x| {
                 let (_, outgoing_send) = x.clone();
                 if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                    // Just do this in the connection processing loop instead
-                    /*                    self.disconnect(
-                        &uri,
-                    );*/
+                    self.disconnect(&uri)
                 };
                 true
             })

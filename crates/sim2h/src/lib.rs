@@ -16,6 +16,7 @@ mod naive_sharding;
 pub mod cache;
 pub mod connection_state;
 pub mod crypto;
+pub mod debug;
 pub mod error;
 use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash};
 mod message_log;
@@ -39,8 +40,7 @@ use lib3h_protocol::{
 };
 use url2::prelude::*;
 
-pub use wire_message::{StatusData, StatusLimboData, WireError, WireMessage, WIRE_VERSION};
-
+use debug::{DebugData, DebugLimboData};
 use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
@@ -49,7 +49,9 @@ use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     sync::Arc,
+    time::{Duration, Instant},
 };
+pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
 use holochain_locksmith::Mutex;
 
@@ -86,8 +88,10 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+static RECALC_RRDHT_ARC_RADIUS_INTERVAL: Duration = Duration::from_secs(20);
+static RETRY_FETCH_MISSING_ASPECTS_INTERVAL: Duration = Duration::from_secs(10);
+static DEBUG_DUMP_INTERVAL: Duration = Duration::from_secs(1);
+const DEBUG_DUMP_PREFIX: &str = "<SIM2H-DEBUG-DUMP> ";
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
@@ -121,9 +125,10 @@ pub struct Sim2h {
     >,
     num_ticks: u64,
     /// when should we recalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: std::time::Instant,
+    rrdht_arc_radius_recalc: Instant,
     /// when should we try to resync nodes that are still missing aspect data
-    missing_aspects_resync: std::time::Instant,
+    missing_aspects_resync: Instant,
+    debug_dump_time: Instant,
     dht_algorithm: DhtAlgorithm,
 }
 
@@ -146,8 +151,9 @@ impl Sim2h {
             msg_recv,
             open_connections: HashMap::new(),
             num_ticks: 0,
-            rrdht_arc_radius_recalc: std::time::Instant::now(),
-            missing_aspects_resync: std::time::Instant::now(),
+            rrdht_arc_radius_recalc: Instant::now(),
+            missing_aspects_resync: Instant::now(),
+            debug_dump_time: Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
         };
 
@@ -464,28 +470,6 @@ impl Sim2h {
         }
     }
 
-    fn get_limbo_status_data(&self) -> StatusLimboData {
-        let mut total_connections = 0;
-        let mut total_messages = 0;
-        let mut max_messages = 0;
-
-        self.connection_states.values().each(|cs| match cs {
-            ConnectionState::Limbo(messages) => {
-                let len = messages.len();
-                total_connections += 1;
-                total_messages += len;
-                if len > max_messages {
-                    max_messages = len
-                };
-            }
-        });
-        StatusLimboData {
-            total_connections,
-            total_messages,
-            max_messages,
-        }
-    }
-
     fn get_status_data(&self) -> StatusData {
         StatusData {
             spaces: self.spaces.len(),
@@ -494,10 +478,41 @@ impl Sim2h {
                 DhtAlgorithm::FullSync => 0,
                 DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
             },
+            version: WIRE_VERSION,
+        }
+    }
+
+    fn get_limbo_debug_data(&self) -> DebugLimboData {
+        let mut total_connections = 0;
+        let mut total_messages = 0;
+        let mut max_messages = 0;
+
+        self.connection_states
+            .read()
+            .values()
+            .for_each(|cs| match cs {
+                ConnectionState::Limbo(messages) => {
+                    let len = messages.len();
+                    total_connections += 1;
+                    total_messages += len;
+                    if len > max_messages {
+                        max_messages = len
+                    };
+                }
+                _ => (),
+            });
+        DebugLimboData {
+            total_connections,
+            total_messages,
+            max_messages,
+        }
+    }
+
+    fn get_debug_data(&self) -> DebugData {
+        DebugData {
             msg_queue_size: self.msg_recv.len(),
             wss_queue_size: self.wss_recv.len(),
-            limbo_status: self.get_limbo_status_data(),
-            version: WIRE_VERSION,
+            limbo: self.get_limbo_debug_data(),
         }
     }
 
@@ -522,25 +537,34 @@ impl Sim2h {
         self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
 
-        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
-            self.rrdht_arc_radius_recalc = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
-                ))
+        if Instant::now() >= self.rrdht_arc_radius_recalc {
+            self.rrdht_arc_radius_recalc = Instant::now()
+                .checked_add(RECALC_RRDHT_ARC_RADIUS_INTERVAL)
                 .expect("can add interval ms");
 
             self.recalc_rrdht_arc_radius();
             //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
         }
 
-        if std::time::Instant::now() >= self.missing_aspects_resync {
-            self.missing_aspects_resync = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
-                ))
+        if Instant::now() >= self.missing_aspects_resync {
+            self.missing_aspects_resync = Instant::now()
+                .checked_add(RETRY_FETCH_MISSING_ASPECTS_INTERVAL)
                 .expect("can add interval ms");
 
             self.retry_sync_missing_aspects();
+        }
+
+        if Instant::now() >= self.debug_dump_time {
+            self.debug_dump_time = Instant::now()
+                .checked_add(DEBUG_DUMP_INTERVAL)
+                .expect("can add interval ms");
+
+            println!(
+                "{}{}",
+                DEBUG_DUMP_PREFIX,
+                serde_json::to_string(&self.get_debug_data())
+                    .expect("Can't serialize sim2h debug data")
+            );
         }
 
         Ok(())

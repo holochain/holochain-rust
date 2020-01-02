@@ -86,7 +86,6 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -120,8 +119,6 @@ pub struct Sim2h {
         ),
     >,
     num_ticks: u64,
-    /// when should we recalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: std::time::Instant,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
     dht_algorithm: DhtAlgorithm,
@@ -146,7 +143,6 @@ impl Sim2h {
             msg_recv,
             open_connections: HashMap::new(),
             num_ticks: 0,
-            rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
         };
@@ -240,13 +236,6 @@ impl Sim2h {
                 },
                 Err(e) => self.priv_drop_connection_for_error(url, e),
             }
-        }
-    }
-
-    /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&mut self) {
-        for (_, space) in self.spaces.iter_mut() {
-            space.write().recalc_rrdht_arc_radius();
         }
     }
 
@@ -492,17 +481,6 @@ impl Sim2h {
 
         self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
-
-        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
-            self.rrdht_arc_radius_recalc = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
-            self.recalc_rrdht_arc_radius();
-            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
-        }
 
         if std::time::Instant::now() >= self.missing_aspects_resync {
             self.missing_aspects_resync = std::time::Instant::now()

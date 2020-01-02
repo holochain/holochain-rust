@@ -560,9 +560,11 @@ impl Sim2h {
 
         if let Some(time) = self.debug_dump_time {
             if Instant::now() >= time {
-                self.debug_dump_time = Some(Instant::now()
-                    .checked_add(DEBUG_DUMP_INTERVAL)
-                    .expect("can add interval ms"));
+                self.debug_dump_time = Some(
+                    Instant::now()
+                        .checked_add(DEBUG_DUMP_INTERVAL)
+                        .expect("can add interval ms"),
+                );
 
                 println!(
                     "{}{}",

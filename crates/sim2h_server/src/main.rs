@@ -30,6 +30,12 @@ struct Cli {
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
+    #[structopt(
+        long,
+        short,
+        help = "Print debug data at regular intervals"
+    )]
+    debug_dump: bool,
 }
 
 fn main() {
@@ -47,7 +53,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, false);
+    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, args.debug_dump);
     if args.sharding > 0 {
         sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,

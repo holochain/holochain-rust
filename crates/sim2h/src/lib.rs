@@ -601,9 +601,13 @@ impl Sim2h {
                 ))
                 .expect("can add interval ms");
 
-            with_latency_publishing!("sim2h.retry-sync-missing-aspects", self.metric_publisher, || {
-                self.retry_sync_missing_aspects();
-            });
+            with_latency_publishing!(
+                "sim2h.retry-sync-missing-aspects",
+                self.metric_publisher,
+                || {
+                    self.retry_sync_missing_aspects();
+                }
+            );
         }
 
         Ok(())

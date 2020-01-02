@@ -29,7 +29,7 @@ use std::{convert::TryFrom, time::Instant};
 use url::Url;
 use url2::prelude::*;
 
-const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 5000;
+const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 2000; // The real initial is 4 seconds because one backoff happens to start
 const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 

@@ -844,6 +844,10 @@ impl Sim2h {
         message: WireMessage,
         signer: &AgentId,
     ) -> Sim2hResult<()> {
+        let debug = uri.host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
+        if debug {
+            debug!("handle_message from zippy: {:?}", message);
+        }
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
             println!("Ping -> Pong");

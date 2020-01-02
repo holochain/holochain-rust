@@ -408,9 +408,10 @@ impl Sim2h {
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             connection_states.remove(uri)
         {
-            spaces.alter(space_address, |maybe_space| {
+            spaces.alter(space_address.clone(), |maybe_space| {
                 maybe_space.and_then(|mut space| {
                     if space.remove_agent(&agent_id) == 0 {
+                        self.space_hashes.write().remove(&space_address);
                         None
                     } else {
                         Some(space)

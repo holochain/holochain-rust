@@ -30,11 +30,7 @@ struct Cli {
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
-    #[structopt(
-        long,
-        short,
-        help = "Print debug data at regular intervals"
-    )]
+    #[structopt(long, short, help = "Print debug data at regular intervals")]
     debug_dump: bool,
 }
 

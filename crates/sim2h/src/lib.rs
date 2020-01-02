@@ -499,7 +499,7 @@ impl Sim2h {
 
     fn disconnect2(
         connection_states: ConnectionStates,
-        spaces: Spaces,
+        _spaces: Spaces,
         open_connections: OpenConnections,
         uri: &Lib3hUri,
         mut space: parking_lot::RwLockWriteGuard<'_, Space>,

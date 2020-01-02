@@ -16,6 +16,8 @@ pub struct StatusData {
     pub spaces: usize,
     pub connections: usize,
     pub redundant_count: u64,
+    pub msg_queue_size: usize,
+    pub wss_queue_size: usize,
     pub version: u32,
 }
 

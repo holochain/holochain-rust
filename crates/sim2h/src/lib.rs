@@ -425,6 +425,8 @@ impl Sim2h {
                         DhtAlgorithm::FullSync => 0,
                         DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
                     },
+                    msg_queue_size: self.msg_recv.len(),
+                    wss_queue_size: self.wss_recv.len(),
                     version: WIRE_VERSION,
                 }),
             );

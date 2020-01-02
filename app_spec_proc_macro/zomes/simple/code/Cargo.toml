@@ -1,6 +1,6 @@
 [package]
 name = "simple"
-version = "0.0.42-alpha1"
+version = "0.0.42-alpha2"
 authors = ["Ashanti Mutinta <Ashantimutinta@gmail.com>"]
 edition = "2018"
 

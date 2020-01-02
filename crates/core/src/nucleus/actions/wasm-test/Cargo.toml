@@ -1,6 +1,6 @@
 [package]
 name = "nucleus-actions-tests"
-version = "0.0.42-alpha1"
+version = "0.0.42-alpha2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

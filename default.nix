@@ -74,6 +74,11 @@ with holonix.pkgs;
     config = config;
    }).buildInputs
 
+    ++ (holonix.pkgs.callPackage ./profiling {
+    pkgs = holonix.pkgs;
+    config = config;
+   }).buildInputs
+
    ++ (holonix.pkgs.callPackage ./docker {
      pkgs = holonix.pkgs;
    }).buildInputs

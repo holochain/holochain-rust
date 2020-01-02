@@ -135,7 +135,7 @@ impl Job {
 
 fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(10000))
+        .checked_add(std::time::Duration::from_millis(60000))
         .unwrap();
 
     let mut read_frame = WsFrame::default();

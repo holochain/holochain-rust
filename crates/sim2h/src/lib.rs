@@ -90,7 +90,7 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 }
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
@@ -844,6 +844,10 @@ impl Sim2h {
         message: WireMessage,
         signer: &AgentId,
     ) -> Sim2hResult<()> {
+        let debug = uri.host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
+        if debug {
+            debug!("handle_message from zippy: {:?}", message);
+        }
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
             println!("Ping -> Pong");

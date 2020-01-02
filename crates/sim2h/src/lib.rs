@@ -530,7 +530,7 @@ impl Sim2h {
         }
     }
 
-    fn get_debug_data(&self) -> DebugData {
+    pub fn get_debug_data(&self) -> DebugData {
         DebugData {
             msg_queue_size: self.msg_recv.len(),
             wss_queue_size: self.wss_recv.len(),

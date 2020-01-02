@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate log;
 
+use holochain_persistence_api::hash::HashString;
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
-use lib3h_protocol::data_types::*;
+use lib3h_protocol::{data_types::*, types::AgentPubKey};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
@@ -19,7 +20,7 @@ thread_local! {
 type Connection = InStreamWss<InStreamTcp>;
 
 pub struct Sim2hClient {
-    agent_id: String,
+    agent_pubkey: HashString,
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
@@ -36,13 +37,13 @@ impl Sim2hClient {
             (pub_key, sec_key)
         });
         let enc = hcid::HcidEncoding::with_kind("hcs0").map_err(|e| format!("{}", e))?;
-        let agent_id = enc.encode(&*pub_key).unwrap();
-        info!("Generated agent id: {}", agent_id);
+        let agent_pubkey = HashString::from(enc.encode(&*pub_key).unwrap());
+        info!("Generated agent id: {}", agent_pubkey);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
 
         let out = Self {
-            agent_id,
+            agent_pubkey,
             pub_key: Arc::new(Mutex::new(pub_key)),
             sec_key: Arc::new(Mutex::new(sec_key)),
             connection,
@@ -55,18 +56,22 @@ impl Sim2hClient {
         &mut self.connection
     }
 
+    pub fn agent_pubkey(&self) -> AgentPubKey {
+        AgentPubKey::from(self.agent_pubkey.clone())
+    }
+
     pub fn await_msg<F>(&mut self, predicate: F) -> Result<WireMessage, String>
     where
         F: Fn(&WireMessage) -> bool,
     {
         let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(10000))
-        .unwrap();
+            .checked_add(std::time::Duration::from_millis(10000))
+            .unwrap();
 
         loop {
             if let Some(msg) = pull_message_from_stream(&mut self.connection) {
                 if predicate(&msg) {
-                    return Ok(msg)
+                    return Ok(msg);
                 } else {
                     println!("await_msg skipping message: {:?}", msg);
                 }
@@ -96,7 +101,7 @@ impl Sim2hClient {
                 .read_lock(),
         );
         let signed_message = SignedWireMessage {
-            provenance: Provenance::new(self.agent_id.clone().into(), sig.into()),
+            provenance: Provenance::new(self.agent_pubkey.clone().into(), sig.into()),
             payload,
         };
         let to_send: Opaque = signed_message.into();
@@ -137,7 +142,9 @@ fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp
 
         loop {
             let mut err = false;
-            match connection.read(&mut read_frame) {
+            let frame = connection.read(&mut read_frame);
+            println!("read: {:?}", frame);
+            match frame {
                 Ok(_) => return Ok(connection),
                 Err(e) if e.would_block() => (),
                 Err(_) => {

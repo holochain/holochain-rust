@@ -93,8 +93,6 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 #[allow(dead_code)]
-const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
-#[allow(dead_code)]
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -135,8 +133,6 @@ pub struct Sim2h {
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
     open_connections: OpenConnections,
-    /// when we should recalculate the rrdht_arc_radius
-    rrdht_arc_radius_recalc: Arc<RwLock<std::time::Instant>>,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: Arc<RwLock<std::time::Instant>>,
     metric_publisher: Arc<std::sync::RwLock<holochain_metrics::logger::LoggerMetricPublisher>>,
@@ -162,7 +158,6 @@ impl Sim2h {
             msg_send,
             msg_recv,
             open_connections: Arc::new(CHashMap::new()),
-            rrdht_arc_radius_recalc: Arc::new(RwLock::new(std::time::Instant::now())),
             missing_aspects_resync: Arc::new(RwLock::new(std::time::Instant::now())),
             metric_publisher: Default::default(),
             dht_algorithm: DhtAlgorithm::FullSync,
@@ -282,29 +277,6 @@ impl Sim2h {
         trace!("priv_check_incoming_messages done");
     }
 
-    /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&self) {
-        let spaces = self.spaces.clone();
-        let space_hashes = self.space_hashes.clone();
-        with_latency_publishing!(
-            "sim2h-recalc-rrdht-arc-radius",
-            self.metric_publisher,
-            || {
-                let space_hashes = space_hashes.read();
-
-                let space_hashes = space_hashes.iter();
-                for space_hash in space_hashes {
-                    spaces.alter(space_hash.clone(), |maybe_space| {
-                        maybe_space.map(|mut space| {
-                            space.recalc_rrdht_arc_radius();
-                            space
-                        })
-                    });
-                }
-            }
-        );
-        trace!("recalc arc radius: done")
-    }
 
     fn request_authoring_list(
         &self,
@@ -579,18 +551,6 @@ impl Sim2h {
         trace!("check incoming messages");
         self.priv_check_incoming_messages();
 
-        let rrdht_arc_radius_recalc = self.rrdht_arc_radius_recalc.clone();
-        if std::time::Instant::now() >= *rrdht_arc_radius_recalc.read() {
-            trace!("recalc arc");
-            *rrdht_arc_radius_recalc.write() = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
-            self.recalc_rrdht_arc_radius();
-            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
-        }
 
         let missing_aspects_resync = self.missing_aspects_resync.clone();
         if std::time::Instant::now() >= *missing_aspects_resync.read() {

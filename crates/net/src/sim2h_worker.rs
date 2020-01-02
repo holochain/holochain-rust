@@ -29,7 +29,7 @@ use std::{convert::TryFrom, time::Instant};
 use url::Url;
 use url2::prelude::*;
 
-const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 1000;
+const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 5000;
 const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
 //const RECONNECT_INTERVAL: Duration = Duration::from_secs(20);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
@@ -114,7 +114,11 @@ impl Sim2hWorker {
     }
 
     fn backoff(&mut self) {
-        if self.connection_timeout_backoff < MAX_CONNECTION_TIMEOUT_MS {
+        let new_backoff = std::cmp::max(
+            MAX_CONNECTION_TIMEOUT_MS,
+            self.connection_timeout_backoff * 2,
+        );
+        if self.connection_timeout_backoff != new_backoff {
             self.inner_set_backoff(self.connection_timeout_backoff * 2);
         }
     }

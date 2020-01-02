@@ -519,6 +519,7 @@ impl Sim2h {
 
                 // TODO write processing loop to walk spaces and clear these out,
                 // or alternatively switch to chashmap
+                // Other idea: switch spaces to using a re-entrant mutex makes this trivial
                 //spaces.write().remove(&space_address);
                 trace!(
                     "disconnect: Spaces cleared for space_address {:?}",
@@ -1243,6 +1244,7 @@ impl Sim2h {
             .map(|x| {
                 let (_, outgoing_send) = x.clone();
                 if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                    // Just do this in the connection processing loop instead
                     /*                    Self::disconnect(
                         connection_states.clone(),
                         spaces.clone(),

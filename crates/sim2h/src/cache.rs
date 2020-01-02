@@ -11,7 +11,7 @@ use lib3h_protocol::{
     uri::Lib3hUri,
 };
 use log::*;
-use std::collections::{HashMap, HashSet};
+use im::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {
@@ -26,6 +26,18 @@ pub struct Space {
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
     /// sim2h currently uses the same radius for all connections
     rrdht_arc_radius: u32,
+}
+
+impl Clone for Space {
+    fn clone(&self) -> Self {
+        Self {
+            crypto: self.crypto.box_clone(),
+            agents: self.agents.clone(),
+            all_aspects_hashes: self.all_aspects_hashes.clone(),
+            missing_aspects: self.missing_aspects.clone(),
+            rrdht_arc_radius: self.rrdht_arc_radius,
+        }
+    }
 }
 
 impl Space {
@@ -125,6 +137,7 @@ impl Space {
         maybe_agent_map.unwrap().get(entry_hash).is_some()
     }
 
+    /*
     pub(crate) fn recalc_rrdht_arc_radius(&mut self) {
         let mut peer_record_set = RValuePeerRecordSet::default()
             // sim2h is currently omniscient
@@ -156,6 +169,7 @@ impl Space {
 
         self.rrdht_arc_radius = new_arc_radius;
     }
+    */
 
     pub fn join_agent(&mut self, agent_id: AgentId, uri: Lib3hUri) -> Sim2hResult<()> {
         let location = calc_location_for_id(&self.crypto, &agent_id.to_string())?;
@@ -228,7 +242,7 @@ impl Space {
 }
 
 // TODO: unify with AspectMap
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
 impl AspectList {
     /// Returns an AspectList list that contains every entry aspect
@@ -236,12 +250,7 @@ impl AspectList {
     pub fn diff(&self, other: &AspectList) -> AspectList {
         let self_set = HashSet::<(EntryHash, AspectHash)>::from(self);
         let other_set = HashSet::<(EntryHash, AspectHash)>::from(other);
-        AspectList::from(
-            &self_set
-                .difference(&other_set)
-                .cloned()
-                .collect::<HashSet<(EntryHash, AspectHash)>>(),
-        )
+        AspectList::from(&self_set.difference(other_set))
     }
 
     pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
@@ -293,7 +302,7 @@ impl AspectList {
         AspectList::from(
             self.0
                 .iter()
-                .filter(|(entry_hash, _)| filter_fn(*entry_hash))
+                .filter(|(entry_hash, _)| filter_fn(entry_hash))
                 .map(|(e, v)| (e.clone(), v.clone()))
                 .collect::<HashMap<EntryHash, Vec<AspectHash>>>(),
         )

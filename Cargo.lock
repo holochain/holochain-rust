@@ -3755,6 +3755,7 @@ dependencies = [
  "holochain_locksmith 0.0.42-alpha1",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "im 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "in_stream 0.0.42-alpha1",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",

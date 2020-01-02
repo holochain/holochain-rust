@@ -546,7 +546,7 @@ impl Sim2h {
                 }
                 self.ensure_space_exists(&space_address);
                 // TODO REMOVE THIS MESSAGE CLONE!
-                self.handle_joined(uri, &space_address.clone(), &agent_id, message.clone())
+                self.handle_joined(uri, &space_address, &agent_id, message)
             }
         }
     }

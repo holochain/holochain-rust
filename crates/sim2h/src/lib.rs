@@ -90,7 +90,7 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 }
 
 const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;

@@ -366,7 +366,8 @@ impl Sim2h {
             drop(spaces_read);
             let mut space_write = spaces.write();
 
-            let _space = space_write.entry(space_address.clone())
+            let _space = space_write
+                .entry(space_address.clone())
                 .or_insert_with(|| RwLock::new(Space::new(self.crypto.box_clone())));
             drop(space_write);
             info!(
@@ -391,7 +392,8 @@ impl Sim2h {
     where
         F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> T,
     {
-        let result : Result<T,()> = self.get_or_create_space_mut_result(space_address, |space| Ok(f(space)));
+        let result: Result<T, ()> =
+            self.get_or_create_space_mut_result(space_address, |space| Ok(f(space)));
         result.unwrap()
     }
 

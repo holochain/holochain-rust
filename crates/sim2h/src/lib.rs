@@ -44,7 +44,6 @@ pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 use im::{HashMap, HashSet};
 use in_stream::*;
 use log::*;
-use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{convert::TryFrom, sync::Arc};
 
@@ -99,11 +98,25 @@ pub enum DhtAlgorithm {
     NaiveSharding { redundant_count: u64 },
 }
 
+#[derive(Debug, Clone)]
+pub struct Sim2hState {
+    pub connections: HashMap<Lib3hUri, ConnectionState>,
+    pub spaces: HashMap<SpaceHash, Space>,
+}
+
+impl Sim2hState {
+    pub fn new() -> Self {
+        Self {
+            connections: HashMap::new(),
+            spaces: HashMap::new(),
+        }
+    }
+}
+
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
-    spaces: HashMap<SpaceHash, Space>,
+    state: Sim2hState,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
@@ -132,8 +145,7 @@ impl Sim2h {
         let mut sim2h = Sim2h {
             crypto,
             bound_uri: None,
-            connection_states: RwLock::new(HashMap::new()),
-            spaces: HashMap::new(),
+            state: Sim2hState::new(),
             pool,
             wss_recv,
             msg_send,
@@ -267,15 +279,16 @@ impl Sim2h {
     }
 
     fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &mut Space {
-        if !self.spaces.contains_key(space_address) {
-            self.spaces
+        if !self.state.spaces.contains_key(space_address) {
+            self.state
+                .spaces
                 .insert(space_address.clone(), Space::new(self.crypto.box_clone()));
             info!(
                 "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                 space_address
             );
         }
-        self.spaces.get_mut(space_address).unwrap()
+        self.state.spaces.get_mut(space_address).unwrap()
     }
 
     // adds an agent to a space
@@ -283,7 +296,7 @@ impl Sim2h {
         trace!("join entered");
         let result =
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
-                let _ = self.connection_states.write().insert(
+                let _ = self.state.connections.insert(
                     uri.clone(),
                     ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
                 );
@@ -343,11 +356,11 @@ impl Sim2h {
         }
 
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
-            self.connection_states.write().remove(uri)
+            self.state.connections.remove(uri)
         {
-            if let Some(space) = self.spaces.get_mut(&space_address) {
+            if let Some(space) = self.state.spaces.get_mut(&space_address) {
                 if space.remove_agent(&agent_id) == 0 {
-                    self.spaces.remove(&space_address);
+                    self.state.spaces.remove(&space_address);
                 }
             }
         }
@@ -356,22 +369,24 @@ impl Sim2h {
 
     // get the connection status of an agent
     fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionState> {
-        let reader = self.connection_states.read();
-        reader.get(uri).map(|ca| (*ca).clone())
+        self.state.connections.get(uri).map(|ca| (*ca).clone())
     }
 
     // find out if an agent is in a space or not and return its URI
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        self.spaces.get(space_address)?.agent_id_to_uri(agent_id)
+        self.state
+            .spaces
+            .get(space_address)?
+            .agent_id_to_uri(agent_id)
     }
 
     // handler for incoming connections
-    fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
+    fn handle_incoming_connect(&mut self, uri: Lib3hUri) -> Sim2hResult<bool> {
         trace!("handle_incoming_connect entered");
         info!("New connection from {:?}", uri);
         if let Some(_old) = self
-            .connection_states
-            .write()
+            .state
+            .connections
             .insert(uri.clone(), ConnectionState::new())
         {
             println!("TODO should remove {}", uri); //TODO
@@ -399,7 +414,7 @@ impl Sim2h {
                 signer.clone(),
                 uri.clone(),
                 &WireMessage::StatusResponse(StatusData {
-                    spaces: self.spaces.len(),
+                    spaces: self.state.spaces.len(),
                     connections: self.open_connections.len(),
                     redundant_count: match self.dht_algorithm {
                         DhtAlgorithm::FullSync => 0,
@@ -431,7 +446,7 @@ impl Sim2h {
                     // TODO: maybe have some upper limit on the number of messages
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);
-                    let _ = self.connection_states.write().insert(uri.clone(), agent);
+                    let _ = self.state.connections.insert(uri.clone(), agent);
                     self.send(
                         signer.clone(),
                         uri.clone(),
@@ -835,7 +850,7 @@ impl Sim2h {
         agent_pool: &[AgentId],
         space_address: &SpaceHash,
     ) -> Option<AgentId> {
-        let space_lock = self.spaces.get(space_address)?;
+        let space_lock = self.state.spaces.get(space_address)?;
         agent_pool
             .into_iter()
             // We ignore all agents that are missing all of the same aspects as well since
@@ -980,6 +995,7 @@ impl Sim2h {
         // Extract all needed info for the call to self.request_gossiping_list() below
         // as copies so we don't have to keep a reference to self.
         let spaces_with_agents_and_uris = self
+            .state
             .spaces
             .iter()
             .filter_map(|(space_hash, space)| {

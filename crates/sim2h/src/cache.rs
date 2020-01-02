@@ -25,6 +25,16 @@ pub struct Space {
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
 }
 
+impl std::fmt::Debug for Space {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Space")
+            .field("agents", &self.agents)
+            .field("all_aspect_hashes", &self.all_aspects_hashes)
+            .field("missing_aspects", &self.missing_aspects)
+            .finish()
+    }
+}
+
 impl Clone for Space {
     fn clone(&self) -> Self {
         Self {

@@ -31,7 +31,6 @@ use url2::prelude::*;
 
 const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 5000;
 const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
-//const RECONNECT_INTERVAL: Duration = Duration::from_secs(20);
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 
 fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {

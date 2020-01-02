@@ -41,15 +41,12 @@ use url2::prelude::*;
 
 pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
+use im::{HashMap, HashSet};
 use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{
-    convert::TryFrom,
-    sync::Arc,
-};
-use im::{HashMap, HashSet};
+use std::{convert::TryFrom, sync::Arc};
 
 use holochain_locksmith::Mutex;
 
@@ -86,7 +83,6 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -120,8 +116,6 @@ pub struct Sim2h {
         ),
     >,
     num_ticks: u64,
-    /// when should we recalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: std::time::Instant,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
     dht_algorithm: DhtAlgorithm,
@@ -146,7 +140,6 @@ impl Sim2h {
             msg_recv,
             open_connections: HashMap::new(),
             num_ticks: 0,
-            rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
         };
@@ -243,15 +236,6 @@ impl Sim2h {
         }
     }
 
-    /*
-    /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&mut self) {
-        for (_, space) in self.spaces.iter_mut() {
-            space.write().recalc_rrdht_arc_radius();
-        }
-    }
-    */
-
     fn request_authoring_list(
         &mut self,
         uri: Lib3hUri,
@@ -284,10 +268,8 @@ impl Sim2h {
 
     fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &mut Space {
         if !self.spaces.contains_key(space_address) {
-            self.spaces.insert(
-                space_address.clone(),
-                Space::new(self.crypto.box_clone()),
-            );
+            self.spaces
+                .insert(space_address.clone(), Space::new(self.crypto.box_clone()));
             info!(
                 "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                 space_address
@@ -380,9 +362,7 @@ impl Sim2h {
 
     // find out if an agent is in a space or not and return its URI
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        self.spaces
-            .get(space_address)?
-            .agent_id_to_uri(agent_id)
+        self.spaces.get(space_address)?.agent_id_to_uri(agent_id)
     }
 
     // handler for incoming connections
@@ -492,19 +472,6 @@ impl Sim2h {
 
         self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
-
-        /*
-        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
-            self.rrdht_arc_radius_recalc = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
-            self.recalc_rrdht_arc_radius();
-            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
-        }
-        */
 
         if std::time::Instant::now() >= self.missing_aspects_resync {
             self.missing_aspects_resync = std::time::Instant::now()
@@ -651,7 +618,7 @@ impl Sim2h {
                     // Cache info about what this agent is missing so we can make sure it got it
                     let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
                     if missing_hashes.len() > 0 {
-                        let mut space = self
+                        let space = self
                             .get_or_create_space(&space_address);
                         for (entry_hash, aspect_hash) in missing_hashes {
                             space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
@@ -911,7 +878,7 @@ impl Sim2h {
         for aspect in entry_data.aspect_list {
             // 1. Add hashes to our global list of all aspects in this space:
             {
-                let mut space = self.get_or_create_space(&space_address);
+                let space = self.get_or_create_space(&space_address);
                 space.add_aspect(
                     entry_data.entry_address.clone(),
                     aspect.aspect_address.clone(),

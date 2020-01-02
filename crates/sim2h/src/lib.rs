@@ -39,7 +39,7 @@ use lib3h_protocol::{
 };
 use url2::prelude::*;
 
-pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
+pub use wire_message::{StatusData, StatusLimboData, WireError, WireMessage, WIRE_VERSION};
 
 use in_stream::*;
 use log::*;
@@ -418,17 +418,7 @@ impl Sim2h {
             self.send(
                 signer.clone(),
                 uri.clone(),
-                &WireMessage::StatusResponse(StatusData {
-                    spaces: self.spaces.len(),
-                    connections: self.open_connections.len(),
-                    redundant_count: match self.dht_algorithm {
-                        DhtAlgorithm::FullSync => 0,
-                        DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
-                    },
-                    msg_queue_size: self.msg_recv.len(),
-                    wss_queue_size: self.wss_recv.len(),
-                    version: WIRE_VERSION,
-                }),
+                &WireMessage::StatusResponse(self.get_status_data()),
             );
             return Ok(());
         }
@@ -471,6 +461,43 @@ impl Sim2h {
                 }
                 self.handle_joined(uri, &space_address, &agent_id, message)
             }
+        }
+    }
+
+    fn get_limbo_status_data(&self) -> StatusLimboData {
+        let mut total_connections = 0;
+        let mut total_messages = 0;
+        let mut max_messages = 0;
+
+        self.connection_states.values().each(|cs| match cs {
+            ConnectionState::Limbo(messages) => {
+                let len = messages.len();
+                total_connections += 1;
+                total_messages += len;
+                if len > max_messages {
+                    max_messages = len
+                };
+            }
+        });
+        StatusLimboData {
+            total_connections,
+            total_messages,
+            max_messages,
+        }
+    }
+
+    fn get_status_data(&self) -> StatusData {
+        StatusData {
+            spaces: self.spaces.len(),
+            connections: self.open_connections.len(),
+            redundant_count: match self.dht_algorithm {
+                DhtAlgorithm::FullSync => 0,
+                DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+            },
+            msg_queue_size: self.msg_recv.len(),
+            wss_queue_size: self.wss_recv.len(),
+            limbo_status: self.get_limbo_status_data(),
+            version: WIRE_VERSION,
         }
     }
 

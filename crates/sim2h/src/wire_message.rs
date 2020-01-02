@@ -18,7 +18,15 @@ pub struct StatusData {
     pub redundant_count: u64,
     pub msg_queue_size: usize,
     pub wss_queue_size: usize,
+    pub limbo_status: StatusLimboData,
     pub version: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StatusLimboData {
+    pub total_connections: usize,
+    pub total_messages: usize,
+    pub max_messages: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

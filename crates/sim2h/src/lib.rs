@@ -349,35 +349,39 @@ impl Sim2h {
         );
     }
 
-    fn get_or_create_space_mut_result<F, E>(
+    fn get_or_create_space_mut_result<F, T, E>(
         &self,
         space_address: &SpaceHash,
         mut f: F,
-    ) -> Result<(), E>
+    ) -> Result<T, E>
     where
-        F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> Result<(), E>,
+        F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> Result<T, E>,
     {
         let thread_name = format!("[{:?}]", std::thread::current().name());
         trace!("{} get_or_create_space_mut_result START", thread_name);
         let spaces = self.spaces.clone();
-        if !spaces.read_recursive().contains_key(space_address) {
-            spaces.write().insert(
-                space_address.clone(),
-                RwLock::new(Space::new(self.crypto.box_clone())),
-            );
+        let spaces_read = spaces.read_recursive();
+
+        if !spaces_read.contains_key(space_address) {
+            drop(spaces_read);
+            let mut space_write = spaces.write();
+
+            let _space = space_write.entry(space_address.clone())
+                .or_insert_with(|| RwLock::new(Space::new(self.crypto.box_clone())));
+            drop(space_write);
             info!(
                 "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                 space_address
-            );
+            )
         }
-        trace!("{} get_or_create_space_mut_result.f START", thread_name);
-        let spaces = spaces.read_recursive();
+
+        let spaces_read = spaces.read_recursive();
         trace!("{} get_or_create_space_mut_result.f GOT READ", thread_name);
         let result = with_latency_publishing!(
             "get_or_create_space_mut_result.f",
             self.metric_publisher,
             f,
-            spaces.get(space_address).unwrap().write()
+            spaces_read.get(space_address).unwrap().write()
         );
         trace!("{} get_or_create_space_mut_result.f END", thread_name);
         result
@@ -387,30 +391,8 @@ impl Sim2h {
     where
         F: FnMut(parking_lot::RwLockWriteGuard<'_, Space>) -> T,
     {
-        let thread_name = format!("[{:?}]", std::thread::current().name());
-        trace!("{} get_or_create_space_mut START", thread_name);
-        let spaces = self.spaces.clone();
-        if !spaces.read_recursive().contains_key(space_address) {
-            spaces.write().insert(
-                space_address.clone(),
-                RwLock::new(Space::new(self.crypto.box_clone())),
-            );
-            info!(
-                "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
-                space_address
-            );
-        };
-        trace!("{} get_or_create_space_mut.f START", thread_name);
-        let spaces = spaces.read_recursive();
-        trace!("{} get_or_create_space_mut.f GOT READ", thread_name);
-        let ret = with_latency_publishing!(
-            "get_or_create_space_mut.f",
-            self.metric_publisher,
-            f,
-            spaces.get(space_address).unwrap().write()
-        );
-        trace!("{} get_or_create_space_mut.f END", thread_name);
-        ret
+        let result : Result<T,()> = self.get_or_create_space_mut_result(space_address, |space| Ok(f(space)));
+        result.unwrap()
     }
 
     // adds an agent to a space

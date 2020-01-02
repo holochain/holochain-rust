@@ -128,12 +128,12 @@ pub struct Sim2h {
     rrdht_arc_radius_recalc: Instant,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: Instant,
-    debug_dump_time: Instant,
+    debug_dump_time: Option<Instant>,
     dht_algorithm: DhtAlgorithm,
 }
 
 impl Sim2h {
-    pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
+    pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri, debug_dump: bool) -> Self {
         let pool = Pool::new();
         pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
 
@@ -151,10 +151,14 @@ impl Sim2h {
             msg_recv,
             open_connections: HashMap::new(),
             num_ticks: 0,
+            dht_algorithm: DhtAlgorithm::FullSync,
             rrdht_arc_radius_recalc: Instant::now(),
             missing_aspects_resync: Instant::now(),
-            debug_dump_time: Instant::now(),
-            dht_algorithm: DhtAlgorithm::FullSync,
+            debug_dump_time: if debug_dump {
+                Some(Instant::now())
+            } else {
+                None
+            },
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -554,17 +558,19 @@ impl Sim2h {
             self.retry_sync_missing_aspects();
         }
 
-        if Instant::now() >= self.debug_dump_time {
-            self.debug_dump_time = Instant::now()
-                .checked_add(DEBUG_DUMP_INTERVAL)
-                .expect("can add interval ms");
+        if let Some(time) = self.debug_dump_time {
+            if Instant::now() >= time {
+                self.debug_dump_time = Some(Instant::now()
+                    .checked_add(DEBUG_DUMP_INTERVAL)
+                    .expect("can add interval ms"));
 
-            println!(
-                "{}{}",
-                DEBUG_DUMP_PREFIX,
-                serde_json::to_string(&self.get_debug_data())
-                    .expect("Can't serialize sim2h debug data")
-            );
+                println!(
+                    "{}{}",
+                    DEBUG_DUMP_PREFIX,
+                    serde_json::to_string(&self.get_debug_data())
+                        .expect("Can't serialize sim2h debug data")
+                );
+            }
         }
 
         Ok(())

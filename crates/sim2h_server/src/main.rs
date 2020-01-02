@@ -47,7 +47,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
+    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, false);
     if args.sharding > 0 {
         sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,

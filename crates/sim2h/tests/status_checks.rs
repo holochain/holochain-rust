@@ -11,5 +11,5 @@ fn queue_size_is_reasonable() {
         .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
         .with_port(port)
         .build();
-    let mut _sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
+    let mut _sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, false);
 }

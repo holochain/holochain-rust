@@ -576,7 +576,7 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
+            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()), false);
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);

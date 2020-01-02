@@ -88,7 +88,6 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-static RECALC_RRDHT_ARC_RADIUS_INTERVAL: Duration = Duration::from_secs(20);
 static RETRY_FETCH_MISSING_ASPECTS_INTERVAL: Duration = Duration::from_secs(10);
 static DEBUG_DUMP_INTERVAL: Duration = Duration::from_secs(1);
 const DEBUG_DUMP_PREFIX: &str = "<SIM2H-DEBUG-DUMP> ";
@@ -124,8 +123,6 @@ pub struct Sim2h {
         ),
     >,
     num_ticks: u64,
-    /// when should we recalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: Instant,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: Instant,
     debug_dump_time: Option<Instant>,
@@ -152,7 +149,6 @@ impl Sim2h {
             open_connections: HashMap::new(),
             num_ticks: 0,
             dht_algorithm: DhtAlgorithm::FullSync,
-            rrdht_arc_radius_recalc: Instant::now(),
             missing_aspects_resync: Instant::now(),
             debug_dump_time: if debug_dump {
                 Some(Instant::now())
@@ -250,13 +246,6 @@ impl Sim2h {
                 },
                 Err(e) => self.priv_drop_connection_for_error(url, e),
             }
-        }
-    }
-
-    /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&mut self) {
-        for (_, space) in self.spaces.iter_mut() {
-            space.write().recalc_rrdht_arc_radius();
         }
     }
 
@@ -540,15 +529,6 @@ impl Sim2h {
 
         self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
-
-        if Instant::now() >= self.rrdht_arc_radius_recalc {
-            self.rrdht_arc_radius_recalc = Instant::now()
-                .checked_add(RECALC_RRDHT_ARC_RADIUS_INTERVAL)
-                .expect("can add interval ms");
-
-            self.recalc_rrdht_arc_radius();
-            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
-        }
 
         if Instant::now() >= self.missing_aspects_resync {
             self.missing_aspects_resync = Instant::now()

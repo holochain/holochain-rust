@@ -277,7 +277,6 @@ impl Sim2h {
         trace!("priv_check_incoming_messages done");
     }
 
-
     fn request_authoring_list(
         &self,
         uri: Lib3hUri,
@@ -550,7 +549,6 @@ impl Sim2h {
         //self.priv_check_incoming_connections();
         trace!("check incoming messages");
         self.priv_check_incoming_messages();
-
 
         let missing_aspects_resync = self.missing_aspects_resync.clone();
         if std::time::Instant::now() >= *missing_aspects_resync.read() {

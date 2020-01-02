@@ -327,6 +327,10 @@ impl Sim2h {
             trace!("{} get_or_create_space_mut_result START", thread_name);
             let spaces = self.spaces.clone();
 
+            if spaces.contains_key(&space_hash) {
+                return;
+            }
+
             let space_hashes = self.space_hashes.clone();
             let _space = spaces.upsert(
                 space_address.clone(),
@@ -454,9 +458,11 @@ impl Sim2h {
 
     // find out if an agent is in a space or not and return its URI
     fn lookup_joined(&self, space_hash: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        self.spaces
-            .get(space_hash)
-            .and_then(|space| space.agent_id_to_uri(agent_id))
+        with_latency_publishing!("sim2h-lookup-joined", self.metric_publisher, || {
+            self.spaces
+                .get(space_hash)
+                .and_then(|space| space.agent_id_to_uri(agent_id))
+        })
     }
 
     // handler for incoming connections

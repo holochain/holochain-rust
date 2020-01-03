@@ -328,9 +328,9 @@ impl Sim2h {
             let spaces = self.spaces.clone();
 
             let exists = with_latency_publishing!(
-                "sim2h-ensure_space_exists-contains_key",
+                "sim2h-ensure_space_exists-space_hashs.contains",
                 self.metric_publisher,
-                || { spaces.contains_key(space_address) }
+                || { self.space_hashes.read().contains(space_address) }
             );
 
             if exists {

@@ -1,12 +1,15 @@
 //! implements caching structures for spaces and aspects
-use crate::{error::*, AgentId};
+use crate::{
+    error::*,
+    naive_sharding::{entry_location, naive_sharding_should_store},
+    AgentId,
+};
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     types::{AspectHash, EntryHash},
     uri::Lib3hUri,
 };
-use log::*;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
@@ -20,8 +23,6 @@ pub struct Space {
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
-    /// sim2h currently uses the same radius for all connections
-    rrdht_arc_radius: u32,
 }
 
 impl Space {
@@ -31,8 +32,6 @@ impl Space {
             agents: HashMap::new(),
             all_aspects_hashes: AspectList::from(HashMap::new()),
             missing_aspects: HashMap::new(),
-            // default to max radius
-            rrdht_arc_radius: ARC_RADIUS_MAX,
         }
     }
 
@@ -109,36 +108,16 @@ impl Space {
         true
     }
 
-    pub(crate) fn recalc_rrdht_arc_radius(&mut self) {
-        let mut peer_record_set = RValuePeerRecordSet::default()
-            // sim2h is currently omniscient
-            .arc_of_included_peer_records(Arc::new(0.into(), ARC_LENGTH_MAX));
-        for (_id, info) in self.agents.iter() {
-            peer_record_set = peer_record_set.push_peer_record(
-                RValuePeerRecord::default()
-                    // since sim2h uses the same storage arc for all nodes
-                    // we just put that same value in here for all nodes
-                    .storage_arc(Arc::new_radius(info.location, self.rrdht_arc_radius))
-                    // we do not yet have the metrics infrastructure to track
-                    // uptime, let's pretend all nodes are up exactly 1/2 the time
-                    .uptime_0_to_1(0.5),
-            );
+    pub fn agent_is_missing_some_aspect_for_entry(
+        &self,
+        agent_id: &AgentId,
+        entry_hash: &EntryHash,
+    ) -> bool {
+        let maybe_agent_map = self.missing_aspects.get(agent_id);
+        if maybe_agent_map.is_none() {
+            return false;
         }
-
-        let mut new_arc_radius = get_recommended_storage_arc_radius(
-            &peer_record_set,
-            25.0, // target_minimum_r_value
-            50.0, // target_maximum_r_value
-            Some(self.rrdht_arc_radius),
-        );
-
-        if new_arc_radius != ARC_RADIUS_MAX {
-            let pct = 100 * new_arc_radius / ARC_RADIUS_MAX;
-            warn!("rrdht-r-value recommends shrinking arc radius to {} %, sim2h is not yet set up to do this, but, yay sharding!", pct);
-            new_arc_radius = ARC_RADIUS_MAX;
-        }
-
-        self.rrdht_arc_radius = new_arc_radius;
+        maybe_agent_map.unwrap().get(entry_hash).is_some()
     }
 
     pub fn join_agent(&mut self, agent_id: AgentId, uri: Lib3hUri) -> Sim2hResult<()> {
@@ -166,8 +145,44 @@ impl Space {
         &self.agents
     }
 
+    pub(crate) fn agents_supposed_to_hold_entry(
+        &self,
+        entry_location: Location,
+        redundant_count: u64,
+    ) -> HashMap<AgentId, AgentInfo> {
+        self.agents
+            .iter()
+            .filter(|(_agent, info)| {
+                naive_sharding_should_store(
+                    info.location,
+                    entry_location,
+                    self.agents.len() as u64,
+                    redundant_count,
+                )
+            })
+            .map(|(e, v)| (e.clone(), v.clone()))
+            .collect()
+    }
+
     pub fn all_aspects(&self) -> &AspectList {
         &self.all_aspects_hashes
+    }
+
+    pub fn aspects_in_shard_for_agent(&self, agent: &AgentId, redundant_count: u64) -> AspectList {
+        let agent_loc = self
+            .agents
+            .get(agent)
+            .expect("cannot fetch aspects for unknown agent")
+            .location;
+        self.all_aspects_hashes
+            .filtered_by_entry_hash(|entry_hash| {
+                naive_sharding_should_store(
+                    agent_loc,
+                    entry_location(&self.crypto, &entry_hash),
+                    self.agents.len() as u64,
+                    redundant_count,
+                )
+            })
     }
 
     pub fn add_aspect(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
@@ -232,6 +247,19 @@ impl AspectList {
             })
             .collect::<Vec<String>>()
             .join("\n")
+    }
+
+    pub fn filtered_by_entry_hash<F: FnMut(&EntryHash) -> bool>(
+        &self,
+        mut filter_fn: F,
+    ) -> AspectList {
+        AspectList::from(
+            self.0
+                .iter()
+                .filter(|(entry_hash, _)| filter_fn(*entry_hash))
+                .map(|(e, v)| (e.clone(), v.clone()))
+                .collect::<HashMap<EntryHash, Vec<AspectHash>>>(),
+        )
     }
 }
 

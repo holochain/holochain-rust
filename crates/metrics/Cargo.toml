@@ -1,6 +1,6 @@
 [package]
 name = "holochain_metrics"
-version = "0.0.41-alpha4"
+version = "0.0.42-alpha2"
 description = "Holochain analytics from logs and other metrics"
 license = "GPL-3.0-only"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
@@ -10,7 +10,7 @@ edition = "2018"
 shrinkwraprs = "=0.2.1"
 serde = { version = "=1.0.89", features = ["rc"] }
 serde_derive = "=1.0.89"
-holochain_locksmith = { version = "=0.0.41-alpha4", path = "../locksmith" }
+holochain_locksmith = { version = "=0.0.42-alpha2", path = "../locksmith" }
 lazy_static = "=1.2.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"
@@ -29,6 +29,7 @@ rusoto_credential = "=0.40.0"
 streaming-stats = "=0.2.2"
 csv = "=1.1"
 structopt = "=0.3.3"
+structopt-derive = "=0.3.3"
 strip-ansi-escapes = "=0.1.0"
 snowflake = "=1.3.0"
 crossbeam-channel = "=0.3.8"

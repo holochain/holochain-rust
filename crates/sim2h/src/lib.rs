@@ -6,6 +6,8 @@ extern crate nanoid;
 #[macro_use]
 extern crate serde;
 #[macro_use]
+extern crate shrinkwraprs;
+#[macro_use]
 extern crate lazy_static;
 
 #[allow(dead_code)]
@@ -95,7 +97,7 @@ use job::*;
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
+    connection_states: RwLock<HashMap<Lib3hUri, ConnectionStateUniq>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
@@ -284,7 +286,7 @@ impl Sim2h {
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
+                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?.into(),
                 );
 
                 self.get_or_create_space(&data.space_address)
@@ -322,12 +324,14 @@ impl Sim2h {
 
     // removes an agent from a space
     fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
-            if (data.agent_id != agent_id) || (data.space_address != space_address) {
-                Err(SPACE_MISMATCH_ERR_STR.into())
-            } else {
-                self.disconnect(uri);
-                Ok(())
+        if let Some(conn) = self.get_connection(uri) {
+            if let ConnectionState::Joined(space_address, agent_id) = conn.state {
+                if (data.agent_id != agent_id) || (data.space_address != space_address) {
+                    Err(SPACE_MISMATCH_ERR_STR.into())
+                } else {
+                    self.disconnect(uri);
+                    Ok(())
+                }
             }
         } else {
             Err(format!("no joined agent found at {} ", &uri).into())
@@ -342,12 +346,15 @@ impl Sim2h {
             con.f_lock().stop();
         }
 
-        if let Some(ConnectionState::Joined(space_address, agent_id)) =
+        if let Some(conn) =
             self.connection_states.write().remove(uri)
         {
-            if let Some(space_lock) = self.spaces.get(&space_address) {
-                if space_lock.write().remove_agent(&agent_id) == 0 {
-                    self.spaces.remove(&space_address);
+            if let ConnectionState::Joined(space_address, agent_id) = conn.state {
+                debug!("connection_state: disconnect {}", conn.id());
+                if let Some(space_lock) = self.spaces.get(&space_address) {
+                    if space_lock.write().remove_agent(&agent_id) == 0 {
+                        self.spaces.remove(&space_address);
+                    }
                 }
             }
         }
@@ -355,7 +362,7 @@ impl Sim2h {
     }
 
     // get the connection status of an agent
-    fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionState> {
+    fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateUniq> {
         let reader = self.connection_states.read();
         reader.get(uri).map(|ca| (*ca).clone())
     }
@@ -375,7 +382,7 @@ impl Sim2h {
         if let Some(_old) = self
             .connection_states
             .write()
-            .insert(uri.clone(), ConnectionState::new())
+            .insert(uri.clone(), ConnectionStateUniq::new())
         {
             println!("TODO should remove {}", uri); //TODO
         };

@@ -8,6 +8,7 @@ use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher};
+use holochain_tracing as ht;
 use in_stream::*;
 use lib3h_protocol::{
     data_types::{
@@ -55,7 +56,7 @@ pub struct Sim2hWorker {
     conductor_api: ConductorApi,
     time_of_last_connection_attempt: Instant,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
-    outgoing_message_buffer: Vec<WireMessage>,
+    outgoing_message_buffer: Vec<ht::SpanWrap<WireMessage>>,
     ws_frame: Option<WsFrame>,
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
@@ -143,7 +144,8 @@ impl Sim2hWorker {
                 return did_something;
             }
             did_something = true;
-            let message = self.outgoing_message_buffer.get(0).unwrap();
+            let wrapped_message = self.outgoing_message_buffer.get(0).unwrap();
+            let {span, data: message} = wrapped_message;
             let payload: String = message.clone().into();
             let signature = self
                 .conductor_api
@@ -158,7 +160,7 @@ impl Sim2hWorker {
                 message.clone(),
                 Provenance::new(self.agent_id.clone(), signature.into()),
             );
-            let to_send: Opaque = signed_wire_message.into();
+            let to_send: Opaque = span.wrap(signed_wire_message).into();
             // safe to unwrap because we check connection_ready() above
             if let Err(e) = self
                 .connection

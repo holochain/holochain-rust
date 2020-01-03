@@ -5,6 +5,7 @@ use crate::{
     },
     error::LockType,
 };
+#[cfg(feature = "debug_info")]
 use backtrace::Backtrace;
 use snowflake::ProcessUniqueId;
 use std::{
@@ -15,6 +16,7 @@ use std::{
 pub(crate) struct GuardTracker {
     pub(crate) puid: ProcessUniqueId,
     pub(crate) created: Instant,
+    #[cfg(feature = "debug_info")]
     pub(crate) backtrace: Backtrace,
     pub(crate) lock_type: LockType,
     pub(crate) immortal: bool,
@@ -27,6 +29,7 @@ impl GuardTracker {
             puid,
             lock_type,
             created: Instant::now(),
+            #[cfg(feature = "debug_info")]
             backtrace: Backtrace::new_unresolved(),
             immortal: false,
             annotation: None,
@@ -64,12 +67,14 @@ impl GuardTracker {
             return;
         }
         self.immortal = true;
+        #[cfg(feature = "debug_info")]
         self.backtrace.resolve();
         let annotation = self
             .annotation
             .as_ref()
             .map(|a| format!("\nAnnotation: {}\n", a))
             .unwrap_or_default();
+        #[cfg(feature = "debug_info")]
         error!(
             r"
 
@@ -86,6 +91,20 @@ Backtrace at the moment of guard creation follows:
             time=IMMORTAL_TIMEOUT.as_secs(),
             annotation=annotation,
             backtrace=self.backtrace
+        );
+        #[cfg(not(feature = "debug_info"))]
+        error!(
+            r"
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!! IMMORTAL LOCK GUARD FOUND !!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+{type:?} guard {puid} lived for > {time} seconds.{annotation}",
+            type=self.lock_type,
+            puid=self.puid,
+            time=IMMORTAL_TIMEOUT.as_secs(),
+            annotation=annotation
         );
     }
 }

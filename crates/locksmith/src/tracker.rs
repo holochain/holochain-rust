@@ -5,7 +5,7 @@ use crate::{
     },
     error::LockType,
 };
-#[cfg(feature = "debug_info")]
+#[cfg(feature = "sync_backtrace_capture")]
 use backtrace::Backtrace;
 use snowflake::ProcessUniqueId;
 use std::{
@@ -16,7 +16,7 @@ use std::{
 pub(crate) struct GuardTracker {
     pub(crate) puid: ProcessUniqueId,
     pub(crate) created: Instant,
-    #[cfg(feature = "debug_info")]
+    #[cfg(feature = "sync_backtrace_capture")]
     pub(crate) backtrace: Backtrace,
     pub(crate) lock_type: LockType,
     pub(crate) immortal: bool,
@@ -29,7 +29,7 @@ impl GuardTracker {
             puid,
             lock_type,
             created: Instant::now(),
-            #[cfg(feature = "debug_info")]
+            #[cfg(feature = "sync_backtrace_capture")]
             backtrace: Backtrace::new_unresolved(),
             immortal: false,
             annotation: None,
@@ -67,14 +67,14 @@ impl GuardTracker {
             return;
         }
         self.immortal = true;
-        #[cfg(feature = "debug_info")]
+        #[cfg(feature = "sync_backtrace_capture")]
         self.backtrace.resolve();
         let annotation = self
             .annotation
             .as_ref()
             .map(|a| format!("\nAnnotation: {}\n", a))
             .unwrap_or_default();
-        #[cfg(feature = "debug_info")]
+        #[cfg(feature = "sync_backtrace_capture")]
         error!(
             r"
 
@@ -92,7 +92,7 @@ Backtrace at the moment of guard creation follows:
             annotation=annotation,
             backtrace=self.backtrace
         );
-        #[cfg(not(feature = "debug_info"))]
+        #[cfg(not(feature = "sync_backtrace_capture"))]
         error!(
             r"
 

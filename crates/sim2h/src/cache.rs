@@ -133,12 +133,7 @@ impl Space {
     }
 
     pub fn agent_id_to_uri(&self, agent_id: &AgentId) -> Option<Lib3hUri> {
-        for (found_agent, info) in self.agents.iter() {
-            if found_agent == agent_id {
-                return Some(info.uri.clone());
-            }
-        }
-        None
+        self.agents.get(agent_id).map(|info| info.uri.clone())
     }
 
     pub(crate) fn all_agents(&self) -> &HashMap<AgentId, AgentInfo> {

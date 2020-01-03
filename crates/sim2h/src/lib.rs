@@ -926,47 +926,51 @@ impl Sim2h {
         space_address: &SpaceHash,
         space: &Space,
     ) {
-        with_latency_publishing!("sim2h-fetch_aspects_from_arbitrary_agent", self.metric_publisher, || {
-        let agent_pool = &mut agent_pool[..];
-        agent_pool.shuffle(&mut thread_rng());
-        for entry_address in aspects_to_fetch.entry_addresses() {
-            if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
-                if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
-                    entry_address,
-                    aspect_address_list,
-                    &for_agent_id,
-                    agent_pool,
-                    &space,
-                ) {
-                    debug!(
-                        "FETCHING missing contents from RANDOM AGENT: {}",
-                        arbitrary_agent
-                    );
+        with_latency_publishing!(
+            "sim2h-fetch_aspects_from_arbitrary_agent",
+            self.metric_publisher,
+            || {
+                let agent_pool = &mut agent_pool[..];
+                agent_pool.shuffle(&mut thread_rng());
+                for entry_address in aspects_to_fetch.entry_addresses() {
+                    if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
+                        if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
+                            entry_address,
+                            aspect_address_list,
+                            &for_agent_id,
+                            agent_pool,
+                            &space,
+                        ) {
+                            debug!(
+                                "FETCHING missing contents from RANDOM AGENT: {}",
+                                arbitrary_agent
+                            );
 
-                    let maybe_url = space.agent_id_to_uri(&arbitrary_agent);
-                    if maybe_url.is_none() {
-                        error!("Could not find URL for randomly selected agent. This should not happen!");
-                        return;
+                            let maybe_url = space.agent_id_to_uri(&arbitrary_agent);
+                            if maybe_url.is_none() {
+                                error!("Could not find URL for randomly selected agent. This should not happen!");
+                                return;
+                            }
+                            let random_url = maybe_url.unwrap();
+
+                            let wire_message = WireMessage::Lib3hToClient(
+                                Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                                    request_id: for_agent_id.clone().into(),
+                                    space_address: space_address.clone(),
+                                    provider_agent_id: arbitrary_agent.clone(),
+                                    entry_address: entry_address.clone(),
+                                    aspect_address_list: Some(aspect_address_list.clone()),
+                                }),
+                            );
+                            debug!("SENDING fetch with request ID: {:?}", wire_message);
+                            self.send(arbitrary_agent.clone(), random_url.clone(), &wire_message);
+                        } else {
+                            warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
+                        }
                     }
-                    let random_url = maybe_url.unwrap();
-
-                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
-                        FetchEntryData {
-                            request_id: for_agent_id.clone().into(),
-                            space_address: space_address.clone(),
-                            provider_agent_id: arbitrary_agent.clone(),
-                            entry_address: entry_address.clone(),
-                            aspect_address_list: Some(aspect_address_list.clone()),
-                        },
-                    ));
-                    debug!("SENDING fetch with request ID: {:?}", wire_message);
-                    self.send(arbitrary_agent.clone(), random_url.clone(), &wire_message);
-                } else {
-                    warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
                 }
             }
-        }
-        })
+        )
     }
 
     /// Get an agent who has at least one of the aspects specified, and who is not the same as for_agent_id.
@@ -979,16 +983,21 @@ impl Sim2h {
         agent_pool: &[AgentId],
         space: &Space,
     ) -> Option<AgentId> {
-        with_latency_publishing!("sim2h-get_agent_not_missing_aspects", self.metric_publisher, || {
-         agent_pool
-            .into_iter()
-            // We ignore all agents that are missing all of the same aspects as well since
-            // they can't help us.
-            .find(|a| {
-                **a != *for_agent_id && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
-            })
-            .cloned()
-        })
+        with_latency_publishing!(
+            "sim2h-get_agent_not_missing_aspects",
+            self.metric_publisher,
+            || {
+                agent_pool
+                    .into_iter()
+                    // We ignore all agents that are missing all of the same aspects as well since
+                    // they can't help us.
+                    .find(|a| {
+                        **a != *for_agent_id
+                            && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
+                    })
+                    .cloned()
+            }
+        )
     }
 
     fn handle_new_entry_data(
@@ -998,65 +1007,67 @@ impl Sim2h {
         provider: AgentPubKey,
     ) {
         with_latency_publishing!("sim2h-handle_new_entry_data", self.metric_publisher, || {
-        // Calculate list of agents that should store new data:
-        let dht_agents = match self.dht_algorithm {
-            DhtAlgorithm::FullSync => self.all_agents_except_one(&space_address, Some(&provider)),
-            DhtAlgorithm::NaiveSharding { redundant_count } => {
-                let entry_loc = entry_location(&self.crypto, &entry_data.entry_address);
-                self.agents_in_neighbourhood(&space_address, entry_loc, redundant_count)
-            }
-        };
+            // Calculate list of agents that should store new data:
+            let dht_agents = match self.dht_algorithm {
+                DhtAlgorithm::FullSync => {
+                    self.all_agents_except_one(&space_address, Some(&provider))
+                }
+                DhtAlgorithm::NaiveSharding { redundant_count } => {
+                    let entry_loc = entry_location(&self.crypto, &entry_data.entry_address);
+                    self.agents_in_neighbourhood(&space_address, entry_loc, redundant_count)
+                }
+            };
 
-        let aspect_addresses = entry_data
-            .aspect_list
-            .iter()
-            .cloned()
-            .map(|aspect_data| aspect_data.aspect_address)
-            .collect::<Vec<_>>();
-        let mut map = HashMap::new();
-        map.insert(entry_data.entry_address.clone(), aspect_addresses);
-        let aspect_list = AspectList::from(map);
-        debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
+            let aspect_addresses = entry_data
+                .aspect_list
+                .iter()
+                .cloned()
+                .map(|aspect_data| aspect_data.aspect_address)
+                .collect::<Vec<_>>();
+            let mut map = HashMap::new();
+            map.insert(entry_data.entry_address.clone(), aspect_addresses);
+            let aspect_list = AspectList::from(map);
+            debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
-        self.spaces.alter(space_address.clone(), |space| {
-            let mut space = space?;
-            for aspect in &entry_data.aspect_list {
-                // 1. Add hashes to our global list of all aspects in this space:
-                space.add_aspect(
-                    entry_data.entry_address.clone(),
-                    aspect.aspect_address.clone(),
-                );
-                debug!(
-                    "Space {} now knows about these aspects:\n{}",
-                    &space_address,
-                    space.all_aspects().pretty_string()
-                );
+            self.spaces.alter(space_address.clone(), |space| {
+                let mut space = space?;
+                for aspect in &entry_data.aspect_list {
+                    // 1. Add hashes to our global list of all aspects in this space:
+                    space.add_aspect(
+                        entry_data.entry_address.clone(),
+                        aspect.aspect_address.clone(),
+                    );
+                    debug!(
+                        "Space {} now knows about these aspects:\n{}",
+                        &space_address,
+                        space.all_aspects().pretty_string()
+                    );
 
-                // 2. Create store message
-                let store_message = WireMessage::Lib3hToClient(
-                    Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
-                        request_id: "".into(),
-                        space_address: space_address.clone(),
-                        provider_agent_id: provider.clone(),
-                        entry_address: entry_data.entry_address.clone(),
-                        entry_aspect: aspect.clone(),
-                    }),
-                );
+                    // 2. Create store message
+                    let store_message = WireMessage::Lib3hToClient(
+                        Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+                            request_id: "".into(),
+                            space_address: space_address.clone(),
+                            provider_agent_id: provider.clone(),
+                            entry_address: entry_data.entry_address.clone(),
+                            entry_aspect: aspect.clone(),
+                        }),
+                    );
 
-                // 3. Send store message to selected nodes
-                self.broadcast(&store_message, dht_agents.clone());
-            }
-            Some(space)
-        });
+                    // 3. Send store message to selected nodes
+                    self.broadcast(&store_message, dht_agents.clone());
+                }
+                Some(space)
+            });
         })
     }
 
     fn broadcast(&self, msg: &WireMessage, agents: Vec<(AgentId, AgentInfo)>) {
         with_latency_publishing!("sim2h-broadcast", self.metric_publisher, || {
-        for (agent, info) in agents {
-            debug!("Broadcast: Sending to {:?}", info.uri);
-            self.send(agent, info.uri, msg);
-        }
+            for (agent, info) in agents {
+                debug!("Broadcast: Sending to {:?}", info.uri);
+                self.send(agent, info.uri, msg);
+            }
         })
     }
 
@@ -1066,23 +1077,23 @@ impl Sim2h {
         except: Option<&AgentId>,
     ) -> Vec<(AgentId, AgentInfo)> {
         with_latency_publishing!("sim2h-all_agents_except_one", self.metric_publisher, || {
-         self.spaces
-            .get(space_address)
-            .map(|space| {
-                space
-                    .all_agents()
-                    .clone()
-                    .into_iter()
-                    .filter(|(a, _)| {
-                        if let Some(exception) = except {
-                            *a != *exception
-                        } else {
-                            true
-                        }
-                    })
-                    .collect::<Vec<(AgentId, AgentInfo)>>()
-            })
-            .unwrap_or_else(Vec::new)
+            self.spaces
+                .get(space_address)
+                .map(|space| {
+                    space
+                        .all_agents()
+                        .clone()
+                        .into_iter()
+                        .filter(|(a, _)| {
+                            if let Some(exception) = except {
+                                *a != *exception
+                            } else {
+                                true
+                            }
+                        })
+                        .collect::<Vec<(AgentId, AgentInfo)>>()
+                })
+                .unwrap_or_else(Vec::new)
         })
     }
 
@@ -1092,55 +1103,59 @@ impl Sim2h {
         entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
-        with_latency_publishing!("sim2h-agents_in_neighbourhood", self.metric_publisher, || {
-        self.spaces
-            .get(space_address)
-            .map(|space| {
-                space
-                    .agents_supposed_to_hold_entry(entry_loc, redundant_count)
-                    .into_iter()
-                    .collect::<Vec<(AgentId, AgentInfo)>>()
-            })
-            .unwrap_or_else(Vec::new)
-        })
+        with_latency_publishing!(
+            "sim2h-agents_in_neighbourhood",
+            self.metric_publisher,
+            || {
+                self.spaces
+                    .get(space_address)
+                    .map(|space| {
+                        space
+                            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+                            .into_iter()
+                            .collect::<Vec<(AgentId, AgentInfo)>>()
+                    })
+                    .unwrap_or_else(Vec::new)
+            }
+        )
     }
 
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         with_latency_publishing!("sim2h-send", self.metric_publisher, || {
-        match msg {
-            WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
-            _ => {
-                debug!(">>OUT>> {} to {}", msg.message_type(), uri);
-                MESSAGE_LOGGER
-                    .lock()
-                    .log_out(agent, uri.clone(), msg.clone());
+            match msg {
+                WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
+                _ => {
+                    debug!(">>OUT>> {} to {}", msg.message_type(), uri);
+                    MESSAGE_LOGGER
+                        .lock()
+                        .log_out(agent, uri.clone(), msg.clone());
+                }
             }
-        }
 
-        let payload: Opaque = msg.clone().into();
+            let payload: Opaque = msg.clone().into();
 
-        let open_connections = self.open_connections.clone();
-        let get_result = open_connections.get_mut(&uri);
+            let open_connections = self.open_connections.clone();
+            let get_result = open_connections.get(&uri);
 
-        let sent = get_result
-            .map(|x| {
-                let (_, outgoing_send) = x.clone();
-                if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                    self.disconnect(&uri)
-                };
-                true
-            })
-            .unwrap_or_else(|| false);
+            let sent = get_result
+                .map(|x| {
+                    let (_, outgoing_send) = x.clone();
+                    if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                        self.disconnect(&uri)
+                    };
+                    true
+                })
+                .unwrap_or_else(|| false);
 
-        if !sent {
-            error!("FAILED TO SEND, NO ROUTE: {}", uri);
-            return;
-        }
+            if !sent {
+                error!("FAILED TO SEND, NO ROUTE: {}", uri);
+                return;
+            }
 
-        match msg {
-            WireMessage::Ping | WireMessage::Pong => {}
-            _ => debug!("sent."),
-        }
+            match msg {
+                WireMessage::Ping | WireMessage::Pong => {}
+                _ => debug!("sent."),
+            }
         })
     }
 

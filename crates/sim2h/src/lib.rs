@@ -547,7 +547,6 @@ impl Sim2h {
                     return Err(SIGNER_MISMATCH_ERR_STR.into());
                 }
                 self.ensure_space_exists(&space_address);
-                // TODO REMOVE THIS MESSAGE CLONE!
                 self.handle_joined(uri, &space_address, &agent_id, message)
             }
         }
@@ -927,6 +926,7 @@ impl Sim2h {
         space_address: &SpaceHash,
         space: &Space,
     ) {
+        with_latency_publishing!("sim2h-fetch_aspects_from_arbitrary_agent", self.metric_publisher, || {
         let agent_pool = &mut agent_pool[..];
         agent_pool.shuffle(&mut thread_rng());
         for entry_address in aspects_to_fetch.entry_addresses() {
@@ -966,6 +966,7 @@ impl Sim2h {
                 }
             }
         }
+        })
     }
 
     /// Get an agent who has at least one of the aspects specified, and who is not the same as for_agent_id.
@@ -978,7 +979,8 @@ impl Sim2h {
         agent_pool: &[AgentId],
         space: &Space,
     ) -> Option<AgentId> {
-        agent_pool
+        with_latency_publishing!("sim2h-get_agent_not_missing_aspects", self.metric_publisher, || {
+         agent_pool
             .into_iter()
             // We ignore all agents that are missing all of the same aspects as well since
             // they can't help us.
@@ -986,6 +988,7 @@ impl Sim2h {
                 **a != *for_agent_id && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
             })
             .cloned()
+        })
     }
 
     fn handle_new_entry_data(
@@ -994,6 +997,7 @@ impl Sim2h {
         space_address: SpaceHash,
         provider: AgentPubKey,
     ) {
+        with_latency_publishing!("sim2h-handle_new_entry_data", self.metric_publisher, || {
         // Calculate list of agents that should store new data:
         let dht_agents = match self.dht_algorithm {
             DhtAlgorithm::FullSync => self.all_agents_except_one(&space_address, Some(&provider)),
@@ -1044,13 +1048,16 @@ impl Sim2h {
             }
             Some(space)
         });
+        })
     }
 
     fn broadcast(&self, msg: &WireMessage, agents: Vec<(AgentId, AgentInfo)>) {
+        with_latency_publishing!("sim2h-broadcast", self.metric_publisher, || {
         for (agent, info) in agents {
             debug!("Broadcast: Sending to {:?}", info.uri);
             self.send(agent, info.uri, msg);
         }
+        })
     }
 
     fn all_agents_except_one(
@@ -1058,7 +1065,8 @@ impl Sim2h {
         space_address: &SpaceHash,
         except: Option<&AgentId>,
     ) -> Vec<(AgentId, AgentInfo)> {
-        self.spaces
+        with_latency_publishing!("sim2h-all_agents_except_one", self.metric_publisher, || {
+         self.spaces
             .get(space_address)
             .map(|space| {
                 space
@@ -1075,6 +1083,7 @@ impl Sim2h {
                     .collect::<Vec<(AgentId, AgentInfo)>>()
             })
             .unwrap_or_else(Vec::new)
+        })
     }
 
     fn agents_in_neighbourhood(
@@ -1083,6 +1092,7 @@ impl Sim2h {
         entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
+        with_latency_publishing!("sim2h-agents_in_neighbourhood", self.metric_publisher, || {
         self.spaces
             .get(space_address)
             .map(|space| {
@@ -1092,9 +1102,11 @@ impl Sim2h {
                     .collect::<Vec<(AgentId, AgentInfo)>>()
             })
             .unwrap_or_else(Vec::new)
+        })
     }
 
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+        with_latency_publishing!("sim2h-send", self.metric_publisher, || {
         match msg {
             WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
             _ => {
@@ -1129,6 +1141,7 @@ impl Sim2h {
             WireMessage::Ping | WireMessage::Pong => {}
             _ => debug!("sent."),
         }
+        })
     }
 
     fn retry_sync_missing_aspects(&self) {

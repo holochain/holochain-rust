@@ -327,7 +327,13 @@ impl Sim2h {
             trace!("{} get_or_create_space_mut_result START", thread_name);
             let spaces = self.spaces.clone();
 
-            if spaces.contains_key(space_address) {
+            let exists = with_latency_publishing!(
+                "sim2h-ensure_space_exists-contains_key",
+                self.metric_publisher,
+                || { spaces.contains_key(space_address) }
+            );
+
+            if exists {
                 return;
             }
 
@@ -341,7 +347,11 @@ impl Sim2h {
                         space_address
                     );
 
-                    space_hashes.write().insert(space_address.clone());
+                    with_latency_publishing!(
+                        "sim2h-ensure_space_exists-space_hashes_write",
+                        self.metric_publisher,
+                        || { space_hashes.write().insert(space_address.clone()) }
+                    );
                     let space = Space::new(self.crypto.box_clone());
                     space
                 },
@@ -354,7 +364,6 @@ impl Sim2h {
     fn join(&self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         with_latency_publishing!("sim2h-join", self.metric_publisher, || {
             trace!("join entered");
-            let spaces = self.spaces.clone();
             let result = if let Some(ConnectionState::Limbo(pending_messages)) =
                 self.get_connection(uri)
             {
@@ -364,13 +373,10 @@ impl Sim2h {
                 );
 
                 self.ensure_space_exists(&data.space_address);
-                spaces.alter(data.space_address.clone(), |space| {
-                    let mut space = space?;
-                    space
-                        .join_agent(data.agent_id.clone(), uri.clone())
-                        .unwrap_or_else(|e| error!("Join space for agent failed: {:?}", e));
-                    Some(space)
-                });
+                if let Some(mut space) = self.spaces.get_mut(&data.space_address) {
+                    space.join_agent(data.agent_id.clone(), uri.clone())?
+                };
+
                 info!(
                     "Agent {:?} joined space {:?}",
                     data.agent_id, data.space_address
@@ -732,8 +738,7 @@ impl Sim2h {
 
                 let dht_algorithm = self.dht_algorithm.clone();
 
-                self.spaces.alter(space_address.clone(), |space| {
-                    let mut space = space?;
+                if let Some(mut space) = self.spaces.get_mut(space_address) {
                     // Check if the node is missing any aspects
                     let aspects_missing_at_node = match dht_algorithm {
                         DhtAlgorithm::FullSync => {
@@ -798,8 +803,7 @@ impl Sim2h {
                             }
                         }
                     }
-                    Some(space)
-                });
+                };
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(
@@ -821,8 +825,7 @@ impl Sim2h {
                         return Ok(())
                     }
                     let url = maybe_url.unwrap();
-                    self.spaces.alter(space_address.clone(), |space| {
-                        let mut space = space?;
+                    if let Some(mut space) = self.spaces.get_mut(space_address) {
                         for aspect in &fetch_result.entry.aspect_list {
                             space.remove_missing_aspect(&to_agent_id, &fetch_result.entry.clone().entry_address, &aspect.aspect_address);
                             let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
@@ -837,8 +840,7 @@ impl Sim2h {
                             ));
                             self.send(to_agent_id.clone(), url.clone(), &store_message)
                         }
-                        Some(space)
-                    });
+                    };
                    trace!("HandleFetchEntryResult processed")
                 }
 
@@ -1029,8 +1031,7 @@ impl Sim2h {
             let aspect_list = AspectList::from(map);
             debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
-            self.spaces.alter(space_address.clone(), |space| {
-                let mut space = space?;
+            if let Some(mut space) = self.spaces.get_mut(&space_address) {
                 for aspect in &entry_data.aspect_list {
                     // 1. Add hashes to our global list of all aspects in this space:
                     space.add_aspect(
@@ -1057,8 +1058,7 @@ impl Sim2h {
                     // 3. Send store message to selected nodes
                     self.broadcast(&store_message, dht_agents.clone());
                 }
-                Some(space)
-            });
+            };
         })
     }
 

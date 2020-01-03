@@ -12,17 +12,22 @@ use lib3h_protocol::{
 };
 use std::collections::{HashMap, HashSet};
 
+use holochain_metrics::{with_latency_publishing, MetricPublisher};
+
+use holochain_locksmith::RwLock;
+use std::sync::Arc;
+
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {
     pub uri: Lib3hUri,
     pub location: Location,
 }
-
 pub struct Space {
     crypto: Box<dyn CryptoSystem>,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
+    metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
 }
 
 impl Space {
@@ -32,6 +37,8 @@ impl Space {
             agents: HashMap::new(),
             all_aspects_hashes: AspectList::from(HashMap::new()),
             missing_aspects: HashMap::new(),
+            metric_publisher: holochain_metrics::config::MetricPublisherConfig::default()
+                .create_metric_publisher(),
         }
     }
 
@@ -70,7 +77,11 @@ impl Space {
     }
 
     pub fn agents_with_missing_aspects(&self) -> Vec<AgentId> {
-        self.missing_aspects.keys().cloned().collect()
+        with_latency_publishing!(
+            "sim2h-cache-agents_with_missing_aspects",
+            self.metric_publisher,
+            || { self.missing_aspects.keys().cloned().collect() }
+        )
     }
 
     /// Returns true if the given agent is missing all of the given aspects for the given entry.
@@ -83,29 +94,35 @@ impl Space {
         entry_hash: &EntryHash,
         aspects: &Vec<AspectHash>,
     ) -> bool {
-        let maybe_agent_map = self.missing_aspects.get(agent_id);
-        if maybe_agent_map.is_none() {
-            return false;
-        }
-        let map_for_agent = maybe_agent_map.unwrap();
+        with_latency_publishing!(
+            "sim2h-cache-agent_is_missing_all_aspects",
+            self.metric_publisher,
+            || {
+                let maybe_agent_map = self.missing_aspects.get(agent_id);
+                if maybe_agent_map.is_none() {
+                    return false;
+                }
+                let map_for_agent = maybe_agent_map.unwrap();
 
-        let maybe_vec_of_missing_aspects_for_entry = map_for_agent.get(entry_hash);
-        if maybe_vec_of_missing_aspects_for_entry.is_none() {
-            return false;
-        }
+                let maybe_vec_of_missing_aspects_for_entry = map_for_agent.get(entry_hash);
+                if maybe_vec_of_missing_aspects_for_entry.is_none() {
+                    return false;
+                }
 
-        let missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();
+                let missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();
 
-        // We check that every of the given aspects is the missing list.
-        // If one is missing from the missing list this block returns some
-        // and the whole function returns false.
-        for aspect in aspects {
-            if !missing_aspects_for_entry.contains(aspect) {
-                return false;
+                // We check that every of the given aspects is the missing list.
+                // If one is missing from the missing list this block returns some
+                // and the whole function returns false.
+                for aspect in aspects {
+                    if !missing_aspects_for_entry.contains(aspect) {
+                        return false;
+                    }
+                }
+
+                true
             }
-        }
-
-        true
+        )
     }
 
     pub fn agent_is_missing_some_aspect_for_entry(
@@ -113,11 +130,17 @@ impl Space {
         agent_id: &AgentId,
         entry_hash: &EntryHash,
     ) -> bool {
-        let maybe_agent_map = self.missing_aspects.get(agent_id);
-        if maybe_agent_map.is_none() {
-            return false;
-        }
-        maybe_agent_map.unwrap().get(entry_hash).is_some()
+        with_latency_publishing!(
+            "sim2h-cache-agent_is_missing_some_aspect_for_entry",
+            self.metric_publisher,
+            || {
+                let maybe_agent_map = self.missing_aspects.get(agent_id);
+                if maybe_agent_map.is_none() {
+                    return false;
+                }
+                maybe_agent_map.unwrap().get(entry_hash).is_some()
+            }
+        )
     }
 
     pub fn join_agent(&mut self, agent_id: AgentId, uri: Lib3hUri) -> Sim2hResult<()> {
@@ -145,18 +168,27 @@ impl Space {
         entry_location: Location,
         redundant_count: u64,
     ) -> HashMap<AgentId, AgentInfo> {
-        self.agents
-            .iter()
-            .filter(|(_agent, info)| {
-                naive_sharding_should_store(
-                    info.location,
-                    entry_location,
-                    self.agents.len() as u64,
-                    redundant_count,
-                )
-            })
-            .map(|(e, v)| (e.clone(), v.clone()))
-            .collect()
+        with_latency_publishing!(
+            "sim2h-cache-agents_supposed_to_hold_entry",
+            self.metric_publisher,
+            || {
+                self.agents
+                    .iter()
+                    .filter_map(|(agent, info)| {
+                        if naive_sharding_should_store(
+                            info.location,
+                            entry_location,
+                            self.agents.len() as u64,
+                            redundant_count,
+                        ) {
+                            Some((agent.clone(), info.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            }
+        )
     }
 
     pub fn all_aspects(&self) -> &AspectList {
@@ -164,20 +196,26 @@ impl Space {
     }
 
     pub fn aspects_in_shard_for_agent(&self, agent: &AgentId, redundant_count: u64) -> AspectList {
-        let agent_loc = self
-            .agents
-            .get(agent)
-            .expect("cannot fetch aspects for unknown agent")
-            .location;
-        self.all_aspects_hashes
-            .filtered_by_entry_hash(|entry_hash| {
-                naive_sharding_should_store(
-                    agent_loc,
-                    entry_location(&self.crypto, &entry_hash),
-                    self.agents.len() as u64,
-                    redundant_count,
-                )
-            })
+        with_latency_publishing!(
+            "sim2h-cache-aspects_in_shard_for_agent",
+            self.metric_publisher,
+            || {
+                let agent_loc = self
+                    .agents
+                    .get(agent)
+                    .expect("cannot fetch aspects for unknown agent")
+                    .location;
+                self.all_aspects_hashes
+                    .filtered_by_entry_hash(|entry_hash| {
+                        naive_sharding_should_store(
+                            agent_loc,
+                            entry_location(&self.crypto, &entry_hash),
+                            self.agents.len() as u64,
+                            redundant_count,
+                        )
+                    })
+            }
+        )
     }
 
     pub fn add_aspect(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {

@@ -3,10 +3,20 @@ use crate::error::Sim2hError;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
 
+pub const WIRE_VERSION: u32 = 1;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {
     MessageWhileInLimbo,
     Other(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StatusData {
+    pub spaces: usize,
+    pub connections: usize,
+    pub redundant_count: u64,
+    pub version: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -18,6 +28,8 @@ pub enum WireMessage {
     Err(WireError),
     Ping,
     Pong,
+    Status,
+    StatusResponse(StatusData),
 }
 
 impl WireMessage {
@@ -25,6 +37,8 @@ impl WireMessage {
         String::from(match self {
             WireMessage::Ping => "Ping",
             WireMessage::Pong => "Pong",
+            WireMessage::Status => "Status",
+            WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::ClientToLib3h(ClientToLib3h::Bootstrap(_)) => "[C>L]Bootstrap",
             WireMessage::ClientToLib3h(ClientToLib3h::FetchEntry(_)) => "[C>L]FetchEntry",
             WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => "[C>L]JoinSpace",

@@ -5,7 +5,7 @@ use url2::prelude::*;
 mod frame;
 pub use frame::*;
 
-const SCHEME: &'static str = "wss";
+const SCHEME: &'static str = "ws";
 
 /// internal helper, make sure we're dealing with wss urls
 fn validate_url_scheme(url: &Url2) -> Result<()> {
@@ -71,7 +71,9 @@ impl<Sub: InStreamListenerStd> InStreamListener<&mut WsFrame, WsFrame>
     fn accept(&mut self) -> Result<<Self as InStreamListener<&mut WsFrame, WsFrame>>::Stream> {
         let stream: Sub::StreamStd = self.sub.accept_std()?;
 
-        let res = tungstenite::accept(stream.into_std_stream());
+        let s = stream.into_std_stream();
+        log::debug!("ws: calling accept on {:?}", s);
+        let res = tungstenite::accept(s);
         let mut out = InStreamWss::priv_new(Url2::default());
         match out.priv_proc_wss_srv_result(res) {
             Ok(_) => Ok(out),
@@ -166,7 +168,10 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                 self.state = Some(WssState::MidCliHandshake(mid));
                 Err(Error::with_would_block())
             }
-            Err(e) => Err(Error::new(ErrorKind::ConnectionRefused, format!("{:?}", e))),
+            Err(e) => Err(Error::new(
+                ErrorKind::ConnectionRefused,
+                format!("wss_cli: {:?}", e),
+            )),
         }
     }
 
@@ -188,7 +193,10 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                 self.state = Some(WssState::MidSrvHandshake(mid));
                 Err(Error::with_would_block())
             }
-            Err(e) => Err(Error::new(ErrorKind::ConnectionRefused, format!("{:?}", e))),
+            Err(e) => Err(Error::new(
+                ErrorKind::ConnectionRefused,
+                format!("ws_srv: {:?}", e),
+            )),
         }
     }
 
@@ -273,6 +281,14 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
             Ok(_) => Ok(out),
             Err(e) if e.would_block() => Ok(out),
             Err(e) => Err(e),
+        }
+    }
+
+    fn check_ready(&mut self) -> Result<bool> {
+        self.priv_process()?;
+        match self.state {
+            Some(WssState::Ready(_)) => Ok(true),
+            _ => Ok(false),
         }
     }
 

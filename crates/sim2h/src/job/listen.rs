@@ -1,4 +1,5 @@
 use crate::*;
+use backtrace::Backtrace;
 
 /// a job that manages the sim2h listening socket connection
 /// every iteration will `accept()` a single pending connection
@@ -21,7 +22,11 @@ impl ListenJob {
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
-                error!("LISTEN ACCEPT FAIL: {:?}", e);
+                error!(
+                    "LISTEN ACCEPT FAIL: {:?}\nbacktrace: {:?}",
+                    e,
+                    Backtrace::new()
+                );
                 // don't panic : )
                 // we just want to drop this connection, so do nothing
             }

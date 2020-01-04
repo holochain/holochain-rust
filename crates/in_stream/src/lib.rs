@@ -15,7 +15,7 @@
 //!     let mut listener:
 //!         InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>> =
 //!         InStreamListenerWss::bind(
-//!             &url2!("wss://127.0.0.1:0"),
+//!             &url2!("ws://127.0.0.1:0"),
 //!             config
 //!         ).unwrap();
 //!

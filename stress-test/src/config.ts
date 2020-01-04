@@ -61,12 +61,11 @@ const network =
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()
   )
 
-
 const dna = Config.dna('passthrough-dna.dna.json', 'passthrough')
 
-const configCommon = {
-  logger,
-  network,
+export const configCommon = {
+    logger,
+    network,
 }
 
 /** Generates a bunch of identical conductor configs with multiple identical instances */

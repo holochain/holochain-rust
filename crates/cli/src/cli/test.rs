@@ -69,7 +69,7 @@ pub fn test(
         // CLI feedback
         println!("{}", "Installing node_modules".green().bold());
         util::run_cmd(
-            tests_path,
+            &tests_path,
             "npm".to_string(),
             match show_npm_output {
                 true => &["install"],
@@ -82,7 +82,7 @@ pub fn test(
     // CLI feedback
     println!("{} tests in {}", "Running".green().bold(), testfile,);
     util::run_cmd(
-        path.to_path_buf(),
+        &path.to_path_buf(),
         "node".to_string(),
         &[testfile.to_string().as_str()],
     )?;

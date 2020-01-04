@@ -1,7 +1,7 @@
 mod chain_log;
 mod generate;
 mod hash_dna;
-mod init;
+pub mod init;
 mod keygen;
 pub mod package;
 pub mod run;

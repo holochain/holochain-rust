@@ -109,9 +109,12 @@ pub enum DhtAlgorithm {
     NaiveSharding { redundant_count: u64 },
 }
 
-type ConnectionStates = Arc<CHashMap<Lib3hUri, ConnectionState>>;
 type SpaceHashes = Arc<RwLock<HashSet<SpaceHash>>>;
 type Spaces = Arc<CHashMap<SpaceHash, Space>>;
+
+//type Spaces = Arc<(evmap::ReadHandle<SpaceHash, Space, (), evmapRandomState>,
+//    evmap::WriteHandle<SpaceHash, Space, (), >)>;
+type ConnectionStates = Arc<CHashMap<Lib3hUri, ConnectionState>>;
 type OpenConnections = Arc<
     CHashMap<
         Lib3hUri,
@@ -330,7 +333,20 @@ impl Sim2h {
             let exists = with_latency_publishing!(
                 "sim2h-ensure_space_exists-space_hashs.contains",
                 self.metric_publisher,
-                || { self.space_hashes.read().contains(space_address) }
+                || {
+                    trace!(
+                        "{} get_or_create_space_mut_result SPACE_HASH READ START",
+                        thread_name
+                    );
+
+                    let ret = self.space_hashes.read().contains(space_address);
+                    trace!(
+                        "{} get_or_create_space_mut_result SPACE_HASH READ END: {:?}",
+                        thread_name,
+                        ret
+                    );
+                    ret
+                }
             );
 
             if exists {
@@ -444,13 +460,15 @@ impl Sim2h {
                 spaces.alter(space_address.clone(), |maybe_space| {
                     maybe_space.and_then(|mut space| {
                         if space.remove_agent(&agent_id) == 0 {
+                            trace!("SPACE HASH WRITE START");
                             self.space_hashes.write().remove(&space_address);
+                            trace!("SPACE HASH WRITE END");
                             None
                         } else {
                             Some(space)
                         }
                     })
-                });
+                })
             }
             trace!("disconnect done");
         })

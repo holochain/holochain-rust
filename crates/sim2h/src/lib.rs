@@ -554,43 +554,47 @@ impl Sim2h {
                 }
             )?;
 
-            match agent {
-                // if the agent sending the message is in limbo, then the only message
-                // allowed is a join message.
-                ConnectionState::Limbo(ref mut pending_messages) => {
-                    if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
-                        if &data.agent_id != signer {
-                            return Err(SIGNER_MISMATCH_ERR_STR.into());
-                        }
-                        self.join(uri, &data)
-                    } else {
-                        // TODO: maybe have some upper limit on the number of messages
-                        // we allow to queue before dropping the connections
-                        pending_messages.push(message);
-                        let _ = self.connection_states.insert(uri.clone(), agent);
-                        self.send(
-                            signer.clone(),
-                            uri.clone(),
-                            &WireMessage::Err(WireError::MessageWhileInLimbo),
-                        );
-                        Ok(())
-                    }
-                }
+            let connection_state_metric = match &agent {
+                ConnectionState::Limbo(_) => "simh-handle_incoming_connect_limbo",
+                ConnectionState::Joined(_, _) => "sim2h-handle_incoming_connect_joined",
+            };
 
-                // if the agent sending the messages has been vetted and is in the space
-                // then build a message to be proxied to the correct destination, and forward it
-                ConnectionState::Joined(space_address, agent_id) => with_latency_publishing!(
-                    "sim2h-handle_message-joined",
-                    self.metric_publisher,
-                    || {
+            with_latency_publishing!(connection_state_metric, self.metric_publisher, || {
+                match agent {
+                    // if the agent sending the message is in limbo, then the only message
+                    // allowed is a join message.
+                    ConnectionState::Limbo(ref mut pending_messages) => {
+                        if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message
+                        {
+                            if &data.agent_id != signer {
+                                return Err(SIGNER_MISMATCH_ERR_STR.into());
+                            }
+                            self.join(uri, &data)
+                        } else {
+                            // TODO: maybe have some upper limit on the number of messages
+                            // we allow to queue before dropping the connections
+                            pending_messages.push(message);
+                            let _ = self.connection_states.insert(uri.clone(), agent);
+                            self.send(
+                                signer.clone(),
+                                uri.clone(),
+                                &WireMessage::Err(WireError::MessageWhileInLimbo),
+                            );
+                            Ok(())
+                        }
+                    }
+
+                    // if the agent sending the messages has been vetted and is in the space
+                    // then build a message to be proxied to the correct destination, and forward it
+                    ConnectionState::Joined(space_address, agent_id) => {
                         if &agent_id != signer {
                             return Err(SIGNER_MISMATCH_ERR_STR.into());
                         }
                         self.ensure_space_exists(&space_address);
                         self.handle_joined(uri, &space_address, &agent_id, message)
                     }
-                ),
-            }
+                }
+            })
         })
     }
 

@@ -60,8 +60,7 @@ use parking_lot::RwLock;
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
-/// Number of threads dedicating to pulling connection requests off the channel and processing them.
-const NUM_CONNECTION_THREADS: u64 = 1;
+const CONNECTION_THREADS_PER_CORE: usize = 1;
 
 /// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {
@@ -195,21 +194,25 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&self) {
-        for _cpu_index in 0..NUM_CONNECTION_THREADS {
+        for _cpu_index in 0..(CONNECTION_THREADS_PER_CORE * num_cpus::get()) {
             let connection_states = self.connection_states.clone();
             let open_connections = self.open_connections.clone();
             let msg_send = self.msg_send.clone();
             let pool = self.pool.clone();
             let wss_recv = self.wss_recv.clone();
 
+            let metric_publisher = self.metric_publisher.clone();
+
             let _result = std::thread::spawn(move || loop {
                 if let Ok(wss) = wss_recv.try_recv() {
                     let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
                     let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
                     let job = Arc::new(Mutex::new(job));
-                    if let Err(error) =
-                        Self::handle_incoming_connect(connection_states.clone(), url.clone())
-                    {
+                    if let Err(error) = Self::handle_incoming_connect(
+                        metric_publisher.clone(),
+                        connection_states.clone(),
+                        url.clone(),
+                    ) {
                         error!("Error handling incoming connection: {:?}", error);
                         return;
                     }
@@ -249,7 +252,7 @@ impl Sim2h {
                         let payload: Opaque = b.into();
                         trace!("priv_check_incoming_messages: payload converted");
 
-                        match Sim2h::verify_payload(payload.clone()) {
+                        match self.verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
                                 trace!("priv_check_incoming_messages: verified message");
                                 if let Err(error) = self.handle_message(&url, wire_message, &source)
@@ -491,16 +494,19 @@ impl Sim2h {
 
     // handler for incoming connections
     fn handle_incoming_connect(
+        metric_publisher: Arc<std::sync::RwLock<dyn MetricPublisher>>,
         connection_states: ConnectionStates,
         uri: Lib3hUri,
     ) -> Sim2hResult<bool> {
-        trace!("handle_incoming_connect entered");
-        info!("New connection from {:?}", uri);
-        if let Some(_old) = connection_states.insert(uri.clone(), ConnectionState::new()) {
-            println!("TODO should remove {}", uri); //TODO
-        };
-        trace!("handle_incoming_connect done");
-        Ok(true)
+        with_latency_publishing!("sim2h-handle_incoming_connect", metric_publisher, || {
+            trace!("handle_incoming_connect entered");
+            info!("New connection from {:?}", uri);
+            if let Some(_old) = connection_states.insert(uri.clone(), ConnectionState::new()) {
+                println!("TODO should remove {}", uri); //TODO
+            };
+            trace!("handle_incoming_connect done");
+            Ok(true)
+        })
     }
 
     // handler for messages sent to sim2h
@@ -510,80 +516,94 @@ impl Sim2h {
         message: WireMessage,
         signer: &AgentId,
     ) -> Sim2hResult<()> {
-        // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
-        if message == WireMessage::Ping {
-            trace!("Ping -> Pong");
-            self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
-            return Ok(());
-        }
-        if message == WireMessage::Status {
-            trace!("Status -> StatusResponse");
-            self.send(
-                signer.clone(),
-                uri.clone(),
-                &WireMessage::StatusResponse(StatusData {
-                    spaces: self.spaces.len(),
-                    connections: self.open_connections.len(),
-                    redundant_count: match self.dht_algorithm {
-                        DhtAlgorithm::FullSync => 0,
-                        DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
-                    },
-                    version: WIRE_VERSION,
-                }),
-            );
-            return Ok(());
-        }
-        MESSAGE_LOGGER
-            .lock()
-            .log_in(signer.clone(), uri.clone(), message.clone());
-        trace!("handle_message entered");
-        let mut agent = self
-            .get_connection(uri)
-            .ok_or_else(|| format!("no connection for {}", uri))?;
+        with_latency_publishing!("sim2h-handle-message", self.metric_publisher, || {
+            // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
+            if message == WireMessage::Ping {
+                trace!("Ping -> Pong");
+                self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
+                return Ok(());
+            }
+            if message == WireMessage::Status {
+                trace!("Status -> StatusResponse");
+                self.send(
+                    signer.clone(),
+                    uri.clone(),
+                    &WireMessage::StatusResponse(StatusData {
+                        spaces: self.spaces.len(),
+                        connections: self.open_connections.len(),
+                        redundant_count: match self.dht_algorithm {
+                            DhtAlgorithm::FullSync => 0,
+                            DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                        },
+                        version: WIRE_VERSION,
+                    }),
+                );
+                return Ok(());
+            }
+            MESSAGE_LOGGER
+                .lock()
+                .log_in(signer.clone(), uri.clone(), message.clone());
+            trace!("handle_message entered");
 
-        match agent {
-            // if the agent sending the message is in limbo, then the only message
-            // allowed is a join message.
-            ConnectionState::Limbo(ref mut pending_messages) => {
-                if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
-                    if &data.agent_id != signer {
-                        return Err(SIGNER_MISMATCH_ERR_STR.into());
+            let mut agent = with_latency_publishing!(
+                "sim2h-handle_incoming_connect-agent_get_connection",
+                self.metric_publisher,
+                || {
+                    self.get_connection(uri)
+                        .ok_or_else(|| format!("no connection for {}", uri))
+                }
+            )?;
+
+            match agent {
+                // if the agent sending the message is in limbo, then the only message
+                // allowed is a join message.
+                ConnectionState::Limbo(ref mut pending_messages) => {
+                    if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
+                        if &data.agent_id != signer {
+                            return Err(SIGNER_MISMATCH_ERR_STR.into());
+                        }
+                        self.join(uri, &data)
+                    } else {
+                        // TODO: maybe have some upper limit on the number of messages
+                        // we allow to queue before dropping the connections
+                        pending_messages.push(message);
+                        let _ = self.connection_states.insert(uri.clone(), agent);
+                        self.send(
+                            signer.clone(),
+                            uri.clone(),
+                            &WireMessage::Err(WireError::MessageWhileInLimbo),
+                        );
+                        Ok(())
                     }
-                    self.join(uri, &data)
-                } else {
-                    // TODO: maybe have some upper limit on the number of messages
-                    // we allow to queue before dropping the connections
-                    pending_messages.push(message);
-                    let _ = self.connection_states.insert(uri.clone(), agent);
-                    self.send(
-                        signer.clone(),
-                        uri.clone(),
-                        &WireMessage::Err(WireError::MessageWhileInLimbo),
-                    );
-                    Ok(())
                 }
-            }
 
-            // if the agent sending the messages has been vetted and is in the space
-            // then build a message to be proxied to the correct destination, and forward it
-            ConnectionState::Joined(space_address, agent_id) => {
-                if &agent_id != signer {
-                    return Err(SIGNER_MISMATCH_ERR_STR.into());
-                }
-                self.ensure_space_exists(&space_address);
-                self.handle_joined(uri, &space_address, &agent_id, message)
+                // if the agent sending the messages has been vetted and is in the space
+                // then build a message to be proxied to the correct destination, and forward it
+                ConnectionState::Joined(space_address, agent_id) => with_latency_publishing!(
+                    "sim2h-handle_message-joined",
+                    self.metric_publisher,
+                    || {
+                        if &agent_id != signer {
+                            return Err(SIGNER_MISMATCH_ERR_STR.into());
+                        }
+                        self.ensure_space_exists(&space_address);
+                        self.handle_joined(uri, &space_address, &agent_id, message)
+                    }
+                ),
             }
-        }
+        })
     }
 
-    fn verify_payload(payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
-        let signed_message = SignedWireMessage::try_from(payload)?;
-        let result = signed_message.verify().unwrap();
-        if !result {
-            return Err(VERIFY_FAILED_ERR_STR.into());
-        }
-        let wire_message = WireMessage::try_from(signed_message.payload)?;
-        Ok((signed_message.provenance.source().into(), wire_message))
+    fn verify_payload(&self, payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
+        with_latency_publishing!("sim2h-verify_payload", self.metric_publisher, || {
+            let signed_message = SignedWireMessage::try_from(payload)?;
+            let result = signed_message.verify().unwrap();
+            if !result {
+                return Err(VERIFY_FAILED_ERR_STR.into());
+            }
+            let wire_message = WireMessage::try_from(signed_message.payload)?;
+            Ok((signed_message.provenance.source().into(), wire_message))
+        })
     }
 
     pub fn process(&self) -> Sim2hResult<()> {
@@ -676,13 +696,14 @@ impl Sim2h {
         agent_id: &AgentId,
         message: WireMessage,
     ) -> Sim2hResult<()> {
-        trace!("handle_joined entered");
-        debug!(
-            "<<IN<< {} from {}",
-            message.message_type(),
-            agent_id.to_string()
-        );
-        match message {
+        with_latency_publishing!("sim2h-handle_joined", self.metric_publisher, || {
+            trace!("handle_joined entered");
+            debug!(
+                "<<IN<< {} from {}",
+                message.message_type(),
+                agent_id.to_string()
+            );
+            match message {
             // First make sure we are not receiving a message in the wrong direction.
             // Panic for now so we can easily spot a mistake.
             // Should maybe break up WireMessage into two different structs so we get the
@@ -936,6 +957,7 @@ impl Sim2h {
                 Err(format!("Message not implemented: {:?}", message).into())
             }
         }
+        })
     }
 
     fn fetch_aspects_from_arbitrary_agent(

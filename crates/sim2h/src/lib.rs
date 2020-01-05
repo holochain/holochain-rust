@@ -93,13 +93,13 @@ const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
     debug!(
-        "connection state lifecycle {}@{} {} {:?}",
+        "connection event conn: {}@{} {} {:?}",
         uuid, uri, desc, obj
     );
 }
 
 fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
-    debug!("open connection lifecycle {}@{} {}", uuid, uri, desc);
+    debug!("connection event open_conns: {}@{} {}", uuid, uri, desc);
 }
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;

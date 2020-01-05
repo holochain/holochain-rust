@@ -91,12 +91,15 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
-fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState) {
-    debug!("connection state lifecycle {} {} {:?}", uuid, desc, obj);
+fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
+    debug!(
+        "connection state lifecycle {}@{} {} {:?}",
+        uuid, uri, desc, obj
+    );
 }
 
-fn open_lifecycle(desc: &str, uuid: &str) {
-    debug!("open connection lifecycle {} {}", uuid, desc);
+fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
+    debug!("open connection lifecycle {}@{} {}", uuid, uri, desc);
 }
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -136,7 +139,7 @@ impl Sim2hState {
     // removes an agent from a space
     fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         if let Some((uuid, state)) = self.get_connection(uri) {
-            conn_lifecycle("leave -> disconnect", &uuid, &state);
+            conn_lifecycle("leave -> disconnect", &uuid, &state, uri);
             if let ConnectionState::Joined(space_address, agent_id) = state {
                 if (data.agent_id != agent_id) || (data.space_address != space_address) {
                     Err(SPACE_MISMATCH_ERR_STR.into())
@@ -181,12 +184,12 @@ impl Sim2hState {
         trace!("disconnect entered");
 
         if let Some((uuid, con, _outgoing_send)) = self.open_connections.remove(uri) {
-            open_lifecycle("disconnect", &uuid);
+            open_lifecycle("disconnect", &uuid, uri);
             con.f_lock().stop();
         }
 
         if let Some((uuid, conn)) = self.connection_states.remove(uri) {
-            conn_lifecycle("disconnect", &uuid, &conn);
+            conn_lifecycle("disconnect", &uuid, &conn, uri);
             if let ConnectionState::Joined(space_address, agent_id) = conn {
                 if let Some(space) = self.spaces.get_mut(&space_address) {
                     if space.remove_agent(&agent_id) == 0 {
@@ -283,7 +286,7 @@ impl Sim2hState {
                 return None;
             }
             Some((uuid, _con, outgoing_send)) => {
-                open_lifecycle("send", uuid);
+                open_lifecycle("send", uuid, &uri);
                 if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
                     // pass the back out to be disconnected
                     return Some(uri);
@@ -898,7 +901,7 @@ impl Sim2h {
             .get_connection(uri)
             .ok_or_else(|| format!("no connection for {}", uri))?;
 
-        conn_lifecycle("handle_message", &uuid, &agent);
+        conn_lifecycle("handle_message", &uuid, &agent, uri);
 
         match agent {
             // if the agent sending the message is in limbo, then the only message

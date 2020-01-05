@@ -298,15 +298,17 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
 
     fn read(&mut self, data: &mut WsFrame) -> Result<usize> {
         self.priv_process()?;
-        log::trace!("instream ws read from {} with connection state: {:?}",
-                self.remote_url, self.state
-            );
+        log::trace!(
+            "read from {} with connection state: {:?}",
+            self.remote_url,
+            self.state
+        );
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
             Some(state) => match state {
                 WssState::Ready(wss) => {
                     let r = wss.read_message();
-                    log::trace!("instream ws read result: {:?}", r);
+                    log::trace!("read result from {}: {:?}", self.remote_url, r);
                     match r {
                         Ok(msg) => {
                             data.assume(msg);

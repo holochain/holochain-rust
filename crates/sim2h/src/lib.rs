@@ -719,10 +719,10 @@ impl Sim2h {
                         format!("unexpected text message: {:?}", s).into(),
                     ),
                     WsFrame::Binary(b) => {
-                        let debug = url.host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
-                        if debug {
-                            println!("receved a frame from zippy ({})", url);
-                        }
+                        trace!(
+                            "priv_check_incoming_messages: received a frame from {}",
+                            url
+                        );
                         let payload: Opaque = b.into();
                         match Sim2h::verify_payload(payload.clone()) {
                             Ok((source, wire_message)) => {
@@ -869,10 +869,6 @@ impl Sim2h {
 
         conn_lifecycle("handle_message", &uuid, &agent, uri);
 
-        let debug = uri.host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
-        if debug {
-            debug!("handle_message from zippy: {:?}", message);
-        }
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
             debug!("Sending Pong in response to Ping");

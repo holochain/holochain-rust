@@ -74,14 +74,12 @@ impl ConnectionJob {
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
-                let debug = self.wss.remote_url().host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
-                if debug {
-                    println!("from zippy ({}) in connection", self.wss.remote_url());
-                }
+                trace!(
+                    "run_result: read from {} in connection",
+                    self.wss.remote_url()
+                );
                 let frame = self.frame.take().unwrap();
-                if debug {
-                    println!("frame read {:?}", frame);
-                }
+                trace!("run_result: frame read {:?}", frame);
                 self.report_msg(Ok(frame));
                 // we got data this time, check again right away
                 return Ok(JobResult::default());

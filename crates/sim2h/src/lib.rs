@@ -92,7 +92,10 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
-    debug!("connection event conn: {} for {}@{} {:?}", desc, uuid, uri, obj);
+    debug!(
+        "connection event conn: {} for {}@{} {:?}",
+        desc, uuid, uri, obj
+    );
 }
 
 fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
@@ -692,8 +695,8 @@ impl Sim2h {
     /// we received some kind of error related to a stream/socket
     /// print some debugging and disconnect it
     fn priv_drop_connection_for_error(&mut self, uri: Lib3hUri, error: Sim2hError) {
-        debug!(
-            "Dropping connection to {} because of error {}: {:?}",
+        error!(
+            "Dropping connection to {} because of error: {:?}",
             uri, error,
         );
         self.disconnect(&uri);

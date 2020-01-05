@@ -136,7 +136,7 @@ impl Sim2hState {
     // removes an agent from a space
     fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         if let Some((uuid, state)) = self.get_connection(uri) {
-            conn_lifecycle("leave -> disconnect", &uuid, &state);
+            conn_lifecycle("leave", &uuid, &state);
             if let ConnectionState::Joined(space_address, agent_id) = state {
                 if (data.agent_id != agent_id) || (data.space_address != space_address) {
                     Err(SPACE_MISMATCH_ERR_STR.into())
@@ -1279,5 +1279,31 @@ impl Sim2h {
 
     fn retry_sync_missing_aspects(&mut self) {
         self.state.write().retry_sync_missing_aspects();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use lib3h_sodium::SodiumCryptoSystem;
+
+    fn test_sim2h() -> Sim2h {
+        let uri = Lib3hUri::try_from("ws://0.0.0.0:9000").unwrap();
+        Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri)
+    }
+
+    #[test]
+    fn cannot_join_twice() {
+        let mut sim2h = test_sim2h();
+        let uri = Lib3hUri::try_from("ws://1.2.3.4:9000").unwrap();
+        let space_data = SpaceData {
+            /// Identifier of this request
+            request_id: "".into(),
+            space_address: "SpaceHash".into(),
+            agent_id: "AgentPubKey".into(),
+        };
+        assert!(sim2h.join(&uri, &space_data).is_ok());
+        assert!(sim2h.join(&uri, &space_data).is_err());
     }
 }

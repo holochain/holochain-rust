@@ -16,7 +16,10 @@ const dnaPath = path.join(__dirname, "../dist/<<DNA_NAME>>.dna.json")
 const orchestrator = new Orchestrator()
 
 const dna = Config.dna(dnaPath, 'scaffold-test')
-const conductorConfig = Config.gen({myInstanceName: dna})
+const conductorConfig = Config.gen(
+  {myInstanceName: dna},
+  {network: Config.network('n3h')}
+)
 
 orchestrator.registerScenario("description of example test", async (s, t) => {
 

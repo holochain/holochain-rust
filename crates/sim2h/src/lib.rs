@@ -92,10 +92,7 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
-    debug!(
-        "connection event conn: {}@{} {} {:?}",
-        uuid, uri, desc, obj
-    );
+    debug!("connection event conn: {}@{} {} {:?}", uuid, uri, desc, obj);
 }
 
 fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
@@ -266,9 +263,9 @@ impl Sim2hState {
 
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Option<Lib3hUri> {
         match msg {
-            WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
+            WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} with {}", agent, uri),
             WireMessage::StatusResponse(r) => {
-                println!("sending StatusResponse {:?} to {}", r, uri);
+                debug!("StatusResponse {:?} to {}", r, uri);
             }
             _ => {
                 debug!(">>OUT>> {} to {}", msg.message_type(), uri);
@@ -776,7 +773,7 @@ impl Sim2h {
 
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        println!("join entered for {} with {:?}", uri, data);
+        debug!("join entered for {} with {:?}", uri, data);
         let result = if let Some((uuid, conn)) = self.get_connection(uri) {
             if let ConnectionState::Limbo(pending_messages) = conn {
                 let conn =
@@ -809,7 +806,7 @@ impl Sim2h {
                     data.agent_id.clone(),
                 );
                 // MDD: maybe the pending messages shouldn't be handled immediately, but pushed into the queue?
-                println!("pending messages in join: {}", pending_messages.len());
+                debug!("pending messages in join: {}", pending_messages.len());
                 for message in *pending_messages {
                     if let Err(err) = self.handle_message(uri, message.clone(), &data.agent_id) {
                         error!(
@@ -862,6 +859,17 @@ impl Sim2h {
         message: WireMessage,
         signer: &AgentId,
     ) -> Sim2hResult<()> {
+        trace!("handle_message entered for {}", uri);
+
+        MESSAGE_LOGGER
+            .lock()
+            .log_in(signer.clone(), uri.clone(), message.clone());
+        let (uuid, mut agent) = self
+            .get_connection(uri)
+            .ok_or_else(|| format!("no connection for {}", uri))?;
+
+        conn_lifecycle("handle_message", &uuid, &agent, uri);
+
         let debug = uri.host().unwrap().to_string() == "68.237.138.100"; //  "127.0.0.1";
         if debug {
             debug!("handle_message from zippy: {:?}", message);
@@ -893,15 +901,6 @@ impl Sim2h {
             );
             return Ok(());
         }
-        MESSAGE_LOGGER
-            .lock()
-            .log_in(signer.clone(), uri.clone(), message.clone());
-        trace!("handle_message entered");
-        let (uuid, mut agent) = self
-            .get_connection(uri)
-            .ok_or_else(|| format!("no connection for {}", uri))?;
-
-        conn_lifecycle("handle_message", &uuid, &agent, uri);
 
         match agent {
             // if the agent sending the message is in limbo, then the only message

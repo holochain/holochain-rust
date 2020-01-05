@@ -92,11 +92,11 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
-    debug!("connection event conn: {}@{} {} {:?}", uuid, uri, desc, obj);
+    debug!("connection event conn: {} for {}@{} {:?}", desc, uuid, uri, obj);
 }
 
 fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
-    debug!("connection event open_conns: {}@{} {}", uuid, uri, desc);
+    debug!("connection event open_conns: {} for {}@{}", desc, uuid, uri);
 }
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -263,10 +263,6 @@ impl Sim2hState {
 
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Option<Lib3hUri> {
         match msg {
-            WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} with {}", agent, uri),
-            WireMessage::StatusResponse(r) => {
-                debug!("StatusResponse {:?} to {}", r, uri);
-            }
             _ => {
                 debug!(">>OUT>> {} to {}", msg.message_type(), uri);
                 MESSAGE_LOGGER
@@ -680,11 +676,12 @@ impl Sim2h {
                 error!("Error handling incoming connection: {:?}", error);
                 return true; //did work despite error.
             }
-            println!("adding connection job for {}", url);
+            let uuid = nanoid::simple();
+            open_lifecycle("adding conn job", &uuid, &url);
             self.state
                 .write()
                 .open_connections
-                .insert(url, (nanoid::simple(), job.clone(), outgoing_send));
+                .insert(url, (uuid, job.clone(), outgoing_send));
             self.pool.push_job(Box::new(job));
             true
         } else {
@@ -695,11 +692,10 @@ impl Sim2h {
     /// we received some kind of error related to a stream/socket
     /// print some debugging and disconnect it
     fn priv_drop_connection_for_error(&mut self, uri: Lib3hUri, error: Sim2hError) {
-        error!(
-            "Transport error occurred on connection to {}: {:?}",
+        debug!(
+            "Dropping connection to {} because of error {}: {:?}",
             uri, error,
         );
-        info!("Dropping connection to {} because of error", uri);
         self.disconnect(&uri);
     }
 
@@ -707,8 +703,8 @@ impl Sim2h {
     fn priv_check_incoming_messages(&mut self) -> bool {
         let len = self.msg_recv.len();
         if len > 0 {
-            println!("Handling {} incoming messages", len);
-            println!("threadpool len {}", self.threadpool.queued_count());
+            debug!("Handling {} incoming messages", len);
+            debug!("threadpool len {}", self.threadpool.queued_count());
         }
         let v: Vec<_> = self.msg_recv.try_iter().collect();
         for (url, msg) in v {
@@ -729,11 +725,11 @@ impl Sim2h {
                             Ok((source, wire_message)) => {
                                 if let Err(error) = self.handle_message(&url, wire_message, &source)
                                 {
-                                    println!("Error handling message: {:?}", error);
+                                    error!("Error handling message: {:?}", error);
                                 }
                             }
                             Err(error) => {
-                                println!(
+                                error!(
                                     "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
                                     url,
                                     error, payload
@@ -839,7 +835,7 @@ impl Sim2h {
     // handler for incoming connections
     fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
         trace!("handle_incoming_connect entered");
-        info!("New connection from {:?}", uri);
+        debug!("New connection from {:?}", uri);
         if let Some(_old) = self
             .state
             .write()
@@ -876,12 +872,12 @@ impl Sim2h {
         }
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
-            println!("Ping -> Pong");
+            debug!("Sending Pong in response to Ping");
             self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
             return Ok(());
         }
         if message == WireMessage::Status {
-            println!("Status -> StatusResponse");
+            debug!("Sending StatusResponse in response to Status");
             let (spaces_len, connection_count) = {
                 let state = self.state.read();
                 (state.spaces.len(), state.open_connections.len())
@@ -912,7 +908,7 @@ impl Sim2h {
                     }
                     self.join(uri, &data)
                 } else {
-                    println!("inserting into pending message while in limbo.");
+                    debug!("inserting into pending message while in limbo.");
                     // TODO: maybe have some upper limit on the number of messages
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);

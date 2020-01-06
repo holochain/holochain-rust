@@ -17,17 +17,58 @@ use holochain_metrics::{with_latency_publishing, MetricPublisher};
 use holochain_locksmith::RwLock;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct AgentInfo {
     pub uri: Lib3hUri,
     pub location: Location,
 }
+
 pub struct Space {
     crypto: Box<dyn CryptoSystem>,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
     metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+}
+
+impl evmap::ShallowCopy for Space {
+    unsafe fn shallow_copy(&mut self) -> Self {
+        self.clone()
+    }
+}
+
+impl std::cmp::PartialEq for Space {
+    fn eq(&self, other: &Self) -> bool {
+        let eq = std::cmp::PartialEq::eq(&self.agents, &other.agents);
+        if !eq {
+            return false;
+        }
+
+        let eq = std::cmp::PartialEq::eq(&self.missing_aspects, &other.missing_aspects);
+        if !eq {
+            return false;
+        }
+        let mut iter = other.all_aspects_hashes.0.iter();
+        for a in &self.all_aspects_hashes.0 {
+            if iter.next().map(|b| a != b).unwrap_or_else(|| true) {
+                return false;
+            }
+        }
+        true
+    }
+}
+impl std::cmp::Eq for Space {}
+
+impl Clone for Space {
+    fn clone(&self) -> Self {
+        Self {
+            crypto: self.crypto.box_clone(),
+            agents: self.agents.clone(),
+            all_aspects_hashes: self.all_aspects_hashes.clone(),
+            missing_aspects: self.missing_aspects.clone(),
+            metric_publisher: self.metric_publisher.clone(),
+        }
+    }
 }
 
 impl Space {
@@ -224,7 +265,7 @@ impl Space {
 }
 
 // TODO: unify with AspectMap
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
 impl AspectList {
     /// Returns an AspectList list that contains every entry aspect

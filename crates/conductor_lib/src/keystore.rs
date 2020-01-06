@@ -851,7 +851,7 @@ pub mod tests {
 
         assert_eq!(
             key_bundle.sign_keys.public(),
-            "HcSCIowJEUHintsxps7dnz5V38ypdDoadU986V476InyYicyWQBx937Y8dxQrgi"
+            "HcSCIcOIYdE5spsmimrFfD9um6Pe7p9piu6g36TsaP55Us4docRdyj4dAnmbaui"
         );
         assert_eq!(
             key_bundle.enc_keys.public(),

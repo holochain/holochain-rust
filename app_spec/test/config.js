@@ -69,6 +69,7 @@ const logger = {
 const commonConfig = { logger, network }
 
 module.exports = {
+  dna,
   one: Config.gen({
       app: dna
     },

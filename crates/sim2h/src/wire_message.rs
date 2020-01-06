@@ -32,20 +32,37 @@ pub enum WireMessage {
     StatusResponse(StatusData),
 }
 
+//status and status responses first
+//responses next
+//the rest at the end
 impl Ord for WireMessage {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
+            WireMessage::StatusResponse(_) => Ordering::Less,
+            WireMessage::Status => match other
+            {
+  
+                    WireMessage::StatusResponse(_) => Ordering::Greater,
+                    _ => Ordering::Less
+                
+            }
             WireMessage::ClientToLib3hResponse(_) => match other {
+                WireMessage::StatusResponse(_) => Ordering::Greater,
+                WireMessage::Status => Ordering::Greater,
                 WireMessage::ClientToLib3hResponse(_) => Ordering::Equal,
                 WireMessage::Lib3hToClientResponse(_) => Ordering::Equal,
                 _ => Ordering::Less,
             },
             WireMessage::Lib3hToClientResponse(_) => match other {
+                WireMessage::StatusResponse(_) => Ordering::Greater,
+                WireMessage::Status => Ordering::Greater,
                 WireMessage::ClientToLib3hResponse(_) => Ordering::Equal,
                 WireMessage::Lib3hToClientResponse(_) => Ordering::Equal,
                 _ => Ordering::Less,
             },
             _ => match other {
+                WireMessage::StatusResponse(_) => Ordering::Greater,
+                WireMessage::Status => Ordering::Greater,
                 WireMessage::ClientToLib3hResponse(_) => Ordering::Greater,
                 WireMessage::Lib3hToClientResponse(_) => Ordering::Greater,
                 _ => Ordering::Equal,

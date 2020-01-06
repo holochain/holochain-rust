@@ -13,7 +13,8 @@ let
 
   script-hc-generate-flame-graph = pkgs.writeShellScriptBin "hc-generate-flame-graph"
   ''
-  rm -rf FlameGraph && git clone https://github.com/brendangregg/FlameGraph && perf script | perl FlameGraph/stackcollapse-perf.pl | perl FlameGraph/flamegraph.pl > generated-graph.svg
+  [ -d "FlameGraph" ] && echo "Flame Graph already exists" || git clone https://github.com/brendangregg/FlameGraph;
+  perf script | perl FlameGraph/stackcollapse-perf.pl | perl FlameGraph/flamegraph.pl > generated-graph.svg
   '';
 in
 {

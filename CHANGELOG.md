@@ -2,6 +2,36 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.42-alpha3] - 2020-01-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.42-alpha2] - 2020-01-02
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixes bugs in the sim2 connecting handling. Backoff timing and reset was broken.
+
+### Security
+
 ## [0.0.42-alpha1] - 2019-12-30
 
 ### Added

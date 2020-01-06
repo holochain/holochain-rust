@@ -436,11 +436,14 @@ impl Sim2h {
                 return;
             }
 
+            trace!("[{:?}] GETTING SPACE WRITE LOCK", thread_name);
             let mut spaces_write = spaces.write.lock().unwrap();
-
+    
+            trace!("[{:?}] SPACE WRITE LOCK", thread_name);
             let space = Space::new(self.crypto.box_clone());
             spaces_write.insert(space_address.clone(), space);
             spaces_write.refresh();
+            trace!("[{:?}] SPACE WRITE REFRESH", thread_name);
             ()
         })
     }
@@ -545,10 +548,13 @@ impl Sim2h {
                     .unwrap_or_else(|| None)
                 {
                     if cnt == 0 {
+                        trace!("GETTING SPACE WRITE LOCK FOR CLEARING of {:?}", space_address);
                         let mut spaces_write = spaces.write.lock().unwrap();
+                        trace!("GOT SPACE WRITE LOCK FOR CLEARING of {:?}", space_address);
                         spaces_write.clear(space_address);
                         spaces_write.refresh();
-                    }
+                        trace!("SPACE WRITE LOCK FOR CLEARING REFRESH");
+                     }
                 }
             }
             trace!("disconnect done");
@@ -894,10 +900,12 @@ impl Sim2h {
                                 for (entry_hash, aspect_hash) in &missing_hashes {
                                     space.add_missing_aspect(agent_id.clone(), entry_hash.clone(), aspect_hash.clone());
                                 }
+                                trace!("SPACE WRITE LOCK FOR MISSING ASPECTS");
                                 let mut spaces_write = self.spaces.write.lock().unwrap();
                                 spaces_write.update(space_address.clone(), space);
                                 spaces_write.refresh();
-                            }
+                                trace!("SPACE WRITE LOCK FOR MISSING ASPECTS REFRESH");
+                             }
 
 
                             match dht_algorithm {
@@ -979,9 +987,12 @@ impl Sim2h {
                             ));
                             self.send(to_agent_id.clone(), url.clone(), &store_message)
                         }
+                        trace!("SPACE WRITE LOCK FOR HANDLE FETCH ENTRY RESULT");
                         let mut spaces_write = self.spaces.write.lock().unwrap();
                         spaces_write.update(space_address.clone(), space);
-                    }));
+                        spaces_write.refresh();
+                        trace!("SPACE WRITE LOCK FOR HANDLE FETCH ENTRY RESULT REFRESH");
+                     }));
                    trace!("HandleFetchEntryResult processed")
                 }
 
@@ -1208,10 +1219,14 @@ impl Sim2h {
                         // 3. Send store message to selected nodes
                         self.broadcast(&store_message, dht_agents.clone());
                     }
+                    trace!("GETTING SPACE WRITE LOCK HANDLE NEW ENTRY FOR {:?}", space_address);
                     let mut spaces_write = self.spaces.write.lock().unwrap();
+                    trace!("GOT SPACE WRITE LOCK HANDLE NEW ENTRY FOR {:?}", space_address);
                     spaces_write.update(space_address, space);
+                    trace!("GOT SPACE WRITE UPDATE FOR HANDLE NEW ENTRY");
                     spaces_write.refresh();
-                }
+                    trace!("SPACE WRITE LOCK HANDLE NEW ENTRY FOR REFRESH");
+                 }
             });
         })
     }

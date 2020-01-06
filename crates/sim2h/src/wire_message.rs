@@ -2,16 +2,17 @@
 use crate::error::Sim2hError;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
+use std::cmp::Ordering;
 
 pub const WIRE_VERSION: u32 = 1;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq,Eq,Serialize, Deserialize,PartialOrd)]
 pub enum WireError {
     MessageWhileInLimbo,
     Other(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq,Eq,Serialize, Deserialize,PartialOrd)]
 pub struct StatusData {
     pub spaces: usize,
     pub connections: usize,
@@ -19,18 +20,62 @@ pub struct StatusData {
     pub version: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone,PartialEq,Serialize, Deserialize)]
 pub enum WireMessage {
-    ClientToLib3h(ClientToLib3h),
     ClientToLib3hResponse(ClientToLib3hResponse),
-    Lib3hToClient(Lib3hToClient),
     Lib3hToClientResponse(Lib3hToClientResponse),
-    Err(WireError),
+    ClientToLib3h(ClientToLib3h),
+    Lib3hToClient(Lib3hToClient),
     Ping,
     Pong,
+    Err(WireError),
     Status,
     StatusResponse(StatusData),
 }
+
+impl Ord for WireMessage {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self
+        {
+            WireMessage::ClientToLib3hResponse(_) =>
+            {
+                match other
+                {
+                    WireMessage::ClientToLib3hResponse(_) => Ordering::Equal,
+                    WireMessage::Lib3hToClientResponse(_) => Ordering::Equal,
+                    _ => Ordering::Greater
+                }
+            },
+            WireMessage::Lib3hToClientResponse(_)=>
+            {
+                match other
+                {
+                    WireMessage::ClientToLib3hResponse(_) => Ordering::Equal,
+                    WireMessage::Lib3hToClientResponse(_) => Ordering::Equal,
+                    _ => Ordering::Greater
+                } 
+            },
+            _ => match other
+            {
+                WireMessage::ClientToLib3hResponse(_) => Ordering::Less,
+                WireMessage::Lib3hToClientResponse(_) => Ordering::Less,
+                _ => Ordering::Equal
+            }
+        }
+    }
+}
+
+impl Eq for WireMessage
+{
+
+}
+
+impl PartialOrd for WireMessage {
+    fn partial_cmp(&self, other: &WireMessage) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 impl WireMessage {
     pub fn message_type(&self) -> String {

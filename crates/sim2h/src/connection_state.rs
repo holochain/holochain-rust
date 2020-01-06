@@ -1,6 +1,7 @@
 //! represents the state of connected agents
 use crate::wire_message::WireMessage;
 use lib3h_protocol::types::{AgentPubKey, SpaceHash};
+use im::ordset::OrdSet;
 pub type AgentId = AgentPubKey;
 
 use crate::error::*;
@@ -8,13 +9,13 @@ use crate::error::*;
 #[derive(PartialEq, Debug, Clone)]
 pub enum ConnectionState {
     #[allow(clippy::all)]
-    Limbo(Box<Vec<WireMessage>>),
+    Limbo(Box<OrdSet<WireMessage>>),
     Joined(SpaceHash, AgentId),
 }
 
 impl ConnectionState {
     pub fn new() -> ConnectionState {
-        ConnectionState::Limbo(Box::new(Vec::new()))
+        ConnectionState::Limbo(Box::new(OrdSet::new()))
     }
 
     /// construct a new "Joined" ConnectionState item
@@ -38,6 +39,6 @@ pub mod tests {
     #[test]
     pub fn test_connection_state() {
         let ca = ConnectionState::new();
-        assert_eq!(ca, ConnectionState::Limbo(Box::new(Vec::new())));
+        assert_eq!(ca, ConnectionState::Limbo(Box::new(OrdSet::new())));
     }
 }

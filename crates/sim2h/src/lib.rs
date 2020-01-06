@@ -9,6 +9,7 @@ extern crate nanoid;
 extern crate serde;
 #[macro_use]
 extern crate lazy_static;
+extern crate im;
 
 #[allow(dead_code)]
 mod naive_sharding;
@@ -439,7 +440,7 @@ impl Sim2h {
                 } else {
                     // TODO: maybe have some upper limit on the number of messages
                     // we allow to queue before dropping the connections
-                    pending_messages.push(message);
+                    pending_messages.insert(message);
                     let _ = self.connection_states.write().insert(uri.clone(), agent);
                     self.send(
                         signer.clone(),

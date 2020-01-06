@@ -39,13 +39,10 @@ impl Ord for WireMessage {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
             WireMessage::StatusResponse(_) => Ordering::Less,
-            WireMessage::Status => match other
-            {
-  
-                    WireMessage::StatusResponse(_) => Ordering::Greater,
-                    _ => Ordering::Less
-                
-            }
+            WireMessage::Status => match other {
+                WireMessage::StatusResponse(_) => Ordering::Greater,
+                _ => Ordering::Less,
+            },
             WireMessage::ClientToLib3hResponse(_) => match other {
                 WireMessage::StatusResponse(_) => Ordering::Greater,
                 WireMessage::Status => Ordering::Greater,

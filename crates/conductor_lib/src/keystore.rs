@@ -119,8 +119,11 @@ impl Keystore {
     /// This will query `passphrase_manager` immediately to set a passphrase for the keystore.
     pub fn new(
         passphrase_manager: Arc<PassphraseManager>,
-        hash_config: Option<PwHashConfig>,
+        mut hash_config: Option<PwHashConfig>,
     ) -> HcResult<Self> {
+        if hash_config.is_none() {
+            hash_config = test_hash_config()
+        }
         Ok(Keystore {
             passphrase_check: make_passphrase_check(
                 &mut passphrase_manager.get_passphrase()?,
@@ -157,7 +160,7 @@ impl Keystore {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let mut keystore: Keystore = serde_json::from_str(&contents)?;
-        keystore.hash_config = hash_config;
+        keystore.hash_config = hash_config.or_else(|| test_hash_config());
         keystore.passphrase_manager = Some(passphrase_manager);
         Ok(keystore)
     }

@@ -1,7 +1,7 @@
 //! represents the state of connected agents
 use crate::wire_message::WireMessage;
-use lib3h_protocol::types::{AgentPubKey, SpaceHash};
 use im::ordset::OrdSet;
+use lib3h_protocol::types::{AgentPubKey, SpaceHash};
 pub type AgentId = AgentPubKey;
 
 use crate::error::*;

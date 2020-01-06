@@ -1,14 +1,10 @@
-const { one, two, dna } = require('../config')
+const { one, twoSame } = require('../config')
 const { Config } = require('@holochain/tryorama')
 
 module.exports = scenario => {
 
   scenario.only('links propagate within a single conductor', async (s, t) => {
-    const config = Config.gen({
-      app1: dna,
-      app2: dna,
-    })
-    const { alice } = await s.players({alice: config}, true)
+    const { alice } = await s.players({alice: twoSame}, true)
 
     await alice.call('app1', 'simple', 'create_link',
       { base: alice.info('app1').agentAddress, target: 'Posty' }

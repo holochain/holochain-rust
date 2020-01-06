@@ -75,6 +75,12 @@ module.exports = {
     },
     commonConfig
   ),
+  twoSame: Config.gen({
+      app1: dna,
+      app2: dna,
+    },
+    commonConfig
+  ),
   two: Config.gen({
       app1: dna,
       app2: dna2

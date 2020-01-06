@@ -330,27 +330,6 @@ mod tests {
     }
 
     #[test]
-    fn space_error_on_duplicate_join() {
-        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
-        let agent =
-            AgentId::from("HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz");
-        assert_eq!(space.agents.len(), 0);
-        space
-            .join_agent(
-                agent.clone(),
-                Lib3hUri::try_from("ws://someagenturi.com:9000").unwrap(),
-            )
-            .expect("should work");
-        let join2_result = space
-            .join_agent(
-                agent.clone(),
-                Lib3hUri::try_from("ws://someagenturi.com:9000").unwrap(),
-            );
-        assert!(join2_result.is_err());
-        assert_eq!(space.agents.len(), 1);
-    }
-
-    #[test]
     fn space_can_add_and_remove_missing_aspects() {
         let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
         let agent = AgentId::from("test-agent");

@@ -1278,29 +1278,3 @@ impl Sim2h {
         self.state.write().retry_sync_missing_aspects();
     }
 }
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    use lib3h_sodium::SodiumCryptoSystem;
-
-    fn test_sim2h() -> Sim2h {
-        let uri = Lib3hUri::try_from("ws://0.0.0.0:9000").unwrap();
-        Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri)
-    }
-
-    #[test]
-    fn cannot_join_twice() {
-        let mut sim2h = test_sim2h();
-        let uri = Lib3hUri::try_from("ws://1.2.3.4:9000").unwrap();
-        let space_data = SpaceData {
-            /// Identifier of this request
-            request_id: "".into(),
-            space_address: "SpaceHash".into(),
-            agent_id: "AgentPubKey".into(),
-        };
-        assert!(sim2h.join(&uri, &space_data).is_ok());
-        assert!(sim2h.join(&uri, &space_data).is_err());
-    }
-}

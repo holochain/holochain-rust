@@ -673,7 +673,7 @@ impl Sim2h {
                     AspectList::from(list_data.address_map.clone()).diff(space.all_aspects())
                 })
                 .unwrap_or_else(|| AspectList::from(HashMap::new()));
-            debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+            //debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
             for entry_address in unseen_aspects.entry_addresses() {
                 if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
                     let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
@@ -795,7 +795,7 @@ impl Sim2h {
                     };
 
                     if aspects_missing_at_node.entry_addresses().count() > 0 {
-                        warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
+                        //warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
 
                         // Cache info about what this agent is missing so we can make sure it got it
                         let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
@@ -1072,8 +1072,6 @@ impl Sim2h {
                 .collect::<Vec<_>>();
             let mut map = HashMap::new();
             map.insert(entry_data.entry_address.clone(), aspect_addresses);
-            let aspect_list = AspectList::from(map);
-            debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
             if let Some(mut space) = self.spaces.get_mut(&space_address) {
                 for aspect in &entry_data.aspect_list {
@@ -1082,11 +1080,11 @@ impl Sim2h {
                         entry_data.entry_address.clone(),
                         aspect.aspect_address.clone(),
                     );
-                    debug!(
+                    /*debug!(
                         "Space {} now knows about these aspects:\n{}",
                         &space_address,
                         space.all_aspects().pretty_string()
-                    );
+                    );*/
 
                     // 2. Create store message
                     let store_message = WireMessage::Lib3hToClient(

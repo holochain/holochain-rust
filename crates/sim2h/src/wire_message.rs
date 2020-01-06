@@ -38,16 +38,16 @@ impl Ord for WireMessage {
             WireMessage::ClientToLib3hResponse(_) => match other {
                 WireMessage::ClientToLib3hResponse(_) => Ordering::Equal,
                 WireMessage::Lib3hToClientResponse(_) => Ordering::Equal,
-                _ => Ordering::Greater,
+                _ => Ordering::Less,
             },
             WireMessage::Lib3hToClientResponse(_) => match other {
                 WireMessage::ClientToLib3hResponse(_) => Ordering::Equal,
                 WireMessage::Lib3hToClientResponse(_) => Ordering::Equal,
-                _ => Ordering::Greater,
+                _ => Ordering::Less,
             },
             _ => match other {
-                WireMessage::ClientToLib3hResponse(_) => Ordering::Less,
-                WireMessage::Lib3hToClientResponse(_) => Ordering::Less,
+                WireMessage::ClientToLib3hResponse(_) => Ordering::Greater,
+                WireMessage::Lib3hToClientResponse(_) => Ordering::Greater,
                 _ => Ordering::Equal,
             },
         }

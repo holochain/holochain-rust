@@ -858,7 +858,7 @@ pub mod tests {
             "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         );
 
-        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "4qBbA4Bs+5Z7GLrOY67lUEtr5PX8MnPzhFwGZsKrUn4JqLjJuLorQuBSj/NfHE677kT4bPJRA7e5x0NooDunQw==".to_string());
         assert_eq!(
             base64::encode(&**key_bundle.enc_keys.private().read_lock()),
             "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()

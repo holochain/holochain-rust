@@ -201,7 +201,12 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) {
-        if let Ok((url, msg)) = self.msg_recv.try_recv() {
+        let len = self.msg_recv.len();
+        if len > 0 {
+            debug!("Handling {} incoming messages", len);
+        }
+        let v: Vec<_> = self.msg_recv.try_iter().collect();
+        for (url, msg) in v {
             let url: Lib3hUri = url::Url::from(url).into();
             match msg {
                 Ok(frame) => match frame {

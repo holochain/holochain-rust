@@ -2,6 +2,22 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.42-alpha4] - 2020-01-07
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Websocket Connection Error on macOs
+
+### Security
+
 ## [0.0.42-alpha3] - 2020-01-05
 
 ### Added

@@ -26,6 +26,7 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use futures::{executor::ThreadPool, future::Future};
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
@@ -38,10 +39,6 @@ use lib3h_protocol::{
     uri::Lib3hUri,
 };
 use url2::prelude::*;
-use futures::{
-    executor::ThreadPool,
-    future::Future,
-};
 
 pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
@@ -106,11 +103,9 @@ thread_local! {
 /// spawn an <Output = ()> future into the sigleton Sim2h futures ThreadPool
 fn sim2h_spawn_ok<Fut>(future: Fut)
 where
-    Fut: Future<Output = ()> + Send + 'static
+    Fut: Future<Output = ()> + Send + 'static,
 {
-    THRD_SIM2H_POOL.with(move |pool| {
-        pool.spawn_ok(future)
-    })
+    THRD_SIM2H_POOL.with(move |pool| pool.spawn_ok(future))
 }
 
 /// infinite loop writing a trace!() once per second as verification
@@ -216,10 +211,8 @@ impl Sim2h {
         let config = WssBindConfig::new(config);
         let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());
-        self.pool
-            .push_job(Box::new(Arc::new(Mutex::new(ListenJob::new(
-                listen, wss_send,
-            )))));
+
+        sim2h_spawn_ok(listen_job(listen, wss_send));
     }
 
     /// if our listening socket has accepted any new connections, set them up

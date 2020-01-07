@@ -23,9 +23,10 @@ pub mod websocket;
 pub mod wire_message;
 
 pub use crate::message_log::MESSAGE_LOGGER;
-use crate::{crypto::*, error::*};
+use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{
@@ -40,7 +41,6 @@ use url2::prelude::*;
 
 pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
-use chashmap::CHashMap;
 use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
@@ -52,7 +52,6 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
-use holochain_metrics::{metrics::MetricPublisher, self_with_latency_publishing};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -87,7 +86,6 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
@@ -96,9 +94,7 @@ pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
 pub type TcpWss = InStreamWss<InStreamTcp>;
 
 mod job;
-//use crate::naive_sharding::{anything_to_location, entry_location, naive_sharding_should_store};
 use job::*;
-//use lib3h::rrdht_util::Location;
 
 #[derive(Clone)]
 pub enum DhtAlgorithm {
@@ -109,7 +105,7 @@ pub enum DhtAlgorithm {
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    connection_states: CHashMap<Lib3hUri, ConnectionState>,
+    connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
@@ -123,11 +119,8 @@ pub struct Sim2h {
         ),
     >,
     num_ticks: u64,
-    /// when should we recalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: std::time::Instant,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
-    metric_publisher: Arc<std::sync::RwLock<holochain_metrics::logger::LoggerMetricPublisher>>,
     dht_algorithm: DhtAlgorithm,
 }
 
@@ -142,7 +135,7 @@ impl Sim2h {
         let mut sim2h = Sim2h {
             crypto,
             bound_uri: None,
-            connection_states: CHashMap::new(),
+            connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
             pool,
             wss_recv,
@@ -150,9 +143,7 @@ impl Sim2h {
             msg_recv,
             open_connections: HashMap::new(),
             num_ticks: 0,
-            rrdht_arc_radius_recalc: std::time::Instant::now(),
             missing_aspects_resync: std::time::Instant::now(),
-            metric_publisher: Default::default(),
             dht_algorithm: DhtAlgorithm::FullSync,
         };
 
@@ -184,40 +175,6 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) {
-        let limbo_cnt = self
-            .connection_states
-            .clone()
-            .into_iter()
-            .filter(|(_k, v)| {
-                if let ConnectionState::Limbo(_) = v {
-                    true
-                } else {
-                    false
-                }
-            })
-            .count() as f64;
-
-        let limbo_states_metric = holochain_metrics::Metric::new_timestamped_now(
-            "sim2h.connection_states.limbo",
-            None,
-            limbo_cnt,
-        );
-
-        let joined_states_metric = holochain_metrics::Metric::new_timestamped_now(
-            "sim2h.connection_states.joined",
-            None,
-            self.connection_states.len() as f64 - limbo_cnt,
-        );
-
-        self.metric_publisher
-            .write()
-            .unwrap()
-            .publish(&limbo_states_metric);
-        self.metric_publisher
-            .write()
-            .unwrap()
-            .publish(&joined_states_metric);
-
         if let Ok(wss) = self.wss_recv.try_recv() {
             let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
             let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
@@ -282,13 +239,6 @@ impl Sim2h {
         }
     }
 
-    /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&mut self) {
-        for (_, space) in self.spaces.iter_mut() {
-            space.write().recalc_rrdht_arc_radius();
-        }
-    }
-
     fn request_authoring_list(
         &mut self,
         uri: Lib3hUri,
@@ -338,7 +288,7 @@ impl Sim2h {
         trace!("join entered");
         let result =
             if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
-                let _ = self.connection_states.insert(
+                let _ = self.connection_states.write().insert(
                     uri.clone(),
                     ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
                 );
@@ -399,7 +349,7 @@ impl Sim2h {
         }
 
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
-            self.connection_states.remove(uri)
+            self.connection_states.write().remove(uri)
         {
             if let Some(space_lock) = self.spaces.get(&space_address) {
                 if space_lock.write().remove_agent(&agent_id) == 0 {
@@ -412,8 +362,8 @@ impl Sim2h {
 
     // get the connection status of an agent
     fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionState> {
-        let reader = self.connection_states.get(uri);
-        reader.map(|ca| (*ca).clone())
+        let reader = self.connection_states.read();
+        reader.get(uri).map(|ca| (*ca).clone())
     }
 
     // find out if an agent is in a space or not and return its URI
@@ -430,6 +380,7 @@ impl Sim2h {
         info!("New connection from {:?}", uri);
         if let Some(_old) = self
             .connection_states
+            .write()
             .insert(uri.clone(), ConnectionState::new())
         {
             println!("TODO should remove {}", uri); //TODO
@@ -489,7 +440,7 @@ impl Sim2h {
                     // TODO: maybe have some upper limit on the number of messages
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);
-                    let _ = self.connection_states.insert(uri.clone(), agent);
+                    let _ = self.connection_states.write().insert(uri.clone(), agent);
                     self.send(
                         signer.clone(),
                         uri.clone(),
@@ -520,18 +471,8 @@ impl Sim2h {
         Ok((signed_message.provenance.source().into(), wire_message))
     }
 
-    pub fn process(&mut self) -> Sim2hResult<()> {
-        self_with_latency_publishing!(
-            "sim2h.process",
-            self.metric_publisher,
-            process_internal,
-            self
-        )
-    }
-
     // process transport and  incoming messages from it
-    fn process_internal(&mut self) -> Sim2hResult<()> {
-        trace!("process");
+    pub fn process(&mut self) -> Sim2hResult<()> {
         self.num_ticks += 1;
         if self.num_ticks % 60000 == 0 {
             debug!(".");
@@ -540,17 +481,6 @@ impl Sim2h {
 
         self.priv_check_incoming_connections();
         self.priv_check_incoming_messages();
-
-        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
-            self.rrdht_arc_radius_recalc = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
-            self.recalc_rrdht_arc_radius();
-            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
-        }
 
         if std::time::Instant::now() >= self.missing_aspects_resync {
             self.missing_aspects_resync = std::time::Instant::now()
@@ -731,10 +661,11 @@ impl Sim2h {
 
                         DhtAlgorithm::NaiveSharding {redundant_count} => {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
+                                let entry_loc = entry_location(&self.crypto, entry_address);
                                 let agent_pool = self
                                     .get_or_create_space(&space_address)
                                     .read()
-                                    .agents_supposed_to_hold_entry(entry_address.clone(), redundant_count)
+                                    .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                                     .keys()
                                     .cloned()
                                     .collect::<Vec<AgentPubKey>>();
@@ -791,10 +722,11 @@ impl Sim2h {
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
+                    let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
                     let agent_pool = self
                         .get_or_create_space(&space_address)
                         .read()
-                        .agents_supposed_to_hold_entry(query_data.entry_address.clone(), redundant_count)
+                        .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                         .keys()
                         .cloned()
                         .collect::<Vec<_>>();
@@ -943,11 +875,10 @@ impl Sim2h {
             DhtAlgorithm::FullSync => {
                 self.all_agents_except_one(space_address.clone(), Some(&provider))
             }
-            DhtAlgorithm::NaiveSharding { redundant_count } => self.agents_in_neighbourhood(
-                space_address.clone(),
-                entry_data.entry_address.clone(),
-                redundant_count,
-            ),
+            DhtAlgorithm::NaiveSharding { redundant_count } => {
+                let entry_loc = entry_location(&self.crypto, &entry_data.entry_address);
+                self.agents_in_neighbourhood(space_address.clone(), entry_loc, redundant_count)
+            }
         };
 
         let aspect_addresses = entry_data
@@ -1022,12 +953,12 @@ impl Sim2h {
     fn agents_in_neighbourhood(
         &mut self,
         space: SpaceHash,
-        entry_hash: EntryHash,
+        entry_loc: Location,
         redundant_count: u64,
     ) -> Vec<(AgentId, AgentInfo)> {
         self.get_or_create_space(&space)
             .read()
-            .agents_supposed_to_hold_entry(entry_hash, redundant_count)
+            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
             .into_iter()
             .collect::<Vec<(AgentId, AgentInfo)>>()
     }

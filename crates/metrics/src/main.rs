@@ -202,7 +202,7 @@ fn print_cloudwatch_metrics(
 }
 
 fn print_log_stats(log_file: PathBuf, aggregation_pattern: Option<String>) {
-    let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
+    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
     let aggregation_pattern = aggregation_pattern.unwrap_or_else(|| "(.*)".into());
     let re = regex::Regex::new(aggregation_pattern.as_str()).unwrap();
     let stats = StatsByMetric::group_by_regex(&re, metrics);

@@ -1,5 +1,5 @@
 use crate::*;
-use holochain_metrics::with_latency_publishing;
+use holochain_metrics::{metrics::MetricPublisher, with_latency_publishing};
 
 /// a cpu-count pool of threads that can execute jobs
 pub(crate) struct Pool {

@@ -72,7 +72,7 @@ impl<Sub: InStreamListenerStd> InStreamListener<&mut WsFrame, WsFrame>
         let stream: Sub::StreamStd = self.sub.accept_std()?;
 
         let s = stream.into_std_stream();
-        println!("ws: calling accept on {:?}", s);
+        log::debug!("ws: calling accept on {:?}", s);
         let res = tungstenite::accept(s);
         let mut out = InStreamWss::priv_new(Url2::default());
         match out.priv_proc_wss_srv_result(res) {

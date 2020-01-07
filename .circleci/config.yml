@@ -299,7 +299,6 @@ workflows:
          - 2019-12-23-docker-aws-push
          - develop
          - final-exam
-         - metric-publishing
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -313,7 +312,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - metric-publishing
          - 2019-12-26-debug-cli-docker
    - docker-build-circle-build:
       requires:

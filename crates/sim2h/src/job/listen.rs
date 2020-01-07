@@ -31,7 +31,8 @@ pub(crate) async fn listen_job(
         }
         if last_break.elapsed().as_millis() > 10 {
             last_break = std::time::Instant::now();
-            futures_timer::Delay::new(std::time::Duration::from_millis(0)).await;
+            // equivalent of thread::yield_now() ?
+            futures::future::lazy(|_| {}).await;
         }
     }
 }

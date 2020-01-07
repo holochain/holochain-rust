@@ -38,6 +38,10 @@ use lib3h_protocol::{
     uri::Lib3hUri,
 };
 use url2::prelude::*;
+use futures::{
+    executor::ThreadPool,
+    future::Future,
+};
 
 pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
 
@@ -83,6 +87,40 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 }
 
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+
+lazy_static! {
+    /// the global futures thread pool reference
+    /// the mutex should only be locked once per thread
+    static ref GLB_SIM2H_POOL: Mutex<ThreadPool> = {
+        Mutex::new(ThreadPool::new().expect("error creating futures thread pool"))
+    };
+}
+
+thread_local! {
+    /// the thread local futures thread pool reference
+    /// clone on ThreadPool creates a cheap reference to the pool
+    /// this way each thread has singleton-ish access without Mutex overhead
+    static THRD_SIM2H_POOL: ThreadPool = GLB_SIM2H_POOL.f_lock().clone();
+}
+
+/// spawn an <Output = ()> future into the sigleton Sim2h futures ThreadPool
+fn sim2h_spawn_ok<Fut>(future: Fut)
+where
+    Fut: Future<Output = ()> + Send + 'static
+{
+    THRD_SIM2H_POOL.with(move |pool| {
+        pool.spawn_ok(future)
+    })
+}
+
+/// infinite loop writing a trace!() once per second as verification
+/// that our ThreadPool executor is still processing jobs
+async fn one_second_tick() {
+    loop {
+        trace!("sim2h futures thread_pool - one second tick");
+        futures_timer::Delay::new(std::time::Duration::from_secs(1)).await;
+    }
+}
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
@@ -136,6 +174,8 @@ pub struct Sim2h {
 
 impl Sim2h {
     pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
+        sim2h_spawn_ok(one_second_tick());
+
         let pool = Pool::new();
         pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
 

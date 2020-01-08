@@ -28,8 +28,7 @@ exclude = [
   "test_utils",
   "app_spec",
   "app_spec_proc_macro",
-  "nodejs_conductor/native",
-  "newrelic-sys"
+  "nodejs_conductor/native"
 ]
 
 [patch.crates-io]

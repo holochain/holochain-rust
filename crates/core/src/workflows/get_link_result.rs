@@ -41,7 +41,7 @@ pub async fn get_link_result_workflow<'a>(
 
     match links_result {
         GetLinksNetworkResult::Links(links) => {
-            let get_links_result = links
+            links
                 .into_iter()
                 .map(|(link_add_address, tag)| {
                     // make DHT calls to get the entries for the links
@@ -51,17 +51,17 @@ pub async fn get_link_result_workflow<'a>(
                         &tag,
                         link_args.options.headers,
                     )
-                    .unwrap()
                 })
-                .map(|get_entry_crud| LinksResult {
-                    address: get_entry_crud.target.clone(),
-                    headers: get_entry_crud.headers.unwrap_or_default(),
-                    status: get_entry_crud.crud_status,
-                    tag: get_entry_crud.tag.clone(),
+                .map(|maybe_get_entry_crud| {
+                    maybe_get_entry_crud.map(|get_entry_crud| LinksResult {
+                        address: get_entry_crud.target.clone(),
+                        headers: get_entry_crud.headers.unwrap_or_default(),
+                        status: get_entry_crud.crud_status,
+                        tag: get_entry_crud.tag.clone(),
+                    })
                 })
-                .collect::<Vec<LinksResult>>();
-
-            Ok(GetLinksResult::new(get_links_result))
+                .collect::<Result<Vec<LinksResult>, HolochainError>>()
+                .map(|get_links_result| GetLinksResult::new(get_links_result))
         }
         _ => Err(HolochainError::ErrorGeneric(
             "Could not get links".to_string(),

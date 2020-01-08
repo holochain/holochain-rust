@@ -9,10 +9,7 @@ use crate::{
     nucleus,
 };
 use holochain_core_types::{
-    crud_status::CrudStatus,
-    entry::{EntryWithMetaAndHeader},
-    error::HolochainError,
-    eav::Attribute,
+    crud_status::CrudStatus, eav::Attribute, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -46,7 +43,8 @@ fn get_links(
             }
             .expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
             (eavi.value(), tag)
-        }).collect())
+        })
+        .collect())
 }
 
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {

@@ -1,24 +1,20 @@
-use holochain_persistence_api::cas::content::Address;
-use crate::workflows::get_entry_result::get_entry_result_workflow;
 use crate::{
     context::Context,
     network::{
         actions::query::{query, QueryMethod},
         query::{
-            GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
-            NetworkQueryResult, GetLinkData,
+            GetLinkData, GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
+            NetworkQueryResult,
         },
     },
+    workflows::get_entry_result::get_entry_result_workflow,
 };
+use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryOptions, GetEntryResultType,
 };
 
-use holochain_core_types::{
-    error::HolochainError,
-    entry::Entry,
-    crud_status::CrudStatus,
-};
+use holochain_core_types::{crud_status::CrudStatus, entry::Entry, error::HolochainError};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
@@ -45,8 +41,15 @@ pub async fn get_link_result_workflow<'a>(
         GetLinksNetworkResult::Links(links) => {
             let get_links_result = links
                 .into_iter()
-                .map(|(link_add_address, tag)| { // make DHT calls to get the entries for the links
-                    get_link_data_from_link_addresses(context, &link_add_address, &tag, link_args.options.headers).unwrap()
+                .map(|(link_add_address, tag)| {
+                    // make DHT calls to get the entries for the links
+                    get_link_data_from_link_addresses(
+                        context,
+                        &link_add_address,
+                        &tag,
+                        link_args.options.headers,
+                    )
+                    .unwrap()
                 })
                 .map(|get_entry_crud| LinksResult {
                     address: get_entry_crud.target.clone(),
@@ -65,7 +68,12 @@ pub async fn get_link_result_workflow<'a>(
 }
 
 // given the address of a link_add/link_remove entry, build a GetLinkData struct by retrieving the data from the DHT
-fn get_link_data_from_link_addresses(context: &Arc<Context>, link_add_address: &Address, tag: &String, include_headers: bool) -> Result<GetLinkData, HolochainError> {
+fn get_link_data_from_link_addresses(
+    context: &Arc<Context>,
+    link_add_address: &Address,
+    tag: &String,
+    include_headers: bool,
+) -> Result<GetLinkData, HolochainError> {
     let get_link_add_entry_args = GetEntryArgs {
         address: link_add_address.clone(),
         options: GetEntryOptions {
@@ -85,7 +93,10 @@ fn get_link_data_from_link_addresses(context: &Arc<Context>, link_add_address: &
                 } else {
                     None
                 };
-                let crud = entry_with_meta_and_headers.meta.map(|m| m.crud_status).unwrap_or(CrudStatus::Live);
+                let crud = entry_with_meta_and_headers
+                    .meta
+                    .map(|m| m.crud_status)
+                    .unwrap_or(CrudStatus::Live);
                 entry_with_meta_and_headers
                     .entry
                     .map(|single_entry| match single_entry {

@@ -10,10 +10,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
-    crud_status::CrudStatus,
-    entry::{EntryWithMetaAndHeader},
-    error::HolochainError,
-    eav::Attribute,
+    crud_status::CrudStatus, eav::Attribute, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -48,7 +45,8 @@ fn get_links(
             }
             .expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
             (eavi.value(), tag)
-        }).collect())
+        })
+        .collect())
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

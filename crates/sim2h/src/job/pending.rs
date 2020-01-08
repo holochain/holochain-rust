@@ -33,14 +33,18 @@ pub(crate) async fn pending_job(
 }
 
 #[allow(clippy::large_enum_variant)]
+/// result of checking the state on a pending websocket connection
 enum PendingState {
     Pending(PendingItem),
     Ready(TcpWss),
     Error(Url2, std::io::Error),
 }
 
+/// a websocket connection that may not have completed handshaking
 struct PendingItem {
+    // the time at which we received this socket
     start: std::time::Instant,
+    // the actual socket
     wss: TcpWss,
 }
 
@@ -52,6 +56,7 @@ impl PendingItem {
         }
     }
 
+    /// check to see if this websocket has completed handshaking
     pub fn check(mut self) -> PendingState {
         match self.wss.check_ready() {
             Ok(true) => return PendingState::Ready(self.wss),
@@ -65,6 +70,7 @@ impl PendingItem {
     }
 }
 
+/// internal helper struct for tracking pending websocket connections
 struct PendingMgr {
     recv_pending: crossbeam_channel::Receiver<TcpWss>,
     send_ready: crossbeam_channel::Sender<TcpWss>,

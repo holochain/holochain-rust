@@ -1,22 +1,34 @@
 use crate::*;
 
+/// commands control the connection manager job
 pub(crate) enum WssCommand {
+    /// close a connection (if open)
     CloseConnection(Url2),
+    /// send an outgoing message (websocket frame) on an open connection
     SendMessage(Url2, WsFrame),
 }
 
+/// events emitted by the connection manager job
 pub(crate) enum WssEvent {
+    /// connection manager job recevied a new (already handshaken) connection
     IncomingConnection(Url2),
+    /// connection manager received a websocket frame from an open connection
     ReceivedData(Url2, WsFrame),
+    /// connection manager got an error sending or receiving on an open connection
     Error(Url2, Sim2hError),
 }
 
+/// internal connection manager helper struct
 struct ConnectionMgr {
+    // new (already handshaken) connections will be sent through this channel
     recv_new_connection: crossbeam_channel::Receiver<TcpWss>,
+    // we will send events out on this channel
     send_wss_event: crossbeam_channel::Sender<WssEvent>,
+    // we will receive commands on this channel
     recv_wss_command: crossbeam_channel::Receiver<WssCommand>,
     // needs to NOT be an IM HashMap, as we cannot clone sockets : )
     connections: std::collections::HashMap<Url2, TcpWss>,
+    // storage for default receive frame
     frame: Option<WsFrame>,
 }
 

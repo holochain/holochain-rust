@@ -46,7 +46,6 @@ use im::{HashMap, HashSet};
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-//use std::{convert::TryFrom, sync::Arc};
 use std::convert::TryFrom;
 
 use holochain_locksmith::Mutex;

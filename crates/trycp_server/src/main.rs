@@ -17,7 +17,7 @@ use reqwest::{self, Url};
 use serde_json::map::Map;
 use std::{
     collections::HashMap,
-    env, fs,
+    fs::File,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
     process::{Child, Command, Stdio},
@@ -211,7 +211,7 @@ fn invalid_request(message: String) -> jsonrpc_core::types::error::Error {
 }
 
 fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::types::error::Error> {
-    fs::File::create(file_path.clone())
+    File::create(file_path.clone())
         .map_err(|e| {
             internal_error(format!(
                 "unable to create file: {:?} {}",
@@ -390,39 +390,13 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let perf = is_program_in_path("perf") && get_as_bool("perf", &params_map, Some(true))?;
-
-        println!("perf enabled: {:?}", perf);
-        let mut conductor = if perf {
-            Command::new("sudo")
-                .args(&[
-                    "perf",
-                    "record",
-                    "--call-graph",
-                    "dwarf",
-                    "holochain",
-                    "-c",
-                    &config_path,
-                ])
-                .env("RUST_BACKTRACE", "full")
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .map_err(|e| {
-                    internal_error(format!(
-                        "unable to spawn conductor with perf instrumentation: {:?}",
-                        e
-                    ))
-                })?
-        } else {
-            Command::new("holochain")
-                .args(&["-c", &config_path])
-                .env("RUST_BACKTRACE", "full")
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?
-        };
+        let mut conductor = Command::new("holochain")
+            .args(&["-c", &config_path])
+            .env("RUST_BACKTRACE", "full")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?;
 
         let mut log_stdout = Command::new("tee")
             .arg(stdout_log_path)
@@ -518,18 +492,4 @@ fn check_player_config(
         )));
     }
     Ok(())
-}
-
-#[allow(dead_code)]
-fn is_program_in_path(program: &str) -> bool {
-    if let Ok(path) = env::var("PATH") {
-        for p in path.split(':') {
-            // TODO this is not windows compatible
-            let p_str = format!("{}/{}", p, program);
-            if fs::metadata(p_str).is_ok() {
-                return true;
-            }
-        }
-    }
-    false
 }

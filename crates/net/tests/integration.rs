@@ -19,6 +19,8 @@ use std::sync::Arc;
 
 #[test]
 fn sim2h_worker_talks_to_sim2h() {
+    let _ = env_logger::builder().is_test(true).try_init();
+
     let crypto = Box::new(SodiumCryptoSystem::new());
 
     let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
@@ -33,7 +35,7 @@ fn sim2h_worker_talks_to_sim2h() {
 
     let srv_cont = cont.clone();
     let sim2h_join = std::thread::spawn(move || {
-        let url = url2!("wss://127.0.0.1:0");
+        let url = url2!("ws://127.0.0.1:0");
         let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 
         snd.send(sim2h.bound_uri.clone().unwrap()).unwrap();
@@ -145,6 +147,7 @@ fn sim2h_worker_talks_to_sim2h() {
         ConductorApi::new(io.clone()),
     )
     .unwrap();
+    worker.set_full_sync(true);
 
     worker
         .receive(Lib3hClientProtocol::JoinSpace(SpaceData {

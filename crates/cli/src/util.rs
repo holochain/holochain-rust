@@ -8,13 +8,50 @@ use std::{
     process::{Command, Stdio},
 };
 
-pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
+pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
     let pretty_command = format!("{} {}", bin.green(), args.join(" ").cyan());
 
     println!("> {}", pretty_command);
 
-    let status = Command::new(bin)
-        .args(args)
+    let command_string = format!("{} {}", bin, args.join(" "));
+    println!("{:?}", command_string);
+
+    // this bypasses the native rust handling of Command by passing the whole thing to bash as:
+    // bash -c "{{ thing you wanted to do }}"
+    // it's basically `eval` which is evil :(
+    // we do this because Rust's `Command` is designed to be "portable"
+    // i.e. the same binary should work across bash, powershell, CMD, etc.
+    // to achieve this all the arg strings are built internally by the rust binary then run as-is
+    // so e.g. Command::new("echo").args("$PWD") would literally print `"$PWD"` not the contents of
+    // the $PWD environment variable (e.g. because Windows CMD would expect `%cd%` not `$PWD`)
+    // what we want is for things to be "portable"
+    // i.e. developers can configure their machines with environment variables and have `hc`
+    // evaluate them to local values that fit their personal workflow/configurations
+    // so e.g. the following should work (i.e. `wasm-gc` finds the built .wasm file)
+    // {
+    //  "command": "cargo",
+    //  "arguments": [
+    //   "build",
+    //   "--release",
+    //   "--target=wasm32-unknown-unknown"
+    //  ]
+    // },
+    // {
+    //  "command": "wasm-gc",
+    //  "arguments": ["$CARGO_TARGET_DIR/wasm32-unknown-unknown/release/{{ name }}.wasm"]
+    // },
+    // note the implicit (in cargo) and explicit (in wasm-gc) use of $CARGO_TARGET_DIR!
+    // note also that the supported development environment is based on `nix-shell` so we _already_
+    // assume/expect that developers are using something bash-like for development already
+    // e.g. we assume `cargo`, `wasm-gc`, `wasm-opt`, `wasm2wat`, `wat2wasm` all exist in the
+    // default template (which we can't assume outside nix-shell in a portable way).
+    //
+    // @TODO - does it make more sense to push "execute arbitrary bash" style features down to the
+    // `nix-shell` layer where we have a better toolkit to handle environments/dependencies?
+    // e.g. @see `hn-release-cut` from holonix that implements conventions/hooks to standardise
+    // bash processes in an extensible way
+    let status = Command::new("bash")
+        .args(&["-c", &command_string])
         .current_dir(base_path)
         .status()?;
 
@@ -96,5 +133,23 @@ pub fn check_for_cargo(use_case: &str, extra_help: Option<Vec<&str>>) -> Default
                 _ => Err(format_err!("This command requires the `cargo` command, but there was an error checking if it is available or not: {}", e)),
             }
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use cli::init::tests::gen_dir;
+    use util::run_cmd;
+
+    #[test]
+    fn run_cmd_test() {
+        let dir = gen_dir();
+        let dir_path_buf = &dir.path().to_path_buf();
+
+        // test this manually with:
+        // `cargo test -p hc run_cmd_test -- --nocapture`
+        // the tempdir should be echoed and not a literal '$PWD'
+        assert!(run_cmd(dir_path_buf, "echo".to_string(), &["$PWD"]).is_ok());
     }
 }

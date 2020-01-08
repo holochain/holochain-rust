@@ -42,10 +42,6 @@ with holonix.pkgs;
   buildInputs = [ holonix.pkgs.libiconv ]
    ++ holonix.shell.buildInputs
 
-   ++ (holonix.pkgs.callPackage ./app_spec {
-    pkgs = holonix.pkgs;
-   }).buildInputs
-
    ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {
     pkgs = holonix.pkgs;
    }).buildInputs

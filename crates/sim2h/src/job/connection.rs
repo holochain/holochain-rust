@@ -1,13 +1,20 @@
 use crate::*;
 
-/// ConnectionJob periodically calls `read` on the underlying websocket stream
-/// if there is data or an error, will forward a FrameResult
-pub(crate) type FrameResult = Result<WsFrame, Sim2hError>;
+pub(crate) enum WssCommand {
+    CloseConnection(Url2),
+    SendMessage(Url2, WsFrame),
+}
+
+pub(crate) enum WssEvent {
+    IncomingConnection(Url2),
+    ReceivedData(Url2, WsFrame),
+    Error(Url2, Sim2hError),
+}
 
 struct ConnectionMgr {
     recv_new_connection: crossbeam_channel::Receiver<TcpWss>,
-    send_incoming_message: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    recv_outgoing_message: crossbeam_channel::Receiver<(Url2, WsFrame)>,
+    send_wss_event: crossbeam_channel::Sender<WssEvent>,
+    recv_wss_command: crossbeam_channel::Receiver<WssCommand>,
     // needs to NOT be an IM HashMap, as we cannot clone sockets : )
     connections: std::collections::HashMap<Url2, TcpWss>,
     frame: Option<WsFrame>,
@@ -16,13 +23,13 @@ struct ConnectionMgr {
 impl ConnectionMgr {
     pub fn new(
         recv_new_connection: crossbeam_channel::Receiver<TcpWss>,
-        send_incoming_message: crossbeam_channel::Sender<(Url2, FrameResult)>,
-        recv_outgoing_message: crossbeam_channel::Receiver<(Url2, WsFrame)>,
+        send_wss_event: crossbeam_channel::Sender<WssEvent>,
+        recv_wss_command: crossbeam_channel::Receiver<WssCommand>,
     ) -> Self {
         Self {
             recv_new_connection,
-            send_incoming_message,
-            recv_outgoing_message,
+            send_wss_event,
+            recv_wss_command,
             connections: std::collections::HashMap::new(),
             frame: None,
         }
@@ -35,7 +42,7 @@ impl ConnectionMgr {
             did_work = true;
         }
 
-        if self.check_outgoing_messages() {
+        if self.check_commands() {
             did_work = true;
         }
 
@@ -44,10 +51,6 @@ impl ConnectionMgr {
         }
 
         did_work
-    }
-
-    fn report_msg(&self, url: Url2, msg: FrameResult) {
-        self.send_incoming_message.f_send((url, msg));
     }
 
     fn check_new_connections(&mut self) -> bool {
@@ -59,8 +62,11 @@ impl ConnectionMgr {
         loop {
             match self.recv_new_connection.try_recv() {
                 Ok(wss) => {
-                    self.connections.insert(wss.remote_url(), wss);
                     did_work = true;
+                    let url = wss.remote_url();
+                    self.connections.insert(url.clone(), wss);
+                    self.send_wss_event
+                        .f_send(WssEvent::IncomingConnection(url));
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
                     panic!("broken recv_new_connection channel");
@@ -72,25 +78,41 @@ impl ConnectionMgr {
         did_work
     }
 
-    fn check_outgoing_messages(&mut self) -> bool {
+    fn close_connection(&mut self, url: Url2) {
+        // TODO - send close Wss frame
+        self.connections.remove(&url);
+    }
+
+    fn send_message(&mut self, url: Url2, frame: WsFrame) {
+        if let Some(wss) = self.connections.get_mut(&url) {
+            if let Err(e) = wss.write(frame) {
+                error!("WEBSOCKET ERROR-outgoing: {:?}", e);
+                self.connections.remove(&url);
+                self.send_wss_event.f_send(WssEvent::Error(url, e.into()));
+            }
+        } else {
+            let err = format!("no route to send {} message {:?}", url, frame);
+            warn!("{}", err);
+            self.send_wss_event.f_send(WssEvent::Error(url, err.into()));
+        }
+    }
+
+    fn check_commands(&mut self) -> bool {
         let mut did_work = false;
 
         // process a batch of outgoing messages at a time
         for _ in 0..100 {
-            match self.recv_outgoing_message.try_recv() {
-                Ok((url, frame)) => {
-                    if let Some(wss) = self.connections.get_mut(&url) {
-                        if let Err(e) = wss.write(frame) {
-                            error!("WEBSOCKET ERROR-outgoing: {:?}", e);
-                            self.connections.remove(&url);
-                            self.report_msg(url, Err(e.into()));
-                        }
-                    } else {
-                        let err = format!("no route to send {} message {:?}", url, frame);
-                        warn!("{}", err);
-                        self.report_msg(url, Err(err.into()));
-                    }
+            match self.recv_wss_command.try_recv() {
+                Ok(cmd) => {
                     did_work = true;
+                    match cmd {
+                        WssCommand::CloseConnection(url) => {
+                            self.close_connection(url);
+                        }
+                        WssCommand::SendMessage(url, frame) => {
+                            self.send_message(url, frame);
+                        }
+                    }
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
                     panic!("broken recv_outgoing_message channel");
@@ -120,20 +142,20 @@ impl ConnectionMgr {
                     did_work = true;
                     let frame = self.frame.take().unwrap();
                     trace!("frame read {} {:?}", url, frame);
-                    reports.push((url.clone(), Ok(frame)));
+                    reports.push(WssEvent::ReceivedData(url.clone(), frame));
                 }
                 Err(e) if e.would_block() => (),
                 Err(e) => {
                     did_work = true;
                     error!("WEBSOCKET ERROR-read: {:?}", e);
-                    reports.push((url.clone(), Err(e.into())));
+                    reports.push(WssEvent::Error(url.clone(), e.into()));
                     removes.push(url.clone());
                 }
             }
         }
 
-        for (url, msg) in reports.drain(..) {
-            self.report_msg(url, msg);
+        for msg in reports.drain(..) {
+            self.send_wss_event.f_send(msg);
         }
 
         for url in removes.iter() {
@@ -146,20 +168,15 @@ impl ConnectionMgr {
 
 /// process all open connections (send / receive data)
 /// timing strategy:
-///   - while there are new connections, keep going for 10 ms, then yield
-///   - if WouldBlock, sleep for 5 ms
-#[allow(dead_code)]
-async fn connection_job(
+///   - while we did work, keep going for 10 ms, then yield
+///   - if no work was done, sleep for 5 ms
+pub(crate) async fn connection_job(
     recv_new_connection: crossbeam_channel::Receiver<TcpWss>,
-    send_incoming_message: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    recv_outgoing_message: crossbeam_channel::Receiver<(Url2, WsFrame)>,
+    send_wss_event: crossbeam_channel::Sender<WssEvent>,
+    recv_wss_command: crossbeam_channel::Receiver<WssCommand>,
 ) {
     let mut last_break = std::time::Instant::now();
-    let mut connections = ConnectionMgr::new(
-        recv_new_connection,
-        send_incoming_message,
-        recv_outgoing_message,
-    );
+    let mut connections = ConnectionMgr::new(recv_new_connection, send_wss_event, recv_wss_command);
     loop {
         if !connections.exec() {
             last_break = std::time::Instant::now();
@@ -171,98 +188,5 @@ async fn connection_job(
             // equivalent of thread::yield_now() ?
             futures::future::lazy(|_| {}).await;
         }
-    }
-}
-
-/// manages a websocket stream/socket - will periodically poll for data
-pub(crate) struct ConnectionJob {
-    cont: bool,
-    wss: TcpWss,
-    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    frame: Option<WsFrame>,
-    outgoing_recv: crossbeam_channel::Receiver<WsFrame>,
-}
-
-impl ConnectionJob {
-    pub(crate) fn new(
-        wss: TcpWss,
-        msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    ) -> (Self, crossbeam_channel::Sender<WsFrame>) {
-        let (outgoing_send, outgoing_recv) = crossbeam_channel::unbounded();
-        (
-            Self {
-                cont: true,
-                wss,
-                msg_send,
-                frame: None,
-                outgoing_recv,
-            },
-            outgoing_send,
-        )
-    }
-
-    /// cancel this job - will be dropped next time it is polled.
-    pub(crate) fn stop(&mut self) {
-        self.cont = false;
-    }
-
-    /// internal - report a received message or error
-    fn report_msg(&self, msg: FrameResult) {
-        self.msg_send.f_send((self.wss.remote_url(), msg));
-    }
-
-    fn run(&mut self) -> JobResult {
-        match self.run_result() {
-            Ok(job_result) => job_result,
-            Err(e) => {
-                self.report_msg(Err(e));
-                // got connection error - stop this job
-                JobResult::done()
-            }
-        }
-    }
-
-    fn run_result(&mut self) -> Result<JobResult, Sim2hError> {
-        if !self.cont {
-            return Ok(JobResult::done());
-        }
-        if self.frame.is_none() {
-            self.frame = Some(WsFrame::default());
-        }
-        match self.outgoing_recv.try_recv() {
-            Ok(frame) => {
-                if let Err(e) = self.wss.write(frame) {
-                    error!("WEBSOCKET ERROR-outgoing: {:?}", e);
-                    return Err(e.into());
-                }
-            }
-            Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                error!("parent channel disconnect");
-                return Err("parent channel disconnect".into());
-            }
-            Err(crossbeam_channel::TryRecvError::Empty) => (),
-        }
-        match self.wss.read(self.frame.as_mut().unwrap()) {
-            Ok(_) => {
-                let frame = self.frame.take().unwrap();
-                trace!("frame read {:?}", frame);
-                self.report_msg(Ok(frame));
-                // we got data this time, check again right away
-                return Ok(JobResult::default());
-            }
-            Err(e) if e.would_block() => (),
-            Err(e) => {
-                error!("WEBSOCKET ERROR-read: {:?}", e,);
-                return Err(e.into());
-            }
-        }
-        // no data this round, wait 5ms before checking again
-        Ok(JobResult::default().wait_ms(5))
-    }
-}
-
-impl Job for Arc<Mutex<ConnectionJob>> {
-    fn run(&mut self) -> JobResult {
-        self.f_lock().run()
     }
 }

@@ -46,7 +46,8 @@ use im::{HashMap, HashSet};
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{convert::TryFrom, sync::Arc};
+//use std::{convert::TryFrom, sync::Arc};
+use std::convert::TryFrom;
 
 use holochain_locksmith::Mutex;
 
@@ -150,17 +151,9 @@ pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
     state: Sim2hState,
-    pool: Pool,
-    wss_recv: crossbeam_channel::Receiver<TcpWss>,
-    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
-    open_connections: HashMap<
-        Lib3hUri,
-        (
-            Arc<Mutex<ConnectionJob>>,
-            crossbeam_channel::Sender<WsFrame>,
-        ),
-    >,
+    recv_wss_event: crossbeam_channel::Receiver<WssEvent>,
+    send_wss_command: crossbeam_channel::Sender<WssCommand>,
+    open_connections: HashSet<Lib3hUri>,
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
@@ -171,27 +164,26 @@ impl Sim2h {
     pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
         sim2h_spawn_ok(one_second_tick());
 
-        let pool = Pool::new();
-        pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
-
-        let (wss_send, wss_recv) = crossbeam_channel::unbounded();
-        let (msg_send, msg_recv) = crossbeam_channel::unbounded();
+        let (send_wss_event, recv_wss_event) = crossbeam_channel::unbounded();
+        let (send_wss_command, recv_wss_command) = crossbeam_channel::unbounded();
 
         let mut sim2h = Sim2h {
             crypto,
             bound_uri: None,
             state: Sim2hState::new(),
-            pool,
-            wss_recv,
-            msg_send,
-            msg_recv,
-            open_connections: HashMap::new(),
+            recv_wss_event,
+            send_wss_command,
+            open_connections: HashSet::new(),
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
         };
 
-        sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
+        sim2h.priv_bind_listening_socket(
+            url::Url::from(bind_spec).into(),
+            send_wss_event,
+            recv_wss_command,
+        );
 
         sim2h
     }
@@ -204,7 +196,8 @@ impl Sim2h {
     fn priv_bind_listening_socket(
         &mut self,
         url: Url2,
-        wss_send: crossbeam_channel::Sender<TcpWss>,
+        send_wss_event: crossbeam_channel::Sender<WssEvent>,
+        recv_wss_command: crossbeam_channel::Receiver<WssCommand>,
     ) {
         let config = TcpBindConfig::default();
         //        let config = TlsBindConfig::new(config).dev_certificate();
@@ -212,23 +205,17 @@ impl Sim2h {
         let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());
 
-        sim2h_spawn_ok(listen_job(listen, wss_send));
-    }
+        let (send_wss, recv_wss) = crossbeam_channel::unbounded();
+        let (send_pending, recv_pending) = crossbeam_channel::unbounded();
 
-    /// if our listening socket has accepted any new connections, set them up
-    fn priv_check_incoming_connections(&mut self) {
-        if let Ok(wss) = self.wss_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-            let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
-            let job = Arc::new(Mutex::new(job));
-            if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                error!("Error handling incoming connection: {:?}", error);
-                return;
-            }
-            self.open_connections
-                .insert(url, (job.clone(), outgoing_send));
-            self.pool.push_job(Box::new(job));
-        }
+        // job to accept incoming connections
+        sim2h_spawn_ok(listen_job(listen, send_pending));
+
+        // job to drive new connections through handshaking
+        sim2h_spawn_ok(pending_job(recv_pending, send_wss));
+
+        // job to process data in and out of connections
+        sim2h_spawn_ok(connection_job(recv_wss, send_wss_event, recv_wss_command));
     }
 
     /// we received some kind of error related to a stream/socket
@@ -242,41 +229,64 @@ impl Sim2h {
         self.disconnect(&uri);
     }
 
-    /// if our connections sent us any data, process it
-    fn priv_check_incoming_messages(&mut self) {
-        if let Ok((url, msg)) = self.msg_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(url).into();
-            match msg {
-                Ok(frame) => match frame {
-                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                        url,
-                        format!("unexpected text message: {:?}", s).into(),
-                    ),
-                    WsFrame::Binary(b) => {
-                        let payload: Opaque = b.into();
-                        match Sim2h::verify_payload(payload.clone()) {
-                            Ok((source, wire_message)) => {
-                                if let Err(error) = self.handle_message(&url, wire_message, &source)
-                                {
-                                    error!("Error handling message: {:?}", error);
-                                }
-                            }
-                            Err(error) => error!(
-                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                error, payload
-                            ),
+    /// handle a batch of incoming wss events
+    fn priv_check_wss_events(&mut self) {
+        for _ in 0..100 {
+            match self.recv_wss_event.try_recv() {
+                Ok(event) => match event {
+                    WssEvent::IncomingConnection(url) => {
+                        let url: Lib3hUri = url::Url::from(url).into();
+                        if let Err(error) = self.handle_incoming_connect(url.clone()) {
+                            error!("Error handling incoming connection: {:?}", error);
+                        } else {
+                            self.open_connections.insert(url);
                         }
                     }
-                    // TODO - we should use websocket ping/pong
-                    //        instead of rolling our own on top of Binary
-                    WsFrame::Ping(_) => (),
-                    WsFrame::Pong(_) => (),
-                    WsFrame::Close(c) => {
-                        debug!("Disconnecting {} after connection reset {:?}", url, c);
-                        self.disconnect(&url);
+                    WssEvent::ReceivedData(url, frame) => {
+                        self.priv_handle_received_data(url, frame);
+                    }
+                    WssEvent::Error(url, e) => {
+                        let url: Lib3hUri = url::Url::from(url).into();
+                        self.priv_drop_connection_for_error(url, e);
                     }
                 },
-                Err(e) => self.priv_drop_connection_for_error(url, e),
+                Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                    panic!("broken recv_wss_event channel");
+                }
+                Err(crossbeam_channel::TryRecvError::Empty) => break,
+            }
+        }
+    }
+
+    /// if our connections sent us any data, process it
+    fn priv_handle_received_data(&mut self, url: Url2, frame: WsFrame) {
+        let url: Lib3hUri = url::Url::from(url).into();
+        match frame {
+            WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                url,
+                format!("unexpected text message: {:?}", s).into(),
+            ),
+            WsFrame::Binary(b) => {
+                let payload: Opaque = b.into();
+                match Sim2h::verify_payload(payload.clone()) {
+                    Ok((source, wire_message)) => {
+                        if let Err(error) = self.handle_message(&url, wire_message, &source) {
+                            error!("Error handling message: {:?}", error);
+                        }
+                    }
+                    Err(error) => error!(
+                        "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                        error, payload
+                    ),
+                }
+            }
+            // TODO - we should use websocket ping/pong
+            //        instead of rolling our own on top of Binary
+            WsFrame::Ping(_) => (),
+            WsFrame::Pong(_) => (),
+            WsFrame::Close(c) => {
+                debug!("Disconnecting {} after connection reset {:?}", url, c);
+                self.disconnect(&url);
             }
         }
     }
@@ -384,9 +394,10 @@ impl Sim2h {
     fn disconnect(&mut self, uri: &Lib3hUri) {
         trace!("disconnect entered");
 
-        if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
-            con.f_lock().stop();
-        }
+        self.open_connections.remove(uri);
+        self.send_wss_command.f_send(WssCommand::CloseConnection(
+            url::Url::from(uri.clone()).into(),
+        ));
 
         if let Some(ConnectionState::Joined(space_address, agent_id)) =
             self.state.connections.remove(uri)
@@ -518,8 +529,7 @@ impl Sim2h {
             self.num_ticks = 0;
         }
 
-        self.priv_check_incoming_connections();
-        self.priv_check_incoming_messages();
+        self.priv_check_wss_events();
 
         if std::time::Instant::now() >= self.missing_aspects_resync {
             self.missing_aspects_resync = std::time::Instant::now()
@@ -1005,17 +1015,15 @@ impl Sim2h {
 
         let payload: Opaque = msg.clone().into();
 
-        match self.open_connections.get_mut(&uri) {
-            None => {
-                error!("FAILED TO SEND, NO ROUTE: {}", uri);
-                return;
-            }
-            Some((_con, outgoing_send)) => {
-                if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                    self.disconnect(&uri);
-                }
-            }
+        if !self.open_connections.contains(&uri) {
+            error!("FAILED TO SEND, NO ROUTE: {}", uri);
+            return;
         }
+
+        self.send_wss_command.f_send(WssCommand::SendMessage(
+            url::Url::from(uri).into(),
+            WsFrame::Binary(payload.as_bytes()),
+        ));
 
         match msg {
             WireMessage::Ping | WireMessage::Pong => {}

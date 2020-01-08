@@ -98,7 +98,7 @@ impl ConnectionMgr {
     fn send_message(&mut self, url: Url2, frame: WsFrame) {
         if let Some(wss) = self.connections.get_mut(&url) {
             if let Err(e) = wss.write(frame) {
-                error!("WEBSOCKET ERROR-outgoing: {:?}", e);
+                error!("error in write to {}: {:?}", url, e);
                 self.connections.remove(&url);
                 self.send_wss_event.f_send(WssEvent::Error(url, e.into()));
             }
@@ -153,13 +153,13 @@ impl ConnectionMgr {
                 Ok(_) => {
                     did_work = true;
                     let frame = self.frame.take().unwrap();
-                    trace!("frame read {} {:?}", url, frame);
+                    trace!("frame read from {} {:?}", url, frame);
                     reports.push(WssEvent::ReceivedData(url.clone(), frame));
                 }
                 Err(e) if e.would_block() => (),
                 Err(e) => {
                     did_work = true;
-                    error!("WEBSOCKET ERROR-read: {:?}", e);
+                    error!("error in read for {}: {:?}", url, e);
                     reports.push(WssEvent::Error(url.clone(), e.into()));
                     removes.push(url.clone());
                 }

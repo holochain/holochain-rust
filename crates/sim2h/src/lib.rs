@@ -432,7 +432,6 @@ impl Sim2h {
             }
         })
     }
-
     // removes a uri from connection and from spaces
     fn disconnect(&mut self, uri: &Lib3hUri) {
         with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
@@ -443,6 +442,16 @@ impl Sim2h {
                 con.f_lock().stop();
             }
 
+            if let Some((uuid, conn)) = self.connection_states.write().remove(uri) {
+                conn_lifecycle("disconnect", &uuid, &conn, uri);
+                if let ConnectionState::Joined(space_address, agent_id) = conn {
+                    if let Some(space) = self.spaces.get_mut(&space_address) {
+                        if space.write().remove_agent(&agent_id) == 0 {
+                            self.spaces.remove(&space_address);
+                        }
+                    }
+                }
+            }
             trace!("disconnect done");
         })
     }

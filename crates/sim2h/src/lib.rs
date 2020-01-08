@@ -52,7 +52,9 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
-use holochain_metrics::{config::MetricPublisherConfig, with_latency_publishing, MetricPublisher};
+use holochain_metrics::{
+    config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
+};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -300,6 +302,8 @@ impl Sim2h {
     }
 
     fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &RwLock<Space> {
+        let clock = std::time::SystemTime::now();
+
         if !self.spaces.contains_key(space_address) {
             self.spaces.insert(
                 space_address.clone(),
@@ -311,7 +315,16 @@ impl Sim2h {
             );
         }
 
-        self.spaces.get(space_address).unwrap()
+        let rw_lock = self.spaces.get(space_address).unwrap();
+        self.metric_publisher
+            .write()
+            .unwrap()
+            .publish(&Metric::new_timestamped_now(
+                "sim2h-get_or_create_space.latency",
+                None,
+                clock.elapsed().unwrap().as_millis() as f64,
+            ));
+        rw_lock
     }
 
     // adds an agent to a space

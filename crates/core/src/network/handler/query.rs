@@ -4,22 +4,18 @@ use crate::{
     entry::CanPublish,
     instance::dispatch_action,
     network::query::{
-        GetLinkData, GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+        GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
     nucleus,
-    workflows::get_entry_result::get_entry_result_workflow,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
-    eav::Attribute,
-    entry::{Entry, EntryWithMetaAndHeader},
+    entry::{EntryWithMetaAndHeader},
     error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryArgs, GetEntryOptions, GetEntryResultType,
-};
+
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 
@@ -30,103 +26,16 @@ fn get_links(
     tag: String,
     crud_status: Option<CrudStatus>,
     headers: bool,
-) -> Result<Vec<GetLinkData>, HolochainError> {
+) -> Result<Vec<Address>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
-
-    let (get_link, error): (Vec<_>, Vec<_>) = dht_store
+    Ok(dht_store
         .get_links(base, link_type, tag, crud_status)
         .unwrap_or_default()
         .into_iter()
-        //get tag
         .map(|(eavi, crud)| {
-            let tag = match eavi.attribute() {
-                Attribute::LinkTag(_, tag) => Ok(tag),
-                Attribute::RemovedLink(_, tag) => Ok(tag),
-                _ => Err(HolochainError::ErrorGeneric(
-                    "Could not get tag".to_string(),
-                )),
-            }
-            .expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
-            (eavi.value(), crud, tag)
-        })
-        //get targets from dht
-        .map(|(link_add_address, crud, tag)| {
-            let error = format!(
-                "Could not find Entries for  Address :{}, tag: {}",
-                link_add_address.clone(),
-                tag.clone()
-            );
-            let link_add_entry_args = GetEntryArgs {
-                address: link_add_address.clone(),
-                options: GetEntryOptions {
-                    headers,
-                    ..Default::default()
-                },
-            };
-
-            context
-                .block_on(get_entry_result_workflow(
-                    &context.clone(),
-                    &link_add_entry_args,
-                ))
-                .map(|get_entry_result| match get_entry_result.result {
-                    GetEntryResultType::Single(entry_with_meta_and_headers) => {
-                        let maybe_entry_headers = if headers {
-                            Some(entry_with_meta_and_headers.headers)
-                        } else {
-                            None
-                        };
-                        entry_with_meta_and_headers
-                            .entry
-                            .map(|single_entry| match single_entry {
-                                Entry::LinkAdd(link_add) => Ok(GetLinkData::new(
-                                    link_add_address.clone(),
-                                    crud,
-                                    link_add.link().target().clone(),
-                                    tag.clone(),
-                                    maybe_entry_headers,
-                                )),
-                                Entry::LinkRemove(link_remove) => Ok(GetLinkData::new(
-                                    link_add_address.clone(),
-                                    crud,
-                                    link_remove.0.link().target().clone(),
-                                    tag.clone(),
-                                    maybe_entry_headers,
-                                )),
-                                _ => Err(HolochainError::ErrorGeneric(
-                                    "Wrong entry type for Link content".to_string(),
-                                )),
-                            })
-                            .unwrap_or(Err(HolochainError::ErrorGeneric(error)))
-                    }
-                    _ => Err(HolochainError::ErrorGeneric(
-                        "Single Entry required for Get Entry".to_string(),
-                    )),
-                })
-                .unwrap_or_else(|e| {
-                    Err(HolochainError::ErrorGeneric(format!(
-                        "Could not get entry for Link Data {:?}",
-                        e
-                    )))
-                })
-        })
-        .partition(Result::is_ok);
-
-    //if can't find target throw error
-    if error.is_empty() {
-        Ok(get_link
-            .iter()
-            .map(|s| s.clone().unwrap())
-            .collect::<Vec<_>>())
-    } else {
-        Err(HolochainError::List(
-            error
-                .iter()
-                .map(|e| e.clone().unwrap_err())
-                .collect::<Vec<_>>(),
-        ))
-    }
+            eavi.value()
+        }).collect())
 }
 
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {

@@ -19,6 +19,8 @@ use std::sync::Arc;
 
 #[test]
 fn sim2h_worker_talks_to_sim2h() {
+    let _ = env_logger::builder().is_test(true).try_init();
+
     let crypto = Box::new(SodiumCryptoSystem::new());
 
     let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());

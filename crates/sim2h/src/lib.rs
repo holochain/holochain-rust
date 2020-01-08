@@ -100,6 +100,35 @@ thread_local! {
     static THRD_SIM2H_POOL: ThreadPool = GLB_SIM2H_POOL.f_lock().clone();
 }
 
+/// I haven't found a better way to ensure a long-running future
+/// actually yields to other tasks...
+/// future::ready() / future::lazy() do not, as `poll` is called immeiately
+/// as an optimization.
+pub(crate) struct TaskYield(bool);
+
+impl TaskYield {
+    pub fn new() -> Self {
+        Self(false)
+    }
+}
+
+impl Future for TaskYield {
+    type Output = ();
+    fn poll(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut futures::task::Context<'_>,
+    ) -> futures::task::Poll<Self::Output> {
+        // make sure we return Pending once, so the task yields
+        if self.0 {
+            futures::task::Poll::Ready(())
+        } else {
+            self.0 = true;
+            cx.waker().wake_by_ref();
+            futures::task::Poll::Pending
+        }
+    }
+}
+
 /// spawn an <Output = ()> future into the sigleton Sim2h futures ThreadPool
 fn sim2h_spawn_ok<Fut>(future: Fut)
 where

@@ -31,8 +31,7 @@ pub(crate) async fn listen_job(
         }
         if last_break.elapsed().as_millis() > 20 {
             last_break = std::time::Instant::now();
-            // equivalent of thread::yield_now() ?
-            futures::future::lazy(|_| {}).await;
+            TaskYield::new().await;
         }
     }
 }

@@ -276,8 +276,7 @@ pub(crate) async fn connection_job(
 
         if last_break.elapsed().as_millis() > 20 {
             last_break = std::time::Instant::now();
-            // equivalent of thread::yield_now() ?
-            futures::future::lazy(|_| {}).await;
+            TaskYield::new().await;
         }
     }
 }
@@ -317,8 +316,7 @@ async fn connection_job_inner(
 
             if last_break.elapsed().as_millis() > 20 {
                 last_break = std::time::Instant::now();
-                // equivalent of thread::yield_now() ?
-                futures::future::lazy(|_| {}).await;
+                TaskYield::new().await;
             }
         }
 

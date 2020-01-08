@@ -60,7 +60,7 @@ enum Cli {
         #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
         /// Use real networking use: n3h/sim2h
         networked: Option<NetworkingType>,
-        #[structopt(long, default_value = "wss://localhost:9000")]
+        #[structopt(long, default_value = "ws://localhost:9000")]
         /// Set the sim2h server url if you are using real networking.
         sim2h_server: String,
         #[structopt(long, short, default_value = "websocket")]

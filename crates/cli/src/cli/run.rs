@@ -1,7 +1,6 @@
-use crate::NetworkingType;
-use cli;
+use crate::{cli, error::DefaultResult, NetworkingType};
 use colored::*;
-use error::DefaultResult;
+use failure::format_err;
 use holochain_common::env_vars::EnvVar;
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -14,6 +13,7 @@ use holochain_conductor_lib::{
 use holochain_core_types::agent::AgentId;
 use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_persistence_api::cas::content::AddressableContent;
+use serde_json::json;
 use std::{fs, path::PathBuf};
 
 pub enum Networking {
@@ -284,7 +284,7 @@ impl Networking {
 
 #[cfg(test)]
 mod tests {
-    extern crate tempfile;
+    use tempfile;
     // use crate::cli::init::{init, tests::gen_dir};
     // use assert_cmd::prelude::*;
     // use std::{env, process::Command, path::PathBuf};

@@ -1,6 +1,7 @@
 use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
-use failure::Error;
+use failure::{ensure, Error};
+use serde_json::json;
 use std::{
     io::ErrorKind,
     path::PathBuf,

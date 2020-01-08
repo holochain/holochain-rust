@@ -1,5 +1,6 @@
 use crate::error::DefaultResult;
 use colored::*;
+use failure::format_err;
 use holochain_core::{
     agent::{
         chain_store::ChainStore,

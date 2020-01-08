@@ -1,5 +1,7 @@
 use crate::{error::DefaultResult, util};
 use base64;
+use failure::bail;
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
 use std::{
     fs::File,

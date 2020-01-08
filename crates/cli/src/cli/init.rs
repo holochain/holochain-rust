@@ -8,6 +8,7 @@ use crate::{
     util::DIST_DIR_NAME,
 };
 use colored::*;
+use failure::bail;
 use serde_json;
 use std::{
     collections::HashMap,
@@ -138,9 +139,9 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-    extern crate tempfile;
     use self::tempfile::{Builder, TempDir};
+    use super::*;
+    use tempfile;
 
     const HOLOCHAIN_TEST_PREFIX: &str = "org_holochain_test";
 

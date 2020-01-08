@@ -1,13 +1,14 @@
 use crate::{config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
+use failure::format_err;
 use holochain_core::nucleus::ribosome::{run_dna, WasmCallData};
 use holochain_core_types::dna::Dna;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
 use ignore::WalkBuilder;
 use json_patch::merge;
-use serde_json::{self, Map, Value};
+use serde_json::{self, json, Map, Value};
 use std::{
     convert::TryFrom,
     fs::{self, File},

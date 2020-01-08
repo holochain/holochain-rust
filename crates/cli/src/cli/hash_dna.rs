@@ -1,4 +1,4 @@
-use error::DefaultResult;
+use crate::error::DefaultResult;
 use failure::err_msg;
 use holochain_conductor_lib::conductor::Conductor;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};

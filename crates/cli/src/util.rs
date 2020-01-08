@@ -1,5 +1,6 @@
 use crate::error::DefaultResult;
 use colored::*;
+use failure::{ensure, format_err};
 pub use holochain_common::paths::DNA_EXTENSION;
 use std::{
     fs,

@@ -7,7 +7,7 @@ use quote::quote;
 use std::env;
 
 //this will only transform the function if item is available
-//this will be moved to tracing crate soon
+//this will be replaced with tracing soon
 #[proc_macro_attribute]
 pub fn trace(attr: TokenStream, item: TokenStream) -> TokenStream {
     let item_clone = item.clone();

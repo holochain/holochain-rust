@@ -1,0 +1,15 @@
+[package]
+name = "new-relic-proc-macro"
+version = "0.0.1"
+authors = ["Ashanti Mutinta <ashantimutinta@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+newrelic = "0.2"
+syn = { version = "=0.15.31", features = ["full", "extra-traits"]}
+quote = "=0.6.11"
+
+[lib]
+proc-macro = true

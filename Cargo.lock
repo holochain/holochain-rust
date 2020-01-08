@@ -2422,6 +2422,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "new-relic-proc-macro"
+version = "0.0.1"
+dependencies = [
+ "newrelic 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.15.31 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "newrelic"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3816,8 +3825,9 @@ dependencies = [
  "lib3h_protocol 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "new-relic-proc-macro 0.0.1",
  "newrelic 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-"sim2h 0.0.42-alpha3",
+ "sim2h 0.0.42-alpha5",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

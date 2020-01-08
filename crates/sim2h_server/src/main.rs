@@ -7,7 +7,6 @@ use log::error;
 use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
-use newrelic::App;
 
 #[derive(StructOpt)]
 struct Cli {
@@ -33,6 +32,7 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
+#[new_relic_proc_macro::trace("SIM2H_SERVER","MAIN","PROCESSISING")]
 fn main() {
     env_logger::init();
 
@@ -54,7 +54,8 @@ fn main() {
         });
     }
 
-    let mut in_process = ||{
+    loop 
+    {
         let result = sim2h.process();
         if let Err(e) = result {
             if e.to_string().contains("Bind error:") {
@@ -64,18 +65,5 @@ fn main() {
                 error!("{}", e.to_string())
             }
         }
-    };
-
-    loop {
-        App::new("SIM2H_SERVER", "725a86a9c804a8a16894ae25af31d166c310NRAL")
-        .map(|live_app|{
-            live_app.non_web_transaction("SIM2H_PROCESS")
-                     .map(|transaction|{
-                         transaction.custom_segment("SIM2H_PROCESS_LOOP_UNIT","PROCESSESSING",|_|{
-                             in_process()
-                         });
-                     }).unwrap_or_else(|_|{in_process()})
-        }).unwrap_or_else(|_|{ in_process()});
-        std::thread::sleep(std::time::Duration::from_millis(1));
     }
 }

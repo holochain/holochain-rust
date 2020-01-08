@@ -21,3 +21,4 @@ log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"
 newrelic = "0.2"
+new-relic-proc-macro = { version = "=0.0.1", path = "../new-relic-proc-macro" }

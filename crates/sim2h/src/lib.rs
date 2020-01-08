@@ -52,6 +52,7 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
+use holochain_metrics::{config::MetricPublisherConfig, with_latency_publishing, MetricPublisher};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -122,6 +123,7 @@ pub struct Sim2h {
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
     dht_algorithm: DhtAlgorithm,
+    metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
 }
 
 impl Sim2h {
@@ -145,6 +147,7 @@ impl Sim2h {
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm: DhtAlgorithm::FullSync,
+            metric_publisher: MetricPublisherConfig::default().create_metric_publisher(),
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -175,18 +178,24 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) {
-        if let Ok(wss) = self.wss_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-            let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
-            let job = Arc::new(Mutex::new(job));
-            if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                error!("Error handling incoming connection: {:?}", error);
-                return;
+        with_latency_publishing!(
+            "sim2h-priv_check_incoming_connections",
+            self.metric_publisher,
+            || {
+                if let Ok(wss) = self.wss_recv.try_recv() {
+                    let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+                    let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
+                    let job = Arc::new(Mutex::new(job));
+                    if let Err(error) = self.handle_incoming_connect(url.clone()) {
+                        error!("Error handling incoming connection: {:?}", error);
+                        return;
+                    }
+                    self.open_connections
+                        .insert(url, (job.clone(), outgoing_send));
+                    self.pool.push_job(Box::new(job));
+                }
             }
-            self.open_connections
-                .insert(url, (job.clone(), outgoing_send));
-            self.pool.push_job(Box::new(job));
-        }
+        )
     }
 
     /// we received some kind of error related to a stream/socket
@@ -202,41 +211,48 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) {
-        if let Ok((url, msg)) = self.msg_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(url).into();
-            match msg {
-                Ok(frame) => match frame {
-                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                        url,
-                        format!("unexpected text message: {:?}", s).into(),
-                    ),
-                    WsFrame::Binary(b) => {
-                        let payload: Opaque = b.into();
-                        match Sim2h::verify_payload(payload.clone()) {
-                            Ok((source, wire_message)) => {
-                                if let Err(error) = self.handle_message(&url, wire_message, &source)
-                                {
-                                    error!("Error handling message: {:?}", error);
+        with_latency_publishing!(
+            "sim2h-priv_check_incoming_messages",
+            self.metric_publisher,
+            || {
+                if let Ok((url, msg)) = self.msg_recv.try_recv() {
+                    let url: Lib3hUri = url::Url::from(url).into();
+                    match msg {
+                        Ok(frame) => match frame {
+                            WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                                url,
+                                format!("unexpected text message: {:?}", s).into(),
+                            ),
+                            WsFrame::Binary(b) => {
+                                let payload: Opaque = b.into();
+                                match self.verify_payload(payload.clone()) {
+                                    Ok((source, wire_message)) => {
+                                        if let Err(error) =
+                                            self.handle_message(&url, wire_message, &source)
+                                        {
+                                            error!("Error handling message: {:?}", error);
+                                        }
+                                    }
+                                    Err(error) => error!(
+                                        "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
+                                        error, payload
+                                    ),
                                 }
                             }
-                            Err(error) => error!(
-                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                error, payload
-                            ),
-                        }
+                            // TODO - we should use websocket ping/pong
+                            //        instead of rolling our own on top of Binary
+                            WsFrame::Ping(_) => (),
+                            WsFrame::Pong(_) => (),
+                            WsFrame::Close(c) => {
+                                debug!("Disconnecting {} after connection reset {:?}", url, c);
+                                self.disconnect(&url);
+                            }
+                        },
+                        Err(e) => self.priv_drop_connection_for_error(url, e),
                     }
-                    // TODO - we should use websocket ping/pong
-                    //        instead of rolling our own on top of Binary
-                    WsFrame::Ping(_) => (),
-                    WsFrame::Pong(_) => (),
-                    WsFrame::Close(c) => {
-                        debug!("Disconnecting {} after connection reset {:?}", url, c);
-                        self.disconnect(&url);
-                    }
-                },
-                Err(e) => self.priv_drop_connection_for_error(url, e),
+                }
             }
-        }
+        )
     }
 
     fn request_authoring_list(
@@ -245,13 +261,20 @@ impl Sim2h {
         space_address: SpaceHash,
         provider_agent_id: AgentId,
     ) {
-        let wire_message =
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-                request_id: "".into(),
-                space_address,
-                provider_agent_id: provider_agent_id.clone(),
-            }));
-        self.send(provider_agent_id, uri, &wire_message);
+        with_latency_publishing!(
+            "sim2h-request_authoring_list",
+            self.metric_publisher,
+            || {
+                let wire_message = WireMessage::Lib3hToClient(
+                    Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+                        request_id: "".into(),
+                        space_address,
+                        provider_agent_id: provider_agent_id.clone(),
+                    }),
+                );
+                self.send(provider_agent_id, uri, &wire_message);
+            }
+        )
     }
 
     fn request_gossiping_list(
@@ -260,13 +283,20 @@ impl Sim2h {
         space_address: SpaceHash,
         provider_agent_id: AgentId,
     ) {
-        let wire_message =
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-                request_id: "".into(),
-                space_address,
-                provider_agent_id: provider_agent_id.clone(),
-            }));
-        self.send(provider_agent_id, uri, &wire_message);
+        with_latency_publishing!(
+            "sim2h-request_gossiping_list",
+            self.metric_publisher,
+            || {
+                let wire_message = WireMessage::Lib3hToClient(
+                    Lib3hToClient::HandleGetGossipingEntryList(GetListData {
+                        request_id: "".into(),
+                        space_address,
+                        provider_agent_id: provider_agent_id.clone(),
+                    }),
+                );
+                self.send(provider_agent_id, uri, &wire_message);
+            }
+        )
     }
 
     fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &RwLock<Space> {
@@ -280,14 +310,17 @@ impl Sim2h {
                 space_address
             );
         }
+
         self.spaces.get(space_address).unwrap()
     }
 
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        trace!("join entered");
-        let result =
-            if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
+        with_latency_publishing!("sim2h-join", self.metric_publisher, || {
+            trace!("join entered");
+            let result = if let Some(ConnectionState::Limbo(pending_messages)) =
+                self.get_connection(uri)
+            {
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
                     ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
@@ -322,71 +355,91 @@ impl Sim2h {
             } else {
                 Err(format!("no agent found in limbo at {} ", uri).into())
             };
-        trace!("join done");
-        result
+            trace!("join done");
+            result
+        })
     }
 
     // removes an agent from a space
     fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
-            if (data.agent_id != agent_id) || (data.space_address != space_address) {
-                Err(SPACE_MISMATCH_ERR_STR.into())
+        with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
+            if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri)
+            {
+                if (data.agent_id != agent_id) || (data.space_address != space_address) {
+                    Err(SPACE_MISMATCH_ERR_STR.into())
+                } else {
+                    self.disconnect(uri);
+                    Ok(())
+                }
             } else {
-                self.disconnect(uri);
-                Ok(())
+                Err(format!("no joined agent found at {} ", &uri).into())
             }
-        } else {
-            Err(format!("no joined agent found at {} ", &uri).into())
-        }
+        })
     }
 
     // removes a uri from connection and from spaces
     fn disconnect(&mut self, uri: &Lib3hUri) {
-        trace!("disconnect entered");
+        with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
+            trace!("disconnect entered");
 
-        if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
-            con.f_lock().stop();
-        }
+            if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
+                con.f_lock().stop();
+            }
 
-        if let Some(ConnectionState::Joined(space_address, agent_id)) =
-            self.connection_states.write().remove(uri)
-        {
-            if let Some(space_lock) = self.spaces.get(&space_address) {
-                if space_lock.write().remove_agent(&agent_id) == 0 {
-                    self.spaces.remove(&space_address);
+            if let Some(ConnectionState::Joined(space_address, agent_id)) =
+                self.connection_states.write().remove(uri)
+            {
+                if let Some(space_lock) = self.spaces.get(&space_address) {
+                    if space_lock.write().remove_agent(&agent_id) == 0 {
+                        self.spaces.remove(&space_address);
+                    }
                 }
             }
-        }
-        trace!("disconnect done");
+            trace!("disconnect done");
+        })
     }
 
     // get the connection status of an agent
     fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionState> {
-        let reader = self.connection_states.read();
-        reader.get(uri).map(|ca| (*ca).clone())
+        with_latency_publishing!("sim2h-get_connection", self.metric_publisher, || {
+            let reader = self.connection_states.read();
+            reader.get(uri).map(|ca| (*ca).clone())
+        })
     }
 
     // find out if an agent is in a space or not and return its URI
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        self.spaces
-            .get(space_address)?
-            .read()
-            .agent_id_to_uri(agent_id)
+        with_latency_publishing!(
+            "sim2h-handle_incoming_connect",
+            self.metric_publisher,
+            || {
+                self.spaces
+                    .get(space_address)?
+                    .read()
+                    .agent_id_to_uri(agent_id)
+            }
+        )
     }
 
     // handler for incoming connections
     fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
-        trace!("handle_incoming_connect entered");
-        info!("New connection from {:?}", uri);
-        if let Some(_old) = self
-            .connection_states
-            .write()
-            .insert(uri.clone(), ConnectionState::new())
-        {
-            println!("TODO should remove {}", uri); //TODO
-        };
-        trace!("handle_incoming_connect done");
-        Ok(true)
+        with_latency_publishing!(
+            "sim2h-handle_incoming_connect",
+            self.metric_publisher,
+            || {
+                trace!("handle_incoming_connect entered");
+                info!("New connection from {:?}", uri);
+                if let Some(_old) = self
+                    .connection_states
+                    .write()
+                    .insert(uri.clone(), ConnectionState::new())
+                {
+                    println!("TODO should remove {}", uri); //TODO
+                };
+                trace!("handle_incoming_connect done");
+                Ok(true)
+            }
+        )
     }
 
     // handler for messages sent to sim2h
@@ -396,79 +449,83 @@ impl Sim2h {
         message: WireMessage,
         signer: &AgentId,
     ) -> Sim2hResult<()> {
-        // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
-        if message == WireMessage::Ping {
-            trace!("Ping -> Pong");
-            self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
-            return Ok(());
-        }
-        if message == WireMessage::Status {
-            trace!("Status -> StatusResponse");
-            self.send(
-                signer.clone(),
-                uri.clone(),
-                &WireMessage::StatusResponse(StatusData {
-                    spaces: self.spaces.len(),
-                    connections: self.open_connections.len(),
-                    redundant_count: match self.dht_algorithm {
-                        DhtAlgorithm::FullSync => 0,
-                        DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
-                    },
-                    version: WIRE_VERSION,
-                }),
-            );
-            return Ok(());
-        }
-        MESSAGE_LOGGER
-            .lock()
-            .log_in(signer.clone(), uri.clone(), message.clone());
-        trace!("handle_message entered");
-        let mut agent = self
-            .get_connection(uri)
-            .ok_or_else(|| format!("no connection for {}", uri))?;
+        with_latency_publishing!("sim2h-handle_messsage", self.metric_publisher, || {
+            // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
+            if message == WireMessage::Ping {
+                trace!("Ping -> Pong");
+                self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
+                return Ok(());
+            }
+            if message == WireMessage::Status {
+                trace!("Status -> StatusResponse");
+                self.send(
+                    signer.clone(),
+                    uri.clone(),
+                    &WireMessage::StatusResponse(StatusData {
+                        spaces: self.spaces.len(),
+                        connections: self.open_connections.len(),
+                        redundant_count: match self.dht_algorithm {
+                            DhtAlgorithm::FullSync => 0,
+                            DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                        },
+                        version: WIRE_VERSION,
+                    }),
+                );
+                return Ok(());
+            }
+            MESSAGE_LOGGER
+                .lock()
+                .log_in(signer.clone(), uri.clone(), message.clone());
+            trace!("handle_message entered");
+            let mut agent = self
+                .get_connection(uri)
+                .ok_or_else(|| format!("no connection for {}", uri))?;
 
-        match agent {
-            // if the agent sending the message is in limbo, then the only message
-            // allowed is a join message.
-            ConnectionState::Limbo(ref mut pending_messages) => {
-                if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
-                    if &data.agent_id != signer {
+            match agent {
+                // if the agent sending the message is in limbo, then the only message
+                // allowed is a join message.
+                ConnectionState::Limbo(ref mut pending_messages) => {
+                    if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
+                        if &data.agent_id != signer {
+                            return Err(SIGNER_MISMATCH_ERR_STR.into());
+                        }
+                        self.join(uri, &data)
+                    } else {
+                        // TODO: maybe have some upper limit on the number of messages
+                        // we allow to queue before dropping the connections
+                        pending_messages.push(message);
+                        let _ = self.connection_states.write().insert(uri.clone(), agent);
+                        self.send(
+                            signer.clone(),
+                            uri.clone(),
+                            &WireMessage::Err(WireError::MessageWhileInLimbo),
+                        );
+                        Ok(())
+                    }
+                }
+
+                // if the agent sending the messages has been vetted and is in the space
+                // then build a message to be proxied to the correct destination, and forward it
+                ConnectionState::Joined(space_address, agent_id) => {
+                    if &agent_id != signer {
                         return Err(SIGNER_MISMATCH_ERR_STR.into());
                     }
-                    self.join(uri, &data)
-                } else {
-                    // TODO: maybe have some upper limit on the number of messages
-                    // we allow to queue before dropping the connections
-                    pending_messages.push(message);
-                    let _ = self.connection_states.write().insert(uri.clone(), agent);
-                    self.send(
-                        signer.clone(),
-                        uri.clone(),
-                        &WireMessage::Err(WireError::MessageWhileInLimbo),
-                    );
-                    Ok(())
+                    self.handle_joined(uri, &space_address, &agent_id, message)
                 }
             }
-
-            // if the agent sending the messages has been vetted and is in the space
-            // then build a message to be proxied to the correct destination, and forward it
-            ConnectionState::Joined(space_address, agent_id) => {
-                if &agent_id != signer {
-                    return Err(SIGNER_MISMATCH_ERR_STR.into());
-                }
-                self.handle_joined(uri, &space_address, &agent_id, message)
-            }
-        }
+        })
     }
 
-    fn verify_payload(payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
-        let signed_message = SignedWireMessage::try_from(payload)?;
-        let result = signed_message.verify().unwrap();
-        if !result {
-            return Err(VERIFY_FAILED_ERR_STR.into());
-        }
-        let wire_message = WireMessage::try_from(signed_message.payload)?;
-        Ok((signed_message.provenance.source().into(), wire_message))
+    fn verify_payload(&self, payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
+        with_latency_publishing!("sim2h-verify_payload", self.metric_publisher, || {
+            let signed_message = SignedWireMessage::try_from(payload)?;
+            let result = signed_message.verify().unwrap();
+            if !result {
+                return Err(VERIFY_FAILED_ERR_STR.into());
+            }
+            let wire_message = WireMessage::try_from(signed_message.payload)?;
+            Ok((signed_message.provenance.source().into(), wire_message))
+        })
     }
 
     // process transport and  incoming messages from it
@@ -995,41 +1052,47 @@ impl Sim2h {
     }
 
     fn retry_sync_missing_aspects(&mut self) {
-        debug!("Checking for nodes with missing aspects to retry sync...");
-        // Extract all needed info for the call to self.request_gossiping_list() below
-        // as copies so we don't have to keep a reference to self.
-        let spaces_with_agents_and_uris = self
-            .spaces
-            .iter()
-            .filter_map(|(space_hash, space_lock)| {
-                let space = space_lock.read();
-                let agents = space.agents_with_missing_aspects();
-                // If this space doesn't have any agents with missing aspects,
-                // ignore it:
-                if agents.is_empty() {
-                    None
-                } else {
-                    // For spaces with agents with missing aspects,
-                    // annotate all agent IDs with their corresponding URI:
-                    let agent_ids_with_uris: Vec<(AgentId, Lib3hUri)> = agents
-                        .iter()
-                        .filter_map(|agent_id| {
-                            space
-                                .agent_id_to_uri(agent_id)
-                                .map(|uri| (agent_id.clone(), uri))
-                        })
-                        .collect();
+        with_latency_publishing!(
+            "sim2h-retry_sync_missing_aspects",
+            self.metric_publisher,
+            || {
+                debug!("Checking for nodes with missing aspects to retry sync...");
+                // Extract all needed info for the call to self.request_gossiping_list() below
+                // as copies so we don't have to keep a reference to self.
+                let spaces_with_agents_and_uris = self
+                    .spaces
+                    .iter()
+                    .filter_map(|(space_hash, space_lock)| {
+                        let space = space_lock.read();
+                        let agents = space.agents_with_missing_aspects();
+                        // If this space doesn't have any agents with missing aspects,
+                        // ignore it:
+                        if agents.is_empty() {
+                            None
+                        } else {
+                            // For spaces with agents with missing aspects,
+                            // annotate all agent IDs with their corresponding URI:
+                            let agent_ids_with_uris: Vec<(AgentId, Lib3hUri)> = agents
+                                .iter()
+                                .filter_map(|agent_id| {
+                                    space
+                                        .agent_id_to_uri(agent_id)
+                                        .map(|uri| (agent_id.clone(), uri))
+                                })
+                                .collect();
 
-                    Some((space_hash.clone(), agent_ids_with_uris))
+                            Some((space_hash.clone(), agent_ids_with_uris))
+                        }
+                    })
+                    .collect::<HashMap<SpaceHash, Vec<_>>>();
+
+                for (space_hash, agents) in spaces_with_agents_and_uris {
+                    for (agent_id, uri) in agents {
+                        debug!("Re-requesting gossip list from {} at {}", agent_id, uri);
+                        self.request_gossiping_list(uri, space_hash.clone(), agent_id);
+                    }
                 }
-            })
-            .collect::<HashMap<SpaceHash, Vec<_>>>();
-
-        for (space_hash, agents) in spaces_with_agents_and_uris {
-            for (agent_id, uri) in agents {
-                debug!("Re-requesting gossip list from {} at {}", agent_id, uri);
-                self.request_gossiping_list(uri, space_hash.clone(), agent_id);
             }
-        }
+        )
     }
 }

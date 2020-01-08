@@ -87,6 +87,16 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 }
 
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
+fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
+    debug!(
+        "connection event conn: {} for {}@{} {:?}",
+        desc, uuid, uri, obj
+    );
+}
+
+fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
+    debug!("connection event open_conns: {} for {}@{}", desc, uuid, uri);
+}
 
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
@@ -102,22 +112,23 @@ pub enum DhtAlgorithm {
     NaiveSharding { redundant_count: u64 },
 }
 
+type ConnectionStateItem = (String, ConnectionState);
+type OpenConnectionItem = (
+    String, // uuid
+    Arc<Mutex<ConnectionJob>>,
+    crossbeam_channel::Sender<WsFrame>,
+);
+
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
+    connection_states: RwLock<HashMap<Lib3hUri, ConnectionStateItem>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
-    open_connections: HashMap<
-        Lib3hUri,
-        (
-            Arc<Mutex<ConnectionJob>>,
-            crossbeam_channel::Sender<WsFrame>,
-        ),
-    >,
+    open_connections: HashMap<Lib3hUri, OpenConnectionItem>,
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
@@ -180,11 +191,16 @@ impl Sim2h {
             let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
             let job = Arc::new(Mutex::new(job));
             if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                error!("Error handling incoming connection: {:?}", error);
+                error!(
+                    "Error handling incoming connection from {}: {:?}",
+                    url, error
+                );
                 return;
             }
+            let uuid = nanoid::simple();
+            open_lifecycle("adding conn job", &uuid, &url);
             self.open_connections
-                .insert(url, (job.clone(), outgoing_send));
+                .insert(url, (uuid, job.clone(), outgoing_send));
             self.pool.push_job(Box::new(job));
         }
     }
@@ -193,7 +209,7 @@ impl Sim2h {
     /// print some debugging and disconnect it
     fn priv_drop_connection_for_error(&mut self, uri: Lib3hUri, error: Sim2hError) {
         debug!(
-            "dropping connection to because of error {}: {:?}",
+            "dropping connection to {} because of error: {:?}",
             uri, error,
         );
         self.disconnect(&uri);
@@ -226,7 +242,7 @@ impl Sim2h {
                                 );
                                 if let Err(error) = self.handle_message(&url, wire_message, &source)
                                 {
-                                    error!("Error handling message: {:?}", error);
+                                    error!("Error handling message from {}: {:?}", url, error);
                                 }
                             }
                             Err(error) => error!(
@@ -296,19 +312,23 @@ impl Sim2h {
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         debug!("join entered for {} with {:?}", uri, data);
-        let result =
-            if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
+        let result = if let Some((uuid, conn)) = self.get_connection(uri) {
+            if let ConnectionState::Limbo(pending_messages) = conn {
+                let conn =
+                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?;
                 let _ = self.connection_states.write().insert(
                     uri.clone(),
-                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
+                    // MDD: we are overwriting the existing connection state here, so we keep the same uuid.
+                    // (This could be done more directly with a Hashmap entry update)
+                    (uuid, conn),
                 );
 
                 self.get_or_create_space(&data.space_address)
                     .write()
                     .join_agent(data.agent_id.clone(), uri.clone())?;
                 info!(
-                    "Agent {:?} joined space {:?}",
-                    data.agent_id, data.space_address
+                    "Agent {:?} @ {} joined space {:?}",
+                    data.agent_id, uri, data.space_address
                 );
                 self.request_authoring_list(
                     uri.clone(),
@@ -332,22 +352,30 @@ impl Sim2h {
                 Ok(())
             } else {
                 Err(format!("no agent found in limbo at {} ", uri).into())
-            };
+            }
+        } else {
+            Err(format!("no agent found at {} ", uri).into())
+        };
         trace!("join done");
         result
     }
 
     // removes an agent from a space
     fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
-            if (data.agent_id != agent_id) || (data.space_address != space_address) {
-                Err(SPACE_MISMATCH_ERR_STR.into())
+        if let Some((uuid, state)) = self.get_connection(uri) {
+            conn_lifecycle("leave -> disconnect", &uuid, &state, uri);
+            if let ConnectionState::Joined(space_address, agent_id) = state {
+                if (data.agent_id != agent_id) || (data.space_address != space_address) {
+                    Err(SPACE_MISMATCH_ERR_STR.into())
+                } else {
+                    self.disconnect(uri);
+                    Ok(())
+                }
             } else {
-                self.disconnect(uri);
-                Ok(())
+                Err(format!("no joined agent found at {} ", &uri).into())
             }
         } else {
-            Err(format!("no joined agent found at {} ", &uri).into())
+            Err(format!("no agent found at {} ", &uri).into())
         }
     }
 
@@ -355,16 +383,18 @@ impl Sim2h {
     fn disconnect(&mut self, uri: &Lib3hUri) {
         trace!("disconnect entered");
 
-        if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
+        if let Some((uuid, con, _outgoing_send)) = self.open_connections.remove(uri) {
+            open_lifecycle("disconnect", &uuid, uri);
             con.f_lock().stop();
         }
 
-        if let Some(ConnectionState::Joined(space_address, agent_id)) =
-            self.connection_states.write().remove(uri)
-        {
-            if let Some(space_lock) = self.spaces.get(&space_address) {
-                if space_lock.write().remove_agent(&agent_id) == 0 {
-                    self.spaces.remove(&space_address);
+        if let Some((uuid, conn)) = self.connection_states.write().remove(uri) {
+            conn_lifecycle("disconnect", &uuid, &conn, uri);
+            if let ConnectionState::Joined(space_address, agent_id) = conn {
+                if let Some(space) = self.spaces.get_mut(&space_address) {
+                    if space.write().remove_agent(&agent_id) == 0 {
+                        self.spaces.remove(&space_address);
+                    }
                 }
             }
         }
@@ -372,7 +402,7 @@ impl Sim2h {
     }
 
     // get the connection status of an agent
-    fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionState> {
+    fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
         let reader = self.connection_states.read();
         reader.get(uri).map(|ca| (*ca).clone())
     }
@@ -392,7 +422,7 @@ impl Sim2h {
         if let Some(_old) = self
             .connection_states
             .write()
-            .insert(uri.clone(), ConnectionState::new())
+            .insert(uri.clone(), (nanoid::simple(), ConnectionState::new()))
         {
             println!("TODO should remove {}", uri); //TODO
         };
@@ -411,6 +441,10 @@ impl Sim2h {
         MESSAGE_LOGGER
             .lock()
             .log_in(signer.clone(), uri.clone(), message.clone());
+        let (uuid, mut agent) = self
+            .get_connection(uri)
+            .ok_or_else(|| format!("no connection for {}", uri))?;
+        conn_lifecycle("handle_message", &uuid, &agent, uri);
 
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
@@ -436,10 +470,6 @@ impl Sim2h {
             return Ok(());
         }
 
-        let mut agent = self
-            .get_connection(uri)
-            .ok_or_else(|| format!("no connection for {}", uri))?;
-
         match agent {
             // if the agent sending the message is in limbo, then the only message
             // allowed is a join message.
@@ -453,7 +483,10 @@ impl Sim2h {
                     // TODO: maybe have some upper limit on the number of messages
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);
-                    let _ = self.connection_states.write().insert(uri.clone(), agent);
+                    let _ = self
+                        .connection_states
+                        .write()
+                        .insert(uri.clone(), (uuid, agent));
                     self.send(
                         signer.clone(),
                         uri.clone(),
@@ -978,7 +1011,6 @@ impl Sim2h {
 
     fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         match msg {
-            WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
             _ => {
                 debug!(">>OUT>> {} to {}", msg.message_type(), uri);
                 MESSAGE_LOGGER
@@ -994,7 +1026,8 @@ impl Sim2h {
                 error!("FAILED TO SEND, NO ROUTE: {}", uri);
                 return;
             }
-            Some((_con, outgoing_send)) => {
+            Some((uuid, _con, outgoing_send)) => {
+                open_lifecycle("send", uuid, &uri);
                 if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
                     self.disconnect(&uri);
                 }

@@ -96,8 +96,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             };
             let filtered_links = links
                 .into_iter()
-                .filter(|link_for_filter| &link_for_filter.target == link.target())
-                .map(|s| s.address)
+                // .filter(|link_for_filter| &link_for_filter.target == link.target()) // this won't work properly
+                .map(|(address, _tag)| address)
                 .collect::<Vec<_>>();
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));

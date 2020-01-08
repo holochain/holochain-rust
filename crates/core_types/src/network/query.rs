@@ -42,7 +42,7 @@ impl GetLinkData {
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum GetLinksNetworkResult {
     Count(usize),
-    Links(Vec<GetLinkData>),
+    Links(Vec<(Address, String)>),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

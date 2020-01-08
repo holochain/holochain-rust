@@ -4,8 +4,9 @@ const PENDING_CONNECTION_TIMEOUT_MS: usize = 30_000; // 30 seconds
 
 /// wait for connections to complete handshaking && timeout slow / errant
 /// timing strategy:
-///   - while we did work, keep going for 10 ms, then yield
-///   - if no work was done, sleep for 5 ms
+///   - if there are any pending connections, we assume handshaking work
+///     is happening - yield after ~ 100 ms
+///   - if there are no pending connections, sleep for 5 ms
 pub(crate) async fn pending_job(
     recv_pending: crossbeam_channel::Receiver<TcpWss>,
     send_ready: crossbeam_channel::Sender<TcpWss>,
@@ -24,7 +25,7 @@ pub(crate) async fn pending_job(
             futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
         }
 
-        if last_break.elapsed().as_millis() > 10 {
+        if last_break.elapsed().as_millis() > 100 {
             last_break = std::time::Instant::now();
             // equivalent of thread::yield_now() ?
             futures::future::lazy(|_| {}).await;
@@ -96,8 +97,9 @@ impl PendingMgr {
             did_work = true;
         }
 
-        if self.check_pending_connections() {
+        if !self.connections.is_empty() {
             did_work = true;
+            self.check_pending_connections();
         }
 
         did_work
@@ -123,9 +125,7 @@ impl PendingMgr {
         did_work
     }
 
-    fn check_pending_connections(&mut self) -> bool {
-        let mut did_work = false;
-
+    fn check_pending_connections(&mut self) {
         let to_check = self.connections.drain(..).collect::<Vec<_>>();
         for item in to_check {
             match item.check() {
@@ -133,16 +133,12 @@ impl PendingMgr {
                     self.connections.push(item);
                 }
                 PendingState::Ready(wss) => {
-                    did_work = true;
                     self.send_ready.f_send(wss);
                 }
                 PendingState::Error(url, e) => {
-                    did_work = true;
                     warn!("Pending Connection Handshake Failed {} {:?}", url, e);
                 }
             }
         }
-
-        did_work
     }
 }

@@ -13,6 +13,7 @@ use holochain_core_types::{
     crud_status::CrudStatus,
     entry::{EntryWithMetaAndHeader},
     error::HolochainError,
+    eav::Attribute,
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -20,23 +21,33 @@ use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 
+pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+
 fn get_links(
     context: &Arc<Context>,
     base: Address,
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-    headers: bool,
-) -> Result<Vec<Address>, HolochainError> {
+    _headers: bool,
+) -> Result<Vec<(Address, LinkTag)>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
     Ok(dht_store
         .get_links(base, link_type, tag, crud_status)
         .unwrap_or_default()
         .into_iter()
-        .map(|(eavi, crud)| {
-            eavi.value()
+        .map(|(eavi, _crud)| {
+            let tag = match eavi.attribute() {
+                Attribute::LinkTag(_, tag) => Ok(tag),
+                Attribute::RemovedLink(_, tag) => Ok(tag),
+                _ => Err(HolochainError::ErrorGeneric(
+                    "Could not get tag".to_string(),
+                )),
+            }
+            .expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
+            (eavi.value(), tag)
         }).collect())
 }
 

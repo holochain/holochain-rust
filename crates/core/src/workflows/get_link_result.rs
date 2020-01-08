@@ -1,16 +1,25 @@
+use holochain_persistence_api::cas::content::Address;
+use crate::workflows::get_entry_result::get_entry_result_workflow;
 use crate::{
     context::Context,
     network::{
         actions::query::{query, QueryMethod},
         query::{
             GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
-            NetworkQueryResult,
+            NetworkQueryResult, GetLinkData,
         },
     },
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_wasm_utils::api_serialization::get_entry::{
+    GetEntryArgs, GetEntryOptions, GetEntryResultType,
+};
 
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    error::HolochainError,
+    entry::Entry,
+    crud_status::CrudStatus,
+};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
@@ -38,6 +47,9 @@ pub async fn get_link_result_workflow<'a>(
         GetLinksNetworkResult::Links(links) => {
             let get_links_result = links
                 .into_iter()
+                .map(|(link_add_address, tag)| { // make DHT calls to get the entries for the links
+                    get_link_data_from_link_addresses(context, &link_add_address, &tag, link_args.options.headers).unwrap()
+                })
                 .map(|get_entry_crud| LinksResult {
                     address: get_entry_crud.target.clone(),
                     headers: get_entry_crud.headers.unwrap_or_default(),
@@ -52,4 +64,65 @@ pub async fn get_link_result_workflow<'a>(
             "Could not get links".to_string(),
         )),
     }
+}
+
+// given the address of a link_add/link_remove entry, build a GetLinkData struct by retrieving the data from the DHT
+fn get_link_data_from_link_addresses(context: &Arc<Context>, link_add_address: &Address, tag: &String, include_headers: bool) -> Result<GetLinkData, HolochainError> {
+    let get_link_add_entry_args = GetEntryArgs {
+        address: link_add_address.clone(),
+        options: GetEntryOptions {
+            headers: include_headers,
+            ..Default::default()
+        },
+    };
+    context
+        .block_on(get_entry_result_workflow(
+            &context.clone(),
+            &get_link_add_entry_args,
+        ))
+        .map(|get_entry_result| match get_entry_result.result {
+            GetEntryResultType::Single(entry_with_meta_and_headers) => {
+                let maybe_entry_headers = if include_headers {
+                    Some(entry_with_meta_and_headers.headers)
+                } else {
+                    None
+                };
+                let crud = entry_with_meta_and_headers.meta.map(|m| m.crud_status).unwrap_or(CrudStatus::Live);
+                entry_with_meta_and_headers
+                    .entry
+                    .map(|single_entry| match single_entry {
+                        Entry::LinkAdd(link_add) => Ok(GetLinkData::new(
+                            link_add_address.clone(),
+                            crud,
+                            link_add.link().target().clone(),
+                            tag.clone(),
+                            maybe_entry_headers,
+                        )),
+                        Entry::LinkRemove(link_remove) => Ok(GetLinkData::new(
+                            link_add_address.clone(),
+                            crud,
+                            link_remove.0.link().target().clone(),
+                            tag.clone(),
+                            maybe_entry_headers,
+                        )),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            "Wrong entry type for Link content".to_string(),
+                        )),
+                    })
+                    .unwrap_or(Err(HolochainError::ErrorGeneric(format!(
+                        "Could not find Entries for Address: {}, tag: {}",
+                        link_add_address.clone(),
+                        tag.clone()
+                    ))))
+            }
+            _ => Err(HolochainError::ErrorGeneric(
+                "Single Entry required for Get Entry".to_string(),
+            )),
+        })
+        .unwrap_or_else(|e| {
+            Err(HolochainError::ErrorGeneric(format!(
+                "Could not get entry for Link Data {:?}",
+                e
+            )))
+        })
 }

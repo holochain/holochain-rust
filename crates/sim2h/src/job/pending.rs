@@ -5,7 +5,7 @@ const PENDING_CONNECTION_TIMEOUT_MS: usize = 30_000; // 30 seconds
 /// wait for connections to complete handshaking && timeout slow / errant
 /// timing strategy:
 ///   - if there are any pending connections, we assume handshaking work
-///     is happening - yield after ~ 100 ms
+///     is happening - yield after ~ 20 ms
 ///   - if there are no pending connections, sleep for 5 ms
 pub(crate) async fn pending_job(
     recv_pending: crossbeam_channel::Receiver<TcpWss>,
@@ -25,7 +25,7 @@ pub(crate) async fn pending_job(
             futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
         }
 
-        if last_break.elapsed().as_millis() > 100 {
+        if last_break.elapsed().as_millis() > 20 {
             last_break = std::time::Instant::now();
             // equivalent of thread::yield_now() ?
             futures::future::lazy(|_| {}).await;

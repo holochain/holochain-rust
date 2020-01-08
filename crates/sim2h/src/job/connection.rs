@@ -259,7 +259,7 @@ impl ConnectionMgr {
 
 /// process all open connections (send / receive data)
 /// timing strategy:
-///   - while we did work, keep going for 100 ms, then yield
+///   - while we did work, keep going for 20 ms, then yield
 ///   - if no work was done, sleep for 5 ms
 pub(crate) async fn connection_job(
     recv_new_connection: crossbeam_channel::Receiver<TcpWss>,
@@ -274,7 +274,7 @@ pub(crate) async fn connection_job(
             futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
         }
 
-        if last_break.elapsed().as_millis() > 100 {
+        if last_break.elapsed().as_millis() > 20 {
             last_break = std::time::Instant::now();
             // equivalent of thread::yield_now() ?
             futures::future::lazy(|_| {}).await;
@@ -284,7 +284,7 @@ pub(crate) async fn connection_job(
 
 /// a job for processing individual socket connections (send / recv)
 /// timing strategy:
-///  - process a batch of sockets, yield if we take > 100 ms
+///  - process a batch of sockets, yield if we take > 20 ms
 ///  - if there are no sockets / or we did no work, sleep for 5 ms
 async fn connection_job_inner(
     recv_connection_item: crossbeam_channel::Receiver<ConnectionItem>,
@@ -315,7 +315,7 @@ async fn connection_job_inner(
                 Err(crossbeam_channel::TryRecvError::Empty) => break,
             }
 
-            if last_break.elapsed().as_millis() > 100 {
+            if last_break.elapsed().as_millis() > 20 {
                 last_break = std::time::Instant::now();
                 // equivalent of thread::yield_now() ?
                 futures::future::lazy(|_| {}).await;

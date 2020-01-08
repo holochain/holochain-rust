@@ -3,7 +3,7 @@ use backtrace::Backtrace;
 
 /// listen / accept new connections from a server socket
 /// timing strategy:
-///   - while there are new connections, keep going for 100 ms, then yield
+///   - while there are new connections, keep going for 20 ms, then yield
 ///   - if WouldBlock, sleep for 5 ms
 pub(crate) async fn listen_job(
     mut listen: TcpWssServer,
@@ -29,7 +29,7 @@ pub(crate) async fn listen_job(
                 // we just want to drop this connection, so do nothing
             }
         }
-        if last_break.elapsed().as_millis() > 100 {
+        if last_break.elapsed().as_millis() > 20 {
             last_break = std::time::Instant::now();
             // equivalent of thread::yield_now() ?
             futures::future::lazy(|_| {}).await;

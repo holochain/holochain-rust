@@ -120,7 +120,7 @@ fn get_link_data_from_link_addresses(
                             "Wrong entry type for Link content".to_string(),
                         )),
                     })
-                    .unwrap_or(Err(HolochainError::ErrorGeneric(format!(
+                    .unwrap_or_else(|| Err(HolochainError::ErrorGeneric(format!(
                         "Could not find Entries for Address: {}, tag: {}",
                         link_add_address.clone(),
                         tag.clone()

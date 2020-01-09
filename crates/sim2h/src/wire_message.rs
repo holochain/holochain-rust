@@ -25,6 +25,7 @@ pub enum WireMessage {
     ClientToLib3hResponse(ClientToLib3hResponse),
     Lib3hToClient(Lib3hToClient),
     Lib3hToClientResponse(Lib3hToClientResponse),
+    MultiSend(Vec<Lib3hToClient>),
     Err(WireError),
     Ping,
     Pong,
@@ -111,6 +112,9 @@ impl WireMessage {
             WireMessage::Lib3hToClientResponse(
                 Lib3hToClientResponse::HandleStoreEntryAspectResult,
             ) => "[L<C]HandleStoreEntryAspectResult",
+            WireMessage::MultiSend(m) => match m {
+                _ => "[L>C]MultiSend::_",
+            },
             WireMessage::Err(_) => "[Error] {:?}",
         })
     }

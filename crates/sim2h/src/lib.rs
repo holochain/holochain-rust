@@ -626,20 +626,20 @@ impl Sim2h {
             let unseen_aspects = AspectList::from(list_data.address_map.clone())
                 .diff(self.get_or_create_space(space_address).read().all_aspects());
             debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+            let mut multi_messages = Vec::new();
             for entry_address in unseen_aspects.entry_addresses() {
                 if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
-                        FetchEntryData {
-                            request_id: "".into(),
-                            space_address: space_address.clone(),
-                            provider_agent_id: agent_id.clone(),
-                            entry_address: entry_address.clone(),
-                            aspect_address_list: Some(aspect_address_list.clone()),
-                        },
-                    ));
-                    self.send(agent_id.clone(), uri.clone(), &wire_message);
+                    multi_messages.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".into(),
+                        space_address: space_address.clone(),
+                        provider_agent_id: agent_id.clone(),
+                        entry_address: entry_address.clone(),
+                        aspect_address_list: Some(aspect_address_list.clone()),
+                    }));
                 }
             }
+            let multi_message = WireMessage::MultiSend(multi_messages);
+            self.send(agent_id.clone(), uri.clone(), &multi_message);
         })
     }
 
@@ -1030,6 +1030,7 @@ impl Sim2h {
             let aspect_list = AspectList::from(map);
             debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
+            let mut multi_messages = Vec::new();
             for aspect in entry_data.aspect_list {
                 // 1. Add hashes to our global list of all aspects in this space:
                 {
@@ -1046,19 +1047,19 @@ impl Sim2h {
                 }
 
                 // 2. Create store message
-                let store_message = WireMessage::Lib3hToClient(
-                    Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+                multi_messages.push(Lib3hToClient::HandleStoreEntryAspect(
+                    StoreEntryAspectData {
                         request_id: "".into(),
                         space_address: space_address.clone(),
                         provider_agent_id: provider.clone(),
                         entry_address: entry_data.entry_address.clone(),
                         entry_aspect: aspect,
-                    }),
-                );
-
-                // 3. Send store message to selected nodes
-                self.broadcast(&store_message, dht_agents.clone());
+                    },
+                ));
             }
+            let store_message = WireMessage::MultiSend(multi_messages);
+            // 3. Send store message to selected nodes
+            self.broadcast(&store_message, dht_agents.clone());
         })
     }
 

@@ -399,7 +399,7 @@ mod tests {
         //let aspect_hash_2_2 = AspectHash::from("aspect_hash_2_2");
         //let aspect_hash_2_3 = AspectHash::from("aspect_hash_2_3");
 
-        assert!(!space.agent_is_missing_all_aspects(
+        assert!(space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
             &vec![aspect_hash_1_1.clone()]
@@ -429,4 +429,28 @@ mod tests {
             &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
         ));
     }
+
+    #[test]
+    fn space_handles_missing_aspect_edge_cases() {
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let agent = AgentId::from("test-agent");
+        let entry_hash = EntryHash::from("entry_hash");
+        // If the agent is not even registered in the space, it is certainly
+        // missing all aspects
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash,
+            &vec![]
+        ));
+
+        // If the entry has not been seen for the agent, the agent is certainly
+        // missing all aspects for it
+        space.missing_aspects.insert(agent.clone(), HashMap::new());
+        assert!(space.agent_is_missing_all_aspects(
+            &agent,
+            &entry_hash,
+            &vec![]
+        ));
+    }
+
 }

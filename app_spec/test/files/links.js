@@ -77,6 +77,7 @@ module.exports = scenario => {
     t.ok(error.line)
   })
 
+// this is where the failing tests are
   scenario('get_links_crud', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 

@@ -116,7 +116,7 @@ impl TryFrom<LogLine> for Metric {
             .and_then(|s| {
                 let to_parse = &s[1];
                 NaiveDateTime::parse_from_str(to_parse, RUST_LOG_DATE_FORMAT)
-                    .map_err(|e| println!("Invalid date string {:?} from log: {:?}", to_parse, e))
+                    .map_err(|e| warn!("Invalid date string {:?} from log: {:?}", to_parse, e))
                     .ok()
             })
             .map(|t: NaiveDateTime| {
@@ -133,16 +133,24 @@ impl TryFrom<LogLine> for Metric {
 
 /// Produces an iterator of metric data given a log file name.
 pub fn metrics_from_file(log_file: PathBuf) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
-    let file = std::fs::File::open(log_file)?;
+    let file = std::fs::File::open(log_file.clone())?;
     let reader = BufReader::new(file);
-    let metrics = reader.lines().filter_map(|line| {
+    let log_file: String = log_file.to_str().unwrap_or_else(|| "unknown").to_string();
+    let stream_id = Some(log_file);
+
+    let metrics = reader.lines().filter_map(move |line| {
         let result: Result<Metric, _> = line
             .map_err(|e| ParseError(format!("{}", e)))
-            .and_then(|line| LogLine(line).try_into());
-        result.map(|x| Some(x)).unwrap_or_else(|e| {
-            warn!("Unparsable log line: {:?}", e);
-            None
-        })
+            .and_then(move |line| LogLine(line).try_into());
+        result
+            .map(|mut metric| {
+                metric.stream_id = stream_id.clone();
+                Some(metric)
+            })
+            .unwrap_or_else(|e| {
+                warn!("Unparsable log line: {:?}", e);
+                None
+            })
     });
     Ok(Box::new(metrics))
 }

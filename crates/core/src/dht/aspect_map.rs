@@ -92,6 +92,20 @@ impl AspectMap {
             .collect::<AspectMapBare>()
             .into()
     }
+
+
+    pub fn filtered_by_entry_hash<F: FnMut(&EntryHash) -> bool>(
+        &self,
+        mut filter_fn: F,
+    ) -> AspectMap {
+        AspectMap::from(
+            self.0
+                .iter()
+                .filter(|(entry_hash, _)| filter_fn(entry_hash))
+                .map(|(e, v)| (e.clone(), v.clone()))
+                .collect::<HashMap<EntryHash, Vec<AspectHash>>>(),
+        )
+    }
 }
 
 impl From<AspectMapBare> for AspectMap {
@@ -124,7 +138,6 @@ impl From<AspectMap> for AspectVecMap {
     }
 }
 
-// TODO: is this needed?
 impl From<&HashSet<(EntryHash, AspectHash)>> for AspectMap {
     fn from(s: &HashSet<(EntryHash, AspectHash)>) -> AspectMap {
         let mut result: AspectMapBare = HashMap::new();

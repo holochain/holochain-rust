@@ -112,11 +112,21 @@ impl WireMessage {
             WireMessage::Lib3hToClientResponse(
                 Lib3hToClientResponse::HandleStoreEntryAspectResult,
             ) => "[L<C]HandleStoreEntryAspectResult",
-            WireMessage::MultiSend(m) => match m {
-                _ => "[L>C]MultiSend::_",
-            },
+            WireMessage::MultiSend(m) => get_multi_type(&m),
             WireMessage::Err(_) => "[Error] {:?}",
         })
+    }
+}
+
+fn get_multi_type(list: &Vec<Lib3hToClient>) -> &str {
+    if list.len() > 0 {
+        match list.get(0).unwrap() {
+            Lib3hToClient::HandleFetchEntry(_) => "[L>C]MultiSend::HandleFetchEntry",
+            Lib3hToClient::HandleStoreEntryAspect(_) => "[L>C]MultiSend::HandleStoreEntryAspect",
+            _ => "[L>C]MultiSend::UNEXPECTED_VARIANT",
+        }
+    } else {
+        "[L>C]MultiSend::EMPTY_SEND"
     }
 }
 

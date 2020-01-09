@@ -208,10 +208,10 @@ impl AspectList {
     }
 
     pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
-        self.0
-            .entry(entry_address)
-            .or_insert_with(Vec::new)
-            .push(aspect_address);
+        let list = self.0.entry(entry_address).or_insert_with(Vec::new);
+        if !list.contains(&aspect_address) {
+            list.push(aspect_address);
+        }
     }
 
     pub fn entry_addresses(&self) -> impl Iterator<Item = &EntryHash> {

@@ -133,49 +133,6 @@ macro_rules! with_latency_publishing {
     }}
 }
 
-/// Wraps a standard rust function with latency timing that is published to
-/// $publisher upon completion of self.f($args,*). The latency metric name will
-/// be "$metric_prefix.latency".
-#[macro_export]
-macro_rules! self_with_latency_publishing {
-    ($metric_prefix:expr, $publisher:expr, $f:ident, $self_:expr) => {{
-        let clock = std::time::SystemTime::now();
-
-        let ret = $self_.$f();
-
-        let latency = clock.elapsed().unwrap().as_millis();
-        if latency == 0 {
-            ret
-        } else {
-            let metric_name = format!("{}.latency", $metric_prefix);
-
-            // TODO pass in stream id or not?
-            let metric = $crate::Metric::new(metric_name.as_str(), None,
-            Some(clock.into()), latency as f64);
-            $publisher.write().unwrap().publish(&metric);
-            ret
-        }
-    }};
-    ($metric_prefix:expr, $publisher:expr, $f:expr, $self_: expr, $($args:expr),+ ) => {{
-        let clock = std::time::SystemTime::now();
-
-        let ret = $self_.$f($($args),+);
-        let latency = clock.elapsed().unwrap().as_millis();
-
-        if latency == 0 {
-            ret
-        } else {
-            let metric_name = format!("{}.latency", $metric_prefix);
-
-            // TODO pass in stream id or not?
-            let metric = $crate::Metric::new(metric_name.as_str(), None,
-            Some(clock.into()), latency as f64);
-            $publisher.write().unwrap().publish(&metric);
-            ret
-        }
-    }}
-}
-
 /// Composes a collection of publishers which are all called for one metric sample.
 pub struct MetricPublishers(Vec<Arc<RwLock<dyn MetricPublisher>>>);
 

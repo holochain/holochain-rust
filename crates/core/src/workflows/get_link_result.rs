@@ -15,7 +15,10 @@ use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryOptions, GetEntryResultType,
 };
 
-use holochain_core_types::{crud_status::CrudStatus, entry::Entry, error::HolochainError, network::query::GetLinkFromRemoteData};
+use holochain_core_types::{
+    crud_status::CrudStatus, entry::Entry, error::HolochainError,
+    network::query::GetLinkFromRemoteData,
+};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
@@ -43,15 +46,24 @@ pub async fn get_link_result_workflow<'a>(
         GetLinksNetworkResult::Links(links) => {
             links
                 .into_iter()
-                .map(|GetLinkFromRemoteData{link_add_address, tag, crud_status}| {
-                    // make DHT calls to get the entries for the links
-                    (get_link_data_from_link_addresses(
-                        context,
-                        &link_add_address,
-                        &tag,
-                        link_args.options.headers,
-                    ), crud_status)
-                })
+                .map(
+                    |GetLinkFromRemoteData {
+                         link_add_address,
+                         tag,
+                         crud_status,
+                     }| {
+                        // make DHT calls to get the entries for the links
+                        (
+                            get_link_data_from_link_addresses(
+                                context,
+                                &link_add_address,
+                                &tag,
+                                link_args.options.headers,
+                            ),
+                            crud_status,
+                        )
+                    },
+                )
                 .map(|(maybe_get_entry_result, crud_status)| {
                     maybe_get_entry_result.map(|get_entry_result| LinksResult {
                         address: get_entry_result.target.clone(),

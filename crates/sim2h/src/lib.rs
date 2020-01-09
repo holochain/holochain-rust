@@ -52,9 +52,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use std::convert::TryFrom;
 
 use holochain_locksmith::Mutex;
-use holochain_metrics::{
-    config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
-};
+use holochain_metrics::{config::MetricPublisherConfig, with_latency_publishing, MetricPublisher};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -99,6 +97,7 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
 }
 
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
+
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
     debug!(
         "connection event conn: {} for {}@{} {:?}",
@@ -186,27 +185,13 @@ pub enum DhtAlgorithm {
     NaiveSharding { redundant_count: u64 },
 }
 
-type ConnectionStateItem = (String, ConnectionState);
-
-#[derive(Debug, Clone)]
-pub struct Sim2hState {
-    pub connections: HashMap<Lib3hUri, ConnectionStateItem>,
-    pub spaces: HashMap<SpaceHash, Space>,
-}
-
-impl Sim2hState {
-    pub fn new() -> Self {
-        Self {
-            connections: HashMap::new(),
-            spaces: HashMap::new(),
-        }
-    }
-}
+mod state;
+use state::*;
 
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    state: Sim2hState,
+    state: Sim2hStateHandle,
     recv_wss_event: crossbeam_channel::Receiver<WssEvent>,
     send_wss_command: crossbeam_channel::Sender<WssCommand>,
     num_ticks: u64,
@@ -224,9 +209,9 @@ impl Sim2h {
         let (send_wss_command, recv_wss_command) = crossbeam_channel::unbounded();
 
         let mut sim2h = Sim2h {
-            crypto,
+            crypto: crypto.box_clone(),
             bound_uri: None,
-            state: Sim2hState::new(),
+            state: Sim2hStateHandle::new(crypto),
             recv_wss_event,
             send_wss_command,
             num_ticks: 0,
@@ -407,11 +392,14 @@ impl Sim2h {
         )
     }
 
-    fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &mut Space {
+    fn danger_get_or_create_space(&mut self, space_address: &SpaceHash) -> DangerGuard<'_> {
+        self.state.danger_get_or_create_space(space_address)
+        /*
         let clock = std::time::SystemTime::now();
 
-        if !self.state.spaces.contains_key(space_address) {
+        if !self.state.danger_lock().spaces.contains_key(space_address) {
             self.state
+                .danger_lock()
                 .spaces
                 .insert(space_address.clone(), Space::new(self.crypto.box_clone()));
             info!(
@@ -420,16 +408,17 @@ impl Sim2h {
             );
         }
 
-        let out = self.state.spaces.get_mut(space_address).unwrap();
+        let out = self.state.danger_lock().spaces.get_mut(space_address).unwrap();
         self.metric_publisher
             .write()
             .unwrap()
             .publish(&Metric::new_timestamped_now(
-                "sim2h-get_or_create_space.latency",
+                "sim2h-danger_get_or_create_space.latency",
                 None,
                 clock.elapsed().unwrap().as_millis() as f64,
             ));
         out
+        */
     }
 
     // adds an agent to a space
@@ -442,14 +431,15 @@ impl Sim2h {
                         data.space_address.clone(),
                         data.agent_id.clone(),
                     )?;
-                    let _ = self.state.connections.insert(
+                    let _ = self.state.danger_lock().connections.insert(
                         uri.clone(),
                         // MDD: we are overwriting the existing connection state here, so we keep the same uuid.
                         // (This could be done more directly with a Hashmap entry update)
                         (uuid, conn),
                     );
 
-                    self.get_or_create_space(&data.space_address)
+                    self.danger_get_or_create_space(&data.space_address)
+                        .get()
                         .join_agent(data.agent_id.clone(), uri.clone())?;
                     info!(
                         "Agent {:?} @ {} joined space {:?}",
@@ -516,12 +506,12 @@ impl Sim2h {
                 url::Url::from(uri.clone()).into(),
             ));
 
-            if let Some((uuid, conn)) = self.state.connections.remove(uri) {
+            if let Some((uuid, conn)) = self.state.danger_lock().connections.remove(uri) {
                 conn_lifecycle("disconnect", &uuid, &conn, uri);
                 if let ConnectionState::Joined(space_address, agent_id) = conn {
-                    if let Some(space) = self.state.spaces.get_mut(&space_address) {
+                    if let Some(space) = self.state.danger_lock().spaces.get_mut(&space_address) {
                         if space.remove_agent(&agent_id) == 0 {
-                            self.state.spaces.remove(&space_address);
+                            self.state.danger_lock().spaces.remove(&space_address);
                         }
                     }
                 }
@@ -533,7 +523,11 @@ impl Sim2h {
     // get the connection status of an agent
     fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
         with_latency_publishing!("sim2h-get_connection", self.metric_publisher, || {
-            self.state.connections.get(uri).map(|ca| (*ca).clone())
+            self.state
+                .danger_lock()
+                .connections
+                .get(uri)
+                .map(|ca| (*ca).clone())
         })
     }
 
@@ -544,6 +538,7 @@ impl Sim2h {
             self.metric_publisher,
             || {
                 self.state
+                    .danger_lock()
                     .spaces
                     .get(space_address)?
                     .agent_id_to_uri(agent_id)
@@ -561,6 +556,7 @@ impl Sim2h {
                 debug!("New connection from {:?}", uri);
                 if let Some(_old) = self
                     .state
+                    .danger_lock()
                     .connections
                     .insert(uri.clone(), (nanoid::simple(), ConnectionState::new()))
                 {
@@ -597,12 +593,16 @@ impl Sim2h {
             }
             if message == WireMessage::Status {
                 debug!("Sending StatusResponse in response to Status");
+                let (spaces, connections) = {
+                    let l = self.state.danger_lock();
+                    (l.spaces.len(), l.connections.len())
+                };
                 self.send(
                     signer.clone(),
                     uri.clone(),
                     &WireMessage::StatusResponse(StatusData {
-                        spaces: self.state.spaces.len(),
-                        connections: self.state.connections.len(),
+                        spaces,
+                        connections,
                         redundant_count: match self.dht_algorithm {
                             DhtAlgorithm::FullSync => 0,
                             DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
@@ -626,7 +626,11 @@ impl Sim2h {
                         // TODO: maybe have some upper limit on the number of messages
                         // we allow to queue before dropping the connections
                         pending_messages.push(message);
-                        let _ = self.state.connections.insert(uri.clone(), (uuid, agent));
+                        let _ = self
+                            .state
+                            .danger_lock()
+                            .connections
+                            .insert(uri.clone(), (uuid, agent));
                         self.send(
                             signer.clone(),
                             uri.clone(),
@@ -692,8 +696,11 @@ impl Sim2h {
         list_data: &EntryListData,
     ) {
         with_latency_publishing!("sim2h-handle-unseen_aspects", self.metric_publisher, || {
-            let unseen_aspects = AspectList::from(HashMap::from(&list_data.address_map))
-                .diff(self.get_or_create_space(space_address).all_aspects());
+            let unseen_aspects = AspectList::from(HashMap::from(&list_data.address_map)).diff(
+                self.danger_get_or_create_space(space_address)
+                    .get()
+                    .all_aspects(),
+            );
             debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
             for entry_address in unseen_aspects.entry_addresses() {
                 if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
@@ -805,11 +812,13 @@ impl Sim2h {
                 // Check if the node is missing any aspects
                 let aspects_missing_at_node = match dht_algorithm {
                     DhtAlgorithm::FullSync => self
-                        .get_or_create_space(&space_address)
+                        .danger_get_or_create_space(&space_address)
+                        .get()
                         .all_aspects()
                         .diff(&AspectList::from(HashMap::from(list_data.address_map))),
                     DhtAlgorithm::NaiveSharding {redundant_count} => self
-                        .get_or_create_space(&space_address)
+                        .danger_get_or_create_space(&space_address)
+                        .get()
                         .aspects_in_shard_for_agent(agent_id, redundant_count)
                         .diff(&AspectList::from(HashMap::from(list_data.address_map)))
                 };
@@ -820,10 +829,10 @@ impl Sim2h {
                     // Cache info about what this agent is missing so we can make sure it got it
                     let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
                     if missing_hashes.len() > 0 {
-                        let space = self
-                            .get_or_create_space(&space_address);
+                        let mut space = self
+                            .danger_get_or_create_space(&space_address);
                         for (entry_hash, aspect_hash) in missing_hashes {
-                            space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
+                            space.get().add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
                         }
                     }
 
@@ -831,7 +840,8 @@ impl Sim2h {
 
                         DhtAlgorithm::FullSync => {
                             let all_agents_in_space = self
-                                .get_or_create_space(&space_address)
+                                .danger_get_or_create_space(&space_address)
+                                .get()
                                 .all_agents()
                                 .keys()
                                 .cloned()
@@ -852,7 +862,8 @@ impl Sim2h {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
                                 let entry_loc = entry_location(&self.crypto, entry_address);
                                 let agent_pool = self
-                                    .get_or_create_space(&space_address)
+                                    .danger_get_or_create_space(&space_address)
+                                    .get()
                                     .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                                     .keys()
                                     .cloned()
@@ -890,7 +901,8 @@ impl Sim2h {
                     let url = maybe_url.unwrap();
                     for aspect in fetch_result.entry.aspect_list {
                         self
-                            .get_or_create_space(&space_address)
+                            .danger_get_or_create_space(&space_address)
+                            .get()
                             .remove_missing_aspect(&to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
                         let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
@@ -911,7 +923,8 @@ impl Sim2h {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
                     let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
                     let agent_pool = self
-                        .get_or_create_space(&space_address)
+                        .danger_get_or_create_space(&space_address)
+                        .get()
                         .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                         .keys()
                         .cloned()
@@ -924,7 +937,8 @@ impl Sim2h {
                         let agents_with_all_aspects_for_entry = agent_pool.iter()
                             .filter(|agent|{
                                 !self
-                                    .get_or_create_space(&space_address)
+                                    .danger_get_or_create_space(&space_address)
+                                    .get()
                                     .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
                             })
                             .cloned()
@@ -1048,7 +1062,8 @@ impl Sim2h {
             "sim2h-get_agent_not_missing_aspects",
             self.metric_publisher,
             || {
-                let space = self.state.spaces.get(space_address)?;
+                let space = self.state.danger_lock();
+                let space = space.spaces.get(space_address)?;
                 agent_pool
                     .into_iter()
                     // We ignore all agents that are missing all of the same aspects as well since
@@ -1094,15 +1109,15 @@ impl Sim2h {
             for aspect in entry_data.aspect_list {
                 // 1. Add hashes to our global list of all aspects in this space:
                 {
-                    let space = self.get_or_create_space(&space_address);
-                    space.add_aspect(
+                    let mut space = self.danger_get_or_create_space(&space_address);
+                    space.get().add_aspect(
                         entry_data.entry_address.clone(),
                         aspect.aspect_address.clone(),
                     );
                     debug!(
                         "Space {} now knows about these aspects:\n{}",
                         &space_address,
-                        space.all_aspects().pretty_string()
+                        space.get().all_aspects().pretty_string()
                     );
                 }
 
@@ -1138,7 +1153,8 @@ impl Sim2h {
         except: Option<&AgentId>,
     ) -> Vec<(AgentId, AgentInfo)> {
         with_latency_publishing!("sim2h-all_agents_except_one", self.metric_publisher, || {
-            self.get_or_create_space(&space)
+            self.danger_get_or_create_space(&space)
+                .get()
                 .all_agents()
                 .clone()
                 .into_iter()
@@ -1163,7 +1179,8 @@ impl Sim2h {
             "sim2h-agents_in_neighbourhood",
             self.metric_publisher,
             || {
-                self.get_or_create_space(&space)
+                self.danger_get_or_create_space(&space)
+                    .get()
                     .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                     .into_iter()
                     .collect::<Vec<(AgentId, AgentInfo)>>()
@@ -1184,7 +1201,7 @@ impl Sim2h {
 
             let payload: Opaque = msg.clone().into();
 
-            if !self.state.connections.contains_key(&uri) {
+            if !self.state.danger_lock().connections.contains_key(&uri) {
                 error!("FAILED TO SEND, NO ROUTE: {}", uri);
                 return;
             }
@@ -1211,6 +1228,7 @@ impl Sim2h {
                 // as copies so we don't have to keep a reference to self.
                 let spaces_with_agents_and_uris = self
                     .state
+                    .danger_lock()
                     .spaces
                     .iter()
                     .filter_map(|(space_hash, space)| {

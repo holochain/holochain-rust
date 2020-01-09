@@ -286,39 +286,35 @@ impl Sim2h {
 
     /// handle a batch of incoming wss events
     fn priv_check_wss_events(&mut self) {
-        with_latency_publishing!(
-            "sim2h-priv_check_wss_events",
-            self.metric_publisher,
-            || {
-                let len = self.recv_wss_event.len();
-                if len > 0 {
-                    debug!("Handling {} incoming messages", len);
-                }
-                for _ in 0..100 {
-                    match self.recv_wss_event.try_recv() {
-                        Ok(event) => match event {
-                            WssEvent::IncomingConnection(url) => {
-                                let url: Lib3hUri = url::Url::from(url).into();
-                                if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                                    error!("Error handling incoming connection: {:?}", error);
-                                }
+        with_latency_publishing!("sim2h-priv_check_wss_events", self.metric_publisher, || {
+            let len = self.recv_wss_event.len();
+            if len > 0 {
+                debug!("Handling {} incoming messages", len);
+            }
+            for _ in 0..100 {
+                match self.recv_wss_event.try_recv() {
+                    Ok(event) => match event {
+                        WssEvent::IncomingConnection(url) => {
+                            let url: Lib3hUri = url::Url::from(url).into();
+                            if let Err(error) = self.handle_incoming_connect(url.clone()) {
+                                error!("Error handling incoming connection: {:?}", error);
                             }
-                            WssEvent::ReceivedData(url, frame) => {
-                                self.priv_handle_received_data(url, frame);
-                            }
-                            WssEvent::Error(url, e) => {
-                                let url: Lib3hUri = url::Url::from(url).into();
-                                self.priv_drop_connection_for_error(url, e);
-                            }
-                        },
-                        Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                            panic!("broken recv_wss_event channel");
                         }
-                        Err(crossbeam_channel::TryRecvError::Empty) => break,
+                        WssEvent::ReceivedData(url, frame) => {
+                            self.priv_handle_received_data(url, frame);
+                        }
+                        WssEvent::Error(url, e) => {
+                            let url: Lib3hUri = url::Url::from(url).into();
+                            self.priv_drop_connection_for_error(url, e);
+                        }
+                    },
+                    Err(crossbeam_channel::TryRecvError::Disconnected) => {
+                        panic!("broken recv_wss_event channel");
                     }
+                    Err(crossbeam_channel::TryRecvError::Empty) => break,
                 }
             }
-        )
+        })
     }
 
     /// if our connections sent us any data, process it
@@ -343,7 +339,8 @@ impl Sim2h {
                                     url,
                                     wire_message
                                 );
-                                if let Err(error) = self.handle_message(&url, wire_message, &source) {
+                                if let Err(error) = self.handle_message(&url, wire_message, &source)
+                                {
                                     error!("Error handling message: {:?}", error);
                                 }
                             }

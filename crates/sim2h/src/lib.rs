@@ -824,12 +824,13 @@ impl Sim2h {
                         return Ok(())
                     }
                     let url = maybe_url.unwrap();
+                    let mut multi_messages = Vec::new();
                     for aspect in fetch_result.entry.aspect_list {
                         self
                             .get_or_create_space(&space_address)
                             .write()
                             .remove_missing_aspect(&to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
-                        let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
+                        multi_messages.push(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
                                 request_id: "".into(),
                                 space_address: space_address.clone(),
@@ -838,8 +839,9 @@ impl Sim2h {
                                 entry_aspect: aspect,
                             },
                         ));
-                        self.send(to_agent_id.clone(), url.clone(), &store_message);
                     }
+                    let store_message = WireMessage::MultiSend(multi_messages);
+                    self.send(to_agent_id, url, &store_message);
                 }
 
                 Ok(())

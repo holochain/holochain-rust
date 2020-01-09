@@ -10,6 +10,7 @@ use crate::{
 };
 use holochain_core_types::{
     crud_status::CrudStatus, eav::Attribute, entry::EntryWithMetaAndHeader, error::HolochainError,
+    network::query::GetLinkFromRemoteData,
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -26,14 +27,14 @@ fn get_links(
     tag: String,
     crud_status: Option<CrudStatus>,
     _headers: bool,
-) -> Result<Vec<(Address, LinkTag)>, HolochainError> {
+) -> Result<Vec<GetLinkFromRemoteData>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
     Ok(dht_store
         .get_links(base, link_type, tag, crud_status)
         .unwrap_or_default()
         .into_iter()
-        .map(|(eavi, _crud)| {
+        .map(|(eavi, crud_status)| {
             let tag = match eavi.attribute() {
                 Attribute::LinkTag(_, tag) => Ok(tag),
                 Attribute::RemovedLink(_, tag) => Ok(tag),
@@ -42,7 +43,11 @@ fn get_links(
                 )),
             }
             .expect("INVALID ATTRIBUTE ON EAV GET, SOMETHING VERY WRONG IN EAV QUERY");
-            (eavi.value(), tag)
+            GetLinkFromRemoteData {
+                tag,
+                crud_status,
+                link_add_address: eavi.value(),
+            }
         })
         .collect())
 }

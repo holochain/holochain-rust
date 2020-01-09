@@ -14,7 +14,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryOptions, GetEntryResultType,
 };
 
-use holochain_core_types::{crud_status::CrudStatus, entry::Entry, error::HolochainError};
+use holochain_core_types::{crud_status::CrudStatus, entry::Entry, error::HolochainError, network::query::GetLinkFromRemoteData};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
@@ -41,21 +41,21 @@ pub async fn get_link_result_workflow<'a>(
         GetLinksNetworkResult::Links(links) => {
             links
                 .into_iter()
-                .map(|(link_add_address, tag)| {
+                .map(|GetLinkFromRemoteData{link_add_address, tag, crud_status}| {
                     // make DHT calls to get the entries for the links
-                    get_link_data_from_link_addresses(
+                    (get_link_data_from_link_addresses(
                         context,
                         &link_add_address,
                         &tag,
                         link_args.options.headers,
-                    )
+                    ), crud_status)
                 })
-                .map(|maybe_get_entry_crud| {
-                    maybe_get_entry_crud.map(|get_entry_crud| LinksResult {
-                        address: get_entry_crud.target.clone(),
-                        headers: get_entry_crud.headers.unwrap_or_default(),
-                        status: get_entry_crud.crud_status,
-                        tag: get_entry_crud.tag.clone(),
+                .map(|(maybe_get_entry_result, crud_status)| {
+                    maybe_get_entry_result.map(|get_entry_result| LinksResult {
+                        address: get_entry_result.target.clone(),
+                        headers: get_entry_result.headers.unwrap_or_default(),
+                        status: crud_status,
+                        tag: get_entry_result.tag.clone(),
                     })
                 })
                 .collect::<Result<Vec<LinksResult>, HolochainError>>()

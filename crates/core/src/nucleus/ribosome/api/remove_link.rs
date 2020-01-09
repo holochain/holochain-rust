@@ -15,6 +15,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
     time::Timeout,
+    network::query::GetLinkFromRemoteData,
 };
 use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions},
@@ -97,7 +98,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             let filtered_links = links
                 .into_iter()
                 // .filter(|link_for_filter| &link_for_filter.target == link.target()) // this won't work properly
-                .map(|(address, _tag)| address)
+                .map(|GetLinkFromRemoteData{link_add_address, ..}| link_add_address)
                 .collect::<Vec<_>>();
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));

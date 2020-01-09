@@ -4,6 +4,7 @@ use crate::{
     naive_sharding::{entry_location, naive_sharding_should_store},
     AgentId,
 };
+use holochain_core::network::aspect_map::AspectMap;
 use im::{HashMap, HashSet};
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
@@ -211,107 +212,7 @@ impl Space {
     }
 }
 
-// TODO: unify with AspectMap
-#[derive(Debug, Clone)]
-pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
-impl AspectList {
-    /// Returns an AspectList list that contains every entry aspect
-    /// in self that is not in other.
-    pub fn diff(&self, other: &AspectList) -> AspectList {
-        let self_set = HashSet::<(EntryHash, AspectHash)>::from(self);
-        let other_set = HashSet::<(EntryHash, AspectHash)>::from(other);
-        AspectList::from(&self_set.difference(other_set))
-    }
-
-    pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
-        let list = self.0.entry(entry_address).or_insert_with(Vec::new);
-        if !list.contains(&aspect_address) {
-            list.push(aspect_address);
-        }
-    }
-
-    pub fn entry_addresses(&self) -> impl Iterator<Item = &EntryHash> {
-        self.0.keys()
-    }
-
-    pub fn per_entry(&self, entry_address: &EntryHash) -> Option<&Vec<AspectHash>> {
-        self.0.get(entry_address)
-    }
-
-    pub fn aspect_hashes(&self) -> Vec<AspectHash> {
-        let mut result = Vec::new();
-        for (_, aspects) in self.0.iter() {
-            result.append(&mut aspects.clone());
-        }
-        result
-    }
-
-    pub fn pretty_string(&self) -> String {
-        self.0
-            .iter()
-            .map(|(entry, aspects)| {
-                format!(
-                    "{}: [{}]",
-                    entry,
-                    aspects
-                        .iter()
-                        .cloned()
-                        .map(|i| i.into())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                )
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
-
-    pub fn filtered_by_entry_hash<F: FnMut(&EntryHash) -> bool>(
-        &self,
-        mut filter_fn: F,
-    ) -> AspectList {
-        AspectList::from(
-            self.0
-                .iter()
-                .filter(|(entry_hash, _)| filter_fn(entry_hash))
-                .map(|(e, v)| (e.clone(), v.clone()))
-                .collect::<HashMap<EntryHash, Vec<AspectHash>>>(),
-        )
-    }
-}
-
-impl From<HashMap<EntryHash, Vec<AspectHash>>> for AspectList {
-    fn from(map: HashMap<EntryHash, Vec<AspectHash>>) -> AspectList {
-        AspectList { 0: map }
-    }
-}
-
-impl From<&AspectList> for HashSet<(EntryHash, AspectHash)> {
-    fn from(a: &AspectList) -> HashSet<(EntryHash, AspectHash)> {
-        let mut result = HashSet::new();
-        for (entry_address, aspect_list) in a.0.iter() {
-            for aspect_address in aspect_list {
-                result.insert((entry_address.clone(), aspect_address.clone()));
-            }
-        }
-        result
-    }
-}
-
-impl From<&HashSet<(EntryHash, AspectHash)>> for AspectList {
-    fn from(s: &HashSet<(EntryHash, AspectHash)>) -> AspectList {
-        let mut result: HashMap<EntryHash, Vec<AspectHash>> = HashMap::new();
-        for (entry_address, aspect_address) in s {
-            if !result.contains_key(entry_address) {
-                result.insert(entry_address.clone(), Vec::new());
-            }
-            result
-                .get_mut(entry_address)
-                .unwrap()
-                .push(aspect_address.clone());
-        }
-        AspectList::from(result)
-    }
-}
+pub type AspectList = AspectMap;
 
 #[cfg(test)]
 mod tests {

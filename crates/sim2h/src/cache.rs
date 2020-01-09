@@ -437,20 +437,11 @@ mod tests {
         let entry_hash = EntryHash::from("entry_hash");
         // If the agent is not even registered in the space, it is certainly
         // missing all aspects
-        assert!(space.agent_is_missing_all_aspects(
-            &agent,
-            &entry_hash,
-            &vec![]
-        ));
+        assert!(space.agent_is_missing_all_aspects(&agent, &entry_hash, &vec![]));
 
         // If the entry has not been seen for the agent, the agent is certainly
         // missing all aspects for it
         space.missing_aspects.insert(agent.clone(), HashMap::new());
-        assert!(space.agent_is_missing_all_aspects(
-            &agent,
-            &entry_hash,
-            &vec![]
-        ));
+        assert!(space.agent_is_missing_all_aspects(&agent, &entry_hash, &vec![]));
     }
-
 }

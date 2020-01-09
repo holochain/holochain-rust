@@ -306,6 +306,32 @@ mod tests {
     use std::convert::TryFrom;
 
     #[test]
+    fn aspect_list_holds_aspects() {
+        let mut list = AspectList::from(HashMap::new());
+        assert_eq!(list.pretty_string(), "");
+        let entry_hash = EntryHash::from("entry_hash_1");
+        let aspect_hash = AspectHash::from("aspect_hash_1");
+        list.add(entry_hash.clone(), aspect_hash.clone());
+        assert_eq!(list.pretty_string(), "entry_hash_1: [aspect_hash_1]");
+        // adding again doesn't cause duplication
+        list.add(entry_hash.clone(), aspect_hash);
+        assert_eq!(list.pretty_string(), "entry_hash_1: [aspect_hash_1]");
+
+        // add more entries and aspects
+        let aspect_hash = AspectHash::from("aspect_hash_1a");
+        list.add(entry_hash, aspect_hash);
+        let entry_hash = EntryHash::from("entry_hash_2");
+        let aspect_hash = AspectHash::from("aspect_hash_2");
+        list.add(entry_hash, aspect_hash);
+        assert!(list.pretty_string() == "entry_hash_2: [aspect_hash_2]\nentry_hash_1: [aspect_hash_1, aspect_hash_1a]" ||
+                list.pretty_string() == "entry_hash_1: [aspect_hash_1, aspect_hash_1a]\nentry_hash_2: [aspect_hash_2]");
+        assert_eq!(list.aspect_hashes().len(), 3);
+    }
+
+    #[test]
+    fn aspect_list_diffs_aspects() {}
+
+    #[test]
     fn space_can_add_and_remove_agents() {
         let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
         let agent =

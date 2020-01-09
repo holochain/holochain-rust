@@ -106,13 +106,13 @@ impl Space {
     ) -> bool {
         let maybe_agent_map = self.missing_aspects.get(agent_id);
         if maybe_agent_map.is_none() {
-            return false;
+            return true;
         }
         let map_for_agent = maybe_agent_map.unwrap();
 
         let maybe_vec_of_missing_aspects_for_entry = map_for_agent.get(entry_hash);
         if maybe_vec_of_missing_aspects_for_entry.is_none() {
-            return false;
+            return true;
         }
 
         let missing_aspects_for_entry = maybe_vec_of_missing_aspects_for_entry.unwrap();

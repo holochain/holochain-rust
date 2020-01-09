@@ -3754,6 +3754,7 @@ dependencies = [
  "holochain_core_types 0.0.42-alpha5",
  "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_locksmith 0.0.42-alpha5",
+ "holochain_metrics 0.0.42-alpha5",
  "holochain_persistence_api 0.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "im 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

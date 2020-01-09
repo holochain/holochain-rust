@@ -1,14 +1,25 @@
+// use crate::workflows::get_link_result::get_link_data_from_link_addresses;
+// use holochain_core_types::network::query::GetLinkFromRemoteData;
 use crate::{
+    network::{
+        actions::query::{query, QueryMethod},
+        query::{
+            GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
+            NetworkQueryResult,
+        },
+    },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::{author_entry::author_entry, get_link_result::get_link_result_workflow},
+    workflows::author_entry::author_entry,
 };
+
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
+    time::Timeout,
 };
 use holochain_wasm_utils::api_serialization::{
-    get_links::{GetLinksArgs, GetLinksOptions, LinksResult},
+    get_links::{GetLinksArgs, GetLinksOptions},
     link_entries::LinkEntriesArgs,
 };
 use std::convert::TryFrom;
@@ -62,25 +73,61 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         tag: link.tag().clone(),
         options: GetLinksOptions::default(),
     };
-    let links_result = context.block_on(get_link_result_workflow(&context, &get_links_args));
-    if links_result.is_err() {
+    let config = GetLinksQueryConfiguration { headers: false };
+    let method = QueryMethod::Link(get_links_args, GetLinksNetworkQuery::Links(config));
+    let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
+    if response_result.is_err() {
         log_error!("zome : Could not get links for remove_link method.");
         ribosome_error_code!(WorkflowFailed)
     } else {
-        let links = links_result.expect("This is supposed to not fail").links();
-        let filtered_links = links
-            .into_iter()
-            .filter(|link_for_filter| &link_for_filter.address == link.target()) // this won't work properly
-            .map(|LinksResult { address, .. }| address)
-            .collect::<Vec<_>>();
+        let response = response_result.expect("Could not get response");
+        let links_result = match response {
+            NetworkQueryResult::Links(query, _, _) => Ok(query),
+            NetworkQueryResult::Entry(_) => Err(HolochainError::ErrorGeneric(
+                "Could not get links for type".to_string(),
+            )),
+        };
+        if links_result.is_err() {
+            log_error!(context, "zome : Could not get links for remove_link method");
+            ribosome_error_code!(WorkflowFailed)
+        } else {
+            let links = links_result.expect("This is supposed to not fail");
+            let links = match links {
+                GetLinksNetworkResult::Links(links) => links,
+                _ => return ribosome_error_code!(WorkflowFailed),
+            };
+            let filtered_links = links
+                .into_iter()
+                // .map(
+                //     |GetLinkFromRemoteData {
+                //          link_add_address,
+                //          tag,
+                //          ..
+                //      }| {
+                //         // make DHT calls to get the entries for the links
+                //         (
+                //             get_link_data_from_link_addresses(
+                //                 &context,
+                //                 &link_add_address,
+                //                 &tag,
+                //                 false,
+                //             ).unwrap(),
+                //             link_add_address,
+                //         )
+                //     },
+                // )                
+                // .filter(|(link_for_filter, _)| &link_for_filter.address == link.target())
+                .map(|response| response.link_add_address)
+                .collect::<Vec<_>>();
 
-        let entry = Entry::LinkRemove((link_remove, filtered_links));
+            let entry = Entry::LinkRemove((link_remove, filtered_links));
 
-        // Wait for future to be resolved
-        let result: Result<(), HolochainError> = context
-            .block_on(author_entry(&entry, None, &context, &vec![]))
-            .map(|_| ());
+            // Wait for future to be resolved
+            let result: Result<(), HolochainError> = context
+                .block_on(author_entry(&entry, None, &context, &vec![]))
+                .map(|_| ());
 
-        runtime.store_result(result)
+            runtime.store_result(result)
+        }
     }
 }

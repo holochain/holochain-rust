@@ -80,7 +80,7 @@ pub async fn get_link_result_workflow<'a>(
 }
 
 // given the address of a link_add/link_remove entry, build a GetLinkData struct by retrieving the data from the DHT
-fn get_link_data_from_link_addresses(
+pub fn get_link_data_from_link_addresses(
     context: &Arc<Context>,
     link_add_address: &Address,
     tag: &String,
@@ -127,7 +127,7 @@ fn get_link_data_from_link_addresses(
                             maybe_entry_headers,
                         )),
                         _ => Err(HolochainError::ErrorGeneric(
-                            "Wrong entry type for Link content".to_string(),
+                            format!("Wrong entry type for Link content. Expected LinkAdd or LinkRemove, got: {:?}", single_entry),
                         )),
                     })
                     .unwrap_or_else(|| {

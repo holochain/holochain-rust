@@ -115,7 +115,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
                 //             link_add_address,
                 //         )
                 //     },
-                // )                
+                // )
                 // .filter(|(link_for_filter, _)| &link_for_filter.address == link.target())
                 .map(|response| response.link_add_address)
                 .collect::<Vec<_>>();

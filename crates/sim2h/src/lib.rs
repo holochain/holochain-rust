@@ -1059,7 +1059,7 @@ impl Sim2h {
             }
             let store_message = WireMessage::MultiSend(multi_messages);
             // 3. Send store message to selected nodes
-            self.broadcast(&store_message, dht_agents.clone());
+            self.broadcast(&store_message, dht_agents);
         })
     }
 

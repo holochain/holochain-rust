@@ -13,7 +13,9 @@ pub(crate) async fn listen_job(
     loop {
         match listen.accept() {
             Ok(wss) => {
-                wss_send.f_send(wss);
+                if !wss_send.i_send(wss) {
+                    return;
+                }
             }
             Err(e) if e.would_block() => {
                 last_break = std::time::Instant::now();

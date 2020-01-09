@@ -26,7 +26,10 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
-use futures::{executor::ThreadPool, future::Future};
+use futures::{
+    executor::{ThreadPool, ThreadPoolBuilder},
+    future::Future,
+};
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
@@ -75,11 +78,20 @@ impl<T> MutexExt<T> for Mutex<T> {
 /// this trait makes sending more readable when we want to panic! on disconnects
 pub(crate) trait SendExt<T> {
     fn f_send(&self, v: T);
+    fn i_send(&self, v: T) -> bool;
 }
 
 impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     fn f_send(&self, v: T) {
         self.send(v).expect("failed to send on crossbeam_channel");
+    }
+
+    fn i_send(&self, v: T) -> bool {
+        if let Ok(_) = self.send(v) {
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -89,7 +101,12 @@ lazy_static! {
     /// the global futures thread pool reference
     /// the mutex should only be locked once per thread
     static ref GLB_SIM2H_POOL: Mutex<ThreadPool> = {
-        Mutex::new(ThreadPool::new().expect("error creating futures thread pool"))
+        let mut builder = ThreadPoolBuilder::new();
+        Mutex::new(builder
+            .name_prefix("sim2h-thread-pool-")
+            .create()
+            .expect("error creating futures thread pool")
+        )
     };
 }
 

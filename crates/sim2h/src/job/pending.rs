@@ -20,9 +20,15 @@ pub(crate) async fn pending_job(
             debug!("pending connection count: {}", pending.connections.len());
         }
 
-        if !pending.exec() {
-            last_break = std::time::Instant::now();
-            futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
+        match pending.exec() {
+            // did no work, sleep for 5 ms
+            Ok(false) => {
+                last_break = std::time::Instant::now();
+                futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
+            }
+            // got error, exit the job
+            Err(_) => return,
+            _ => (),
         }
 
         if last_break.elapsed().as_millis() > 20 {
@@ -89,22 +95,22 @@ impl PendingMgr {
         }
     }
 
-    pub fn exec(&mut self) -> bool {
+    pub fn exec(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
-        if self.check_new_connections() {
+        if self.check_new_connections()? {
             did_work = true;
         }
 
         if !self.connections.is_empty() {
             did_work = true;
-            self.check_pending_connections();
+            self.check_pending_connections()?;
         }
 
-        did_work
+        Ok(did_work)
     }
 
-    fn check_new_connections(&mut self) -> bool {
+    fn check_new_connections(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
         // process a batch of incoming connections
@@ -115,16 +121,17 @@ impl PendingMgr {
                     self.connections.push(PendingItem::new(wss));
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                    panic!("broken recv_pending channel");
+                    error!("pending job recv_pending disconnected");
+                    return Err(());
                 }
                 Err(crossbeam_channel::TryRecvError::Empty) => break,
             }
         }
 
-        did_work
+        Ok(did_work)
     }
 
-    fn check_pending_connections(&mut self) {
+    fn check_pending_connections(&mut self) -> Result<(), ()> {
         let to_check = self.connections.drain(..).collect::<Vec<_>>();
         for item in to_check {
             match item.check() {
@@ -132,12 +139,15 @@ impl PendingMgr {
                     self.connections.push(item);
                 }
                 PendingState::Ready(wss) => {
-                    self.send_ready.f_send(wss);
+                    if !self.send_ready.i_send(wss) {
+                        return Err(());
+                    }
                 }
                 PendingState::Error(url, e) => {
                     warn!("Pending Connection Handshake Failed {} {:?}", url, e);
                 }
             }
         }
+        Ok(())
     }
 }

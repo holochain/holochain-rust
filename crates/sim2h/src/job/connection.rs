@@ -1,5 +1,5 @@
 use crate::*;
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error, ErrorKind};
 
 #[derive(Debug)]
 /// commands control the connection manager job
@@ -47,20 +47,18 @@ impl ConnectionItem {
         }
     }
 
-    pub fn process(&mut self) -> Result<bool> {
-        match self.process_inner() {
-            Ok(did_work) => Ok(did_work),
-            Err(e) => {
-                let err: std::io::Error = e.kind().clone().into();
-                self.send_wss_event
-                    .f_send(WssEvent::Error(self.url.clone(), err.into()));
-                Err(e)
-            }
-        }
+    fn report_err(&mut self, e: std::io::Error) -> Result<(), ()> {
+        self.send_wss_event
+            .i_send(WssEvent::Error(self.url.clone(), e.into()));
+        Err(())
+    }
+
+    fn report_close(&mut self) -> Result<(), ()> {
+        self.report_err(Error::new(ErrorKind::Other, "closing"))
     }
 
     /// allows us to capture any errors and forward the error back
-    fn process_inner(&mut self) -> Result<bool> {
+    fn process(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
         if self.check_commands()? {
@@ -77,12 +75,16 @@ impl ConnectionItem {
     fn send_message(&mut self, frame: WsFrame) {
         if let Err(e) = self.wss.write(frame) {
             error!("error in write to {}: {:?}", self.url, e);
-            self.send_wss_event
-                .f_send(WssEvent::Error(self.url.clone(), e.into()));
+            if !self
+                .send_wss_event
+                .i_send(WssEvent::Error(self.url.clone(), e.into()))
+            {
+                error!("write channel error");
+            }
         }
     }
 
-    fn check_commands(&mut self) -> Result<bool> {
+    fn check_commands(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
         // process a batch of outgoing messages at a time
@@ -93,7 +95,7 @@ impl ConnectionItem {
                     match cmd {
                         WssCommand::CloseConnection(_url) => {
                             // TODO - send closing websocket frame
-                            return Err(Error::new(ErrorKind::Other, "closing"));
+                            self.report_close()?;
                         }
                         WssCommand::SendMessage(_url, frame) => {
                             self.send_message(frame);
@@ -103,7 +105,7 @@ impl ConnectionItem {
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
                     //panic!("broken recv_wss_command channel");
                     // if the channel is disconnected, we got closed
-                    return Err(Error::new(ErrorKind::Other, "closing"));
+                    self.report_close()?;
                 }
                 Err(crossbeam_channel::TryRecvError::Empty) => break,
             }
@@ -112,7 +114,7 @@ impl ConnectionItem {
         Ok(did_work)
     }
 
-    fn check_incoming_messages(&mut self) -> Result<bool> {
+    fn check_incoming_messages(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
         if self.frame.is_none() {
@@ -124,13 +126,17 @@ impl ConnectionItem {
                 did_work = true;
                 let frame = self.frame.take().unwrap();
                 trace!("frame read from {} {:?}", self.url, frame);
-                self.send_wss_event
-                    .f_send(WssEvent::ReceivedData(self.url.clone(), frame));
+                if !self
+                    .send_wss_event
+                    .i_send(WssEvent::ReceivedData(self.url.clone(), frame))
+                {
+                    self.report_close()?;
+                }
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
                 error!("error in read for {}: {:?}", self.url, e);
-                return Err(e);
+                self.report_err(e)?;
             }
         }
 
@@ -177,21 +183,21 @@ impl ConnectionMgr {
         }
     }
 
-    pub fn exec(&mut self) -> bool {
+    pub fn exec(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
-        if self.check_new_connections() {
+        if self.check_new_connections()? {
             did_work = true;
         }
 
-        if self.check_commands() {
+        if self.check_commands()? {
             did_work = true;
         }
 
-        did_work
+        Ok(did_work)
     }
 
-    fn check_new_connections(&mut self) -> bool {
+    fn check_new_connections(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
         for _ in 0..100 {
@@ -208,16 +214,16 @@ impl ConnectionMgr {
                     ));
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                    panic!("broken recv_new_connection channel");
+                    return Err(());
                 }
                 Err(crossbeam_channel::TryRecvError::Empty) => break,
             }
         }
 
-        did_work
+        Ok(did_work)
     }
 
-    fn check_commands(&mut self) -> bool {
+    fn check_commands(&mut self) -> Result<bool, ()> {
         let mut did_work = false;
 
         // process a batch of outgoing messages at a time
@@ -247,13 +253,13 @@ impl ConnectionMgr {
                     }
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                    panic!("broken recv_wss_command channel");
+                    return Err(());
                 }
                 Err(crossbeam_channel::TryRecvError::Empty) => break,
             }
         }
 
-        did_work
+        Ok(did_work)
     }
 }
 
@@ -269,9 +275,15 @@ pub(crate) async fn connection_job(
     let mut last_break = std::time::Instant::now();
     let mut connections = ConnectionMgr::new(recv_new_connection, send_wss_event, recv_wss_command);
     loop {
-        if !connections.exec() {
-            last_break = std::time::Instant::now();
-            futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
+        match connections.exec() {
+            // did no work, sleep for 5 ms
+            Ok(false) => {
+                last_break = std::time::Instant::now();
+                futures_timer::Delay::new(std::time::Duration::from_millis(5)).await;
+            }
+            // got error, exit the job
+            Err(_) => return,
+            _ => (),
         }
 
         if last_break.elapsed().as_millis() > 20 {
@@ -299,17 +311,21 @@ async fn connection_job_inner(
                     match item.process() {
                         Ok(true) => {
                             did_work = true;
-                            send_connection_item.f_send(item);
+                            if !send_connection_item.i_send(item) {
+                                return;
+                            }
                         }
                         Ok(false) => {
-                            send_connection_item.f_send(item);
+                            if !send_connection_item.i_send(item) {
+                                return;
+                            }
                         }
                         // the item should already have sent back the error
                         Err(_) => (),
                     }
                 }
                 Err(crossbeam_channel::TryRecvError::Disconnected) => {
-                    panic!("broken recv_connection_item channel");
+                    return;
                 }
                 Err(crossbeam_channel::TryRecvError::Empty) => break,
             }

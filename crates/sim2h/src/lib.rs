@@ -626,20 +626,25 @@ impl Sim2h {
             let unseen_aspects = AspectList::from(list_data.address_map.clone())
                 .diff(self.get_or_create_space(space_address).read().all_aspects());
             debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-            let mut multi_messages = Vec::new();
-            for entry_address in unseen_aspects.entry_addresses() {
-                if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                    multi_messages.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                        request_id: "".into(),
-                        space_address: space_address.clone(),
-                        provider_agent_id: agent_id.clone(),
-                        entry_address: entry_address.clone(),
-                        aspect_address_list: Some(aspect_address_list.clone()),
-                    }));
+            if unseen_aspects.len() > 0 {
+                debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+                let mut multi_messages = Vec::new();
+                for entry_address in unseen_aspects.entry_addresses() {
+                    if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
+                        multi_messages.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                            request_id: "".into(),
+                            space_address: space_address.clone(),
+                            provider_agent_id: agent_id.clone(),
+                            entry_address: entry_address.clone(),
+                            aspect_address_list: Some(aspect_address_list.clone()),
+                        }));
+                    }
                 }
+                let multi_message = WireMessage::MultiSend(multi_messages);
+                self.send(agent_id.clone(), uri.clone(), &multi_message)
+            } else {
+                debug!("NO UNSEEN ASPECTS")
             }
-            let multi_message = WireMessage::MultiSend(multi_messages);
-            self.send(agent_id.clone(), uri.clone(), &multi_message);
         })
     }
 

@@ -30,7 +30,7 @@ pub struct NetConnectionThread {
     pub endpoint: String,
     pub p2p_endpoint: url::Url,
 }
-
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
     fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
@@ -38,7 +38,7 @@ impl NetSend for NetConnectionThread {
         Ok(())
     }
 }
-
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetConnectionThread {
     /// NetSendThread Constructor.
     /// Spawns a thread that will create and run a NetWorker with the given factory, handler and

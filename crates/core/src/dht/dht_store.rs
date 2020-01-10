@@ -92,6 +92,7 @@ impl AddressableContent for DhtStoreSnapshot {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_get_links_eavi_query<'a>(
     address: Address,
     link_type: String,
@@ -116,6 +117,7 @@ pub fn create_get_links_eavi_query<'a>(
     ))
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl DhtStore {
     // LifeCycle
     // =========

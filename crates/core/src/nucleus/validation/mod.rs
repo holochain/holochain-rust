@@ -72,6 +72,7 @@ impl From<ValidationError> for HolochainError {
 ///
 /// All of this actually happens in the functions of the sub modules. This function is the
 /// main validation entry point and, like a workflow, stays high-level.
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_entry(
     entry: Entry,
     link: Option<Address>,
@@ -127,6 +128,7 @@ pub async fn validate_entry(
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn entry_to_validation_data(
     context: Arc<Context>,
     entry: &Entry,
@@ -183,6 +185,7 @@ pub fn entry_to_validation_data(
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_entry_with_header(
     context: Arc<Context>,
     address: &Address,

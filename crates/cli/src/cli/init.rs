@@ -16,6 +16,7 @@ use std::{
     path::PathBuf,
 };
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn create_test_file(
     test_folder_path: &PathBuf,
     test_file_name: &str,

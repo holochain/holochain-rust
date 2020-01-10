@@ -19,6 +19,7 @@ use std::{pin::Pin, sync::Arc};
 ///
 /// Returns a future that resolves to Option<ValidationPackage> (or HolochainError).
 /// If that is None this means that we couldn't get a validation package from the source.
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_validation_package(
     header: ChainHeader,
     context: &Arc<Context>,
@@ -41,6 +42,7 @@ pub struct GetValidationPackageFuture {
     address: Address,
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 

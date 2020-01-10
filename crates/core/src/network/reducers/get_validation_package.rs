@@ -10,6 +10,7 @@ use std::time::{Duration, SystemTime};
 // Should probably also be configurable via config or env vars
 const GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS: u64 = 10000;
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
@@ -22,7 +23,7 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
 
     send_message(network_state, source_address, direct_message)
 }
-
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_get_validation_package(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -49,7 +50,7 @@ pub fn reduce_get_validation_package(
         .get_validation_package_timeouts
         .insert(entry_address, timeout);
 }
-
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_get_validation_package_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,

@@ -15,6 +15,7 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_respond_query_inner(
     network_state: &mut NetworkState,
     network_query_result: &NetworkQueryResult,

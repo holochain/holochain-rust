@@ -32,6 +32,7 @@ pub enum WireMessage {
     StatusResponse(StatusData),
 }
 
+[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl WireMessage {
     pub fn message_type(&self) -> String {
         String::from(match self {

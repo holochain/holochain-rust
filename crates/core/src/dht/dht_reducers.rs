@@ -23,6 +23,7 @@ type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<DhtStore> {
     // Get reducer
     let reducer = match resolve_reducer(action_wrapper) {
@@ -39,6 +40,7 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 }
 
 /// Maps incoming action to the correct reducer
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -50,6 +52,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_commit_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -65,6 +68,7 @@ pub(crate) fn reduce_commit_entry(
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_hold_aspect(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -147,6 +151,7 @@ pub(crate) fn reduce_hold_aspect(
 }
 
 #[allow(dead_code)]
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_get_links(
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
@@ -157,6 +162,7 @@ pub(crate) fn reduce_get_links(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_queue_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -184,6 +190,7 @@ pub fn reduce_queue_holding_workflow(
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Option<DhtStore> {
     let pruned_queue = old_store
         .queued_holding_workflows
@@ -208,6 +215,7 @@ pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Op
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_remove_queued_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,

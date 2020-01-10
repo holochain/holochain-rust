@@ -176,6 +176,7 @@ pub struct CloudwatchLogsOptions {
     pub query_args: QueryArgs,
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl CloudWatchLogger {
     /// Query the cloudwatch logger given a start and stop time interval.
     /// Produces a raw vector of result field rows (each as a vector).
@@ -395,6 +396,7 @@ impl CloudWatchLogger {
 
 const PUBLISH_CHUNK_SIZE: usize = 10;
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl MetricPublisher for CloudWatchLogger {
     fn publish(&mut self, metric: &Metric) {
         self.metrics_to_publish.push(metric.clone());
@@ -406,6 +408,7 @@ impl MetricPublisher for CloudWatchLogger {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl CloudWatchLogger {
     fn publish_internal(&mut self) {
         let log_events = self

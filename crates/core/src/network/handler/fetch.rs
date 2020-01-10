@@ -12,6 +12,7 @@ use std::{collections::HashSet, sync::Arc};
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let address = get_dht_data.entry_address.clone();
     let mut aspects: HashSet<EntryAspect> = HashSet::new();

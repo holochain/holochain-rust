@@ -32,6 +32,7 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
+[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
     env_logger::init();
 

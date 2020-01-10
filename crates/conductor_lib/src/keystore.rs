@@ -114,6 +114,7 @@ fn make_passphrase_check(
     encrypt_with_passphrase_buf(&mut check_buf, passphrase, hash_config)
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Keystore {
     /// Create a new keystore.
     /// This will query `passphrase_manager` immediately to set a passphrase for the keystore.

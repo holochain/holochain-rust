@@ -5,6 +5,7 @@ use crate::{
 };
 use std::sync::Arc;
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn check_network_processes_for_timeouts(context: Arc<Context>) {
     let state = context.state().expect("Couldn't get state in timeout job");
     for (key, (time, duration)) in state.network().query_timeouts.iter() {

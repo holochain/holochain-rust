@@ -8,6 +8,7 @@ use std::{
     path::PathBuf,
 };
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>, quiet: bool) -> DefaultResult<()> {
     let passphrase = passphrase.unwrap_or_else(|| {
         if !quiet {

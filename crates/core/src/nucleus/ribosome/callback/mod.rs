@@ -63,6 +63,7 @@ impl FromStr for Callback {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Callback {
     // cannot test this because PartialEq is not implemented for fns
     #[cfg_attr(tarpaulin, skip)]
@@ -83,6 +84,7 @@ impl Callback {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Defn for Callback {
     fn as_str(&self) -> &'static str {
         match *self {
@@ -170,6 +172,7 @@ impl From<RibosomeEncodedValue> for CallbackResult {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     match ribosome::run_dna(
         Some(call.clone().parameters.to_bytes()),
@@ -186,6 +189,7 @@ pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> Callb
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn call(
     context: Arc<Context>,
     zome: &str,

@@ -13,6 +13,7 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn remove_link_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,

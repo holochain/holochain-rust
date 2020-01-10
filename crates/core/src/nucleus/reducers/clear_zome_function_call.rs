@@ -4,6 +4,7 @@ use crate::{
     state::State,
 };
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_clear_zome_function_call(
     nucleus_state: &mut NucleusState,
     _root_state: &State,

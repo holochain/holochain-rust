@@ -57,6 +57,7 @@ impl PartialEq for NetworkState {
     }
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl NetworkState {
     pub fn new() -> Self {
         NetworkState {

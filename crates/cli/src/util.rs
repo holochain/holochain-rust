@@ -8,6 +8,7 @@ use std::{
     process::{Command, Stdio},
 };
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
     let pretty_command = format!("{} {}", bin.green(), args.join(" ").cyan());
 
@@ -65,6 +66,7 @@ pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult
 }
 
 /// Helper method for getting the standard dna file name built from the directory name and extension
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn std_dna_file_name(path: &PathBuf) -> DefaultResult<String> {
     let dir_name = file_name_string(path)?;
     Ok(format!("{}.{}", dir_name, DNA_EXTENSION))
@@ -73,6 +75,7 @@ pub fn std_dna_file_name(path: &PathBuf) -> DefaultResult<String> {
 pub const DIST_DIR_NAME: &str = "dist";
 
 /// Helper method for obtaining the path to the dist directory, and creating it if it doesn't exist
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
     // create dist folder
     let dist_path = path.join(&DIST_DIR_NAME);
@@ -84,11 +87,13 @@ pub fn get_dist_path(path: &PathBuf) -> DefaultResult<PathBuf> {
     Ok(dist_path)
 }
 
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn std_package_path(path: &PathBuf) -> DefaultResult<PathBuf> {
     Ok(get_dist_path(path)?.join(std_dna_file_name(path)?))
 }
 
 /// Helper method for obtaining the file name of a path as a String
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn file_name_string(path: &PathBuf) -> DefaultResult<String> {
     let file_name = path
         .file_name()
@@ -103,6 +108,7 @@ pub fn file_name_string(path: &PathBuf) -> DefaultResult<String> {
 /// Takes in extra contextual info as strings, and returns a bool
 /// which should indicate whether the caller should continue with execution
 /// or perform a graceful and early exit
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn check_for_cargo(use_case: &str, extra_help: Option<Vec<&str>>) -> DefaultResult<bool> {
     match Command::new("cargo").stdout(Stdio::null()).status() {
         // no problems checking, and cargo is installed

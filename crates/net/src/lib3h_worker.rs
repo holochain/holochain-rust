@@ -33,6 +33,7 @@ impl Lib3hWorker {
 }
 
 /// Constructors
+[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Lib3hWorker {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn with_wss_transport(handler: NetHandler, real_config: EngineConfig) -> NetResult<Self> {

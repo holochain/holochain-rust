@@ -21,14 +21,13 @@ members = [
   "crates/sim1h",
   "crates/sim2h",
   "crates/sim2h_server",
-  "crates/wasm_utils",
-  "crates/new-relic-proc-macro"
+  "crates/wasm_utils"
 ]
 exclude = [
   "test_utils",
   "app_spec",
   "app_spec_proc_macro",
-  "nodejs_conductor/native"
+  "nodejs_conductor/native",
 ]
 
 [patch.crates-io]

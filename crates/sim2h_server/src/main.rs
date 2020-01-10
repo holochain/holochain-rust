@@ -35,7 +35,6 @@ struct Cli {
 #[new_relic_proc_macro::trace("SIM2H_SERVER","MAIN","PROCESSISING")]
 fn main() {
     env_logger::init();
-
     let args = Cli::from_args();
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
@@ -53,7 +52,6 @@ fn main() {
             redundant_count: args.sharding,
         });
     }
-
     loop 
     {
         let result = sim2h.process();

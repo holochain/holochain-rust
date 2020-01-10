@@ -32,7 +32,7 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
-#[new_relic_proc_macro::trace("SIM2H_SERVER","MAIN","PROCESSISING")]
+#[new_relic_proc_macro::trace("SIM2H_SERVER", "MAIN", "PROCESSISING")]
 fn main() {
     env_logger::init();
     let args = Cli::from_args();
@@ -52,8 +52,7 @@ fn main() {
             redundant_count: args.sharding,
         });
     }
-    loop 
-    {
+    loop {
         let result = sim2h.process();
         if let Err(e) = result {
             if e.to_string().contains("Bind error:") {

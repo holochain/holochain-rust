@@ -194,6 +194,10 @@ impl Space {
 #[derive(Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
 impl AspectList {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     /// Returns an AspectList list that contains every entry aspect
     /// in self that is not in other.
     pub fn diff(&self, other: &AspectList) -> AspectList {

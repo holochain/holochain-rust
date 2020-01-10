@@ -455,6 +455,11 @@ impl Sim2hWorker {
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
             WireMessage::Pong => {}
             WireMessage::Lib3hToClient(m) => self.to_core.push(Lib3hServerProtocol::from(m)),
+            WireMessage::MultiSend(messages) => {
+                for m in messages {
+                    self.to_core.push(Lib3hServerProtocol::from(m));
+                }
+            }
             WireMessage::ClientToLib3hResponse(m) => {
                 self.to_core.push(Lib3hServerProtocol::from(m))
             }

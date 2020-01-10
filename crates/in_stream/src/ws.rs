@@ -301,14 +301,14 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
         log::trace!(
             "read from {} with connection state: {:?}",
             self.remote_url,
-            self.state
+            self.state,
         );
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
             Some(state) => match state {
                 WssState::Ready(wss) => {
                     let r = wss.read_message();
-                    log::trace!("read result from {}: {:?}", self.remote_url, r);
+                    log::trace!("read result from {}: {:?}", self.remote_url, r,);
                     match r {
                         Ok(msg) => {
                             data.assume(msg);

@@ -161,13 +161,24 @@ impl InStreamTcp {
 
     fn priv_process(&mut self) -> Result<()> {
         if let Some(cdata) = &mut self.connecting {
-            if let Ok(_) = self.stream.connect(&cdata.addr) {
-                self.connecting = None;
-            } else {
-                if let Some(timeout) = cdata.connect_timeout {
-                    if std::time::Instant::now() >= timeout {
-                        return Err(ErrorKind::TimedOut.into());
+            match self.stream.connect(&cdata.addr) {
+                Err(e) => {
+                    if let Some(code) = e.raw_os_error() {
+                        // `Socket is already connected` : )
+                        if code == 56 {
+                            self.connecting = None;
+                        }
                     }
+                }
+                Ok(_) => {
+                    self.connecting = None;
+                }
+            }
+        }
+        if let Some(cdata) = &mut self.connecting {
+            if let Some(timeout) = cdata.connect_timeout {
+                if std::time::Instant::now() >= timeout {
+                    return Err(ErrorKind::TimedOut.into());
                 }
             }
         }

@@ -119,8 +119,11 @@ impl Keystore {
     /// This will query `passphrase_manager` immediately to set a passphrase for the keystore.
     pub fn new(
         passphrase_manager: Arc<PassphraseManager>,
-        hash_config: Option<PwHashConfig>,
+        mut hash_config: Option<PwHashConfig>,
     ) -> HcResult<Self> {
+        if hash_config.is_none() {
+            hash_config = test_hash_config()
+        }
         Ok(Keystore {
             passphrase_check: make_passphrase_check(
                 &mut passphrase_manager.get_passphrase()?,
@@ -157,7 +160,7 @@ impl Keystore {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let mut keystore: Keystore = serde_json::from_str(&contents)?;
-        keystore.hash_config = hash_config;
+        keystore.hash_config = hash_config.or_else(|| test_hash_config());
         keystore.passphrase_manager = Some(passphrase_manager);
         Ok(keystore)
     }
@@ -848,14 +851,14 @@ pub mod tests {
 
         assert_eq!(
             key_bundle.sign_keys.public(),
-            "HcSCIowJEUHintsxps7dnz5V38ypdDoadU986V476InyYicyWQBx937Y8dxQrgi"
+            "HcSCIcOIYdE5spsmimrFfD9um6Pe7p9piu6g36TsaP55Us4docRdyj4dAnmbaui"
         );
         assert_eq!(
             key_bundle.enc_keys.public(),
             "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         );
 
-        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "4qBbA4Bs+5Z7GLrOY67lUEtr5PX8MnPzhFwGZsKrUn4JqLjJuLorQuBSj/NfHE677kT4bPJRA7e5x0NooDunQw==".to_string());
         assert_eq!(
             base64::encode(&**key_bundle.enc_keys.private().read_lock()),
             "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()

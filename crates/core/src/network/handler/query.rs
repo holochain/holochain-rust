@@ -104,10 +104,11 @@ fn get_links(
                         "Single Entry required for Get Entry".to_string(),
                     )),
                 })
-                .unwrap_or_else(|_| {
-                    Err(HolochainError::ErrorGeneric(
-                        "Could Not Get Entry for Link Data".to_string(),
-                    ))
+                .unwrap_or_else(|e| {
+                    Err(HolochainError::ErrorGeneric(format!(
+                        "Could not get entry for Link Data {:?}",
+                        e
+                    )))
                 })
         })
         .partition(Result::is_ok);
@@ -170,7 +171,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
         JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
-            let links = get_links(
+            match get_links(
                 &context,
                 query_data.entry_address.clone().into(),
                 link_type.clone(),
@@ -180,14 +181,24 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                     GetLinksNetworkQuery::Links(get_headers) => get_headers.headers,
                     _ => false,
                 },
-            )
-            .expect("Could not get_links from dht node");
-            let links_result = match query {
-                GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
-                GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
-            };
-            let respond_links = NetworkQueryResult::Links(links_result, link_type, tag);
-            ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
+            ) {
+                Ok(links) => {
+                    let links_result = match query {
+                        GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
+                        GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
+                    };
+                    let respond_links = NetworkQueryResult::Links(links_result, link_type, tag);
+                    ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
+                }
+                Err(err) => {
+                    log_error!(
+                        context,
+                        "net: Error ({:?}) getting links from dht node",
+                        err,
+                    );
+                    return;
+                }
+            }
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone().into());

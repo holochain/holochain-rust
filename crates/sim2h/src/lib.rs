@@ -46,7 +46,7 @@ use log::*;
 use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     convert::TryFrom,
     sync::Arc,
 };
@@ -55,6 +55,8 @@ use holochain_locksmith::Mutex;
 use holochain_metrics::{
     config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
 };
+
+pub mod sim2h_context;
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -623,7 +625,7 @@ impl Sim2h {
         list_data: &EntryListData,
     ) {
         with_latency_publishing!("sim2h-handle-unseen_aspects", self.metric_publisher, || {
-            let unseen_aspects = AspectList::from(list_data.address_map.clone())
+            let unseen_aspects = AspectList::from(im::HashMap::from(&list_data.address_map))
                 .diff(self.get_or_create_space(space_address).read().all_aspects());
             debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
             for entry_address in unseen_aspects.entry_addresses() {
@@ -739,19 +741,19 @@ impl Sim2h {
                         .get_or_create_space(&space_address)
                         .read()
                         .all_aspects()
-                        .diff(&AspectList::from(list_data.address_map)),
+                        .diff(&AspectList::from(im::HashMap::from(list_data.address_map))),
                     DhtAlgorithm::NaiveSharding {redundant_count} => self
                         .get_or_create_space(&space_address)
                         .read()
                         .aspects_in_shard_for_agent(agent_id, redundant_count)
-                        .diff(&AspectList::from(list_data.address_map))
+                        .diff(&AspectList::from(im::HashMap::from(list_data.address_map)))
                 };
 
                 if aspects_missing_at_node.entry_addresses().count() > 0 {
                     warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
 
                     // Cache info about what this agent is missing so we can make sure it got it
-                    let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
+                    let missing_hashes: im::HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
                     if missing_hashes.len() > 0 {
                         let mut space = self
                             .get_or_create_space(&space_address)
@@ -1025,7 +1027,7 @@ impl Sim2h {
                 .cloned()
                 .map(|aspect_data| aspect_data.aspect_address)
                 .collect::<Vec<_>>();
-            let mut map = HashMap::new();
+            let mut map = im::HashMap::new();
             map.insert(entry_data.entry_address.clone(), aspect_addresses);
             let aspect_list = AspectList::from(map);
             debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());

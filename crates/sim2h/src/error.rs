@@ -29,6 +29,11 @@ impl From<std::io::Error> for Sim2hError {
         Sim2hError(format!("{:?}", err))
     }
 }
+impl From<futures::channel::oneshot::Canceled> for Sim2hError {
+    fn from(err: futures::channel::oneshot::Canceled) -> Self {
+        Sim2hError(format!("{:?}", err))
+    }
+}
 impl fmt::Display for Sim2hError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)

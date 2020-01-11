@@ -10,7 +10,7 @@ use lib3h_protocol::{
     types::{AspectHash, EntryHash},
     uri::Lib3hUri,
 };
-use std::collections::{HashMap, HashSet};
+use im::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {
@@ -23,6 +23,27 @@ pub struct Space {
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
+}
+
+impl std::fmt::Debug for Space {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Space")
+            .field("agents", &self.agents)
+            .field("all_aspect_hashes", &self.all_aspects_hashes)
+            .field("missing_aspects", &self.missing_aspects)
+            .finish()
+    }
+}
+
+impl Clone for Space {
+    fn clone(&self) -> Self {
+        Self {
+            crypto: self.crypto.box_clone(),
+            agents: self.agents.clone(),
+            all_aspects_hashes: self.all_aspects_hashes.clone(),
+            missing_aspects: self.missing_aspects.clone(),
+        }
+    }
 }
 
 impl Space {
@@ -191,7 +212,7 @@ impl Space {
 }
 
 // TODO: unify with AspectMap
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
 impl AspectList {
     /// Returns an AspectList list that contains every entry aspect
@@ -199,12 +220,7 @@ impl AspectList {
     pub fn diff(&self, other: &AspectList) -> AspectList {
         let self_set = HashSet::<(EntryHash, AspectHash)>::from(self);
         let other_set = HashSet::<(EntryHash, AspectHash)>::from(other);
-        AspectList::from(
-            &self_set
-                .difference(&other_set)
-                .cloned()
-                .collect::<HashSet<(EntryHash, AspectHash)>>(),
-        )
+        AspectList::from(&self_set.difference(other_set))
     }
 
     pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
@@ -256,7 +272,7 @@ impl AspectList {
         AspectList::from(
             self.0
                 .iter()
-                .filter(|(entry_hash, _)| filter_fn(*entry_hash))
+                .filter(|(entry_hash, _)| filter_fn(entry_hash))
                 .map(|(e, v)| (e.clone(), v.clone()))
                 .collect::<HashMap<EntryHash, Vec<AspectHash>>>(),
         )

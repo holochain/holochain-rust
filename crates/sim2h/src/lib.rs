@@ -26,6 +26,7 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use futures::future::FutureExt;
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
@@ -45,11 +46,7 @@ use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    sync::Arc,
-};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{
@@ -57,6 +54,7 @@ use holochain_metrics::{
 };
 
 pub mod sim2h_context;
+use sim2h_context::*;
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -126,6 +124,7 @@ type OpenConnectionItem = (
 
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
+    sim2h_context: Sim2hContextRef,
     pub bound_uri: Option<Lib3hUri>,
     connection_states: RwLock<HashMap<Lib3hUri, ConnectionStateItem>>,
     spaces: HashMap<SpaceHash, RwLock<Space>>,
@@ -149,8 +148,11 @@ impl Sim2h {
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
 
+        let sim2h_context = task_context_thread_pool(crypto.box_clone());
+
         let mut sim2h = Sim2h {
             crypto,
+            sim2h_context,
             bound_uri: None,
             connection_states: RwLock::new(HashMap::new()),
             spaces: HashMap::new(),
@@ -378,6 +380,22 @@ impl Sim2h {
                     self.get_or_create_space(&data.space_address)
                         .write()
                         .join_agent(data.agent_id.clone(), uri.clone())?;
+
+                    let future = self
+                        .sim2h_context
+                        .state()
+                        .join_agent(
+                            data.space_address.clone(),
+                            data.agent_id.clone(),
+                            uri.clone(),
+                        )
+                        .map(|r| {
+                            if let Err(e) = r {
+                                error!("join_agent error: {:?}", e);
+                            }
+                        });
+                    self.sim2h_context.spawn(future);
+
                     info!(
                         "Agent {:?} @ {} joined space {:?}",
                         data.agent_id, uri, data.space_address
@@ -683,6 +701,15 @@ impl Sim2h {
                 {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
+
+                let future = self.sim2h_context.state().lookup_joined(
+                    space_address.clone(),
+                    dm_data.to_agent_id.clone(),
+                );
+                self.sim2h_context.spawn(async move {
+                    println!("LU JOINED: {:?}", future.await);
+                });
+
                 let to_url = self
                     .lookup_joined(space_address, &dm_data.to_agent_id)
                     .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;

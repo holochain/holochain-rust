@@ -1,15 +1,16 @@
-use std::sync::Arc;
-use lib3h_crypto_api::CryptoSystem;
 use futures::{
-    future::{Future, FutureExt},
     executor::ThreadPoolBuilder,
+    future::{Future, FutureExt},
 };
+use lib3h_crypto_api::CryptoSystem;
+use std::sync::Arc;
 
 mod state;
 use state::*;
 
 /// spawn task fn lets us abstract the executor implementation
-pub type Sim2hContextSpawnFn = Arc<dyn Fn(futures::future::BoxFuture<'static, ()>) + 'static + Send + Sync>;
+pub type Sim2hContextSpawnFn =
+    Arc<dyn Fn(futures::future::BoxFuture<'static, ()>) + 'static + Send + Sync>;
 
 /// cheaply clone-able context object that lets us share our
 /// task spawning capabilities, crypto system, state, etc
@@ -24,10 +25,7 @@ pub type Sim2hContextRef = Arc<Sim2hContext>;
 
 impl Sim2hContext {
     /// create a new sim2h context instance
-    pub fn new(
-        spawn_fn: Sim2hContextSpawnFn,
-        crypto: Box<dyn CryptoSystem>,
-    ) -> Sim2hContextRef {
+    pub fn new(spawn_fn: Sim2hContextSpawnFn, crypto: Box<dyn CryptoSystem>) -> Sim2hContextRef {
         Arc::new(Self {
             spawn_fn: spawn_fn.clone(),
             crypto: crypto.box_clone(),
@@ -37,7 +35,8 @@ impl Sim2hContext {
 
     /// spawn a new future task into our executor
     pub fn spawn<F>(&self, future: F)
-        where F: Future<Output = ()> + Send + 'static
+    where
+        F: Future<Output = ()> + Send + 'static,
     {
         (self.spawn_fn)(future.boxed());
     }
@@ -47,14 +46,9 @@ impl Sim2hContext {
         self.crypto.as_ref()
     }
 
-    /// read-only state access
+    /// access to sim2h context state data
     pub fn state(&self) -> &Sim2hStateRef {
         &self.state
-    }
-
-    /// mutable state access
-    pub fn state_mut(&mut self) -> &Sim2hStateRef {
-        &mut self.state
     }
 }
 

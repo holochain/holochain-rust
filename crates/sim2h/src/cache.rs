@@ -4,13 +4,13 @@ use crate::{
     naive_sharding::{entry_location, naive_sharding_should_store},
     AgentId,
 };
+use im::{HashMap, HashSet};
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     types::{AspectHash, EntryHash},
     uri::Lib3hUri,
 };
-use im::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {

@@ -3,7 +3,8 @@ use crate::error::Sim2hError;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
 
-pub const WIRE_VERSION: u32 = 1;
+pub type WireMessageVersion = u32;
+pub const WIRE_VERSION: WireMessageVersion = 2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {
@@ -20,6 +21,13 @@ pub struct StatusData {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HelloData {
+    pub redundant_count: u64,
+    pub version: u32,
+    pub extra: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireMessage {
     ClientToLib3h(ClientToLib3h),
     ClientToLib3hResponse(ClientToLib3hResponse),
@@ -29,6 +37,8 @@ pub enum WireMessage {
     Err(WireError),
     Ping,
     Pong,
+    Hello(WireMessageVersion),
+    HelloResponse(HelloData),
     Status,
     StatusResponse(StatusData),
 }
@@ -40,6 +50,8 @@ impl WireMessage {
             WireMessage::Pong => "Pong",
             WireMessage::Status => "Status",
             WireMessage::StatusResponse(_) => "StatusResponse",
+            WireMessage::Hello(_) => "Hello",
+            WireMessage::HelloResponse(_) => "HelloResponse",
             WireMessage::ClientToLib3h(ClientToLib3h::Bootstrap(_)) => "[C>L]Bootstrap",
             WireMessage::ClientToLib3h(ClientToLib3h::FetchEntry(_)) => "[C>L]FetchEntry",
             WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => "[C>L]JoinSpace",
@@ -191,6 +203,22 @@ pub mod tests {
             "\"{\\\"Err\\\":{\\\"Other\\\":\\\"\\\\\\\"fake_error\\\\\\\"\\\"}}\"",
             format!("{}", opaque_msg)
         );
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+    }
+    #[test]
+    pub fn test_wire_message_version() {
+        let msg = WireMessage::Hello(1);
+        let opaque_msg: Opaque = msg.clone().into();
+        assert_eq!("\"{\\\"Hello\\\":1}\"", format!("{}", opaque_msg));
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+    }
+    #[test]
+    pub fn test_wire_message_ping() {
+        let msg = WireMessage::Ping;
+        let opaque_msg: Opaque = msg.clone().into();
+        assert_eq!("\"\\\"Ping\\\"\"", format!("{}", opaque_msg));
         let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
         assert_eq!(roundtrip_msg, msg);
     }

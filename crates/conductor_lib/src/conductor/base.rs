@@ -1146,7 +1146,7 @@ impl Conductor {
     /// and
     /// - dna_hash_computed_from_file: from the hash computed from the loaded DNA of the file.dna
     fn check_dna_consistency_from_all_sources(
-        ctx: &holochain_core::context::Context,
+        ctx: &holochain_core::context::ConductorContext,
         dna_hash_from_conductor_config: &HashString,
         dna_hash_computed: &HashString,
         dna_hash_computed_from_file: &HashString,

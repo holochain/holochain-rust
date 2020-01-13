@@ -59,7 +59,6 @@ pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
-    network: Arc<NetworkState>,
     pub conductor_api: ConductorApi,
 }
 
@@ -78,7 +77,6 @@ impl State {
                 context.agent_id.address(),
             )),
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
-            network: Arc::new(NetworkState::new()),
             conductor_api: context.conductor_api.clone(),
         }
     }
@@ -114,7 +112,6 @@ impl State {
             nucleus: Arc::new(nucleus_state),
             agent: Arc::new(agent_state),
             dht: Arc::new(dht_store),
-            network: Arc::new(NetworkState::new()),
             conductor_api: context.conductor_api.clone(),
         }
     }
@@ -152,11 +149,6 @@ impl State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
             dht: crate::dht::dht_reducers::reduce(Arc::clone(&self.dht), &action_wrapper),
-            network: crate::network::reducers::reduce(
-                Arc::clone(&self.network),
-                &self,
-                &action_wrapper,
-            ),
             conductor_api: self.conductor_api.clone(),
         }
     }
@@ -171,10 +163,6 @@ impl State {
 
     pub fn dht(&self) -> Arc<DhtStore> {
         Arc::clone(&self.dht)
-    }
-
-    pub fn network(&self) -> Arc<NetworkState> {
-        Arc::clone(&self.network)
     }
 
     pub fn try_from_snapshots(
@@ -324,16 +312,6 @@ impl StateWrapper {
 
     pub fn dht(&self) -> Arc<DhtStore> {
         Arc::clone(&self.state.as_ref().expect("Tried to use dropped state").dht)
-    }
-
-    pub fn network(&self) -> Arc<NetworkState> {
-        Arc::clone(
-            &self
-                .state
-                .as_ref()
-                .expect("Tried to use dropped state")
-                .network,
-        )
     }
 
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {

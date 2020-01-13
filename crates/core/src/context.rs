@@ -78,24 +78,88 @@ pub struct InstanceStats {
     pub offline: bool,
 }
 
+pub struct ConductorContext {
+    pub(crate) instance_name: String,
+    pub agent_id: AgentId,
+    pub persister: Arc<RwLock<dyn Persister>>,
+    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+    pub p2p_config: P2pConfig,
+    pub conductor_api: ConductorApi,
+    pub state_dump_logging: bool,
+    pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+}
+
+impl ConductorContext {
+    // test_check_conductor_api() is used to inject a conductor_api with a working
+    // mock of agent/sign to be used in tests.
+    // There are two different implementations of this function below which get pulled
+    // in depending on if "test" is in the build config, or not.
+    // This allows unit tests of core to not have to deal with a conductor_api.
+    #[cfg(not(test))]
+    fn test_check_conductor_api(
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        _agent_id: AgentId,
+    ) -> Arc<RwLock<IoHandler>> {
+        // If you get here through this panic make sure that the context passed into the instance
+        // gets created with a real conductor API. In test config it will be populated with mock API
+        // that implements agent/sign with the mock_signer. We need this for testing but should
+        // never use that code in production!
+        // Hence the two different cases here.
+        conductor_api.expect("Context can't be created without conductor API")
+    }
+
+    #[cfg(test)]
+    fn test_check_conductor_api(
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        agent_id: AgentId,
+    ) -> Arc<RwLock<IoHandler>> {
+        conductor_api.unwrap_or_else(|| Arc::new(RwLock::new(mock_conductor_api(agent_id))))
+    }
+
+    pub fn new(
+        instance_name: &str,
+        agent_id: AgentId,
+        persister: Arc<RwLock<dyn Persister>>,
+        chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        p2p_config: P2pConfig,
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        signal_tx: Option<SignalSender>,
+        state_dump_logging: bool,
+        metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+    ) -> Self {
+        ConductorContext {
+            instance_name: instance_name.to_owned(),
+            agent_id: agent_id.clone(),
+            persister,
+            chain_storage,
+            dht_storage,
+            eav_storage: eav,
+            p2p_config,
+            conductor_api: ConductorApi::new(Self::test_check_conductor_api(
+                conductor_api,
+                agent_id,
+            )),
+            state_dump_logging,
+            metric_publisher,
+        }
+    }
+}
+
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like persister
 /// but also the store of the instance that gets injected before passing on the context
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    pub(crate) instance_name: String,
-    pub agent_id: AgentId,
-    pub persister: Arc<RwLock<dyn Persister>>,
-    state: Option<Arc<RwLock<StateWrapper>>>,
-    pub action_channel: Option<Sender<ActionWrapper>>,
-    pub observer_channel: Option<Sender<Observer>>,
-    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-    pub p2p_config: P2pConfig,
+    state: Arc<RwLock<StateWrapper>>,
+    pub network: Arc<NetworkState>,
+    pub action_channel: Sender<ActionWrapper>,
     pub conductor_api: ConductorApi,
-    pub(crate) signal_tx: Option<Sender<Signal>>,
+    pub(crate) signal_tx: Sender<Signal>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
     thread_pool: ThreadPool,
@@ -166,41 +230,6 @@ impl Context {
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_with_channels(
-        instance_name: &str,
-        agent_id: AgentId,
-        persister: Arc<RwLock<dyn Persister>>,
-        action_channel: Option<Sender<ActionWrapper>>,
-        signal_tx: Option<Sender<Signal>>,
-        observer_channel: Option<Sender<Observer>>,
-        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-        p2p_config: P2pConfig,
-        state_dump_logging: bool,
-        metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
-    ) -> Result<Context, HolochainError> {
-        Ok(Context {
-            instance_name: instance_name.to_owned(),
-            agent_id: agent_id.clone(),
-            persister,
-            state: None,
-            action_channel,
-            signal_tx,
-            observer_channel,
-            chain_storage: cas.clone(),
-            dht_storage: cas,
-            eav_storage: eav,
-            p2p_config,
-            conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
-            instance_is_alive: Arc::new(AtomicBool::new(true)),
-            state_dump_logging,
-            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
-            redux_wants_write: Arc::new(AtomicBool::new(false)),
-            metric_publisher,
-        })
     }
 
     /// Returns the name of this context instance.

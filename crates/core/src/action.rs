@@ -4,7 +4,6 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
         query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },
@@ -125,9 +124,6 @@ pub enum Action {
     /// Adds an entry aspect to the local DHT shard.
     /// Does not validate, assumes referenced entry is valid.
     HoldAspect(EntryAspect),
-
-    //action for updating crudstatus
-    CrudStatus((EntryWithHeader, CrudStatus)),
 
     // ----------------
     // Network actions:

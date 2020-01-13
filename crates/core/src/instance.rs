@@ -37,6 +37,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use crate::network::state::NetworkState;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
@@ -48,6 +49,7 @@ pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60)
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<StateWrapper>>,
+    network: Arc<NetworkState>,
     action_channel: Option<Sender<ActionWrapper>>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
@@ -166,11 +168,13 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
-    pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
+    pub fn initialize_context(self, context: Arc<Context>) -> Arc<Context> {
         let mut sub_context = (*context).clone();
+        sub_context.set_instance(Arc::new(RwLock::new(self)))
         sub_context.set_state(self.state.clone());
         sub_context.action_channel = self.action_channel.clone();
         sub_context.observer_channel = self.observer_channel.clone();
+        sub_context.network = self.network.clone();
         Arc::new(sub_context)
     }
 
@@ -391,6 +395,7 @@ impl Instance {
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
+            network: Arc::new(NetworkState::new()),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -404,6 +409,7 @@ impl Instance {
     pub fn from_state(state: State, context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(StateWrapper::from(state))),
+            network: Arc::new(NetworkState::new()),
             action_channel: None,
             observer_channel: None,
             scheduler_handle: None,
@@ -428,6 +434,10 @@ impl Instance {
             .try_write()
             .ok_or_else(|| HolochainError::new("Could not get lock on persister"))?
             .save(&state)
+    }
+
+    pub fn network(&self) -> Arc<NetworkState> {
+        self.network.clone()
     }
 
     #[allow(clippy::needless_lifetimes)]
@@ -554,42 +564,6 @@ pub mod tests {
     ) -> Arc<Context> {
         let (context, _) = test_context_and_logger_with_in_memory_network(agent_name, network_name);
         context
-    }
-
-    /// create a test context
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_channels(
-        agent_name: &str,
-        action_channel: &Sender<ActionWrapper>,
-        observer_channel: &Sender<Observer>,
-        network_name: Option<&str>,
-    ) -> Arc<Context> {
-        let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        Arc::new(
-            Context::new_with_channels(
-                "Test-context-with-channels-instance",
-                agent,
-                Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-                Some(action_channel.clone()),
-                None,
-                Some(observer_channel.clone()),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                // TODO should bootstrap nodes be set here?
-                test_memory_network_config(network_name),
-                false,
-                Arc::new(RwLock::new(
-                    holochain_metrics::DefaultMetricPublisher::default(),
-                )),
-            )
-            .unwrap(),
-        )
     }
 
     #[cfg_attr(tarpaulin, skip)]

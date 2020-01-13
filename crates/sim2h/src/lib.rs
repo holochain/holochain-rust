@@ -39,7 +39,9 @@ use lib3h_protocol::{
 };
 use url2::prelude::*;
 
-pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
+pub use wire_message::{
+    HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
+};
 
 use in_stream::*;
 use log::*;
@@ -116,11 +118,12 @@ pub enum DhtAlgorithm {
 }
 
 type ConnectionStateItem = (String, ConnectionState);
-type OpenConnectionItem = (
-    String, // uuid
-    Arc<Mutex<ConnectionJob>>,
-    crossbeam_channel::Sender<WsFrame>,
-);
+struct OpenConnectionItem {
+    version: WireMessageVersion,
+    uuid: String,
+    job: Arc<Mutex<ConnectionJob>>,
+    sender: crossbeam_channel::Sender<WsFrame>,
+}
 
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
@@ -208,8 +211,15 @@ impl Sim2h {
                     }
                     let uuid = nanoid::simple();
                     open_lifecycle("adding conn job", &uuid, &url);
-                    self.open_connections
-                        .insert(url, (uuid, job.clone(), outgoing_send));
+                    self.open_connections.insert(
+                        url,
+                        OpenConnectionItem {
+                            version: 1, // assume version 1 until we get a Hello
+                            uuid,
+                            job: job.clone(),
+                            sender: outgoing_send,
+                        },
+                    );
                     self.pool.push_job(Box::new(job));
                 }
             }
@@ -437,7 +447,13 @@ impl Sim2h {
         with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
             trace!("disconnect entered");
 
-            if let Some((uuid, con, _outgoing_send)) = self.open_connections.remove(uri) {
+            if let Some(OpenConnectionItem {
+                version: _,
+                uuid,
+                job: con,
+                sender: _,
+            }) = self.open_connections.remove(uri)
+            {
                 open_lifecycle("disconnect", &uuid, uri);
                 con.f_lock().stop();
             }
@@ -522,7 +538,7 @@ impl Sim2h {
                 self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
                 return Ok(());
             }
-            if message == WireMessage::Status {
+            if let WireMessage::Status = message {
                 debug!("Sending StatusResponse in response to Status");
                 self.send(
                     signer.clone(),
@@ -535,6 +551,25 @@ impl Sim2h {
                             DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
                         },
                         version: WIRE_VERSION,
+                    }),
+                );
+                return Ok(());
+            }
+            if let WireMessage::Hello(version) = message {
+                debug!("Sending HelloResponse in response to Hello({})", version);
+                if let Some(conn) = self.open_connections.get_mut(uri) {
+                    conn.version = version;
+                }
+                self.send(
+                    signer.clone(),
+                    uri.clone(),
+                    &WireMessage::HelloResponse(HelloData {
+                        redundant_count: match self.dht_algorithm {
+                            DhtAlgorithm::FullSync => 0,
+                            DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                        },
+                        version: WIRE_VERSION,
+                        extra: None,
                     }),
                 );
                 return Ok(());
@@ -626,19 +661,24 @@ impl Sim2h {
             let unseen_aspects = AspectList::from(list_data.address_map.clone())
                 .diff(self.get_or_create_space(space_address).read().all_aspects());
             debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-            for entry_address in unseen_aspects.entry_addresses() {
-                if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
-                        FetchEntryData {
+            if unseen_aspects.len() > 0 {
+                debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+                let mut multi_messages = Vec::new();
+                for entry_address in unseen_aspects.entry_addresses() {
+                    if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
+                        multi_messages.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
                             request_id: "".into(),
                             space_address: space_address.clone(),
                             provider_agent_id: agent_id.clone(),
                             entry_address: entry_address.clone(),
                             aspect_address_list: Some(aspect_address_list.clone()),
-                        },
-                    ));
-                    self.send(agent_id.clone(), uri.clone(), &wire_message);
+                        }));
+                    }
                 }
+                let multi_message = WireMessage::MultiSend(multi_messages);
+                self.send(agent_id.clone(), uri.clone(), &multi_message)
+            } else {
+                debug!("NO UNSEEN ASPECTS")
             }
         })
     }
@@ -824,12 +864,13 @@ impl Sim2h {
                         return Ok(())
                     }
                     let url = maybe_url.unwrap();
+                    let mut multi_messages = Vec::new();
                     for aspect in fetch_result.entry.aspect_list {
                         self
                             .get_or_create_space(&space_address)
                             .write()
                             .remove_missing_aspect(&to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
-                        let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
+                        multi_messages.push(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
                                 request_id: "".into(),
                                 space_address: space_address.clone(),
@@ -838,8 +879,9 @@ impl Sim2h {
                                 entry_aspect: aspect,
                             },
                         ));
-                        self.send(to_agent_id.clone(), url.clone(), &store_message);
                     }
+                    let store_message = WireMessage::MultiSend(multi_messages);
+                    self.send(to_agent_id, url, &store_message);
                 }
 
                 Ok(())
@@ -1030,6 +1072,7 @@ impl Sim2h {
             let aspect_list = AspectList::from(map);
             debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
+            let mut multi_messages = Vec::new();
             for aspect in entry_data.aspect_list {
                 // 1. Add hashes to our global list of all aspects in this space:
                 {
@@ -1046,19 +1089,19 @@ impl Sim2h {
                 }
 
                 // 2. Create store message
-                let store_message = WireMessage::Lib3hToClient(
-                    Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+                multi_messages.push(Lib3hToClient::HandleStoreEntryAspect(
+                    StoreEntryAspectData {
                         request_id: "".into(),
                         space_address: space_address.clone(),
                         provider_agent_id: provider.clone(),
                         entry_address: entry_data.entry_address.clone(),
                         entry_aspect: aspect,
-                    }),
-                );
-
-                // 3. Send store message to selected nodes
-                self.broadcast(&store_message, dht_agents.clone());
+                    },
+                ));
             }
+            let store_message = WireMessage::MultiSend(multi_messages);
+            // 3. Send store message to selected nodes
+            self.broadcast(&store_message, dht_agents);
         })
     }
 
@@ -1123,17 +1166,42 @@ impl Sim2h {
                 }
             }
 
-            let payload: Opaque = msg.clone().into();
-
             match self.open_connections.get_mut(&uri) {
                 None => {
                     error!("FAILED TO SEND, NO ROUTE: {}", uri);
                     return;
                 }
-                Some((uuid, _con, outgoing_send)) => {
+                Some(OpenConnectionItem {
+                    version,
+                    uuid,
+                    job: _,
+                    sender: outgoing_send,
+                }) => {
                     open_lifecycle("send", uuid, &uri);
-                    if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                        self.disconnect(&uri);
+
+                    if (version > &mut 1)
+                        || match msg {
+                            WireMessage::MultiSend(_) => false,
+                            _ => true,
+                        }
+                    {
+                        let payload: Opaque = msg.clone().into();
+
+                        if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                            self.disconnect(&uri);
+                        }
+                    } else {
+                        // version 1 can't handle multi send so send them all individually
+                        if let WireMessage::MultiSend(messages) = msg {
+                            for msg in messages {
+                                let payload: Opaque =
+                                    WireMessage::Lib3hToClient(msg.clone()).into();
+                                if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                                    self.disconnect(&uri);
+                                    return;
+                                }
+                            }
+                        }
                     }
                 }
             }

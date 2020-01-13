@@ -4,8 +4,10 @@
 //! even including an entry being marked as deleted.
 
 use crate::eav::EntityAttributeValueIndex;
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 
-use eav::Attribute;
+use crate::eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
 use holochain_persistence_api::{

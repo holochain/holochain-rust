@@ -1,14 +1,15 @@
 //! holochain_core_types::dna::wasm is a module for managing webassembly code
 //!  - within the in-memory dna struct
 //!  - and serialized to json
-use backtrace::Backtrace;
-
 use crate::error::HolochainError;
+use backtrace::Backtrace;
 use base64;
+use log::debug;
 use serde::{
     self,
     de::{Deserializer, Visitor},
     ser::Serializer,
+    Deserialize, Serialize,
 };
 use std::{
     fmt,
@@ -41,7 +42,7 @@ impl Deref for ModuleArc {
     }
 }
 impl fmt::Debug for ModuleArc {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ModuleMutex")
     }
 }
@@ -67,7 +68,7 @@ where
         type Value = Vec<u8>;
 
         /// we only want to accept strings
-        fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        fn expecting(&self, formatter: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
             formatter.write_str("string")
         }
 
@@ -122,7 +123,7 @@ fn empty_module() -> Arc<RwLock<Option<ModuleArc>>> {
 }
 
 impl fmt::Debug for DnaWasm {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "<<<DNA WASM CODE>>>")
     }
 }

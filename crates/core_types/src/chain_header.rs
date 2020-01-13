@@ -11,6 +11,8 @@ use crate::{
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
 };
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 

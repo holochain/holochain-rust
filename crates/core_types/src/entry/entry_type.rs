@@ -1,5 +1,7 @@
-use error::HolochainError;
+use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 use std::{
     convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},
@@ -153,7 +155,7 @@ impl From<&'static str> for EntryType {
 }
 
 impl Display for EntryType {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", String::from(self.to_owned()))
     }
 }

@@ -11,9 +11,11 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
+use holochain_json_derive::DefaultJson;
 use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
+use serde::{Deserialize, Serialize};
 
 use serde_json::Error as SerdeError;
 use std::{
@@ -77,7 +79,7 @@ impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
 }
 
 impl fmt::Display for CoreError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Holochain Core error: {}\n  --> {}:{}\n",
@@ -135,7 +137,7 @@ impl From<rust_base58::base58::FromBase58Error> for HolochainError {
 }
 
 impl fmt::Display for HolochainError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ErrorGeneric(err_msg) => write!(f, "{}", err_msg),
             CryptoError(crypto_error) => write!(f, "{}", crypto_error),

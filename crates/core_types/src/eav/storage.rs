@@ -1,5 +1,7 @@
-use eav::{eavi::EntityAttributeValueIndex, query::EaviQuery};
-use error::{HcResult, HolochainError};
+use crate::{
+    eav::{eavi::EntityAttributeValueIndex, query::EaviQuery},
+    error::{HcResult, HolochainError},
+};
 use objekt;
 use std::{
     collections::BTreeSet,
@@ -25,7 +27,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// - Some(Value) = requires the given value (e.g. all entities referencing an Address)
     fn fetch_eavi(
         &self,
-        query: &EaviQuery,
+        query: &EaviQuery<'_>,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
 
     // @TODO: would like to do this, but can't because of the generic type param
@@ -34,7 +36,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     //     I: Iterator<Item = EntityAttributeValueIndex>;
 }
 
-clone_trait_object!(EntityAttributeValueStorage);
+objekt::clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug, Default)]
 pub struct ExampleEntityAttributeValueStorage {
@@ -60,7 +62,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
     fn fetch_eavi(
         &self,
-        query: &EaviQuery,
+        query: &EaviQuery<'_>,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let lock = self.storage.read()?;
         let set = (*lock).clone();

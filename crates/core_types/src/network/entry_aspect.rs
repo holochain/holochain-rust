@@ -1,6 +1,8 @@
 use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use serde::{Deserialize, Serialize};
 use std::{
     convert::{Into, TryFrom},
     fmt,
@@ -106,7 +108,7 @@ fn format_header(header: &ChainHeader) -> String {
     )
 }
 impl fmt::Debug for EntryAspect {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EntryAspect::Content(entry, header) => write!(
                 f,

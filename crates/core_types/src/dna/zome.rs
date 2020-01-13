@@ -9,10 +9,12 @@ use crate::{
     },
     entry::entry_type::EntryType,
 };
+use holochain_json_derive::DefaultJson;
+use serde::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
-use dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
+use crate::dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
 
 /// Represents the "config" object on a "zome".

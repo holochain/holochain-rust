@@ -1,9 +1,9 @@
 //! File holding all the structs for handling entry types defined by DNA.
 
-use dna::zome::ZomeEntryTypes;
-use entry::entry_type::EntryType;
+use crate::{dna::zome::ZomeEntryTypes, entry::entry_type::EntryType};
 use holochain_json_api::{error::JsonError, json::JsonString};
-use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
+use holochain_json_derive::DefaultJson;
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
 /// Enum for Zome EntryType "sharing" property.

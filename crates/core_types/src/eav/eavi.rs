@@ -3,6 +3,7 @@
 //! being used to define relationships between AddressableContent values.
 //! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
 
+use holochain_json_derive::DefaultJson;
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
@@ -13,6 +14,8 @@ use holochain_persistence_api::{
     },
     error::{PersistenceError, PersistenceResult},
 };
+use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
@@ -71,7 +74,7 @@ impl From<AttributeError> for HolochainError {
 }
 
 impl fmt::Display for Attribute {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Attribute::CrudStatus => write!(f, "crud-status"),
             Attribute::CrudLink => write!(f, "crud-link"),

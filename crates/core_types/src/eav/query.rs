@@ -1,4 +1,4 @@
-use eav::eavi::Attribute;
+use crate::eav::eavi::Attribute;
 
 /// Represents a set of filtering operations on the EAVI store.
 pub type EaviQuery<'a> = holochain_persistence_api::eav::query::EaviQuery<'a, Attribute>;

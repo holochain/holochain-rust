@@ -6,7 +6,7 @@ use lib3h_crypto_api::CryptoSystem;
 use std::sync::Arc;
 
 mod state;
-use state::*;
+pub use state::*;
 
 /// spawn task fn lets us abstract the executor implementation
 pub type Sim2hContextSpawnFn =
@@ -49,6 +49,11 @@ impl Sim2hContext {
     /// access to sim2h context state data
     pub fn state(&self) -> &Sim2hStateRef {
         &self.state
+    }
+
+    /// DELETE ME - temporary direct access to state for iteration
+    pub fn delete_me_block_lock_state(&self) -> futures::lock::MutexGuard<'_, Sim2hStateInner> {
+        self.state.delete_me_block_lock()
     }
 }
 

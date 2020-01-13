@@ -28,9 +28,8 @@ enum StateWriteProtocol {
 }
 
 pub struct Sim2hStateInner {
-    #[allow(dead_code)]
-    spaces: HashMap<SpaceHash, Space>,
-    crypto: Box<dyn CryptoSystem>,
+    pub spaces: HashMap<SpaceHash, Space>,
+    pub crypto: Box<dyn CryptoSystem>,
 }
 
 impl Sim2hStateInner {
@@ -118,6 +117,10 @@ impl Sim2hState {
             .boxed(),
         );
         out
+    }
+
+    pub fn delete_me_block_lock(&self) -> futures::lock::MutexGuard<'_, Sim2hStateInner> {
+        futures::executor::block_on(self.inner.lock())
     }
 
     pub fn join_agent(

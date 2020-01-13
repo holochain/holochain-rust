@@ -98,7 +98,7 @@ impl Job {
         println!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
-
+        println!("Await successfull");
         let out = Self {
             agent_id,
             pub_key: Arc::new(Mutex::new(pub_key)),
@@ -111,6 +111,7 @@ impl Job {
 
     /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
+        println!("Sending wire message to sim2h: {:?}", message);
         let payload: Opaque = message.into();
         let payload_buf: Box<dyn lib3h_crypto_api::Buffer> = Box::new(payload.clone().as_bytes());
         let sig = base64::encode(

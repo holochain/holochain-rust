@@ -74,6 +74,10 @@ impl ConnectionJob {
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
+                trace!(
+                    "run_result: read from {} in connection",
+                    self.wss.remote_url()
+                );
                 let frame = self.frame.take().unwrap();
                 trace!("frame read from {} {:?}", self.wss.remote_url(), frame);
                 self.report_msg(Ok(frame));

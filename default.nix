@@ -43,8 +43,6 @@ with holonix.pkgs;
   LIBCLANG_PATH="${holonix.pkgs.llvmPackages.libclang}/lib";
   hardeningDisable = [ "fortify" ];
 
-  NEW_RELIC_LICENSE_KEY="725a86a9c804a8a16894ae25af31d166c310NRAL";
-
   buildInputs = [ holonix.pkgs.libiconv holonix.pkgs.pcre holonix.pkgs.cmake holonix.pkgs.clang]
    ++ holonix.shell.buildInputs
 

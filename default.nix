@@ -39,7 +39,11 @@ with holonix.pkgs;
     ''
     ];
 
-  buildInputs = [ holonix.pkgs.libiconv ]
+  # Needed so bindgen can find libclang.so
+  LIBCLANG_PATH="${holonix.pkgs.llvmPackages.libclang}/lib";
+  hardeningDisable = [ "fortify" ];
+
+  buildInputs = [ holonix.pkgs.libiconv holonix.pkgs.pcre holonix.pkgs.cmake holonix.pkgs.clang]
    ++ holonix.shell.buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {

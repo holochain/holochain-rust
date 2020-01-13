@@ -71,7 +71,7 @@ pub trait ConductorAdmin {
     ) -> Result<(), HolochainError>;
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorAdmin for Conductor {
     /// Installs a DNA package from the file system to the conductor
     /// If copy=true it will also copy the DNA package to the conductors default

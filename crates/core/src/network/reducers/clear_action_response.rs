@@ -4,7 +4,7 @@ use crate::{
     state::State,
 };
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_clear_action_response(
     network_state: &mut NetworkState,
     _root_state: &State,

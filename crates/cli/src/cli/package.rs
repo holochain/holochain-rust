@@ -28,7 +28,7 @@ const CARGO_FILE_NAME: &str = "Cargo.toml";
 
 pub type Object = Map<String, Value>;
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultResult<bool> {
     let toml: Value = toml::from_str(cargo_toml)?;
     let dependancies = toml
@@ -48,7 +48,7 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
 
 struct Packager {}
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 impl Packager {
     fn new() -> Packager {
         Packager {}
@@ -261,7 +261,7 @@ impl Packager {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn package(output: PathBuf, properties: serde_json::Value) -> DefaultResult<()> {
     Packager::package(output, properties)
 }

@@ -8,7 +8,7 @@ use holochain_core_types::{
 use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_from_agent_chain(
     context: &Arc<Context>,
     address: &Address,
@@ -26,7 +26,7 @@ pub fn get_entry_from_agent_chain(
     agent.chain_store().get(address)
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: &Address,
@@ -34,7 +34,7 @@ pub(crate) fn get_entry_from_dht(
     context.state().unwrap().dht().get(address)
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn get_entry_crud_meta_from_dht(
     context: &Arc<Context>,
     address: &Address,
@@ -98,7 +98,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_with_meta(
     context: &Arc<Context>,
     address: Address,

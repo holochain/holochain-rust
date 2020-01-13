@@ -5,7 +5,7 @@ use crate::{
 };
 use std::time::Duration;
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_prune(
     network_state: &mut NetworkState,
     _root_state: &State,

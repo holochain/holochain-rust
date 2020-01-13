@@ -9,7 +9,7 @@ use lib3h_protocol::{
     data_types::DirectMessageData as Lib3hDirectMessageData, protocol_client::Lib3hClientProtocol,
 };
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
@@ -38,7 +38,7 @@ fn inner(
     send(network_state, protocol_object)
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_send_direct_message(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -56,7 +56,7 @@ pub fn reduce_send_direct_message(
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_send_direct_message_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,

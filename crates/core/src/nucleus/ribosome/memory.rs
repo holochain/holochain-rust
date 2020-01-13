@@ -31,7 +31,7 @@ pub struct WasmPageManager {
 /// Return code of 0 means success, while any other value means a failure and gives the error code.
 /// In the future, to handle bigger memory needs, we could do same with an i64 instead
 /// and handle multiple memory Pages.
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl WasmPageManager {
     pub fn new(wasm_instance: &ModuleRef) -> Self {
         // get wasm memory reference from module

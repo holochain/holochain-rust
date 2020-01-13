@@ -14,7 +14,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_entry_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,

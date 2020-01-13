@@ -7,7 +7,7 @@ use holochain_core_types::chain_header::ChainHeader;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::sync::Arc;
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn header_to_string(h: &ChainHeader) -> String {
     format!(
         r#"===========Header===========
@@ -29,7 +29,7 @@ Prev. address: {:?}
     )
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn address_to_content_string(address: &Address, context: Arc<Context>) -> String {
     let maybe_content = address_to_content_and_type(address, context);
     maybe_content
@@ -45,7 +45,7 @@ fn address_to_content_string(address: &Address, context: Arc<Context>) -> String
         })
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn state_dump(context: Arc<Context>) {
     let dump = StateDump::from(context.clone());
 

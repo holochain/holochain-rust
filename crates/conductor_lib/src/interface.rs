@@ -98,7 +98,7 @@ pub struct ConductorApiBuilder {
     io: Box<IoHandler>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorApiBuilder {
     pub fn new() -> Self {
         ConductorApiBuilder {

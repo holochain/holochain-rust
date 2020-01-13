@@ -39,7 +39,7 @@ pub struct AgentState {
     initial_agent_address: Address,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain_store: ChainStore, initial_agent_address: Address) -> AgentState {
@@ -181,7 +181,7 @@ impl From<AgentActionResponse> for Response {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,
@@ -226,7 +226,7 @@ pub fn create_new_chain_header(
 /// Create an entry-with-header for a header.
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
@@ -261,7 +261,7 @@ pub fn create_entry_with_header_for_header(
 /// Intended for use inside the reducer, isolated for unit testing.
 /// callback checks (e.g. validate_commit) happen elsewhere because callback functions cause
 /// action reduction to hang
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_commit_entry(
     agent_state: &mut AgentState,
     root_state: &State,
@@ -293,7 +293,7 @@ fn reduce_commit_entry(
     );
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_prune(agent_state: &mut AgentState, _root_state: &State, action_wrapper: &ActionWrapper) {
     assert_eq!(action_wrapper.action(), &Action::Prune);
 
@@ -316,7 +316,7 @@ fn reduce_prune(agent_state: &mut AgentState, _root_state: &State, action_wrappe
         });
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_clear_action_response(
     agent_state: &mut AgentState,
     _root_state: &State,
@@ -334,7 +334,7 @@ fn reduce_clear_action_response(
 }
 
 /// maps incoming action to the correct handler
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
@@ -345,7 +345,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 }
 
 /// Reduce Agent's state according to provided Action
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(
     old_state: Arc<AgentState>,
     root_state: &State,

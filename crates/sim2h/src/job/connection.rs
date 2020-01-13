@@ -13,7 +13,7 @@ pub(crate) struct ConnectionJob {
     outgoing_recv: crossbeam_channel::Receiver<WsFrame>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl ConnectionJob {
     pub(crate) fn new(
         wss: TcpWss,

@@ -64,7 +64,7 @@ pub struct Observer {
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context

@@ -44,7 +44,7 @@ pub enum ChainStoreQueryResult {
     Headers(Vec<ChainHeader>),
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ChainStore {
     pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
@@ -223,7 +223,7 @@ impl ChainStoreIterator {
 }
 
 /// Follows ChainHeader.link through every previous Entry (of any EntryType) in the chain
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Iterator for ChainStoreIterator {
     type Item = ChainHeader;
 

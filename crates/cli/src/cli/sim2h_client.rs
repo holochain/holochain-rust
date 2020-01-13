@@ -10,7 +10,7 @@ use sim2h::{
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {
     let url = match Url2::try_parse(url_string.clone()) {
         Err(e) => Err(format!(
@@ -85,7 +85,7 @@ struct Job {
     //    wss_connection: InStreamWss<InStreamTls<InStreamTcp>>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 impl Job {
     pub fn new(connect_uri: &Url2) -> Result<Self, String> {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
@@ -134,7 +134,7 @@ impl Job {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(60000))

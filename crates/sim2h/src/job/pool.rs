@@ -21,7 +21,7 @@ lazy_static! {
     };
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Pool {
     pub(crate) fn new() -> Self {
         // make sure if a thread panics, the whole process exits

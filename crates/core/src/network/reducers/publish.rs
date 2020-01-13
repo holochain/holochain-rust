@@ -24,7 +24,7 @@ use lib3h_protocol::{
 use crate::network::actions::Response;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
     let type_hint = ea.type_hint();
     let aspect_address = ea.address();
@@ -39,7 +39,7 @@ pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
 }
 
 /// Send to network a PublishDhtData message
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn publish_entry(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
@@ -61,7 +61,7 @@ fn publish_entry(
 }
 
 /// Send to network a publish request for either delete or update aspect information
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn publish_update_delete_meta(
     network_state: &mut NetworkState,
     orig_entry_address: Address,
@@ -101,7 +101,7 @@ fn publish_update_delete_meta(
 }
 
 /// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn publish_link_meta(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
@@ -138,7 +138,7 @@ fn publish_link_meta(
     )
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_publish_inner(
     network_state: &mut NetworkState,
     root_state: &State,
@@ -183,7 +183,7 @@ fn reduce_publish_inner(
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_publish(
     network_state: &mut NetworkState,
     root_state: &State,

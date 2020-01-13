@@ -15,7 +15,7 @@ pub struct MemListener {
     accept_queue: Vec<MemStream>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl MemListener {
     /// private constructor, you probably want `bind`
     fn priv_new(url: Url2, recv: crossbeam_channel::Receiver<MemStream>) -> Self {
@@ -82,7 +82,7 @@ pub struct MemStream {
     recv_buf: Vec<u8>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl MemStream {
     /// private constructor, you probably want `connect`
     fn priv_new(
@@ -110,7 +110,7 @@ impl MemStream {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Read for MemStream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let mut disconnected = false;
@@ -149,7 +149,7 @@ impl Read for MemStream {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Write for MemStream {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         // if we're still connected, send data to our pair
@@ -192,7 +192,7 @@ struct MemManager {
     listeners: HashMap<Url2, crossbeam_channel::Sender<MemStream>>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl MemManager {
     /// create a new singleton
     fn new() -> Self {

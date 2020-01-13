@@ -9,6 +9,7 @@ extern crate nanoid;
 extern crate serde;
 #[macro_use]
 extern crate lazy_static;
+extern crate newrelic;
 
 #[allow(dead_code)]
 mod naive_sharding;
@@ -139,7 +140,7 @@ pub struct Sim2h {
     metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Sim2h {
     pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
         let pool = Pool::new();

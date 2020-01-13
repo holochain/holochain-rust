@@ -17,7 +17,7 @@ use std::sync::Arc;
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct ReceiveReturnValue(Result<String, String>);
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn receive(
     context: Arc<Context>,
     zome: &str,

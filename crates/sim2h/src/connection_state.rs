@@ -12,7 +12,7 @@ pub enum ConnectionState {
     Joined(SpaceHash, AgentId),
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl ConnectionState {
     pub fn new() -> ConnectionState {
         ConnectionState::Limbo(Box::new(Vec::new()))

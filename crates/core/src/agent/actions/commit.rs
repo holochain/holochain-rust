@@ -14,7 +14,7 @@ use std::{pin::Pin, sync::Arc};
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn commit_entry(
     entry: Entry,
     maybe_link_update_delete: Option<Address>,
@@ -40,7 +40,7 @@ pub struct CommitFuture {
     action: ActionWrapper,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;
 

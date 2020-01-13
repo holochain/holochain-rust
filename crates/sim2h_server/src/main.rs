@@ -1,5 +1,6 @@
 extern crate lib3h_sodium;
 extern crate structopt;
+extern crate newrelic;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
@@ -32,7 +33,7 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
     env_logger::init();
 

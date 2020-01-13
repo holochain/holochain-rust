@@ -40,7 +40,7 @@ pub struct IpcNetWorker {
 }
 
 /// Constructors
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl IpcNetWorker {
     /// Public Constructor with config as a json string
     pub fn new(
@@ -144,7 +144,7 @@ impl IpcNetWorker {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(mut self: Box<Self>) -> NetResult<()> {
@@ -235,7 +235,7 @@ impl NetWorker for IpcNetWorker {
 }
 
 // private
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl IpcNetWorker {
     // Send 'Connect to bootstrap nodes' request to Ipc server
     fn priv_send_connects(&mut self) -> NetResult<()> {

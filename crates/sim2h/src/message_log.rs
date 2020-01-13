@@ -34,7 +34,7 @@ pub struct MessageLogger {
     running: bool,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl MessageLogger {
     pub fn new() -> Self {
         MessageLogger {

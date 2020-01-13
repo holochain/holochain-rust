@@ -11,7 +11,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn dispatch_queue_holding_workflow(
     pending: PendingValidation,
     delay: Option<Duration>,
@@ -23,7 +23,7 @@ pub fn dispatch_queue_holding_workflow(
     dispatch_action(context.action_channel(), action_wrapper);
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn queue_holding_workflow(
     pending: PendingValidation,
     delay: Option<Duration>,
@@ -52,7 +52,7 @@ pub struct QueueHoldingWorkflowFuture {
     pending: PendingValidation,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for QueueHoldingWorkflowFuture {
     type Output = ();
 

@@ -29,7 +29,7 @@ impl Default for MetricPublisherConfig {
     }
 }
 
-[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl MetricPublisherConfig {
     /// Instantiates a new metric publisher given this configuration instance.
     pub fn create_metric_publisher(&self) -> Arc<RwLock<dyn MetricPublisher>> {

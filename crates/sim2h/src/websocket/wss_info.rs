@@ -9,7 +9,7 @@ pub struct WssInfo<T: std::io::Read + std::io::Write + std::fmt::Debug> {
     pub(in crate::websocket) stateful_socket: WebsocketStreamState<T>,
 }
 
-[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl<T: std::io::Read + std::io::Write + std::fmt::Debug> WssInfo<T> {
     pub fn close(&mut self) -> TransportResult<()> {
         if let WebsocketStreamState::ReadyWss(socket) = &mut self.stateful_socket {

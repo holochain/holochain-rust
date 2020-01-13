@@ -41,7 +41,9 @@ use lib3h_protocol::{
 };
 use url2::prelude::*;
 
-pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
+pub use wire_message::{
+    HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
+};
 
 use in_stream::*;
 use log::*;
@@ -128,11 +130,12 @@ struct Sim2hState {
 }
 
 type ConnectionStateItem = (String, ConnectionState);
-type OpenConnectionItem = (
-    String, // uuid
-    Arc<Mutex<ConnectionJob>>,
-    crossbeam_channel::Sender<WsFrame>,
-);
+struct OpenConnectionItem {
+    version: WireMessageVersion,
+    uuid: String,
+    job: Arc<Mutex<ConnectionJob>>,
+    sender: crossbeam_channel::Sender<WsFrame>,
+}
 
 impl Sim2hState {
     // find out if an agent is in a space or not and return its URI
@@ -202,7 +205,13 @@ impl Sim2hState {
         with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
             trace!("disconnect entered");
 
-            if let Some((uuid, con, _outgoing_send)) = self.open_connections.remove(uri) {
+            if let Some(OpenConnectionItem {
+                version: _,
+                uuid,
+                job: con,
+                sender: _,
+            }) = self.open_connections.remove(uri)
+            {
                 open_lifecycle("disconnect", &uuid, uri);
                 con.f_lock().stop();
             }
@@ -291,7 +300,7 @@ impl Sim2hState {
         )
     }
 
-    fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Option<Lib3hUri> {
+    fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Vec<Lib3hUri> {
         with_latency_publishing!("sim2h-send", self.metric_publisher, || {
             match msg {
                 _ => {
@@ -302,18 +311,44 @@ impl Sim2hState {
                 }
             }
 
-            let payload: Opaque = msg.clone().into();
+            let mut to_disconnect = Vec::new();
 
             match self.open_connections.get(&uri) {
                 None => {
                     error!("FAILED TO SEND, NO ROUTE: {}", uri);
-                    return None;
+                    return to_disconnect;
                 }
-                Some((uuid, _con, outgoing_send)) => {
+                Some(OpenConnectionItem {
+                    version,
+                    uuid,
+                    job: _,
+                    sender: outgoing_send,
+                }) => {
                     open_lifecycle("send", uuid, &uri);
-                    if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                        // pass the back out to be disconnected
-                        return Some(uri);
+
+                    if (version > &mut 1)
+                        || match msg {
+                            WireMessage::MultiSend(_) => false,
+                            _ => true,
+                        }
+                    {
+                        let payload: Opaque = msg.clone().into();
+
+                        if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                            // pass the back out to be disconnected
+                            to_disconnect.push(uri.clone());
+                        }
+                    } else {
+                        // version 1 can't handle multi send so send them all individually
+                        if let WireMessage::MultiSend(messages) = msg {
+                            for msg in messages {
+                                let payload: Opaque =
+                                    WireMessage::Lib3hToClient(msg.clone()).into();
+                                if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
+                                    to_disconnect.push(uri.clone());
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -322,7 +357,8 @@ impl Sim2hState {
                 WireMessage::Ping | WireMessage::Pong => {}
                 _ => debug!("sent."),
             }
-            return None;
+
+            return to_disconnect;
         })
     }
 
@@ -439,10 +475,7 @@ impl Sim2hState {
         }
         let url = maybe_url.unwrap();
         let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
-        match self.send(query_target, url, &query_message) {
-            Some(uri) => vec![uri],
-            None => vec![],
-        }
+        self.send(query_target, url, &query_message)
     }
 
     fn build_aspects_from_arbitrary_agent(
@@ -490,13 +523,11 @@ impl Sim2hState {
                                 }),
                             );
                             debug!("SENDING fetch with request ID: {:?}", wire_message);
-                            if let Some(uri) = self.send(
+                            disconnects.append(&mut self.send(
                                 arbitrary_agent.clone(),
                                 random_url.clone(),
                                 &wire_message,
-                            ) {
-                                disconnects.push(uri);
-                            }
+                            ));
                         } else {
                             warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
                         }
@@ -543,9 +574,11 @@ impl Sim2hState {
                         }
                     }
                     let multi_message = WireMessage::MultiSend(multi_messages);
-                    if let Some(uri) = self.send(agent_id.clone(), uri.clone(), &multi_message) {
-                        disconnects.push(uri);
-                    }
+                    disconnects.append(&mut self.send(
+                        agent_id.clone(),
+                        uri.clone(),
+                        &multi_message,
+                    ));
                 } else {
                     debug!("NO UNSEEN ASPECTS")
                 }
@@ -750,10 +783,15 @@ impl Sim2h {
                     }
                     let uuid = nanoid::simple();
                     open_lifecycle("adding conn job", &uuid, &url);
-                    self.state
-                        .write()
-                        .open_connections
-                        .insert(url, (uuid, job.clone(), outgoing_send));
+                    self.state.write().open_connections.insert(
+                        url,
+                        OpenConnectionItem {
+                            version: 1, // assume version 1 until we get a Hello
+                            uuid,
+                            job: job.clone(),
+                            sender: outgoing_send,
+                        },
+                    );
                     self.pool.push_job(Box::new(job));
                     true
                 } else {
@@ -976,7 +1014,7 @@ impl Sim2h {
                 self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
                 return Ok(());
             }
-            if message == WireMessage::Status {
+            if let WireMessage::Status = message {
                 debug!("Sending StatusResponse in response to Status");
                 let (spaces_len, connection_count) = {
                     let state = self.state.read();
@@ -993,6 +1031,28 @@ impl Sim2h {
                             DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
                         },
                         version: WIRE_VERSION,
+                    }),
+                );
+                return Ok(());
+            }
+            if let WireMessage::Hello(version) = message {
+                debug!("Sending HelloResponse in response to Hello({})", version);
+                {
+                    let mut state = self.state.write();
+                    if let Some(conn) = state.open_connections.get_mut(uri) {
+                        conn.version = version;
+                    }
+                }
+                self.send(
+                    signer.clone(),
+                    uri.clone(),
+                    &WireMessage::HelloResponse(HelloData {
+                        redundant_count: match self.dht_algorithm {
+                            DhtAlgorithm::FullSync => 0,
+                            DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                        },
+                        version: WIRE_VERSION,
+                        extra: None,
                     }),
                 );
                 return Ok(());

@@ -556,7 +556,7 @@ impl Sim2h {
                 return Ok(());
             }
             if let WireMessage::Hello(version) = message {
-                debug!("Sending HelloResponse in response to Hello");
+                debug!("Sending HelloResponse in response to Hello({})", version);
                 if let Some(conn) = self.open_connections.get_mut(uri) {
                     conn.version = version;
                 }

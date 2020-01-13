@@ -15,6 +15,7 @@ holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 lib3h_sodium = "=0.0.25"
 holochain_persistence_api = "=0.0.11"
 holochain_tracing_macros = "0.0.4"
+newrelic="0.2"
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

@@ -48,12 +48,8 @@ pub use wire_message::{
 use im::{HashMap, HashSet};
 use in_stream::*;
 use log::*;
-use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{
-    convert::TryFrom,
-    sync::Arc,
-};
+use std::{convert::TryFrom, sync::Arc};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{
@@ -132,7 +128,6 @@ enum PoolTask {
 pub struct Sim2h {
     sim2h_context: Sim2hContextRef,
     pub bound_uri: Option<Lib3hUri>,
-    state: Arc<RwLock<Sim2hState>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
@@ -164,17 +159,9 @@ impl Sim2h {
             spaces: HashMap::new(),
             metric_publisher: metric_publisher.clone(),
         };
-        let state_ = Arc::new(RwLock::new(Sim2hState {
-            crypto: crypto.box_clone(),
-            connection_states: std::collections::HashMap::new(),
-            open_connections: std::collections::HashMap::new(),
-            spaces: HashMap::new(),
-            metric_publisher: metric_publisher.clone(),
-        }));
         let sim2h_context = sim2h_context_thread_pool(crypto.box_clone(), state);
         let mut sim2h = Sim2h {
             sim2h_context,
-            state: state_,
             bound_uri: None,
             pool,
             wss_recv,
@@ -231,7 +218,8 @@ impl Sim2h {
                     }
                     let uuid = nanoid::simple();
                     open_lifecycle("adding conn job", &uuid, &url);
-                    self.state.write().open_connections.insert(
+                    let mut state = self.sim2h_context.delete_me();
+                    state.write().open_connections.insert(
                         url,
                         OpenConnectionItem {
                             version: 1, // assume version 1 until we get a Hello
@@ -351,18 +339,21 @@ impl Sim2h {
                         data.space_address.clone(),
                         data.agent_id.clone(),
                     )?;
-                    let _ = self.state.write().connection_states.insert(
-                        uri.clone(),
-                        // MDD: we are overwriting the existing connection state here, so we keep the same uuid.
-                        // (This could be done more directly with a Hashmap entry update)
-                        (uuid, conn),
-                    );
+                    {
+                        let mut state = self.sim2h_context.delete_me();
+                        let _ = state.write().connection_states.insert(
+                            uri.clone(),
+                            // MDD: we are overwriting the existing connection state here, so we keep the same uuid.
+                            // (This could be done more directly with a Hashmap entry update)
+                            (uuid, conn),
+                        );
 
-                    self.state.write().join_agent(
-                        &data.space_address,
-                        data.agent_id.clone(),
-                        uri.clone(),
-                    )?;
+                        state.write().join_agent(
+                            &data.space_address,
+                            data.agent_id.clone(),
+                            uri.clone(),
+                        )?;
+                    }
                     info!(
                         "Agent {:?} joined space {:?}",
                         data.agent_id, data.space_address
@@ -373,11 +364,14 @@ impl Sim2h {
                         data.agent_id.clone(),
                     );
                     // MDD: why is request_gossiping_list in Sim2hState but not request_authoring_list?
-                    self.state.write().request_gossiping_list(
-                        uri.clone(),
-                        data.space_address.clone(),
-                        data.agent_id.clone(),
-                    );
+                    self.sim2h_context
+                        .delete_me()
+                        .write()
+                        .request_gossiping_list(
+                            uri.clone(),
+                            data.space_address.clone(),
+                            data.agent_id.clone(),
+                        );
                     // MDD: maybe the pending messages shouldn't be handled immediately, but pushed into the queue?
                     debug!("pending messages in join: {}", pending_messages.len());
                     for message in *pending_messages {
@@ -404,14 +398,17 @@ impl Sim2h {
     // get the connection status of an agent
     fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
         with_latency_publishing!("sim2h-get_connection", self.metric_publisher, || {
-            self.state.read().get_connection(uri)
+            self.sim2h_context.delete_me().read().get_connection(uri)
         })
     }
 
     // find out if an agent is in a space or not and return its URI
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
         with_latency_publishing!("sim2h-lookup_joined", self.metric_publisher, || {
-            self.state.read().lookup_joined(space_address, agent_id)
+            self.sim2h_context
+                .delete_me()
+                .read()
+                .lookup_joined(space_address, agent_id)
         })
     }
 
@@ -424,7 +421,8 @@ impl Sim2h {
                 trace!("handle_incoming_connect entered");
                 debug!("New connection from {:?}", uri);
                 if let Some(_old) = self
-                    .state
+                    .sim2h_context
+                    .delete_me()
                     .write()
                     .connection_states
                     .insert(uri.clone(), (nanoid::simple(), ConnectionState::new()))
@@ -465,7 +463,8 @@ impl Sim2h {
             if let WireMessage::Status = message {
                 debug!("Sending StatusResponse in response to Status");
                 let (spaces_len, connection_count) = {
-                    let state = self.state.read();
+                    let state = self.sim2h_context.delete_me();
+                    let state = state.read();
                     (state.spaces.len(), state.open_connections.len())
                 };
                 self.send(
@@ -486,7 +485,8 @@ impl Sim2h {
             if let WireMessage::Hello(version) = message {
                 debug!("Sending HelloResponse in response to Hello({})", version);
                 {
-                    let mut state = self.state.write();
+                    let mut state = self.sim2h_context.delete_me();
+                    let state = state.write();
                     if let Some(conn) = state.open_connections.get_mut(uri) {
                         conn.version = version;
                     }
@@ -523,7 +523,8 @@ impl Sim2h {
                         // MDD: TODO: is it necessary to re-insert the data at the same uri?
                         // didn't we just mutate it in-place?
                         let _ = self
-                            .state
+                            .sim2h_context
+                            .delete_me()
                             .write()
                             .connection_states
                             .insert(uri.clone(), (uuid, agent));
@@ -569,7 +570,7 @@ impl Sim2h {
             match self.tp_recv.try_recv() {
                 Ok(PoolTask::Disconnect(disconnects)) => {
                     for url in disconnects {
-                        self.state.write().disconnect(&url)
+                        self.sim2h_context.delete_me().write().disconnect(&url)
                     }
                 }
                 //            Ok(PoolTask::VerifyPayload(Ok(_))) => {
@@ -629,7 +630,7 @@ impl Sim2h {
                 Err("join message should have been processed elsewhere and can't be proxied".into())
             }
             WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(data)) => {
-                self.state.write().leave(uri, &data)
+                self.sim2h_context.delete_me().write().leave(uri, &data)
             }
 
             // -- Direct Messaging -- //
@@ -671,7 +672,7 @@ impl Sim2h {
                 if (data.provider_agent_id != *agent_id) || (data.space_address != *space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                self.state.write().handle_new_entry_data(data.entry, space_address.clone(), agent_id.clone(), self.dht_algorithm.clone());
+                self.sim2h_context.delete_me().write().handle_new_entry_data(data.entry, space_address.clone(), agent_id.clone(), self.dht_algorithm.clone());
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data)) => {
@@ -694,11 +695,11 @@ impl Sim2h {
                 // Check if the node is missing any aspects
                 let aspects_missing_at_node = match dht_algorithm {
                     DhtAlgorithm::FullSync => self
-                        .state.read().get_space(&space_address)
+                        .sim2h_context.delete_me().read().get_space(&space_address)
                         .all_aspects()
                         .diff(&AspectList::from(HashMap::from(list_data.address_map))),
                     DhtAlgorithm::NaiveSharding {redundant_count} => self
-                        .state.read().get_space(&space_address)
+                        .sim2h_context.delete_me().read().get_space(&space_address)
                         .aspects_in_shard_for_agent(agent_id, redundant_count)
                         .diff(&AspectList::from(HashMap::from(list_data.address_map)))
                 };
@@ -709,14 +710,17 @@ impl Sim2h {
                     // Cache info about what this agent is missing so we can make sure it got it
                     let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
                     if missing_hashes.len() > 0 {
-                        self.state.write().add_missing_aspects(space_address, &agent_id, missing_hashes);
+                        self.sim2h_context.delete_me().write().add_missing_aspects(space_address, &agent_id, missing_hashes);
                     }
 
                     match dht_algorithm {
 
                         DhtAlgorithm::FullSync => {
                             let all_agents_in_space = self
-                                .state.read().get_space(&space_address)
+                                .sim2h_context
+                                .delete_me()
+                                .read()
+                                .get_space(&space_address)
                                 .all_agents()
                                 .keys()
                                 .cloned()
@@ -737,7 +741,9 @@ impl Sim2h {
                             for entry_address in aspects_missing_at_node.entry_addresses() {
                                 let entry_loc = entry_location(self.sim2h_context.box_crypto(), entry_address);
                                 let agent_pool = self
-                                    .state.read()
+                                    .sim2h_context
+                                    .delete_me()
+                                    .read()
                                     .get_space(&space_address)
                                     .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                                     .keys()
@@ -764,7 +770,7 @@ impl Sim2h {
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {
                     debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
-                    self.state.write().handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone(),self.dht_algorithm.clone());
+                    self.sim2h_context.delete_me().write().handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone(),self.dht_algorithm.clone());
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
                     let to_agent_id = AgentPubKey::from(fetch_result.request_id);
@@ -777,7 +783,9 @@ impl Sim2h {
                     let mut multi_messages = Vec::new();
                     for aspect in fetch_result.entry.aspect_list {
                         self
-                            .state.write()
+                            .sim2h_context
+                            .delete_me()
+                            .write()
                             .remove_missing_aspect(space_address, &to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
                         multi_messages.push(Lib3hToClient::HandleStoreEntryAspect(
                             StoreEntryAspectData {
@@ -797,12 +805,13 @@ impl Sim2h {
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
-                    let state = self.state.clone();
+                    let ctx = self.sim2h_context.clone();
                     let tx = self.tp_send.clone();
                     let space_address = space_address.clone();
                     self.threadpool.execute(move || {
                         let disconnects =
-                            state
+                            ctx
+                            .delete_me()
                             .read()
                             .build_query(space_address,query_data,redundant_count);
                         tx.send(PoolTask::Disconnect(disconnects))
@@ -843,17 +852,19 @@ impl Sim2h {
         agent_id: &AgentId,
         list_data: &EntryListData,
     ) {
-        let state = self.state.clone();
+        let ctx = self.sim2h_context.clone();
         let tx = self.tp_send.clone();
         let uri = uri.clone();
         let space_address = space_address.clone();
         let agent_id = agent_id.clone();
         let list_data = list_data.clone();
         self.threadpool.execute(move || {
-            let disconnects =
-                state
-                    .read()
-                    .build_handle_unseen_aspects(uri, space_address, agent_id, list_data);
+            let disconnects = ctx.delete_me().read().build_handle_unseen_aspects(
+                uri,
+                space_address,
+                agent_id,
+                list_data,
+            );
             tx.send(PoolTask::Disconnect(disconnects))
                 .expect("should send");
         });
@@ -870,10 +881,10 @@ impl Sim2h {
             "sim2h-fetch_aspects_from_arbitrary_agent",
             self.metric_publisher,
             || {
-                let state = self.state.clone();
+                let ctx = self.sim2h_context.clone();
                 let tx = self.tp_send.clone();
                 self.threadpool.execute(move || {
-                    let disconnects = state.read().build_aspects_from_arbitrary_agent(
+                    let disconnects = ctx.delete_me().read().build_aspects_from_arbitrary_agent(
                         aspects_to_fetch,
                         for_agent_id,
                         agent_pool,
@@ -887,14 +898,17 @@ impl Sim2h {
     }
 
     fn disconnect(&self, uri: &Lib3hUri) {
-        self.state.write().disconnect(uri);
+        self.sim2h_context.delete_me().write().disconnect(uri);
     }
 
     fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
-        self.state.write().send(agent, uri, msg);
+        self.sim2h_context.delete_me().write().send(agent, uri, msg);
     }
 
     fn retry_sync_missing_aspects(&mut self) {
-        self.state.write().retry_sync_missing_aspects();
+        self.sim2h_context
+            .delete_me()
+            .write()
+            .retry_sync_missing_aspects();
     }
 }

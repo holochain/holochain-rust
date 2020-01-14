@@ -27,6 +27,20 @@ impl Clone for Sim2hContextInner {
     }
 }
 
+pub struct DeleteMe<'lt> {
+    delete_me: futures::lock::MutexGuard<'lt, Sim2hState>,
+}
+
+impl<'lt> DeleteMe<'lt> {
+    pub fn read(&self) -> &Sim2hState {
+        &self.delete_me
+    }
+
+    pub fn write(&mut self) -> &mut Sim2hState {
+        &mut self.delete_me
+    }
+}
+
 /// cheaply clone-able context object that lets us share our
 /// task spawning capabilities, crypto system, state, etc
 pub struct Sim2hContext {
@@ -45,15 +59,9 @@ impl Sim2hContext {
         crypto: Box<dyn CryptoSystem>,
         state: Sim2hState,
     ) -> Sim2hContextRef {
-        let inner = Sim2hContextInner {
-            spawn_fn,
-            crypto,
-        };
+        let inner = Sim2hContextInner { spawn_fn, crypto };
         let state = Sim2hStateMutex::new(inner.clone(), state);
-        Arc::new(Self {
-            inner,
-            state,
-        })
+        Arc::new(Self { inner, state })
     }
 
     #[allow(dead_code)]
@@ -71,9 +79,17 @@ impl Sim2hContext {
         self.inner.crypto.as_ref()
     }
 
+    #[allow(clippy::borrowed_box)]
     /// some apis need the box around it... prefer `crypto()` when possible
     pub fn box_crypto(&self) -> &Box<dyn CryptoSystem> {
         &self.inner.crypto
+    }
+
+    /// DELETE ME - temporary direct access to state for iteration
+    pub fn delete_me(&self) -> DeleteMe {
+        DeleteMe {
+            delete_me: self.state.delete_me_block_lock(),
+        }
     }
 }
 

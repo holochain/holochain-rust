@@ -1,7 +1,5 @@
 use crate::*;
-use futures::{
-    lock::Mutex,
-};
+use futures::lock::Mutex;
 
 pub struct Sim2hStateMutex {
     #[allow(dead_code)]
@@ -15,11 +13,12 @@ pub type Sim2hStateRef = Arc<Sim2hStateMutex>;
 impl Sim2hStateMutex {
     pub fn new(ctx: Sim2hContextInner, state: Sim2hState) -> Sim2hStateRef {
         let inner = Arc::new(Mutex::new(state));
-        let out = Arc::new(Sim2hStateMutex {
-            ctx,
-            inner: inner.clone(),
-        });
+        let out = Arc::new(Sim2hStateMutex { ctx, inner });
         out
+    }
+
+    pub fn delete_me_block_lock(&self) -> futures::lock::MutexGuard<'_, Sim2hState> {
+        futures::executor::block_on(self.inner.lock())
     }
 }
 
@@ -43,7 +42,11 @@ pub struct OpenConnectionItem {
 
 impl Sim2hState {
     // find out if an agent is in a space or not and return its URI
-    pub(crate) fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
+    pub(crate) fn lookup_joined(
+        &self,
+        space_address: &SpaceHash,
+        agent_id: &AgentId,
+    ) -> Option<Lib3hUri> {
         with_latency_publishing!("sim2h-state-lookup_joined", self.metric_publisher, || {
             self.spaces.get(space_address)?.agent_id_to_uri(agent_id)
         })
@@ -518,7 +521,7 @@ impl Sim2hState {
                 .collect::<Vec<_>>();
             let mut map = HashMap::new();
             map.insert(entry_data.entry_address.clone(), aspect_addresses);
-            let aspect_list = AspectList::from(HashMap::from(map));
+            let aspect_list = AspectList::from(map);
             debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
             let mut multi_messages = Vec::new();

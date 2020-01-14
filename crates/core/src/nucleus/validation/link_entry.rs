@@ -5,7 +5,7 @@ use crate::{
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
-    ribosome::callback::links_utils,
+    wasm_engine::callback::links_utils,
 };
 use boolinator::*;
 use holochain_core_types::{

@@ -13,7 +13,7 @@ pub use crate::{
         reducers::reduce,
         state::ZomeFnCallState,
     },
-    ribosome::api::ZomeApiFunction,
+    wasm_engine::api::ZomeApiFunction,
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 use holochain_json_api::json::JsonString;
@@ -123,9 +123,9 @@ pub mod tests {
         },
         nucleus::{
             call_zome_function,
-            ribosome::api::call::tests::setup_test,
             state::{NucleusState, NucleusStatus},
         },
+        wasm_engine::api::call::tests::setup_test,
     };
     use test_utils;
 

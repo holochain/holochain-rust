@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{actions::get_entry::get_entry_from_agent_chain, ZomeFnCall, ZomeFnResult},
-    ribosome::{self, WasmCallData},
+    wasm_engine::{self, WasmCallData},
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
@@ -278,7 +278,7 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
         .name(format!("{:?}", zome_call))
         .spawn(move || {
             // Have Ribosome spin up DNA and call the zome function
-            let call_result = ribosome::run_dna(
+            let call_result = wasm_engine::run_dna(
                 Some(zome_call.clone().parameters.to_bytes()),
                 WasmCallData::new_zome_call(context.clone(), zome_call.clone()),
             );

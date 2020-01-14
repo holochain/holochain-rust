@@ -3,8 +3,10 @@ use crate::{
     content_store::GetContent,
     context::Context,
     entry::CanPublish,
-    ribosome::callback::{validation_package::get_validation_package_definition, CallbackResult},
     state::{State, StateWrapper},
+    wasm_engine::callback::{
+        validation_package::get_validation_package_definition, CallbackResult,
+    },
 };
 use holochain_core_types::{
     chain_header::ChainHeader,

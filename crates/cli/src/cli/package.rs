@@ -1,7 +1,7 @@
 use crate::{config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
-use holochain_core::ribosome::{run_dna, WasmCallData};
+use holochain_core::wasm_engine::{run_dna, WasmCallData};
 use holochain_core_types::dna::Dna;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;

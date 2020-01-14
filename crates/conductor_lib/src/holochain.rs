@@ -97,7 +97,7 @@ use holochain_core::{
     instance::Instance,
     nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
-    ribosome::{run_dna, WasmCallData},
+    wasm_engine::{run_dna, WasmCallData},
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},

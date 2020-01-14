@@ -21,7 +21,9 @@ use crate::{
         actions::build_validation_package::build_validation_package,
         validation::build_from_dht::try_make_validation_package_dht,
     },
-    ribosome::callback::{validation_package::get_validation_package_definition, CallbackResult},
+    wasm_engine::callback::{
+        validation_package::get_validation_package_definition, CallbackResult,
+    },
     workflows::{
         hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
         hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,

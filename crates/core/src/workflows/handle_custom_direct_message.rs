@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
+    wasm_engine::callback::{receive::receive, CallbackParams, CallbackResult},
 };
 
 use holochain_core_types::error::HolochainError;

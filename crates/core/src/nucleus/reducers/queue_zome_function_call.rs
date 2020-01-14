@@ -1,8 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
-    ribosome::MAX_ZOME_CALLS,
     state::State,
+    wasm_engine::MAX_ZOME_CALLS,
 };
 
 /// Reduce AddPendingValidation Action.

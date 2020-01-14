@@ -21,7 +21,7 @@ holochain_persistence_pickle = "=0.0.11"
 holochain_persistence_lmdb = "=0.0.11"
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
-holochain_tracing_macros = "0.0.4"
+holochain_tracing_macros = "0.0.5"
 lib3h = "=0.0.25"
 lib3h_sodium = "=0.0.25"
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }

@@ -15,7 +15,7 @@ holochain_conductor_lib = { version = "=0.0.42-alpha5", path = "../conductor_lib
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
-holochain_tracing_macros = "0.0.4"
+holochain_tracing_macros = "0.0.5"
 newrelic="0.2"
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
 lib3h_crypto_api = "=0.0.25"

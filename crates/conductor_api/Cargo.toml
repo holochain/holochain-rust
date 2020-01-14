@@ -12,7 +12,7 @@ edition = "2018"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_wasm_utils = { version = "=0.0.42-alpha5", path = "../wasm_utils" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
-holochain_tracing_macros = "0.0.4"
+holochain_tracing_macros = "0.0.5"
 newrelic="0.2"
 jsonrpc-core = "=14.0.1"
 jsonrpc-lite = "=0.5.0"

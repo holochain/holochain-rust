@@ -1,6 +1,6 @@
 //! implements caching structures for spaces and aspects
 use crate::*;
-use im::{HashMap, HashSet};
+use im::{HashMap, HashSet, Vector};
 use naive_sharding::naive_sharding_should_store;
 
 #[derive(Debug, Clone)]
@@ -45,7 +45,7 @@ impl Space {
             crypto,
             space_address,
             agents: HashMap::new(),
-            all_aspects_hashes: AspectList::from(HashMap::new()),
+            all_aspects_hashes: AspectList::new(),
             missing_aspects: HashMap::new(),
         }
     }
@@ -96,7 +96,7 @@ impl Space {
         &self,
         agent_id: &AgentId,
         entry_hash: &EntryHash,
-        aspects: &Vec<AspectHash>,
+        aspects: &Vector<AspectHash>,
     ) -> bool {
         let maybe_agent_map = self.missing_aspects.get(agent_id);
         if maybe_agent_map.is_none() {
@@ -271,7 +271,7 @@ impl Space {
                     space_address: self.space_address.clone(),
                     provider_agent_id: agent_id.clone(),
                     entry_address: entry_address.clone(),
-                    aspect_address_list: Some(aspect_address_list.clone()),
+                    aspect_address_list: Some(aspect_address_list.iter().cloned().collect()),
                 }));
             }
         }
@@ -288,7 +288,7 @@ impl Space {
     pub fn get_agent_not_missing_aspects(
         &self,
         entry_hash: &EntryHash,
-        aspects: &Vec<AspectHash>,
+        aspects: &Vector<AspectHash>,
         for_agent_id: &AgentId,
         agent_pool: &[AgentId],
     ) -> Option<AgentId> {
@@ -337,7 +337,9 @@ impl Space {
                             space_address: self.space_address.clone(),
                             provider_agent_id: arbitrary_agent.clone(),
                             entry_address: entry_address.clone(),
-                            aspect_address_list: Some(aspect_address_list.clone()),
+                            aspect_address_list: Some(
+                                aspect_address_list.iter().cloned().collect(),
+                            ),
                         },
                     ));
                     debug!("SENDING fetch with request ID: {:?}", wire_message);
@@ -353,8 +355,12 @@ impl Space {
 
 // TODO: unify with AspectMap
 #[derive(Clone, Debug)]
-pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
+pub struct AspectList(HashMap<EntryHash, Vector<AspectHash>>);
 impl AspectList {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -368,9 +374,9 @@ impl AspectList {
     }
 
     pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
-        let list = self.0.entry(entry_address).or_insert_with(Vec::new);
+        let list = self.0.entry(entry_address).or_insert_with(Vector::new);
         if !list.contains(&aspect_address) {
-            list.push(aspect_address);
+            list.push_back(aspect_address);
         }
     }
 
@@ -378,14 +384,14 @@ impl AspectList {
         self.0.keys()
     }
 
-    pub fn per_entry(&self, entry_address: &EntryHash) -> Option<&Vec<AspectHash>> {
+    pub fn per_entry(&self, entry_address: &EntryHash) -> Option<&Vector<AspectHash>> {
         self.0.get(entry_address)
     }
 
-    pub fn aspect_hashes(&self) -> Vec<AspectHash> {
-        let mut result = Vec::new();
+    pub fn aspect_hashes(&self) -> Vector<AspectHash> {
+        let mut result = Vector::new();
         for (_, aspects) in self.0.iter() {
-            result.append(&mut aspects.clone());
+            result.append(aspects.clone());
         }
         result
     }
@@ -418,14 +424,24 @@ impl AspectList {
                 .iter()
                 .filter(|(entry_hash, _)| filter_fn(entry_hash))
                 .map(|(e, v)| (e.clone(), v.clone()))
-                .collect::<HashMap<EntryHash, Vec<AspectHash>>>(),
+                .collect::<HashMap<EntryHash, Vector<AspectHash>>>(),
         )
+    }
+}
+
+impl From<HashMap<EntryHash, Vector<AspectHash>>> for AspectList {
+    fn from(map: HashMap<EntryHash, Vector<AspectHash>>) -> AspectList {
+        AspectList { 0: map }
     }
 }
 
 impl From<HashMap<EntryHash, Vec<AspectHash>>> for AspectList {
     fn from(map: HashMap<EntryHash, Vec<AspectHash>>) -> AspectList {
-        AspectList { 0: map }
+        let mut out = HashMap::new();
+        for (k, v) in map.iter() {
+            out.insert(k.clone(), Vector::from(v));
+        }
+        AspectList { 0: out }
     }
 }
 
@@ -467,7 +483,7 @@ mod tests {
 
     #[test]
     fn aspect_list_holds_aspects() {
-        let mut list = AspectList::from(HashMap::new());
+        let mut list = AspectList::new();
         assert_eq!(list.pretty_string(), "");
         let entry_hash = EntryHash::from("entry_hash_1");
         let aspect_hash = AspectHash::from("aspect_hash_1");
@@ -572,31 +588,31 @@ mod tests {
         assert!(!space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
-            &vec![aspect_hash_1_1.clone()]
+            &im::vector![aspect_hash_1_1.clone()]
         ));
         space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1_1.clone());
         assert!(space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
-            &vec![aspect_hash_1_1.clone()]
+            &im::vector![aspect_hash_1_1.clone()]
         ));
         space.add_missing_aspect(agent.clone(), entry_hash_2.clone(), aspect_hash_2_1.clone());
         assert!(space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
-            &vec![aspect_hash_1_1.clone()]
+            &im::vector![aspect_hash_1_1.clone()]
         ));
 
         assert!(!space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
-            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+            &im::vector![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
         ));
         space.add_missing_aspect(agent.clone(), entry_hash_1.clone(), aspect_hash_1_2.clone());
         assert!(space.agent_is_missing_all_aspects(
             &agent,
             &entry_hash_1,
-            &vec![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
+            &im::vector![aspect_hash_1_1.clone(), aspect_hash_1_2.clone()]
         ));
     }
 }

@@ -5,7 +5,7 @@ use lib3h_protocol::data_types::*;
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    WireMessage,
+    WireMessage, WIRE_VERSION,
 };
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
@@ -38,6 +38,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
     let mut job = Job::new(&url)?;
     job.send_wire(match message_string.as_ref() {
         "ping" => WireMessage::Ping,
+        "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
         _ => {
             return Err(format!(
@@ -99,7 +100,7 @@ impl Job {
         println!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
-
+        println!("Await successfull");
         let out = Self {
             agent_id,
             pub_key: Arc::new(Mutex::new(pub_key)),
@@ -112,6 +113,7 @@ impl Job {
 
     /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
+        println!("Sending wire message to sim2h: {:?}", message);
         let payload: Opaque = message.into();
         let payload_buf: Box<dyn lib3h_crypto_api::Buffer> = Box::new(payload.clone().as_bytes());
         let sig = base64::encode(

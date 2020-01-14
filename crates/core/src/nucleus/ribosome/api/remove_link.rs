@@ -5,11 +5,11 @@ use crate::{
         actions::query::{query, QueryMethod},
         query::{
             GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
-            NetworkQueryResult,
+            NetworkQueryResult,GetLinkFromRemoteData
         },
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::author_entry::author_entry,
+    workflows::{author_entry::author_entry,get_link_result::get_link_data_from_link_addresses}
 };
 
 use holochain_core_types::{
@@ -92,33 +92,37 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             ribosome_error_code!(WorkflowFailed)
         } else {
             let links = links_result.expect("This is supposed to not fail");
+            println!("link target{:?}",link.target().clone());
             let links = match links {
                 GetLinksNetworkResult::Links(links) => links,
                 _ => return ribosome_error_code!(WorkflowFailed),
             };
-            let filtered_links = links
+            
+            let filtered_links = links.clone()
                 .into_iter()
-                // .map(
-                //     |GetLinkFromRemoteData {
-                //          link_add_address,
-                //          tag,
-                //          ..
-                //      }| {
-                //         // make DHT calls to get the entries for the links
-                //         (
-                //             get_link_data_from_link_addresses(
-                //                 &context,
-                //                 &link_add_address,
-                //                 &tag,
-                //                 false,
-                //             ).unwrap(),
-                //             link_add_address,
-                //         )
-                //     },
-                // )
-                // .filter(|(link_for_filter, _)| &link_for_filter.address == link.target())
-                .map(|response| response.link_add_address)
+                 .map(
+                     |GetLinkFromRemoteData {
+                          link_add_address,
+                          tag,
+                          ..
+                      }| {
+                         // make DHT calls to get the entries for the links
+                         (
+                             get_link_data_from_link_addresses(
+                                 &context,
+                                 &link_add_address,
+                                 &tag,
+                                 false,
+                             ).unwrap(),
+                             link_add_address,
+                         )
+                     },
+                 )
+                 .filter(|(link_for_filter, _)|{println!("link for filter{:?}",link_for_filter.clone());&link_for_filter.target == link.target()})
+                .map(|response| response.1)
                 .collect::<Vec<_>>();
+            println!("filtered links {:?}",links.clone());
+            println!("filtered links {:?}",filtered_links.clone());
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));
 

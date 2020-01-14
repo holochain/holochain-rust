@@ -41,17 +41,6 @@ pub struct OpenConnectionItem {
 }
 
 impl Sim2hState {
-    // find out if an agent is in a space or not and return its URI
-    pub(crate) fn lookup_joined(
-        &self,
-        space_address: &SpaceHash,
-        agent_id: &AgentId,
-    ) -> Option<Lib3hUri> {
-        with_latency_publishing!("sim2h-state-lookup_joined", self.metric_publisher, || {
-            self.spaces.get(space_address)?.agent_id_to_uri(agent_id)
-        })
-    }
-
     // removes an agent from a space
     pub(crate) fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
@@ -89,8 +78,10 @@ impl Sim2hState {
         let clock = std::time::SystemTime::now();
         let contains_space = self.spaces.contains_key(space_address);
         if !contains_space {
-            self.spaces
-                .insert(space_address.clone(), Space::new(self.crypto.box_clone()));
+            self.spaces.insert(
+                space_address.clone(),
+                Space::new(self.crypto.box_clone(), space_address.clone()),
+            );
             info!(
                 "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
                 space_address
@@ -313,185 +304,11 @@ impl Sim2hState {
         )
     }
 
-    /// Get an agent who has at least one of the aspects specified, and who is not the same as for_agent_id.
-    /// `agent_pool` is expected to be randomly shuffled, to ensure that no hotspots are created.
-    pub(crate) fn get_agent_not_missing_aspects(
-        &self,
-        entry_hash: &EntryHash,
-        aspects: &Vec<AspectHash>,
-        for_agent_id: &AgentId,
-        agent_pool: &[AgentId],
-        space_address: &SpaceHash,
-    ) -> Option<AgentId> {
-        let space = self.spaces.get(space_address)?;
-        agent_pool
-            .into_iter()
-            // We ignore all agents that are missing all of the same aspects as well since
-            // they can't help us.
-            .find(|a| {
-                **a != *for_agent_id && !space.agent_is_missing_all_aspects(*a, entry_hash, aspects)
-            })
-            .cloned()
-    }
-
-    pub(crate) fn build_query(
-        &self,
-        space_address: SpaceHash,
-        query_data: QueryEntryData,
-        redundant_count: u64,
-    ) -> Vec<Lib3hUri> {
-        let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
-        let agent_pool = self
-            .get_space(&space_address)
-            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
-            .keys()
-            .cloned()
-            .collect::<Vec<_>>();
-
-        let query_target = if agent_pool.is_empty() {
-            // If there is nobody we could ask, just send the query back
-            query_data.requester_agent_id.clone()
-        } else {
-            let agents_with_all_aspects_for_entry = agent_pool
-                .iter()
-                .filter(|agent| {
-                    !self
-                        .get_space(&space_address)
-                        .agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
-                })
-                .cloned()
-                .collect::<Vec<AgentId>>();
-
-            let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
-                // If there is nobody who as all aspects of an entry, just
-                // ask somebody of that shard:
-                agent_pool
-            } else {
-                agents_with_all_aspects_for_entry
-            };
-
-            let agent_slice = &mut agents_to_sample_from[..];
-            agent_slice.shuffle(&mut thread_rng());
-            agent_slice[0].clone()
-        };
-
-        let maybe_url = self.lookup_joined(&space_address, &query_target);
-        if maybe_url.is_none() {
-            error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
-            return vec![];
-        }
-        let url = maybe_url.unwrap();
-        let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
-        self.send(query_target, url, &query_message)
-    }
-
-    pub(crate) fn build_aspects_from_arbitrary_agent(
-        &self,
-        aspects_to_fetch: AspectList,
-        for_agent_id: AgentId,
-        mut agent_pool: Vec<AgentId>,
-        space_address: SpaceHash,
-    ) -> Vec<Lib3hUri> {
-        with_latency_publishing!(
-            "sim2h-build_aspects_from_arbitrary_agent",
-            self.metric_publisher,
-            || {
-                let agent_pool = &mut agent_pool[..];
-                agent_pool.shuffle(&mut thread_rng());
-                let mut disconnects = Vec::new();
-                for entry_address in aspects_to_fetch.entry_addresses() {
-                    if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
-                        if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
-                            entry_address,
-                            aspect_address_list,
-                            &for_agent_id,
-                            agent_pool,
-                            &space_address,
-                        ) {
-                            debug!(
-                                "FETCHING missing contents from RANDOM AGENT: {}",
-                                arbitrary_agent
-                            );
-
-                            let maybe_url = self.lookup_joined(&space_address, &arbitrary_agent);
-                            if maybe_url.is_none() {
-                                error!("Could not find URL for randomly selected agent. This should not happen!");
-                                return Vec::new();
-                            }
-                            let random_url = maybe_url.unwrap();
-
-                            let wire_message = WireMessage::Lib3hToClient(
-                                Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                    request_id: for_agent_id.clone().into(),
-                                    space_address: space_address.clone(),
-                                    provider_agent_id: arbitrary_agent.clone(),
-                                    entry_address: entry_address.clone(),
-                                    aspect_address_list: Some(aspect_address_list.clone()),
-                                }),
-                            );
-                            debug!("SENDING fetch with request ID: {:?}", wire_message);
-                            disconnects.append(&mut self.send(
-                                arbitrary_agent.clone(),
-                                random_url.clone(),
-                                &wire_message,
-                            ));
-                        } else {
-                            warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
-                        }
-                    }
-                }
-                disconnects
-            }
-        )
-    }
-
     // get the connection status of an agent
     pub(crate) fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
         with_latency_publishing!("sim2h-state-get_connection", self.metric_publisher, || {
             self.connection_states.get(uri).map(|ca| (*ca).clone())
         })
-    }
-
-    pub(crate) fn build_handle_unseen_aspects(
-        &self,
-        uri: Lib3hUri,
-        space_address: SpaceHash,
-        agent_id: AgentId,
-        list_data: EntryListData,
-    ) -> Vec<Lib3hUri> {
-        with_latency_publishing!(
-            "sim2h-build-handle-unseen_aspects",
-            self.metric_publisher,
-            || {
-                let unseen_aspects = AspectList::from(HashMap::from(list_data.address_map))
-                    .diff(self.get_space(&space_address).all_aspects());
-                let mut disconnects = Vec::new();
-                if unseen_aspects.len() > 0 {
-                    debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-                    let mut multi_messages = Vec::new();
-                    for entry_address in unseen_aspects.entry_addresses() {
-                        if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                            multi_messages.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                request_id: "".into(),
-                                space_address: space_address.clone(),
-                                provider_agent_id: agent_id.clone(),
-                                entry_address: entry_address.clone(),
-                                aspect_address_list: Some(aspect_address_list.clone()),
-                            }));
-                        }
-                    }
-                    let multi_message = WireMessage::MultiSend(multi_messages);
-                    disconnects.append(&mut self.send(
-                        agent_id.clone(),
-                        uri.clone(),
-                        &multi_message,
-                    ));
-                } else {
-                    debug!("NO UNSEEN ASPECTS")
-                }
-                disconnects
-            }
-        )
     }
 
     pub(crate) fn handle_new_entry_data(

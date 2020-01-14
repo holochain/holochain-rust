@@ -1,9 +1,8 @@
+use crate::*;
 use futures::{
     executor::ThreadPoolBuilder,
     future::{Future, FutureExt},
 };
-use lib3h_crypto_api::CryptoSystem;
-use std::sync::Arc;
 
 mod state;
 pub use state::*;
@@ -83,6 +82,12 @@ impl Sim2hContext {
     /// some apis need the box around it... prefer `crypto()` when possible
     pub fn box_crypto(&self) -> &Box<dyn CryptoSystem> {
         &self.inner.crypto
+    }
+
+    /// DELETE ME - temporary direct access to clone a space (if it exists)
+    pub fn delete_me_clone_space(&self, space_address: &SpaceHash) -> Option<Space> {
+        let state = self.state.delete_me_block_lock();
+        Some(state.spaces.get(space_address)?.clone())
     }
 
     /// DELETE ME - temporary direct access to state for iteration

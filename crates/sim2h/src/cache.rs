@@ -1,16 +1,7 @@
 //! implements caching structures for spaces and aspects
-use crate::{
-    error::*,
-    naive_sharding::{entry_location, naive_sharding_should_store},
-    AgentId,
-};
+use crate::*;
 use im::{HashMap, HashSet};
-use lib3h::rrdht_util::*;
-use lib3h_crypto_api::CryptoSystem;
-use lib3h_protocol::{
-    types::{AspectHash, EntryHash},
-    uri::Lib3hUri,
-};
+use naive_sharding::naive_sharding_should_store;
 
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {
@@ -20,6 +11,7 @@ pub(crate) struct AgentInfo {
 
 pub struct Space {
     crypto: Box<dyn CryptoSystem>,
+    space_address: SpaceHash,
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
@@ -39,6 +31,7 @@ impl Clone for Space {
     fn clone(&self) -> Self {
         Self {
             crypto: self.crypto.box_clone(),
+            space_address: self.space_address.clone(),
             agents: self.agents.clone(),
             all_aspects_hashes: self.all_aspects_hashes.clone(),
             missing_aspects: self.missing_aspects.clone(),
@@ -47,9 +40,10 @@ impl Clone for Space {
 }
 
 impl Space {
-    pub fn new(crypto: Box<dyn CryptoSystem>) -> Self {
+    pub fn new(crypto: Box<dyn CryptoSystem>, space_address: SpaceHash) -> Self {
         Space {
             crypto,
+            space_address,
             agents: HashMap::new(),
             all_aspects_hashes: AspectList::from(HashMap::new()),
             missing_aspects: HashMap::new(),
@@ -208,6 +202,152 @@ impl Space {
 
     pub fn add_aspect(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
         self.all_aspects_hashes.add(entry_address, aspect_address);
+    }
+
+    pub fn build_query(
+        &self,
+        query_data: QueryEntryData,
+        redundant_count: u64,
+    ) -> Option<(AgentId, Lib3hUri, WireMessage)> {
+        let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
+        let agent_pool = self
+            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let query_target = if agent_pool.is_empty() {
+            // If there is nobody we could ask, just send the query back
+            query_data.requester_agent_id.clone()
+        } else {
+            let agents_with_all_aspects_for_entry = agent_pool
+                .iter()
+                .filter(|agent| {
+                    !self.agent_is_missing_some_aspect_for_entry(agent, &query_data.entry_address)
+                })
+                .cloned()
+                .collect::<Vec<AgentId>>();
+
+            let mut agents_to_sample_from = if agents_with_all_aspects_for_entry.is_empty() {
+                // If there is nobody who as all aspects of an entry, just
+                // ask somebody of that shard:
+                agent_pool
+            } else {
+                agents_with_all_aspects_for_entry
+            };
+
+            let agent_slice = &mut agents_to_sample_from[..];
+            agent_slice.shuffle(&mut thread_rng());
+            agent_slice[0].clone()
+        };
+
+        let maybe_url = self.agent_id_to_uri(&query_target);
+        if maybe_url.is_none() {
+            error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
+            return None;
+        }
+        let url = maybe_url.unwrap();
+        let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
+        Some((query_target, url, query_message))
+    }
+
+    pub fn build_handle_unseen_aspects(
+        &self,
+        uri: Lib3hUri,
+        agent_id: AgentId,
+        list_data: EntryListData,
+    ) -> Option<(AgentId, Lib3hUri, WireMessage)> {
+        let unseen_aspects =
+            AspectList::from(HashMap::from(list_data.address_map)).diff(self.all_aspects());
+        if unseen_aspects.len() > 0 {
+            debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
+        }
+
+        let mut multi_messages = Vec::new();
+        for entry_address in unseen_aspects.entry_addresses() {
+            if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
+                multi_messages.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                    request_id: "".into(),
+                    space_address: self.space_address.clone(),
+                    provider_agent_id: agent_id.clone(),
+                    entry_address: entry_address.clone(),
+                    aspect_address_list: Some(aspect_address_list.clone()),
+                }));
+            }
+        }
+
+        if multi_messages.is_empty() {
+            debug!("NO UNSEEN ASPECTS");
+            return None;
+        }
+
+        let multi_message = WireMessage::MultiSend(multi_messages);
+        Some((agent_id, uri, multi_message))
+    }
+
+    pub fn get_agent_not_missing_aspects(
+        &self,
+        entry_hash: &EntryHash,
+        aspects: &Vec<AspectHash>,
+        for_agent_id: &AgentId,
+        agent_pool: &[AgentId],
+    ) -> Option<AgentId> {
+        agent_pool
+            .into_iter()
+            // We ignore all agents that are missing all of the same aspects as well since
+            // they can't help us.
+            .find(|a| {
+                **a != *for_agent_id && !self.agent_is_missing_all_aspects(*a, entry_hash, aspects)
+            })
+            .cloned()
+    }
+
+    pub fn build_aspects_from_arbitrary_agent(
+        &self,
+        aspects_to_fetch: AspectList,
+        for_agent_id: AgentId,
+        mut agent_pool: Vec<AgentId>,
+    ) -> Vec<(AgentId, Lib3hUri, WireMessage)> {
+        let agent_pool = &mut agent_pool[..];
+        agent_pool.shuffle(&mut thread_rng());
+        let mut sends = Vec::new();
+        for entry_address in aspects_to_fetch.entry_addresses() {
+            if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
+                if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
+                    entry_address,
+                    aspect_address_list,
+                    &for_agent_id,
+                    agent_pool,
+                ) {
+                    debug!(
+                        "FETCHING missing contents from RANDOM AGENT: {}",
+                        arbitrary_agent
+                    );
+
+                    let maybe_url = self.agent_id_to_uri(&arbitrary_agent);
+                    if maybe_url.is_none() {
+                        error!("Could not find URL for randomly selected agent. This should not happen!");
+                        return Vec::new();
+                    }
+                    let random_url = maybe_url.unwrap();
+
+                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
+                        FetchEntryData {
+                            request_id: for_agent_id.clone().into(),
+                            space_address: self.space_address.clone(),
+                            provider_agent_id: arbitrary_agent.clone(),
+                            entry_address: entry_address.clone(),
+                            aspect_address_list: Some(aspect_address_list.clone()),
+                        },
+                    ));
+                    debug!("SENDING fetch with request ID: {:?}", wire_message);
+                    sends.push((arbitrary_agent.clone(), random_url.clone(), wire_message));
+                } else {
+                    warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
+                }
+            }
+        }
+        sends
     }
 }
 

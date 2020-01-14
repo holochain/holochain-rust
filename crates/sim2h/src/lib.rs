@@ -406,9 +406,8 @@ impl Sim2h {
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
         with_latency_publishing!("sim2h-lookup_joined", self.metric_publisher, || {
             self.sim2h_context
-                .delete_me()
-                .read()
-                .lookup_joined(space_address, agent_id)
+                .delete_me_clone_space(space_address)?
+                .agent_id_to_uri(agent_id)
         })
     }
 
@@ -695,11 +694,15 @@ impl Sim2h {
                 // Check if the node is missing any aspects
                 let aspects_missing_at_node = match dht_algorithm {
                     DhtAlgorithm::FullSync => self
-                        .sim2h_context.delete_me().read().get_space(&space_address)
+                        .sim2h_context
+                        .delete_me_clone_space(&space_address)
+                        .expect("space should exists")
                         .all_aspects()
                         .diff(&AspectList::from(HashMap::from(list_data.address_map))),
                     DhtAlgorithm::NaiveSharding {redundant_count} => self
-                        .sim2h_context.delete_me().read().get_space(&space_address)
+                        .sim2h_context
+                        .delete_me_clone_space(&space_address)
+                        .expect("space should exist")
                         .aspects_in_shard_for_agent(agent_id, redundant_count)
                         .diff(&AspectList::from(HashMap::from(list_data.address_map)))
                 };
@@ -718,9 +721,8 @@ impl Sim2h {
                         DhtAlgorithm::FullSync => {
                             let all_agents_in_space = self
                                 .sim2h_context
-                                .delete_me()
-                                .read()
-                                .get_space(&space_address)
+                                .delete_me_clone_space(&space_address)
+                                .expect("space should exist")
                                 .all_agents()
                                 .keys()
                                 .cloned()
@@ -742,9 +744,8 @@ impl Sim2h {
                                 let entry_loc = entry_location(self.sim2h_context.box_crypto(), entry_address);
                                 let agent_pool = self
                                     .sim2h_context
-                                    .delete_me()
-                                    .read()
-                                    .get_space(&space_address)
+                                    .delete_me_clone_space(&space_address)
+                                    .expect("space should exist")
                                     .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                                     .keys()
                                     .cloned()
@@ -809,13 +810,18 @@ impl Sim2h {
                     let tx = self.tp_send.clone();
                     let space_address = space_address.clone();
                     self.threadpool.execute(move || {
-                        let disconnects =
-                            ctx
-                            .delete_me()
-                            .read()
-                            .build_query(space_address,query_data,redundant_count);
-                        tx.send(PoolTask::Disconnect(disconnects))
-                            .expect("should send");
+                        if let Some((agent_id, uri, wire_message)) = ctx
+                            .delete_me_clone_space(&space_address)
+                            .expect("space should exist")
+                            .build_query(query_data, redundant_count)
+                        {
+                            let disconnects = ctx
+                                .delete_me()
+                                .read()
+                                .send(agent_id, uri, &wire_message);
+                            tx.send(PoolTask::Disconnect(disconnects))
+                                .expect("should send");
+                        }
                     });
                     Ok(())
                 } else {
@@ -859,14 +865,15 @@ impl Sim2h {
         let agent_id = agent_id.clone();
         let list_data = list_data.clone();
         self.threadpool.execute(move || {
-            let disconnects = ctx.delete_me().read().build_handle_unseen_aspects(
-                uri,
-                space_address,
-                agent_id,
-                list_data,
-            );
-            tx.send(PoolTask::Disconnect(disconnects))
-                .expect("should send");
+            if let Some((agent_id, uri, wire_message)) = ctx
+                .delete_me_clone_space(&space_address)
+                .expect("space should exist")
+                .build_handle_unseen_aspects(uri, agent_id, list_data)
+            {
+                let disconnects = ctx.delete_me().read().send(agent_id, uri, &wire_message);
+                tx.send(PoolTask::Disconnect(disconnects))
+                    .expect("should send");
+            }
         });
     }
 
@@ -884,14 +891,21 @@ impl Sim2h {
                 let ctx = self.sim2h_context.clone();
                 let tx = self.tp_send.clone();
                 self.threadpool.execute(move || {
-                    let disconnects = ctx.delete_me().read().build_aspects_from_arbitrary_agent(
-                        aspects_to_fetch,
-                        for_agent_id,
-                        agent_pool,
-                        space_address,
-                    );
-                    tx.send(PoolTask::Disconnect(disconnects))
-                        .expect("should send");
+                    let sends = ctx
+                        .delete_me_clone_space(&space_address)
+                        .expect("space should exist")
+                        .build_aspects_from_arbitrary_agent(
+                            aspects_to_fetch,
+                            for_agent_id,
+                            agent_pool,
+                        );
+                    for (agent_id, uri, wire_message) in sends {
+                        let disconnects = ctx.delete_me().read().send(agent_id, uri, &wire_message);
+                        if !disconnects.is_empty() {
+                            tx.send(PoolTask::Disconnect(disconnects))
+                                .expect("should send");
+                        }
+                    }
                 });
             }
         )

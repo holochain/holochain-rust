@@ -1,6 +1,6 @@
 extern crate lib3h_sodium;
-extern crate structopt;
 extern crate newrelic;
+extern crate structopt;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;

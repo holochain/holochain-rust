@@ -42,7 +42,6 @@ fn reduce_respond_fetch_data_inner(
     )
 }
 
-
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_respond_fetch_data(
     network_state: &mut NetworkState,

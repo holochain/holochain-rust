@@ -4,10 +4,10 @@ use crate::{
         actions::query::{query, QueryMethod},
         query::{
             GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
-            NetworkQueryResult,
+            NetworkQueryResult,GetLinkFromRemoteData
         },
     },
-    workflows::author_entry::author_entry,
+    workflows::{author_entry::author_entry,get_link_result::get_link_data_from_link_addresses}
     NEW_RELIC_LICENSE_KEY,
 };
 
@@ -90,10 +90,14 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         };
 
         if let Ok(GetLinksNetworkResult::Links(links)) = links_result {
-            let filtered_links = links
+            println!("link target{:?}",link.target().clone());
+            
+            let filtered_links = links.clone()
                 .into_iter()
                 .map(|GetLinkFromRemoteData {link_add_address, ..}| link_add_address)
                 .collect::<Vec<_>>();
+            println!("filtered links {:?}",links.clone());
+            println!("filtered links {:?}",filtered_links.clone());
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));
 

@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn space_can_add_and_remove_agents() {
-        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()), "BLA".into());
         let agent =
             AgentId::from("HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz");
         assert_eq!(space.agents.len(), 0);
@@ -517,7 +517,7 @@ mod tests {
 
     #[test]
     fn space_can_add_and_remove_missing_aspects() {
-        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()), "BLA".into());
         let agent = AgentId::from("test-agent");
 
         assert!(space.agents_with_missing_aspects().is_empty());
@@ -559,7 +559,7 @@ mod tests {
 
     #[test]
     fn space_can_tell_if_agent_is_missing_all_aspects() {
-        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()));
+        let mut space = Space::new(Box::new(SodiumCryptoSystem::new()), "BLA".into());
         let agent = AgentId::from("test-agent");
         let entry_hash_1 = EntryHash::from("entry_hash_1");
         let entry_hash_2 = EntryHash::from("entry_hash_2");

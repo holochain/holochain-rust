@@ -98,7 +98,6 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             };
 
             let filtered_links = links
-                .clone()
                 .into_iter()
                 .map(
                     |GetLinkFromRemoteData {

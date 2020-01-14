@@ -18,14 +18,14 @@ pub enum ZomeApiError {
     FunctionNotImplemented,
     HashNotFound,
     ValidationFailed(String),
-    Timeout,
+    Timeout(String),
 }
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
         match zome_api_error {
             ZomeApiError::ValidationFailed(s) => HolochainError::ValidationFailed(s),
-            ZomeApiError::Timeout => HolochainError::Timeout,
+            ZomeApiError::Timeout(s) => HolochainError::Timeout(s),
             _ => HolochainError::RibosomeFailed(zome_api_error.to_string()),
         }
     }
@@ -41,7 +41,7 @@ impl From<HolochainError> for ZomeApiError {
     fn from(holochain_error: HolochainError) -> Self {
         match holochain_error {
             HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
-            HolochainError::Timeout => ZomeApiError::Timeout,
+            HolochainError::Timeout(s) => ZomeApiError::Timeout(s),
             _ => ZomeApiError::Internal(holochain_error.to_string()),
         }
     }

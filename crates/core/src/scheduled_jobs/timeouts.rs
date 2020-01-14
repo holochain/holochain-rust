@@ -91,6 +91,6 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
+        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout(_))));
     }
 }

@@ -75,7 +75,7 @@ pub fn reduce_query_timeout(
     if network_state.get_query_results.get(key).unwrap().is_none() {
         network_state
             .get_query_results
-            .insert(key.clone(), Some(Err(HolochainError::Timeout)));
+            .insert(key.clone(), Some(Err(HolochainError::Timeout("reduce_query_timeout".into()))));
     }
 }
 
@@ -216,7 +216,7 @@ mod tests {
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
-            Some(Some(Err(HolochainError::Timeout)))
+            Some(Some(Err(HolochainError::Timeout(_))))
         );
 
         // test that an existing result does not get overwritten by timeout signal
@@ -402,7 +402,7 @@ mod tests {
 
         assert_eq!(
             maybe_get_entry_result,
-            Some(Some(Err(HolochainError::Timeout)))
+            Some(Some(Err(HolochainError::Timeout(_))))
         );
     }
 }

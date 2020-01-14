@@ -70,7 +70,7 @@ pub fn reduce_send_direct_message_timeout(
 
     network_state
         .custom_direct_message_replys
-        .insert(id.clone(), Err(HolochainError::Timeout));
+        .insert(id.clone(), Err(HolochainError::Timeout("reduce_send_direct_message_timeout".into())));
 }
 
 #[cfg(test)]
@@ -140,6 +140,6 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
+        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout(_))));
     }
 }

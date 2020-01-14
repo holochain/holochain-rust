@@ -236,7 +236,7 @@ impl ZomeFnCallState {
 pub mod tests {
 
     use super::{HdkFnCall, NucleusState, ZomeFnCallState};
-    use crate::nucleus::ribosome::api::ZomeApiFunction;
+    use crate::wasm_engine::api::ZomeApiFunction;
 
     /// dummy nucleus state
     pub fn test_nucleus_state() -> NucleusState {

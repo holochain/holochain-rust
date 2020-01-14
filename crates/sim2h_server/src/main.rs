@@ -4,7 +4,8 @@ extern crate structopt;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::error;
+use log::{error, warn};
+use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
@@ -35,6 +36,10 @@ struct Cli {
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
+    NewRelicConfig::default()
+        .logging(LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     env_logger::init();
     let args = Cli::from_args();
     let host = "ws://0.0.0.0/";

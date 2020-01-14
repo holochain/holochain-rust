@@ -90,7 +90,6 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         };
 
         if let Ok(GetLinksNetworkResult::Links(links)) = links_result {
-            println!("link target{:?}", link.target().clone());
 
             let filtered_links = links
                 .clone()
@@ -114,13 +113,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
                         )
                     },
                 )
-                .filter(|(link_for_filter, _)| {
-                    println!("link for filter{:?}", link_for_filter.clone());
-                    &link_for_filter.target == link.target()
-                })
+                .filter(|(link_for_filter, _)| &link_for_filter.target == link.target())
                 .collect::<Vec<_>>();
-            println!("filtered links {:?}", links.clone());
-            println!("filtered links {:?}", filtered_links.clone());
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));
 

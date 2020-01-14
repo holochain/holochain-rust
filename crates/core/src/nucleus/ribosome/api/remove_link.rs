@@ -92,7 +92,6 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             ribosome_error_code!(WorkflowFailed)
         } else {
             let links = links_result.expect("This is supposed to not fail");
-            println!("link target{:?}", link.target().clone());
             let links = match links {
                 GetLinksNetworkResult::Links(links) => links,
                 _ => return ribosome_error_code!(WorkflowFailed),
@@ -120,14 +119,9 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
                         )
                     },
                 )
-                .filter(|(link_for_filter, _)| {
-                    println!("link for filter{:?}", link_for_filter.clone());
-                    &link_for_filter.target == link.target()
-                })
+                .filter(|(link_for_filter, _)| &link_for_filter.target == link.target())
                 .map(|response| response.1)
                 .collect::<Vec<_>>();
-            println!("filtered links {:?}", links.clone());
-            println!("filtered links {:?}", filtered_links.clone());
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));
 

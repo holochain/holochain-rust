@@ -43,7 +43,7 @@ with holonix.pkgs;
   LIBCLANG_PATH="${holonix.pkgs.llvmPackages.libclang}/lib";
   hardeningDisable = [ "fortify" ];
 
-  buildInputs = [ holonix.pkgs.libiconv]
+  buildInputs = [ holonix.pkgs.libiconv holonix.pkgs.pcre]
    ++ holonix.shell.buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {

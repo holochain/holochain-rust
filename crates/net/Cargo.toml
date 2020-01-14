@@ -9,7 +9,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dev-dependencies]
-lib3h_crypto_api = "=0.0.25"
+lib3h_crypto_api = "=0.0.26"
 base64 = "=0.10.1"
 hcid = "=0.0.6"
 jsonrpc-core = "=14.0.1"
@@ -19,10 +19,10 @@ tempfile = "=3.0.7"
 failure = "=0.1.5"
 sim1h = { version = "=0.0.42-alpha5", path = "../sim1h" }
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-lib3h_sodium = "=0.0.25"
-lib3h_protocol = "=0.0.25"
-lib3h = "=0.0.25"
-lib3h_zombie_actor = "=0.0.25"
+lib3h_sodium = "=0.0.26"
+lib3h_protocol = "=0.0.26"
+lib3h = "=0.0.26"
+lib3h_zombie_actor = "=0.0.26"
 detach = "=0.0.19"
 holochain_tracing = { version = "=0.0.4" }
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }

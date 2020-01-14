@@ -798,8 +798,10 @@ impl Sim2h {
                             },
                         ));
                     }
-                    let store_message = WireMessage::MultiSend(multi_messages);
-                    self.send(to_agent_id, url, &store_message);
+                    if multi_messages.len() > 0 {
+                        let store_message = WireMessage::MultiSend(multi_messages);
+                        self.send(to_agent_id, url, &store_message);
+                    }
                 }
 
                 Ok(())

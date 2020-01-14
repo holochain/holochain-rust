@@ -293,7 +293,7 @@ pub fn test_links_with_load() {
         12,
     );
     let expected_links = expected_result.unwrap().clone();
-    assert_eq!(expected_links.links().len(), 1); 
+    assert_eq!(expected_links.links().len(), 1);
 
     //try get links and load with nothing, not sure of necessary more of a type system check
     let expected_result = wait_for_zome_result::<Vec<TestEntry>>(

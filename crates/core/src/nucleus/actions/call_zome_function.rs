@@ -1,11 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::{
-        actions::get_entry::get_entry_from_agent_chain,
-        ribosome::{self, WasmCallData},
-        ZomeFnCall, ZomeFnResult,
-    },
+    nucleus::{actions::get_entry::get_entry_from_agent_chain, ZomeFnCall, ZomeFnResult},
+    ribosome::{self, WasmCallData},
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, wasm::DnaWasm},

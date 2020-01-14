@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    nucleus::ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
+    ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
 };
 
 use holochain_core_types::error::HolochainError;

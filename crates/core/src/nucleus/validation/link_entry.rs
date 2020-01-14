@@ -2,10 +2,10 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        ribosome::callback::links_utils,
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
+    ribosome::callback::links_utils,
 };
 use boolinator::*;
 use holochain_core_types::{

@@ -95,12 +95,9 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{
-        call_zome_function,
-        ribosome::{run_dna, WasmCallData},
-        ZomeFnCall,
-    },
+    nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
+    ribosome::{run_dna, WasmCallData},
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},

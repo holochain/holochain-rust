@@ -2,7 +2,6 @@
 ///
 pub mod actions;
 pub mod reducers;
-pub mod ribosome;
 pub mod state;
 pub mod validation;
 pub use crate::{
@@ -12,9 +11,9 @@ pub use crate::{
             call_zome_function, make_cap_request_for_call, ExecuteZomeFnResponse,
         },
         reducers::reduce,
-        ribosome::api::ZomeApiFunction,
         state::ZomeFnCallState,
     },
+    ribosome::api::ZomeApiFunction,
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 use holochain_json_api::json::JsonString;

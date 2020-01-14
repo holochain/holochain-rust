@@ -330,6 +330,11 @@ impl Sim2hState {
                 }
             };
 
+            debug!(
+                "handle_new_entry_data with entry_data.aspect_list len {}",
+                entry_data.aspect_list.len()
+            );
+
             let aspect_addresses = entry_data
                 .aspect_list
                 .iter()
@@ -339,7 +344,6 @@ impl Sim2hState {
             let mut map = HashMap::new();
             map.insert(entry_data.entry_address.clone(), aspect_addresses);
             let aspect_list = AspectList::from(map);
-            debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
 
             let mut multi_messages = Vec::new();
             for aspect in entry_data.aspect_list {
@@ -361,10 +365,15 @@ impl Sim2hState {
                     },
                 ));
             }
-            let multi_message = WireMessage::MultiSend(multi_messages);
+            if multi_messages.len() > 0 {
+                debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
+                let multi_message = WireMessage::MultiSend(multi_messages);
 
-            // 3. Send store message to selected nodes
-            self.broadcast(&multi_message, dht_agents);
+                // 3. Send store message to selected nodes
+                self.broadcast(&multi_message, dht_agents);
+            } else {
+                debug!("NO NEW ASPECTS");
+            }
         })
     }
 

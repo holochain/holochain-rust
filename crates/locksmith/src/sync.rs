@@ -139,7 +139,6 @@ Backtrace at the moment of guard creation follows:
 }
 
 lazy_static! {
-    static ref GUARDS: Mutex<HashMap<ProcessUniqueId, GuardTracker>> = Mutex::new(HashMap::new());
     static ref PENDING_LOCKS: Mutex<HashMap<ProcessUniqueId, (LockType, Instant, Backtrace)>> =
         Mutex::new(HashMap::new());
 }
@@ -152,10 +151,10 @@ pub fn spawn_locksmith_guard_watcher() {
         ))
         .spawn(move || loop {
             let mut reports: Vec<(i64, String)> = {
-                guards_guard()
+                with_guards_guard(|g| g
                         .values_mut()
                         .filter_map(|gt| gt.report_and_update())
-                        .collect();
+                        .collect());
             };
             if reports.len() > 0 {
                 reports.sort_unstable_by_key(|(elapsed, _)| -*elapsed);
@@ -206,21 +205,21 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                guards_guard().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
+                with_guards_guard(|g| g.insert(puid, GuardTracker::new(puid, LockType::$lock_type)));
                 Self { puid, inner }
             }
 
             pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
-                guards_guard()
+                with_guards_guard(|g| g
                         .entry(self.puid)
-                        .and_modify(|g| g.annotation = Some(annotation.into()));
+                        .and_modify(|g| g.annotation = Some(annotation.into())));
                 self
             }
         }
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                guards_guard().remove(&self.puid);
+                with_guards_guard(|g| g.remove(&self.puid));
             }
         }
     };

@@ -406,7 +406,7 @@ impl Sim2h {
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
         with_latency_publishing!("sim2h-lookup_joined", self.metric_publisher, || {
             self.sim2h_context
-                .delete_me_clone_space(space_address)?
+                .delete_me_lock_space(space_address)?
                 .agent_id_to_uri(agent_id)
         })
     }
@@ -695,13 +695,13 @@ impl Sim2h {
                 let aspects_missing_at_node = match dht_algorithm {
                     DhtAlgorithm::FullSync => self
                         .sim2h_context
-                        .delete_me_clone_space(&space_address)
+                        .delete_me_lock_space(&space_address)
                         .expect("space should exists")
                         .all_aspects()
                         .diff(&AspectList::from(HashMap::from(list_data.address_map))),
                     DhtAlgorithm::NaiveSharding {redundant_count} => self
                         .sim2h_context
-                        .delete_me_clone_space(&space_address)
+                        .delete_me_lock_space(&space_address)
                         .expect("space should exist")
                         .aspects_in_shard_for_agent(agent_id, redundant_count)
                         .diff(&AspectList::from(HashMap::from(list_data.address_map)))
@@ -721,7 +721,7 @@ impl Sim2h {
                         DhtAlgorithm::FullSync => {
                             let all_agents_in_space = self
                                 .sim2h_context
-                                .delete_me_clone_space(&space_address)
+                                .delete_me_lock_space(&space_address)
                                 .expect("space should exist")
                                 .all_agents()
                                 .keys()
@@ -744,7 +744,7 @@ impl Sim2h {
                                 let entry_loc = entry_location(self.sim2h_context.box_crypto(), entry_address);
                                 let agent_pool = self
                                     .sim2h_context
-                                    .delete_me_clone_space(&space_address)
+                                    .delete_me_lock_space(&space_address)
                                     .expect("space should exist")
                                     .agents_supposed_to_hold_entry(entry_loc, redundant_count)
                                     .keys()
@@ -813,7 +813,7 @@ impl Sim2h {
                     let space_address = space_address.clone();
                     self.threadpool.execute(move || {
                         if let Some((agent_id, uri, wire_message)) = ctx
-                            .delete_me_clone_space(&space_address)
+                            .delete_me_lock_space(&space_address)
                             .expect("space should exist")
                             .build_query(query_data, redundant_count)
                         {
@@ -868,7 +868,7 @@ impl Sim2h {
         let list_data = list_data.clone();
         self.threadpool.execute(move || {
             if let Some((agent_id, uri, wire_message)) = ctx
-                .delete_me_clone_space(&space_address)
+                .delete_me_lock_space(&space_address)
                 .expect("space should exist")
                 .build_handle_unseen_aspects(uri, agent_id, list_data)
             {
@@ -894,7 +894,7 @@ impl Sim2h {
                 let tx = self.tp_send.clone();
                 self.threadpool.execute(move || {
                     let sends = ctx
-                        .delete_me_clone_space(&space_address)
+                        .delete_me_lock_space(&space_address)
                         .expect("space should exist")
                         .build_aspects_from_arbitrary_agent(
                             aspects_to_fetch,

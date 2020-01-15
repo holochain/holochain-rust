@@ -26,6 +26,25 @@ impl Clone for Sim2hContextInner {
     }
 }
 
+pub struct DeleteMeSpace<'lt> {
+    delete_me: futures::lock::MutexGuard<'lt, Sim2hState>,
+    space_address: SpaceHash,
+}
+
+impl<'lt> std::ops::Deref for DeleteMeSpace<'lt> {
+    type Target = Space;
+
+    fn deref(&self) -> &Self::Target {
+        self.delete_me.spaces.get(&self.space_address).unwrap()
+    }
+}
+
+impl<'lt> std::ops::DerefMut for DeleteMeSpace<'lt> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.delete_me.spaces.get_mut(&self.space_address).unwrap()
+    }
+}
+
 pub struct DeleteMe<'lt> {
     delete_me: futures::lock::MutexGuard<'lt, Sim2hState>,
 }
@@ -84,6 +103,19 @@ impl Sim2hContext {
         &self.inner.crypto
     }
 
+    pub fn delete_me_lock_space(&self, space_address: &SpaceHash) -> Option<DeleteMeSpace> {
+        let state = self.state.delete_me_block_lock();
+        if state.spaces.contains_key(space_address) {
+            Some(DeleteMeSpace {
+                delete_me: state,
+                space_address: space_address.clone(),
+            })
+        } else {
+            None
+        }
+    }
+
+    #[allow(dead_code)]
     /// DELETE ME - temporary direct access to clone a space (if it exists)
     pub fn delete_me_clone_space(&self, space_address: &SpaceHash) -> Option<Space> {
         let state = self.state.delete_me_block_lock();

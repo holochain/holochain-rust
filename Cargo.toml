@@ -36,3 +36,15 @@ exclude = [
 #lib3h_crypto_api = "=0.0.26"
 #lib3h_sodium = "=0.0.26"
 #lib3h_zombie_actor = "=0.0.26"
+holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "2020-01-15-lazy-static" }
+holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "2020-01-15-lazy-static" }
+holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "2020-01-15-lazy-static" }
+holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "2020-01-15-lazy-static" }
+holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "2020-01-15-lazy-static" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "2020-01-15-lazy-static" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "2020-01-15-lazy-static" }
+lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "2020-01-15-lazy-static" }
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "2020-01-15-lazy-static" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "2020-01-15-lazy-static" }
+holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch = "2020-01-15-lazy-static" }
+rust_sodium-sys = { git = "https://github.com/thedavidmeister/rust_sodium", branch = "2020-01-15-lazy-static" }

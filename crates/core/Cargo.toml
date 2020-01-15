@@ -18,7 +18,7 @@ snowflake = { version = "=1.3.0", features = ["serde_support"] }
 bitflags = "=1.0.4"
 wasmi = "=0.4.4"
 failure = "=0.1.5"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 unwrap_to = "=0.1.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"

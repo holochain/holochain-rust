@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    nucleus::ribosome::callback::{init::init, CallbackParams, CallbackResult},
+    wasm_engine::callback::{init::init, CallbackParams, CallbackResult},
 };
 use holochain_core_types::{
     dna::Dna,

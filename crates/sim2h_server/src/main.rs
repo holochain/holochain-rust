@@ -4,7 +4,7 @@ extern crate structopt;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::error;
-use sim2h::{Sim2h, MESSAGE_LOGGER};
+use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
 
@@ -20,6 +20,13 @@ struct Cli {
     #[structopt(
         long,
         short,
+        help = "Sharding redundancy count; use 0 for fullsync",
+        default_value = "50"
+    )]
+    sharding: u64,
+    #[structopt(
+        long,
+        short,
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
@@ -30,7 +37,7 @@ fn main() {
 
     let args = Cli::from_args();
 
-    let host = "wss://0.0.0.0/";
+    let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
         .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
         .with_port(args.port)
@@ -41,17 +48,28 @@ fn main() {
     }
 
     let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
+    if args.sharding > 0 {
+        sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
+            redundant_count: args.sharding,
+        });
+    }
 
     loop {
         let result = sim2h.process();
-        if let Err(e) = result {
-            if e.to_string().contains("Bind error:") {
-                println!("{:?}", e);
-                exit(1)
-            } else {
-                error!("{}", e.to_string())
+        match result {
+            Err(e) => {
+                if e.to_string().contains("Bind error:") {
+                    println!("{:?}", e);
+                    exit(1)
+                } else {
+                    error!("{}", e.to_string())
+                }
             }
+            Ok(false) => {
+                // if no work sleep a little
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            _ => (),
         }
-        std::thread::sleep(std::time::Duration::from_millis(1));
     }
 }

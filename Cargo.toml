@@ -36,3 +36,5 @@ lib3h_protocol = { version = "=0.0.26", git = "https://github.com/holochain/lib3
 lib3h_crypto_api = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 lib3h_sodium = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 lib3h_zombie_actor = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+holochain_tracing = { path = "../tracing/crates/tracing" }
+holochain_tracing_macros = { path = "../tracing/crates/tracing_macros" }

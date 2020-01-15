@@ -5,7 +5,7 @@ use lib3h_protocol::data_types::*;
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    WireMessage,
+    WireMessage, WIRE_VERSION,
 };
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
@@ -37,6 +37,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
     let mut job = Job::new(&url)?;
     job.send_wire(match message_string.as_ref() {
         "ping" => WireMessage::Ping,
+        "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
         _ => {
             return Err(format!(
@@ -46,7 +47,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
         }
     });
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(1000))
+        .checked_add(std::time::Duration::from_millis(60000))
         .unwrap();
     loop {
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -80,7 +81,8 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    connection: InStreamWss<InStreamTls<InStreamTcp>>,
+    connection: InStreamWss<InStreamTcp>,
+    //    wss_connection: InStreamWss<InStreamTls<InStreamTcp>>,
 }
 
 impl Job {
@@ -96,7 +98,7 @@ impl Job {
         println!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
-
+        println!("Await successfull");
         let out = Self {
             agent_id,
             pub_key: Arc::new(Mutex::new(pub_key)),
@@ -109,6 +111,7 @@ impl Job {
 
     /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
+        println!("Sending wire message to sim2h: {:?}", message);
         let payload: Opaque = message.into();
         let payload_buf: Box<dyn lib3h_crypto_api::Buffer> = Box::new(payload.clone().as_bytes());
         let sig = base64::encode(
@@ -131,18 +134,17 @@ impl Job {
     }
 }
 
-fn await_in_stream_connect(
-    connect_uri: &Url2,
-) -> Result<InStreamWss<InStreamTls<InStreamTcp>>, String> {
+fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(10000))
+        .checked_add(std::time::Duration::from_millis(60000))
         .unwrap();
 
     let mut read_frame = WsFrame::default();
 
     // keep trying to connect
     loop {
-        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        //        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        let config = WssConnectConfig::new(TcpConnectConfig::default());
         let mut connection =
             InStreamWss::connect(connect_uri, config).map_err(|e| format!("{}", e))?;
         connection.write(WsFrame::Ping(b"".to_vec())).unwrap();

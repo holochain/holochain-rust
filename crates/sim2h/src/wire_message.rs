@@ -3,6 +3,9 @@ use crate::error::Sim2hError;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
 
+pub type WireMessageVersion = u32;
+pub const WIRE_VERSION: WireMessageVersion = 2;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {
     MessageWhileInLimbo,
@@ -13,6 +16,15 @@ pub enum WireError {
 pub struct StatusData {
     pub spaces: usize,
     pub connections: usize,
+    pub redundant_count: u64,
+    pub version: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HelloData {
+    pub redundant_count: u64,
+    pub version: u32,
+    pub extra: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,9 +33,12 @@ pub enum WireMessage {
     ClientToLib3hResponse(ClientToLib3hResponse),
     Lib3hToClient(Lib3hToClient),
     Lib3hToClientResponse(Lib3hToClientResponse),
+    MultiSend(Vec<Lib3hToClient>),
     Err(WireError),
     Ping,
     Pong,
+    Hello(WireMessageVersion),
+    HelloResponse(HelloData),
     Status,
     StatusResponse(StatusData),
 }
@@ -35,6 +50,8 @@ impl WireMessage {
             WireMessage::Pong => "Pong",
             WireMessage::Status => "Status",
             WireMessage::StatusResponse(_) => "StatusResponse",
+            WireMessage::Hello(_) => "Hello",
+            WireMessage::HelloResponse(_) => "HelloResponse",
             WireMessage::ClientToLib3h(ClientToLib3h::Bootstrap(_)) => "[C>L]Bootstrap",
             WireMessage::ClientToLib3h(ClientToLib3h::FetchEntry(_)) => "[C>L]FetchEntry",
             WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => "[C>L]JoinSpace",
@@ -107,8 +124,21 @@ impl WireMessage {
             WireMessage::Lib3hToClientResponse(
                 Lib3hToClientResponse::HandleStoreEntryAspectResult,
             ) => "[L<C]HandleStoreEntryAspectResult",
+            WireMessage::MultiSend(m) => get_multi_type(&m),
             WireMessage::Err(_) => "[Error] {:?}",
         })
+    }
+}
+
+fn get_multi_type(list: &Vec<Lib3hToClient>) -> &str {
+    if list.len() > 0 {
+        match list.get(0).unwrap() {
+            Lib3hToClient::HandleFetchEntry(_) => "[L>C]MultiSend::HandleFetchEntry",
+            Lib3hToClient::HandleStoreEntryAspect(_) => "[L>C]MultiSend::HandleStoreEntryAspect",
+            _ => "[L>C]MultiSend::UNEXPECTED_VARIANT",
+        }
+    } else {
+        "[L>C]MultiSend::EMPTY_SEND"
     }
 }
 
@@ -173,6 +203,22 @@ pub mod tests {
             "\"{\\\"Err\\\":{\\\"Other\\\":\\\"\\\\\\\"fake_error\\\\\\\"\\\"}}\"",
             format!("{}", opaque_msg)
         );
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+    }
+    #[test]
+    pub fn test_wire_message_version() {
+        let msg = WireMessage::Hello(1);
+        let opaque_msg: Opaque = msg.clone().into();
+        assert_eq!("\"{\\\"Hello\\\":1}\"", format!("{}", opaque_msg));
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+    }
+    #[test]
+    pub fn test_wire_message_ping() {
+        let msg = WireMessage::Ping;
+        let opaque_msg: Opaque = msg.clone().into();
+        assert_eq!("\"\\\"Ping\\\"\"", format!("{}", opaque_msg));
         let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
         assert_eq!(roundtrip_msg, msg);
     }

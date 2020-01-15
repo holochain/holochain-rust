@@ -235,7 +235,7 @@ impl Context {
     /// Returns immediately either with the lock or with None if the lock
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
-    #[autotrace]
+    #[no_autotrace]
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         if self.redux_wants_write.load(Relaxed) {
             None

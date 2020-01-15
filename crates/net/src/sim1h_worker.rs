@@ -293,6 +293,7 @@ impl NetWorker for Sim1hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         self.num_ticks += 1;
         if self.num_ticks % 100 == 0 {
             io::stdout().flush()?;
@@ -306,7 +307,10 @@ impl NetWorker for Sim1hWorker {
             {
                 debug!("NET>?>CORE {:?}", request);
                 let request = Lib3hServerProtocol::from(request);
-                if let Err(error) = self.handler.handle(Ok(request)) {
+                if let Err(error) = self
+                    .handler
+                    .handle(Ok(span.follower("inner").wrap(request)))
+                {
                     warn!("Error returned from network handler in Sim1h: {:?}", error);
                 }
 
@@ -315,7 +319,10 @@ impl NetWorker for Sim1hWorker {
             for response in state.process_pending_responses_to_client() {
                 debug!("NET>!>CORE {:?}", response);
                 let response = Lib3hServerProtocol::from(response);
-                if let Err(error) = self.handler.handle(Ok(response)) {
+                if let Err(error) = self
+                    .handler
+                    .handle(Ok(span.follower("inner").wrap(response)))
+                {
                     warn!("Error returned from network handler in Sim1h: {:?}", error);
                 }
 
@@ -328,7 +335,10 @@ impl NetWorker for Sim1hWorker {
             match self.handle_client_message(data.clone()) {
                 Ok(response) => {
                     debug!("NET>!>CORE {:?}", response);
-                    if let Err(error) = self.handler.handle(Ok(response)) {
+                    if let Err(error) = self
+                        .handler
+                        .handle(Ok(span.follower("inner").wrap(response)))
+                    {
                         warn!("Error returned from network handler in Sim1h: {:?}", error);
                     }
                 }

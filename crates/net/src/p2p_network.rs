@@ -44,6 +44,7 @@ impl P2pNetwork {
         agent_id: Option<Address>,
         conductor_api: Option<ConductorApi>,
     ) -> NetResult<Self> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         // Create Config struct
         let backend_config_str = match &p2p_config.backend_config {
             BackendConfig::Json(ref json) => JsonString::from_json(&json.to_string()),
@@ -144,7 +145,7 @@ impl P2pNetwork {
                         // Generates compiler error.
                     }
                 };
-                handler.handle(Ok(message))
+                handler.handle(Ok(span.follower("inner").wrap(message)))
             }))
         } else {
             handler

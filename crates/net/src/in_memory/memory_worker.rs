@@ -25,9 +25,10 @@ impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
     fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         // InMemoryWorker doesn't have to do anything on shutdown
         if data == Lib3hClientProtocol::Shutdown {
-            self.handler.handle(Ok(Lib3hServerProtocol::Terminated))?;
+            self.handler.handle(Ok(span.wrap(Lib3hServerProtocol::Terminated)))?;
             return Ok(());
         }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
@@ -73,17 +74,18 @@ impl NetWorker for InMemoryWorker {
 
     /// check for messages from our InMemoryServer
     fn tick(&mut self) -> NetResult<bool> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            self.handler.handle(Ok(Lib3hServerProtocol::P2pReady))?;
+            self.handler.handle(Ok(span.child("can-send").wrap(Lib3hServerProtocol::P2pReady)))?;
         }
         // check for messages from our InMemoryServer
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
                 did_something = true;
-                self.handler.handle(Ok(data))?;
+                self.handler.handle(Ok(span.child("inner").wrap(data)))?;
             }
         }
         Ok(did_something)

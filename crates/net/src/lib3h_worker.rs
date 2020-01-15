@@ -86,11 +86,12 @@ impl NetWorker for Lib3hWorker {
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
             for msg in output {
-                self.handler.handle(Ok(msg))?;
+                self.handler.handle(Ok(span.follower("inner").wrap(msg)))?;
             }
         }
         Ok(did_something)

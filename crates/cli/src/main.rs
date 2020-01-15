@@ -95,7 +95,7 @@ enum Cli {
         #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
         /// Use real networking use: n3h/sim2h
         networked: Option<NetworkingType>,
-        #[structopt(long, default_value = "wss://localhost:9000")]
+        #[structopt(long, default_value = "ws://localhost:9000")]
         /// Set the sim2h server url if you are using real networking.
         sim2h_server: String,
         #[structopt(long, short, default_value = "websocket")]
@@ -188,7 +188,7 @@ fn main() {
                     reporter.report(&[span]).expect("could not report span");
                 }
             });
-        ht::Tracer::with_sender(ht::NullSampler, span_tx)
+        ht::Tracer::with_sender(ht::AllSampler, span_tx)
     };
 
     let _trace_guard = ht::push_span(tracer.span("hc::main").start().into());

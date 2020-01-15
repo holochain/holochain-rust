@@ -8,19 +8,19 @@ use std::{fmt, sync::Arc};
 pub struct NetHandler {
     #[serde(skip)]
     closure:
-        Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>>>,
+        Arc<RwLock<Box<dyn FnMut(NetResult<ht::SpanWrap<Lib3hServerProtocol>>) -> NetResult<()> + Send + Sync>>>,
 }
 
 impl NetHandler {
     pub fn new(
-        c: Box<dyn FnMut(NetResult<Lib3hServerProtocol>) -> NetResult<()> + Send + Sync>,
+        c: Box<dyn FnMut(NetResult<ht::SpanWrap<Lib3hServerProtocol>>) -> NetResult<()> + Send + Sync>,
     ) -> NetHandler {
         NetHandler {
             closure: Arc::new(RwLock::new(c)),
         }
     }
 
-    pub fn handle(&mut self, message: NetResult<Lib3hServerProtocol>) -> NetResult<()> {
+    pub fn handle(&mut self, message: NetResult<ht::SpanWrap<Lib3hServerProtocol>>) -> NetResult<()> {
         let mut lock = self.closure.write();
         (&mut *lock)(message)
     }

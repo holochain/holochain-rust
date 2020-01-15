@@ -20,4 +20,4 @@ RUN ls /holochain/.cargo/bin
 
 RUN mkdir /tmp/sim2h -p
 
-CMD RUST_LOG=debug sim2h_server -p 9000 > /tmp/sim2h/log.txt 2>&1
+CMD sim2h_server -p 9000 -s 20 > /tmp/sim2h/log.txt 2>&1

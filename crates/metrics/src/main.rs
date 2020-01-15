@@ -201,14 +201,11 @@ fn print_cloudwatch_metrics(
     writer.flush().unwrap();
 }
 
-// TODO use aggregation patern
-fn print_log_stats(log_file: PathBuf, _aggregation_pattern: Option<String>) {
-    let metrics = crate::logger::metrics_from_file(log_file.clone()).unwrap();
-    let stats = StatsByMetric::from_iter_with_stream_id(
-        metrics,
-        log_file.to_str().unwrap_or_else(|| "unknown"),
-        //        aggregation_pattern
-    );
+fn print_log_stats(log_file: PathBuf, aggregation_pattern: Option<String>) {
+    let metrics = crate::logger::metrics_from_file(log_file).unwrap();
+    let aggregation_pattern = aggregation_pattern.unwrap_or_else(|| "(.*)".into());
+    let re = regex::Regex::new(aggregation_pattern.as_str()).unwrap();
+    let stats = StatsByMetric::group_by_regex(&re, metrics);
     stats.write_csv(std::io::stdout()).unwrap()
 }
 

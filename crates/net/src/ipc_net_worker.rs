@@ -171,6 +171,7 @@ impl NetWorker for IpcNetWorker {
     /// do some upkeep on the internal worker
     /// IPC server state handling / magic
     fn tick(&mut self) -> NetResult<bool> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         let (did_work, evt_lst) = self.wss_socket.poll()?;
         if evt_lst.len() > 0 {
             self.last_known_state = "ready".to_string();
@@ -193,7 +194,7 @@ impl NetWorker for IpcNetWorker {
                 }
                 TransportEvent::Message(_id, msg) => {
                     let msg: Lib3hServerProtocol = serde_json::from_slice(&msg)?;
-                    self.handler.handle(Ok(msg.clone()))?;
+                    self.handler.handle(Ok(span.follower("inner").wrap(msg.clone())))?;
 
                     // on shutdown, close all connections
                     if msg == Lib3hServerProtocol::Terminated {
@@ -209,7 +210,7 @@ impl NetWorker for IpcNetWorker {
                     // - Try connecting to boostrap nodes
                     if !self.is_network_ready && &self.last_known_state == "ready" {
                         self.is_network_ready = true;
-                        self.handler.handle(Ok(Lib3hServerProtocol::P2pReady))?;
+                        self.handler.handle(Ok(span.follower("inner").wrap(Lib3hServerProtocol::P2pReady)))?;
                         self.priv_send_connects()?;
                     }
                 }

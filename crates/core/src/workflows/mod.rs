@@ -19,10 +19,10 @@ use crate::{
     },
     nucleus::{
         actions::build_validation_package::build_validation_package,
-        ribosome::callback::{
-            validation_package::get_validation_package_definition, CallbackResult,
-        },
         validation::build_from_dht::try_make_validation_package_dht,
+    },
+    wasm_engine::callback::{
+        validation_package::get_validation_package_definition, CallbackResult,
     },
     workflows::{
         hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,

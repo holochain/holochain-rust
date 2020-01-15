@@ -25,6 +25,7 @@ extern crate pretty_assertions;
 extern crate log;
 #[macro_use]
 extern crate holochain_logging;
+// extern crate holochain_tracing as ht;
 #[macro_use]
 extern crate holochain_tracing_macros;
 
@@ -60,5 +61,5 @@ pub mod signal;
 pub mod state;
 // #[autotrace]
 pub mod state_dump;
-// #[autotrace]
+pub mod wasm_engine;
 pub mod workflows;

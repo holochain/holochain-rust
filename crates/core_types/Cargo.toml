@@ -21,6 +21,7 @@ serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 lazy_static = "=1.2.0"
 multihash = "=0.8.0"
+flate2 = "=1.0.12"
 mashup = "0.1.9"
 wasmi = "=0.4.4"
 hcid = "=0.0.6"

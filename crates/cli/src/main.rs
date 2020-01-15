@@ -18,7 +18,6 @@ extern crate structopt;
 extern crate failure;
 #[macro_use]
 extern crate serde_derive;
-extern crate base64;
 extern crate colored;
 extern crate semver;
 #[macro_use]

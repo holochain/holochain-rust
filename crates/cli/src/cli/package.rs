@@ -1,5 +1,4 @@
 use crate::{config_files::Build, error::DefaultResult, util};
-use base64;
 use colored::*;
 use holochain_core::wasm_engine::{run_dna, WasmCallData};
 use holochain_core_types::dna::Dna;
@@ -13,7 +12,6 @@ use std::{
     fs::{self, File},
     io::Read,
     path::PathBuf,
-    sync::Arc,
 };
 
 use holochain_core_types::hdk_version::{HDKVersion, HDK_VERSION};
@@ -184,13 +182,12 @@ impl Packager {
                 {
                     let build = Build::from_file(dir_with_code.join(BUILD_CONFIG_FILE_NAME))?;
                     let wasm = build.run(&dir_with_code)?;
-                    let wasm_binary = Arc::new(base64::decode(&wasm)?);
 
                     let json_string = run_dna(
                         Some("{}".as_bytes().to_vec()),
                         WasmCallData::DirectCall(
                             "__hdk_get_json_definition".to_string(),
-                            wasm_binary.clone(),
+                            wasm.code.clone(), // An Arc<Vec<u8>>
                         ),
                     )?;
 
@@ -244,10 +241,11 @@ impl Packager {
                         });
                     }
 
-                    let wasm = build.run(&node)?;
+                    // A DnaWasm is serializable into JSON
+                    let dna_wasm = build.run(&node)?;
 
                     // here insert the wasm itself
-                    main_tree.insert(file_name.clone(), json!({ "code": wasm }));
+                    main_tree.insert(file_name.clone(), json!(dna_wasm));
                 } else {
                     let sub_tree_content = self.bundle_recurse(&node)?;
                     main_tree.insert(file_name.clone(), sub_tree_content.into());

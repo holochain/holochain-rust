@@ -58,6 +58,7 @@ pub mod ugly;
 pub mod validation;
 #[macro_use]
 extern crate holochain_logging;
+extern crate flate2;
 
 pub const HDK_HASH: &str = env!(
     "HDK_HASH",

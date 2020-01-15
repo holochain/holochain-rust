@@ -5,14 +5,19 @@ use backtrace::Backtrace;
 
 use crate::error::HolochainError;
 use base64;
+use flate2::{
+    bufread::{GzDecoder, GzEncoder},
+    Compression,
+};
 use serde::{
     self,
-    de::{Deserializer, Visitor},
-    ser::Serializer,
+    de::{Deserializer, SeqAccess, Visitor},
+    ser::{Error, SerializeSeq, Serializer},
 };
 use std::{
-    fmt,
+    cmp, fmt,
     hash::{Hash, Hasher},
+    io::{BufReader, Read},
     ops::Deref,
     sync::{Arc, RwLock},
 };
@@ -46,16 +51,40 @@ impl fmt::Debug for ModuleArc {
     }
 }
 
-/// Private helper for converting binary WebAssembly into base64 serialized string.
+const DNA_LINE_LEN: usize = 132;
+
+/// Private helper for converting binary WebAssembly into base64 serialized string sequence.
+/// Encodes to Gzip compressed, base-64 encoded String, or [String, ...].  Will load historical
+/// large single-String WASMs, but will *not* correctly compute `hc hash`.  Output the base-64
+/// encoded compressed WASM in 99-byte*4/3 == 132-symbol chunks
 fn _vec_u8_to_b64_str<S>(data: &Arc<Vec<u8>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let b64 = base64::encode(data.as_ref());
-    s.serialize_str(&b64)
+    let buf_reader = BufReader::new(data.as_slice());
+    let mut gz = GzEncoder::new(buf_reader, Compression::best());
+    let mut buf = Vec::new();
+    gz.read_to_end(&mut buf).map_err(S::Error::custom)?;
+    let b64 = base64::encode(&buf);
+    let cnt = (b64.len() + DNA_LINE_LEN - 1) / DNA_LINE_LEN;
+    if cnt <= 1 {
+        // For small WASMs (eg. tests, and for backward-compatibility) emit them as a simple *un-compressed* String
+        let b64_uncompressed = base64::encode(data.as_ref());
+        s.serialize_str(&b64_uncompressed)
+    } else {
+        let mut seq = s.serialize_seq(Some(cnt)).map_err(S::Error::custom)?;
+        let mut cur: &str = b64.as_ref();
+        while !cur.is_empty() {
+            let (chunk, rest) = cur.split_at(cmp::min(DNA_LINE_LEN, cur.len()));
+            seq.serialize_element(chunk).map_err(S::Error::custom)?;
+            cur = rest;
+        }
+        seq.end()
+    }
 }
 
-/// Private helper for converting base64 string into binary WebAssembly.
+/// Private helper for converting base64 string into binary WebAssembly.  Decodes base-64 encoded
+/// String (not Gzip-compressed, for backward-compatibility), or Gzip-compressed [String, ...]
 fn _b64_str_to_vec_u8<'de, D>(d: D) -> Result<Arc<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -68,18 +97,34 @@ where
 
         /// we only want to accept strings
         fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-            formatter.write_str("string")
+            formatter.write_str("base-64 encoded string, or [string, ...] ")
         }
 
-        /// if we get a string, try to base64 decode into binary
+        /// if we get a String, try to base-64 decode straight into binary WASM
         fn visit_str<E>(self, value: &str) -> Result<Vec<u8>, E>
         where
             E: serde::de::Error,
         {
-            match base64::decode(value) {
-                Ok(v) => Ok(v),
-                Err(e) => Err(serde::de::Error::custom(e)),
+            base64::decode(value).map_err(serde::de::Error::custom)
+        }
+
+        /// If we got a [String, ...], decode base-64 and uncompress into binary WASM
+        fn visit_seq<A>(self, mut seq: A) -> Result<Vec<u8>, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let mut compressed: Vec<u8> = vec![];
+            while let Some(elem) = seq.next_element::<&[u8]>()? {
+                compressed.extend_from_slice(
+                    // inefficient but WASM loading is rare
+                    &base64::decode(elem).map_err(serde::de::Error::custom)?,
+                );
             }
+            let mut gz = GzDecoder::new(compressed.as_slice());
+            let mut value: Vec<u8> = vec![];
+            gz.read_to_end(&mut value)
+                .map_err(serde::de::Error::custom)?;
+            Ok(value)
         }
     }
 

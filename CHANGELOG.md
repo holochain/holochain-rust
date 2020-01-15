@@ -115,6 +115,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [0.0.41-alpha2] - 2019-12-19
 
 ### Added
+
 - Adds support for setting the agent name and id via a parameter with hc run by calling `hc run --agent-name MyAgentName`. The `%agent_id` is generated from the name. This allows multiple hc run conductors to be used on the same machine. It will be overwritten by the `HC_AGENT` environment variable.
 - Adds support for sim2h with hc run by calling `hc run --networked sim2h --sim2h-server wss://localhost:9000`.
 - Adds support for [hApp-bundles](https://github.com/holochain/holoscape/tree/master/example-bundles) to `hc run`. This enables complex hApp setups with multiple DNAs and bridges to be easily run during development without having to write/maintain a conductor config file. [#1939](https://github.com/holochain/holochain-rust/pull/1939)
@@ -137,6 +138,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - core `shellHook` can now override holonix `shellHook`
 - several `--target-dir` flags are removed in favour of `$CARGO_TARGET_DIR`
 - the passphrase hashing config is now set to faster and less secure parameters to reduce the start-up time of conductors a lot, esp. on slow devices. (will become a setting the user can choose in the future - faster and less secure config is fine for now and throughout alpha and beta) [#1986](https://github.com/holochain/holochain-rust/pull/1986)
+- the `.dna.json` files produced by `hc package` now contains compressed base-64 encoded WASM `"code"` as a list of strings, instead of as a single (sometimes multi-megabyte) string; reading the historical file format is supported [#1958](https://github.com/holochain/holochain-rust/pull/1958)
 
 ### Deprecated
 

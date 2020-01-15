@@ -36,3 +36,12 @@ exclude = [
 #lib3h_crypto_api = "=0.0.26"
 #lib3h_sodium = "=0.0.26"
 #lib3h_zombie_actor = "=0.0.26"
+holochain_persistence_api = { path = "../holochain-persistence/crates/holochain_persistence_api" }
+holochain_persistence_file = { path = "../holochain-persistence/crates/holochain_persistence_file" }
+holochain_persistence_lmdb = { path = "../holochain-persistence/crates/holochain_persistence_lmdb" }
+holochain_persistence_mem = { path = "../holochain-persistence/crates/holochain_persistence_mem" }
+holochain_persistence_pickle = { path = "../holochain-persistence/crates/holochain_persistence_pickle" }
+lib3h_sodium = { path = "../lib3h/crates/sodium" }
+lib3h_zombie_actor = { path = "../lib3h/crates/zombie_actor" }
+lib3h = { path = "../lib3h/crates/lib3h" }
+holochain_tracing = { path = "../holochain-tracing/crates/tracing" }

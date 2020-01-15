@@ -22,7 +22,7 @@ lib3h_crypto_api = "=0.0.26"
 lib3h_sodium = "=0.0.26"
 lib3h_protocol = "=0.0.26"
 lib3h_zombie_actor = "=0.0.26"
-holochain_tracing = "=0.0.4"
+holochain_tracing = "=0.0.5"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
@@ -30,7 +30,7 @@ in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "=0.4.8"
 env_logger = "=0.6.1"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 nanoid = "=0.2.0"
 num_cpus = "=1.11.1"
 url = "=2.1.0"

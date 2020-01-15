@@ -27,7 +27,7 @@ serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
 serde_derive = "=1.0.89"
 crossbeam-channel = "=0.3.8"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 jsonrpc-ws-server = "14.0.1"
 base64 = "=0.10.1"
 url = { version = "=2.1.0", features = ["serde"] }

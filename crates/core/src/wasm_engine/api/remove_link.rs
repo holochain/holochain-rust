@@ -1,4 +1,3 @@
-use crate::workflows::get_link_result::get_link_data_from_link_addresses;
 use crate::{
     network::{
         actions::query::{query, QueryMethod},
@@ -8,7 +7,7 @@ use crate::{
         },
     },
     wasm_engine::{api::ZomeApiResult, Runtime},
-    workflows::author_entry::author_entry,
+    workflows::{author_entry::author_entry, get_link_result::get_link_data_from_link_addresses},
 };
 
 use holochain_core_types::{

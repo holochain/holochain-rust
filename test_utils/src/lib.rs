@@ -620,8 +620,7 @@ pub fn generate_zome_internal_error(error_kind: String) -> ZomeApiError {
         .join("crates")
         .join("core")
         .join("src")
-        .join("nucleus")
-        .join("ribosome")
+        .join("wasm_engine")
         .join("runtime.rs");
     let path_string = path
         .as_path()

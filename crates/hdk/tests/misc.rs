@@ -260,8 +260,7 @@ fn can_invalidate_invalid_commit() {
         .join("crates")
         .join("core")
         .join("src")
-        .join("nucleus")
-        .join("ribosome")
+        .join("wasm_engine")
         .join("runtime.rs");
     let path_string = path
         .as_path()

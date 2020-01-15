@@ -80,7 +80,7 @@ pub async fn hold_link_workflow(
 
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
-    //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
+    //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up <== THIS!
     hold_entry_workflow(&entry_with_header, context.clone()).await?;
     log_debug!(
         context,

@@ -2,12 +2,12 @@ use crate::{
     network::{
         actions::query::{query, QueryMethod},
         query::{
-            GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
-            NetworkQueryResult,
+            GetLinkFromRemoteData, GetLinksNetworkQuery, GetLinksNetworkResult,
+            GetLinksQueryConfiguration, NetworkQueryResult,
         },
     },
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::author_entry::author_entry,
+    workflows::{author_entry::author_entry, get_link_result::get_link_data_from_link_addresses},
 };
 
 use holochain_core_types::{
@@ -87,10 +87,39 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             )),
         };
 
-        if let Ok(GetLinksNetworkResult::Links(links)) = links_result {
+        if links_result.is_err() {
+            log_error!(context, "zome : Could not get links for remove_link method");
+            ribosome_error_code!(WorkflowFailed)
+        } else {
+            let links = links_result.expect("This is supposed to not fail");
+            let links = match links {
+                GetLinksNetworkResult::Links(links) => links,
+                _ => return ribosome_error_code!(WorkflowFailed),
+            };
+
             let filtered_links = links
                 .into_iter()
-                .map(|GetLinkFromRemoteData {link_add_address, ..}| link_add_address)
+                .map(
+                    |GetLinkFromRemoteData {
+                         link_add_address,
+                         tag,
+                         ..
+                     }| {
+                        // make DHT calls to get the entries for the links
+                        (
+                            get_link_data_from_link_addresses(
+                                &context,
+                                &link_add_address,
+                                &tag,
+                                false,
+                            )
+                            .unwrap(),
+                            link_add_address,
+                        )
+                    },
+                )
+                .filter(|(link_for_filter, _)| &link_for_filter.target == link.target())
+                .map(|response| response.1)
                 .collect::<Vec<_>>();
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));

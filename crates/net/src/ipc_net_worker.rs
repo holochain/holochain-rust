@@ -20,6 +20,9 @@ use crate::tweetlog::TweetProxy;
 
 use serde_json;
 
+type Lib3hClientProtocolWrapped = ht::EncodedSpanWrap<Lib3hClientProtocol>;
+type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;
+
 /// a NetWorker talking to the network via another process through an IPC connection.
 #[allow(dead_code)] // for handler which is temporarily disabled
 pub struct IpcNetWorker {
@@ -162,7 +165,7 @@ impl NetWorker for IpcNetWorker {
 
     /// we got a message from holochain core
     /// (just forwards to the internal worker relay)
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         let data = serde_json::to_string_pretty(&data)?;
         self.wss_socket.send_all(data.as_bytes())?;
         Ok(())
@@ -180,7 +183,7 @@ impl NetWorker for IpcNetWorker {
         for evt in evt_lst {
             match evt {
                 TransportEvent::TransportError(_id, e) => {
-                    self.log.e(&format!("ipc ws error {:?}", e));
+                    self.log.e(&format!("ipc ws error {span.follower("inner").wrap(Lib3hServerProtocol::P2pReady):?}", e));
                     self.wss_socket.close(self.transport_id.clone())?;
                     self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
                 }
@@ -193,11 +196,11 @@ impl NetWorker for IpcNetWorker {
                     self.transport_id = self.wss_socket.wait_connect(&self.ipc_uri)?;
                 }
                 TransportEvent::Message(_id, msg) => {
-                    let msg: Lib3hServerProtocol = serde_json::from_slice(&msg)?;
-                    self.handler.handle(Ok(span.follower("inner").wrap(msg.clone())))?;
+                    let msg: Lib3hServerProtocolWrapped = serde_json::from_slice(&msg)?;
+                    self.handler.handle(Ok(msg))?;
 
                     // on shutdown, close all connections
-                    if msg == Lib3hServerProtocol::Terminated {
+                    if let Lib3hServerProtocol::Terminated = msg.data {
                         self.is_network_ready = false;
                         self.last_known_state = "terminated".to_string();
                         let res = self.wss_socket.close_all();
@@ -210,7 +213,7 @@ impl NetWorker for IpcNetWorker {
                     // - Try connecting to boostrap nodes
                     if !self.is_network_ready && &self.last_known_state == "ready" {
                         self.is_network_ready = true;
-                        self.handler.handle(Ok(span.follower("inner").wrap(Lib3hServerProtocol::P2pReady)))?;
+                        self.handler.handle(Ok(msg))?;
                         self.priv_send_connects()?;
                     }
                 }
@@ -236,6 +239,7 @@ impl NetWorker for IpcNetWorker {
 // private
 impl IpcNetWorker {
     // Send 'Connect to bootstrap nodes' request to Ipc server
+    #[autotrace]
     fn priv_send_connects(&mut self) -> NetResult<()> {
         let bs_nodes: Vec<String> = self.bootstrap_nodes.drain(..).collect();
         for bs_node in &bs_nodes {
@@ -246,11 +250,12 @@ impl IpcNetWorker {
                     continue;
                 }
             };
-            self.receive(Lib3hClientProtocol::Connect(ConnectData {
+            let msg = Lib3hClientProtocol::Connect(ConnectData {
                 request_id: snowflake::ProcessUniqueId::new().to_string(),
                 peer_location: uri.into(),
                 network_id: NetworkHash::default(),
-            }))?
+            });
+            self.receive(ht::top_follower("pre-receive").wrap(msg).into())?
         }
 
         Ok(())

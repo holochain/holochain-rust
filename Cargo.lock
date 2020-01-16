@@ -1491,7 +1491,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "snowflake",
  "test_utils",
  "uuid 0.7.1",
@@ -1537,7 +1537,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "uuid 0.7.1",
 ]
 
@@ -1604,7 +1604,7 @@ dependencies = [
  "rusoto_sts",
  "serde",
  "serde_derive",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "snowflake",
  "streaming-stats",
  "strip-ansi-escapes",
@@ -1634,6 +1634,7 @@ dependencies = [
  "holochain_metrics",
  "holochain_persistence_api",
  "holochain_tracing",
+ "holochain_tracing_macros",
  "in_stream",
  "jsonrpc-core",
  "lazy_static",
@@ -1691,7 +1692,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "uuid 0.7.1",
 ]
 
@@ -1806,7 +1807,9 @@ dependencies = [
  "log 0.4.8",
  "rustracing",
  "rustracing_jaeger",
- "shrinkwraprs",
+ "serde",
+ "serde_derive",
+ "shrinkwraprs 0.3.0",
 ]
 
 [[package]]
@@ -2018,7 +2021,7 @@ dependencies = [
  "net2",
  "openssl",
  "parking_lot 0.9.0",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "tungstenite",
  "url2",
 ]
@@ -2211,7 +2214,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "tungstenite",
  "url 2.1.0",
 ]
@@ -2264,7 +2267,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_derive",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
  "url 2.1.0",
  "url_serde",
 ]
@@ -2297,7 +2300,7 @@ dependencies = [
  "parking_lot 0.7.1",
  "predicates",
  "regex",
- "shrinkwraprs",
+ "shrinkwraprs 0.2.1",
 ]
 
 [[package]]
@@ -4105,6 +4108,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "shrinkwraprs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e63e6744142336dfb606fe2b068afa2e1cca1ee6a5d8377277a92945d81fa331"
+dependencies = [
+ "bitflags",
+ "itertools 0.8.2",
+ "proc-macro2 1.0.7",
+ "quote 1.0.2",
+ "syn 1.0.13",
+]
+
+[[package]]
 name = "signal-hook"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4165,6 +4181,7 @@ dependencies = [
  "holochain_metrics",
  "holochain_persistence_api",
  "holochain_tracing",
+ "holochain_tracing_macros",
  "in_stream",
  "lazy_static",
  "lib3h",

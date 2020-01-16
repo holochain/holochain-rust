@@ -48,7 +48,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::connection::net_connection::NetSend;
+use holochain_net::{connection::net_connection::NetSend, p2p_network::Lib3hClientProtocolWrapped};
 
 use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
 
@@ -109,6 +109,7 @@ pub fn reduce(
 
 /// Sends the given Lib3hClientProtocol over the network using the network proxy instance
 /// that lives in the NetworkState.
+#[autotrace]
 pub fn send(
     network_state: &mut NetworkState,
     msg: Lib3hClientProtocol,
@@ -118,7 +119,7 @@ pub fn send(
         .as_mut()
         .map(|network| {
             network
-                .send(msg)
+                .send(ht::top_follower("send").wrap(msg).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?
@@ -128,6 +129,7 @@ pub fn send(
 /// This creates a transient connection as every node-to-node communication follows a
 /// request-response pattern. This function therefore logs the open connection
 /// (expecting a response) in network_state.direct_message_connections.
+#[autotrace]
 pub fn send_message(
     network_state: &mut NetworkState,
     to_agent_id: &Address,
@@ -147,7 +149,8 @@ pub fn send_message(
         content: content.into(),
     };
 
-    let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;
+    let msg = Lib3hClientProtocol::SendDirectMessage(data);
+    let _ = send(network_state, msg)?;
 
     network_state.direct_message_connections.insert(id, message);
 

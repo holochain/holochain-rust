@@ -2,9 +2,11 @@ use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
+use crate::p2p_network::Lib3hClientProtocolWrapped;
 use failure::err_msg;
 use holochain_locksmith::Mutex;
 use holochain_logging::prelude::*;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -13,8 +15,6 @@ use std::{
     },
     thread, time,
 };
-
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 const TICK_SLEEP_MIN_US: u64 = 100;
 const TICK_SLEEP_MAX_US: u64 = 10_000;
@@ -25,7 +25,7 @@ const TICK_SLEEP_STARTUP_RETRY_MS: u64 = 3_000;
 #[derive(Clone)]
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
-    send_channel: crossbeam_channel::Sender<Lib3hClientProtocol>,
+    send_channel: ht::channel::EncodedSpanSender<Lib3hClientProtocol>,
     thread: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     pub endpoint: String,
     pub p2p_endpoint: url::Url,
@@ -33,7 +33,7 @@ pub struct NetConnectionThread {
 
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
-    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         self.send_channel.send(data)?;
         Ok(())
     }
@@ -142,7 +142,7 @@ impl NetConnectionThread {
         // Done
         Ok(NetConnectionThread {
             can_keep_running,
-            send_channel,
+            send_channel: send_channel.into(),
             thread: Arc::new(Mutex::new(Some(thread))),
             endpoint,
             p2p_endpoint,
@@ -182,7 +182,7 @@ mod tests {
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
         data_types::GenericResultData,
-        protocol_server::Lib3hServerProtocol,
+        protocol_server::Lib3hServerProtocolWrapped,
         types::{AgentPubKey, SpaceHash},
     };
 
@@ -194,8 +194,8 @@ mod tests {
         }
     }
 
-    fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocol {
-        Lib3hServerProtocol::SuccessResult(GenericResultData {
+    fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocolWrapped {
+        Lib3hServerProtocolWrapped::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: AgentPubKey::from("test-agent"),
@@ -203,8 +203,8 @@ mod tests {
         })
     }
 
-    fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocol {
-        Lib3hClientProtocol::SuccessResult(GenericResultData {
+    fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocolWrapped {
+        Lib3hClientProtocolWrapped::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: AgentPubKey::from("test-agent"),
@@ -236,9 +236,9 @@ mod tests {
             Ok(true)
         }
 
-        fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+        fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
             match data {
-                Lib3hClientProtocol::SuccessResult(data) => self
+                Lib3hClientProtocolWrapped::SuccessResult(data) => self
                     .handler
                     .handle(Ok(success_server_result(&*data.result_info))),
                 msg => panic!("unexpected client protocol message in receive: {:?}", msg),
@@ -272,7 +272,7 @@ mod tests {
             let tmp = receiver.recv().unwrap();
 
             match tmp {
-                Lib3hServerProtocol::SuccessResult(generic_data) => {
+                Lib3hServerProtocolWrapped::SuccessResult(generic_data) => {
                     if generic_data.result_info == "tick".to_string().into_bytes().into() {
                         continue;
                     } else {
@@ -305,7 +305,7 @@ mod tests {
         let res = receiver.recv().unwrap();
 
         match res {
-            Lib3hServerProtocol::SuccessResult(generic_data) => {
+            Lib3hServerProtocolWrapped::SuccessResult(generic_data) => {
                 assert_eq!("tick".to_string().into_bytes(), *generic_data.result_info)
             }
             msg => panic!("unexpected message received: {:?}", msg),

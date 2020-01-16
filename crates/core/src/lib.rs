@@ -25,7 +25,7 @@ extern crate pretty_assertions;
 extern crate log;
 #[macro_use]
 extern crate holochain_logging;
-// extern crate holochain_tracing as ht;
+extern crate holochain_tracing as ht;
 #[macro_use]
 extern crate holochain_tracing_macros;
 

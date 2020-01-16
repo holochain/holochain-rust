@@ -78,7 +78,7 @@ impl Lib3hWorker {
 impl NetWorker for Lib3hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         self.net_engine.post(data.clone())?;
         // Done
         Ok(())
@@ -91,7 +91,7 @@ impl NetWorker for Lib3hWorker {
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
             for msg in output {
-                self.handler.handle(Ok(span.follower("inner").wrap(msg)))?;
+                self.handler.handle(Ok(span.follower("inner").wrap(msg).into()))?;
             }
         }
         Ok(did_something)

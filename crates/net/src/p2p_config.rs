@@ -1,4 +1,4 @@
-use crate::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+use crate::{/*sim1h_worker::Sim1hConfig, */sim2h_worker::Sim2hConfig};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
@@ -69,6 +69,11 @@ pub enum BackendConfig {
     Memory(EngineConfig),
     Sim1h(Sim1hConfig),
     Sim2h(Sim2hConfig),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
+pub struct Sim1hConfig {
+    dynamo_url: String
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]

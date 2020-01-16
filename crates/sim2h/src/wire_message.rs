@@ -2,6 +2,7 @@
 use crate::error::Sim2hError;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
+use ht;
 
 pub type WireMessageVersion = u32;
 pub const WIRE_VERSION: WireMessageVersion = 2;
@@ -27,13 +28,13 @@ pub struct HelloData {
     pub extra: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WireMessage {
-    ClientToLib3h(ClientToLib3h),
-    ClientToLib3hResponse(ClientToLib3hResponse),
-    Lib3hToClient(Lib3hToClient),
-    Lib3hToClientResponse(Lib3hToClientResponse),
-    MultiSend(Vec<Lib3hToClient>),
+    ClientToLib3h(ht::EncodedSpanWrap<ClientToLib3h>),
+    ClientToLib3hResponse(ht::EncodedSpanWrap<ClientToLib3hResponse>),
+    Lib3hToClient(ht::EncodedSpanWrap<Lib3hToClient>),
+    Lib3hToClientResponse(ht::EncodedSpanWrap<Lib3hToClientResponse>),
+    MultiSend(Vec<ht::EncodedSpanWrap<Lib3hToClient>>),
     Err(WireError),
     Ping,
     Pong,
@@ -42,6 +43,26 @@ pub enum WireMessage {
     Status,
     StatusResponse(StatusData),
 }
+
+// impl PartialEq for WireMessage {
+//     fn eq(&self, other: &Self) -> bool {
+//         use WireMessage::*;
+//         match (self, other) {
+//             (ClientToLib3h(a), ClientToLib3h(b)) => a.data == b.data,
+//             (ClientToLib3hResponse(a), ClientToLib3hResponse(b)) => a.data == b.data,
+//             (Lib3hToClient(a), Lib3hToClient(b)) => a.data == b.data,
+//             (Lib3hToClientResponse(a), Lib3hToClientResponse(b)) => a.data == b.data,
+//             (MultiSend(a), MultiSend(b)) => a.map,
+//             Err(WireError),
+//             Ping,
+//             Pong,
+//             Hello(WireMessageVersion),
+//             HelloResponse(HelloData),
+//             Status,
+//             StatusResponse(StatusData),
+//         }
+//     }
+// }
 
 impl WireMessage {
     pub fn message_type(&self) -> String {
@@ -52,85 +73,62 @@ impl WireMessage {
             WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::Hello(_) => "Hello",
             WireMessage::HelloResponse(_) => "HelloResponse",
-            WireMessage::ClientToLib3h(ClientToLib3h::Bootstrap(_)) => "[C>L]Bootstrap",
-            WireMessage::ClientToLib3h(ClientToLib3h::FetchEntry(_)) => "[C>L]FetchEntry",
-            WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => "[C>L]JoinSpace",
-            WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(_)) => "[C>L]LeaveSpace",
-            WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(_)) => "[C>L]PublishEntry",
-            WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(_)) => "[C>L]QueryEntry",
-            WireMessage::ClientToLib3h(ClientToLib3h::SendDirectMessage(_)) => {
-                "[C>L]SendDirectmessage"
-            }
-            WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::BootstrapSuccess) => {
-                "[C<L]BootsrapSuccess"
-            }
-            WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::FetchEntryResult(_)) => {
-                "[C<L]FetchEntryResult"
-            }
-            WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::JoinSpaceResult) => {
-                "[C<L]JoinSpaceResult"
-            }
-            WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::LeaveSpaceResult) => {
-                "[C<L]LeaveSpaceResult"
-            }
-            WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::QueryEntryResult(_)) => {
-                "[C<L]QueryEntryResult"
-            }
-            WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::SendDirectMessageResult(
-                _,
-            )) => "[C<L]SendDirectMessageResult",
-            WireMessage::Lib3hToClient(Lib3hToClient::Connected(_)) => "[L>C]Connected",
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleDropEntry(_)) => "[L>C]HandleDropEntry",
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(_)) => {
-                "[L>C]HandleFetchEntry"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_)) => {
-                "[L>C]HandleGetAuthoringList"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {
-                "[L>C]HandleGetGossipingEntryList"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(_)) => {
-                "[L>C]HandleQueryEntry"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(_)) => {
-                "[L>C]HandleSendDirectMessage"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(_)) => {
-                "[L>C]HandleStoreEntryAspect"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(_)) => {
-                "[L>C]SendDirectMessageResult"
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::Unbound(_)) => "[L>C]Unbound",
-            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleDropEntryResult) => {
-                "[L<C]HandleDropEntryResult"
-            }
-            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleFetchEntryResult(
-                _,
-            )) => "[L<C]HandleFetchEntryResult",
-            WireMessage::Lib3hToClientResponse(
-                Lib3hToClientResponse::HandleGetAuthoringEntryListResult(_),
-            ) => "[L<C]HandleGetAuthoringEntryListResult",
-            WireMessage::Lib3hToClientResponse(
-                Lib3hToClientResponse::HandleGetGossipingEntryListResult(_),
-            ) => "[L<C]HandleGetGossipingEntryListResult",
-            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(
-                _,
-            )) => "[L<C]HandleQueryEntryResult",
-            WireMessage::Lib3hToClientResponse(
-                Lib3hToClientResponse::HandleSendDirectMessageResult(_),
-            ) => "[L<C]HandleSendDirectMessageResult",
-            WireMessage::Lib3hToClientResponse(
-                Lib3hToClientResponse::HandleStoreEntryAspectResult,
-            ) => "[L<C]HandleStoreEntryAspectResult",
-            WireMessage::MultiSend(m) => get_multi_type(&m),
+            WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {
+                ClientToLib3h::Bootstrap(_) => "[C>L]Bootstrap",
+                ClientToLib3h::FetchEntry(_) => "[C>L]FetchEntry",
+                ClientToLib3h::JoinSpace(_) => "[C>L]JoinSpace",
+                ClientToLib3h::LeaveSpace(_) => "[C>L]LeaveSpace",
+                ClientToLib3h::PublishEntry(_) => "[C>L]PublishEntry",
+                ClientToLib3h::QueryEntry(_) => "[C>L]QueryEntry",
+                ClientToLib3h::SendDirectMessage(_) => "[C>L]SendDirectmessage",
+            },
+            WireMessage::ClientToLib3hResponse(span_wrap) => match span_wrap.data {
+                ClientToLib3hResponse::BootstrapSuccess => "[C<L]BootsrapSuccess",
+                ClientToLib3hResponse::FetchEntryResult(_) => "[C<L]FetchEntryResult",
+                ClientToLib3hResponse::JoinSpaceResult => "[C<L]JoinSpaceResult",
+                ClientToLib3hResponse::LeaveSpaceResult => "[C<L]LeaveSpaceResult",
+                ClientToLib3hResponse::QueryEntryResult(_) => "[C<L]QueryEntryResult",
+                ClientToLib3hResponse::SendDirectMessageResult(_) => "[C<L]SendDirectMessageResult",
+            },
+            WireMessage::Lib3hToClient(span_wrap) => match span_wrap.data {
+                Lib3hToClient::Connected(_) => "[L>C]Connected",
+                Lib3hToClient::HandleDropEntry(_) => "[L>C]HandleDropEntry",
+                Lib3hToClient::HandleFetchEntry(_) => "[L>C]HandleFetchEntry",
+                Lib3hToClient::HandleGetAuthoringEntryList(_) => "[L>C]HandleGetAuthoringList",
+                Lib3hToClient::HandleGetGossipingEntryList(_) => "[L>C]HandleGetGossipingEntryList",
+                Lib3hToClient::HandleQueryEntry(_) => "[L>C]HandleQueryEntry",
+                Lib3hToClient::HandleSendDirectMessage(_) => "[L>C]HandleSendDirectMessage",
+                Lib3hToClient::HandleStoreEntryAspect(_) => "[L>C]HandleStoreEntryAspect",
+                Lib3hToClient::SendDirectMessageResult(_) => "[L>C]SendDirectMessageResult",
+                Lib3hToClient::Unbound(_) => "[L>C]Unbound",
+            },
+            WireMessage::Lib3hToClientResponse(span_wrap) => match span_wrap.data {
+                Lib3hToClientResponse::HandleDropEntryResult => "[L<C]HandleDropEntryResult",
+                Lib3hToClientResponse::HandleFetchEntryResult(_) => "[L<C]HandleFetchEntryResult",
+                Lib3hToClientResponse::HandleGetAuthoringEntryListResult(_) => {
+                    "[L<C]HandleGetAuthoringEntryListResult"
+                }
+                Lib3hToClientResponse::HandleGetGossipingEntryListResult(_) => {
+                    "[L<C]HandleGetGossipingEntryListResult"
+                }
+                Lib3hToClientResponse::HandleQueryEntryResult(_) => "[L<C]HandleQueryEntryResult",
+                Lib3hToClientResponse::HandleSendDirectMessageResult(_) => {
+                    "[L<C]HandleSendDirectMessageResult"
+                }
+                Lib3hToClientResponse::HandleStoreEntryAspectResult => {
+                    "[L<C]HandleStoreEntryAspectResult"
+                }
+            },
+            WireMessage::MultiSend(m) => {
+                let messages: Vec<&Lib3hToClient> = m.iter().map(|w| &w.data).collect();
+                get_multi_type(messages)
+            },
             WireMessage::Err(_) => "[Error] {:?}",
         })
     }
 }
 
-fn get_multi_type(list: &Vec<Lib3hToClient>) -> &str {
+fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
     if list.len() > 0 {
         match list.get(0).unwrap() {
             Lib3hToClient::HandleFetchEntry(_) => "[L>C]MultiSend::HandleFetchEntry",

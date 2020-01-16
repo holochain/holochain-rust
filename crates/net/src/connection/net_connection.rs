@@ -3,24 +3,27 @@ use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3
 use parking_lot::RwLock;
 use std::{fmt, sync::Arc};
 
+type Lib3hClientProtocolWrapped = ht::EncodedSpanWrap<Lib3hClientProtocol>;
+type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;
+
 /// closure for processing a Protocol message received from the network
 #[derive(Clone, Serialize)]
 pub struct NetHandler {
     #[serde(skip)]
     closure:
-        Arc<RwLock<Box<dyn FnMut(NetResult<ht::SpanWrap<Lib3hServerProtocol>>) -> NetResult<()> + Send + Sync>>>,
+        Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocolWrapped>) -> NetResult<()> + Send + Sync>>>,
 }
 
 impl NetHandler {
     pub fn new(
-        c: Box<dyn FnMut(NetResult<ht::SpanWrap<Lib3hServerProtocol>>) -> NetResult<()> + Send + Sync>,
+        c: Box<dyn FnMut(NetResult<Lib3hServerProtocolWrapped>) -> NetResult<()> + Send + Sync>,
     ) -> NetHandler {
         NetHandler {
             closure: Arc::new(RwLock::new(c)),
         }
     }
 
-    pub fn handle(&mut self, message: NetResult<ht::SpanWrap<Lib3hServerProtocol>>) -> NetResult<()> {
+    pub fn handle(&mut self, message: NetResult<Lib3hServerProtocolWrapped>) -> NetResult<()> {
         let mut lock = self.closure.write();
         (&mut *lock)(message)
     }
@@ -43,7 +46,7 @@ pub type NetShutdown = Option<Box<dyn FnMut() + Send + Sync>>;
 
 ///  Trait for sending a Protocol message to the network
 pub trait NetSend {
-    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()>;
+    fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()>;
 }
 
 /// Trait that represents a worker thread that relays incoming and outgoing protocol messages
@@ -51,7 +54,7 @@ pub trait NetSend {
 pub trait NetWorker {
     /// The receiving method when NetSend's `send()` is called.
     /// It should relay that Protocol message to the p2p module.
-    fn receive(&mut self, _data: Lib3hClientProtocol) -> NetResult<()> {
+    fn receive(&mut self, _data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         Ok(())
     }
 

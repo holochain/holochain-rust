@@ -1,11 +1,13 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
 use super::memory_server::*;
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    p2p_network::Lib3hClientProtocolWrapped,
 };
-
 use holochain_json_api::json::JsonString;
 use holochain_locksmith::Mutex;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -24,11 +26,13 @@ pub struct InMemoryWorker {
 impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
     /// forward to our in-memory server
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        let span = ht::with_top_or_null(|s| s.child("pre-send"));
+    fn receive(&mut self, span_wrap: Lib3hClientProtocolWrapped) -> NetResult<()> {
+        // let span = ht::with_top_or_null(|s| s.child("pre-send"));
+        let data = &span_wrap.data;
         // InMemoryWorker doesn't have to do anything on shutdown
-        if data == Lib3hClientProtocol::Shutdown {
-            self.handler.handle(Ok(span.wrap(Lib3hServerProtocol::Terminated)))?;
+        if span_wrap.data == Lib3hClientProtocol::Shutdown {
+            self.handler
+                .handle(Ok(span_wrap.swapped(Lib3hServerProtocol::Terminated)))?;
             return Ok(());
         }
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
@@ -37,7 +41,7 @@ impl NetWorker for InMemoryWorker {
             .expect("InMemoryServer should have been initialized by now")
             .lock()
             .unwrap();
-        match &data {
+        match data {
             Lib3hClientProtocol::JoinSpace(track_msg) => {
                 let dna_address: HashString = track_msg.space_address.clone().into();
                 match self.receiver_per_dna.entry(dna_address.clone()) {
@@ -55,7 +59,7 @@ impl NetWorker for InMemoryWorker {
         // Serve
         server.serve(data.clone())?;
         // After serve
-        match &data {
+        match data {
             Lib3hClientProtocol::LeaveSpace(untrack_msg) => {
                 let dna_address: HashString = untrack_msg.space_address.clone().into();
                 match self.receiver_per_dna.entry(dna_address.clone()) {
@@ -78,14 +82,18 @@ impl NetWorker for InMemoryWorker {
         // Send p2pready on first tick
         if self.can_send_P2pReady {
             self.can_send_P2pReady = false;
-            self.handler.handle(Ok(span.child("can-send").wrap(Lib3hServerProtocol::P2pReady)))?;
+            self.handler.handle(Ok(span
+                .child("can-send")
+                .wrap(Lib3hServerProtocol::P2pReady)
+                .into()))?;
         }
         // check for messages from our InMemoryServer
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
                 did_something = true;
-                self.handler.handle(Ok(span.child("inner").wrap(data)))?;
+                self.handler
+                    .handle(Ok(span.child("inner").wrap(data).into()))?;
             }
         }
         Ok(did_something)

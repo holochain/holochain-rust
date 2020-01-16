@@ -285,7 +285,7 @@ impl Sim1hWorker {
 impl NetWorker for Sim1hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         debug!("CORE>>>NET {:?}", data);
         self.inbox.push(data);
         Ok(())

@@ -23,6 +23,7 @@ lib3h_sodium = "=0.0.26"
 lib3h_protocol = "=0.0.26"
 lib3h_zombie_actor = "=0.0.26"
 holochain_tracing = "=0.0.6"
+holochain_tracing_macros = "=0.0.3"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }

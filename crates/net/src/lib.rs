@@ -32,6 +32,8 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate holochain_logging;
+#[macro_use]
+extern crate holochain_tracing_macros;
 
 extern crate env_logger;
 
@@ -46,9 +48,9 @@ pub mod connection;
 pub mod error;
 pub mod in_memory;
 pub mod ipc;
-pub mod ipc_net_worker;
-pub mod lib3h_worker;
+// pub mod ipc_net_worker;
+// pub mod lib3h_worker;
 pub mod p2p_config;
 pub mod p2p_network;
-pub mod sim1h_worker;
+// pub mod sim1h_worker;
 pub mod sim2h_worker;

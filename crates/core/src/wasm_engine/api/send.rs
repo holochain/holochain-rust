@@ -12,6 +12,12 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: SendArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let span = runtime
+        .call_data()
+        .ok()
+        .map(|d| d.context.tracer.span("hdk invoke_send").start().into())
+        .unwrap_or_else(|| ht::noop("hdk invoke_send no context".to_string()));
+    let _trace_guard = ht::push_span(span);
     let call_data = runtime.call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);

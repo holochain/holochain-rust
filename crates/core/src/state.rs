@@ -148,6 +148,7 @@ impl State {
         }
     }
 
+    #[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),

@@ -9,6 +9,7 @@ use lib3h_protocol::{
     data_types::DirectMessageData as Lib3hDirectMessageData, protocol_client::Lib3hClientProtocol,
 };
 
+#[autotrace]
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
@@ -37,6 +38,7 @@ fn inner(
     send(network_state, protocol_object)
 }
 
+#[autotrace]
 pub fn reduce_send_direct_message(
     network_state: &mut NetworkState,
     _root_state: &State,

@@ -62,6 +62,7 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 /// maps incoming action to the correct handler
+#[autotrace]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
@@ -91,6 +92,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     }
 }
 
+#[autotrace]
 pub fn reduce(
     old_state: Arc<NetworkState>,
     root_state: &State,
@@ -119,7 +121,7 @@ pub fn send(
         .as_mut()
         .map(|network| {
             network
-                .send(ht::top_follower("send").wrap(msg).into())
+                .send(ht::top_follower("send-inner").wrap(msg).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?

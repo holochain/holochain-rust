@@ -812,11 +812,11 @@ impl Sim2h {
                     let tx = self.tp_send.clone();
                     let space_address = space_address.clone();
                     self.threadpool.execute(move || {
-                        if let Some((agent_id, uri, wire_message)) = ctx
+                        let res = ctx
                             .delete_me_lock_space(&space_address)
                             .expect("space should exist")
-                            .build_query(query_data, redundant_count)
-                        {
+                            .build_query(query_data, redundant_count);
+                        if let Some((agent_id, uri, wire_message)) = res {
                             let disconnects = ctx
                                 .delete_me()
                                 .read()
@@ -867,11 +867,11 @@ impl Sim2h {
         let agent_id = agent_id.clone();
         let list_data = list_data.clone();
         self.threadpool.execute(move || {
-            if let Some((agent_id, uri, wire_message)) = ctx
+            let res = ctx
                 .delete_me_lock_space(&space_address)
                 .expect("space should exist")
-                .build_handle_unseen_aspects(uri, agent_id, list_data)
-            {
+                .build_handle_unseen_aspects(uri, agent_id, list_data);
+            if let Some((agent_id, uri, wire_message)) = res {
                 let disconnects = ctx.delete_me().read().send(agent_id, uri, &wire_message);
                 tx.send(PoolTask::Disconnect(disconnects))
                     .expect("should send");

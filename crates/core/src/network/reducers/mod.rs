@@ -48,7 +48,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use holochain_net::{connection::net_connection::NetSend, p2p_network::Lib3hClientProtocolWrapped};
+use holochain_net::connection::net_connection::NetSend;
 
 use lib3h_protocol::{data_types::DirectMessageData, protocol_client::Lib3hClientProtocol};
 

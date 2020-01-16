@@ -10,6 +10,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
 use log::{debug, error, info};
 
+#[autotrace]
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
@@ -79,7 +80,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     state.dna_address = Some(network_settings.dna_address.clone());
     state.agent_id = Some(network_settings.agent_id.clone());
 
-    if let Err(err) = network.send(json) {
+    if let Err(err) = network.send(ht::top_follower("reduce_init").wrap(json).into()) {
         error!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
         error!("Failed to initialize network!");
         network.stop();

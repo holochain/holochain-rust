@@ -1,4 +1,5 @@
-use crate::{/*sim1h_worker::Sim1hConfig, */sim2h_worker::Sim2hConfig};
+use crate::{/*sim1h_worker::FakeSim1hConfig, */sim2h_worker::Sim2hConfig};
+use holochain_common::FakeSim1hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
@@ -67,13 +68,8 @@ pub enum BackendConfig {
     Json(serde_json::Value),
     Lib3h(EngineConfig),
     Memory(EngineConfig),
-    Sim1h(Sim1hConfig),
+    Sim1h(FakeSim1hConfig),
     Sim2h(Sim2hConfig),
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
-pub struct Sim1hConfig {
-    dynamo_url: String
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
@@ -179,7 +175,7 @@ impl P2pConfig {
     pub fn new_with_sim1h_backend(dynamo_path: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::SIM1H,
-            BackendConfig::Sim1h(Sim1hConfig {
+            BackendConfig::Sim1h(FakeSim1hConfig {
                 dynamo_url: dynamo_path.into(),
             }),
             None,

@@ -706,10 +706,27 @@ impl<T> KeepReadWriteForFutureMutex<T> for futures::lock::Mutex<T> {
     }
 }
 
+/// this is just a hack so i don't have to search/replace all the
+/// read/writes to locks + we might want to keep that distinction
+trait KeepReadWriteForLocksmithMutex<T> {
+    fn read(&self) -> holochain_locksmith::MutexGuard<T>;
+    fn write(&self) -> holochain_locksmith::MutexGuard<T>;
+}
+
+impl<T> KeepReadWriteForLocksmithMutex<T> for holochain_locksmith::Mutex<T> {
+    fn read(&self) -> holochain_locksmith::MutexGuard<T> {
+        self.f_lock()
+    }
+
+    fn write(&self) -> holochain_locksmith::MutexGuard<T> {
+        self.f_lock()
+    }
+}
+
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    state: Arc<futures::lock::Mutex<Sim2hState>>,
+    state: Arc<holochain_locksmith::Mutex<Sim2hState>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
@@ -733,7 +750,7 @@ impl Sim2h {
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
         let (tp_send, tp_recv) = crossbeam_channel::unbounded();
         let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
-        let state = Arc::new(futures::lock::Mutex::new(Sim2hState {
+        let state = Arc::new(holochain_locksmith::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
             open_connections: HashMap::new(),

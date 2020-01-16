@@ -47,7 +47,6 @@ pub use wire_message::{
 
 use in_stream::*;
 use log::*;
-use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
     collections::{HashMap, HashSet},
@@ -690,10 +689,27 @@ enum PoolTask {
     Disconnect(Vec<Lib3hUri>),
 }
 
+/// this is just a hack so i don't have to search/replace all the
+/// read/writes to locks + we might want to keep that distinction
+trait KeepReadWriteForFutureMutex<T> {
+    fn read(&self) -> futures::lock::MutexGuard<T>;
+    fn write(&self) -> futures::lock::MutexGuard<T>;
+}
+
+impl<T> KeepReadWriteForFutureMutex<T> for futures::lock::Mutex<T> {
+    fn read(&self) -> futures::lock::MutexGuard<T> {
+        futures::executor::block_on(self.lock())
+    }
+
+    fn write(&self) -> futures::lock::MutexGuard<T> {
+        futures::executor::block_on(self.lock())
+    }
+}
+
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    state: Arc<RwLock<Sim2hState>>,
+    state: Arc<futures::lock::Mutex<Sim2hState>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
@@ -717,7 +733,7 @@ impl Sim2h {
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
         let (tp_send, tp_recv) = crossbeam_channel::unbounded();
         let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
-        let state = Arc::new(RwLock::new(Sim2hState {
+        let state = Arc::new(futures::lock::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
             open_connections: HashMap::new(),

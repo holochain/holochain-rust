@@ -73,9 +73,10 @@ pub fn reduce_query_timeout(
     }
 
     if network_state.get_query_results.get(key).unwrap().is_none() {
-        network_state
-            .get_query_results
-            .insert(key.clone(), Some(Err(HolochainError::Timeout("reduce_query_timeout".into()))));
+        network_state.get_query_results.insert(
+            key.clone(),
+            Some(Err(HolochainError::Timeout("reduce_query_timeout".into()))),
+        );
     }
 }
 

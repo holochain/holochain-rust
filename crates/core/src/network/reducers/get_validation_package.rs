@@ -67,7 +67,10 @@ pub fn reduce_get_validation_package_timeout(
         return;
     }
 
-    network_state
-        .get_validation_package_results
-        .insert(address.clone(), Some(Err(HolochainError::Timeout("reduce_get_validation_package".into()))));
+    network_state.get_validation_package_results.insert(
+        address.clone(),
+        Some(Err(HolochainError::Timeout(
+            "reduce_get_validation_package".into(),
+        ))),
+    );
 }

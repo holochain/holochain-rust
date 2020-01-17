@@ -68,9 +68,12 @@ pub fn reduce_send_direct_message_timeout(
         return;
     }
 
-    network_state
-        .custom_direct_message_replys
-        .insert(id.clone(), Err(HolochainError::Timeout("reduce_send_direct_message_timeout".into())));
+    network_state.custom_direct_message_replys.insert(
+        id.clone(),
+        Err(HolochainError::Timeout(
+            "reduce_send_direct_message_timeout".into(),
+        )),
+    );
 }
 
 #[cfg(test)]

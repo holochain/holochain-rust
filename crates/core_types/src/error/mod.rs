@@ -409,7 +409,7 @@ mod tests {
                 HolochainError::CapabilityCheckFailed,
                 "Caller does not have Capability to make that call",
             ),
-            (HolochainError::Timeout(_), "timeout"),
+            (HolochainError::Timeout("err".to_string()), "timeout err"),
             (
                 HolochainError::ValidationPending,
                 "Entry validation could not be completed",

@@ -143,6 +143,11 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout(_))));
+        assert_eq!(
+            maybe_reply,
+            Some(Err(HolochainError::Timeout(
+                "reduce_send_direct_message_timeout".to_string()
+            )))
+        );
     }
 }

@@ -150,6 +150,15 @@ impl State {
 
     #[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
+        let _span_guard = ht::push_span_with(|span| {
+            span.child_("reduce-inner", |s| {
+                s.tag(ht::Tag::new(
+                    "action_wrapper",
+                    format!("{:?}", action_wrapper),
+                ))
+                .start()
+            }).into()
+        });
         State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),

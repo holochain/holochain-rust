@@ -134,9 +134,15 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             return Ok(());
         }
         let message = message.unwrap();
-        let _span = ht::SpanWrap::from(message.clone()).follower(&context.tracer, "create_handler").map(|mut span| {
-            span.event(format!("message.data: {:?}", message.data));
-        });
+        let mut _span = ht::SpanWrap::from(message.clone())
+            .follower(&context.tracer, "create_handler")
+            .unwrap_or_else(|| {
+                context.tracer
+                    .span("create_handler (missing history)")
+                    .start()
+                    .into()
+            });
+        _span.event(format!("message.data: {:?}", message.data));
         match message.data {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {

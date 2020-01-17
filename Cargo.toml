@@ -31,17 +31,17 @@ exclude = [
 ]
 
 [patch.crates-io]
-lib3h = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
-lib3h_protocol = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
-lib3h_crypto_api = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
-lib3h_sodium = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
-lib3h_zombie_actor = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+# lib3h = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+# lib3h_protocol = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+# lib3h_crypto_api = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+# lib3h_sodium = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
+# lib3h_zombie_actor = { version = "=0.0.26", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 
-# lib3h = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h" }
-# lib3h_protocol = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h" }
-# lib3h_crypto_api = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h" }
-# lib3h_sodium = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h" }
-# lib3h_zombie_actor = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h" }
+lib3h = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h" }
+lib3h_protocol = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/lib3h_protocol" }
+lib3h_crypto_api = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/crypto_api" }
+lib3h_sodium = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/sodium" }
+lib3h_zombie_actor = { version = "=0.0.26", path = "/home/michael/Holo/lib3h/crates/zombie_actor" }
 
-holochain_tracing = { path = "../tracing/crates/tracing" }
-holochain_tracing_macros = { path = "../tracing/crates/tracing_macros" }
+holochain_tracing = { version = "=0.0.13", path = "../tracing/crates/tracing" }
+holochain_tracing_macros = { version = "=0.0.13", path = "../tracing/crates/tracing_macros" }

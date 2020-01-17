@@ -107,6 +107,7 @@ MessageData {{
 }
 
 // TODO Implement a failure workflow?
+#[autotrace]
 fn handle_failure_result(
     context: &Arc<Context>,
     failure_data: GenericResultData,
@@ -134,15 +135,17 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             return Ok(());
         }
         let message = message.unwrap();
-        let mut _span = ht::SpanWrap::from(message.clone())
-            .follower(&context.tracer, "create_handler")
+        let mut span = ht::SpanWrap::from(message.clone())
+            .follower(&context.tracer, "create_handler / received message")
             .unwrap_or_else(|| {
                 context.tracer
                     .span("create_handler (missing history)")
                     .start()
                     .into()
             });
-        _span.event(format!("message.data: {:?}", message.data));
+        span.event(format!("message.data: {:?}", message.data));
+        // Set this as the root span for autotrace
+        ht::push_span(span);
         match message.data {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {

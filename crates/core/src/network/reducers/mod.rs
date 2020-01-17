@@ -120,8 +120,14 @@ pub fn send(
         .network
         .as_mut()
         .map(|network| {
+            let span: ht::Span = ht::with_top_or_null(|top| {
+                top.follower_("send-inner", |s|
+                    s.tag(ht::Tag::new("msg", format!("{:?}", msg)))
+                    .start()
+                ).into()
+            });
             network
-                .send(ht::top_follower("send-inner").wrap(msg).into())
+                .send(span.wrap(msg).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?

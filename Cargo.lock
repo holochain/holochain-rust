@@ -560,7 +560,6 @@ checksum = "891f5117f720f720924586e087b7eb385d816afb467a231c2fec64239de00986"
 [[package]]
 name = "detach"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 
 [[package]]
 name = "deunicode"
@@ -1772,7 +1771,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_tracing"
-version = "0.0.6"
+version = "0.0.13"
 dependencies = [
  "backtrace",
  "crossbeam-channel",
@@ -1787,9 +1786,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_tracing_macros"
-version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7aa315bb54be20059df613e81a0dae4a1350f11a4a1d12fa1a0f9e6a47bfa0b3"
+version = "0.0.13"
 dependencies = [
  "crossbeam-channel",
  "holochain_tracing",
@@ -2162,7 +2159,6 @@ checksum = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 [[package]]
 name = "lib3h"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "backtrace",
  "detach 0.0.26",
@@ -2195,7 +2191,6 @@ dependencies = [
 [[package]]
 name = "lib3h_crypto_api"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "serde",
  "serde_derive",
@@ -2205,7 +2200,6 @@ dependencies = [
 [[package]]
 name = "lib3h_mdns"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "byteorder",
  "hostname",
@@ -2221,7 +2215,6 @@ dependencies = [
 [[package]]
 name = "lib3h_p2p_protocol"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "capnp",
  "serde",
@@ -2232,7 +2225,6 @@ dependencies = [
 [[package]]
 name = "lib3h_protocol"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "backtrace",
  "base64 0.10.1",
@@ -2248,7 +2240,6 @@ dependencies = [
 [[package]]
 name = "lib3h_sodium"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "lazy_static",
  "lib3h_crypto_api",
@@ -2260,7 +2251,6 @@ dependencies = [
 [[package]]
 name = "lib3h_zombie_actor"
 version = "0.0.26"
-source = "git+https://github.com/holochain/lib3h?branch=tracing-0.0.6#62459e568dcf511f3de9d83e66dfd5f6b3ffcf2a"
 dependencies = [
  "backtrace",
  "crossbeam-channel",
@@ -4170,8 +4160,11 @@ dependencies = [
 name = "sim2h_server"
 version = "0.0.42-alpha5"
 dependencies = [
+ "crossbeam-channel",
  "detach 0.0.19",
  "env_logger 0.7.1",
+ "holochain_tracing",
+ "holochain_tracing_macros",
  "lib3h",
  "lib3h_protocol",
  "lib3h_sodium",
@@ -5405,7 +5398,3 @@ dependencies = [
  "podio",
  "time",
 ]
-
-[[patch.unused]]
-name = "holochain_tracing_macros"
-version = "0.0.5"

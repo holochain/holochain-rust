@@ -178,11 +178,11 @@ impl NetConnectionThread {
 #[cfg(test)]
 mod tests {
     use super::{super::net_connection::NetWorker, *};
+    use crate::p2p_network::Lib3hServerProtocolWrapped;
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
         data_types::GenericResultData,
-        protocol_server::Lib3hServerProtocolWrapped,
         types::{AgentPubKey, SpaceHash},
     };
 

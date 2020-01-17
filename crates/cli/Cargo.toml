@@ -15,8 +15,8 @@ holochain_conductor_lib = { version = "=0.0.42-alpha5", path = "../conductor_lib
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
-holochain_tracing = "=0.0.6"
-holochain_tracing_macros = "=0.0.3"
+holochain_tracing = "=0.0.13"
+holochain_tracing_macros = "=0.0.13"
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
 lib3h_crypto_api = "=0.0.26"
 in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }

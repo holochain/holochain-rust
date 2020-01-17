@@ -719,10 +719,15 @@ pub struct Sim2h {
     tp_send: crossbeam_channel::Sender<PoolTask>,
     tp_recv: crossbeam_channel::Receiver<PoolTask>,
     metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
+    tracer: ht::Tracer,
 }
 
 impl Sim2h {
-    pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        bind_spec: Lib3hUri,
+        tracer: Option<ht::Tracer>,
+    ) -> Self {
         let pool = Pool::new();
         pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
 
@@ -752,6 +757,7 @@ impl Sim2h {
             tp_send,
             tp_recv,
             metric_publisher,
+            tracer: tracer.unwrap_or_else(|| ht::null_tracer()),
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -1195,215 +1201,220 @@ impl Sim2h {
             WireMessage::Lib3hToClient(_) | WireMessage::ClientToLib3hResponse(_) =>
                 panic!("This is soo wrong. Clients should never send a message that only servers can send."),
             // -- Space -- //
-            WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data.clone() {
-                ClientToLib3h::JoinSpace(_) => Err("join message should have been processed elsewhere and can't be proxied".into()),
-                ClientToLib3h::LeaveSpace(data) => self.state.write().leave(uri, &data),
-                // -- Direct Messaging -- //
-                // Send a message directly to another agent on the network
-                ClientToLib3h::SendDirectMessage(dm_data) => {
-                    if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
-                    {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
-                    }
-                    let to_url = self
-                        .lookup_joined(space_address, &dm_data.to_agent_id)
-                        .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
-                    self.send(
-                        dm_data.to_agent_id.clone(),
-                        to_url,
-                        &WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::HandleSendDirectMessage(dm_data.to_owned())))
-                    );
-                    Ok(())
-                }
-                ClientToLib3h::PublishEntry(data) => {
-                    if (data.provider_agent_id != *agent_id) || (data.space_address != *space_address) {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
-                    }
-                    self.state.write().handle_new_entry_data(data.to_owned().entry, space_address.clone(), agent_id.clone(), self.dht_algorithm.clone());
-                    Ok(())
-                }
-                ClientToLib3h::QueryEntry(query_data) => {
-                    if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
-                        let state = self.state.clone();
-                        let tx = self.tp_send.clone();
-                        let space_address = space_address.clone();
-                        self.threadpool.execute(move || {
-                            let disconnects =
-                                state
-                                .read()
-                                .build_query(space_address,query_data.to_owned(),redundant_count);
-                            tx.send(PoolTask::Disconnect(disconnects))
-                                .expect("should send");
-                        });
+            WireMessage::ClientToLib3h(span_wrap) => {
+                let _span = ht::SpanWrap::from(span_wrap.clone()).follower(&self.tracer, "handle_joined - ClientToLib3h");
+                match span_wrap.data.clone() {
+                    ClientToLib3h::JoinSpace(_) => Err("join message should have been processed elsewhere and can't be proxied".into()),
+                    ClientToLib3h::LeaveSpace(data) => self.state.write().leave(uri, &data),
+                    // -- Direct Messaging -- //
+                    // Send a message directly to another agent on the network
+                    ClientToLib3h::SendDirectMessage(dm_data) => {
+                        if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
+                        {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
+                        }
+                        let to_url = self
+                            .lookup_joined(space_address, &dm_data.to_agent_id)
+                            .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
+                        self.send(
+                            dm_data.to_agent_id.clone(),
+                            to_url,
+                            &WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::HandleSendDirectMessage(dm_data.to_owned())))
+                        );
                         Ok(())
-                    } else {
-                        Err("Got ClientToLib3h::QueryEntry in full-sync mode".into())
                     }
-                }
-                _ => {
-                    warn!("Ignoring unimplemented message: {:?}", message.clone() );
-                    Err(format!("Message not implemented: {:?}", message).into())
+                    ClientToLib3h::PublishEntry(data) => {
+                        if (data.provider_agent_id != *agent_id) || (data.space_address != *space_address) {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
+                        }
+                        self.state.write().handle_new_entry_data(data.to_owned().entry, space_address.clone(), agent_id.clone(), self.dht_algorithm.clone());
+                        Ok(())
+                    }
+                    ClientToLib3h::QueryEntry(query_data) => {
+                        if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
+                            let state = self.state.clone();
+                            let tx = self.tp_send.clone();
+                            let space_address = space_address.clone();
+                            self.threadpool.execute(move || {
+                                let disconnects =
+                                    state
+                                    .read()
+                                    .build_query(space_address,query_data.to_owned(),redundant_count);
+                                tx.send(PoolTask::Disconnect(disconnects))
+                                    .expect("should send");
+                            });
+                            Ok(())
+                        } else {
+                            Err("Got ClientToLib3h::QueryEntry in full-sync mode".into())
+                        }
+                    }
+                    _ => {
+                        warn!("Ignoring unimplemented message: {:?}", message.clone() );
+                        Err(format!("Message not implemented: {:?}", message).into())
+                    }
                 }
             }
             // Direct message response
-            WireMessage::Lib3hToClientResponse(span_wrap) => match span_wrap.data.clone() {
-                Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
-                    if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
-                    {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
-                    }
-                    let to_url = self
-                        .lookup_joined(space_address, &dm_data.to_agent_id)
-                        .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
-                    self.send(
-                        dm_data.to_agent_id.clone(),
-                        to_url,
-                        &WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::SendDirectMessageResult(dm_data)))
-                    );
-                    Ok(())
-                }
-                Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
-                    debug!("GOT AUTHORING LIST from {}", agent_id);
-                    if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
-                    }
-                    self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
-                    Ok(())
-                }
-                Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data) => {
-                    debug!("GOT GOSSIPING LIST from {}", agent_id);
-                    if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
-                    }
-                    self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
-
-                    let dht_algorithm = self.dht_algorithm.clone();
-
-                    // Check if the node is missing any aspects
-                    let aspects_missing_at_node = match dht_algorithm {
-                        DhtAlgorithm::FullSync => self
-                            .state.read().get_space(&space_address)
-                            .all_aspects()
-                            .diff(&AspectList::from(list_data.address_map)),
-                        DhtAlgorithm::NaiveSharding {redundant_count} => self
-                            .state.read().get_space(&space_address)
-                            .aspects_in_shard_for_agent(agent_id, redundant_count)
-                            .diff(&AspectList::from(list_data.address_map))
-                    };
-
-                    if aspects_missing_at_node.entry_addresses().count() > 0 {
-                        warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
-
-                        // Cache info about what this agent is missing so we can make sure it got it
-                        let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
-                        if missing_hashes.len() > 0 {
-                            self.state.write().add_missing_aspects(space_address,&agent_id,missing_hashes);
+            WireMessage::Lib3hToClientResponse(span_wrap) => {
+                let _span = ht::SpanWrap::from(span_wrap.clone()).follower(&self.tracer, "handle_joined - Lib3hToClientResponse");
+                match span_wrap.data.clone() {
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
+                        if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
+                        {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
                         }
+                        let to_url = self
+                            .lookup_joined(space_address, &dm_data.to_agent_id)
+                            .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
+                        self.send(
+                            dm_data.to_agent_id.clone(),
+                            to_url,
+                            &WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::SendDirectMessageResult(dm_data)))
+                        );
+                        Ok(())
+                    }
+                    Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
+                        debug!("GOT AUTHORING LIST from {}", agent_id);
+                        if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
+                        }
+                        self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
+                        Ok(())
+                    }
+                    Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data) => {
+                        debug!("GOT GOSSIPING LIST from {}", agent_id);
+                        if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
+                        }
+                        self.handle_unseen_aspects(uri, space_address, agent_id, &list_data);
 
-                        match dht_algorithm {
+                        let dht_algorithm = self.dht_algorithm.clone();
 
-                            DhtAlgorithm::FullSync => {
-                                let all_agents_in_space = self
-                                    .state.read().get_space(&space_address)
-                                    .all_agents()
-                                    .keys()
-                                    .cloned()
-                                    .collect::<Vec<AgentPubKey>>();
-                                if all_agents_in_space.len() == 1 {
-                                    error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
-                                } else {
-                                    self.fetch_aspects_from_arbitrary_agent(
-                                        aspects_missing_at_node,
-                                        agent_id.clone(),
-                                        all_agents_in_space,
-                                        space_address.clone()
-                                    );
-                                }
-                            },
+                        // Check if the node is missing any aspects
+                        let aspects_missing_at_node = match dht_algorithm {
+                            DhtAlgorithm::FullSync => self
+                                .state.read().get_space(&space_address)
+                                .all_aspects()
+                                .diff(&AspectList::from(list_data.address_map)),
+                            DhtAlgorithm::NaiveSharding {redundant_count} => self
+                                .state.read().get_space(&space_address)
+                                .aspects_in_shard_for_agent(agent_id, redundant_count)
+                                .diff(&AspectList::from(list_data.address_map))
+                        };
 
-                            DhtAlgorithm::NaiveSharding {redundant_count} => {
-                                for entry_address in aspects_missing_at_node.entry_addresses() {
-                                    let entry_loc = entry_location(&self.crypto, entry_address);
-                                    let agent_pool = self
-                                        .state.read()
-                                        .get_space(&space_address)
-                                        .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+                        if aspects_missing_at_node.entry_addresses().count() > 0 {
+                            warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
+
+                            // Cache info about what this agent is missing so we can make sure it got it
+                            let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
+                            if missing_hashes.len() > 0 {
+                                self.state.write().add_missing_aspects(space_address,&agent_id,missing_hashes);
+                            }
+
+                            match dht_algorithm {
+
+                                DhtAlgorithm::FullSync => {
+                                    let all_agents_in_space = self
+                                        .state.read().get_space(&space_address)
+                                        .all_agents()
                                         .keys()
                                         .cloned()
                                         .collect::<Vec<AgentPubKey>>();
-                                    self.fetch_aspects_from_arbitrary_agent(
-                                        aspects_missing_at_node.filtered_by_entry_hash(|e| e == entry_address),
-                                        agent_id.clone(),
-                                        agent_pool,
-                                        space_address.clone()
-                                    );
+                                    if all_agents_in_space.len() == 1 {
+                                        error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
+                                    } else {
+                                        self.fetch_aspects_from_arbitrary_agent(
+                                            aspects_missing_at_node,
+                                            agent_id.clone(),
+                                            all_agents_in_space,
+                                            space_address.clone()
+                                        );
+                                    }
+                                },
+
+                                DhtAlgorithm::NaiveSharding {redundant_count} => {
+                                    for entry_address in aspects_missing_at_node.entry_addresses() {
+                                        let entry_loc = entry_location(&self.crypto, entry_address);
+                                        let agent_pool = self
+                                            .state.read()
+                                            .get_space(&space_address)
+                                            .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+                                            .keys()
+                                            .cloned()
+                                            .collect::<Vec<AgentPubKey>>();
+                                        self.fetch_aspects_from_arbitrary_agent(
+                                            aspects_missing_at_node.filtered_by_entry_hash(|e| e == entry_address),
+                                            agent_id.clone(),
+                                            agent_pool,
+                                            space_address.clone()
+                                        );
+                                    }
                                 }
                             }
                         }
+
+                        Ok(())
                     }
 
-                    Ok(())
-                }
-
-                Lib3hToClientResponse::HandleFetchEntryResult(fetch_result) => {
-                    if (fetch_result.provider_agent_id != *agent_id) || (fetch_result.space_address != *space_address) {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
-                    }
-                    debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
-                    if fetch_result.request_id == "" {
-                        debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
-                        self.state.write().handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone(),self.dht_algorithm.clone());
-                    } else {
-                        debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
-                        let to_agent_id = AgentPubKey::from(fetch_result.request_id);
-                        let maybe_url = self.lookup_joined(space_address, &to_agent_id);
-                        if maybe_url.is_none() {
-                            error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
-                            return Ok(())
+                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_result) => {
+                        if (fetch_result.provider_agent_id != *agent_id) || (fetch_result.space_address != *space_address) {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
                         }
-                        let url = maybe_url.unwrap();
-                        let mut multi_messages = Vec::new();
-                        for aspect in fetch_result.entry.aspect_list {
-                            self
-                                .state.write()
-                                .remove_missing_aspect(space_address, &to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
-                            let msg = Lib3hToClient::HandleStoreEntryAspect(
-                                StoreEntryAspectData {
-                                    request_id: "".into(),
-                                    space_address: space_address.clone(),
-                                    provider_agent_id: agent_id.clone(),
-                                    entry_address: fetch_result.entry.entry_address.clone(),
-                                    entry_aspect: aspect,
-                                },
-                            );
-                            multi_messages.push(span_wrap.swapped(msg));
+                        debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
+                        if fetch_result.request_id == "" {
+                            debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
+                            self.state.write().handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone(),self.dht_algorithm.clone());
+                        } else {
+                            debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
+                            let to_agent_id = AgentPubKey::from(fetch_result.request_id);
+                            let maybe_url = self.lookup_joined(space_address, &to_agent_id);
+                            if maybe_url.is_none() {
+                                error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
+                                return Ok(())
+                            }
+                            let url = maybe_url.unwrap();
+                            let mut multi_messages = Vec::new();
+                            for aspect in fetch_result.entry.aspect_list {
+                                self
+                                    .state.write()
+                                    .remove_missing_aspect(space_address, &to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
+                                let msg = Lib3hToClient::HandleStoreEntryAspect(
+                                    StoreEntryAspectData {
+                                        request_id: "".into(),
+                                        space_address: space_address.clone(),
+                                        provider_agent_id: agent_id.clone(),
+                                        entry_address: fetch_result.entry.entry_address.clone(),
+                                        entry_aspect: aspect,
+                                    },
+                                );
+                                multi_messages.push(span_wrap.swapped(msg));
+                            }
+                            let store_message = WireMessage::MultiSend(multi_messages);
+                            self.send(to_agent_id, url, &store_message);
                         }
-                        let store_message = WireMessage::MultiSend(multi_messages);
-                        self.send(to_agent_id, url, &store_message);
-                    }
 
-                    Ok(())
-                }
-                Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
-                    if (query_result.responder_agent_id != *agent_id) || (query_result.space_address != *space_address)
-                    {
-                        return Err(SPACE_MISMATCH_ERR_STR.into());
+                        Ok(())
                     }
-                    let to_url = self
-                        .lookup_joined(space_address, &query_result.requester_agent_id)
-                        .ok_or_else(|| format!("unvalidated proxy agent {}", &query_result.requester_agent_id))?;
-                    self.send(
-                        query_result.requester_agent_id.clone(),
-                        to_url,
-                        &WireMessage::ClientToLib3hResponse(span_wrap.swapped(ClientToLib3hResponse::QueryEntryResult(query_result)))
-                    );
-                    Ok(())
+                    Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
+                        if (query_result.responder_agent_id != *agent_id) || (query_result.space_address != *space_address)
+                        {
+                            return Err(SPACE_MISMATCH_ERR_STR.into());
+                        }
+                        let to_url = self
+                            .lookup_joined(space_address, &query_result.requester_agent_id)
+                            .ok_or_else(|| format!("unvalidated proxy agent {}", &query_result.requester_agent_id))?;
+                        self.send(
+                            query_result.requester_agent_id.clone(),
+                            to_url,
+                            &WireMessage::ClientToLib3hResponse(span_wrap.swapped(ClientToLib3hResponse::QueryEntryResult(query_result)))
+                        );
+                        Ok(())
+                    }
+                    _ => {
+                        warn!("Ignoring unimplemented message: {:?}", message );
+                        Err(format!("Message not implemented: {:?}", message).into())
+                    }
                 }
-                _ => {
-                    warn!("Ignoring unimplemented message: {:?}", message );
-                    Err(format!("Message not implemented: {:?}", message).into())
-                }
-
             }
 
             _ => {

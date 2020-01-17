@@ -105,7 +105,7 @@ impl fmt::Display for ZomeApiError {
             ZomeApiError::FunctionNotImplemented => write!(f, "Function not implemented"),
             ZomeApiError::HashNotFound => write!(f, "Hash not found"),
             ZomeApiError::ValidationFailed(msg) => write!(f, "{}", msg),
-            ZomeApiError::Timeout => write!(f, "Timeout"),
+            ZomeApiError::Timeout(s) => write!(f, "Timeout({})", s),
         }
     }
 }

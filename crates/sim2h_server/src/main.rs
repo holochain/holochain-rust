@@ -30,6 +30,12 @@ struct Cli {
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
+    #[structopt(
+        long,
+        short,
+        help = "URL of a Jaeger server to send tracing spans to. No tracing if not specified."
+    )]
+    _tracing_url: Option<PathBuf>,
 }
 
 fn main() {

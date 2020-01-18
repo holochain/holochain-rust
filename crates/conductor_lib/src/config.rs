@@ -74,6 +74,11 @@ pub struct Configuration {
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
+
+    /// Configures Jaeger tracing. Optional.
+    #[serde(default)]
+    pub tracing: TracingConfiguration,
+
     /// Configuration options for the network module. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
@@ -185,6 +190,25 @@ impl Default for LoggerConfiguration {
             state_dump: false,
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum TracingConfiguration {
+    None,
+    Jaeger(JaegerTracingConfiguration),
+}
+
+impl Default for TracingConfiguration {
+    fn default() -> Self {
+        TracingConfiguration::None
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct JaegerTracingConfiguration {
+    node_name: String,
+    server_url: String,
 }
 
 /// Check for duplicate items in a list of strings

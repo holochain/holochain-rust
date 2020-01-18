@@ -207,8 +207,7 @@ impl Default for TracingConfiguration {
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct JaegerTracingConfiguration {
-    node_name: String,
-    server_url: String,
+    pub service_name: String,
 }
 
 /// Check for duplicate items in a list of strings

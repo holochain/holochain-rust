@@ -28,13 +28,12 @@ pub fn run(
     port: u16,
     interface_type: String,
     conductor_config: Configuration,
-    tracer: Option<ht::Tracer>,
 ) -> DefaultResult<()> {
     if package {
         cli::package(dna_path, json!({}))?;
     }
 
-    mount_conductor_from_config(conductor_config, tracer);
+    mount_conductor_from_config(conductor_config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
     conductor.key_loader = test_keystore_loader();

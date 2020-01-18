@@ -14,17 +14,13 @@
 /// If called without arguments, this executable tries to load a configuration from
 /// ~/.holochain/conductor/conductor_config.toml.
 /// A custom config can be provided with the --config, -c flag.
-extern crate crossbeam_channel;
 extern crate holochain_conductor_lib;
 extern crate holochain_core_types;
 extern crate holochain_locksmith;
-extern crate holochain_tracing;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
-#[macro_use]
-extern crate log;
 
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -34,10 +30,9 @@ use holochain_core_types::{
     error::HolochainError, hdk_version::HDK_VERSION, BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
-use holochain_tracing as ht;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
-use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc, thread};
+use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -70,24 +65,6 @@ const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-    // Tracer config:
-    let tracer = {
-        let (span_tx, span_rx) = crossbeam_channel::unbounded();
-
-        let _ = thread::Builder::new()
-            .name("tracer_loop".to_string())
-            .spawn(move || {
-                info!("Tracer loop started.");
-                // TODO: killswitch
-                let reporter = ht::Reporter::new("Holochain Core").unwrap();
-                for span in span_rx {
-                    reporter.report(&[span]).expect("could not report span");
-                }
-            });
-        ht::Tracer::with_sender(ht::AllSampler, span_tx)
-    };
-
-    let _trace_guard = ht::push_span(tracer.span("holochain::main").start().into());
 
     let _ = spawn_locksmith_guard_watcher();
 
@@ -118,7 +95,7 @@ fn main() {
     let config_path_str = config_path.to_str().unwrap();
 
     println!("Using config path: {}", config_path_str);
-    match bootstrap_from_config(config_path_str, Some(tracer)) {
+    match bootstrap_from_config(config_path_str) {
         Ok(()) => {
             {
                 let mut conductor_guard = CONDUCTOR.lock().unwrap();
@@ -181,12 +158,12 @@ fn main() {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn bootstrap_from_config(path: &str, tracer: Option<ht::Tracer>) -> Result<(), HolochainError> {
+fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
         .map_err(|string| HolochainError::ConfigError(string))?;
-    mount_conductor_from_config(config, tracer);
+    mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
     println!("Unlocking agent keys:");

@@ -256,7 +256,7 @@ impl Instance {
         action_wrapper: &ActionWrapper,
         context: &Arc<Context>,
     ) -> Result<(), HolochainError> {
-        let _trace_guard = ht::push_span(context.tracer.span("ROOT: process_action").start().into());
+        let _trace_guard = ht::push_span(context.tracer.span("process_action (ROOT)").start().into());
         context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {

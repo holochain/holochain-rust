@@ -23,6 +23,7 @@ struct Cli {
         default_value = "9000"
     )]
     port: u16,
+
     #[structopt(
         long,
         short,
@@ -30,18 +31,20 @@ struct Cli {
         default_value = "50"
     )]
     sharding: u64,
+
     #[structopt(
         long,
         short,
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
+
     #[structopt(
         long,
         short,
-        help = "URL of a Jaeger server to send tracing spans to. No tracing if not specified."
+        help = "The service name to use for Jaeger tracing spans. No tracing is done if not specified."
     )]
-    _tracing_url: Option<PathBuf>,
+    tracing_service_name: Option<String>,
 }
 
 fn main() {
@@ -49,19 +52,21 @@ fn main() {
 
     let args = Cli::from_args();
 
-    let tracer = {
+    let tracer = if let Some(service_name) = args.tracing_service_name {
         let (span_tx, span_rx) = crossbeam_channel::unbounded();
         let _ = std::thread::Builder::new()
             .name("tracer_loop".to_string())
             .spawn(move || {
                 info!("Tracer loop started.");
                 // TODO: killswitch
-                let reporter = ht::Reporter::new("sim2h-server").unwrap();
+                let reporter = ht::Reporter::new(&service_name).unwrap();
                 for span in span_rx {
                     reporter.report(&[span]).expect("could not report span");
                 }
             });
-        ht::Tracer::with_sender(ht::AllSampler, span_tx)
+        Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
+    } else {
+        None
     };
 
     let host = "ws://0.0.0.0/";
@@ -74,7 +79,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, Some(tracer));
+    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, tracer);
     if args.sharding > 0 {
         sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,

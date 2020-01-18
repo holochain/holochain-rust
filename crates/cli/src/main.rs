@@ -1,4 +1,3 @@
-#![warn(unused_extern_crates)]
 extern crate holochain_common;
 extern crate holochain_conductor_lib;
 extern crate holochain_core;
@@ -8,7 +7,6 @@ extern crate holochain_locksmith;
 extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
-extern crate holochain_tracing as ht;
 extern crate json_patch;
 extern crate lib3h_crypto_api;
 extern crate lib3h_protocol;
@@ -24,8 +22,6 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate log;
 extern crate dns_lookup;
 extern crate flate2;
 extern crate glob;
@@ -175,33 +171,16 @@ arg_enum! {
 }
 
 fn main() {
-    // Tracer config:
-    let tracer = {
-        let (span_tx, span_rx) = crossbeam_channel::unbounded();
-        let _ = std::thread::Builder::new()
-            .name("tracer_loop".to_string())
-            .spawn(move || {
-                info!("Tracer loop started.");
-                // TODO: killswitch
-                let reporter = ht::Reporter::new("Holochain Core").unwrap();
-                for span in span_rx {
-                    reporter.report(&[span]).expect("could not report span");
-                }
-            });
-        ht::Tracer::with_sender(ht::AllSampler, span_tx)
-    };
-
-    let _trace_guard = ht::push_span(tracer.span("hc::main").start().into());
 
     lib3h_sodium::check_init();
-    run(Some(tracer)).unwrap_or_else(|err| {
+    run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 
         ::std::process::exit(1);
     });
 }
 
-fn run(tracer: Option<ht::Tracer>) -> HolochainResult<()> {
+fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
     let project_path =
@@ -298,7 +277,6 @@ fn run(tracer: Option<ht::Tracer>) -> HolochainResult<()> {
                 port,
                 interface_type,
                 conductor_config,
-                tracer,
             )
             .map_err(HolochainError::Default)?
         }

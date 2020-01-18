@@ -46,7 +46,7 @@ use crate::{
     conductor::passphrase_manager::{
         PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
     },
-    config::{AgentConfiguration, PassphraseServiceConfig},
+    config::{AgentConfiguration, PassphraseServiceConfig, TracingConfiguration},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
@@ -94,8 +94,8 @@ lazy_static! {
 /// in above static CONDUCTOR.
 /// It replaces any Conductor instance that was mounted before to CONDUCTOR with a new one
 /// create from the given configuration.
-pub fn mount_conductor_from_config(config: Configuration, tracer: Option<ht::Tracer>) {
-    let conductor = Conductor::from_config(config, tracer);
+pub fn mount_conductor_from_config(config: Configuration) {
+    let conductor = Conductor::from_config(config);
     CONDUCTOR.lock().unwrap().replace(conductor);
 }
 
@@ -179,7 +179,7 @@ pub fn notify(msg: String) {
 
 #[autotrace]
 impl Conductor {
-    pub fn from_config(config: Configuration, tracer: Option<ht::Tracer>) -> Self {
+    pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
         let _rules = config.logger.rules.clone();
         let mut logger_builder = FastLoggerBuilder::new();
@@ -225,6 +225,27 @@ impl Conductor {
                 }
             };
 
+        // Tracer config:
+        let tracer = match config.tracing.clone() {
+            TracingConfiguration::Jaeger(jaeger_config) => {
+                let (span_tx, span_rx) = crossbeam_channel::unbounded();
+                let _ = thread::Builder::new()
+                    .name("tracer_loop".to_string())
+                    .spawn(move || {
+                        info!("Tracer loop started.");
+                        // TODO: killswitch
+                        let reporter = ht::Reporter::new(&jaeger_config.service_name).unwrap();
+                        for span in span_rx {
+                            reporter.report(&[span]).expect("could not report span");
+                        }
+                    });
+                Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
+            }
+            TracingConfiguration::None => {
+                None
+            }
+        };
+
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
@@ -246,7 +267,7 @@ impl Conductor {
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
-            tracer: tracer,
+            tracer,
         }
     }
 

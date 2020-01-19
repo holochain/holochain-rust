@@ -34,9 +34,9 @@ extern crate maplit;
 // #[macro_use]
 // extern crate shrinkwraprs;
 extern crate hcid;
-extern crate wasmi;
 #[macro_use]
 extern crate log;
+extern crate wasmer_runtime;
 
 pub mod chain_header;
 pub mod crud_status;

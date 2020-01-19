@@ -22,6 +22,7 @@ use std::{
     io::{self, Error as IoError},
     option::NoneError,
 };
+use wasmer_runtime::error::Error as WasmerError;
 
 //--------------------------------------------------------------------------------------------------
 // CoreError
@@ -285,6 +286,12 @@ impl From<NoneError> for HolochainError {
 
 impl From<hcid::HcidError> for HolochainError {
     fn from(error: hcid::HcidError) -> Self {
+        HolochainError::ErrorGeneric(format!("{:?}", error))
+    }
+}
+
+impl From<WasmerError> for HolochainError {
+    fn from(error: WasmerError) -> Self {
         HolochainError::ErrorGeneric(format!("{:?}", error))
     }
 }

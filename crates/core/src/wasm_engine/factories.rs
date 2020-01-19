@@ -2,18 +2,24 @@ use crate::wasm_engine::api::ZomeApiFunction;
 use holochain_core_types::error::HolochainError;
 use std::{str::FromStr, sync::Arc};
 use wasmi::{
-    self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, Module,
-    ModuleImportResolver, ModuleInstance, ModuleRef, NopExternals, Signature, ValueType,
+    self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder,
+    ModuleImportResolver, Signature, ValueType,
 };
+use wasmer_runtime::Module;
+use wasmer_runtime::Instance;
+use wasmer_runtime::imports;
+use wasmer_runtime::instantiate;
 
 /// Creates a WASM module, that is the executable program, from a given WASM binary byte array.
 pub fn wasm_module_factory(wasm: Arc<Vec<u8>>) -> Result<Module, HolochainError> {
-    wasmi::Module::from_buffer(&*wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
+    // wasmi::Module::from_buffer(&*wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
+    let import_object = imports! { };
+    Ok(instantiate(&wasm, &import_object)?.module())
 }
 
 /// Creates a runnable WASM module instance from a module reference.
 /// Adds the Holochain specific API functions as imports.
-pub fn wasm_instance_factory(module: &Module) -> Result<ModuleRef, HolochainError> {
+pub fn wasm_instance_factory(module: &Module) -> Result<Instance, HolochainError> {
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions
     // read about the Externals trait for more detail
@@ -65,9 +71,11 @@ pub fn wasm_instance_factory(module: &Module) -> Result<ModuleRef, HolochainErro
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
 
-    // Create module instance from wasm module, and start it if start is defined
-    ModuleInstance::new(&module, &imports)
-        .expect("Failed to instantiate module")
-        .run_start(&mut NopExternals)
-        .map_err(|_| HolochainError::RibosomeFailed("Module failed to start".to_string()))
+    // // Create module instance from wasm module, and start it if start is defined
+    // ModuleInstance::new(&module, &imports)
+    //     .expect("Failed to instantiate module")
+    //     .run_start(&mut NopExternals)
+    //     .map_err(|_| HolochainError::RibosomeFailed("Module failed to start".to_string()))
+    let import_object = imports! { };
+    Ok(module.instantiate(&import_object)?)
 }

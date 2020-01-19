@@ -110,6 +110,14 @@ impl WasmAllocation {
     pub fn length(self) -> Length {
         self.length
     }
+
+    pub fn start(self) -> Offset {
+        self.offset()
+    }
+
+    pub fn end(self) -> Offset {
+        (MemoryInt::from(self.start()) + MemoryInt::from(self.length())).into()
+    }
 }
 
 pub type AllocationResult = Result<WasmAllocation, AllocationError>;

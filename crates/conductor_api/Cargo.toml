@@ -11,7 +11,7 @@ edition = "2018"
 [dependencies]
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_wasm_utils = { version = "=0.0.42-alpha5", path = "../wasm_utils" }
-holochain_locksmith = { features = ["bypass"], version = "=0.0.42-alpha5", path = "../locksmith" }
+holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 jsonrpc-core = "=14.0.1"
 jsonrpc-lite = "=0.5.0"
 serde = { version = "=1.0.89", features = ["rc"] }

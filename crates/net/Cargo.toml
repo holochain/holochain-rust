@@ -29,7 +29,7 @@ holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
 holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.42-alpha5", path = "../conductor_api" }
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
-holochain_locksmith = { features = ["bypass"], version = "=0.0.42-alpha5", path = "../locksmith" }
+holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = "=0.0.13"

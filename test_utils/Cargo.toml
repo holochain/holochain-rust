@@ -16,7 +16,7 @@ holochain_conductor_lib = { version = "=0.0.42-alpha5", path = "../crates/conduc
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../crates/core_types" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../crates/dpki" }
 holochain_wasm_utils = { version = "=0.0.42-alpha5", path = "../crates/wasm_utils" }
-holochain_locksmith = { features = ["bypass"], version = "=0.0.42-alpha5", path = "../crates/locksmith" }
+holochain_locksmith = { version = "=0.0.42-alpha5", path = "../crates/locksmith" }
 holochain_persistence_api = "=0.0.13"
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"

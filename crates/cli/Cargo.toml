@@ -14,7 +14,7 @@ holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
 holochain_conductor_lib = { version = "=0.0.42-alpha5", path = "../conductor_lib" }
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
-holochain_locksmith = { features = ["bypass"], version = "=0.0.42-alpha5", path = "../locksmith" }
+holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
 lib3h_crypto_api = "=0.0.31"
 in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }

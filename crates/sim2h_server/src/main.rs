@@ -15,6 +15,7 @@ use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+#[structopt(rename_all = "kebab-case")]
 struct Cli {
     #[structopt(
         long,
@@ -44,7 +45,7 @@ struct Cli {
         short,
         help = "The service name to use for Jaeger tracing spans. No tracing is done if not specified."
     )]
-    tracing_service_name: Option<String>,
+    tracing_name: Option<String>,
 }
 
 fn main() {
@@ -52,7 +53,7 @@ fn main() {
 
     let args = Cli::from_args();
 
-    let tracer = if let Some(service_name) = args.tracing_service_name {
+    let tracer = if let Some(service_name) = args.tracing_name {
         let (span_tx, span_rx) = crossbeam_channel::unbounded();
         let _ = std::thread::Builder::new()
             .name("tracer_loop".to_string())

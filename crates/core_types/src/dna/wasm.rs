@@ -12,7 +12,7 @@ use serde::{
 use std::{
     fmt,
     hash::{Hash, Hasher},
-    sync::{Arc},
+    sync::Arc,
 };
 
 /// Private helper for converting binary WebAssembly into base64 serialized string.
@@ -104,5 +104,4 @@ impl DnaWasm {
             code: Arc::new(wasm),
         }
     }
-
 }

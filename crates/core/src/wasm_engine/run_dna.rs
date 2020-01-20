@@ -1,24 +1,19 @@
 use crate::{
     nucleus::ZomeFnResult,
     wasm_engine::{
-        factories::{wasm_instance_factory},
+        factories::wasm_instance_factory,
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
     },
 };
-use holochain_core_types::{
-    error::{
-        HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
-    },
+use holochain_core_types::error::{
+    HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
 };
 use holochain_json_api::json::JsonString;
 
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;
-use wasmer_runtime::Value;
-use wasmer_runtime::Module;
-use wasmer_runtime::instantiate;
-use wasmer_runtime::imports;
+use wasmer_runtime::{imports, instantiate, Module, Value};
 
 /// Returns the WASM module, i.e. the WASM binary program code to run
 /// for the given WasmCallData.
@@ -50,7 +45,9 @@ fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
         .zomes
         .get(&zome_name)
         .ok_or_else(|| HolochainError::new(&format!("No Ribosome found for Zome '{}'", zome_name)))?
-        .code.code;
+        .code
+        .code
+        .clone();
 
     let import_object = imports! {};
     let instance = instantiate(&wasm, &import_object)?;
@@ -72,14 +69,16 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         memory_manager: WasmPageManager::new(),
+        wasm_instance,
         data,
     };
 
     // Write input arguments in wasm memory
     // scope for mutable borrow of runtime
     let encoded_allocation_of_input: RibosomeEncodingBits = {
-        let mut_runtime = &mut runtime;
-        let maybe_allocation = mut_runtime.memory_manager.write(&wasm_instance, &input_parameters);
+        let maybe_allocation = runtime
+            .memory_manager
+            .write(&mut runtime.wasm_instance, &input_parameters);
 
         match maybe_allocation {
             // No allocation to write is ok
@@ -97,18 +96,18 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     };
 
     // scope for mutable borrow of runtime
-    let returned_encoding: RibosomeEncodingBits = {
-        let mut_runtime = &mut runtime;
-
+    let returned_encoding = match {
         // Try installing a custom panic handler.
         // HDK-rust implements a function __install_panic_handler that reroutes output of
         // PanicInfo to hdk::debug.
         // Try calling it but fail silently if this function is not there.
-        let _ = wasm_instance.call("__install_panic_handler", &[]);
+        let _ = runtime.wasm_instance.call("__install_panic_handler", &[]);
+
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
-        wasm_instance
+        runtime
+            .wasm_instance
             .call(
                 &fn_name,
                 &[Value::I64(
@@ -121,15 +120,24 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                     err, runtime.data
                 ))
             })?
-            .unwrap()
-            .try_into() // Option<_>
+            .first()
             .ok_or_else(|| {
                 HolochainError::RibosomeFailed(format!(
                     "WASM return value missing. data = {:?}",
                     runtime.data
                 ))
             })?
-    };
+            .to_owned()
+    } {
+        Value::I64(runtime_value) => runtime_value,
+        _ => {
+            return Err(HolochainError::RibosomeFailed(format!(
+                "WASM return value not I64"
+            )))
+        }
+    } as RibosomeEncodingBits;
+
+    // let returned_encoding = returned_runtime_value as RibosomeEncodingBits;
 
     // Handle result returned by called zome function
     let return_code = RibosomeEncodedValue::from(returned_encoding);
@@ -167,7 +175,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
             match WasmAllocation::try_from(ribosome_allocation) {
                 Ok(allocation) => {
-                    let result = runtime.memory_manager.read(allocation);
+                    let result = runtime
+                        .memory_manager
+                        .read(&runtime.wasm_instance, allocation);
                     match String::from_utf8(result) {
                         Ok(json_string) => {
                             return_log_msg = json_string.clone();

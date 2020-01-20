@@ -53,7 +53,7 @@ impl WasmPageManager {
     }
 
     /// Write data on top of stack
-    pub fn write(&mut self, instance: &Instance, data: &[u8]) -> AllocationResult {
+    pub fn write(&mut self, instance: &mut Instance, data: &[u8]) -> AllocationResult {
         if data.len() as MemoryBits > WasmAllocation::max() {
             return Err(AllocationError::OutOfBounds);
         }
@@ -80,15 +80,15 @@ impl WasmPageManager {
         let memory = instance.context_mut().memory(0);
 
         for (byte, cell) in data.iter().zip(
-            memory.view()
-            [
-                MemoryInt::from(allocation.start()) as usize..MemoryInt::from(allocation.end()) as usize
-                ].iter()) {
-                    cell.set(byte.to_owned());
-                }
+            memory.view()[MemoryInt::from(allocation.start()) as usize
+                ..MemoryInt::from(allocation.end()) as usize]
+                .iter(),
+        ) {
+            cell.set(byte.to_owned());
+        }
 
-            // .set(MemoryInt::from(mem_buf.offset()), &data)
-            // .expect("memory should be writable");
+        // .set(MemoryInt::from(mem_buf.offset()), &data)
+        // .expect("memory should be writable");
 
         Ok(allocation)
     }
@@ -103,7 +103,10 @@ impl WasmPageManager {
         //     .expect("Successfully retrieve the result")
         let memory = instance.context().memory(0);
 
-        memory.view()[MemoryInt::from(allocation.start()) as usize..MemoryInt::from(allocation.end()) as usize
-        ].iter().map(|cell| cell.get()).collect()
+        memory.view()[MemoryInt::from(allocation.start()) as usize
+            ..MemoryInt::from(allocation.end()) as usize]
+            .iter()
+            .map(|cell| cell.get())
+            .collect()
     }
 }

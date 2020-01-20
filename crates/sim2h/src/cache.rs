@@ -4,13 +4,17 @@ use crate::{
     naive_sharding::{entry_location, naive_sharding_should_store},
     AgentId,
 };
+use holochain_locksmith::RwLock;
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     types::{AspectHash, EntryHash},
     uri::Lib3hUri,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AgentInfo {
@@ -23,6 +27,7 @@ pub struct Space {
     agents: HashMap<AgentId, AgentInfo>,
     all_aspects_hashes: AspectList,
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
+    entry_locations: Arc<RwLock<HashMap<EntryHash, Location>>>,
 }
 
 impl Space {
@@ -32,6 +37,7 @@ impl Space {
             agents: HashMap::new(),
             all_aspects_hashes: AspectList::from(HashMap::new()),
             missing_aspects: HashMap::new(),
+            entry_locations: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -178,11 +184,27 @@ impl Space {
             .filtered_by_entry_hash(|entry_hash| {
                 naive_sharding_should_store(
                     agent_loc,
-                    entry_location(&self.crypto, &entry_hash),
+                    self.entry_location(entry_hash),
                     self.agents.len() as u64,
                     redundant_count,
                 )
             })
+    }
+
+    pub fn entry_location(&self, entry_hash: &EntryHash) -> Location {
+        let cached_location: Option<Location> = self
+            .entry_locations
+            .read()
+            .ok()
+            .and_then(|map| map.get(entry_hash).cloned());
+        cached_location.unwrap_or_else(|| {
+            let calculated_location = entry_location(&self.crypto, entry_hash);
+            let _ = self
+                .entry_locations
+                .write()
+                .map(|mut map| map.insert(entry_hash.clone(), calculated_location.clone()));
+            calculated_location
+        })
     }
 
     pub fn add_aspect(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {

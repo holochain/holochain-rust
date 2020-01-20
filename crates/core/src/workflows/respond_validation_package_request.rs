@@ -12,6 +12,7 @@ use holochain_core_types::signature::Provenance;
 use holochain_persistence_api::cas::content::Address;
 use std::{sync::Arc, vec::Vec};
 
+#[autotrace]
 pub fn respond_validation_package_request(
     to_agent_id: Address,
     msg_id: String,

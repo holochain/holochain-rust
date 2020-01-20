@@ -68,7 +68,7 @@ const logger = {
 
 const tracing = ({playerName}) => ({
   type: 'jaeger',
-  service_name: playerName,
+  service_name: `holochain-${playerName}`,
 })
 
 const commonConfig = { logger, network, tracing }

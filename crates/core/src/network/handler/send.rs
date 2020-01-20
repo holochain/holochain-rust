@@ -14,6 +14,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::data_types::DirectMessageData;
 use std::convert::TryFrom;
 
+#[autotrace]
 fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
         std::str::from_utf8(content)

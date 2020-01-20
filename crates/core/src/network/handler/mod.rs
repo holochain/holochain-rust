@@ -145,7 +145,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             });
         span.event(format!("message.data: {:?}", message.data));
         // Set this as the root span for autotrace
-        ht::push_span(span);
+        let _guard = ht::push_span(span);
         match message.data {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
@@ -225,10 +225,12 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             }
             Lib3hServerProtocol::HandleSendDirectMessage(message_data) => {
                 if !is_my_dna(&my_dna_address, &message_data.space_address.to_string()) {
+                    ht::with_top(|span| span.event("not my dna"));
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
+                    ht::with_top(|span| span.event("not my id"));
                     return Ok(());
                 }
                 log_debug!(

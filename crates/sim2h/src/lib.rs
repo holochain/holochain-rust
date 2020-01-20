@@ -697,16 +697,16 @@ enum PoolTask {
 /// this is just a hack so i don't have to search/replace all the
 /// read/writes to locks + we might want to keep that distinction
 trait KeepReadWriteForFutureMutex<T> {
-    fn read(&self) -> futures::lock::MutexGuard<T>;
-    fn write(&self) -> futures::lock::MutexGuard<T>;
+    fn read(&self) -> tokio::sync::MutexGuard<T>;
+    fn write(&self) -> tokio::sync::MutexGuard<T>;
 }
 
-impl<T> KeepReadWriteForFutureMutex<T> for futures::lock::Mutex<T> {
-    fn read(&self) -> futures::lock::MutexGuard<T> {
+impl<T> KeepReadWriteForFutureMutex<T> for tokio::sync::Mutex<T> {
+    fn read(&self) -> tokio::sync::MutexGuard<T> {
         futures::executor::block_on(self.lock())
     }
 
-    fn write(&self) -> futures::lock::MutexGuard<T> {
+    fn write(&self) -> tokio::sync::MutexGuard<T> {
         futures::executor::block_on(self.lock())
     }
 }
@@ -731,7 +731,7 @@ impl<T> KeepReadWriteForLocksmithMutex<T> for holochain_locksmith::Mutex<T> {
 pub struct Sim2h {
     crypto: Box<dyn CryptoSystem>,
     pub bound_uri: Option<Lib3hUri>,
-    state: Arc<holochain_locksmith::Mutex<Sim2hState>>,
+    state: Arc<tokio::sync::Mutex<Sim2hState>>,
     pool: Pool,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
@@ -746,6 +746,40 @@ pub struct Sim2h {
     metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
 }
 
+pub fn run_sim2h(mut sim2h: Sim2h) -> tokio::runtime::Runtime {
+    let rt = tokio::runtime::Builder::new()
+        .enable_all()
+        .threaded_scheduler()
+        .thread_name("sim2h-tokio-thread")
+        .build()
+        .expect("can build tokio runtime");
+
+    rt.spawn(async move {
+        loop {
+            let result = sim2h.process().await;
+            match result {
+                Err(e) => {
+                    if e.to_string().contains("Bind error:") {
+                        println!("{:?}", e);
+                        std::process::exit(1);
+                    } else {
+                        error!("{}", e.to_string())
+                    }
+                }
+                Ok(false) => {
+                    // if no work sleep a little
+                    tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
+                }
+                _ => {
+                    tokio::task::yield_now().await;
+                }
+            }
+        }
+    });
+
+    rt
+}
+
 impl Sim2h {
     pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
         let pool = Pool::new();
@@ -755,7 +789,7 @@ impl Sim2h {
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
         let (tp_send, tp_recv) = crossbeam_channel::unbounded();
         let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
-        let state = Arc::new(holochain_locksmith::Mutex::new(Sim2hState {
+        let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
             open_connections: HashMap::new(),
@@ -1148,7 +1182,7 @@ impl Sim2h {
     }
 
     // process transport and  incoming messages from it
-    pub fn process(&mut self) -> Sim2hResult<bool> {
+    pub async fn process(&mut self) -> Sim2hResult<bool> {
         with_latency_publishing!("sim2h-process", self.metric_publisher, || {
             self.num_ticks += 1;
             if self.num_ticks % 60000 == 0 {

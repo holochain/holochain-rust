@@ -109,6 +109,10 @@ impl Pool {
         }
     }
 
+    pub(crate) fn get_push_job_handle(&self) -> crossbeam_channel::Sender<Box<dyn Job>> {
+        self.job_send.clone()
+    }
+
     pub(crate) fn push_job(&self, job: Box<dyn Job>) {
         self.job_send.send(job).expect("failed to send job");
     }

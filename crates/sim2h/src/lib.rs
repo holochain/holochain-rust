@@ -861,25 +861,35 @@ impl Sim2h {
             self.metric_publisher,
             || {
                 if let Ok(wss) = self.wss_recv.try_recv() {
-                    let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-                    let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
-                    let job = Arc::new(Mutex::new(job));
-                    if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                        error!("Error handling incoming connection: {:?}", error);
-                        return true; //did work despite error.
-                    }
-                    let uuid = nanoid::simple();
-                    open_lifecycle("adding conn job", &uuid, &url);
-                    self.state.write().open_connections.insert(
-                        url,
-                        OpenConnectionItem {
-                            version: 1, // assume version 1 until we get a Hello
-                            uuid,
-                            job: job.clone(),
-                            sender: outgoing_send,
-                        },
-                    );
-                    self.pool.push_job(Box::new(job));
+                    let job_send = self.pool.get_push_job_handle();
+                    let msg_send = self.msg_send.clone();
+                    let state = self.state.clone();
+                    tokio::task::spawn(async move {
+                        let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+                        let uuid = nanoid::simple();
+                        open_lifecycle("adding conn job", &uuid, &url);
+
+                        let (job, outgoing_send) = ConnectionJob::new(wss, msg_send);
+                        let job = Arc::new(Mutex::new(job));
+
+                        job_send.send(Box::new(job.clone())).expect("send fail");
+
+                        let mut state = state.lock().await;
+
+                        state
+                            .connection_states
+                            .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
+
+                        state.open_connections.insert(
+                            url,
+                            OpenConnectionItem {
+                                version: 1, // assume version 1 until we get a Hello
+                                uuid,
+                                job,
+                                sender: outgoing_send,
+                            },
+                        );
+                    });
                     true
                 } else {
                     false
@@ -895,7 +905,9 @@ impl Sim2h {
             "dropping connection to {} because of error: {:?}",
             uri, error,
         );
-        self.disconnect(&uri);
+        self.tp_send
+            .send(PoolTask::Disconnect(vec![uri]))
+            .expect("should send");
     }
 
     /// if our connections sent us any data, process it
@@ -947,7 +959,9 @@ impl Sim2h {
                             WsFrame::Pong(_) => (),
                             WsFrame::Close(c) => {
                                 debug!("Disconnecting {} after connection reset {:?}", url, c);
-                                self.disconnect(&url);
+                                self.tp_send
+                                    .send(PoolTask::Disconnect(vec![url]))
+                                    .expect("should send");
                             }
                         },
                         Err(e) => self.priv_drop_connection_for_error(url, e),
@@ -964,20 +978,20 @@ impl Sim2h {
         space_address: SpaceHash,
         provider_agent_id: AgentId,
     ) {
-        with_latency_publishing!(
-            "sim2h-request_authoring_list",
-            self.metric_publisher,
-            || {
-                let wire_message = WireMessage::Lib3hToClient(
-                    Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-                        request_id: "".into(),
-                        space_address,
-                        provider_agent_id: provider_agent_id.clone(),
-                    }),
-                );
-                self.send(provider_agent_id, uri, &wire_message);
-            }
-        )
+        let state = self.state.clone();
+        tokio::task::spawn(async move {
+            let wire_message = WireMessage::Lib3hToClient(
+                Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+                    request_id: "".into(),
+                    space_address,
+                    provider_agent_id: provider_agent_id.clone(),
+                }),
+            );
+            state
+                .lock()
+                .await
+                .send(provider_agent_id, uri, &wire_message);
+        });
     }
 
     // adds an agent to a space
@@ -990,29 +1004,32 @@ impl Sim2h {
                         data.space_address.clone(),
                         data.agent_id.clone(),
                     )?;
-                    let _ = self.state.write().connection_states.insert(
-                        uri.clone(),
-                        // MDD: we are overwriting the existing connection state here, so we keep the same uuid.
-                        // (This could be done more directly with a Hashmap entry update)
-                        (uuid, conn),
-                    );
+                    {
+                        let mut state = self.state.write();
+                        let _ = state.connection_states.insert(
+                            uri.clone(),
+                            // MDD: we are overwriting the existing connection state here, so we keep the same uuid.
+                            // (This could be done more directly with a Hashmap entry update)
+                            (uuid, conn),
+                        );
 
-                    self.state.write().join_agent(
-                        &data.space_address,
-                        data.agent_id.clone(),
-                        uri.clone(),
-                    )?;
-                    info!(
-                        "Agent {:?} joined space {:?}",
-                        data.agent_id, data.space_address
-                    );
+                        state.join_agent(
+                            &data.space_address,
+                            data.agent_id.clone(),
+                            uri.clone(),
+                        )?;
+                        info!(
+                            "Agent {:?} joined space {:?}",
+                            data.agent_id, data.space_address
+                        );
+                        // MDD: why is request_gossiping_list in Sim2hState but not request_authoring_list?
+                        state.request_gossiping_list(
+                            uri.clone(),
+                            data.space_address.clone(),
+                            data.agent_id.clone(),
+                        );
+                    }
                     self.request_authoring_list(
-                        uri.clone(),
-                        data.space_address.clone(),
-                        data.agent_id.clone(),
-                    );
-                    // MDD: why is request_gossiping_list in Sim2hState but not request_authoring_list?
-                    self.state.write().request_gossiping_list(
                         uri.clone(),
                         data.space_address.clone(),
                         data.agent_id.clone(),
@@ -1057,6 +1074,7 @@ impl Sim2h {
     }
     */
 
+    /*
     // handler for incoming connections
     fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
         with_latency_publishing!(
@@ -1078,6 +1096,7 @@ impl Sim2h {
             }
         )
     }
+    */
 
     // handler for messages sent to sim2h
     fn handle_message(
@@ -1096,7 +1115,10 @@ impl Sim2h {
             // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
             if message == WireMessage::Ping {
                 debug!("Sending Pong in response to Ping");
-                self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
+                let state = self.state.clone();
+                tokio::task::spawn(async move {
+                    state.lock().await.send(signer, uri, &WireMessage::Pong);
+                });
                 return Ok(());
             }
             if let WireMessage::Status = message {
@@ -1170,16 +1192,16 @@ impl Sim2h {
                         pending_messages.push(message);
                         // MDD: TODO: is it necessary to re-insert the data at the same uri?
                         // didn't we just mutate it in-place?
-                        let _ = self
-                            .state
-                            .write()
-                            .connection_states
-                            .insert(uri.clone(), (uuid, agent));
-                        self.send(
-                            signer.clone(),
-                            uri.clone(),
-                            &WireMessage::Err(WireError::MessageWhileInLimbo),
-                        );
+                        let state = self.state.clone();
+                        tokio::task::spawn(async move {
+                            let mut state = state.lock().await;
+                            let _ = state.connection_states.insert(uri.clone(), (uuid, agent));
+                            state.send(
+                                signer.clone(),
+                                uri.clone(),
+                                &WireMessage::Err(WireError::MessageWhileInLimbo),
+                            );
+                        });
                         Ok(())
                     }
                 }
@@ -1216,9 +1238,13 @@ impl Sim2h {
 
             match self.tp_recv.try_recv() {
                 Ok(PoolTask::Disconnect(disconnects)) => {
-                    for url in disconnects {
-                        self.state.write().disconnect(&url)
-                    }
+                    let state = self.state.clone();
+                    tokio::task::spawn(async move {
+                        let mut state = state.lock().await;
+                        for url in disconnects {
+                            state.disconnect(&url)
+                        }
+                    });
                 }
                 //            Ok(PoolTask::VerifyPayload(Ok(_))) => {
                 /*/                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
@@ -1243,7 +1269,10 @@ impl Sim2h {
                     ))
                     .expect("can add interval ms");
 
-                self.retry_sync_missing_aspects();
+                let state = self.state.clone();
+                tokio::task::spawn(async move {
+                    state.lock().await.retry_sync_missing_aspects();
+                });
             }
             Ok(did_work)
         })
@@ -1620,15 +1649,21 @@ impl Sim2h {
         });
     }
 
+    /*
     fn disconnect(&self, uri: &Lib3hUri) {
         self.state.write().disconnect(uri);
     }
+    */
 
+    /*
     fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         self.state.write().send(agent, uri, msg);
     }
+    */
 
+    /*
     fn retry_sync_missing_aspects(&mut self) {
         self.state.write().retry_sync_missing_aspects();
     }
+    */
 }

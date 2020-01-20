@@ -260,6 +260,11 @@ impl Sim2hState {
         let space = self.get_or_create_space(space_address);
         space.add_aspect(entry_hash, aspect_hash);
         debug!(
+            "Space {} now knows about {} entries:\n",
+            &space_address,
+            space.all_aspects().len()
+        );
+        trace!(
             "Space {} now knows about these aspects:\n{}",
             &space_address,
             space.all_aspects().pretty_string()
@@ -1348,7 +1353,7 @@ impl Sim2h {
                 }
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {
-                    debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
+                    debug!("Got FetchEntry result from {} without request id - must be from authoring list", agent_id);
                     self.state.write().handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone(),self.dht_algorithm.clone());
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);

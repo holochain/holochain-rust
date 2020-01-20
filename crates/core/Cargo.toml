@@ -38,7 +38,7 @@ holochain_persistence_file = "=0.0.13"
 holochain_persistence_mem = "=0.0.13"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
+holochain_locksmith = { features = ["bypass"], version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
 log = "=0.4.8"
 holochain_logging = "=0.0.4"

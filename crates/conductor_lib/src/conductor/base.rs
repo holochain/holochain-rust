@@ -241,9 +241,7 @@ impl Conductor {
                     });
                 Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
             }
-            TracingConfiguration::None => {
-                None
-            }
+            TracingConfiguration::None => None,
         };
 
         Conductor {

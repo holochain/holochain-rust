@@ -10,8 +10,11 @@ type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;
 #[derive(Clone, Serialize)]
 pub struct NetHandler {
     #[serde(skip)]
-    closure:
-        Arc<RwLock<Box<dyn FnMut(NetResult<Lib3hServerProtocolWrapped>) -> NetResult<()> + Send + Sync>>>,
+    closure: Arc<
+        RwLock<
+            Box<dyn FnMut(NetResult<Lib3hServerProtocolWrapped>) -> NetResult<()> + Send + Sync>,
+        >,
+    >,
 }
 
 impl NetHandler {

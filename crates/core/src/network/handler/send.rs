@@ -41,7 +41,8 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
     match message {
         DirectMessage::Custom(custom_direct_message) => {
             let c = context.clone();
-            let span = ht::top_follower("into closure for handle_custom_direct_message".to_string());
+            let span =
+                ht::top_follower("into closure for handle_custom_direct_message".to_string());
             let closure = async move || {
                 if let Err(error) = handle_custom_direct_message(
                     message_data.from_agent_id.into(),

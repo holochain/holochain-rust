@@ -121,10 +121,10 @@ pub fn send(
         .as_mut()
         .map(|network| {
             let span: ht::Span = ht::with_top_or_null(|top| {
-                top.follower_("send-inner", |s|
-                    s.tag(ht::Tag::new("msg", format!("{:?}", msg)))
-                    .start()
-                ).into()
+                top.follower_("send-inner", |s| {
+                    s.tag(ht::Tag::new("msg", format!("{:?}", msg))).start()
+                })
+                .into()
             });
             network
                 .send(span.wrap(msg).into())

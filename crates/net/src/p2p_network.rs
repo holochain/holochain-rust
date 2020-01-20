@@ -9,8 +9,6 @@ use crate::{
         NetResult,
     },
     in_memory::memory_worker::InMemoryWorker,
-    // ipc_net_worker::IpcNetWorker,
-    // lib3h_worker::Lib3hWorker,
     p2p_config::*,
     tweetlog::*,
 };
@@ -18,16 +16,14 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
 };
 
-use crate::{/*sim1h_worker::Sim1hWorker, */sim2h_worker::Sim2hWorker};
+use crate::sim2h_worker::Sim2hWorker;
 use crossbeam_channel;
 use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
 
-
 pub type Lib3hClientProtocolWrapped = ht::EncodedSpanWrap<Lib3hClientProtocol>;
 pub type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;
-
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 

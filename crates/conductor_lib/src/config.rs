@@ -11,6 +11,7 @@ use crate::{conductor::base::DnaLoader, logger::LogRules};
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
+use holochain_common::FakeSim1hConfig;
 use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::{
@@ -19,12 +20,11 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
-use holochain_common::FakeSim1hConfig;
 use holochain_json_api::json::JsonString;
+use holochain_metrics::MetricPublisherConfig;
+use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
-use holochain_metrics::MetricPublisherConfig;
-use holochain_net::{/*sim1h_worker::FakeSim1hConfig, */sim2h_worker::Sim2hConfig};
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -875,7 +875,6 @@ pub enum NetworkConfig {
     Sim1h(FakeSim1hConfig),
     Sim2h(Sim2hConfig),
 }
-
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct N3hConfig {

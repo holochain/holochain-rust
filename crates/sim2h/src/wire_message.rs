@@ -1,8 +1,8 @@
 //! encapsulates lib3h ghostmessage for sim2h including security challenge
 use crate::error::Sim2hError;
+use ht;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
-use ht;
 
 pub type WireMessageVersion = u32;
 pub const WIRE_VERSION: WireMessageVersion = 2;
@@ -122,7 +122,7 @@ impl WireMessage {
             WireMessage::MultiSend(m) => {
                 let messages: Vec<&Lib3hToClient> = m.iter().map(|w| &w.data).collect();
                 get_multi_type(messages)
-            },
+            }
             WireMessage::Err(_) => "[Error] {:?}",
         })
     }

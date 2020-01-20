@@ -1,4 +1,4 @@
-use crate::{/*sim1h_worker::FakeSim1hConfig, */sim2h_worker::Sim2hConfig};
+use crate::sim2h_worker::Sim2hConfig;
 use holochain_common::FakeSim1hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};

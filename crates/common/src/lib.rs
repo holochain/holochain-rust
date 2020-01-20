@@ -1,4 +1,3 @@
-
 extern crate holochain_json_api;
 #[macro_use]
 extern crate holochain_json_derive;
@@ -12,10 +11,9 @@ pub mod paths;
 // (This is just for bootstrapping while still in alpha)
 pub const DEFAULT_PASSPHRASE: &str = "convenient and insecure keystore";
 
-
 use holochain_json_api::{error::JsonError, json::JsonString};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct FakeSim1hConfig {
-    pub dynamo_url: String
+    pub dynamo_url: String,
 }

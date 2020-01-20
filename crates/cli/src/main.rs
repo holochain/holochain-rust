@@ -171,7 +171,6 @@ arg_enum! {
 }
 
 fn main() {
-
     lib3h_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
@@ -271,14 +270,8 @@ fn run() -> HolochainResult<()> {
                 "Booting conductor with following configuration: {:?}",
                 conductor_config
             );
-            cli::run(
-                dna_path,
-                package,
-                port,
-                interface_type,
-                conductor_config,
-            )
-            .map_err(HolochainError::Default)?
+            cli::run(dna_path, package, port, interface_type, conductor_config)
+                .map_err(HolochainError::Default)?
         }
 
         Cli::Test {

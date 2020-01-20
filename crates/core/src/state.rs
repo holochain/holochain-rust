@@ -157,7 +157,8 @@ impl State {
                     format!("{:?}", action_wrapper),
                 ))
                 .start()
-            }).into()
+            })
+            .into()
         });
         State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),

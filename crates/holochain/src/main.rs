@@ -65,7 +65,6 @@ const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-
     let _ = spawn_locksmith_guard_watcher();
 
     lib3h_sodium::check_init();

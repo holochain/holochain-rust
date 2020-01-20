@@ -1,9 +1,11 @@
 //! provides worker that makes use of sim2h
 
-use crate::p2p_network::Lib3hClientProtocolWrapped;
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    p2p_network::Lib3hClientProtocolWrapped,
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
@@ -243,8 +245,9 @@ impl Sim2hWorker {
         match span_wrap.data.clone() {
             // Success response to a request (any Command with an `request_id` field.)
             Lib3hClientProtocol::SuccessResult(generic_result_data) => {
-                self.to_core
-                    .push(span_wrap.swapped(Lib3hServerProtocol::FailureResult(generic_result_data)));
+                self.to_core.push(
+                    span_wrap.swapped(Lib3hServerProtocol::FailureResult(generic_result_data)),
+                );
                 Ok(())
             }
             // Connect to the specified multiaddr
@@ -264,16 +267,16 @@ impl Sim2hWorker {
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let log_context = "ClientToLib3h::JoinSpace";
                 self.space_data = Some(space_data.clone());
-                self.send_wire_message(WireMessage::ClientToLib3h(span_wrap.swapped(ClientToLib3h::JoinSpace(
-                    space_data,
-                ))))
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    span_wrap.swapped(ClientToLib3h::JoinSpace(space_data)),
+                ))
             }
             // Order the p2p module to leave the network of the specified space.
             Lib3hClientProtocol::LeaveSpace(space_data) => {
                 //error!("Leave space not implemented for sim2h yet");
-                self.send_wire_message(WireMessage::ClientToLib3h(span_wrap.swapped(ClientToLib3h::LeaveSpace(
-                    space_data,
-                ))))
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    span_wrap.swapped(ClientToLib3h::LeaveSpace(space_data)),
+                ))
             }
 
             // -- Direct Messaging -- //
@@ -287,9 +290,9 @@ impl Sim2hWorker {
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
                 //let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    span_wrap.swapped(Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data)),
-                ))
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data),
+                )))
             }
             // -- Entry -- //
             // Request an Entry from the dht network
@@ -315,9 +318,9 @@ impl Sim2hWorker {
                     }
                     Ok(())
                 } else {
-                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                        span_wrap.swapped(Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data)),
-                    ))
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
+                        Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
+                    )))
                 }
             }
             // Publish data to the dht.
@@ -343,9 +346,9 @@ impl Sim2hWorker {
                     }
                 }
 
-                self.send_wire_message(WireMessage::ClientToLib3h(span_wrap.swapped(ClientToLib3h::PublishEntry(
-                    provided_entry_data,
-                ))))
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    span_wrap.swapped(ClientToLib3h::PublishEntry(provided_entry_data)),
+                ))
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
@@ -357,9 +360,9 @@ impl Sim2hWorker {
                     self.to_core.push(span_wrap.swapped(msg));
                     Ok(())
                 } else {
-                    self.send_wire_message(WireMessage::ClientToLib3h(span_wrap.swapped(ClientToLib3h::QueryEntry(
-                        query_entry_data,
-                    ))))
+                    self.send_wire_message(WireMessage::ClientToLib3h(
+                        span_wrap.swapped(ClientToLib3h::QueryEntry(query_entry_data)),
+                    ))
                 }
             }
             // Response to a `HandleQueryEntry` request
@@ -371,9 +374,9 @@ impl Sim2hWorker {
                     self.to_core.push(span_wrap.swapped(msg));
                     Ok(())
                 } else {
-                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                        span_wrap.swapped(Lib3hToClientResponse::HandleQueryEntryResult(query_entry_result_data)),
-                    ))
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
+                        Lib3hToClientResponse::HandleQueryEntryResult(query_entry_result_data),
+                    )))
                 }
             }
 
@@ -384,9 +387,9 @@ impl Sim2hWorker {
                 if self.is_full_sync_DHT {
                     self.self_store_authored_aspects();
                 }
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    span_wrap.swapped(Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data)),
-                ))
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
+                    Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
+                )))
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
@@ -394,9 +397,9 @@ impl Sim2hWorker {
                 if self.is_full_sync_DHT {
                     self.self_store_authored_aspects();
                 }
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
-                    span_wrap.swapped(Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data)),
-                ))
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
+                    Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data),
+                )))
             }
 
             // -- N3h specific functinonality -- //

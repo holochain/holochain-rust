@@ -136,7 +136,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
         }
         let message = message.unwrap();
         let mut span = ht::SpanWrap::from(message.clone())
-            .follower(&context.tracer, "create_handler / received message")
+            .follower(&context.tracer, "received message from handler")
             .unwrap_or_else(|| {
                 context.tracer
                     .span("create_handler (missing history)")

@@ -15,6 +15,7 @@ use std::sync::Arc;
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct ReceiveReturnValue(Result<String, String>);
 
+#[autotrace]
 pub fn receive(
     context: Arc<Context>,
     zome: &str,

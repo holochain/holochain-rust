@@ -44,6 +44,7 @@ pub mod content_store;
 pub mod context;
 pub mod dht;
 pub mod entry;
+#[autotrace]
 pub mod instance;
 #[cfg(test)]
 pub mod link_tests;

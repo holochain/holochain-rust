@@ -5,6 +5,7 @@ use crate::{
 };
 use std::sync::Arc;
 
+#[autotrace]
 pub fn init(
     context: Arc<Context>,
     zome: &str,

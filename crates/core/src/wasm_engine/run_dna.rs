@@ -55,6 +55,7 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
+#[autotrace]
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
     let wasm_instance = wasm_instance_factory(&wasm_module)?;

@@ -184,6 +184,7 @@ pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> Callb
     }
 }
 
+#[autotrace]
 pub fn call(
     context: Arc<Context>,
     zome: &str,

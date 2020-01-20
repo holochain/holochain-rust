@@ -201,7 +201,6 @@ impl Instance {
                 let mut state_observers: Vec<Observer> = Vec::new();
                 let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
                 while kill_receiver.try_recv().is_err() {
-                    // TODO: I changed a clone() to a take() because I couldn't see how this would work otherwise. Was it right??
                     if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
@@ -253,10 +252,11 @@ impl Instance {
     /// returns the new vector of observers
     pub(crate) fn process_action(
         &self,
-        action_wrapper: &ActionWrapper,
+        action_wrapper: &ht::SpanWrap<ActionWrapper>,
         context: &Arc<Context>,
     ) -> Result<(), HolochainError> {
-        let _trace_guard = ht::push_span(context.tracer.span("process_action (ROOT)").start().into());
+        let span = action_wrapper.follower_or_null(&context.tracer, "begin process_action");
+        let _trace_guard = ht::push_span(span);
         context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
@@ -268,7 +268,7 @@ impl Instance {
                 .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
                 .ok_or_else(|| HolochainError::Timeout)?;
 
-            new_state = state.reduce(action_wrapper.clone());
+            new_state = state.reduce(action_wrapper.data.clone());
 
             // Change the state
             *state = new_state;
@@ -478,6 +478,7 @@ impl Drop for Instance {
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
+#[autotrace]
 pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
     lax_send_wrapped(action_channel.clone(), action_wrapper, "dispatch_action");
 }
@@ -551,7 +552,7 @@ pub mod tests {
                 None,
                 false,
                 holochain_metrics::config::MetricPublisherConfig::default()
-                .create_metric_publisher(),
+                    .create_metric_publisher(),
                 Arc::new(ht::null_tracer()),
             )),
             logger,

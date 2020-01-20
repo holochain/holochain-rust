@@ -303,6 +303,7 @@ impl StateWrapper {
         }
     }
 
+    #[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         StateWrapper {
             state: Some(

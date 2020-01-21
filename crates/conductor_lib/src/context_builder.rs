@@ -18,6 +18,7 @@ use std::{
 };
 
 use holochain_metrics::{DefaultMetricPublisher, MetricPublisher, MetricPublisherConfig};
+use holochain_core::context::ConductorContext;
 
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
@@ -190,7 +191,7 @@ impl ContextBuilder {
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
-    pub fn spawn(self) -> Context {
+    pub fn spawn(self) -> ConductorContext {
         let chain_storage = self
             .chain_storage
             .unwrap_or_else(|| Arc::new(RwLock::new(MemoryStorage::new())));
@@ -204,7 +205,7 @@ impl ContextBuilder {
             .metric_publisher
             .unwrap_or_else(|| Arc::new(RwLock::new(DefaultMetricPublisher::default())));
 
-        Context::new(
+        ConductorContext::new(
             &self
                 .instance_name
                 .unwrap_or_else(|| "Anonymous-instance".to_string()),

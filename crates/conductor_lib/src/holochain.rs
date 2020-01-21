@@ -115,6 +115,7 @@ use jsonrpc_core::IoHandler;
 use std::sync::Arc;
 
 use holochain_metrics::with_latency_publishing;
+use holochain_core::context::ConductorContext;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -174,7 +175,7 @@ impl Holochain {
         }
     }
 
-    pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
+    pub fn load(context: Arc<ConductorContext>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister.load(context.clone())?.ok_or_else(|| {
             HolochainError::ErrorGeneric("State could not be loaded due to NoneError".to_string())

@@ -10,6 +10,7 @@ use crate::{
 /// the entry's address.
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_queue_zome_function_call(
     state: &mut NucleusState,
     _root_state: &State,

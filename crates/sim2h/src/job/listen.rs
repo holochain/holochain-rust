@@ -8,6 +8,7 @@ pub(crate) struct ListenJob {
     wss_send: crossbeam_channel::Sender<TcpWss>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl ListenJob {
     pub(crate) fn new(listen: TcpWssServer, wss_send: crossbeam_channel::Sender<TcpWss>) -> Self {
         Self { listen, wss_send }

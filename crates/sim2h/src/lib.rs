@@ -437,9 +437,9 @@ impl Sim2hState {
         query_data: QueryEntryData,
         redundant_count: u64,
     ) -> Vec<Lib3hUri> {
-        let entry_loc = entry_location(&self.crypto, &query_data.entry_address);
-        let agent_pool = self
-            .get_space(&space_address)
+        let space = self.get_space(&space_address);
+        let entry_loc = space.entry_location(&query_data.entry_address);
+        let agent_pool = space
             .agents_supposed_to_hold_entry(entry_loc, redundant_count)
             .keys()
             .cloned()

@@ -83,11 +83,6 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         IndexFilter::LatestByAttribute,
         None,
     ))?;
-    assert!(
-        link_eavs.len() <= 1,
-        "link_eavs.len() = {}",
-        link_eavs.len()
-    );
     if link_eavs.len() == 1 {
         maybe_link_update_delete = Some(link_eavs.iter().next().unwrap().value());
     }

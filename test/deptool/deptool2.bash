@@ -8,7 +8,9 @@ dirs=`ls`
 for d in $dirs
 do 
     cd $d 
+if grep "$CRATE" Cargo.toml > /dev/null; then
     cargo-add add $CRATE --git $REPO --branch $BRANCH
-    cd .. 
+fi
+cd ..
 done
 cd $ROOT

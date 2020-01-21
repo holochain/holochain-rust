@@ -35,16 +35,10 @@ uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"
 shrinkwraprs = "=0.2.1"
 crossbeam-channel = "=0.3.8"
-lib3h_crypto_api = "=0.0.31"
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 parking_lot ="=0.9.0"
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
-holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [dev-dependencies]
 test_utils = { version = "=0.0.42-alpha5", path = "../../test_utils"}

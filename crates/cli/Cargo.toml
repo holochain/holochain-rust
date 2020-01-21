@@ -16,10 +16,10 @@ holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-lib3h_crypto_api = "=0.0.31"
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
 url2 = "=0.0.4"
-lib3h_sodium = "=0.0.31"
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 holochain_json_api = "=0.0.17"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }

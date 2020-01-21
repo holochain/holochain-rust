@@ -31,3 +31,4 @@ holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-p
 holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }

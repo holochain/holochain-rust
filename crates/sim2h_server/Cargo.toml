@@ -16,7 +16,7 @@ sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
 detach = "=0.0.19"
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
-lib3h_sodium = "=0.0.31"
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"

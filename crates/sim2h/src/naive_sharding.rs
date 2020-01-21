@@ -34,7 +34,9 @@ pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) ->
 
 /// implement a super simple sharding algorithm
 /// to distribute data when node counts go > 50
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+// NOTE - don't decorate this function with tracing
+//        it gets called often enough that performance suffers
+//#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 pub fn naive_sharding_should_store(
     agent_loc: Location,
     data_addr_loc: Location,
@@ -79,6 +81,8 @@ mod tests {
 
     #[test]
     fn it_should_safely_distribute_data() {
+        println!("starting test");
+
         let thread_cont = std::sync::Arc::new(std::sync::Mutex::new(true));
         let mut hash_threads = Vec::new();
 
@@ -86,6 +90,8 @@ mod tests {
         let (addr_send, addr_recv) = crossbeam_channel::bounded::<Location>(100);
 
         for _ in 0..8 {
+            println!("starting hash thread");
+
             let id_send_clone = id_send.clone();
             let addr_send_clone = addr_send.clone();
             let cont = thread_cont.clone();
@@ -133,7 +139,9 @@ mod tests {
         let mut mean = 0.0;
 
         // simulate a 10,000 node network, growing 20 nodes at a time
-        for _ in 0..500 {
+        for top_loop in 0..500 {
+            println!("top loop: {}", top_loop);
+
             for _ in 0..20 {
                 let id_loc = id_recv.recv().unwrap();
                 //println!("id: {}", *id_loc);
@@ -232,6 +240,8 @@ mod tests {
                 }
             }
         }
+
+        println!("shutting down threads");
 
         *thread_cont.lock().unwrap() = false;
 

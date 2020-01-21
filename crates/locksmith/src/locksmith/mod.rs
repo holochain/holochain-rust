@@ -1,5 +1,4 @@
 mod common;
-mod error;
 mod guard;
 mod mutex;
 mod tracker;

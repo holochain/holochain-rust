@@ -14,11 +14,11 @@ holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.13"
-holochain_persistence_mem = "=0.0.13"
-holochain_persistence_file = "=0.0.13"
-holochain_persistence_pickle = "=0.0.13"
-holochain_persistence_lmdb = "=0.0.13"
+holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 lib3h = "=0.0.31"

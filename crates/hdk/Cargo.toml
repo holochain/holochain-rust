@@ -18,10 +18,14 @@ holochain_wasm_utils = { version = "=0.0.42-alpha5", path = "../wasm_utils" }
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_json_api = "=0.0.17"
 holochain_json_derive = "=0.0.17"
-holochain_persistence_api = "=0.0.13"
+holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 pretty_assertions = "=0.6.1"
 env_logger = "=0.6.1"
 url = "=2.1.0"
+holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 
 [dev-dependencies]
 test_utils = { version = "=0.0.42-alpha5", path = "../../test_utils" }

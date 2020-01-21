@@ -4,7 +4,7 @@ use crate::{
     wasm_engine::callback::{Callback, CallbackParams, CallbackResult},
 };
 use std::sync::Arc;
-
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn init(
     context: Arc<Context>,
     zome: &str,

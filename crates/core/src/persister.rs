@@ -39,6 +39,7 @@ impl PartialEq for SimplePersister {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Persister for SimplePersister {
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();

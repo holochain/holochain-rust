@@ -25,6 +25,7 @@ pub struct Space {
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Space {
     pub fn new(crypto: Box<dyn CryptoSystem>) -> Self {
         Space {
@@ -193,6 +194,7 @@ impl Space {
 // TODO: unify with AspectMap
 #[derive(Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl AspectList {
     pub fn len(&self) -> usize {
         self.0.len()

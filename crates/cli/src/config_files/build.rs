@@ -19,6 +19,7 @@ pub struct Build {
     pub artifact: PathBuf,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 impl Build {
     /// Creates a Build struct from a .hcbuild JSON file and returns it
     pub fn from_file<T: AsRef<Path>>(path: T) -> DefaultResult<Build> {

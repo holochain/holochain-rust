@@ -7,6 +7,7 @@ use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_query_inner(
     network_state: &mut NetworkState,
     key: QueryKey,
@@ -29,6 +30,8 @@ fn reduce_query_inner(
         }),
     )
 }
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_query(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -58,6 +61,7 @@ pub fn reduce_query(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_query_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,

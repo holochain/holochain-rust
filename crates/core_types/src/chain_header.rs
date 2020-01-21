@@ -5,8 +5,8 @@
 use crate::{
     agent::test_agent_id,
     entry::{
-        entry_type::{test_entry_type, EntryType},
-        test_entry,
+        entry_type::{test_entry_type, test_link_entry_type, test_sys_entry_type, EntryType},
+        test_entry, test_link_entry, test_sys_entry, Entry,
     },
     signature::{Provenance, Signature},
     time::{test_iso_8601, Iso8601},
@@ -128,9 +128,36 @@ impl AddressableContent for ChainHeader {
     }
 }
 
+// TODO: refactor these test_chain_headers with passing the test_entry
 /// returns a dummy header for use in tests
 pub fn test_chain_header() -> ChainHeader {
     test_chain_header_with_sig("sig")
+}
+
+pub fn test_chain_header_for_sys_entry() -> ChainHeader {
+    test_chain_header_for_sys_entry_with_sig("sig")
+}
+
+pub fn test_chain_header_for_link_entry() -> ChainHeader {
+    test_chain_header_for_link_entry_with_sig("sig")
+}
+
+/// Creates a chain header from a test entry with a sig.
+pub fn test_chain_header_from_entry_with_sig(
+    entry: Entry,
+    entry_type: EntryType,
+    provenances: Vec<Provenance>,
+    timestamp: Iso8601,
+) -> ChainHeader {
+    ChainHeader::new(
+        &entry_type,
+        &entry.address(),
+        &provenances,
+        &None,
+        &None,
+        &None,
+        &timestamp,
+    )
 }
 
 /// returns a dummy header for use in tests
@@ -138,6 +165,42 @@ pub fn test_chain_header_with_sig(sig: &'static str) -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),
+        &test_provenances(sig),
+        &None,
+        &None,
+        &None,
+        &test_iso_8601(),
+    )
+}
+
+/// Convenience function
+pub fn test_chain_header_from_entry_with_sig_default_provs_time(
+    entry: Entry,
+    entry_type: EntryType,
+    sig: &'static str,
+) -> ChainHeader {
+    test_chain_header_from_entry_with_sig(entry, entry_type, test_provenances(sig), test_iso_8601())
+}
+
+/// returns a sys header for use in tests.
+// TODO: refactor test_chain_header_for_sys_entry_with_sig
+// and test_chain_header_with_sig by passing an `Entry`.
+pub fn test_chain_header_for_sys_entry_with_sig(sig: &'static str) -> ChainHeader {
+    ChainHeader::new(
+        &test_sys_entry_type(),
+        &test_sys_entry().address(),
+        &test_provenances(sig),
+        &None,
+        &None,
+        &None,
+        &test_iso_8601(),
+    )
+}
+
+pub fn test_chain_header_for_link_entry_with_sig(sig: &'static str) -> ChainHeader {
+    ChainHeader::new(
+        &test_link_entry_type(),
+        &test_link_entry().address(),
         &test_provenances(sig),
         &None,
         &None,

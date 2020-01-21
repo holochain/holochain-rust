@@ -4,6 +4,7 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    network::header_with_its_entry::HeaderWithItsEntry,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -230,14 +231,42 @@ impl DhtStore {
         entry: &Entry,
         header: &ChainHeader,
     ) -> Result<(), HolochainError> {
-        let eavi = EntityAttributeValueIndex::new(
-            &entry.address(),
-            &Attribute::EntryHeader,
-            &header.address(),
-        )?;
-        self.add(header)?;
-        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
-        Ok(())
+        match HeaderWithItsEntry::try_from_header_and_entry(header.clone(), entry.clone()) {
+            Ok(_header_with_its_entry) => {
+                let eavi = EntityAttributeValueIndex::new(
+                    &entry.address(),
+                    &Attribute::EntryHeader,
+                    &header.address(),
+                )?;
+                self.add(header)?;
+                self.meta_storage.write().unwrap().add_eavi(&eavi)?;
+                Ok(())
+            }
+            Err(err) => match err {
+                HolochainError::HeaderEntryMismatch(
+                    mut err_msg,
+                    header_entry_address,
+                    entry_address,
+                ) => {
+                    debug!(
+                        "Tried to add entry:\n{:#?}\nand header:\n{:#?}\nto the CAS and EAV, respectively",
+                        entry, header,
+                    );
+                    err_msg = format!(
+                        "Tried to add entry and header to the CAS and EAV,\n
+                        respectively. See the debug log for further details\n
+                        of header and entry. {}",
+                        err_msg
+                    );
+                    Err(HolochainError::HeaderEntryMismatch(
+                        err_msg,
+                        header_entry_address,
+                        entry_address,
+                    ))
+                }
+                _ => Err(err),
+            },
+        }
     }
 
     pub fn mark_aspect_as_held(&mut self, aspect: &EntryAspect) {
@@ -305,8 +334,8 @@ impl DhtStore {
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| {
-                current.entry_with_header.header.entry_address()
-                    == pending.entry_with_header.header.entry_address()
+                current.header_with_its_entry.header().entry_address()
+                    == pending.header_with_its_entry.header().entry_address()
                     && current.workflow == pending.workflow
             },
         )
@@ -327,7 +356,7 @@ where
     let unique_pending: HashSet<Address> = pending
         .clone()
         .into_iter()
-        .map(|p| p.pending.entry_with_header.entry.address())
+        .map(|p| p.pending.header_with_its_entry.entry().address())
         .collect();
 
     Box::new(move |p| {
@@ -355,13 +384,14 @@ impl AddContent for DhtStore {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow},
-        network::entry_with_header::EntryWithHeader,
-    };
+    use crate::dht::pending_validations::{PendingValidationStruct, ValidatingWorkflow};
     use holochain_core_types::{
-        chain_header::test_chain_header_with_sig,
-        entry::{test_entry, test_entry_a, test_entry_b, test_entry_c},
+        chain_header::{
+            test_chain_header_from_entry_with_sig_default_provs_time, test_chain_header_with_sig,
+        },
+        entry::{
+            entry_type::test_entry_type, test_entry, test_entry_a, test_entry_b, test_entry_c,
+        },
     };
 
     use holochain_persistence_api::{
@@ -385,24 +415,67 @@ pub mod tests {
         assert_eq!(headers, vec![header1, header2]);
     }
 
-    fn pending_validation_for_entry(
+    fn try_pending_validation_for_entry_header_and_deps(
         entry: Entry,
+        header: ChainHeader,
         dependencies: Vec<Address>,
-    ) -> PendingValidationWithTimeout {
-        let header = test_chain_header_with_sig("sig1");
-        let mut pending_struct = PendingValidationStruct::new(
-            EntryWithHeader { entry, header },
+    ) -> Result<PendingValidationWithTimeout, HolochainError> {
+        match PendingValidationStruct::try_from_entry_and_header(
+            entry.clone(),
+            header.clone(),
+            EntryAspect::Content(entry, header),
             ValidatingWorkflow::HoldEntry,
-        );
-        pending_struct.dependencies = dependencies;
-        PendingValidationWithTimeout::new(Arc::new(pending_struct.clone()), None)
+        ) {
+            Ok(mut pending_struct) => {
+                pending_struct.dependencies = dependencies;
+                Ok(PendingValidationWithTimeout::new(
+                    Arc::new(pending_struct.clone()),
+                    None,
+                ))
+            }
+            Err(err) => {
+                let err_msg = format!(
+                    "Tried pending validation for entry from entry and header, got error: {}",
+                    err
+                );
+                Err(HolochainError::ErrorGeneric(err_msg))
+            }
+        }
+    }
+
+    // Convenience function
+    fn test_chain_header_for_entry_app(entry: Entry) -> ChainHeader {
+        test_chain_header_from_entry_with_sig_default_provs_time(entry, test_entry_type(), "sig1")
+    }
+
+    // Convenience function, creates a header from the entry, no dependencies for app entry
+    fn try_pending_validation_for_app_entry_no_deps(
+        entry: Entry,
+    ) -> Result<PendingValidationWithTimeout, HolochainError> {
+        try_pending_validation_for_entry_header_and_deps(
+            entry.clone(),
+            test_chain_header_for_entry_app(entry),
+            Vec::new(),
+        )
+    }
+
+    // Convenience function, creates a header from the entry, with dependencies for app entry
+    fn try_pending_validation_for_app_entry_with_deps(
+        entry: Entry,
+        deps: Vec<Address>,
+    ) -> Result<PendingValidationWithTimeout, HolochainError> {
+        try_pending_validation_for_entry_header_and_deps(
+            entry.clone(),
+            test_chain_header_for_entry_app(entry),
+            deps,
+        )
     }
 
     #[test]
-    fn test_dependency_resolution_no_dependencies() {
+    fn test_dependency_resolution_no_dependencies() -> Result<(), HolochainError> {
         // A and B have no dependencies. Both should be free
-        let a = pending_validation_for_entry(test_entry_a(), Vec::new());
-        let b = pending_validation_for_entry(test_entry_b(), Vec::new());
+        let a = try_pending_validation_for_app_entry_no_deps(test_entry_a())?;
+        let b = try_pending_validation_for_app_entry_no_deps(test_entry_b())?;
         let pending_list = vec![a.clone(), b.clone()];
         assert_eq!(
             pending_list
@@ -412,14 +485,22 @@ pub mod tests {
                 .collect::<Vec<_>>(),
             vec![a, b]
         );
+        Ok(())
     }
 
     #[test]
-    fn test_dependency_resolution_chain() {
+    fn test_dependency_resolution_chain() -> Result<(), HolochainError> {
         // A depends on B and B depends on C. C should be free
-        let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
-        let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()]);
-        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+        let a = try_pending_validation_for_app_entry_with_deps(
+            test_entry_a(),
+            vec![test_entry_b().address()],
+        )?;
+        let b = try_pending_validation_for_app_entry_with_deps(
+            test_entry_b(),
+            vec![test_entry_c().address()],
+        )?;
+        let c = try_pending_validation_for_app_entry_no_deps(test_entry_c())?;
+
         let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
             pending_list
@@ -429,17 +510,18 @@ pub mod tests {
                 .collect::<Vec<_>>(),
             vec![c]
         );
+        Ok(())
     }
 
     #[test]
-    fn test_dependency_resolution_tree() {
+    fn test_dependency_resolution_tree() -> Result<(), HolochainError> {
         // A depends on B and C. B and C should be free
-        let a = pending_validation_for_entry(
+        let a = try_pending_validation_for_app_entry_with_deps(
             test_entry_a(),
             vec![test_entry_b().address(), test_entry_c().address()],
-        );
-        let b = pending_validation_for_entry(test_entry_b(), vec![]);
-        let c = pending_validation_for_entry(test_entry_c(), vec![]);
+        )?;
+        let b = try_pending_validation_for_app_entry_no_deps(test_entry_b())?;
+        let c = try_pending_validation_for_app_entry_no_deps(test_entry_c())?;
         let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
             pending_list
@@ -449,5 +531,7 @@ pub mod tests {
                 .collect::<Vec<_>>(),
             vec![b, c]
         );
+
+        Ok(())
     }
 }

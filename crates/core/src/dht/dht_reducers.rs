@@ -81,10 +81,22 @@ pub(crate) fn reduce_hold_aspect(
     match aspect {
         EntryAspect::Content(entry, header) => {
             match reduce_store_entry_inner(&mut new_store, entry) {
-                Ok(()) => {
-                    new_store.add_header_for_entry(&entry, &header).ok()?;
-                    Some(new_store)
-                }
+                Ok(()) => match new_store.add_header_for_entry(&entry, &header) {
+                    Ok(()) => Some(new_store),
+                    Err(err) => {
+                        let err_msg = format!(
+                            "Tried to add the header for entry to the new
+                                store in reduce_hold_aspect, got error. {}",
+                            err
+                        );
+                        debug!(
+                            "{}, entry:\n{:?}\nheader:\n{:?} \nnew_store:\n{:?}",
+                            err_msg, entry, header, new_store
+                        );
+                        error!("{}", err_msg);
+                        None
+                    }
+                },
                 Err(e) => {
                     error!("{}", e);
                     None
@@ -191,7 +203,11 @@ pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Op
         .unique_by(|p| {
             (
                 p.pending.workflow.clone(),
-                p.pending.entry_with_header.header.entry_address(),
+                p.pending
+                    .header_with_its_entry
+                    .header()
+                    .entry_address()
+                    .clone(),
             )
         })
         .cloned()
@@ -251,15 +267,18 @@ pub mod tests {
             pending_validations::{PendingValidation, PendingValidationStruct, ValidatingWorkflow},
         },
         instance::tests::test_context,
-        network::entry_with_header::EntryWithHeader,
+        network::header_with_its_entry::HeaderWithItsEntry,
         state::test_store,
     };
     use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
-        chain_header::test_chain_header,
+        chain_header::{
+            test_chain_header, test_chain_header_for_link_entry, test_chain_header_for_sys_entry,
+            ChainHeader,
+        },
         eav::Attribute,
-        entry::{test_entry, test_sys_entry, Entry},
+        entry::{test_entry, test_link_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
         network::entry_aspect::EntryAspect,
     };
@@ -280,6 +299,7 @@ pub mod tests {
 
     #[test]
     fn reduce_hold_aspect_test() {
+        enable_logging_for_test();
         let context = test_context("bob", None);
         let store = test_store(context);
 
@@ -290,7 +310,7 @@ pub mod tests {
             &store.dht(),
             &ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
                 sys_entry.clone(),
-                test_chain_header(),
+                test_chain_header_for_sys_entry(),
             ))),
         )
         .expect("there should be a new store for committing a sys entry");
@@ -541,23 +561,47 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
-        let entry_with_header = EntryWithHeader {
-            entry: entry.clone(),
-            header: test_chain_header(),
-        };
-
-        Arc::new(PendingValidationStruct::new(entry_with_header, workflow))
+    fn try_create_pending_validation(
+        entry: Entry,
+        header: ChainHeader,
+        workflow: ValidatingWorkflow,
+    ) -> PendingValidation {
+        match HeaderWithItsEntry::try_from_header_and_entry(header.clone(), entry.clone()) {
+            Ok(header_with_its_entry) => Arc::new(PendingValidationStruct::new(
+                header_with_its_entry,
+                workflow,
+            )),
+            Err(err) => {
+                let err_msg = format!(
+                    "Tried to create a pending validation, got an error: {}",
+                    err
+                );
+                debug!(
+                    "{}, entry:\n{:?}\nheader from test_chain_header():\n{:?}\n",
+                    err_msg, entry, header
+                );
+                panic!(err_msg);
+            }
+        }
     }
 
+    // Causes a header and entry mismatch when calling try_create_pending_validation()
+    // -> try_from_header_and_entry().
+    // Should be since link_entry doesn't match with test chain header
     #[test]
     pub fn test_holding_queue() {
+        enable_logging_for_test();
         let context = test_context("test", None);
         let store = DhtStore::new(context.dht_storage.clone(), context.eav_storage.clone());
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();
-        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
+        let test_header = test_chain_header();
+        let hold = try_create_pending_validation(
+            test_entry.clone(),
+            test_header.clone(),
+            ValidatingWorkflow::HoldEntry,
+        );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),
@@ -567,23 +611,11 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 1);
         assert!(store.has_exact_queued_holding_workflow(&hold));
 
-        let test_link = String::from("test_link");
-        let test_tag = String::from("test-tag");
-        let link = Link::new(
-            &test_entry.address(),
-            &test_entry.address(),
-            &test_link.clone(),
-            &test_tag.clone(),
+        let hold_link = try_create_pending_validation(
+            test_link_entry(),
+            test_chain_header_for_link_entry(),
+            ValidatingWorkflow::HoldLink,
         );
-        let link_data = LinkData::from_link(
-            &link,
-            LinkActionKind::ADD,
-            test_chain_header(),
-            test_agent_id(),
-        );
-
-        let link_entry = Entry::LinkAdd(link_data.clone());
-        let hold_link = create_pending_validation(link_entry, ValidatingWorkflow::HoldLink);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
@@ -597,7 +629,11 @@ pub mod tests {
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
         assert_eq!(hold_link, next_pending);
 
-        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
+        let update = try_create_pending_validation(
+            test_entry.clone(),
+            test_header,
+            ValidatingWorkflow::UpdateEntry,
+        );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

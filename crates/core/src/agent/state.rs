@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::{ChainStore, ChainStoreIterator},
-    network::entry_with_header::EntryWithHeader,
+    network::header_with_its_entry::HeaderWithItsEntry,
     state::State,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
@@ -221,13 +221,13 @@ pub fn create_new_chain_header(
     ))
 }
 
-/// Create an entry-with-header for a header.
+/// Creates a `HeaderWithItsEntry` for a `ChainHeader`.
 /// Since published headers are treated as entries, the header must also
 /// have its own header!
-pub fn create_entry_with_header_for_header(
+pub fn create_header_with_its_entry_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
-) -> Result<EntryWithHeader, HolochainError> {
+) -> Result<HeaderWithItsEntry, HolochainError> {
     let timestamp = chain_header.timestamp().clone();
     let entry = Entry::ChainHeader(chain_header);
     // This header entry needs its own header so we can publish it.
@@ -251,7 +251,7 @@ pub fn create_entry_with_header_for_header(
         &None,
         &timestamp,
     );
-    Ok(EntryWithHeader { entry, header })
+    HeaderWithItsEntry::try_from_header_and_entry(header, entry)
 }
 
 /// Do a Commit Action against an agent state.

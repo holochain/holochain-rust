@@ -222,7 +222,7 @@ impl ConductorAdmin for Conductor {
                 return Err(HolochainError::ConfigError(format!(
                     "Invalid storage option: {}",
                     s
-                )))
+                )));
             }
         };
 

@@ -136,12 +136,12 @@ pub fn entry_to_validation_data(
     match entry {
         Entry::App(_, _) => maybe_link_update_delete
             .map(|link_update| {
-                get_entry_with_header(context.clone(), &link_update)
-                    .map(|entry_with_header| {
+                try_get_entry_with_meta_and_header_tuple(context.clone(), &link_update)
+                    .map(|entry_with_meta_and_header_tuple| {
                         Ok(EntryValidationData::Modify {
-                            old_entry: entry_with_header.0.entry.clone(),
+                            old_entry: entry_with_meta_and_header_tuple.0.entry.clone(),
                             new_entry: entry.clone(),
-                            old_entry_header: entry_with_header.1,
+                            old_entry_header: entry_with_meta_and_header_tuple.1,
                             validation_data: validation_data.clone(),
                         })
                     })
@@ -159,11 +159,11 @@ pub fn entry_to_validation_data(
             }),
         Entry::Deletion(deletion_entry) => {
             let deletion_address = deletion_entry.deleted_entry_address().clone();
-            get_entry_with_header(context, &deletion_address)
-                .map(|entry_with_header| {
+            try_get_entry_with_meta_and_header_tuple(context, &deletion_address)
+                .map(|entry_with_meta_and_header| {
                     Ok(EntryValidationData::Delete {
-                        old_entry: entry_with_header.0.entry.clone(),
-                        old_entry_header: entry_with_header.1,
+                        old_entry: entry_with_meta_and_header.0.entry.clone(),
+                        old_entry_header: entry_with_meta_and_header.1,
                         validation_data: validation_data.clone(),
                     })
                 })
@@ -183,7 +183,8 @@ pub fn entry_to_validation_data(
     }
 }
 
-fn get_entry_with_header(
+// It's a long name but it avoids confusion with getting `EntryWithMetaAndHeader`, or avoiding confusion when searching.
+fn try_get_entry_with_meta_and_header_tuple(
     context: Arc<Context>,
     address: &Address,
 ) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {

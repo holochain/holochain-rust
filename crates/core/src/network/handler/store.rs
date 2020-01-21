@@ -68,13 +68,13 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         log_debug!(context, "net/handle: HandleStoreMeta: got LINK. processing...");
         // TODO: do a loop on content once links properly implemented
         assert_eq!(dht_meta_data.content_list.len(), 1);
-        let entry_with_header: EntryWithHeader = serde_json::from_str(
+        let header_with_its_entry: HeaderWithItsEntry = serde_json::from_str(
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHeader"),
+                .expect("dht_meta_data should be HeaderWithItsEntry"),
         )
-        .expect("dht_meta_data should be EntryWithHeader");
+        .expect("dht_meta_data should be HeaderWithItsEntry");
         thread::spawn(move || {
-            match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
+            match context.block_on(hold_link_workflow(&header_with_its_entry, &context.clone())) {
                 Err(error) => log_error!(context, "net/dht: {}", error),
                 _ => (),
             }
@@ -83,15 +83,15 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         log_debug!(context, "net/handle: HandleStoreMeta: got LINK REMOVAL. processing...");
         // TODO: do a loop on content once links properly implemented
         assert_eq!(dht_meta_data.content_list.len(), 1);
-        let entry_with_header: EntryWithHeader = serde_json::from_str(
+        let header_with_its_entry: HeaderWithItsEntry = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be HeaderWithItsEntry"),
         )
         .expect("dht_meta_data should be EntryWithHader");
         thread::spawn(move || {
             if let Err(error) =
-                context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
+                context.block_on(remove_link_workflow(&header_with_its_entry, &context.clone()))
             {
                 log_error!(context, "net/dht: {}", error)
             }
@@ -102,15 +102,15 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     {
         log_debug!(context, "net/handle: HandleStoreMeta: got CRUD STATUS. processing...");
 
-        let entry_with_header: EntryWithHeader = serde_json::from_str(
+        let header_with_its_entry: HeaderWithItsEntry = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be HeaderWithItsEntry"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be HeaderWithItsEntry");
         thread::spawn(move || {
             if let Err(error) =
-                context.block_on(hold_remove_workflow(entry_with_header, context.clone()))
+                context.block_on(hold_remove_workflow(header_with_its_entry, context.clone()))
             {
                 log_error!(context, "net/dht: {}", error)
             }
@@ -120,15 +120,15 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         == CrudStatus::Modified
     {
         log_debug!(context, "net/handle: HandleStoreMeta: got CRUD LINK. processing...");
-        let entry_with_header: EntryWithHeader = serde_json::from_str(
+        let header_with_its_entry: HeaderWithItsEntry = serde_json::from_str(
             //should be careful doing slice access, it might panic
             &serde_json::to_string(&dht_meta_data.content_list[0])
-                .expect("dht_meta_data should be EntryWithHader"),
+                .expect("dht_meta_data should be HeaderWithItsEntry"),
         )
-        .expect("dht_meta_data should be EntryWithHader");
+        .expect("dht_meta_data should be HeaderWithItsEntry");
         thread::spawn(move || {
             if let Err(error) =
-                context.block_on(hold_update_workflow(entry_with_header, context.clone()))
+                context.block_on(hold_update_workflow(header_with_its_entry, context.clone()))
             {
                 log_error!(context, "net/dht: {}", error)
             }

@@ -1,4 +1,4 @@
-use crate::{agent::state::create_entry_with_header_for_header, content_store::GetContent};
+use crate::{agent::state::create_header_with_its_entry_for_header, content_store::GetContent};
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -12,7 +12,6 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
@@ -20,6 +19,7 @@ use crate::{
             send::*,
             store::*,
         },
+        header_with_its_entry::HeaderWithItsEntry,
     },
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
@@ -303,18 +303,19 @@ fn get_content_aspect(
         });
 
     // If we have found a header for the requested entry in the chain...
-    let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&state, header)?),
+    let maybe_header_with_its_entry = match maybe_chain_header {
+        Some((header, true)) => Some(create_header_with_its_entry_for_header(&state, header)?),
         Some((header, false)) => {
             // ... we can just get the content from the chain CAS
-            Some(EntryWithHeader {
-                entry: state
-                    .agent()
-                    .chain_store()
-                    .get(&header.entry_address())?
-                    .expect("Could not find entry in chain CAS, but header is chain"),
-                header,
-            })
+            let entry = state
+                .agent()
+                .chain_store()
+                .get(&header.entry_address())?
+                .expect("Could not find entry in chain CAS, but header is chain");
+            match HeaderWithItsEntry::try_from_header_and_entry(header, entry) {
+                Ok(header_with_its_entry) => Some(header_with_its_entry),
+                Err(error) => return Err(error),
+            }
         }
         None => {
             // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
@@ -333,10 +334,13 @@ fn get_content_aspect(
                     // TODO: this is just taking the first header..
                     // We should actually transform all headers into EntryAspect::Headers and just the first one
                     // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    Some(EntryWithHeader {
-                        entry,
-                        header: headers[0].clone(),
-                    })
+                    match HeaderWithItsEntry::try_from_header_and_entry(headers[0].clone(), entry) {
+                        Ok(header_with_its_entry) => Some(header_with_its_entry),
+                        Err(error) => {
+                            log_error!(context, "{}", error);
+                            None
+                        }
+                    }
                 } else {
                     debug!(
                         "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"
@@ -350,17 +354,18 @@ fn get_content_aspect(
         }
     };
 
-    let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
+    let header_with_its_entry =
+        maybe_header_with_its_entry.ok_or(HolochainError::EntryNotFoundLocally)?;
 
-    let _ = entry_with_header
-        .entry
+    let _ = header_with_its_entry
+        .entry()
         .entry_type()
         .can_publish(&context)
         .ok_or(HolochainError::EntryIsPrivate)?;
 
     Ok(EntryAspect::Content(
-        entry_with_header.entry,
-        entry_with_header.header,
+        header_with_its_entry.entry(),
+        header_with_its_entry.header(),
     ))
 }
 

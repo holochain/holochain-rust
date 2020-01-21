@@ -1,6 +1,6 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    network::header_with_its_entry::HeaderWithItsEntry, nucleus::validation::validate_entry,
     workflows::hold_entry::hold_entry_workflow,
 };
 
@@ -14,10 +14,11 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn remove_link_workflow(
-    entry_with_header: &EntryWithHeader,
+    header_with_its_entry: &HeaderWithItsEntry,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let (link_data, links_to_remove) = match &entry_with_header.entry {
+    let entry = &header_with_its_entry.entry();
+    let (link_data, links_to_remove) = match entry {
         Entry::LinkRemove(data) => data,
         _ => Err(HolochainError::ErrorGeneric(
             "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
@@ -31,7 +32,7 @@ pub async fn remove_link_workflow(
         context,
         "workflow/remove_link: getting validation package..."
     );
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(&header_with_its_entry, context.clone())
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -53,7 +54,7 @@ pub async fn remove_link_workflow(
     // 3. Validate the entry
     log_debug!(context, "workflow/remove_link: validate...");
     validate_entry(
-        entry_with_header.entry.clone(),
+        header_with_its_entry.entry(),
         None,
         validation_data,
         &context
@@ -64,7 +65,7 @@ pub async fn remove_link_workflow(
             HolochainError::ValidationPending
         } else {
             log_warn!(context, "workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry,
+                header_with_its_entry.entry(),
                 err,
             );
             HolochainError::from(err)
@@ -77,17 +78,17 @@ pub async fn remove_link_workflow(
     // 3. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::LinkRemove(
         (link_data.clone(), links_to_remove.clone()),
-        entry_with_header.header.clone(),
+        header_with_its_entry.header(),
     );
     hold_aspect(aspect, context.clone()).await?;
     log_debug!(context, "workflow/remove_link: added! {:?}", link);
 
     //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
-    hold_entry_workflow(&entry_with_header, context.clone()).await?;
+    hold_entry_workflow(&header_with_its_entry, context.clone()).await?;
     log_debug!(
         context,
         "workflow/hold_entry: added! {:?}",
-        entry_with_header
+        header_with_its_entry
     );
 
     Ok(())

@@ -1,4 +1,4 @@
-use crate::network::entry_with_header::EntryWithHeader;
+use crate::network::header_with_its_entry::HeaderWithItsEntry;
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 
@@ -6,15 +6,15 @@ pub trait ValidationDependencies {
     fn get_validation_dependencies(&self) -> Vec<Address>;
 }
 
-impl ValidationDependencies for EntryWithHeader {
+impl ValidationDependencies for HeaderWithItsEntry {
     fn get_validation_dependencies(&self) -> Vec<Address> {
-        match &self.entry {
+        match &self.entry() {
             Entry::App(_, _) => {
                 // In the future an entry should be dependent its previous header but
                 // for now it can require nothing by default.
                 // There is also potential to add a WASM function for determining dependencies as a function
                 // of the entry content.
-                match self.header.link_update_delete() {
+                match self.header().link_update_delete() {
                     // If it is an update, require that the original entry is validated
                     Some(entry_to_update) => vec![entry_to_update],
                     None => Vec::new(),
@@ -47,8 +47,10 @@ impl ValidationDependencies for EntryWithHeader {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::network::header_with_its_entry::HeaderWithItsEntry;
     use holochain_core_types::{
-        agent::AgentId, chain_header::ChainHeader, link::link_data::LinkData, time::Iso8601,
+        agent::AgentId, chain_header::ChainHeader, error::HolochainError,
+        link::link_data::LinkData, time::Iso8601,
     };
     use holochain_persistence_api::cas::content::AddressableContent;
 
@@ -64,20 +66,26 @@ pub mod tests {
         )
     }
 
-    fn entry_with_header_from_entry(entry: Entry) -> EntryWithHeader {
+    fn try_header_with_its_entry_from_entry(
+        entry: Entry,
+    ) -> Result<HeaderWithItsEntry, HolochainError> {
         let header = test_header_for_entry(&entry);
-        EntryWithHeader::new(entry, header)
+        HeaderWithItsEntry::try_from_header_and_entry(header, entry)
     }
 
     #[test]
-    fn test_get_validation_dependencies_app_entry() {
+    fn test_get_validation_dependencies_app_entry() -> Result<(), HolochainError> {
         let entry = Entry::App("entry_type".into(), "content".into());
-        let entry_wh = entry_with_header_from_entry(entry);
-        assert_eq!(entry_wh.get_validation_dependencies(), Vec::new(),)
+        try_header_with_its_entry_from_entry(entry).map(|header_with_its_entry| {
+            assert_eq!(
+                header_with_its_entry.get_validation_dependencies(),
+                Vec::new()
+            )
+        })
     }
 
     #[test]
-    fn test_get_validation_dependencies_link_add_entry() {
+    fn test_get_validation_dependencies_link_add_entry() -> Result<(), HolochainError> {
         let entry = Entry::LinkAdd(LinkData::new_add(
             &Address::from("QmBaseAddress"),
             &Address::from("QmTargetAddress"),
@@ -86,19 +94,20 @@ pub mod tests {
             test_header_for_entry(&Entry::App("".into(), "".into())),
             AgentId::new("HcAgentId", "key".into()),
         ));
-        let entry_wh = entry_with_header_from_entry(entry);
-        assert_eq!(
-            entry_wh.get_validation_dependencies(),
-            vec![
-                Address::from("QmBaseAddress"),
-                Address::from("QmTargetAddress")
-            ],
-        )
+        try_header_with_its_entry_from_entry(entry).map(|header_with_its_entry| {
+            assert_eq!(
+                header_with_its_entry.get_validation_dependencies(),
+                vec![
+                    Address::from("QmBaseAddress"),
+                    Address::from("QmTargetAddress")
+                ],
+            )
+        })
     }
 
     #[test]
-    fn test_get_validation_dependencies_header_entry() {
-        let header_entry_conent = ChainHeader::new(
+    fn test_get_validation_dependencies_header_entry() -> Result<(), HolochainError> {
+        let header_entry_content = ChainHeader::new(
             &"some type".into(),
             &Address::from("QmAddressOfEntry"),
             &Vec::new(),                                     // provenences
@@ -107,11 +116,12 @@ pub mod tests {
             &None,                                           // link update/delete
             &Iso8601::from(0),
         );
-        let entry = Entry::ChainHeader(header_entry_conent);
-        let entry_wh = entry_with_header_from_entry(entry);
-        assert_eq!(
-            entry_wh.get_validation_dependencies(),
-            vec![Address::from("QmPreviousHeaderAddress")],
-        )
+        let entry = Entry::ChainHeader(header_entry_content);
+        try_header_with_its_entry_from_entry(entry).map(|header_with_its_entry| {
+            assert_eq!(
+                header_with_its_entry.get_validation_dependencies(),
+                vec![Address::from("QmPreviousHeaderAddress")],
+            )
+        })
     }
 }

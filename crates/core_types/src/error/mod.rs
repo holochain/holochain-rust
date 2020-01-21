@@ -12,7 +12,7 @@ use holochain_json_api::{
     json::*,
 };
 use holochain_locksmith::LocksmithError;
-use holochain_persistence_api::{error::PersistenceError, hash::HashString};
+use holochain_persistence_api::{cas::content::Address, error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
 
 use serde_json::Error as SerdeError;
@@ -115,6 +115,7 @@ pub enum HolochainError {
     InitializationFailed(String),
     LifecycleError(String),
     DnaHashMismatch(HashString, HashString),
+    HeaderEntryMismatch(String, Address, Address),
     EntryNotFoundLocally,
     EntryIsPrivate,
     List(Vec<HolochainError>),
@@ -161,6 +162,12 @@ impl fmt::Display for HolochainError {
                 f,
                 "Provided DNA hash does not match actual DNA hash! {} != {}",
                 hash1, hash2
+            ),
+            HeaderEntryMismatch(err_msg, header_entry_address, entry_address) => write!(
+                f,
+                "Header/Entry mismatch. The entry address {} in the
+                 header does not match the address {} of the entry. {}",
+                header_entry_address, entry_address, err_msg
             ),
             EntryNotFoundLocally => write!(f, "The requested entry could not be found locally"),
             EntryIsPrivate => write!(

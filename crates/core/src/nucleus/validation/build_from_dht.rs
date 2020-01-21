@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, entry::CanPublish, network::entry_with_header::EntryWithHeader,
+    context::Context, entry::CanPublish, network::header_with_its_entry::HeaderWithItsEntry,
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use holochain_core_types::{
@@ -85,16 +85,16 @@ async fn public_chain_entries_from_headers_dht(
 }
 
 pub(crate) async fn try_make_validation_package_dht(
-    entry_with_header: &EntryWithHeader,
+    header_with_its_entry: &HeaderWithItsEntry,
     validation_package_definition: &ValidationPackageDefinition,
     context: Arc<Context>,
 ) -> Result<ValidationPackage, HolochainError> {
+    let entry_header = header_with_its_entry.header();
     log_debug!(
         context,
         "Constructing validation package from DHT for entry with address: {}",
-        entry_with_header.header.entry_address()
+        entry_header.clone().entry_address()
     );
-    let entry_header = entry_with_header.header.clone();
 
     log_debug!(context, "Retrieving chain headers...");
 
@@ -175,7 +175,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_validation_package_same_from_author_and_other_agent() {
+    fn test_validation_package_same_from_author_and_other_agent() -> Result<(), HolochainError> {
         let mut dna = test_dna();
         dna.uuid = "test_validation_package_same_from_author_and_other_agent".to_string();
         let netname = Some("test_validation_package_same_from_author_and_other_agent, the network");
@@ -204,12 +204,12 @@ pub mod tests {
             .next()
             .expect("Must be able to get header for just published entry");
 
-        let entry_with_header = EntryWithHeader { entry, header };
+        let header_with_its_entry = HeaderWithItsEntry::try_from_header_and_entry(header, entry)?;
 
         // jack (the author) retrieves a local validation package
         let local_validation_package = context2
             .block_on(try_make_local_validation_package(
-                &entry_with_header,
+                &header_with_its_entry,
                 &ValidationPackageDefinition::ChainFull,
                 context2.clone(),
             ))
@@ -218,7 +218,7 @@ pub mod tests {
         // jill reconstructs one from published headers
         let dht_validation_package = context1
             .block_on(try_make_validation_package_dht(
-                &entry_with_header,
+                &header_with_its_entry,
                 &ValidationPackageDefinition::ChainFull,
                 context1.clone(),
             ))
@@ -242,6 +242,7 @@ pub mod tests {
             2
         );
 
-        assert_eq!(local_validation_package, dht_validation_package,)
+        assert_eq!(local_validation_package, dht_validation_package,);
+        Ok(())
     }
 }

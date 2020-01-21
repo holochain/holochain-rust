@@ -235,7 +235,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                             // ignore would-block errors on write
                             // tungstenite queues them in pending, they'll get sent
                             Err(tungstenite::error::Error::Io(e)) if e.would_block() => {
-                                return Ok(())
+                                return Ok(());
                             }
                             Err(tungstenite::error::Error::Io(_)) => {
                                 if let Err(tungstenite::error::Error::Io(e)) = res {
@@ -248,7 +248,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                                 return Err(Error::new(
                                     ErrorKind::Other,
                                     format!("tungstenite error: {:?}", e),
-                                ))
+                                ));
                             }
                         }
                     } else {
@@ -351,7 +351,7 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
                         return Err(Error::new(
                             ErrorKind::Other,
                             format!("tungstenite error: {:?}", e),
-                        ))
+                        ));
                     }
                 }
             }

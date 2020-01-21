@@ -4,7 +4,7 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
+        header_with_its_entry::HeaderWithItsEntry,
         query::{GetLinksNetworkQuery, NetworkQueryResult},
         state::NetworkState,
     },
@@ -127,7 +127,7 @@ pub enum Action {
     HoldAspect(EntryAspect),
 
     //action for updating crudstatus
-    CrudStatus((EntryWithHeader, CrudStatus)),
+    CrudStatus((HeaderWithItsEntry, CrudStatus)),
 
     // ----------------
     // Network actions:

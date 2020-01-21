@@ -1,11 +1,8 @@
 use crate::{
     action::ActionWrapper,
     network::{
-        actions::NetworkActionResponse,
-        entry_aspect::EntryAspect,
-        entry_with_header::{fetch_entry_with_header, EntryWithHeader},
-        reducers::send,
-        state::NetworkState,
+        actions::NetworkActionResponse, entry_aspect::EntryAspect,
+        header_with_its_entry::HeaderWithItsEntry, reducers::send, state::NetworkState,
     },
     state::State,
 };
@@ -40,7 +37,7 @@ pub fn entry_data_to_entry_aspect_data(ea: &EntryAspect) -> EntryAspectData {
 /// Send to network a PublishDhtData message
 fn publish_entry(
     network_state: &mut NetworkState,
-    entry_with_header: &EntryWithHeader,
+    header_with_its_entry: &HeaderWithItsEntry,
 ) -> Result<(), HolochainError> {
     send(
         network_state,
@@ -48,10 +45,10 @@ fn publish_entry(
             space_address: network_state.dna_address.clone().unwrap().into(),
             provider_agent_id: network_state.agent_id.clone().unwrap().into(),
             entry: EntryData {
-                entry_address: entry_with_header.entry.address().into(),
+                entry_address: header_with_its_entry.entry().address().into(),
                 aspect_list: vec![entry_data_to_entry_aspect_data(&EntryAspect::Content(
-                    entry_with_header.entry.clone(),
-                    entry_with_header.header.clone(),
+                    header_with_its_entry.entry(),
+                    header_with_its_entry.header(),
                 ))],
             },
         }),
@@ -63,16 +60,16 @@ fn publish_update_delete_meta(
     network_state: &mut NetworkState,
     orig_entry_address: Address,
     crud_status: CrudStatus,
-    entry_with_header: &EntryWithHeader,
+    header_with_its_entry: &HeaderWithItsEntry,
 ) -> Result<(), HolochainError> {
     // publish crud-status
 
     let aspect = match crud_status {
         CrudStatus::Modified => EntryAspect::Update(
-            entry_with_header.entry.clone(),
-            entry_with_header.header.clone(),
+            header_with_its_entry.entry(),
+            header_with_its_entry.header(),
         ),
-        CrudStatus::Deleted => EntryAspect::Deletion(entry_with_header.header.clone()),
+        CrudStatus::Deleted => EntryAspect::Deletion(header_with_its_entry.header()),
         crud => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Unexpeced CRUD variant {:?}",
@@ -97,27 +94,24 @@ fn publish_update_delete_meta(
     Ok(())
 }
 
-/// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
+/// Send to network a PublishMeta message holding a link metadata to `header_with_its_entry`
 fn publish_link_meta(
     network_state: &mut NetworkState,
-    entry_with_header: &EntryWithHeader,
+    header_with_its_entry: &HeaderWithItsEntry,
 ) -> Result<(), HolochainError> {
-    let (base, aspect) = match entry_with_header.entry.clone() {
+    let (base, aspect) = match header_with_its_entry.entry() {
         Entry::LinkAdd(link_data) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkAdd(link_data, entry_with_header.header.clone()),
+            EntryAspect::LinkAdd(link_data, header_with_its_entry.header()),
         ),
         Entry::LinkRemove((link_data, links_to_remove)) => (
             link_data.link().base().clone(),
-            EntryAspect::LinkRemove(
-                (link_data, links_to_remove),
-                entry_with_header.header.clone(),
-            ),
+            EntryAspect::LinkRemove((link_data, links_to_remove), header_with_its_entry.header()),
         ),
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd/Remove received {:?}",
-                entry_with_header.entry,
+                header_with_its_entry.entry(),
             )));
         }
     };
@@ -141,39 +135,42 @@ fn reduce_publish_inner(
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
+    let header_with_its_entry =
+        HeaderWithItsEntry::fetch_header_with_its_entry(&address, root_state)?;
 
-    match entry_with_header.entry.entry_type() {
-        EntryType::AgentId => publish_entry(network_state, &entry_with_header),
-        EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            match entry_with_header.header.link_update_delete() {
+    match header_with_its_entry.entry().entry_type() {
+        EntryType::AgentId => publish_entry(network_state, &header_with_its_entry),
+        EntryType::App(_) => publish_entry(network_state, &header_with_its_entry).and_then(|_| {
+            match header_with_its_entry.header().link_update_delete() {
                 Some(modified_entry) => publish_update_delete_meta(
                     network_state,
                     modified_entry,
                     CrudStatus::Modified,
-                    &entry_with_header.clone(),
+                    &header_with_its_entry.clone(),
                 ),
                 None => Ok(()),
             }
         }),
-        EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
-        EntryType::LinkRemove => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
-        EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
-            match entry_with_header.header.link_update_delete() {
-                Some(modified_entry) => publish_update_delete_meta(
-                    network_state,
-                    modified_entry,
-                    CrudStatus::Deleted,
-                    &entry_with_header.clone(),
-                ),
-                None => Ok(()),
-            }
-        }),
+        EntryType::LinkAdd => publish_entry(network_state, &header_with_its_entry)
+            .and_then(|_| publish_link_meta(network_state, &header_with_its_entry)),
+        EntryType::LinkRemove => publish_entry(network_state, &header_with_its_entry)
+            .and_then(|_| publish_link_meta(network_state, &header_with_its_entry)),
+        EntryType::Deletion => {
+            publish_entry(network_state, &header_with_its_entry).and_then(|_| {
+                match header_with_its_entry.header().link_update_delete() {
+                    Some(modified_entry) => publish_update_delete_meta(
+                        network_state,
+                        modified_entry,
+                        CrudStatus::Deleted,
+                        &header_with_its_entry.clone(),
+                    ),
+                    None => Ok(()),
+                }
+            })
+        }
         _ => Err(HolochainError::NotImplemented(format!(
             "reduce_publish_inner not implemented for {}",
-            entry_with_header.entry.entry_type()
+            header_with_its_entry.entry().entry_type()
         ))),
     }
 }

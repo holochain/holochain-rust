@@ -6,8 +6,7 @@ use stats::Commute;
 use std::{
     collections::HashMap,
     error::Error,
-    fmt,
-    fmt::{Display, Formatter},
+    fmt::{self, Display, Formatter},
     io,
     iter::FromIterator,
 };
@@ -632,7 +631,6 @@ mod tests {
         assert_eq!(size_stats.min(), 1.0);
         assert_eq!(size_stats.max(), 100.0);
     }
-
     #[test]
     fn can_perform_stat_check() {
         let expected: StatsByMetric<StatsRecord> = StatsByMetric::from_iter(

@@ -128,10 +128,15 @@ impl ContextBuilder {
         fs::create_dir_all(&cas_path)?;
         fs::create_dir_all(&eav_path)?;
 
-        let cas_storage = Arc::new(RwLock::new(LmdbStorage::new(&cas_path, initial_mmap_bytes)));
+        let cas_storage = Arc::new(RwLock::new(LmdbStorage::new(
+            &cas_path,
+            initial_mmap_bytes,
+            None,
+        )));
         let eav_storage = Arc::new(RwLock::new(EavLmdbStorage::new(
             eav_path,
             initial_mmap_bytes,
+            None,
         )));
         self.chain_storage = Some(cas_storage.clone());
         self.dht_storage = Some(cas_storage);

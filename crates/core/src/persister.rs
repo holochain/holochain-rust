@@ -42,7 +42,7 @@ impl PartialEq for SimplePersister {
 impl Persister for SimplePersister {
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
-        let mut store = lock.write()?;
+        let store = lock.write()?;
         let agent_snapshot = AgentStateSnapshot::from(state);
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
         let dht_store_snapshot = DhtStoreSnapshot::from(state);

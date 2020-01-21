@@ -6,18 +6,20 @@ module.exports = scenario => {
   scenario.only('links propagate within a single conductor', async (s, t) => {
     const { alice } = await s.players({alice: twoSame}, true)
 
+    const base = alice.info('app1').agentAddress
+
     await alice.call('app1', 'simple', 'create_link',
-      { base: alice.info('app1').agentAddress, target: 'Posty' }
+      { base, target: 'Posty' }
     )
 
     await s.consistency()
 
     const posts1 = await alice.call('app2', 'simple', 'get_my_links',
-      { base: alice.info('app2').agentAddress, status_request: 'Live' }
+      { base, status_request: 'Live' }
     )
 
     const posts2 = await alice.call('app2', 'simple', 'get_my_links',
-      { base: alice.info('app2').agentAddress, status_request: 'Live' }
+      { base, status_request: 'Live' }
     )
 
     t.ok(posts1.Ok)

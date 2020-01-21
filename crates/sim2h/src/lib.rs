@@ -304,6 +304,28 @@ impl Sim2hState {
         )
     }
 
+    fn request_authoring_list(
+        &mut self,
+        uri: Lib3hUri,
+        space_address: SpaceHash,
+        provider_agent_id: AgentId,
+    ) {
+        with_latency_publishing!(
+            "sim2h-request_authoring_list",
+            self.metric_publisher,
+            || {
+                let wire_message = WireMessage::Lib3hToClient(
+                    Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+                        request_id: "".into(),
+                        space_address,
+                        provider_agent_id: provider_agent_id.clone(),
+                    }),
+                );
+                self.send(provider_agent_id, uri, &wire_message);
+            }
+        )
+    }
+
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Vec<Lib3hUri> {
         with_latency_publishing!("sim2h-send", self.metric_publisher, || {
             match msg {
@@ -972,6 +994,7 @@ impl Sim2h {
         )
     }
 
+    /*
     fn request_authoring_list(
         &mut self,
         uri: Lib3hUri,
@@ -993,6 +1016,7 @@ impl Sim2h {
                 .send(provider_agent_id, uri, &wire_message);
         });
     }
+    */
 
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
@@ -1022,18 +1046,17 @@ impl Sim2h {
                             "Agent {:?} joined space {:?}",
                             data.agent_id, data.space_address
                         );
-                        // MDD: why is request_gossiping_list in Sim2hState but not request_authoring_list?
                         state.request_gossiping_list(
                             uri.clone(),
                             data.space_address.clone(),
                             data.agent_id.clone(),
                         );
+                        state.request_authoring_list(
+                            uri.clone(),
+                            data.space_address.clone(),
+                            data.agent_id.clone(),
+                        );
                     }
-                    self.request_authoring_list(
-                        uri.clone(),
-                        data.space_address.clone(),
-                        data.agent_id.clone(),
-                    );
                     // MDD: maybe the pending messages shouldn't be handled immediately, but pushed into the queue?
                     debug!("pending messages in join: {}", pending_messages.len());
                     for message in *pending_messages {

@@ -388,8 +388,7 @@ fn can_return_empty_string_as_validation_fail() {
         .join("crates")
         .join("core")
         .join("src")
-        .join("nucleus")
-        .join("ribosome")
+        .join("wasm_engine")
         .join("runtime.rs");
     let path_string = path
         .as_path()

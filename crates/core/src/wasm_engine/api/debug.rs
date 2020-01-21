@@ -1,5 +1,5 @@
 use crate::wasm_engine::{api::ZomeApiResult, Runtime};
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u64

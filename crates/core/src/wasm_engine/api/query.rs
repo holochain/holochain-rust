@@ -14,7 +14,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
 use std::{convert::TryFrom, sync::Arc};
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u64

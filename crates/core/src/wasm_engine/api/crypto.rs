@@ -2,7 +2,7 @@ use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use holochain_json_api::json::*;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64

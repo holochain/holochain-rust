@@ -2,7 +2,7 @@ use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use holochain_dpki::utils::Verify;
 use holochain_wasm_utils::api_serialization::verify_signature::VerifySignatureArgs;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::VerifySignature function code
 /// args: [0] encoded MemoryAllocation as u64

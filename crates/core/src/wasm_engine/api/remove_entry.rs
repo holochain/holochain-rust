@@ -11,7 +11,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation

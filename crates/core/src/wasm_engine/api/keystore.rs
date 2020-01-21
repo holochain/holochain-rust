@@ -11,7 +11,6 @@ use jsonrpc_lite::JsonRpc;
 use serde_json::{self, Value};
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
-use wasmi::{RuntimeArgs, RuntimeValue};
 
 fn conductor_callback<S: Into<String>>(
     method: S,

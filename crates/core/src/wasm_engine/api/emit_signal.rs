@@ -4,7 +4,7 @@ use crate::{
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::EmitSignal function code
 /// args: [0] encoded MemoryAllocation as u64

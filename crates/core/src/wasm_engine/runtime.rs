@@ -17,7 +17,8 @@ use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, fmt, sync::Arc};
 use wasmer_runtime::Instance;
-use wasmi::{Externals, HostError, RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use wasmer_runtime::error::RuntimeError;
+use wasmer_runtime::Value;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -108,23 +109,26 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
+    pub fn zome_call_data(&self) -> Result<ZomeCallData, RuntimeError> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+            _ => Err(
+                RuntimeError::Trap{ msg: Box::new(format!(
                 "zome_call_data: {:?}",
-                &self.data
-            )))))),
+                &self.data)) }
+            ),
         }
     }
 
     pub fn callback_call_data(&self) -> Result<CallbackCallData, Trap> {
         match &self.data {
             WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+            _ => Err(
+                RuntimeError::Trap {
+                    msg: Box::new(format!(
                 "callback_call_data: {:?}",
-                &self.data
-            )))))),
+                &self.data)) }
+            ),
         }
     }
 
@@ -142,10 +146,13 @@ impl Runtime {
                 fn_name: data.call.fn_name.clone(),
                 parameters: data.call.parameters.clone(),
             }),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
-                "call_data: {:?}",
-                &self.data
-            )))))),
+            _ => Err(
+                RuntimeError::Trap {
+                    msg: Box::new(format!(
+                    "call_data: {:?}",
+                    &self.data
+                ))}
+            ),
         }
     }
 
@@ -153,10 +160,12 @@ impl Runtime {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
             WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
-            _ => Err(Trap::new(TrapKind::Host(Box::new(BadCallError(format!(
+            _ => Err(
+                RuntimeError::Trap {
+                    msg: Box::new(format!(
                 "context data: {:?}",
                 &self.data
-            )))))),
+            ))}),
         }
     }
 
@@ -205,7 +214,7 @@ impl Runtime {
 
         match self.memory_manager.write(&mut self.wasm_instance, &s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(Some(RuntimeValue::I64(RibosomeEncodingBits::from(
+            Ok(allocation) => Ok(Some(Value::I64(RibosomeEncodingBits::from(
                 RibosomeEncodedValue::Allocation(allocation.into()),
             )
                 as RibosomeRuntimeBits))),

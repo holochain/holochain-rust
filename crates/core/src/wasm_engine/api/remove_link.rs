@@ -9,6 +9,7 @@ use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
+use wasmer_runtime::Value;
 
 use holochain_core_types::{
     entry::Entry,
@@ -21,7 +22,6 @@ use holochain_wasm_utils::api_serialization::{
     link_entries::LinkEntriesArgs,
 };
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u64

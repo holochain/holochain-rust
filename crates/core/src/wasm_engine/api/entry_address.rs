@@ -5,14 +5,14 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::RibosomeRuntimeBits,
 };
+use wasmer_runtime::Value;
 use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::{convert::TryFrom, str::FromStr};
-use wasmi::{RuntimeArgs, RuntimeValue};
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
-        Some(RuntimeValue::I64(
+        Some(Value::I64(
             holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as RibosomeRuntimeBits,
         ))
     })?;
@@ -21,7 +21,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
     if entry_type.is_app() {
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
-            return Err(Some(RuntimeValue::I64(
+            return Err(Some(Value::I64(
                 holochain_core_types::error::RibosomeErrorCode::UnknownEntryType
                     as RibosomeRuntimeBits,
             )));

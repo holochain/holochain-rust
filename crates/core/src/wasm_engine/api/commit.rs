@@ -3,11 +3,11 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use holochain_core_types::error::HolochainError;
+use wasmer_runtime::Value;
 
 use holochain_wasm_utils::api_serialization::commit_entry::{CommitEntryArgs, CommitEntryResult};
 
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u64

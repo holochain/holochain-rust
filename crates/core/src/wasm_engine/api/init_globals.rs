@@ -9,7 +9,6 @@ use holochain_persistence_api::{
 use holochain_json_api::json::JsonString;
 
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
-use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u64

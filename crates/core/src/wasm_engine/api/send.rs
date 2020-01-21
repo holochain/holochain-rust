@@ -5,7 +5,7 @@ use crate::{
 use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Send function code
 /// args: [0] encoded MemoryAllocation as u64

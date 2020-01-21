@@ -2,7 +2,7 @@ use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{hdk_version::HDK_VERSION, HDK_HASH};
 use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Meta function code
 /// args: [0] encoded MemoryAllocation as u64

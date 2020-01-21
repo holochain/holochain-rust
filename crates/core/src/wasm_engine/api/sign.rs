@@ -4,7 +4,7 @@ use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
 use lib3h_sodium::secbuf::SecBuf;
 use std::convert::TryFrom;
-use wasmi::{RuntimeArgs, RuntimeValue};
+use wasmer_runtime::Value;
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64

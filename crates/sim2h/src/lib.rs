@@ -713,7 +713,15 @@ impl Sim2hState {
 }
 
 #[derive(Debug)]
+struct Sim2hComHandleMessage {
+    uri: Lib3hUri,
+    message: WireMessage,
+    signer: AgentId,
+}
+
+#[derive(Debug)]
 enum Sim2hCom {
+    HandleMessage(Box<Sim2hComHandleMessage>),
     Disconnect(Vec<Lib3hUri>),
 }
 
@@ -743,6 +751,16 @@ impl Sim2hHandle {
 
     pub async fn lock_state(&self) -> tokio::sync::MutexGuard<'_, Sim2hState> {
         self.state.lock().await
+    }
+
+    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
+        self.send_com
+            .send(Sim2hCom::HandleMessage(Box::new(Sim2hComHandleMessage {
+                uri,
+                message,
+                signer,
+            })))
+            .expect("can send");
     }
 
     pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
@@ -986,22 +1004,7 @@ impl Sim2h {
                                     url
                                 );
                                 let payload: Opaque = b.into();
-                                match Sim2h::verify_payload(payload.clone()) {
-                                    Ok((source, wire_message)) => {
-                                        if let Err(error) =
-                                            self.handle_message(url, wire_message, source)
-                                        {
-                                            error!("Error handling message: {:?}", error);
-                                        }
-                                    }
-                                    Err(error) => {
-                                        error!(
-                                            "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
-                                            url,
-                                            error, payload
-                                        );
-                                    }
-                                }
+                                Sim2h::verify_payload(self.sim2h_handle.clone(), url, payload);
                             }
                             // TODO - we should use websocket ping/pong
                             //        instead of rolling our own on top of Binary
@@ -1062,14 +1065,11 @@ impl Sim2h {
                     // MDD: maybe the pending messages shouldn't be handled immediately, but pushed into the queue?
                     debug!("pending messages in join: {}", pending_messages.len());
                     for message in *pending_messages {
-                        if let Err(err) =
-                            self.handle_message(uri.clone(), message.clone(), data.agent_id.clone())
-                        {
-                            error!(
-                                "Error while handling limbo pending message {:?} for {}: {}",
-                                message, uri, err
-                            );
-                        }
+                        self.sim2h_handle.handle_message(
+                            uri.clone(),
+                            message.clone(),
+                            data.agent_id.clone(),
+                        );
                     }
                     Ok(())
                 } else {
@@ -1243,14 +1243,28 @@ impl Sim2h {
         })
     }
 
-    fn verify_payload(payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
-        let signed_message = SignedWireMessage::try_from(payload)?;
-        let result = signed_message.verify().unwrap();
-        if !result {
-            return Err(VERIFY_FAILED_ERR_STR.into());
-        }
-        let wire_message = WireMessage::try_from(signed_message.payload)?;
-        Ok((signed_message.provenance.source().into(), wire_message))
+    fn verify_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+        tokio::task::spawn(async move {
+            match (|| -> Sim2hResult<(AgentId, WireMessage)> {
+                let signed_message = SignedWireMessage::try_from(payload.clone())?;
+                let result = signed_message.verify().unwrap();
+                if !result {
+                    return Err(VERIFY_FAILED_ERR_STR.into());
+                }
+                let wire_message = WireMessage::try_from(signed_message.payload)?;
+                Ok((signed_message.provenance.source().into(), wire_message))
+            })() {
+                Ok((source, wire_message)) => {
+                    sim2h_handle.handle_message(url, wire_message, source)
+                }
+                Err(error) => {
+                    error!(
+                        "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
+                        url, error, payload
+                    );
+                }
+            }
+        });
     }
 
     // process transport and  incoming messages from it
@@ -1267,6 +1281,9 @@ impl Sim2h {
                 match self.recv_com.try_recv() {
                     Ok(Sim2hCom::Disconnect(mut disconnects)) => {
                         d_list.append(&mut disconnects);
+                    }
+                    Ok(Sim2hCom::HandleMessage(m)) => {
+                        self.handle_message(m.uri, m.message, m.signer)?;
                     }
                     _ => (),
                 }

@@ -3,7 +3,7 @@ const { Config } = require('@holochain/tryorama')
 
 module.exports = scenario => {
 
-  scenario.only('links propagate within a single conductor', async (s, t) => {
+  scenario('links propagate within a single conductor', async (s, t) => {
     const { alice } = await s.players({alice: twoSame}, true)
 
     const base = alice.info('app1').agentAddress

@@ -1,6 +1,6 @@
 [package]
 name = "sim2h"
-version = "0.0.42-alpha2"
+version = "0.0.42-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h"
@@ -14,22 +14,23 @@ repository = "https://github.com/holochain/sim2h"
 [dependencies]
 backtrace = "=0.3.27"
 hcid = "=0.0.6"
-holochain_persistence_api = "=0.0.11"
+holochain_persistence_api = "=0.0.13"
 holochain_json_api = "=0.0.17"
 detach = "=0.0.19"
-lib3h = "=0.0.25"
-lib3h_crypto_api = "=0.0.25"
-lib3h_sodium = "=0.0.25"
-lib3h_protocol = "=0.0.25"
-lib3h_zombie_actor = "=0.0.25"
-holochain_tracing = "=0.0.4"
-holochain_core_types = { version = "=0.0.42-alpha2", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.42-alpha2", path = "../locksmith" }
-in_stream = { version = "=0.0.42-alpha2", path = "../in_stream" }
+lib3h = "=0.0.31"
+lib3h_crypto_api = "=0.0.31"
+lib3h_sodium = "=0.0.31"
+lib3h_protocol = "=0.0.31"
+lib3h_zombie_actor = "=0.0.31"
+holochain_tracing = "=0.0.13"
+holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
+holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
+in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "=0.4.8"
 env_logger = "=0.6.1"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 nanoid = "=0.2.0"
 num_cpus = "=1.11.1"
 url = "=2.1.0"
@@ -46,3 +47,5 @@ chrono = "=0.4.6"
 native-tls = "=0.2.3"
 openssl = "=0.10.25"
 tungstenite = "=0.9.2"
+threadpool = "=1.7.1"
+chashmap = "=2.2.2"

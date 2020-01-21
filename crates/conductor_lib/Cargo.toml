@@ -4,27 +4,27 @@ description = "holochain conductor library"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.42-alpha2"
+version = "0.0.42-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-holochain_core = { version = "=0.0.42-alpha2", path = "../core" }
-holochain_core_types = { version = "=0.0.42-alpha2", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.42-alpha2", path = "../locksmith" }
+holochain_core = { version = "=0.0.42-alpha5", path = "../core" }
+holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.11"
-holochain_persistence_mem = "=0.0.11"
-holochain_persistence_file = "=0.0.11"
-holochain_persistence_pickle = "=0.0.11"
-holochain_persistence_lmdb = "=0.0.11"
-holochain_dpki = { version = "=0.0.42-alpha2", path = "../dpki" }
-holochain_net = { version = "=0.0.42-alpha2", path = "../net" }
-lib3h = "=0.0.25"
-lib3h_sodium = "=0.0.25"
-holochain_metrics = { version = "=0.0.42-alpha2", path = "../metrics" }
-holochain_common = { version = "=0.0.42-alpha2", path = "../common" }
+holochain_persistence_api = "=0.0.13"
+holochain_persistence_mem = "=0.0.13"
+holochain_persistence_file = "=0.0.13"
+holochain_persistence_pickle = "=0.0.13"
+holochain_persistence_lmdb = "=0.0.13"
+holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
+holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
+lib3h = "=0.0.31"
+lib3h_sodium = "=0.0.31"
+holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
+holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
 chrono = "=0.4.6"
 serde = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
@@ -40,7 +40,7 @@ petgraph = "=0.4.13"
 colored = "=1.7.0"
 regex = "=1.1.2"
 maplit = "=1.0.2"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 json-patch = "=0.2.2"
 hyper = "=0.12.25"
 fs_extra = "=1.1.0"
@@ -54,9 +54,9 @@ nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
 snowflake = "=1.3.0"
 [dev-dependencies]
-test_utils = { version = "=0.0.42-alpha2", path = "../../test_utils" }
+test_utils = { version = "=0.0.42-alpha5", path = "../../test_utils" }
 tempfile = "=3.0.7"
-holochain_wasm_utils = { version = "=0.0.42-alpha2", path = "../wasm_utils" }
+holochain_wasm_utils = { version = "=0.0.42-alpha5", path = "../wasm_utils" }
 structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"
 ws = "=0.8.0"

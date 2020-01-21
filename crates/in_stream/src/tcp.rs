@@ -97,7 +97,7 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
         let (stream, addr) = self.0.accept()?;
         stream.set_nonblocking(true)?;
         let remote_url = url2!("{}://{}", SCHEME, addr);
-        log::trace!("tcp: accepted from {}", remote_url);
+        log::debug!("tcp: accepted from {}", remote_url);
         InStreamTcp::priv_new(stream, remote_url, None)
     }
 }
@@ -161,13 +161,24 @@ impl InStreamTcp {
 
     fn priv_process(&mut self) -> Result<()> {
         if let Some(cdata) = &mut self.connecting {
-            if let Ok(_) = self.stream.connect(&cdata.addr) {
-                self.connecting = None;
-            } else {
-                if let Some(timeout) = cdata.connect_timeout {
-                    if std::time::Instant::now() >= timeout {
-                        return Err(ErrorKind::TimedOut.into());
+            match self.stream.connect(&cdata.addr) {
+                Err(e) => {
+                    if let Some(code) = e.raw_os_error() {
+                        // `Socket is already connected` : )
+                        if code == 56 {
+                            self.connecting = None;
+                        }
                     }
+                }
+                Ok(_) => {
+                    self.connecting = None;
+                }
+            }
+        }
+        if let Some(cdata) = &mut self.connecting {
+            if let Some(timeout) = cdata.connect_timeout {
+                if std::time::Instant::now() >= timeout {
+                    return Err(ErrorKind::TimedOut.into());
                 }
             }
         }

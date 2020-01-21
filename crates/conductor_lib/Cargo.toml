@@ -21,7 +21,7 @@ holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-p
 holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
-lib3h = "=0.0.31"
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_sodium = "=0.0.31"
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
 holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
@@ -53,6 +53,7 @@ holochain_logging = "=0.0.4"
 nickel = "=0.11.0"
 url = { version = "=2.1.0", features = ["serde"] }
 snowflake = "=1.3.0"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 [dev-dependencies]
 test_utils = { version = "=0.0.42-alpha5", path = "../../test_utils" }
 tempfile = "=3.0.7"

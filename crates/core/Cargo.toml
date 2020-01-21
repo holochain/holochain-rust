@@ -29,7 +29,7 @@ holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 holochain_wasm_utils = { version = "=0.0.42-alpha5", path = "../wasm_utils" }
 holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.42-alpha5", path = "../conductor_api" }
-lib3h_protocol = "=0.0.31"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_sodium = "=0.0.31"
 holochain_json_derive = "=0.0.17"
 holochain_json_api = "=0.0.17"
@@ -59,6 +59,7 @@ im = { version = "=14.0.0", features = ["serde"] }
 itertools = "0.8.2"
 holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [dev-dependencies]
 wabt = "=0.7.4"

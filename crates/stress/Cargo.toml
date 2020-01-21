@@ -14,7 +14,7 @@ crossbeam-channel = "=0.3.8"
 env_logger = "=0.6.1"
 hcid = "=0.0.6"
 lib3h_crypto_api = "=0.0.31"
-lib3h_protocol = "=0.0.31"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_sodium = "=0.0.31"
 log = "=0.4.8"
 nanoid = "=0.2.0"
@@ -34,6 +34,7 @@ holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-per
 holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [features]
 vendored = ["native-tls/vendored"]

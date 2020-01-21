@@ -21,3 +21,5 @@ holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-per
 holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }

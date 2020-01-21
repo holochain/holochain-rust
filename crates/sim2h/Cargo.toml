@@ -17,10 +17,10 @@ hcid = "=0.0.6"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_json_api = "=0.0.17"
 detach = "=0.0.19"
-lib3h = "=0.0.31"
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_crypto_api = "=0.0.31"
 lib3h_sodium = "=0.0.31"
-lib3h_protocol = "=0.0.31"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_zombie_actor = "=0.0.31"
 holochain_tracing = "=0.0.13"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }

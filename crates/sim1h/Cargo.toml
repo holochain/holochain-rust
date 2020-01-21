@@ -15,7 +15,7 @@ repository = "https://github.com/holochain/holochain-rust"
 rusoto_core = "0.40.0"
 rusoto_dynamodb = "0.40.0"
 dynomite = "0.5"
-lib3h_protocol = "=0.0.31"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 detach = "=0.0.19"
 holochain_tracing = "=0.0.13"
 uuid = { version = "0.4", features = ["v4"] }
@@ -33,3 +33,4 @@ holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-per
 holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }

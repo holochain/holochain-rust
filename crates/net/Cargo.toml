@@ -53,11 +53,6 @@ parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
 holochain_logging = "=0.0.4"
 log = "0.4.8"
-holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [features]
 

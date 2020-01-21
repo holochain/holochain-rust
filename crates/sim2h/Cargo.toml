@@ -48,8 +48,3 @@ native-tls = "=0.2.3"
 openssl = "=0.10.25"
 tungstenite = "=0.9.2"
 threadpool = "=1.7.1"
-chashmap = "=2.2.2"
-holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }

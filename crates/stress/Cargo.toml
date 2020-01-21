@@ -29,12 +29,6 @@ in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
 structopt = "=0.3.3"
 toml = "=0.5.0"
 url2 = "=0.0.4"
-holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [features]
 vendored = ["native-tls/vendored"]

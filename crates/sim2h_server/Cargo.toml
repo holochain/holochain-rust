@@ -20,8 +20,3 @@ lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transacti
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"
-holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_pickle = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }

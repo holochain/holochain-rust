@@ -199,15 +199,16 @@ pub enum TracingConfiguration {
     Jaeger(JaegerTracingConfiguration),
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct JaegerTracingConfiguration {
+    pub service_name: String,
+    pub socket_address: Option<String>,
+}
+
 impl Default for TracingConfiguration {
     fn default() -> Self {
         TracingConfiguration::None
     }
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct JaegerTracingConfiguration {
-    pub service_name: String,
 }
 
 /// Check for duplicate items in a list of strings

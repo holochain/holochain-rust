@@ -60,7 +60,7 @@ fn main() {
             .spawn(move || {
                 info!("Tracer loop started.");
                 // TODO: killswitch
-                let reporter = ht::Reporter::new(&service_name).unwrap();
+                let reporter = ht::reporter::JaegerBinaryReporter::new(&service_name).unwrap();
                 for span in span_rx {
                     reporter.report(&[span]).expect("could not report span");
                 }

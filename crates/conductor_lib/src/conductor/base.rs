@@ -35,6 +35,7 @@ use std::{
     io::prelude::*,
     option::NoneError,
     path::PathBuf,
+    str::FromStr,
     sync::Arc,
     thread,
     time::Duration,
@@ -234,7 +235,14 @@ impl Conductor {
                     .spawn(move || {
                         info!("Tracer loop started.");
                         // TODO: killswitch
-                        let reporter = ht::Reporter::new(&jaeger_config.service_name).unwrap();
+                        let mut reporter = ht::reporter::JaegerBinaryReporter::new(&jaeger_config.service_name).unwrap();
+                        if let Some(s) = jaeger_config.socket_address {
+                            let addr = std::net::SocketAddr::from_str(&s)
+                                .expect("Could not parse socket address");
+                            reporter
+                                .set_agent_addr(addr)
+                                .expect("Could not set Jaeger socket address");
+                        }
                         for span in span_rx {
                             reporter.report(&[span]).expect("could not report span");
                         }

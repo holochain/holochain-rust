@@ -14,7 +14,7 @@ repository = "https://github.com/holochain/holochain-rust"
 [dependencies]
 crossbeam-channel = "0.3"
 env_logger = "0.6"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 log = "0.4"
 nanoid = "0.2"
 native-tls = "0.2"

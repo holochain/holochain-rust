@@ -6,7 +6,6 @@ extern crate lib3h_crypto_api;
 extern crate log;
 extern crate nanoid;
 extern crate num_cpus;
-extern crate threadpool;
 #[macro_use]
 extern crate serde;
 #[macro_use]
@@ -58,7 +57,6 @@ use holochain_locksmith::Mutex;
 use holochain_metrics::{
     config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
 };
-use threadpool::ThreadPool;
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -614,11 +612,10 @@ impl Sim2hState {
     }
 
     async fn handle_new_entry_data(
-        state: Arc<tokio::sync::Mutex<Sim2hState>>,
+        sim2h_handle: Sim2hHandle,
         entry_data: EntryData,
         space_address: SpaceHash,
         provider: AgentPubKey,
-        dht_algorithm: DhtAlgorithm,
     ) {
         let aspect_addresses = entry_data
             .aspect_list
@@ -654,16 +651,16 @@ impl Sim2hState {
         let multi_message = WireMessage::MultiSend(multi_messages);
 
         // 3. Send store message to selected nodes
-        let mut state = state.lock().await;
+        let mut state = sim2h_handle.lock_state().await;
 
         // Calculate list of agents that should store new data:
-        let dht_agents = match dht_algorithm {
+        let dht_agents = match sim2h_handle.dht_algorithm() {
             DhtAlgorithm::FullSync => {
                 state.all_agents_except_one(space_address.clone(), Some(&provider))
             }
             DhtAlgorithm::NaiveSharding { redundant_count } => {
                 let entry_loc = entry_location(&state.crypto, &entry_data.entry_address);
-                state.agents_in_neighbourhood(space_address.clone(), entry_loc, redundant_count)
+                state.agents_in_neighbourhood(space_address.clone(), entry_loc, *redundant_count)
             }
         };
 
@@ -715,9 +712,44 @@ impl Sim2hState {
     }
 }
 
-enum PoolTask {
-    //    VerifyPayload(Result<(Lib3hUri, WireMessage, AgentPubKey), ()>),
+#[derive(Debug)]
+enum Sim2hCom {
     Disconnect(Vec<Lib3hUri>),
+}
+
+#[derive(Clone)]
+struct Sim2hHandle {
+    state: Arc<tokio::sync::Mutex<Sim2hState>>,
+    send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
+    dht_algorithm: DhtAlgorithm,
+}
+
+impl Sim2hHandle {
+    pub fn new(
+        state: Arc<tokio::sync::Mutex<Sim2hState>>,
+        send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
+        dht_algorithm: DhtAlgorithm,
+    ) -> Self {
+        Self {
+            state,
+            send_com,
+            dht_algorithm,
+        }
+    }
+
+    pub fn dht_algorithm(&self) -> &DhtAlgorithm {
+        &self.dht_algorithm
+    }
+
+    pub async fn lock_state(&self) -> tokio::sync::MutexGuard<'_, Sim2hState> {
+        self.state.lock().await
+    }
+
+    pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
+        self.send_com
+            .send(Sim2hCom::Disconnect(disconnect))
+            .expect("can send");
+    }
 }
 
 /// this is just a hack so i don't have to search/replace all the
@@ -752,23 +784,6 @@ impl<T> KeepReadWriteForLocksmithMutex<T> for holochain_locksmith::Mutex<T> {
     fn write(&self) -> holochain_locksmith::MutexGuard<T> {
         self.f_lock()
     }
-}
-
-pub struct Sim2h {
-    pub bound_uri: Option<Lib3hUri>,
-    state: Arc<tokio::sync::Mutex<Sim2hState>>,
-    pool: Pool,
-    wss_recv: crossbeam_channel::Receiver<TcpWss>,
-    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
-    num_ticks: u64,
-    /// when should we try to resync nodes that are still missing aspect data
-    missing_aspects_resync: std::time::Instant,
-    dht_algorithm: DhtAlgorithm,
-    threadpool: ThreadPool,
-    tp_send: crossbeam_channel::Sender<PoolTask>,
-    tp_recv: crossbeam_channel::Receiver<PoolTask>,
-    metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
 }
 
 pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
@@ -818,14 +833,33 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
     rt
 }
 
+pub struct Sim2h {
+    pub bound_uri: Option<Lib3hUri>,
+    state: Arc<tokio::sync::Mutex<Sim2hState>>,
+    pool: Pool,
+    wss_recv: crossbeam_channel::Receiver<TcpWss>,
+    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
+    msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
+    num_ticks: u64,
+    /// when should we try to resync nodes that are still missing aspect data
+    missing_aspects_resync: std::time::Instant,
+    dht_algorithm: DhtAlgorithm,
+    recv_com: tokio::sync::mpsc::UnboundedReceiver<Sim2hCom>,
+    sim2h_handle: Sim2hHandle,
+    metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
+}
+
 impl Sim2h {
-    pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        bind_spec: Lib3hUri,
+        dht_algorithm: DhtAlgorithm,
+    ) -> Self {
         let pool = Pool::new();
         pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
-        let (tp_send, tp_recv) = crossbeam_channel::unbounded();
         let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
         let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
@@ -834,6 +868,8 @@ impl Sim2h {
             spaces: HashMap::new(),
             metric_publisher: metric_publisher.clone(),
         }));
+        let (send_com, recv_com) = tokio::sync::mpsc::unbounded_channel();
+        let sim2h_handle = Sim2hHandle::new(state.clone(), send_com, dht_algorithm.clone());
         let mut sim2h = Sim2h {
             state,
             bound_uri: None,
@@ -843,20 +879,15 @@ impl Sim2h {
             msg_recv,
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
-            dht_algorithm: DhtAlgorithm::FullSync,
-            threadpool: ThreadPool::new(num_cpus::get()),
-            tp_send,
-            tp_recv,
+            dht_algorithm,
+            recv_com,
+            sim2h_handle,
             metric_publisher,
         };
 
         sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
 
         sim2h
-    }
-
-    pub fn set_dht_algorithm(&mut self, new_algo: DhtAlgorithm) {
-        self.dht_algorithm = new_algo;
     }
 
     /// bind a listening socket, and set up the polling job to accept connections
@@ -885,7 +916,7 @@ impl Sim2h {
                 if let Ok(wss) = self.wss_recv.try_recv() {
                     let job_send = self.pool.get_push_job_handle();
                     let msg_send = self.msg_send.clone();
-                    let state = self.state.clone();
+                    let sim2h_handle = self.sim2h_handle.clone();
                     tokio::task::spawn(async move {
                         let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
                         let uuid = nanoid::simple();
@@ -896,7 +927,7 @@ impl Sim2h {
 
                         job_send.send(Box::new(job.clone())).expect("send fail");
 
-                        let mut state = state.lock().await;
+                        let mut state = sim2h_handle.lock_state().await;
 
                         state
                             .connection_states
@@ -927,9 +958,7 @@ impl Sim2h {
             "dropping connection to {} because of error: {:?}",
             uri, error,
         );
-        self.tp_send
-            .send(PoolTask::Disconnect(vec![uri]))
-            .expect("should send");
+        self.sim2h_handle.disconnect(vec![uri]);
     }
 
     /// if our connections sent us any data, process it
@@ -941,7 +970,6 @@ impl Sim2h {
                 let len = self.msg_recv.len();
                 if len > 0 {
                     debug!("Handling {} incoming messages", len);
-                    debug!("threadpool len {}", self.threadpool.queued_count());
                 }
                 let v: Vec<_> = self.msg_recv.try_iter().collect();
                 for (url, msg) in v {
@@ -981,9 +1009,7 @@ impl Sim2h {
                             WsFrame::Pong(_) => (),
                             WsFrame::Close(c) => {
                                 debug!("Disconnecting {} after connection reset {:?}", url, c);
-                                self.tp_send
-                                    .send(PoolTask::Disconnect(vec![url]))
-                                    .expect("should send");
+                                self.sim2h_handle.disconnect(vec![url]);
                             }
                         },
                         Err(e) => self.priv_drop_connection_for_error(url, e),
@@ -993,30 +1019,6 @@ impl Sim2h {
             }
         )
     }
-
-    /*
-    fn request_authoring_list(
-        &mut self,
-        uri: Lib3hUri,
-        space_address: SpaceHash,
-        provider_agent_id: AgentId,
-    ) {
-        let state = self.state.clone();
-        tokio::task::spawn(async move {
-            let wire_message = WireMessage::Lib3hToClient(
-                Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-                    request_id: "".into(),
-                    space_address,
-                    provider_agent_id: provider_agent_id.clone(),
-                }),
-            );
-            state
-                .lock()
-                .await
-                .send(provider_agent_id, uri, &wire_message);
-        });
-    }
-    */
 
     // adds an agent to a space
     fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
@@ -1138,18 +1140,20 @@ impl Sim2h {
             // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
             if message == WireMessage::Ping {
                 debug!("Sending Pong in response to Ping");
-                let state = self.state.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    state.lock().await.send(signer, uri, &WireMessage::Pong);
+                    sim2h_handle
+                        .lock_state()
+                        .await
+                        .send(signer, uri, &WireMessage::Pong);
                 });
                 return Ok(());
             }
             if let WireMessage::Status = message {
                 debug!("Sending StatusResponse in response to Status");
-                let state = self.state.clone();
-                let dht_algorithm = self.dht_algorithm.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    let state = state.lock().await;
+                    let state = sim2h_handle.lock_state().await;
                     let spaces_len = state.spaces.len();
                     let connection_count = state.open_connections.len();
                     state.send(
@@ -1158,9 +1162,9 @@ impl Sim2h {
                         &WireMessage::StatusResponse(StatusData {
                             spaces: spaces_len,
                             connections: connection_count,
-                            redundant_count: match dht_algorithm {
+                            redundant_count: match sim2h_handle.dht_algorithm() {
                                 DhtAlgorithm::FullSync => 0,
-                                DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                                DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
                             },
                             version: WIRE_VERSION,
                         }),
@@ -1170,10 +1174,9 @@ impl Sim2h {
             }
             if let WireMessage::Hello(version) = message {
                 debug!("Sending HelloResponse in response to Hello({})", version);
-                let state = self.state.clone();
-                let dht_algorithm = self.dht_algorithm.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    let mut state = state.lock().await;
+                    let mut state = sim2h_handle.lock_state().await;
                     if let Some(conn) = state.open_connections.get_mut(&uri) {
                         conn.version = version;
                     }
@@ -1181,9 +1184,9 @@ impl Sim2h {
                         signer.clone(),
                         uri.clone(),
                         &WireMessage::HelloResponse(HelloData {
-                            redundant_count: match dht_algorithm {
+                            redundant_count: match sim2h_handle.dht_algorithm() {
                                 DhtAlgorithm::FullSync => 0,
-                                DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+                                DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
                             },
                             version: WIRE_VERSION,
                             extra: None,
@@ -1215,9 +1218,9 @@ impl Sim2h {
                         pending_messages.push(message);
                         // MDD: TODO: is it necessary to re-insert the data at the same uri?
                         // didn't we just mutate it in-place?
-                        let state = self.state.clone();
+                        let sim2h_handle = self.sim2h_handle.clone();
                         tokio::task::spawn(async move {
-                            let mut state = state.lock().await;
+                            let mut state = sim2h_handle.lock_state().await;
                             let _ = state.connection_states.insert(uri.clone(), (uuid, agent));
                             state.send(
                                 signer.clone(),
@@ -1259,27 +1262,24 @@ impl Sim2h {
                 self.num_ticks = 0;
             }
 
-            match self.tp_recv.try_recv() {
-                Ok(PoolTask::Disconnect(disconnects)) => {
-                    let state = self.state.clone();
-                    tokio::task::spawn(async move {
-                        let mut state = state.lock().await;
-                        for url in disconnects {
-                            state.disconnect(&url)
-                        }
-                    });
+            let mut d_list = Vec::new();
+            for _ in 0..100 {
+                match self.recv_com.try_recv() {
+                    Ok(Sim2hCom::Disconnect(mut disconnects)) => {
+                        d_list.append(&mut disconnects);
+                    }
+                    _ => (),
                 }
-                //            Ok(PoolTask::VerifyPayload(Ok(_))) => {
-                /*/                let debug = url.host().unwrap().to_string() == "68.237.138.100";//  "127.0.0.1";
-                    if debug {
-                    println!("payload verified from from zippy ({}) message is {:?}", url, wire_message);
-                }
-                    if let Err(error) = self.handle_message(&url, wire_message, &source) {
-                    error!("Error handling message: {:?}", error);
-                }*/
-                    //      }
-                _ => (),
-            };
+            }
+            if !d_list.is_empty() {
+                let sim2h_handle = self.sim2h_handle.clone();
+                tokio::task::spawn(async move {
+                    let mut state = sim2h_handle.lock_state().await;
+                    for url in d_list {
+                        state.disconnect(&url);
+                    }
+                });
+            }
 
             let did_work_1 = self.priv_check_incoming_connections();
             let did_work_2 = self.priv_check_incoming_messages();
@@ -1292,9 +1292,9 @@ impl Sim2h {
                     ))
                     .expect("can add interval ms");
 
-                let state = self.state.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    state.lock().await.retry_sync_missing_aspects();
+                    sim2h_handle.lock_state().await.retry_sync_missing_aspects();
                 });
             }
             Ok(did_work)
@@ -1329,9 +1329,9 @@ impl Sim2h {
                 Err("join message should have been processed elsewhere and can't be proxied".into())
             }
             WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(data)) => {
-                let state = self.state.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    let mut state = state.lock().await;
+                    let mut state = sim2h_handle.lock_state().await;
                     if let Err(e) = state.leave(&uri, &data) {
                         error!("failed to leave space: {:?}", e);
                     }
@@ -1342,14 +1342,14 @@ impl Sim2h {
             // -- Direct Messaging -- //
             // Send a message directly to another agent on the network
             WireMessage::ClientToLib3h(ClientToLib3h::SendDirectMessage(dm_data)) => {
-                let state = self.state.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
                     if (dm_data.from_agent_id != agent_id) || (dm_data.space_address != space_address)
                     {
                         error!("{}", SPACE_MISMATCH_ERR_STR);
                     }
 
-                    let state = state.lock().await;
+                    let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
                     {
@@ -1371,14 +1371,14 @@ impl Sim2h {
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleSendDirectMessageResult(
                 dm_data,
             )) => {
-                let state = self.state.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
                     if (dm_data.from_agent_id != agent_id) || (dm_data.space_address != space_address)
                     {
                         error!("{}", SPACE_MISMATCH_ERR_STR);
                     }
 
-                    let state = state.lock().await;
+                    let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
                     {
@@ -1400,14 +1400,12 @@ impl Sim2h {
                 if (data.provider_agent_id != agent_id) || (data.space_address != space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                let state = self.state.clone();
-                let dht_algorithm = self.dht_algorithm.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(Sim2hState::handle_new_entry_data(
-                    state,
+                    sim2h_handle,
                     data.entry,
                     space_address,
                     agent_id,
-                    dht_algorithm,
                 ));
                 Ok(())
             }
@@ -1426,22 +1424,21 @@ impl Sim2h {
                 }
                 self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
 
-                let state = self.state.clone();
-                let dht_algorithm = self.dht_algorithm.clone();
-                let tp_send = self.tp_send.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
 
                 tokio::task::spawn(async move {
-                    let mut l_state = state.lock().await;
+                    let l_state = sim2h_handle.clone();
+                    let mut l_state = l_state.lock_state().await;
 
                     // Check if the node is missing any aspects
-                    let aspects_missing_at_node = match dht_algorithm {
+                    let aspects_missing_at_node = match sim2h_handle.dht_algorithm() {
                         DhtAlgorithm::FullSync => l_state
                             .get_space(&space_address)
                             .all_aspects()
                             .diff(&AspectList::from(list_data.address_map)),
                         DhtAlgorithm::NaiveSharding {redundant_count} => l_state
                             .get_space(&space_address)
-                            .aspects_in_shard_for_agent(&agent_id, redundant_count)
+                            .aspects_in_shard_for_agent(&agent_id, *redundant_count)
                             .diff(&AspectList::from(list_data.address_map))
                     };
 
@@ -1454,7 +1451,7 @@ impl Sim2h {
                             l_state.add_missing_aspects(&space_address, &agent_id, missing_hashes);
                         }
 
-                        match dht_algorithm {
+                        match sim2h_handle.dht_algorithm() {
 
                             DhtAlgorithm::FullSync => {
                                 let all_agents_in_space = l_state
@@ -1467,8 +1464,7 @@ impl Sim2h {
                                     error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
                                 } else {
                                     Sim2h::fetch_aspects_from_arbitrary_agent(
-                                        state.clone(),
-                                        tp_send.clone(),
+                                        sim2h_handle,
                                         aspects_missing_at_node,
                                         agent_id.clone(),
                                         all_agents_in_space,
@@ -1482,13 +1478,12 @@ impl Sim2h {
                                     let entry_loc = entry_location(&l_state.crypto, entry_address);
                                     let agent_pool = l_state
                                         .get_space(&space_address)
-                                        .agents_supposed_to_hold_entry(entry_loc, redundant_count)
+                                        .agents_supposed_to_hold_entry(entry_loc, *redundant_count)
                                         .keys()
                                         .cloned()
                                         .collect::<Vec<AgentPubKey>>();
                                     Sim2h::fetch_aspects_from_arbitrary_agent(
-                                        state.clone(),
-                                        tp_send.clone(),
+                                        sim2h_handle.clone(),
                                         aspects_missing_at_node.filtered_by_entry_hash(|e| e == entry_address),
                                         agent_id.clone(),
                                         agent_pool,
@@ -1510,18 +1505,16 @@ impl Sim2h {
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {
                     debug!("Got FetchEntry result from {} without request id - must be from authoring list", agent_id);
-                    let state = self.state.clone();
-                    let dht_algorithm = self.dht_algorithm.clone();
+                    let sim2h_handle = self.sim2h_handle.clone();
                     tokio::task::spawn(Sim2hState::handle_new_entry_data(
-                        state,
+                        sim2h_handle,
                         fetch_result.entry,
                         space_address,
                         agent_id,
-                        dht_algorithm,
                     ));
                 } else {
                     debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
-                    let state = self.state.clone();
+                    let sim2h_handle = self.sim2h_handle.clone();
                     tokio::task::spawn(async move {
                         let to_agent_id = AgentPubKey::from(fetch_result.request_id);
                         let mut multi_messages = Vec::new();
@@ -1544,7 +1537,7 @@ impl Sim2h {
 
                         let store_message = WireMessage::MultiSend(multi_messages);
 
-                        let mut state = state.lock().await;
+                        let mut state = sim2h_handle.lock_state().await;
                         let maybe_url = state.lookup_joined(&space_address, &to_agent_id);
                         if maybe_url.is_none() {
                             error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
@@ -1567,19 +1560,17 @@ impl Sim2h {
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
-                    let state = self.state.clone();
-                    let tx = self.tp_send.clone();
+                    let sim2h_handle = self.sim2h_handle.clone();
                     let space_address = space_address.clone();
                     tokio::task::spawn(async move {
-                        let disconnects = state
-                            .lock().await
+                        let disconnects = sim2h_handle
+                            .lock_state().await
                             .build_query(
                                 space_address,
                                 query_data,
                                 redundant_count
                             );
-                        tx.send(PoolTask::Disconnect(disconnects))
-                            .expect("should send");
+                        sim2h_handle.disconnect(disconnects);
                     });
                     Ok(())
                 } else {
@@ -1587,7 +1578,7 @@ impl Sim2h {
                 }
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result)) => {
-                let state = self.state.clone();
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
                     if (query_result.responder_agent_id != agent_id) || (query_result.space_address != space_address)
                     {
@@ -1599,7 +1590,7 @@ impl Sim2h {
                     let msg_out = WireMessage::ClientToLib3hResponse(
                         ClientToLib3hResponse::QueryEntryResult(query_result),
                     );
-                    let state = state.lock().await;
+                    let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &req_agent_id)
                     {
@@ -1632,43 +1623,38 @@ impl Sim2h {
         agent_id: &AgentId,
         list_data: &EntryListData,
     ) {
-        let state = self.state.clone();
-        let tx = self.tp_send.clone();
+        let sim2h_handle = self.sim2h_handle.clone();
         let uri = uri.clone();
         let space_address = space_address.clone();
         let agent_id = agent_id.clone();
         let list_data = list_data.clone();
         tokio::task::spawn(async move {
-            let disconnects = state.lock().await.build_handle_unseen_aspects(
+            let disconnects = sim2h_handle.lock_state().await.build_handle_unseen_aspects(
                 uri,
                 space_address,
                 agent_id,
                 list_data,
             );
-            tx.send(PoolTask::Disconnect(disconnects))
-                .expect("should send");
+            sim2h_handle.disconnect(disconnects);
         });
     }
 
     fn fetch_aspects_from_arbitrary_agent(
-        state: Arc<tokio::sync::Mutex<Sim2hState>>,
-        tp_send: crossbeam_channel::Sender<PoolTask>,
+        sim2h_handle: Sim2hHandle,
         aspects_to_fetch: AspectList,
         for_agent_id: AgentId,
         agent_pool: Vec<AgentId>,
         space_address: SpaceHash,
     ) {
         tokio::task::spawn(async move {
-            let state = state.lock().await;
+            let state = sim2h_handle.lock_state().await;
             let disconnects = state.build_aspects_from_arbitrary_agent(
                 aspects_to_fetch,
                 for_agent_id,
                 agent_pool,
                 space_address,
             );
-            tp_send
-                .send(PoolTask::Disconnect(disconnects))
-                .expect("should send");
+            sim2h_handle.disconnect(disconnects);
         });
     }
 

@@ -14,7 +14,7 @@ use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    run_sim2h, Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, Sim2h, WireMessage,
 };
 use std::{
     collections::{HashMap, VecDeque},
@@ -576,7 +576,11 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            let sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
+            let sim2h = Sim2h::new(
+                Box::new(SodiumCryptoSystem::new()),
+                Lib3hUri(url.into()),
+                DhtAlgorithm::FullSync,
+            );
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);

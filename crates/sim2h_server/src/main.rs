@@ -46,10 +46,13 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
-    sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
-        redundant_count: args.sharding,
-    });
+    let sim2h = Sim2h::new(
+        Box::new(SodiumCryptoSystem::new()),
+        uri,
+        DhtAlgorithm::NaiveSharding {
+            redundant_count: args.sharding,
+        },
+    );
 
     run_sim2h(sim2h)
         // just park the main thread indefinitely...

@@ -4,7 +4,6 @@ use wasmer_runtime::{imports, instantiate, Instance, Module};
 
 /// Creates a WASM module, that is the executable program, from a given WASM binary byte array.
 pub fn wasm_module_factory(wasm: Arc<Vec<u8>>) -> Result<Module, HolochainError> {
-    // wasmi::Module::from_buffer(&*wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
     let import_object = imports! {};
     Ok(instantiate(&wasm, &import_object)?.module())
 }

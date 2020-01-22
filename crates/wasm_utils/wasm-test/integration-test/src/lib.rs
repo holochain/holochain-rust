@@ -5,7 +5,6 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
-extern crate wasmi;
 
 use holochain_wasm_utils::holochain_json_api::{
     json::{JsonString, RawString}, error::JsonError
@@ -25,8 +24,6 @@ use holochain_wasm_utils::memory::MemoryInt;
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
-use wasmi::MemoryInstance;
-use wasmi::memory_units::Pages;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]

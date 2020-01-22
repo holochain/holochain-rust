@@ -34,8 +34,8 @@ impl ToString for RibosomeEncodedAllocation {
     }
 }
 
-/// Represents all possible values passed to/from wasmi functions
-/// All wasmi functions are I64 values
+/// Represents all possible values passed to/from wasm functions
+/// All wasm functions are I64 values
 #[repr(u64)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeEncodedValue {

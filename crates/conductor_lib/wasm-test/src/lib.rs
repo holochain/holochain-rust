@@ -43,7 +43,7 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
         Err(_) => return,
     };
 
-    // Call WASMI-able DEBUG
+    // Call WASM-able DEBUG
     unsafe { hc_debug(allocation.as_ribosome_encoding()) };
 
     // Free input allocation and all allocations made inside print()
@@ -145,7 +145,7 @@ fn hdk_commit(
     };
     let allocation_of_input = mem_stack.write_json(args)?;
 
-    // Call WASMI-able commit
+    // Call WASM-able commit
     let encoded_allocation_of_result =
         unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding()) };
     // Deserialize complex result stored in memory
@@ -172,7 +172,7 @@ fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
     let input = ZomeApiInternalResult::failure(Address::from("whatever"));
     let allocation_of_input = mem_stack.write_json(input)?;
 
-    // Call WASMI-able commit
+    // Call WASM-able commit
     let encoded_allocation_of_result =
         unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding()) };
 

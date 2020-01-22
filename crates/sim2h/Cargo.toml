@@ -21,7 +21,7 @@ lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
-lib3h_zombie_actor = "=0.0.31"
+lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 holochain_tracing = "=0.0.13"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }

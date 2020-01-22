@@ -13,6 +13,7 @@ base64 = "=0.10.1"
 hcid = "=0.0.6"
 jsonrpc-core = "=14.0.1"
 tempfile = "=3.0.7"
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [dependencies]
 failure = "=0.1.5"
@@ -21,7 +22,8 @@ sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
-lib3h_zombie_actor = "=0.0.31"
+lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
+
 detach = "=0.0.19"
 holochain_tracing = "=0.0.13"
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }

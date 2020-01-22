@@ -548,11 +548,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "detach"
-version = "0.0.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "deunicode"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1363,6 +1358,7 @@ dependencies = [
  "holochain_net 0.0.42-alpha5",
  "holochain_persistence_api 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_persistence_file 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
+ "holochain_persistence_lmdb 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_persistence_mem 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_wasm_utils 0.0.42-alpha5",
  "im 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1568,9 +1564,10 @@ dependencies = [
  "jsonrpc-core 14.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
+ "lib3h_crypto_api 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "lib3h_protocol 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "lib3h_sodium 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
- "lib3h_zombie_actor 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_zombie_actor 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1596,37 +1593,6 @@ dependencies = [
 name = "holochain_persistence_api"
 version = "0.0.13"
 source = "git+https://github.com/holochain/holochain-persistence?branch=transactional#361c7fb5aa32b2dc926a7950a9518663d08bc854"
-dependencies = [
- "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-channel-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-core-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-executor-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-io-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-sink-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "futures-util-preview 0.3.0-alpha.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "hcid 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_json_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "objekt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
- "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "holochain_persistence_api"
-version = "0.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2145,16 +2111,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib3h_crypto_api"
-version = "0.0.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "lib3h_mdns"
 version = "0.0.31"
 source = "git+https://github.com/holochain/lib3h?branch=transactional#6cfb2af45b12bb0bf04bfb3c9590e9f5d8a78644"
@@ -2213,18 +2169,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib3h_sodium"
-version = "0.0.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_crypto_api 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust_sodium_holochain_fork 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust_sodium_holochain_fork-sys 0.10.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "lib3h_zombie_actor"
 version = "0.0.31"
 source = "git+https://github.com/holochain/lib3h?branch=transactional#6cfb2af45b12bb0bf04bfb3c9590e9f5d8a78644"
@@ -2233,25 +2177,6 @@ dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "detach 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "holochain_persistence_api 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
- "holochain_tracing 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lock_api 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "parking_lot 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "predicates 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "lib3h_zombie_actor"
-version = "0.0.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
- "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "detach 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lock_api 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3984,7 +3909,7 @@ dependencies = [
  "lib3h_crypto_api 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "lib3h_protocol 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "lib3h_sodium 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
- "lib3h_zombie_actor 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_zombie_actor 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4291,11 +4216,11 @@ dependencies = [
  "holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_locksmith 0.0.42-alpha5",
  "holochain_net 0.0.42-alpha5",
- "holochain_persistence_api 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_persistence_api 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_wasm_utils 0.0.42-alpha5",
  "jsonrpc-ws-server 14.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lib3h_sodium 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib3h_sodium 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -5339,7 +5264,6 @@ dependencies = [
 "checksum ctor 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8ce37ad4184ab2ce004c33bf6379185d3b1c95801cab51026bd271bf68eedc"
 "checksum detach 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)" = "891f5117f720f720924586e087b7eb385d816afb467a231c2fec64239de00986"
 "checksum detach 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
-"checksum detach 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)" = "f0bc5b5e9587ec049bd13d4d98e4d508896aa412c7da91ee73187c759e2b093f"
 "checksum deunicode 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
 "checksum difference 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 "checksum digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)" = "03b072242a8cbaf9c145665af9d250c59af3b958f83ed6824e13533cf76d5b90"
@@ -5416,7 +5340,6 @@ dependencies = [
 "checksum holochain_json_derive 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)" = "b82510813b7164094ca380651f81350d461fb695f4580c4d25d9f52bcc5e1f5d"
 "checksum holochain_logging 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "1eea83e3663d88570a6443db7dbfcabe6fb50797c5b0384d096ca835938bc366"
 "checksum holochain_persistence_api 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)" = "<none>"
-"checksum holochain_persistence_api 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)" = "0ba1d6707c68dc62c7842a79355042bb06b390197e3ce7586a2f721a226d7360"
 "checksum holochain_persistence_file 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)" = "<none>"
 "checksum holochain_persistence_lmdb 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)" = "<none>"
 "checksum holochain_persistence_mem 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)" = "<none>"
@@ -5453,14 +5376,11 @@ dependencies = [
 "checksum lazycell 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 "checksum lib3h 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
 "checksum lib3h_crypto_api 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
-"checksum lib3h_crypto_api 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)" = "083278d7274b477ced7d856575d0676d0c325b8d2a2f7512f8a09ad523f5c4d6"
 "checksum lib3h_mdns 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
 "checksum lib3h_p2p_protocol 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
 "checksum lib3h_protocol 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
 "checksum lib3h_sodium 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
-"checksum lib3h_sodium 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)" = "a9395d6fbd237bcddaebc9854d0f2f044c1047cf707f5619567e98a02e9341dd"
 "checksum lib3h_zombie_actor 0.0.31 (git+https://github.com/holochain/lib3h?branch=transactional)" = "<none>"
-"checksum lib3h_zombie_actor 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)" = "7c21a3203b326c9c41771776805359d9890eb9d430738f565951acee15b59546"
 "checksum libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)" = "d515b1f41455adea1313a4a2ac8a8a477634fbae63cc6100e3aebb207ce61558"
 "checksum libflate 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)" = "d9135df43b1f5d0e333385cb6e7897ecd1a43d7d11b91ac003f4d2c2d2401fdd"
 "checksum linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"

@@ -914,8 +914,9 @@ pub mod tests {
         let content_storage = Arc::new(RwLock::new(LmdbStorage::new(
             cas_dir.path(),
             cas_initial_mmap,
+            None,
         )));
-        let meta_storage = Arc::new(RwLock::new(EavLmdbStorage::new(eav_dir.path(), None)));
+        let meta_storage = Arc::new(RwLock::new(EavLmdbStorage::new(eav_dir.path(), None, None)));
         let logger = test_logger();
         (
             Arc::new(Context::new(

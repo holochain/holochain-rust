@@ -24,7 +24,7 @@ snowflake = "=1.3.0"
 default =[]
 
 #this feature allows the compilation with backtraces involved
-sync_backtrace = []
+backtrace = []
 
 #feature flag for turning on debug info, I figured we could use this for some of the noise in the logs
-debug_info = ["sync_backtrace"]
+debug_info = ["backtrace"]

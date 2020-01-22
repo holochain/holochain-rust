@@ -8,7 +8,7 @@ in
 {
  dev-shell = minimal.holonix.pkgs.stdenv.mkDerivation(minimal.shell-config // {
   buildInputs = [
-   pkgs.newrelic-sysmond
+   minimal.holonix.pkgs.newrelic-sysmond
   ]
   ++ sim2h_server.buildInputs
   ++ minimal.shell-config.buildInputs

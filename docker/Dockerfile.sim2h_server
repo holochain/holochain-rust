@@ -8,6 +8,8 @@ RUN echo $CARGO_HOME
 RUN nix-shell $shellfile --run hc-sim2h-server-install
 RUN nix-shell $shellfile --run 'cargo clean'
 RUN nix-collect-garbage
+RUN NIXPKGS_ALLOW_UNFREE=1 nix-env -iA nixpkgs.newrelic-sysmond
+RUN nix-shell $shellfile --run 'nrsysmond'
 
 # https://stackoverflow.com/questions/22713551/how-to-flatten-a-docker-image#22714556
 FROM scratch

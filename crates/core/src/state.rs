@@ -63,6 +63,7 @@ pub struct State {
     pub conductor_api: ConductorApi,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl State {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table

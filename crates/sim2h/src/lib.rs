@@ -736,6 +736,8 @@ enum Sim2hCom {
 }
 
 #[derive(Clone)]
+/// A clonable reference to our Sim2h instance that can be passed
+/// into `'static` async blocks && still be able to make sim2h calls
 struct Sim2hHandle {
     state: Arc<tokio::sync::Mutex<Sim2hState>>,
     send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
@@ -755,14 +757,17 @@ impl Sim2hHandle {
         }
     }
 
+    /// get our current dht algorithm
     pub fn dht_algorithm(&self) -> &DhtAlgorithm {
         &self.dht_algorithm
     }
 
+    /// acquire a mutex lock to our state data
     pub async fn lock_state(&self) -> tokio::sync::MutexGuard<'_, Sim2hState> {
         self.state.lock().await
     }
 
+    /// forward a message to be handled
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
         self.send_com
             .send(Sim2hCom::HandleMessage(Box::new(Sim2hComHandleMessage {
@@ -773,6 +778,7 @@ impl Sim2hHandle {
             .expect("can send");
     }
 
+    /// forward a message to an already joined connection to be handled
     pub fn handle_joined(
         &self,
         uri: Lib3hUri,
@@ -790,6 +796,7 @@ impl Sim2hHandle {
             .expect("can send");
     }
 
+    /// disconnect an active connection
     pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
         self.send_com
             .send(Sim2hCom::Disconnect(disconnect))
@@ -797,42 +804,8 @@ impl Sim2hHandle {
     }
 }
 
-/*
-/// this is just a hack so i don't have to search/replace all the
-/// read/writes to locks + we might want to keep that distinction
-trait KeepReadWriteForFutureMutex<T> {
-    fn read(&self) -> tokio::sync::MutexGuard<T>;
-    fn write(&self) -> tokio::sync::MutexGuard<T>;
-}
-
-impl<T> KeepReadWriteForFutureMutex<T> for tokio::sync::Mutex<T> {
-    fn read(&self) -> tokio::sync::MutexGuard<T> {
-        futures::executor::block_on(self.lock())
-    }
-
-    fn write(&self) -> tokio::sync::MutexGuard<T> {
-        futures::executor::block_on(self.lock())
-    }
-}
-
-/// this is just a hack so i don't have to search/replace all the
-/// read/writes to locks + we might want to keep that distinction
-trait KeepReadWriteForLocksmithMutex<T> {
-    fn read(&self) -> holochain_locksmith::MutexGuard<T>;
-    fn write(&self) -> holochain_locksmith::MutexGuard<T>;
-}
-
-impl<T> KeepReadWriteForLocksmithMutex<T> for holochain_locksmith::Mutex<T> {
-    fn read(&self) -> holochain_locksmith::MutexGuard<T> {
-        self.f_lock()
-    }
-
-    fn write(&self) -> holochain_locksmith::MutexGuard<T> {
-        self.f_lock()
-    }
-}
-*/
-
+/// creates a tokio runtime and executes the Sim2h instance within it
+/// returns the runtime so the user can choose how to manage the main loop
 pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
     let rt = tokio::runtime::Builder::new()
         .enable_all()
@@ -880,6 +853,7 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
     rt
 }
 
+/// a Sim2h server instance - manages connections between holochain instances
 pub struct Sim2h {
     pub bound_uri: Option<Lib3hUri>,
     pool: Pool,
@@ -897,6 +871,7 @@ pub struct Sim2h {
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Sim2h {
+    /// create a new Sim2h server instance
     pub fn new(
         crypto: Box<dyn CryptoSystem>,
         bind_spec: Lib3hUri,
@@ -1054,56 +1029,67 @@ impl Sim2h {
     // adds an agent to a space
     async fn join(sim2h_handle: Sim2hHandle, uri: Lib3hUri, data: SpaceData) {
         debug!("join entered for {} with {:?}", uri, data);
-        let mut state = sim2h_handle.lock_state().await;
+        let mut pending_messages = {
+            let mut state = sim2h_handle.lock_state().await;
 
-        let (_uuid, conn) = match state.connection_states.get_mut(&uri) {
-            Some((uuid, conn)) => (uuid, conn),
-            None => {
-                error!("no agent found at {} ", uri);
-                return;
-            }
-        };
+            let (_uuid, conn) = match state.connection_states.get_mut(&uri) {
+                Some((uuid, conn)) => (uuid, conn),
+                None => {
+                    error!("no agent found at {} ", uri);
+                    sim2h_handle.disconnect(vec![uri]);
+                    return;
+                }
+            };
 
-        let mut pending_messages = match conn {
-            ConnectionState::Limbo(pending_messages) => {
-                pending_messages.drain(..).collect::<Vec<_>>()
-            }
-            _ => {
-                error!("no agent found in limbo at {} ", uri);
-                return;
-            }
-        };
+            let pending_messages = match conn {
+                ConnectionState::Limbo(pending_messages) => {
+                    pending_messages.drain(..).collect::<Vec<_>>()
+                }
+                _ => {
+                    error!("no agent found in limbo at {} ", uri);
+                    sim2h_handle.disconnect(vec![uri]);
+                    return;
+                }
+            };
 
-        let new_conn =
-            match ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone()) {
+            let new_conn = match ConnectionState::new_joined(
+                data.space_address.clone(),
+                data.agent_id.clone(),
+            ) {
                 Err(e) => {
                     error!("error creating new connection state: {:?}", e);
+                    sim2h_handle.disconnect(vec![uri]);
                     return;
                 }
                 Ok(new_conn) => new_conn,
             };
 
-        *conn = new_conn;
+            *conn = new_conn;
 
-        if let Err(e) = state.join_agent(&data.space_address, data.agent_id.clone(), uri.clone()) {
-            error!("error joining agent {} - {:?}", uri, e);
-            sim2h_handle.disconnect(vec![uri]);
-            return;
-        }
-        info!(
-            "Agent {:?} joined space {:?}",
-            data.agent_id, data.space_address
-        );
-        state.request_gossiping_list(
-            uri.clone(),
-            data.space_address.clone(),
-            data.agent_id.clone(),
-        );
-        state.request_authoring_list(
-            uri.clone(),
-            data.space_address.clone(),
-            data.agent_id.clone(),
-        );
+            if let Err(e) =
+                state.join_agent(&data.space_address, data.agent_id.clone(), uri.clone())
+            {
+                error!("error joining agent {} - {:?}", uri, e);
+                sim2h_handle.disconnect(vec![uri]);
+                return;
+            }
+            info!(
+                "Agent {:?} joined space {:?}",
+                data.agent_id, data.space_address
+            );
+            state.request_gossiping_list(
+                uri.clone(),
+                data.space_address.clone(),
+                data.agent_id.clone(),
+            );
+            state.request_authoring_list(
+                uri.clone(),
+                data.space_address.clone(),
+                data.agent_id.clone(),
+            );
+
+            pending_messages
+        };
 
         debug!("pending messages in join: {}", pending_messages.len());
         for message in pending_messages.drain(..) {
@@ -1111,48 +1097,6 @@ impl Sim2h {
         }
         trace!("join done");
     }
-
-    /*
-    // get the connection status of an agent
-    fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
-        with_latency_publishing!("sim2h-get_connection", self.metric_publisher, || {
-            self.state.read().get_connection(uri)
-        })
-    }
-    */
-
-    /*
-    // find out if an agent is in a space or not and return its URI
-    fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        with_latency_publishing!("sim2h-lookup_joined", self.metric_publisher, || {
-            self.state.read().lookup_joined(space_address, agent_id)
-        })
-    }
-    */
-
-    /*
-    // handler for incoming connections
-    fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
-        with_latency_publishing!(
-            "sim2h-handle_incoming_connect",
-            self.metric_publisher,
-            || {
-                trace!("handle_incoming_connect entered");
-                debug!("New connection from {:?}", uri);
-                if let Some(_old) = self
-                    .state
-                    .write()
-                    .connection_states
-                    .insert(uri.clone(), (nanoid::simple(), ConnectionState::new()))
-                {
-                    println!("TODO should remove {}", uri); //TODO
-                };
-                trace!("handle_incoming_connect done");
-                Ok(true)
-            }
-        )
-    }
-    */
 
     // handler for messages sent to sim2h
     fn handle_message(
@@ -1227,53 +1171,6 @@ impl Sim2h {
                 return Ok(());
             }
 
-            /*
-            let (uuid, mut agent) = self
-                .get_connection(&uri)
-                .ok_or_else(|| format!("no connection for {}", uri))?;
-
-            conn_lifecycle("handle_message", &uuid, &agent, &uri);
-
-            match agent {
-                // if the agent sending the message is in limbo, then the only message
-                // allowed is a join message.
-                ConnectionState::Limbo(ref mut pending_messages) => {
-                    if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
-                        if data.agent_id != signer {
-                            return Err(SIGNER_MISMATCH_ERR_STR.into());
-                        }
-                        self.join(&uri, &data)
-                    } else {
-                        debug!("inserting into pending message while in limbo.");
-                        // TODO: maybe have some upper limit on the number of messages
-                        // we allow to queue before dropping the connections
-                        pending_messages.push(message);
-                        // MDD: TODO: is it necessary to re-insert the data at the same uri?
-                        // didn't we just mutate it in-place?
-                        let sim2h_handle = self.sim2h_handle.clone();
-                        tokio::task::spawn(async move {
-                            let mut state = sim2h_handle.lock_state().await;
-                            let _ = state.connection_states.insert(uri.clone(), (uuid, agent));
-                            state.send(
-                                signer.clone(),
-                                uri.clone(),
-                                &WireMessage::Err(WireError::MessageWhileInLimbo),
-                            );
-                        });
-                        Ok(())
-                    }
-                }
-                // if the agent sending the messages has been vetted and is in the space
-                // then build a message to be proxied to the correct destination, and forward it
-                ConnectionState::Joined(space_address, agent_id) => {
-                    if agent_id != signer {
-                        return Err(SIGNER_MISMATCH_ERR_STR.into());
-                    }
-                    self.sim2h_handle.handle_joined(uri, space_address, agent_id, message);
-                    Ok(())
-                }
-            }
-            */
             tokio::task::spawn(Sim2h::handle_connection_msg(
                 self.sim2h_handle.clone(),
                 uri,
@@ -1315,9 +1212,6 @@ impl Sim2h {
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);
 
-                    // MDD: TODO: is it necessary to re-insert the data at the same uri?
-                    // didn't we just mutate it in-place?
-                    //let _ = state.connection_states.insert(uri.clone(), (uuid, agent));
                     state.send(
                         signer.clone(),
                         uri.clone(),
@@ -1354,6 +1248,7 @@ impl Sim2h {
                         "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
                         url, error, payload
                     );
+                    sim2h_handle.disconnect(vec![url]);
                 }
             }
         });
@@ -1456,6 +1351,7 @@ impl Sim2h {
                     let mut state = sim2h_handle.lock_state().await;
                     if let Err(e) = state.leave(&uri, &data) {
                         error!("failed to leave space: {:?}", e);
+                        sim2h_handle.disconnect(vec![uri]);
                     }
                 });
                 Ok(())
@@ -1464,13 +1360,11 @@ impl Sim2h {
             // -- Direct Messaging -- //
             // Send a message directly to another agent on the network
             WireMessage::ClientToLib3h(ClientToLib3h::SendDirectMessage(dm_data)) => {
+                if (dm_data.from_agent_id != agent_id) || (dm_data.space_address != space_address) {
+                    return Err(SPACE_MISMATCH_ERR_STR.into());
+                }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    if (dm_data.from_agent_id != agent_id) || (dm_data.space_address != space_address)
-                    {
-                        error!("{}", SPACE_MISMATCH_ERR_STR);
-                    }
-
                     let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
@@ -1493,13 +1387,11 @@ impl Sim2h {
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleSendDirectMessageResult(
                 dm_data,
             )) => {
+                if (dm_data.from_agent_id != agent_id) || (dm_data.space_address != space_address) {
+                    return Err(SPACE_MISMATCH_ERR_STR.into());
+                }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    if (dm_data.from_agent_id != agent_id) || (dm_data.space_address != space_address)
-                    {
-                        error!("{}", SPACE_MISMATCH_ERR_STR);
-                    }
-
                     let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
@@ -1700,14 +1592,12 @@ impl Sim2h {
                 }
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result)) => {
+                if (query_result.responder_agent_id != agent_id) || (query_result.space_address != space_address)
+                {
+                    return Err(SPACE_MISMATCH_ERR_STR.into());
+                }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    if (query_result.responder_agent_id != agent_id) || (query_result.space_address != space_address)
-                    {
-                        error!("{}", SPACE_MISMATCH_ERR_STR);
-                        return;
-                    }
-
                     let req_agent_id = query_result.requester_agent_id.clone();
                     let msg_out = WireMessage::ClientToLib3hResponse(
                         ClientToLib3hResponse::QueryEntryResult(query_result),
@@ -1779,22 +1669,4 @@ impl Sim2h {
             sim2h_handle.disconnect(disconnects);
         });
     }
-
-    /*
-    fn disconnect(&self, uri: &Lib3hUri) {
-        self.state.write().disconnect(uri);
-    }
-    */
-
-    /*
-    fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
-        self.state.write().send(agent, uri, msg);
-    }
-    */
-
-    /*
-    fn retry_sync_missing_aspects(&mut self) {
-        self.state.write().retry_sync_missing_aspects();
-    }
-    */
 }

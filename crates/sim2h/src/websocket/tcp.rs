@@ -12,6 +12,7 @@ use url2::prelude::*;
 
 use std::net::{TcpListener, TcpStream};
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl StreamManager<std::net::TcpStream> {
     /// convenience constructor for creating a websocket "Transport"
     /// instance that is based of the rust std TcpStream

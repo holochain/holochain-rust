@@ -95,6 +95,7 @@ pub struct ConsistencyModel {
     context: Arc<Context>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ConsistencyModel {
     pub fn new(context: Arc<Context>) -> Self {
         Self {

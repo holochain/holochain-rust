@@ -13,6 +13,7 @@ pub trait ConductorDebug {
     ) -> Result<(String, String), HolochainError>;
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorDebug for Conductor {
     fn running_instances(&self) -> Result<Vec<String>, HolochainError> {
         Ok(self.instances.keys().cloned().collect())

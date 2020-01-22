@@ -544,6 +544,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_more"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.15.31 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "detach"
 version = "0.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2508,6 +2519,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "new-relic-proc-macro"
+version = "0.0.1"
+dependencies = [
+ "newrelic 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.15.31 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "newrelic"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "derive_more 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "newrelic-sys 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "newrelic-sys"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "nickel"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3966,6 +4001,8 @@ dependencies = [
  "lib3h_protocol 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "new-relic-proc-macro 0.0.1",
+ "newrelic 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sim2h 0.0.42-alpha5",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -5291,6 +5328,7 @@ dependencies = [
 "checksum csv 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "11f8cbd084b9a431d52dfac0b8428a26b68f1061138a7bea18aa56b9cdf55266"
 "checksum csv-core 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "9b5cadb6b25c77aeff80ba701712494213f4a8418fcda2ee11b6560c3ad0bf4c"
 "checksum ctor 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8ce37ad4184ab2ce004c33bf6379185d3b1c95801cab51026bd271bf68eedc"
+"checksum derive_more 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6d944ac6003ed268757ef1ee686753b57efc5fcf0ebe7b64c9fc81e7e32ff839"
 "checksum detach 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)" = "891f5117f720f720924586e087b7eb385d816afb467a231c2fec64239de00986"
 "checksum detach 0.0.31 (registry+https://github.com/rust-lang/crates.io-index)" = "f0bc5b5e9587ec049bd13d4d98e4d508896aa412c7da91ee73187c759e2b093f"
 "checksum deunicode 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
@@ -5447,6 +5485,8 @@ dependencies = [
 "checksum nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ef553a0f07a7a45c731f0c5d83cf9ef9caddf7407e413142731db416504bfe0f"
 "checksum native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4b2df1a4c22fd44a62147fd8f13dd0f95c9d8ca7b2610299b2a2f9cf8964274e"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
+"checksum newrelic 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e53fdf317888c3af42d370c17727266baa2d5a40e68dba3c6b215dc889c0a0c7"
+"checksum newrelic-sys 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c5edb85a1ac47f88c3c596a1273a394be4be02d2ef847b584d1e96eb69ac7b52"
 "checksum nickel 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e5061a832728db2dacb61cefe0ce303b58f85764ec680e71d9138229640a46d9"
 "checksum nix 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6c722bee1037d430d0f8e687bbdbf222f27cc6e4e68d5caf630857bb2b6dbdce"
 "checksum nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3b2e0b4f3320ed72aaedb9a5ac838690a8047c7b275da22711fddff4f8a14229"

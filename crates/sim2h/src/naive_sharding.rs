@@ -5,6 +5,7 @@ use lib3h_protocol::types::EntryHash;
 #[allow(clippy::borrowed_box)]
 /// ack - lib3h can only convert agent_ids to locations right now
 /// work around this in a dorky manner
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> Location {
     match calc_location_for_id(crypto, anything) {
         Ok(loc) => loc,
@@ -25,6 +26,7 @@ pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> L
 }
 
 #[allow(clippy::borrowed_box)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) -> Location {
     let entry_hash_str: String = entry_hash.clone().into();
     anything_to_location(crypto, &entry_hash_str)
@@ -32,6 +34,7 @@ pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) ->
 
 /// implement a super simple sharding algorithm
 /// to distribute data when node counts go > 50
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 pub fn naive_sharding_should_store(
     agent_loc: Location,
     data_addr_loc: Location,

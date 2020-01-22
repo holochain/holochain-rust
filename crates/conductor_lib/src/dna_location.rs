@@ -14,6 +14,7 @@ pub enum DnaLocation {
     Url(Url),
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl DnaLocation {
     pub fn get_content(&self) -> Result<String, HolochainError> {
         match self {

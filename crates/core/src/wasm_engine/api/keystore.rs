@@ -6,7 +6,9 @@ use holochain_core_types::error::{HcResult, HolochainError};
 
 use holochain_json_api::json::JsonString;
 
-use holochain_wasm_utils::api_serialization::keystore::KeystoreListResult;
+use holochain_wasm_utils::api_serialization::{
+    keystore::KeystoreListResult, wasm_string::WasmString,
+};
 use jsonrpc_lite::JsonRpc;
 use serde_json::{self, Value};
 use snowflake::ProcessUniqueId;
@@ -48,7 +50,7 @@ fn conductor_callback<S: Into<String>>(
     }
 }
 
-pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
+pub fn invoke_keystore_list(runtime: &mut Runtime, _: WasmString) -> ZomeApiResult {
     let context = runtime.context()?;
     let result = conductor_callback("agent/keystore/list", "{}", context.clone());
     let string_list: Vec<String> = match result {
@@ -66,22 +68,17 @@ pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeA
     runtime.store_result(Ok(KeystoreListResult { ids: string_list }))
 }
 
-pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
+pub fn invoke_keystore_new_random(runtime: &mut Runtime, args_str: WasmString) -> ZomeApiResult {
     let result = conductor_callback(
         "agent/keystore/add_random_seed",
         &args_str.to_string(),
-        context.clone(),
+        runtime.context()?,
     );
     match result {
         Ok(_) => (),
         Err(err) => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: agent/keystore/add_random_seed callback failed: {:?}",
                 err
             );
@@ -91,21 +88,17 @@ pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     runtime.store_result(Ok(()))
 }
 
-pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
+pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args_str: WasmString) -> ZomeApiResult {
     let result = conductor_callback(
         "agent/keystore/add_seed_from_seed",
         &args_str.to_string(),
-        context.clone(),
+        runtime.context()?,
     );
     match result {
         Ok(_) => (),
         Err(err) => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: agent/keystore/add_seed_from_seed callback failed: {:?}",
                 err
             );
@@ -116,20 +109,16 @@ pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args: &RuntimeArgs) ->
     runtime.store_result(Ok(()))
 }
 
-pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
+pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args_str: WasmString) -> ZomeApiResult {
     let result = conductor_callback(
         "agent/keystore/add_key_from_seed",
         &args_str.to_string(),
-        context.clone(),
+        runtime.context()?,
     );
     let string: String = match result {
         Ok(json_string) => {
             log_debug!(
-                context,
+                runtime.context()?,
                 "zome: keystore_add_key_from_seed json_string:{:?}",
                 json_string
             );
@@ -138,7 +127,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
         }
         Err(err) => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: agent/keystore/add_key_from_seed callback failed: {:?}",
                 err
             );
@@ -147,7 +136,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     };
 
     log_debug!(
-        context,
+        runtime.context()?,
         "zome: pubkey derive of args:{:?} is:{:?}",
         args_str,
         string
@@ -155,26 +144,26 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
-pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
+pub fn invoke_keystore_sign(runtime: &mut Runtime, args_str: WasmString) -> ZomeApiResult {
     let result = conductor_callback(
         "agent/keystore/sign",
         &args_str.to_string(),
-        context.clone(),
+        runtime.context()?,
     );
     let string: String = match result {
         Ok(json_string) => {
-            log_debug!(context, "zome: keystore_sign json_string:{:?}", json_string);
+            log_debug!(
+                runtime.context()?,
+                "zome: keystore_sign json_string:{:?}",
+                json_string
+            );
 
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
             value["signature"].as_str().unwrap().to_owned()
         }
         Err(err) => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: agent/keystore/sign callback failed: {:?}",
                 err
             );
@@ -183,7 +172,7 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     };
 
     log_debug!(
-        context,
+        runtime.context()?,
         "zome: signature of args:{:?} is:{:?}",
         args_str,
         string
@@ -192,20 +181,19 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
-pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
+pub fn invoke_keystore_get_public_key(
+    runtime: &mut Runtime,
+    args_str: WasmString,
+) -> ZomeApiResult {
     let result = conductor_callback(
         "agent/keystore/get_public_key",
         &args_str.to_string(),
-        context.clone(),
+        runtime.context()?,
     );
     let string: String = match result {
         Ok(json_string) => {
             log_debug!(
-                context,
+                runtime.context()?,
                 "zome: keystore_get_public_key json_string:{:?}",
                 json_string
             );
@@ -214,7 +202,7 @@ pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs)
         }
         Err(err) => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: agent/keystore/get_public_key callback failed: {:?}",
                 err
             );
@@ -223,7 +211,7 @@ pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs)
     };
 
     log_debug!(
-        context,
+        runtime.context()?,
         "zome: pubkey for args:{:?} is:{:?}",
         args_str,
         string

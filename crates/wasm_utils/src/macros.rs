@@ -26,7 +26,7 @@ macro_rules! ribosome_success {
 #[macro_export]
 macro_rules! ribosome_error_code {
     ($s:ident) => {
-        Ok(Some(Value::I64(
+        Ok(Some(wasmer_runtime::Value::I64(
             $crate::holochain_core_types::error::RibosomeErrorCode::$s
                 as $crate::holochain_core_types::error::RibosomeRuntimeBits,
         )))

@@ -1,43 +1,24 @@
 use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use holochain_json_api::json::*;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
-use std::convert::TryFrom;
-use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
-    let crypto_args = match CryptoArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_crypto failed to deserialize SignArgs: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
-    let message = context
+pub fn invoke_crypto(runtime: &mut Runtime, crypto_args: CryptoArgs) -> ZomeApiResult {
+    let message = runtime
+        .context()?
         .conductor_api
         .execute(crypto_args.payload.clone(), crypto_args.method.clone())
         .map(|sig| JsonString::from_json(&sig));
 
     log_debug!(
-        context,
+        runtime.context()?,
         "zome: crypto method {:?} of data:{:?} by:{:?} is:{:?}",
         crypto_args.method,
         crypto_args.payload,
-        context.agent_id,
+        runtime.context()?.agent_id,
         message
     );
 

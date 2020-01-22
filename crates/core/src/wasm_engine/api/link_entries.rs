@@ -10,29 +10,13 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use std::convert::TryFrom;
-use wasmer_runtime::Value;
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
-pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let input = match LinkEntriesArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-    let top_chain_header_option = context
+pub fn invoke_link_entries(runtime: &mut Runtime, input: LinkEntriesArgs) -> ZomeApiResult {
+    let top_chain_header_option = runtime
+        .context()?
         .state()
         .expect("Couldn't get state in invoke_linke_entries")
         .agent()
@@ -42,9 +26,9 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Some(top_chain) => top_chain,
         None => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
-                args_str
+                input
             );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
@@ -55,14 +39,15 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         &link,
         LinkActionKind::ADD,
         top_chain_header,
-        context.agent_id.clone(),
+        runtime.context()?.agent_id.clone(),
     );
     let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
-    let result: Result<Address, HolochainError> = context
-        .block_on(author_entry(&entry, None, &context, &vec![]))
+    let result: Result<Address, HolochainError> = runtime
+        .context()?
+        .block_on(author_entry(&entry, None, &runtime.context()?, &vec![]))
         .map(|_| entry.address());
 
     runtime.store_result(result)

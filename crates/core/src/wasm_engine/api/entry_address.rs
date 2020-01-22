@@ -5,12 +5,12 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::RibosomeRuntimeBits,
 };
-use wasmer_runtime::Value;
 use holochain_persistence_api::cas::content::AddressableContent;
+use wasmer_runtime::Value;
 
-use std::{convert::TryFrom, str::FromStr};
+use std::str::FromStr;
 
-pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
+pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<Value>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
         Some(Value::I64(
             holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as RibosomeRuntimeBits,
@@ -35,17 +35,10 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: entry_type_name and entry_value as JsonString
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let entry = match Entry::try_from(args_str) {
-        Ok(input) => input,
-        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
-    };
-
+pub fn invoke_entry_address(runtime: &mut Runtime, entry: Entry) -> ZomeApiResult {
     // Check if entry_type is valid
-    let dna = context
+    let dna = runtime
+        .context()?
         .state()
         .unwrap()
         .nucleus()

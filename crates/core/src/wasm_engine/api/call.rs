@@ -13,8 +13,7 @@ use holochain_logging::prelude::*;
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom, sync::Arc};
-use wasmer_runtime::Value;
+use std::sync::Arc;
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
@@ -43,27 +42,11 @@ impl ZomeFnCall {
 /// Launch an Action::Call with newly formed ZomeFnCall-
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> ZomeApiResult {
     let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
-    let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
-        Ok(input) => input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_call failed to deserialize: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
     let result = if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
+        let zome_call = ZomeFnCall::from_args(runtime.context()?, input.clone());
 
         if let Ok(zome_call_data) = runtime.zome_call_data() {
             // Don't allow recursive calls

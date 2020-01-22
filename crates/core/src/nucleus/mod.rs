@@ -23,12 +23,12 @@ use std::sync::Arc;
 
 /// Struct holding data for tracing the call of an HDK function from a zome function
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
-pub struct HdkFnCall {
+pub struct WasmApiFnCall {
     pub function: ZomeApiFunction,
     pub parameters: JsonString,
 }
 
-pub type HdkFnCallResult = Result<JsonString, String>;
+pub type WasmApiFnCallResult = Result<JsonString, String>;
 
 /// Struct holding data for requesting the execution of a Zome function (QueueZomeFunctionCall Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]

@@ -3,8 +3,8 @@ pub mod init_application;
 pub mod queue_zome_function_call;
 pub mod return_initialization_result;
 pub mod return_zome_function_result;
-pub mod trace_invoke_hdk_function;
-pub mod trace_return_hdk_function;
+pub mod trace_invoke_wasm_api_function;
+pub mod trace_return_wasm_api_function;
 
 use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
@@ -15,8 +15,8 @@ use crate::{
             queue_zome_function_call::reduce_queue_zome_function_call,
             return_initialization_result::reduce_return_initialization_result,
             return_zome_function_result::reduce_return_zome_function_result,
-            trace_invoke_hdk_function::reduce_trace_invoke_hdk_function,
-            trace_return_hdk_function::reduce_trace_return_hdk_function,
+            trace_invoke_wasm_api_function::reduce_trace_invoke_wasm_api_function,
+            trace_return_wasm_api_function::reduce_trace_return_wasm_api_function,
         },
         state::NucleusState,
     },
@@ -33,8 +33,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::InitializeChain(_) => Some(reduce_initialize_chain),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::QueueZomeFunctionCall(_) => Some(reduce_queue_zome_function_call),
-        Action::TraceInvokeHdkFunction(_) => Some(reduce_trace_invoke_hdk_function),
-        Action::TraceReturnHdkFunction(_) => Some(reduce_trace_return_hdk_function),
+        Action::TraceInvokeWasmApiFunction(_) => Some(reduce_trace_invoke_wasm_api_function),
+        Action::TraceReturnWasmApiFunction(_) => Some(reduce_trace_return_wasm_api_function),
         _ => None,
     }
 }

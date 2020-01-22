@@ -61,9 +61,9 @@ use crate::wasm_engine::{
 use crate::wasm_engine::Defn;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
-use wasmer_runtime::Value;
+use wasmer_runtime::{error::RuntimeError, Value};
 
-pub type ZomeApiResult = Result<Option<RuntimeValue>, Trap>;
+pub type ZomeApiResult = Result<Option<Value>, RuntimeError>;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS

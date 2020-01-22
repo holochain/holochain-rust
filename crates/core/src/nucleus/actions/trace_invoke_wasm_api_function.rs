@@ -2,22 +2,20 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    nucleus::{HdkFnCall, HdkFnCallResult, ZomeFnCall},
+    nucleus::{WasmApiFnCall, ZomeFnCall},
 };
 use std::sync::Arc;
 
-pub fn trace_return_hdk_function(
+pub fn trace_invoke_wasm_api_function(
     zome_fn_call: ZomeFnCall,
-    hdk_fn_call: HdkFnCall,
-    hdk_fn_call_result: HdkFnCallResult,
+    wasm_api_fn_call: WasmApiFnCall,
     context: &Arc<Context>,
 ) {
     dispatch_action(
         context.action_channel(),
-        ActionWrapper::new(Action::TraceReturnHdkFunction((
+        ActionWrapper::new(Action::TraceInvokeWasmApiFunction((
             zome_fn_call,
-            hdk_fn_call,
-            hdk_fn_call_result,
+            wasm_api_fn_call,
         ))),
     );
 }

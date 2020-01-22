@@ -1,11 +1,7 @@
 use crate::{
     context::Context,
     nucleus::{CallbackFnCall, ZomeFnCall},
-    wasm_engine::{
-        api::{ZomeApiFunction, ZomeApiResult},
-        memory::WasmPageManager,
-        Defn,
-    },
+    wasm_engine::{api::ZomeApiResult, memory::WasmPageManager},
 };
 use holochain_core_types::error::{
     HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
@@ -16,9 +12,7 @@ use holochain_json_api::json::JsonString;
 
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, fmt, sync::Arc};
-use wasmer_runtime::Instance;
-use wasmer_runtime::error::RuntimeError;
-use wasmer_runtime::Value;
+use wasmer_runtime::{error::RuntimeError, Instance, Value};
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -51,7 +45,7 @@ impl fmt::Display for BadCallError {
     }
 }
 
-impl HostError for BadCallError {}
+// impl HostError for BadCallError {}
 
 impl WasmCallData {
     pub fn new_zome_call(context: Arc<Context>, call: ZomeFnCall) -> Self {
@@ -112,27 +106,22 @@ impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, RuntimeError> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            _ => Err(
-                RuntimeError::Trap{ msg: Box::new(format!(
-                "zome_call_data: {:?}",
-                &self.data)) }
-            ),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("zome_call_data: {:?}", &self.data).into_boxed_str(),
+            }),
         }
     }
 
-    pub fn callback_call_data(&self) -> Result<CallbackCallData, Trap> {
+    pub fn callback_call_data(&self) -> Result<CallbackCallData, RuntimeError> {
         match &self.data {
             WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
-            _ => Err(
-                RuntimeError::Trap {
-                    msg: Box::new(format!(
-                "callback_call_data: {:?}",
-                &self.data)) }
-            ),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("callback_call_data: {:?}", &self.data).into_boxed_str(),
+            }),
         }
     }
 
-    pub fn call_data(&self) -> Result<CallData, Trap> {
+    pub fn call_data(&self) -> Result<CallData, RuntimeError> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(CallData {
                 context: data.context.clone(),
@@ -146,26 +135,19 @@ impl Runtime {
                 fn_name: data.call.fn_name.clone(),
                 parameters: data.call.parameters.clone(),
             }),
-            _ => Err(
-                RuntimeError::Trap {
-                    msg: Box::new(format!(
-                    "call_data: {:?}",
-                    &self.data
-                ))}
-            ),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("call_data: {:?}", &self.data).into_boxed_str(),
+            }),
         }
     }
 
-    pub fn context(&self) -> Result<Arc<Context>, Trap> {
+    pub fn context(&self) -> Result<Arc<Context>, RuntimeError> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
             WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
-            _ => Err(
-                RuntimeError::Trap {
-                    msg: Box::new(format!(
-                "context data: {:?}",
-                &self.data
-            ))}),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("context data: {:?}", &self.data).into_boxed_str(),
+            }),
         }
     }
 
@@ -173,13 +155,8 @@ impl Runtime {
     /// Input RuntimeArgs should only have one input which is the encoded allocation holding
     /// the complex data as an utf8 string.
     /// Returns the utf8 string.
-    pub fn load_json_string_from_args(&self, args: &RuntimeArgs) -> JsonString {
-        // @TODO don't panic in WASM
-        // @see https://github.com/holochain/holochain-rust/issues/159
-        assert_eq!(1, args.len());
-
+    pub fn load_json_string_from_args(&self, encoded: RibosomeEncodingBits) -> JsonString {
         // Read complex argument serialized in memory
-        let encoded: RibosomeEncodingBits = args.nth(0);
         let return_code = RibosomeEncodedValue::from(encoded);
         let allocation = match return_code {
             RibosomeEncodedValue::Success => return JsonString::null(),
@@ -216,8 +193,7 @@ impl Runtime {
             Err(_) => ribosome_error_code!(Unspecified),
             Ok(allocation) => Ok(Some(Value::I64(RibosomeEncodingBits::from(
                 RibosomeEncodedValue::Allocation(allocation.into()),
-            )
-                as RibosomeRuntimeBits))),
+            ) as RibosomeRuntimeBits))),
         }
     }
 
@@ -229,18 +205,5 @@ impl Runtime {
             Ok(value) => ZomeApiInternalResult::success(value),
             Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
         })
-    }
-}
-
-// Correlate the indexes of core API functions with a call to the actual function
-// by implementing the Externals trait from Wasmi.
-impl Externals for Runtime {
-    fn invoke_index(&mut self, index: usize, args: RuntimeArgs) -> ZomeApiResult {
-        let zf = ZomeApiFunction::from_index(index);
-        match zf {
-            ZomeApiFunction::MissingNo => panic!("unknown function index"),
-            // convert the function to its callable form and call it with the given arguments
-            _ => zf.apply(self, &args),
-        }
     }
 }

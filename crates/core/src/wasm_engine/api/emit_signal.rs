@@ -3,32 +3,14 @@ use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
-use std::convert::TryFrom;
 use wasmer_runtime::Value;
 
 /// ZomeApiFunction::EmitSignal function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+pub fn invoke_emit_signal(runtime: &Runtime, emit_signal_args: EmitSignalArgs) -> ZomeApiResult {
     let context = runtime.context()?;
-
-    let args_str = runtime.load_json_string_from_args(&args);
-    let emit_signal_args = match EmitSignalArgs::try_from(args_str.clone()) {
-        Ok(args) => args,
-        // Exit on error
-        Err(error) => {
-            log_error!(
-                context,
-                "zome: invoke_emit_signal failed to \
-                 deserialize arguments: {:?} with error {:?}",
-                args_str,
-                error
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
     if let Some(sender) = context.signal_tx() {
         let signal = Signal::User(UserSignal::from(emit_signal_args));
         let _ = sender.send(signal).map_err(|err| {

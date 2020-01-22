@@ -14,24 +14,17 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
-use std::convert::TryFrom;
-use wasmer_runtime::Value;
 
-pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let args = match CommitCapabilityGrantArgs::try_from(args_str) {
-        Ok(input) => input,
-        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
-    };
-
+pub fn invoke_commit_capability_grant(
+    runtime: &mut Runtime,
+    args: CommitCapabilityGrantArgs,
+) -> ZomeApiResult {
     let task_result: Result<Address, HolochainError> =
         match CapTokenGrant::create(&args.id, args.cap_type, args.assignees, args.functions) {
-            Ok(grant) => context.block_on(commit_entry(
+            Ok(grant) => runtime.context()?.block_on(commit_entry(
                 Entry::CapTokenGrant(grant),
                 None,
-                &context.clone(),
+                &runtime.context()?,
             )),
             Err(err) => Err(HolochainError::ErrorGeneric(format!(
                 "Unable to commit capability grant: {}",
@@ -42,20 +35,15 @@ pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs)
     runtime.store_result(task_result)
 }
 
-pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let args = match CommitCapabilityClaimArgs::try_from(args_str) {
-        Ok(input) => input,
-        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
-    };
-
+pub fn invoke_commit_capability_claim(
+    runtime: &mut Runtime,
+    args: CommitCapabilityClaimArgs,
+) -> ZomeApiResult {
     let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
-    let task_result: Result<Address, HolochainError> = context.block_on(commit_entry(
+    let task_result: Result<Address, HolochainError> = runtime.context()?.block_on(commit_entry(
         Entry::CapTokenClaim(claim),
         None,
-        &context.clone(),
+        &runtime.context()?,
     ));
     runtime.store_result(task_result)
 }

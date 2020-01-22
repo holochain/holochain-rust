@@ -1,6 +1,5 @@
-use crate::wasm_engine::api::ZomeApiFunction;
 use holochain_core_types::error::HolochainError;
-use std::{str::FromStr, sync::Arc};
+use std::sync::Arc;
 use wasmer_runtime::{imports, instantiate, Instance, Module};
 
 /// Creates a WASM module, that is the executable program, from a given WASM binary byte array.

@@ -19,6 +19,6 @@ pub fn reduce_clear_zome_function_call(
         .cloned()
         .collect();
     nucleus_state.running_zome_calls.remove(&call);
-    nucleus_state.hdk_function_calls.remove(&call);
+    nucleus_state.wasm_api_function_calls.remove(&call);
     nucleus_state.zome_call_results.remove(&call);
 }

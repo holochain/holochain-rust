@@ -9,7 +9,6 @@ use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use wasmer_runtime::Value;
 
 use holochain_core_types::{
     entry::Entry,
@@ -21,38 +20,26 @@ use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions},
     link_entries::LinkEntriesArgs,
 };
-use std::convert::TryFrom;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let input = match LinkEntriesArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_remove_link failed to deserialize LinkEntriesArgs: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
-    let top_chain_header_option = context.state().unwrap().agent().top_chain_header();
+pub fn invoke_remove_link(runtime: &mut Runtime, input: LinkEntriesArgs) -> ZomeApiResult {
+    let top_chain_header_option = runtime
+        .context()?
+        .state()
+        .unwrap()
+        .agent()
+        .top_chain_header();
 
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
         None => {
             log_error!(
-                context,
+                runtime.context()?,
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
-                args_str
+                input
             );
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
@@ -63,7 +50,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
         &link,
         LinkActionKind::REMOVE,
         top_chain_header,
-        context.agent_id.clone(),
+        runtime.context()?.agent_id.clone(),
     );
     let get_links_args = GetLinksArgs {
         entry_address: link.base().clone(),
@@ -73,7 +60,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     };
     let config = GetLinksQueryConfiguration { headers: false };
     let method = QueryMethod::Link(get_links_args, GetLinksNetworkQuery::Links(config));
-    let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
+    let response_result =
+        runtime
+            .context()?
+            .block_on(query(runtime.context()?, method, Timeout::default()));
     if response_result.is_err() {
         log_error!("zome : Could not get links for remove_link method.");
         ribosome_error_code!(WorkflowFailed)
@@ -86,7 +76,10 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             )),
         };
         if links_result.is_err() {
-            log_error!(context, "zome : Could not get links for remove_link method");
+            log_error!(
+                runtime.context()?,
+                "zome : Could not get links for remove_link method"
+            );
             ribosome_error_code!(WorkflowFailed)
         } else {
             let links = links_result.expect("This is supposed to not fail");
@@ -103,8 +96,9 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             let entry = Entry::LinkRemove((link_remove, filtered_links));
 
             // Wait for future to be resolved
-            let result: Result<(), HolochainError> = context
-                .block_on(author_entry(&entry, None, &context, &vec![]))
+            let result: Result<(), HolochainError> = runtime
+                .context()?
+                .block_on(author_entry(&entry, None, &runtime.context()?, &vec![]))
                 .map(|_| ());
 
             runtime.store_result(result)

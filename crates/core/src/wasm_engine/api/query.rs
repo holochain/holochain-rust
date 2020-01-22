@@ -13,8 +13,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
-use std::{convert::TryFrom, sync::Arc};
-use wasmer_runtime::Value;
+use std::sync::Arc;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -59,17 +58,10 @@ use wasmer_runtime::Value;
 /// `*`         Zero or more of any character
 /// `**/`       Zero or more of any namespace component
 ///
-pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args.
-    let args_str = runtime.load_json_string_from_args(&args);
-    let query = match QueryArgs::try_from(args_str) {
-        Ok(input) => input,
-        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
-    };
-
+pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
     // Perform query
-    let agent = context
+    let agent = runtime
+        .context()?
         .state()
         .expect("Couldn't get state in invoke_query")
         .agent();
@@ -114,7 +106,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_entries: Result<Vec<(Address, Entry)>, HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
-                         Ok((address.to_owned(), get_entry_from_chain(&context, address)?)))
+                         Ok((address.to_owned(), get_entry_from_chain(&runtime.context()?, address)?)))
                     .filter(|maybe_entry_address_pair| match maybe_entry_address_pair {
                         // Don't include DNA entries since we are storing the result in WASM memory
                         // and DNA entries are usually quite big (several MBs).
@@ -135,7 +127,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     // and DNA entries are usually quite big (several MBs).
                     .filter(|header| *header.entry_type() != EntryType::Dna)
                     .map(|header| // -> Result<Entry, HolochainError>
-                         Ok((header.to_owned(), get_entry_from_chain(&context,header.entry_address())?)))
+                         Ok((header.to_owned(), get_entry_from_chain(&runtime.context()?,header.entry_address())?)))
                     .collect();
                 match maybe_headers_with_entries {
                     Ok(headers_with_entries) => {

@@ -14,13 +14,10 @@ use holochain_core_types::{
     network::entry_aspect::EntryAspect,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
-    eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
+    cas::content::{Address, AddressableContent, Content},
+    eav::{EavFilter, IndexFilter},
+    txn::PersistenceManagerDyn,
 };
 use regex::Regex;
 
@@ -39,10 +36,8 @@ use std::{
 /// as well as the holding list, i.e. list of all entries held for the DHT.
 #[derive(Clone, Debug)]
 pub struct DhtStore {
+    persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     // Storages holding local shard data
-    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
 
@@ -51,14 +46,8 @@ pub struct DhtStore {
 
 impl PartialEq for DhtStore {
     fn eq(&self, other: &DhtStore) -> bool {
-        let content = &self.content_storage.clone();
-        let other_content = &other.content_storage.clone();
-        let meta = &self.meta_storage.clone();
-        let other_meta = &other.meta_storage.clone();
-
         self.holding_map == other.holding_map
-            && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
-            && *meta.read().unwrap() == *other_meta.read().unwrap()
+            && (*self.persistence_manager).get_id() == (*other.persistence_manager).get_id()
     }
 }
 
@@ -121,24 +110,19 @@ pub fn create_get_links_eavi_query<'a>(
 impl DhtStore {
     // LifeCycle
     // =========
-    pub fn new(
-        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-    ) -> Self {
+    pub fn new(persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>) -> Self {
         DhtStore {
-            content_storage,
-            meta_storage,
+            persistence_manager,
             holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
         }
     }
 
     pub fn new_from_snapshot(
-        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         snapshot: DhtStoreSnapshot,
     ) -> Self {
-        let mut new_dht_store = Self::new(content_storage, meta_storage);
+        let mut new_dht_store = Self::new(persistence_manager);
         new_dht_store.holding_map = snapshot.holding_map.into();
         new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
@@ -156,7 +140,10 @@ impl DhtStore {
         crud_filter: Option<CrudStatus>,
     ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
-        let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
+        let filtered = self
+            .persistence_manager
+            .eav()
+            .fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
             .map(|s| match s.attribute() {
@@ -184,15 +171,14 @@ impl DhtStore {
             IndexFilter::LatestByAttribute,
             None,
         );
-        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
+        Ok(self.persistence_manager.eav().fetch_eavi(&query)?)
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
-        self.meta_storage
-            .read()
-            .unwrap()
+        self.persistence_manager
+            .eav()
             // fetch all EAV references to chain headers for this entry
             .fetch_eavi(&EaviQuery::new(
                 Some(entry_address).into(),
@@ -238,7 +224,7 @@ impl DhtStore {
             &header.address(),
         )?;
         self.add(header)?;
-        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
+        self.persistence_manager.eav().add_eavi(&eavi)?;
         Ok(())
     }
 
@@ -254,14 +240,14 @@ impl DhtStore {
         &self,
         query: &EaviQuery,
     ) -> PersistenceResult<BTreeSet<EntityAttributeValueIndex>> {
-        self.meta_storage.read().unwrap().fetch_eavi(query)
+        self.persistence_manager.eav().fetch_eavi(query)
     }
 
     pub(crate) fn add_eavi(
         &mut self,
         eavi: &EntityAttributeValueIndex,
     ) -> PersistenceResult<Option<EntityAttributeValueIndex>> {
-        self.meta_storage.write().unwrap().add_eavi(&eavi)
+        self.persistence_manager.eav().add_eavi(&eavi)
     }
 
     pub(crate) fn next_queued_holding_workflow(
@@ -342,13 +328,13 @@ where
 
 impl GetContent for DhtStore {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
-        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+        Ok((*self.persistence_manager.cas()).fetch(address)?)
     }
 }
 
 impl AddContent for DhtStore {
     fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        (*self.content_storage.write().unwrap())
+        (*self.persistence_manager.cas())
             .add(content)
             .map_err(|e| e.into())
     }

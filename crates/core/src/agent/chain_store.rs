@@ -2,31 +2,30 @@ use crate::content_store::{AddContent, GetContent};
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
+    eav::Attribute,
     entry::entry_type::EntryType,
     error::{
         HcResult,
         RibosomeErrorCode::{self, *},
     },
 };
-use holochain_locksmith::RwLock;
-use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent, Content},
-    storage::ContentAddressableStorage,
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    txn::PersistenceManagerDyn,
 };
+
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct ChainStore {
     // Storages holding local shard data
-    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
 }
 
 impl PartialEq for ChainStore {
     fn eq(&self, other: &ChainStore) -> bool {
-        let storage_lock = &self.content_storage.clone();
-        let storage = &*storage_lock.read().unwrap();
-        let other_storage_lock = &other.content_storage.clone();
-        let other_storage = &*other_storage_lock.read().unwrap();
+        let storage = &self.persistence_manager;
+        let other_storage = &other.persistence_manager;
         storage.get_id() == other_storage.get_id()
     }
 }
@@ -46,12 +45,14 @@ pub enum ChainStoreQueryResult {
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ChainStore {
-    pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
-        ChainStore { content_storage }
+    pub fn new(persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>) -> Self {
+        ChainStore {
+            persistence_manager,
+        }
     }
 
     pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
-        ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
+        ChainStoreIterator::new(self.persistence_manager.clone(), start_chain_header.clone())
     }
 
     /// Scans the local chain for the first Entry of EntryType, and then creates a
@@ -63,7 +64,7 @@ impl ChainStore {
         entry_type: &EntryType,
     ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator::new(
-            self.content_storage.clone(),
+            self.persistence_manager.clone(),
             self.iter(start_chain_header)
                 .find(|chain_header| chain_header.entry_type() == entry_type),
         )
@@ -187,13 +188,13 @@ impl ChainStore {
 
 impl GetContent for ChainStore {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
-        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
+        Ok((*self.persistence_manager.cas()).fetch(address)?)
     }
 }
 
 impl AddContent for ChainStore {
     fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        (*self.content_storage.write().unwrap())
+        (*self.persistence_manager.cas())
             .add(content)
             .map_err(|e| e.into())
     }
@@ -206,17 +207,17 @@ impl AddContent for ChainStore {
 /// Locates the next Entry by following ChainHeader's .link
 ///
 pub struct ChainStoreIterator {
-    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     current: Option<ChainHeader>,
 }
 
 impl ChainStoreIterator {
     pub fn new(
-        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         current: Option<ChainHeader>,
     ) -> ChainStoreIterator {
         ChainStoreIterator {
-            content_storage,
+            persistence_manager,
             current,
         }
     }
@@ -230,7 +231,7 @@ impl Iterator for ChainStoreIterator {
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
-        let storage = &self.content_storage.clone();
+        let storage = &self.persistence_manager.cas();
         self.current = previous
             .as_ref()
             .and_then(|chain_header| chain_header.link())
@@ -239,8 +240,6 @@ impl Iterator for ChainStoreIterator {
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
                 storage
-                    .read()
-                    .unwrap()
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
                     .map(|content| {
@@ -262,17 +261,17 @@ impl Iterator for ChainStoreIterator {
 /// multiple EntryType queries.
 ///
 pub struct ChainStoreTypeIterator {
-    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     current: Option<ChainHeader>,
 }
 
 impl ChainStoreTypeIterator {
     pub fn new(
-        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         current: Option<ChainHeader>,
     ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator {
-            content_storage,
+            persistence_manager,
             current,
         }
     }
@@ -285,7 +284,7 @@ impl Iterator for ChainStoreTypeIterator {
     /// May panic if there is an underlying error in the table
     fn next(&mut self) -> Option<ChainHeader> {
         let previous = self.current.take();
-        let storage = &self.content_storage.clone();
+        let storage = &self.persistence_manager.cas();
         self.current = previous
             .as_ref()
             .and_then(|chain_header| chain_header.link_same_type())
@@ -294,8 +293,6 @@ impl Iterator for ChainStoreTypeIterator {
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
                 storage
-                    .read()
-                    .unwrap()
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
                     .map(|content| {
@@ -320,16 +317,15 @@ pub mod tests {
         time::test_iso_8601,
     };
     use holochain_json_api::json::{JsonString, RawString};
-    use holochain_locksmith::RwLock;
     use holochain_persistence_api::cas::content::AddressableContent;
     use holochain_persistence_file::cas::file::FilesystemStorage;
     use tempfile;
 
     pub fn test_chain_store() -> ChainStore {
-        ChainStore::new(std::sync::Arc::new(RwLock::new(
+        ChainStore::new(std::sync::Arc::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
                 .expect("could not create chain store"),
-        )))
+        ))
     }
 
     #[test]

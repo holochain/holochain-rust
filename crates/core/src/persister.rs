@@ -4,12 +4,11 @@ use crate::{
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
 };
-use holochain_core_types::error::HolochainError;
-use holochain_locksmith::RwLock;
+use holochain_core_types::{eav::Attribute, error::HolochainError};
 
-use holochain_persistence_api::cas::{
-    content::{Address, AddressableContent, Content},
-    storage::ContentAddressableStorage,
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    txn::PersistenceManagerDyn,
 };
 
 use crate::{
@@ -30,31 +29,31 @@ pub trait Persister: Send + Sync {
 
 #[derive(Clone)]
 pub struct SimplePersister {
-    storage: Arc<RwLock<dyn ContentAddressableStorage>>,
+    storage: Arc<dyn PersistenceManagerDyn<Attribute>>,
 }
 
 impl PartialEq for SimplePersister {
     fn eq(&self, other: &SimplePersister) -> bool {
-        (&*self.storage.read().unwrap()).get_id() == (&*other.storage.read().unwrap()).get_id()
+        (&*self.storage).get_id() == (&*other.storage).get_id()
     }
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Persister for SimplePersister {
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
-        let lock = &*self.storage.clone();
-        let store = lock.write()?;
         let agent_snapshot = AgentStateSnapshot::from(state);
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
         let dht_store_snapshot = DhtStoreSnapshot::from(state);
-        store.add(&agent_snapshot)?;
-        store.add(&nucleus_snapshot)?;
-        store.add(&dht_store_snapshot)?;
+
+        let cursor = self.storage.create_cursor()?;
+        cursor.add(&agent_snapshot)?;
+        cursor.add(&nucleus_snapshot)?;
+        cursor.add(&dht_store_snapshot)?;
+        cursor.commit()?;
         Ok(())
     }
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
-        let lock = &*self.storage.clone();
-        let store = lock.read().unwrap();
+        let store = self.storage.cas();
 
         let agent_snapshot: Option<AgentStateSnapshot> = store
             .fetch(&Address::from(AGENT_SNAPSHOT_ADDRESS))?
@@ -92,7 +91,7 @@ impl Persister for SimplePersister {
 }
 
 impl SimplePersister {
-    pub fn new(storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
+    pub fn new(storage: Arc<dyn PersistenceManagerDyn<Attribute>>) -> Self {
         SimplePersister { storage }
     }
 }

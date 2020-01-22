@@ -900,10 +900,10 @@ impl Conductor {
                                     format!("Error creating context: {}", hc_err.to_string())
                                 })?
                     }
-                    StorageConfiguration::Lmdb { path, initial_mmap_bytes } => {
+                    StorageConfiguration::Lmdb { path, initial_mmap_bytes, staging_path_prefix } => {
                         context_builder =
                             context_builder
-                                .with_lmdb_storage(path, initial_mmap_bytes)
+                                .with_lmdb_storage(path, staging_path_prefix, initial_mmap_bytes)
                                 .map_err(|hc_err| {
                                     format!("Error creating context: {}", hc_err.to_string())
                                 })?

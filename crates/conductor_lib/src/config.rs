@@ -717,6 +717,7 @@ pub enum StorageConfiguration {
     Lmdb {
         path: String,
         initial_mmap_bytes: Option<usize>,
+        staging_path_prefix: Option<String>,
     },
 }
 

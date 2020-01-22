@@ -35,6 +35,7 @@ use holochain_persistence_api::{
         storage::ContentAddressableStorage,
     },
     eav::EntityAttributeValueStorage,
+    txn::PersistenceManagerDyn,
 };
 use jsonrpc_core::{self, IoHandler};
 use std::{
@@ -90,9 +91,7 @@ pub struct Context {
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<Sender<ActionWrapper>>,
     pub observer_channel: Option<Sender<Observer>>,
-    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+    pub persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<Sender<Signal>>,
@@ -136,9 +135,7 @@ impl Context {
         instance_name: &str,
         agent_id: AgentId,
         persister: Arc<RwLock<dyn Persister>>,
-        chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
@@ -153,9 +150,7 @@ impl Context {
             action_channel: None,
             signal_tx,
             observer_channel: None,
-            chain_storage,
-            dht_storage,
-            eav_storage: eav,
+            persistence_manager,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(
                 conductor_api,
@@ -177,8 +172,7 @@ impl Context {
         action_channel: Option<Sender<ActionWrapper>>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
-        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         p2p_config: P2pConfig,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
@@ -187,13 +181,11 @@ impl Context {
             instance_name: instance_name.to_owned(),
             agent_id: agent_id.clone(),
             persister,
+            persistence_manager,
             state: None,
             action_channel,
             signal_tx,
             observer_channel,
-            chain_storage: cas.clone(),
-            dht_storage: cas,
-            eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
@@ -422,6 +414,18 @@ impl Context {
             number_running_zome_calls: state.nucleus().running_zome_calls.len(),
             offline: false,
         })
+    }
+
+    pub fn chain_storage(&self) -> Arc<dyn ContentAddressableStorage> {
+        self.persistence_manager.cas()
+    }
+
+    pub fn dht_storage(&self) -> Arc<dyn ContentAddressableStorage> {
+        self.persistence_manager.cas()
+    }
+
+    pub fn eav_storage(&self) -> Arc<dyn EntityAttributeValueStorage<Attribute>> {
+        self.persistence_manager.eav()
     }
 }
 

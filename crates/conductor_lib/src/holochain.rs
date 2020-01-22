@@ -176,7 +176,7 @@ impl Holochain {
     }
 
     pub fn load(context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(context.dht_storage.clone());
+        let persister = SimplePersister::new(context.persistence_manager.clone());
         let loaded_state = persister.load(context.clone())?.ok_or_else(|| {
             HolochainError::ErrorGeneric("State could not be loaded due to NoneError".to_string())
         })?;

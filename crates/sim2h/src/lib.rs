@@ -810,6 +810,7 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
     let rt = tokio::runtime::Builder::new()
         .enable_all()
         .threaded_scheduler()
+        .core_threads(num_cpus::get())
         .thread_name("sim2h-tokio-thread")
         .build()
         .expect("can build tokio runtime");

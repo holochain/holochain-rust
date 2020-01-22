@@ -800,7 +800,7 @@ type = 'cmd'"#
 
     pub fn create_test_conductor_from_toml(toml: &str, test_name: &str) -> Conductor {
         let config = load_configuration::<Configuration>(toml).unwrap();
-        let mut conductor = Conductor::from_config(config.clone(), None);
+        let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor.boot_from_config().unwrap();

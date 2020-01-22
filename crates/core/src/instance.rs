@@ -881,7 +881,11 @@ pub mod tests {
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(Box::new(dna));
-        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None, vec![])));
+        let commit_action = ht::test_span("").wrap(ActionWrapper::new(Action::Commit((
+            dna_entry.clone(),
+            None,
+            vec![],
+        ))));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
@@ -905,8 +909,11 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action =
-            ActionWrapper::new(Action::Commit((agent_entry.clone(), None, vec![])));
+        let commit_agent_action = ht::test_span("").wrap(ActionWrapper::new(Action::Commit((
+            agent_entry.clone(),
+            None,
+            vec![],
+        ))));
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
@@ -978,7 +985,11 @@ pub mod tests {
 
         // write an entry larger than the initial mmap
         let entry = test_entry(0, 3 * initial_mmap_size);
-        let commit_agent_action = ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
+        let commit_agent_action = ht::test_span("").wrap(ActionWrapper::new(Action::Commit((
+            entry.clone(),
+            None,
+            vec![],
+        ))));
 
         instance
             .process_action(&commit_agent_action, &context)

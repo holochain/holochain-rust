@@ -686,6 +686,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 
 [[package]]
+name = "encode_unicode"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1767,6 +1773,32 @@ dependencies = [
  "serde_derive",
  "serde_test",
  "uuid 0.7.1",
+]
+
+[[package]]
+name = "holochain_stress"
+version = "0.0.42-alpha5"
+dependencies = [
+ "base64 0.10.1",
+ "crossbeam-channel",
+ "env_logger 0.6.1",
+ "hcid",
+ "in_stream",
+ "lib3h_crypto_api",
+ "lib3h_protocol",
+ "lib3h_sodium",
+ "log 0.4.8",
+ "nanoid",
+ "native-tls",
+ "num_cpus",
+ "prettytable-rs",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sim2h",
+ "structopt 0.3.3",
+ "toml",
+ "url2",
 ]
 
 [[package]]
@@ -3131,6 +3163,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "prettytable-rs"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fd04b170004fa2daccf418a7f8253aaf033c27760b5f225889024cf66d7ac2e"
+dependencies = [
+ "atty",
+ "csv",
+ "encode_unicode",
+ "lazy_static",
+ "term",
+ "unicode-width",
+]
+
+[[package]]
 name = "proc-macro-error"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4433,6 +4479,17 @@ dependencies = [
  "slug",
  "unic-segment",
  "url 1.7.2",
+]
+
+[[package]]
+name = "term"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edd106a334b7657c10b7c540a0106114feadeb4dc314513e97df481d5d966f42"
+dependencies = [
+ "byteorder",
+ "dirs 1.0.5",
+ "winapi 0.3.8",
 ]
 
 [[package]]

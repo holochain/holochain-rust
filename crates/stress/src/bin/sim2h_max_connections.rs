@@ -15,7 +15,7 @@ use url2::prelude::*;
 //fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
 fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(5000))
+        .checked_add(std::time::Duration::from_millis(20000))
         .unwrap();
 
     let mut read_frame = WsFrame::default();
@@ -223,7 +223,6 @@ pub fn main() {
 
             info!("CONNECTION COUNT: {}", con_count);
 
-            // wait 20 ms
             tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
         }
     });

@@ -879,8 +879,10 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
 
 /// a Sim2h server instance - manages connections between holochain instances
 pub struct Sim2h {
+    bound_listener: Option<TcpWssServer>,
     pub bound_uri: Option<Lib3hUri>,
-    pool: Pool,
+    //pool: Pool,
+    wss_send: crossbeam_channel::Sender<TcpWss>,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
     msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
     msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
@@ -901,8 +903,8 @@ impl Sim2h {
         bind_spec: Lib3hUri,
         dht_algorithm: DhtAlgorithm,
     ) -> Self {
-        let pool = Pool::new();
-        pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
+        //let pool = Pool::new();
+        //pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
@@ -916,9 +918,19 @@ impl Sim2h {
         }));
         let (send_com, recv_com) = tokio::sync::mpsc::unbounded_channel();
         let sim2h_handle = Sim2hHandle::new(state, send_com, dht_algorithm.clone());
-        let mut sim2h = Sim2h {
-            bound_uri: None,
-            pool,
+
+        let config = TcpBindConfig::default();
+        //        let config = TlsBindConfig::new(config).dev_certificate();
+        let config = WssBindConfig::new(config);
+        let url = url::Url::from(bind_spec).into();
+        let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
+        let bound_uri = Some(url::Url::from(listen.binding()).into());
+
+        let sim2h = Sim2h {
+            bound_listener: Some(listen),
+            bound_uri,
+            //pool,
+            wss_send,
             wss_recv,
             msg_send,
             msg_recv,
@@ -930,11 +942,12 @@ impl Sim2h {
             metric_publisher,
         };
 
-        sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
+        //sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
 
         sim2h
     }
 
+    /*
     /// bind a listening socket, and set up the polling job to accept connections
     fn priv_bind_listening_socket(
         &mut self,
@@ -946,11 +959,14 @@ impl Sim2h {
         let config = WssBindConfig::new(config);
         let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
         self.bound_uri = Some(url::Url::from(listen.binding()).into());
+        /*
         self.pool
             .push_job(Box::new(Arc::new(Mutex::new(ListenJob::new(
                 listen, wss_send,
             )))));
+        */
     }
+    */
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) -> bool {
@@ -969,7 +985,7 @@ impl Sim2h {
                     }
                 }
                 if !wss_list.is_empty() {
-                    let job_send = self.pool.get_push_job_handle();
+                    //let job_send = self.pool.get_push_job_handle();
                     let msg_send = self.msg_send.clone();
                     let sim2h_handle = self.sim2h_handle.clone();
                     tokio::task::spawn(async move {
@@ -983,7 +999,24 @@ impl Sim2h {
                             let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
                             let job = Arc::new(Mutex::new(job));
 
-                            job_send.send(Box::new(job.clone())).expect("send fail");
+                            //job_send.send(Box::new(job.clone())).expect("send fail");
+                            let mut job_clone = job.clone();
+                            tokio::task::spawn(async move {
+                                loop {
+                                    let res = job_clone.run();
+                                    if !res.cont {
+                                        break;
+                                    }
+                                    if res.wait_ms == 0 {
+                                        tokio::task::yield_now().await;
+                                    } else {
+                                        tokio::time::delay_for(std::time::Duration::from_millis(
+                                            res.wait_ms,
+                                        ))
+                                        .await;
+                                    }
+                                }
+                            });
 
                             state
                                 .connection_states
@@ -1291,6 +1324,40 @@ impl Sim2h {
     // process transport and  incoming messages from it
     pub fn process(&mut self) -> Sim2hResult<bool> {
         with_latency_publishing!("sim2h-process", self.metric_publisher, || {
+            if self.bound_listener.is_some() {
+                let mut listen = self.bound_listener.take().unwrap();
+                let wss_send = self.wss_send.clone();
+                tokio::task::spawn(async move {
+                    loop {
+                        let mut did_work = false;
+                        for _ in 0..100 {
+                            match listen.accept() {
+                                Ok(wss) => {
+                                    wss_send.f_send(wss);
+                                    did_work = true;
+                                }
+                                Err(e) if e.would_block() => {
+                                    break;
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "LISTEN ACCEPT FAIL: {:?}\nbacktrace: {:?}",
+                                        e,
+                                        backtrace::Backtrace::new()
+                                    );
+                                    did_work = true;
+                                }
+                            }
+                        }
+                        if did_work {
+                            tokio::task::yield_now().await;
+                        } else {
+                            tokio::time::delay_for(std::time::Duration::from_millis(10)).await;
+                        }
+                    }
+                });
+            }
+
             let mut did_work = false;
 
             self.num_ticks += 1;

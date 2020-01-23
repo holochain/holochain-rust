@@ -314,6 +314,7 @@ workflows:
          - develop
          - final-exam
          - 2019-12-26-debug-cli-docker
+         - 2020-01-23-docker-sim2h-fix
    - docker-build-circle-build:
       requires:
        - docker-build-latest

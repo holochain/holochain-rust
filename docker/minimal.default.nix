@@ -13,6 +13,7 @@ let
   CARGO_HOME = "/holochain/.cargo";
   name = "dev-shell";
   buildInputs = [
+      pcre-config
   ]
   ++ holonix.rust.buildInputs
   ;

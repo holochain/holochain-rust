@@ -62,7 +62,6 @@ impl ConnectionJob {
         }
         match self.outgoing_recv.try_recv() {
             Ok(frame) => {
-                let _kt = KillTimer::new("wss.write");
                 if let Err(e) = self.wss.write(frame) {
                     error!("error in write to {}: {:?}", self.wss.remote_url(), e);
                     return Err(e.into());
@@ -75,7 +74,6 @@ impl ConnectionJob {
             Err(crossbeam_channel::TryRecvError::Empty) => (),
         }
         {
-            let _kt = KillTimer::new("wss.read");
             match self.wss.read(self.frame.as_mut().unwrap()) {
                 Ok(_) => {
                     trace!(

@@ -7,6 +7,7 @@ homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
+default-run = "sim2h_stress"
 
 [dependencies]
 base64 = "=0.10.1"

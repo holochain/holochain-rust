@@ -196,11 +196,9 @@ pub fn main() {
 
     let mut rt = run_sim2h(sim2h);
     rt.block_on(async move {
-        std::thread::spawn(|| {
-            loop {
-                warn!("1 second tick - hardware");
-                std::thread::sleep(std::time::Duration::from_secs(1));
-            }
+        std::thread::spawn(|| loop {
+            warn!("1 second tick - hardware");
+            std::thread::sleep(std::time::Duration::from_secs(1));
         });
 
         tokio::task::spawn(async move {
@@ -228,9 +226,9 @@ pub fn main() {
 
             let cbound_uri = bound_uri.clone();
             tokio::task::spawn(async move {
-                let mut job = tokio::task::spawn_blocking(move || {
-                    Job::new(&cbound_uri)
-                }).await.unwrap();
+                let mut job = tokio::task::spawn_blocking(move || Job::new(&cbound_uri))
+                    .await
+                    .unwrap();
                 loop {
                     job.tick();
                     tokio::time::delay_for(std::time::Duration::from_millis(100)).await;

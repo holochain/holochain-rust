@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate url2;
+extern crate holochain_tracing as ht;
 
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_locksmith::{Mutex, RwLock};
@@ -36,7 +37,7 @@ fn sim2h_worker_talks_to_sim2h() {
     let srv_cont = cont.clone();
     let sim2h_join = std::thread::spawn(move || {
         let url = url2!("ws://127.0.0.1:0");
-        let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
+        let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()), None);
 
         snd.send(sim2h.bound_uri.clone().unwrap()).unwrap();
         drop(snd);
@@ -119,7 +120,7 @@ fn sim2h_worker_talks_to_sim2h() {
     let result_data_worker = result_data.clone();
     let mut worker = Sim2hWorker::new(
         NetHandler::new(Box::new(move |msg| {
-            match msg.unwrap() {
+            match msg.unwrap().data {
                 Lib3hServerProtocol::HandleGetAuthoringEntryList(info) => {
                     println!("HANDLE A LIST: {:?}", info);
                     ResultData::as_mut(&result_data_worker).got_handle_a_list = true;
@@ -150,15 +151,15 @@ fn sim2h_worker_talks_to_sim2h() {
     worker.set_full_sync(true);
 
     worker
-        .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(SpaceData {
             agent_id: agent_id.clone().into(),
             request_id: "".to_string(),
             space_address: "BLA".to_string().into(),
-        }))
+        })))
         .unwrap();
 
     worker
-        .receive(Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
             space_address: "BLA".to_string().into(),
             provider_agent_id: agent_id.clone().into(),
             entry: EntryData {
@@ -170,17 +171,17 @@ fn sim2h_worker_talks_to_sim2h() {
                     publish_ts: 0,
                 }],
             },
-        }))
+        })))
         .unwrap();
 
     worker
-        .receive(Lib3hClientProtocol::SendDirectMessage(DirectMessageData {
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(DirectMessageData {
             space_address: "BLA".to_string().into(),
             request_id: "".to_string(),
             to_agent_id: agent_id.clone().into(),
             from_agent_id: agent_id.clone().into(),
             content: b"BLA".to_vec().into(),
-        }))
+        })))
         .unwrap();
 
     for _ in 0..40 {

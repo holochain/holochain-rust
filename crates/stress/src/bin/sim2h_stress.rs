@@ -6,6 +6,7 @@ extern crate log;
 extern crate prettytable;
 #[macro_use]
 extern crate serde_derive;
+extern crate holochain_tracing as ht;
 
 use holochain_stress::*;
 use in_stream::*;
@@ -361,13 +362,15 @@ impl Job {
 
     /// join the space "abcd" : )
     pub fn join_space(&mut self) {
-        self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
-            SpaceData {
-                agent_id: self.agent_id.clone().into(),
-                request_id: "".to_string(),
-                space_address: "abcd".to_string().into(),
-            },
-        )));
+        self.send_wire(WireMessage::ClientToLib3h(
+            ht::top_follower("join_space")
+                .wrap(ClientToLib3h::JoinSpace(SpaceData {
+                    agent_id: self.agent_id.clone().into(),
+                    request_id: "".to_string(),
+                    space_address: "abcd".to_string().into(),
+                }))
+                .into(),
+        ));
     }
 
     /// send a ping message to sim2h
@@ -391,13 +394,15 @@ impl Job {
                 .insert(rid.clone(), std::time::Instant::now());
 
             self.send_wire(WireMessage::ClientToLib3h(
-                ClientToLib3h::SendDirectMessage(DirectMessageData {
-                    space_address: "abcd".to_string().into(),
-                    request_id: rid,
-                    to_agent_id: to_agent_id.into(),
-                    from_agent_id: self.agent_id.clone().into(),
-                    content,
-                }),
+                ht::top_follower("dm")
+                    .wrap(ClientToLib3h::SendDirectMessage(DirectMessageData {
+                        space_address: "abcd".to_string().into(),
+                        request_id: rid,
+                        to_agent_id: to_agent_id.into(),
+                        from_agent_id: self.agent_id.clone().into(),
+                        content,
+                    }))
+                    .into(),
             ));
 
             logger.log("dm_send_count", 1.0);
@@ -440,16 +445,17 @@ impl Job {
             (addr, aspect)
         });
 
-        self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(
-            ProvidedEntryData {
-                space_address: "abcd".to_string().into(),
-                provider_agent_id: self.agent_id.clone().into(),
-                entry: EntryData {
-                    entry_address: addr.into(),
-                    aspect_list: vec![aspect],
-                },
+        let msg = ClientToLib3h::PublishEntry(ProvidedEntryData {
+            space_address: "abcd".to_string().into(),
+            provider_agent_id: self.agent_id.clone().into(),
+            entry: EntryData {
+                entry_address: addr.into(),
+                aspect_list: vec![aspect],
             },
-        )));
+        });
+        self.send_wire(WireMessage::ClientToLib3h(
+            ht::top_follower("publish").wrap(msg).into(),
+        ));
 
         logger.log("publish_send_count", 1.0);
     }
@@ -468,35 +474,40 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
-            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(aspect)) => {
-                let epoch_millis = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64;
-                let published = aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
-                let elapsed = epoch_millis - published;
-                logger.log("publish_received_aspect_in_ms", elapsed as f64);
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
-                let to_agent_id: String = dm_data.to_agent_id.clone().into();
-                assert_eq!(self.agent_id, to_agent_id);
-                let mut out_dm = dm_data.clone();
-                out_dm.to_agent_id = dm_data.from_agent_id;
-                out_dm.from_agent_id = dm_data.to_agent_id;
-                self.send_wire(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
-                ));
-            }
-            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data)) => {
-                let res = self.pending_dms.remove(&dm_data.request_id);
-                if res.is_none() {
-                    panic!("invalid dm.request_id")
+            WireMessage::Lib3hToClient(span_wrap) => match &span_wrap.data {
+                Lib3hToClient::HandleGetAuthoringEntryList(_)
+                | Lib3hToClient::HandleGetGossipingEntryList(_) => {}
+                Lib3hToClient::HandleStoreEntryAspect(aspect) => {
+                    let epoch_millis = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis() as u64;
+                    let published = aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
+                    let elapsed = epoch_millis - published;
+                    logger.log("publish_received_aspect_in_ms", elapsed as f64);
                 }
-                let res = res.unwrap();
-                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
-            }
+                Lib3hToClient::HandleSendDirectMessage(dm_data) => {
+                    let to_agent_id: String = dm_data.to_agent_id.clone().into();
+                    assert_eq!(self.agent_id, to_agent_id);
+                    let dm_data = dm_data.clone();
+                    let mut out_dm = dm_data.clone();
+                    out_dm.to_agent_id = dm_data.from_agent_id;
+                    out_dm.from_agent_id = dm_data.to_agent_id;
+                    self.send_wire(WireMessage::Lib3hToClientResponse(
+                        span_wrap
+                            .swapped(Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm)),
+                    ));
+                }
+                Lib3hToClient::SendDirectMessageResult(dm_data) => {
+                    let res = self.pending_dms.remove(&dm_data.request_id);
+                    if res.is_none() {
+                        panic!("invalid dm.request_id")
+                    }
+                    let res = res.unwrap();
+                    logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
+                }
+                e @ _ => panic!("unexpected: {:?}", e),
+            },
             e @ _ => panic!("unexpected: {:?}", e),
         }
     }
@@ -576,7 +587,8 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
+            // TODO: set up tracer here if we want to examine traces of stress runs
+            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()), None);
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);

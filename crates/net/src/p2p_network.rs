@@ -247,9 +247,9 @@ mod tests {
 
         handler
             .to_owned()
-            .handle(Ok(Lib3hServerProtocol::P2pReady))
+            .handle(Ok(ht::test_span().wrap(Lib3hServerProtocol::P2pReady).into()))
             .unwrap();
-        res.send(Lib3hClientProtocol::Connect(connect_data))
+        res.send(ht::test_span().wrap(Lib3hClientProtocol::Connect(connect_data)).into())
             .unwrap();
         res.stop();
     }

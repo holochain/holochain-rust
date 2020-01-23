@@ -183,6 +183,7 @@ mod tests {
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
         data_types::GenericResultData,
+        protocol_server::Lib3hServerProtocol,
         types::{AgentPubKey, SpaceHash},
     };
 
@@ -195,21 +196,21 @@ mod tests {
     }
 
     fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocolWrapped {
-        Lib3hServerProtocolWrapped::SuccessResult(GenericResultData {
+        ht::test_wrap_enc(Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: AgentPubKey::from("test-agent"),
             result_info: result_info.clone().into(),
-        })
+        }))
     }
 
     fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocolWrapped {
-        Lib3hClientProtocolWrapped::SuccessResult(GenericResultData {
+        ht::test_wrap_enc(Lib3hClientProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: AgentPubKey::from("test-agent"),
             result_info: result_info.into(),
-        })
+        }))
     }
 
     #[test]
@@ -236,9 +237,9 @@ mod tests {
             Ok(true)
         }
 
-        fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
-            match data {
-                Lib3hClientProtocolWrapped::SuccessResult(data) => self
+        fn receive(&mut self, msg: Lib3hClientProtocolWrapped) -> NetResult<()> {
+            match msg.data {
+                Lib3hClientProtocol::SuccessResult(data) => self
                     .handler
                     .handle(Ok(success_server_result(&*data.result_info))),
                 msg => panic!("unexpected client protocol message in receive: {:?}", msg),
@@ -271,8 +272,8 @@ mod tests {
         loop {
             let tmp = receiver.recv().unwrap();
 
-            match tmp {
-                Lib3hServerProtocolWrapped::SuccessResult(generic_data) => {
+            match tmp.data {
+                Lib3hServerProtocol::SuccessResult(generic_data) => {
                     if generic_data.result_info == "tick".to_string().into_bytes().into() {
                         continue;
                     } else {
@@ -304,8 +305,8 @@ mod tests {
 
         let res = receiver.recv().unwrap();
 
-        match res {
-            Lib3hServerProtocolWrapped::SuccessResult(generic_data) => {
+        match res.data {
+            Lib3hServerProtocol::SuccessResult(generic_data) => {
                 assert_eq!("tick".to_string().into_bytes(), *generic_data.result_info)
             }
             msg => panic!("unexpected message received: {:?}", msg),

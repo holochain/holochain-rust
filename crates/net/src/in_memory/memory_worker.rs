@@ -189,7 +189,7 @@ mod tests {
         let mut memory_worker_1 = Box::new(
             InMemoryWorker::new(
                 NetHandler::new(Box::new(move |r| {
-                    handler_send_1.send(r?)?;
+                    handler_send_1.send(r?.data)?;
                     Ok(())
                 })),
                 memory_config,
@@ -206,11 +206,13 @@ mod tests {
         });
         // First Track
         memory_worker_1
-            .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
-                request_id: "test_req1".to_string(),
-                space_address: example_dna_address().into(),
-                agent_id: AgentPubKey::from(AGENT_ID_1),
-            }))
+            .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(
+                SpaceData {
+                    request_id: "test_req1".to_string(),
+                    space_address: example_dna_address().into(),
+                    agent_id: AgentPubKey::from(AGENT_ID_1),
+                },
+            )))
             .unwrap();
 
         // Should receive PeerConnected
@@ -219,11 +221,13 @@ mod tests {
 
         // Second Track
         memory_worker_1
-            .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
-                request_id: "test_req2".to_string(),
-                space_address: example_dna_address().into(),
-                agent_id: AgentPubKey::from(AGENT_ID_1),
-            }))
+            .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(
+                SpaceData {
+                    request_id: "test_req2".to_string(),
+                    space_address: example_dna_address().into(),
+                    agent_id: AgentPubKey::from(AGENT_ID_1),
+                },
+            )))
             .unwrap();
 
         memory_worker_1.tick().unwrap();

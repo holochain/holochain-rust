@@ -16,7 +16,7 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         .call_data()
         .ok()
         .map(|d| d.context.tracer.span("hdk invoke_send").start().into())
-        .unwrap_or_else(|| ht::noop("hdk invoke_send no context".to_string()));
+        .unwrap_or_else(|| ht::noop("hdk invoke_send no context"));
     let _trace_guard = ht::push_span(span);
     let call_data = runtime.call_data()?;
     // deserialize args

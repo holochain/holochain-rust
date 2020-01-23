@@ -1,5 +1,6 @@
 extern crate crossbeam_channel;
 extern crate num_cpus;
+extern crate holochain_tracing as ht;
 
 use std::{
     collections::BTreeMap,

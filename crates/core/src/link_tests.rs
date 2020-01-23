@@ -59,7 +59,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         instance
-            .process_action(&commit_action, &context)
+            .process_action(&ht::test_wrap(commit_action), &context)
             .expect("process_action should run without error");
         // Check if LinkEntry is found
         assert!(instance
@@ -87,7 +87,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         instance
-            .process_action(&commit_action, &context)
+            .process_action(&ht::test_wrap(commit_action), &context)
             .expect("process_action should run without error");
         // Check if LinkEntry is found
         assert!(instance

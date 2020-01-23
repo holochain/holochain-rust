@@ -1783,6 +1783,7 @@ dependencies = [
  "crossbeam-channel",
  "env_logger 0.6.1",
  "hcid",
+ "holochain_tracing",
  "in_stream",
  "lib3h_crypto_api",
  "lib3h_protocol",

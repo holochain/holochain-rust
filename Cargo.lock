@@ -1377,7 +1377,6 @@ dependencies = [
  "holochain_net 0.0.42-alpha5",
  "holochain_persistence_api 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_persistence_file 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
- "holochain_persistence_lmdb 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_persistence_mem 0.0.13 (git+https://github.com/holochain/holochain-persistence?branch=transactional)",
  "holochain_tracing_macros 0.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.42-alpha5",

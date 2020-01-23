@@ -19,6 +19,7 @@ pub struct KeyBundle {
     pub enc_keys: EncryptingKeyPair,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl KeyBundle {
     /// create a new KeyBundle
     pub fn new(sign_keys: SigningKeyPair, enc_keys: EncryptingKeyPair) -> HcResult<Self> {

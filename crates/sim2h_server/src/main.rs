@@ -1,5 +1,6 @@
 extern crate crossbeam_channel;
 extern crate lib3h_sodium;
+extern crate newrelic;
 extern crate structopt;
 #[macro_use]
 extern crate log;
@@ -9,7 +10,8 @@ extern crate holochain_tracing as ht;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::error;
+use log::{error, warn};
+use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
@@ -48,9 +50,13 @@ struct Cli {
     tracing_name: Option<String>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
+    NewRelicConfig::default()
+        .logging(LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     env_logger::init();
-
     let args = Cli::from_args();
 
     let tracer = if let Some(service_name) = args.tracing_name {
@@ -86,7 +92,6 @@ fn main() {
             redundant_count: args.sharding,
         });
     }
-
     loop {
         let result = sim2h.process();
         match result {

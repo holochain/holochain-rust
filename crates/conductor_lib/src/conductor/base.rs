@@ -180,6 +180,7 @@ pub fn notify(msg: String) {
 }
 
 #[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
@@ -1577,6 +1578,7 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
 }
 
 #[allow(dead_code)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 fn with_port_heuristic<T, F: FnOnce() -> T>(
     wanted_port: u16,
     find_free_port: bool,
@@ -1592,6 +1594,7 @@ fn with_port_heuristic<T, F: FnOnce() -> T>(
     Ok(try_with_port(port, f))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 fn run_interface(
     interface_config: &InterfaceConfiguration,
     handler: IoHandler,

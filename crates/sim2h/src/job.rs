@@ -13,6 +13,7 @@ impl Default for JobResult {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl JobResult {
     pub(crate) fn done() -> Self {
         Self {

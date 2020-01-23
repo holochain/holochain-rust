@@ -47,6 +47,7 @@ pub struct Sim1hWorker {
     state: Option<Sim1hState>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Sim1hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
@@ -282,6 +283,7 @@ impl Sim1hWorker {
 }
 
 // TODO: DRY this up as it is basically the same as the lib3h engine
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetWorker for Sim1hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine

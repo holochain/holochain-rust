@@ -3,6 +3,7 @@
 
 use crate::ipc::transport_wss::TransportWss;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl TransportWss<std::net::TcpStream> {
     /// convenience constructor for creating a websocket "Transport"
     /// instance that is based of the rust std TcpStream

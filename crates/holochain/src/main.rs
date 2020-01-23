@@ -64,6 +64,7 @@ impl Default for SignalConfiguration {
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 #[cfg_attr(tarpaulin, skip)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn main() {
     let _ = spawn_locksmith_guard_watcher();
 
@@ -157,6 +158,7 @@ fn main() {
 }
 
 #[cfg_attr(tarpaulin, skip)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
@@ -181,6 +183,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
 }
 
 #[cfg_attr(tarpaulin, skip)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;
     let mut contents = String::new();

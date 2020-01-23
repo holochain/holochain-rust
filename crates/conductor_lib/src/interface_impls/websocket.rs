@@ -22,6 +22,7 @@ impl WebsocketInterface {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Interface for WebsocketInterface {
     fn run(
         &mut self,

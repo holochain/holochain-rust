@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
 #[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_link_entries(
     link: &Link,
     context: &Arc<Context>,
@@ -63,6 +64,7 @@ pub struct LinkDefinitionPath {
 /// zomes, entry types and their links and returns the first match.
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn find_link_definition_by_type(
     link_type: &String,
     context: &Arc<Context>,

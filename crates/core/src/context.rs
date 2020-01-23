@@ -108,6 +108,7 @@ pub struct Context {
     pub tracer: Arc<ht::Tracer>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Context {
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.

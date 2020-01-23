@@ -11,6 +11,7 @@ use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol
 use log::{debug, error, info};
 
 #[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);

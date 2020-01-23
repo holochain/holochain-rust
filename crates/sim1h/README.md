@@ -173,7 +173,7 @@ In summary, Sim1h is for "internal use only", whatever that means to you.
 
 ## Usage
 
-Sim1h is available in the v0.0.31 of the [holochain-rust conductor](https://github.com/holochain/holochain-rust)
+Sim1h is available in the v0.0.31 of the #[holochain-rust conductor](https://github.com/holochain/holochain-rust)
 as is a new `sim1h` network type.  Also, there is a nix command to run a local dynamodb instance.
 
 In your conductor config, use the following for the `network` config section:

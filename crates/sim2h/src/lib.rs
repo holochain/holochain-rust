@@ -14,6 +14,7 @@ extern crate lazy_static;
 extern crate holochain_tracing as ht;
 #[macro_use]
 extern crate holochain_tracing_macros;
+extern crate newrelic;
 
 #[allow(dead_code)]
 mod naive_sharding;
@@ -729,6 +730,7 @@ pub struct Sim2h {
 }
 
 #[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Sim2h {
     pub fn new(
         crypto: Box<dyn CryptoSystem>,

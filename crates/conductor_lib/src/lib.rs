@@ -12,7 +12,7 @@
 /// Depending on the specific (application) use-case, the context in which a Holochain instance
 /// is run may vary drastically. Application developers may want to bundle Holochain with
 /// and statically link the core library into their custom made executable.
-/// In such a case, [holochain.rs](conductor_api/src/holochain.rs) may be used directly as a
+/// In such a case, #[holochain.rs](conductor_api/src/holochain.rs) may be used directly as a
 /// wrapper around a single instance.
 ///
 /// In the general case, many different DNAs are being executed alongside each other in the

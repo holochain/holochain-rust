@@ -44,26 +44,7 @@ pub enum WireMessage {
     StatusResponse(StatusData),
 }
 
-// impl PartialEq for WireMessage {
-//     fn eq(&self, other: &Self) -> bool {
-//         use WireMessage::*;
-//         match (self, other) {
-//             (ClientToLib3h(a), ClientToLib3h(b)) => a.data == b.data,
-//             (ClientToLib3hResponse(a), ClientToLib3hResponse(b)) => a.data == b.data,
-//             (Lib3hToClient(a), Lib3hToClient(b)) => a.data == b.data,
-//             (Lib3hToClientResponse(a), Lib3hToClientResponse(b)) => a.data == b.data,
-//             (MultiSend(a), MultiSend(b)) => a.map,
-//             Err(WireError),
-//             Ping,
-//             Pong,
-//             Hello(WireMessageVersion),
-//             HelloResponse(HelloData),
-//             Status,
-//             StatusResponse(StatusData),
-//         }
-//     }
-// }
-
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl WireMessage {
     pub fn message_type(&self) -> String {
         String::from(match self {

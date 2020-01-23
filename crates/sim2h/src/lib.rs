@@ -90,7 +90,9 @@ pub(crate) trait SendExt<T> {
 
 impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     fn f_send(&self, v: T) {
-        self.send(v).expect("failed to send on crossbeam_channel");
+        if let Err(e) = self.send(v) {
+            error!("failed to send on channel -- shutting down? {:?}", e);
+        }
     }
 }
 
@@ -816,13 +818,16 @@ impl Sim2hHandle {
 
     /// forward a message to be handled
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
-        self.send_com
-            .send(Sim2hCom::HandleMessage(Box::new(Sim2hComHandleMessage {
-                uri,
-                message,
-                signer,
-            })))
-            .expect("can send");
+        if let Err(e) =
+            self.send_com
+                .send(Sim2hCom::HandleMessage(Box::new(Sim2hComHandleMessage {
+                    uri,
+                    message,
+                    signer,
+                })))
+        {
+            error!("error sending message to sim2h - shutting down? {:?}", e);
+        }
     }
 
     /// forward a message to an already joined connection to be handled
@@ -897,7 +902,13 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
             //        we can get rid of the `process()` function
             //        and remove this spawn_blocking code
             let sim2h = match tokio::task::spawn_blocking(blocking_fn.take().unwrap()).await {
-                Err(e) => panic!(e),
+                Err(e) => {
+                    // sometimes we get errors on shutdown...
+                    // we can't recover because the sim2h instance is lost
+                    // but don't panic... just exit
+                    error!("sim2h process failed: {:?}", e);
+                    return;
+                }
                 Ok((sim2h, Err(e))) => {
                     if e.to_string().contains("Bind error:") {
                         println!("{:?}", e);
@@ -1297,11 +1308,16 @@ impl Sim2h {
                     // we allow to queue before dropping the connections
                     pending_messages.push(message);
 
+                    // commenting this out...
+                    // I don't think we want core to have to deal with this
+                    // we just haven't finished processing the join yet
+                    /*
                     state.send(
                         signer.clone(),
                         uri.clone(),
                         &WireMessage::Err(WireError::MessageWhileInLimbo),
                     );
+                    */
                 }
             }
             ConnectionState::Joined(space_address, agent_id) => {

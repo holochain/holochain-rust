@@ -196,6 +196,20 @@ pub fn main() {
 
     let mut rt = run_sim2h(sim2h);
     rt.block_on(async move {
+        std::thread::spawn(|| {
+            loop {
+                warn!("1 second tick - hardware");
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+        });
+
+        tokio::task::spawn(async move {
+            loop {
+                warn!("1 second tick - tokio");
+                tokio::time::delay_for(std::time::Duration::from_secs(1)).await;
+            }
+        });
+
         info!("bound sim2h to {}", bound_uri);
 
         // wait 'till server is accepting connections.
@@ -214,7 +228,9 @@ pub fn main() {
 
             let cbound_uri = bound_uri.clone();
             tokio::task::spawn(async move {
-                let mut job = Job::new(&cbound_uri);
+                let mut job = tokio::task::spawn_blocking(move || {
+                    Job::new(&cbound_uri)
+                }).await.unwrap();
                 loop {
                     job.tick();
                     tokio::time::delay_for(std::time::Duration::from_millis(100)).await;

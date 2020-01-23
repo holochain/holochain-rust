@@ -56,9 +56,11 @@ use std::{
 };
 
 use holochain_locksmith::Mutex;
+/*
 use holochain_metrics::{
     config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
 };
+*/
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -106,6 +108,23 @@ fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
     debug!("connection event open_conns: {} for {}@{}", desc, uuid, uri);
 }
 
+struct KillTimer(String, std::time::Instant);
+
+impl KillTimer {
+    pub fn new(tag: &str) -> Self {
+        Self(tag.to_string(), std::time::Instant::now())
+    }
+}
+
+impl Drop for KillTimer {
+    fn drop(&mut self) {
+        let ms = self.1.elapsed().as_millis();
+        if ms > 3 {
+            error!("KT {} {} ms", self.0, ms);
+        }
+    }
+}
+
 //pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
 //pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
 pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
@@ -125,7 +144,7 @@ struct Sim2hState {
     connection_states: HashMap<Lib3hUri, ConnectionStateItem>,
     open_connections: HashMap<Lib3hUri, OpenConnectionItem>,
     spaces: HashMap<SpaceHash, Space>,
-    metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
+    //metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
 }
 
 type ConnectionStateItem = (String, ConnectionState);
@@ -139,14 +158,14 @@ struct OpenConnectionItem {
 impl Sim2hState {
     // find out if an agent is in a space or not and return its URI
     fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        with_latency_publishing!("sim2h-state-lookup_joined", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-state-lookup_joined", self.metric_publisher, || {
             self.spaces.get(space_address)?.agent_id_to_uri(agent_id)
-        })
+        //})
     }
 
     // removes an agent from a space
     fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
             if let Some((uuid, state)) = self.get_connection(uri) {
                 conn_lifecycle("leave -> disconnect", &uuid, &state, uri);
                 if let ConnectionState::Joined(space_address, agent_id) = state {
@@ -162,7 +181,7 @@ impl Sim2hState {
             } else {
                 Err(format!("no agent found at {} ", &uri).into())
             }
-        })
+        //})
     }
 
     fn get_space(&self, space_address: &SpaceHash) -> &Space {
@@ -178,7 +197,7 @@ impl Sim2hState {
     }
 
     fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &mut Space {
-        let clock = std::time::SystemTime::now();
+        //let clock = std::time::SystemTime::now();
         let contains_space = self.spaces.contains_key(space_address);
         if !contains_space {
             self.spaces
@@ -189,6 +208,7 @@ impl Sim2hState {
             );
         }
         let space = self.spaces.get_mut(space_address).unwrap();
+        /*
         self.metric_publisher
             .write()
             .unwrap()
@@ -197,11 +217,12 @@ impl Sim2hState {
                 None,
                 clock.elapsed().unwrap().as_millis() as f64,
             ));
+        */
         space
     }
     // removes a uri from connection and from spaces
     fn disconnect(&mut self, uri: &Lib3hUri) {
-        with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-disconnnect", self.metric_publisher, || {
             trace!("disconnect entered");
 
             if let Some(OpenConnectionItem {
@@ -226,7 +247,7 @@ impl Sim2hState {
                 }
             }
             trace!("disconnect done");
-        })
+        //})
     }
 
     fn join_agent(
@@ -288,10 +309,12 @@ impl Sim2hState {
         space_address: SpaceHash,
         provider_agent_id: AgentId,
     ) {
+        /*
         with_latency_publishing!(
             "sim2h-request_gossiping_list",
             self.metric_publisher,
             || {
+            */
                 let wire_message = WireMessage::Lib3hToClient(
                     Lib3hToClient::HandleGetGossipingEntryList(GetListData {
                         request_id: "".into(),
@@ -300,8 +323,8 @@ impl Sim2hState {
                     }),
                 );
                 self.send(provider_agent_id, uri, &wire_message);
-            }
-        )
+            //}
+        //)
     }
 
     fn request_authoring_list(
@@ -310,10 +333,12 @@ impl Sim2hState {
         space_address: SpaceHash,
         provider_agent_id: AgentId,
     ) {
+        /*
         with_latency_publishing!(
             "sim2h-request_authoring_list",
             self.metric_publisher,
             || {
+            */
                 let wire_message = WireMessage::Lib3hToClient(
                     Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
                         request_id: "".into(),
@@ -322,12 +347,12 @@ impl Sim2hState {
                     }),
                 );
                 self.send(provider_agent_id, uri, &wire_message);
-            }
-        )
+            //}
+        //)
     }
 
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Vec<Lib3hUri> {
-        with_latency_publishing!("sim2h-send", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-send", self.metric_publisher, || {
             match msg {
                 _ => {
                     debug!(">>OUT>> {} to {}", msg.message_type(), uri);
@@ -385,14 +410,16 @@ impl Sim2hState {
             }
 
             return to_disconnect;
-        })
+        //})
     }
 
     fn retry_sync_missing_aspects(&mut self) {
+        /*
         with_latency_publishing!(
             "sim2h-retry_sync_missing_aspects",
             self.metric_publisher,
             || {
+        */
                 debug!("Checking for nodes with missing aspects to retry sync...");
                 // Extract all needed info for the call to self.request_gossiping_list() below
                 // as copies so we don't have to keep a reference to self.
@@ -428,8 +455,8 @@ impl Sim2hState {
                         self.request_gossiping_list(uri, space_hash.clone(), agent_id);
                     }
                 }
-            }
-        )
+            //}
+        //)
     }
 
     /// Get an agent who has at least one of the aspects specified, and who is not the same as for_agent_id.
@@ -511,10 +538,12 @@ impl Sim2hState {
         mut agent_pool: Vec<AgentId>,
         space_address: SpaceHash,
     ) -> Vec<Lib3hUri> {
+        /*
         with_latency_publishing!(
             "sim2h-build_aspects_from_arbitrary_agent",
             self.metric_publisher,
             || {
+            */
                 let agent_pool = &mut agent_pool[..];
                 agent_pool.shuffle(&mut thread_rng());
                 let mut disconnects = Vec::new();
@@ -560,15 +589,15 @@ impl Sim2hState {
                     }
                 }
                 disconnects
-            }
-        )
+            //}
+        //)
     }
 
     // get the connection status of an agent
     fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
-        with_latency_publishing!("sim2h-state-get_connection", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-state-get_connection", self.metric_publisher, || {
             self.connection_states.get(uri).map(|ca| (*ca).clone())
-        })
+        //})
     }
 
     fn build_handle_unseen_aspects(
@@ -578,10 +607,12 @@ impl Sim2hState {
         agent_id: AgentId,
         list_data: EntryListData,
     ) -> Vec<Lib3hUri> {
+        /*
         with_latency_publishing!(
             "sim2h-build-handle-unseen_aspects",
             self.metric_publisher,
             || {
+        */
                 let unseen_aspects = AspectList::from(list_data.address_map)
                     .diff(self.get_space(&space_address).all_aspects());
                 let mut disconnects = Vec::new();
@@ -609,8 +640,8 @@ impl Sim2hState {
                     debug!("NO UNSEEN ASPECTS")
                 }
                 disconnects
-            }
-        )
+            //}
+        //)
     }
 
     async fn handle_new_entry_data(
@@ -674,12 +705,12 @@ impl Sim2hState {
     }
 
     fn broadcast(&mut self, msg: &WireMessage, agents: Vec<(AgentId, AgentInfo)>) {
-        with_latency_publishing!("sim2h-broadcast", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-broadcast", self.metric_publisher, || {
             for (agent, info) in agents {
                 debug!("Broadcast: Sending to {:?}", info.uri);
                 self.send(agent, info.uri, msg);
             }
-        })
+        //})
     }
 
     fn all_agents_except_one(
@@ -892,7 +923,7 @@ pub struct Sim2h {
     dht_algorithm: DhtAlgorithm,
     recv_com: tokio::sync::mpsc::UnboundedReceiver<Sim2hCom>,
     sim2h_handle: Sim2hHandle,
-    metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
+    //metric_publisher: std::sync::Arc<holochain_locksmith::RwLock<dyn MetricPublisher>>,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
@@ -908,13 +939,13 @@ impl Sim2h {
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let (msg_send, msg_recv) = crossbeam_channel::unbounded();
-        let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
+        //let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
         let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
             open_connections: HashMap::new(),
             spaces: HashMap::new(),
-            metric_publisher: metric_publisher.clone(),
+            //metric_publisher: metric_publisher.clone(),
         }));
         let (send_com, recv_com) = tokio::sync::mpsc::unbounded_channel();
         let sim2h_handle = Sim2hHandle::new(state, send_com, dht_algorithm.clone());
@@ -939,7 +970,7 @@ impl Sim2h {
             dht_algorithm,
             recv_com,
             sim2h_handle,
-            metric_publisher,
+            //metric_publisher,
         };
 
         //sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
@@ -970,10 +1001,12 @@ impl Sim2h {
 
     /// if our listening socket has accepted any new connections, set them up
     fn priv_check_incoming_connections(&mut self) -> bool {
+        /*
         with_latency_publishing!(
             "sim2h-priv_check_incoming_connections",
             self.metric_publisher,
             || {
+            */
                 let mut did_work = false;
                 let mut wss_list = Vec::new();
                 for _ in 0..100 {
@@ -1035,8 +1068,8 @@ impl Sim2h {
                     });
                 }
                 did_work
-            }
-        )
+            //}
+        //)
     }
 
     /// we received some kind of error related to a stream/socket
@@ -1051,10 +1084,12 @@ impl Sim2h {
 
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) -> bool {
+        /*
         with_latency_publishing!(
             "sim2h-priv_check_incoming_messages",
             self.metric_publisher,
             || {
+            */
                 let len = self.msg_recv.len();
                 if len > 0 {
                     debug!("Handling {} incoming messages", len);
@@ -1089,8 +1124,8 @@ impl Sim2h {
                     }
                 }
                 false
-            }
-        )
+            //}
+        //)
     }
 
     // adds an agent to a space
@@ -1172,7 +1207,7 @@ impl Sim2h {
         message: WireMessage,
         signer: AgentId,
     ) -> Sim2hResult<()> {
-        with_latency_publishing!("sim2h-handle_messsage", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-handle_messsage", self.metric_publisher, || {
             trace!("handle_message entered for {}", uri);
 
             MESSAGE_LOGGER
@@ -1245,7 +1280,7 @@ impl Sim2h {
                 signer,
             ));
             Ok(())
-        })
+        //})
     }
 
     async fn handle_connection_msg(
@@ -1323,7 +1358,7 @@ impl Sim2h {
 
     // process transport and  incoming messages from it
     pub fn process(&mut self) -> Sim2hResult<bool> {
-        with_latency_publishing!("sim2h-process", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-process", self.metric_publisher, || {
             if self.bound_listener.is_some() {
                 let mut listen = self.bound_listener.take().unwrap();
                 let wss_send = self.wss_send.clone();
@@ -1416,7 +1451,7 @@ impl Sim2h {
             }
 
             Ok(did_work)
-        })
+        //})
     }
 
     // given an incoming messages, prepare a proxy message and whether it's an publish or request
@@ -1428,7 +1463,7 @@ impl Sim2h {
         agent_id: AgentId,
         message: WireMessage,
     ) -> Sim2hResult<()> {
-        with_latency_publishing!("sim2h-joined", self.metric_publisher, || {
+        //with_latency_publishing!("sim2h-joined", self.metric_publisher, || {
             trace!("handle_joined entered");
             debug!(
                 "<<IN<< {} from {}",
@@ -1726,7 +1761,7 @@ impl Sim2h {
                 Err(format!("Message not implemented: {:?}", message).into())
             }
         }
-        })
+        //})
     }
 
     fn handle_unseen_aspects(

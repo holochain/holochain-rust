@@ -168,7 +168,12 @@ impl Drop for MetricsTimer {
         } else if elapsed >= 10.0 {
             info!("metric - {} - {} ms", self.tag, elapsed);
         }
-        self.sender.send((self.tag, elapsed)).unwrap();
+        if let Err(e) = self.sender.send((self.tag, elapsed)) {
+            error!(
+                "failed to send metric - shutting down? {} {:?}",
+                self.tag, e
+            );
+        }
     }
 }
 

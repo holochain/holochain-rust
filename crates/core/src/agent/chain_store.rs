@@ -211,6 +211,16 @@ pub struct ChainStoreIterator {
     current: Option<ChainHeader>,
 }
 
+use holochain_persistence_api::{
+    error::PersistenceResult,
+    txn::{CursorDyn, CursorProviderDyn},
+};
+impl CursorProviderDyn<Attribute> for ChainStore {
+    fn create_cursor(&self) -> PersistenceResult<Box<dyn CursorDyn<Attribute>>> {
+        self.persistence_manager.create_cursor()
+    }
+}
+
 impl ChainStoreIterator {
     pub fn new(
         persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,

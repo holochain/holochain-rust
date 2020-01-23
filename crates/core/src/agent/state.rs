@@ -1,14 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::{ChainStore, ChainStoreIterator},
+    content_store::GetContent,
     network::entry_with_header::EntryWithHeader,
-    state::State,
-};
-use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
-
-use crate::{
-    content_store::{AddContent, GetContent},
-    state::{ActionResponse, StateWrapper, ACTION_PRUNE_MS},
+    state::{ActionResponse, State, StateWrapper, ACTION_PRUNE_MS},
 };
 use bitflags::_core::time::Duration;
 use holochain_core_types::{
@@ -22,6 +17,10 @@ use holochain_core_types::{
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
+};
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent, Content},
+    txn::CursorProviderDyn,
 };
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
 use im::HashMap;
@@ -278,8 +277,10 @@ fn reduce_commit_entry(
         provenances,
     )
     .and_then(|chain_header| {
-        agent_state.chain_store.add(entry)?;
-        agent_state.chain_store.add(&chain_header)?;
+        let cursor = agent_state.chain_store.create_cursor()?;
+        cursor.add(entry)?;
+        cursor.add(&chain_header)?;
+        cursor.commit()?;
         Ok((chain_header, entry.address()))
     })
     .and_then(|(chain_header, address)| {

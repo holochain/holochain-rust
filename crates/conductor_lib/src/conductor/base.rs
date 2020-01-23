@@ -112,6 +112,8 @@ pub fn mount_conductor_from_config(config: Configuration) {
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
     instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,
+    trace_reporters:
+        Arc<RwLock<HashMap<String, (Receiver<ht::FinishedSpan>, ht::reporter::JaegerCompactReporter)>>>,
     agent_keys: HashMap<String, Arc<Mutex<Keystore>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
@@ -131,7 +133,6 @@ pub struct Conductor {
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
     // TODO: remove this when n3h gets deprecated
     n3h_keepalive_network: Option<P2pNetwork>, // hack needed so that n3h process stays alive even if all instances get shutdown.
-    tracer: Option<ht::Tracer>,
 }
 
 impl Drop for Conductor {
@@ -226,35 +227,10 @@ impl Conductor {
                 }
             };
 
-        // Tracer config:
-        let tracer = match config.tracing.clone() {
-            TracingConfiguration::Jaeger(jaeger_config) => {
-                let (span_tx, span_rx) = crossbeam_channel::unbounded();
-                let _ = thread::Builder::new()
-                    .name("tracer_loop".to_string())
-                    .spawn(move || {
-                        info!("Tracer loop started.");
-                        // TODO: killswitch
-                        let mut reporter = ht::reporter::JaegerBinaryReporter::new(&jaeger_config.service_name).unwrap();
-                        if let Some(s) = jaeger_config.socket_address {
-                            let addr = std::net::SocketAddr::from_str(&s)
-                                .expect("Could not parse socket address");
-                            reporter
-                                .set_agent_addr(addr)
-                                .expect("Could not set Jaeger socket address");
-                        }
-                        for span in span_rx {
-                            reporter.report(&[span]).expect("could not report span");
-                        }
-                    });
-                Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
-            }
-            TracingConfiguration::None => None,
-        };
-
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
+            trace_reporters: Arc::new(RwLock::new(HashMap::new())),
             agent_keys: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
@@ -273,7 +249,6 @@ impl Conductor {
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
             n3h_keepalive_network: None,
-            tracer,
         }
     }
 
@@ -465,6 +440,22 @@ impl Conductor {
             .expect("Must be able to spawn thread")
     }
 
+    pub fn spawn_trace_reporter_thread(&mut self) -> thread::JoinHandle<()> {
+        let reporters = self.trace_reporters.clone();
+        thread::Builder::new()
+            .name("signal_multiplexer".to_string())
+            .spawn(move || loop {
+                // TODO: try using crossbeam Select?
+                for (rx, reporter) in reporters.read().unwrap().values() {
+                    if let Ok(span) = rx.try_recv() {
+                        reporter.report(&[span]).expect("could not report span");
+                    }
+                }
+                thread::sleep(Duration::from_millis(1));
+            })
+            .expect("Must be able to spawn thread")
+    }
+
     pub fn stop_stats_thread(&self) {
         self.stats_thread_kill_switch
             .as_ref()
@@ -585,6 +576,8 @@ impl Conductor {
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
         notify("Start all instances".to_string());
+        // TODO: how to stop?
+        self.spawn_trace_reporter_thread();
         self.config
             .instances
             .iter()
@@ -872,17 +865,47 @@ impl Conductor {
         Ok(())
     }
 
+    fn build_tracer_and_reporter_for_instance(
+        &self,
+        id: &str,
+    ) -> Option<(
+        ht::Tracer,
+        Receiver<ht::FinishedSpan>,
+        ht::reporter::JaegerCompactReporter,
+    )> {
+        match self.config.tracing.clone() {
+            TracingConfiguration::Jaeger(jaeger_config) => {
+                let (span_tx, span_rx) = crossbeam_channel::unbounded();
+                let service_name = format!("{}-{}", jaeger_config.service_name, id);
+                let mut reporter = ht::reporter::JaegerCompactReporter::new(&service_name).unwrap();
+                if let Some(s) = jaeger_config.socket_address {
+                    let addr =
+                        std::net::SocketAddr::from_str(&s).expect("Could not parse socket address");
+                    reporter
+                        .set_agent_addr(addr)
+                        .expect("Could not set Jaeger socket address");
+                }
+                Some((
+                    ht::Tracer::with_sender(ht::AllSampler, span_tx),
+                    span_rx,
+                    reporter,
+                ))
+            }
+            TracingConfiguration::None => None,
+        }
+    }
+
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(&mut self, id: &String) -> Result<Holochain, String> {
         self.config.check_consistency(&mut self.dna_loader)?;
-
         self.config
             .instance_by_id(&id)
             .ok_or_else(|| String::from("Instance not found in config"))
             .and_then(|instance_config| {
                 // Build context:
                 let mut context_builder = ContextBuilder::new();
+                let instance_name = instance_config.id.clone();
 
                 // Agent:
                 let agent_id = &instance_config.agent;
@@ -906,11 +929,13 @@ impl Conductor {
                 self.instance_signal_receivers
                 .write()
                 .unwrap()
-                .insert(instance_config.id.clone(), receiver);
+                .insert(instance_name.clone(), receiver);
+
                 context_builder = context_builder.with_signals(sender);
 
-                if let Some(tracer) = self.tracer.clone() {
+                if let Some((tracer, span_rx, reporter)) = self.build_tracer_and_reporter_for_instance(&instance_name) {
                     context_builder = context_builder.with_tracer(tracer);
+                    self.trace_reporters.write().unwrap().insert(instance_name.clone(), (span_rx, reporter));
                 }
 
                 // Storage:
@@ -942,7 +967,6 @@ impl Conductor {
                     }
                 }
 
-                let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id)?;
                 context_builder = context_builder.with_conductor_api(api);
@@ -1843,8 +1867,7 @@ pub mod tests {
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml(8888, 8889)).unwrap();
-        let mut conductor =
-            Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
+        let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
         conductor.key_loader = test_key_loader();
         conductor.boot_from_config().unwrap();

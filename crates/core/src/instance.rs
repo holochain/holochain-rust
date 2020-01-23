@@ -255,7 +255,16 @@ impl Instance {
         action_wrapper: &ht::SpanWrap<ActionWrapper>,
         context: &Arc<Context>,
     ) -> Result<(), HolochainError> {
-        let span = action_wrapper.follower_or_null(&context.tracer, "begin process_action");
+        let span = action_wrapper
+            .follower(&context.tracer, "begin process_action")
+            .unwrap_or_else(|| {
+                context
+                    .tracer
+                    .span("ROOT: process_action")
+                    .tag(ht::debug_tag("action_wrapper", action_wrapper))
+                    .start()
+                    .into()
+            });
         let _trace_guard = ht::push_span(span);
         context.redux_wants_write.store(true, Relaxed);
         // Mutate state

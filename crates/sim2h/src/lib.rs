@@ -45,6 +45,7 @@ pub use wire_message::{
     HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
 };
 
+//use futures::stream::StreamExt;
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
@@ -816,6 +817,28 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
         .expect("can build tokio runtime");
 
     rt.spawn(async move {
+        /*
+        tokio::task::spawn(async move {
+            let mut listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+                .await
+                .expect("failed to bind");
+            warn!("TT BOUND TO: {:?}", listener.local_addr());
+            while let Ok((stream, addr)) = listener.accept().await {
+                let stream: tokio::net::TcpStream = stream;
+                tokio::task::spawn(async move {
+                    warn!("GOT TT CONNECTION: {:?}", addr);
+                    let ws_stream = tokio_tungstenite::accept_async(stream)
+                        .await
+                        .expect("failed to handshake websocket");
+                    let (write, read) = ws_stream.split();
+                    read.forward(write)
+                        .await
+                        .expect("failed to forward message")
+                });
+            }
+        });
+        */
+
         let gen_blocking_fn = move |mut sim2h: Sim2h| {
             move || {
                 let res = sim2h.process();
@@ -935,40 +958,50 @@ impl Sim2h {
             "sim2h-priv_check_incoming_connections",
             self.metric_publisher,
             || {
-                if let Ok(wss) = self.wss_recv.try_recv() {
+                let mut did_work = false;
+                let mut wss_list = Vec::new();
+                for _ in 0..100 {
+                    if let Ok(wss) = self.wss_recv.try_recv() {
+                        did_work = true;
+                        wss_list.push(wss);
+                    } else {
+                        break;
+                    }
+                }
+                if !wss_list.is_empty() {
                     let job_send = self.pool.get_push_job_handle();
                     let msg_send = self.msg_send.clone();
                     let sim2h_handle = self.sim2h_handle.clone();
                     tokio::task::spawn(async move {
-                        let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-                        let uuid = nanoid::simple();
-                        open_lifecycle("adding conn job", &uuid, &url);
-
-                        let (job, outgoing_send) = ConnectionJob::new(wss, msg_send);
-                        let job = Arc::new(Mutex::new(job));
-
-                        job_send.send(Box::new(job.clone())).expect("send fail");
-
                         let mut state = sim2h_handle.lock_state().await;
 
-                        state
-                            .connection_states
-                            .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
+                        for wss in wss_list.drain(..) {
+                            let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+                            let uuid = nanoid::simple();
+                            open_lifecycle("adding conn job", &uuid, &url);
 
-                        state.open_connections.insert(
-                            url,
-                            OpenConnectionItem {
-                                version: 1, // assume version 1 until we get a Hello
-                                uuid,
-                                job,
-                                sender: outgoing_send,
-                            },
-                        );
+                            let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
+                            let job = Arc::new(Mutex::new(job));
+
+                            job_send.send(Box::new(job.clone())).expect("send fail");
+
+                            state
+                                .connection_states
+                                .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
+
+                            state.open_connections.insert(
+                                url,
+                                OpenConnectionItem {
+                                    version: 1, // assume version 1 until we get a Hello
+                                    uuid,
+                                    job,
+                                    sender: outgoing_send,
+                                },
+                            );
+                        }
                     });
-                    true
-                } else {
-                    false
                 }
+                did_work
             }
         )
     }

@@ -15,7 +15,7 @@ use url2::prelude::*;
 //fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
 fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
     let timeout = std::time::Instant::now()
-        .checked_add(std::time::Duration::from_millis(20000))
+        .checked_add(std::time::Duration::from_millis(5000))
         .unwrap();
 
     let mut read_frame = WsFrame::default();
@@ -200,6 +200,9 @@ pub fn main() {
 
         // wait 'till server is accepting connections.
         await_in_stream_connect(&bound_uri);
+
+        //let mut job = Job::new(&bound_uri);
+        //job.tick();
 
         info!("CONNECTED, starting max_connection test");
 

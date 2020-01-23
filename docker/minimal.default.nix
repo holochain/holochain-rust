@@ -5,6 +5,7 @@ let
   sha256 = config.holonix.github.sha256;
   }) { };
  shell-config = {
+  LIBCLANG_PATH="${holonix.pkgs.llvmPackages.libclang}/lib";
 
  # needed for newrelic to compile its dependencies
  # this is a hack to workaround this:
@@ -12,8 +13,7 @@ let
  hardeningDisable = [ "fortify" ];
   CARGO_HOME = "/holochain/.cargo";
   name = "dev-shell";
-  buildInputs = [
-      pcre-config
+  buildInputs = [ holonix.pkgs.pcre
   ]
   ++ holonix.rust.buildInputs
   ;

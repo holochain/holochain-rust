@@ -352,18 +352,11 @@ pub mod tests {
         entry::{test_entry, test_entry_a, test_entry_b, test_entry_c},
     };
 
-    use holochain_persistence_api::{
-        cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
-    };
-
     #[test]
     fn get_headers_roundtrip() {
-        let mut store = DhtStore::new(
-            Arc::new(RwLock::new(
-                ExampleContentAddressableStorage::new().unwrap(),
-            )),
-            Arc::new(RwLock::new(ExampleEntityAttributeValueStorage::new())),
-        );
+        let mut store = DhtStore::new(Arc::new(
+            holochain_persistence_api::txn::new_example_persistence_manager().unwrap(),
+        ));
         let entry = test_entry();
         let header1 = test_chain_header_with_sig("sig1");
         let header2 = test_chain_header_with_sig("sig2");

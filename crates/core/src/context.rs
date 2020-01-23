@@ -169,10 +169,10 @@ impl Context {
         instance_name: &str,
         agent_id: AgentId,
         persister: Arc<RwLock<dyn Persister>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         action_channel: Option<Sender<ActionWrapper>>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
-        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         p2p_config: P2pConfig,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
@@ -459,32 +459,25 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 
 #[cfg(test)]
 pub mod tests {
-    use self::tempfile::tempdir;
     use super::*;
     use crate::persister::SimplePersister;
     use holochain_core_types::agent::AgentId;
     use holochain_locksmith::RwLock;
-    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::Arc;
-    use tempfile;
 
     #[test]
     fn context_log_macro_test_from_context() {
         use crate::*;
 
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
+        let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
+
         let ctx = Context::new(
             "LOG-TEST-ID",
             AgentId::generate_fake("Bilbo"),
-            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
+            Arc::new(RwLock::new(SimplePersister::new(
+                persistence_manager.clone(),
+            ))),
+            persistence_manager.clone(),
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,

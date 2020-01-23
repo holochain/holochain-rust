@@ -306,7 +306,6 @@ impl Iterator for ChainStoreTypeIterator {
 
 #[cfg(test)]
 pub mod tests {
-    use self::tempfile::tempdir;
     use crate::agent::chain_store::{ChainStore, ChainStoreQueryOptions, ChainStoreQueryResult};
     use holochain_core_types::{
         chain_header::{test_chain_header, test_provenances, ChainHeader},
@@ -318,13 +317,10 @@ pub mod tests {
     };
     use holochain_json_api::json::{JsonString, RawString};
     use holochain_persistence_api::cas::content::AddressableContent;
-    use holochain_persistence_file::cas::file::FilesystemStorage;
-    use tempfile;
 
     pub fn test_chain_store() -> ChainStore {
         ChainStore::new(std::sync::Arc::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
-                .expect("could not create chain store"),
+            holochain_persistence_file::txn::default_manager(),
         ))
     }
 
@@ -345,14 +341,14 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.content_storage.clone();
-        (*storage.write().unwrap())
+        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        storage
             .add(&chain_header_a)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_b)
             .expect("could not add header to cas");
-
+        storage.commit().unwrap();
         let expected = vec![chain_header_b.clone(), chain_header_a.clone()];
         let mut found = vec![];
         for chain_header in chain_store.iter(&Some(chain_header_b)) {
@@ -398,8 +394,8 @@ pub mod tests {
         );
 
         for chain_header in vec![&chain_header_a, &chain_header_b, &chain_header_c] {
-            let storage = chain_store.content_storage.clone();
-            (*storage.write().unwrap())
+            let storage = chain_store.persistence_manager.cas();
+            storage
                 .add(chain_header)
                 .expect("could not add header to cas");
         }
@@ -495,23 +491,23 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.content_storage.clone();
-        (*storage.write().unwrap())
+        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        storage
             .add(&chain_header_a)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_b)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_c)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_d)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_e)
             .expect("could not add header to cas");
-
+        storage.commit().unwrap();
         // First, lets see if we can find the EntryType "testEntryTypeB" Entries
         let found = match chain_store
             .query(
@@ -658,15 +654,18 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        (*storage.write().unwrap())
+
+        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        storage
             .add(&chain_header_f)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_g)
             .expect("could not add header to cas");
-        (*storage.write().unwrap())
+        storage
             .add(&chain_header_h)
             .expect("could not add header to cas");
+        storage.commit().unwrap();
 
         // Multiple complex globs.  The leading '**/' matches 0 or more leading .../ segments, so returns
         let found = match chain_store
@@ -722,9 +721,12 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        (*storage.write().unwrap())
+
+        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        storage
             .add(&chain_header_i)
             .expect("could not add header to cas");
+        storage.commit().unwrap();
 
         // Find EntryTypes which are/not System (start with '%'), and end in 'e'
         let found = match chain_store

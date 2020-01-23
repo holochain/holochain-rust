@@ -52,6 +52,7 @@ impl Persister for SimplePersister {
         cursor.commit()?;
         Ok(())
     }
+
     fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
         let store = self.storage.cas();
 
@@ -114,7 +115,7 @@ mod tests {
         let _tempfile = temp_path.to_str().unwrap();
         let context = test_context_with_agent_state(None);
         File::create(temp_path.clone()).unwrap();
-        let mut persistance = SimplePersister::new(context.dht_storage.clone());
+        let mut persistance = SimplePersister::new(context.persistence_manager.clone());
         let state = context.state().unwrap().clone();
         persistance.save(&state).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();

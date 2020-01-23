@@ -75,6 +75,7 @@ impl ContextBuilder {
 
         let persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>> =
             Arc::new(holochain_persistence_file::txn::new_manager(cas_path, eav_path).unwrap());
+
         self.persistence_manager = Some(persistence_manager);
         Ok(self)
     }

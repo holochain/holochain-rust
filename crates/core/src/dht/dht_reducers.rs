@@ -561,7 +561,7 @@ pub mod tests {
     #[test]
     pub fn test_holding_queue() {
         let context = test_context("test", None);
-        let store = DhtStore::new(context.dht_storage.clone(), context.eav_storage.clone());
+        let store = DhtStore::new(context.persistence_manager.clone());
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();

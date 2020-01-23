@@ -92,7 +92,6 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
 
 #[cfg(test)]
 pub mod test {
-    use self::tempfile::tempdir;
     use super::*;
     use crate::{
         context::Context,
@@ -103,25 +102,19 @@ pub mod test {
     use holochain_locksmith::RwLock;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use serde_json::json;
     use std::sync::Arc;
-    use tempfile;
 
     fn test_context(p2p_config: P2pConfig) -> Arc<Context> {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
+        let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
+
         let mut context = Context::new(
             "Test-context-instance",
             AgentId::generate_fake("Terence"),
-            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
+            Arc::new(RwLock::new(SimplePersister::new(
+                persistence_manager.clone(),
+            ))),
+            persistence_manager.clone(),
             p2p_config,
             None,
             None,

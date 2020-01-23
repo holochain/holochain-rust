@@ -28,7 +28,7 @@ pub struct HelloData {
     pub extra: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireMessage {
     ClientToLib3h(ht::EncodedSpanWrap<ClientToLib3h>),
     ClientToLib3hResponse(ht::EncodedSpanWrap<ClientToLib3hResponse>),

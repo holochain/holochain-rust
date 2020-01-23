@@ -310,6 +310,7 @@ impl Sim2hState {
         )
     }
 
+    #[autotrace]
     fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Vec<Lib3hUri> {
         with_latency_publishing!("sim2h-send", self.metric_publisher, || {
             match msg {
@@ -727,6 +728,7 @@ pub struct Sim2h {
     tracer: ht::Tracer,
 }
 
+#[autotrace]
 impl Sim2h {
     pub fn new(
         crypto: Box<dyn CryptoSystem>,
@@ -1207,7 +1209,8 @@ impl Sim2h {
                 panic!("This is soo wrong. Clients should never send a message that only servers can send."),
             // -- Space -- //
             WireMessage::ClientToLib3h(span_wrap) => {
-                let _span = ht::SpanWrap::from(span_wrap.clone()).follower(&self.tracer, "handle_joined - ClientToLib3h");
+                let span = ht::SpanWrap::from(span_wrap.clone()).follower(&self.tracer, "handle_joined - ClientToLib3h");
+                let _spanguard = span.map(|span| ht::push_span(span));
                 match span_wrap.data.clone() {
                     ClientToLib3h::JoinSpace(_) => Err("join message should have been processed elsewhere and can't be proxied".into()),
                     ClientToLib3h::LeaveSpace(data) => self.state.write().leave(uri, &data),
@@ -1261,7 +1264,8 @@ impl Sim2h {
             }
             // Direct message response
             WireMessage::Lib3hToClientResponse(span_wrap) => {
-                let _span = ht::SpanWrap::from(span_wrap.clone()).follower(&self.tracer, "handle_joined - Lib3hToClientResponse");
+                let span = ht::SpanWrap::from(span_wrap.clone()).follower(&self.tracer, "handle_joined - Lib3hToClientResponse");
+                let _spanguard = span.map(|span| ht::push_span(span));
                 match span_wrap.data.clone() {
                     Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
                         if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
@@ -1430,6 +1434,7 @@ impl Sim2h {
         })
     }
 
+    #[autotrace]
     fn handle_unseen_aspects(
         &self,
         uri: &Lib3hUri,
@@ -1484,6 +1489,7 @@ impl Sim2h {
         self.state.write().disconnect(uri);
     }
 
+    #[autotrace]
     fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         self.state.write().send(agent, uri, msg);
     }

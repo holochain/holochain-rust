@@ -1,9 +1,14 @@
 use crate::{agent::state::create_entry_with_header_for_header, content_store::GetContent};
 use holochain_logging::prelude::*;
+#[autotrace]
 pub mod fetch;
+#[autotrace]
 pub mod lists;
+#[autotrace]
 pub mod query;
+#[autotrace]
 pub mod send;
+#[autotrace]
 pub mod store;
 
 use crate::{

@@ -63,5 +63,6 @@ newrelic="0.2"
 [dev-dependencies]
 wabt = "=0.7.4"
 test_utils = { version = "=0.0.42-alpha5", path = "../../test_utils" }
+holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 tempfile = "=3.0.7"
 sim1h = { version = "=0.0.42-alpha5", path = "../sim1h" }

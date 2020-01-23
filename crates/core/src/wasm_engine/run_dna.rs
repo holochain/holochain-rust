@@ -131,9 +131,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     } {
         Value::I64(runtime_value) => runtime_value,
         _ => {
-            return Err(HolochainError::RibosomeFailed(format!(
-                "WASM return value not I64"
-            )))
+            return Err(HolochainError::RibosomeFailed(
+                "WASM return value not I64".to_string()
+            ))
         }
     } as RibosomeEncodingBits;
 

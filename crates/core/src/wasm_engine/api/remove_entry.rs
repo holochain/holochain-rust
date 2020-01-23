@@ -23,7 +23,6 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, deleted_entry_address: Address
     };
     let maybe_entry_result = runtime
         .context()?
-        .clone()
         .block_on(get_entry_result_workflow(&runtime.context()?, &get_args));
 
     if let Err(err) = maybe_entry_result {
@@ -49,7 +48,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, deleted_entry_address: Address
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address),
-            &runtime.context()?.clone(),
+            &runtime.context()?,
             &vec![],
         ))
         .map(|_| deletion_entry.address());

@@ -12,7 +12,7 @@ use holochain_wasm_utils::api_serialization::send::SendArgs;
 pub fn invoke_send(runtime: &mut Runtime, args: SendArgs) -> ZomeApiResult {
     let message = CustomDirectMessage {
         payload: Ok(args.payload),
-        zome: runtime.call_data()?.zome_name.clone(),
+        zome: runtime.call_data()?.zome_name,
     };
 
     let result = runtime
@@ -21,9 +21,9 @@ pub fn invoke_send(runtime: &mut Runtime, args: SendArgs) -> ZomeApiResult {
             args.to_agent,
             message,
             args.options.0,
-            runtime.context()?.clone(),
+            runtime.context()?,
         ))
-        .map(|s| JsonString::from_json(&String::from(s)));
+        .map(|s| JsonString::from_json(&s));
 
     runtime.store_result(result)
 }

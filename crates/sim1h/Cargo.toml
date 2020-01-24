@@ -17,7 +17,7 @@ rusoto_dynamodb = "0.40.0"
 dynomite = "0.5"
 lib3h_protocol = "=0.0.31"
 detach = "=0.0.19"
-holochain_tracing = "=0.0.13"
+holochain_tracing = "=0.0.14"
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.4.8"
 env_logger = "=0.6.1"

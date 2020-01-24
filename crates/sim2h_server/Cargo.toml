@@ -13,8 +13,8 @@ repository = "https://github.com/holochain/sim2h"
 
 [dependencies]
 crossbeam-channel = "=0.3.8"
-holochain_tracing = "=0.0.13"
-holochain_tracing_macros = "=0.0.13"
+holochain_tracing = "=0.0.14"
+holochain_tracing_macros = "=0.0.14"
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
 newrelic="0.2"
 detach = "=0.0.19"

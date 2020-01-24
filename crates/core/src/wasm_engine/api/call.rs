@@ -46,7 +46,7 @@ pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> ZomeApiResul
     let context = runtime.context()?;
     let result = if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(runtime.context()?, input.clone());
+        let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
         if let Ok(zome_call_data) = runtime.zome_call_data() {
             // Don't allow recursive calls

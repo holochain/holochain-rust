@@ -59,9 +59,9 @@ use std::sync::Arc;
 /// `**/`       Zero or more of any namespace component
 ///
 pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
     // Perform query
-    let agent = runtime
-        .context()?
+    let agent = context
         .state()
         .expect("Couldn't get state in invoke_query")
         .agent();
@@ -106,7 +106,7 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
                 let maybe_entries: Result<Vec<(Address, Entry)>, HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
-                         Ok((address.to_owned(), get_entry_from_chain(&runtime.context()?, address)?)))
+                         Ok((address.to_owned(), get_entry_from_chain(&context, address)?)))
                     .filter(|maybe_entry_address_pair| match maybe_entry_address_pair {
                         // Don't include DNA entries since we are storing the result in WASM memory
                         // and DNA entries are usually quite big (several MBs).
@@ -127,7 +127,7 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
                     // and DNA entries are usually quite big (several MBs).
                     .filter(|header| *header.entry_type() != EntryType::Dna)
                     .map(|header| // -> Result<Entry, HolochainError>
-                         Ok((header.to_owned(), get_entry_from_chain(&runtime.context()?,header.entry_address())?)))
+                         Ok((header.to_owned(), get_entry_from_chain(&context,header.entry_address())?)))
                     .collect();
                 match maybe_headers_with_entries {
                     Ok(headers_with_entries) => {

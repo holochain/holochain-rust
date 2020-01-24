@@ -61,7 +61,9 @@ use crate::wasm_engine::{
 use crate::wasm_engine::Defn;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
+// use wasmer_runtime::{Value};
 use wasmer_runtime::{error::RuntimeError, Value};
+// use holochain_core_types::error::HolochainError;
 
 pub type ZomeApiResult = Result<Option<Value>, RuntimeError>;
 

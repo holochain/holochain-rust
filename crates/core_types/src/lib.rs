@@ -36,7 +36,6 @@ extern crate maplit;
 extern crate hcid;
 #[macro_use]
 extern crate log;
-extern crate wasmer_runtime;
 
 pub mod chain_header;
 pub mod crud_status;

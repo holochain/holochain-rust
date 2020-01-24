@@ -22,7 +22,6 @@ use std::{
     io::{self, Error as IoError},
     option::NoneError,
 };
-use wasmer_runtime::error::{Error as WasmerError, RuntimeError};
 
 //--------------------------------------------------------------------------------------------------
 // CoreError
@@ -126,20 +125,6 @@ pub type HcResult<T> = Result<T, HolochainError>;
 impl HolochainError {
     pub fn new(msg: &str) -> HolochainError {
         HolochainError::ErrorGeneric(msg.to_string())
-    }
-}
-
-impl From<HolochainError> for RuntimeError {
-    fn from(holochain_error: HolochainError) -> RuntimeError {
-        RuntimeError::Trap {
-            msg: holochain_error.to_string().into_boxed_str(),
-        }
-    }
-}
-
-impl From<RuntimeError> for HolochainError {
-    fn from(runtime_error: RuntimeError) -> HolochainError {
-        HolochainError::RibosomeFailed(runtime_error.to_string())
     }
 }
 
@@ -300,12 +285,6 @@ impl From<NoneError> for HolochainError {
 
 impl From<hcid::HcidError> for HolochainError {
     fn from(error: hcid::HcidError) -> Self {
-        HolochainError::ErrorGeneric(format!("{:?}", error))
-    }
-}
-
-impl From<WasmerError> for HolochainError {
-    fn from(error: WasmerError) -> Self {
         HolochainError::ErrorGeneric(format!("{:?}", error))
     }
 }

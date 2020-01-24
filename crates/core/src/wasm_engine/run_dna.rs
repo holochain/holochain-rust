@@ -11,9 +11,10 @@ use holochain_core_types::error::{
 };
 use holochain_json_api::json::JsonString;
 
+use crate::wasm_engine::factories::wasm_module_factory;
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
 use std::convert::TryFrom;
-use wasmer_runtime::{imports, instantiate, Module, Value};
+use wasmer_runtime::{Module, Value};
 
 /// Returns the WASM module, i.e. the WASM binary program code to run
 /// for the given WasmCallData.
@@ -24,10 +25,7 @@ use wasmer_runtime::{imports, instantiate, Module, Value};
 /// For ZomeCalls and CallbackCalls it gets the according module from the DNA.
 fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
-        // let transient_module = ModuleArc::new(wasm_module_factory(wasm)?);
-        let import_object = imports! {};
-        let instance = instantiate(&wasm, &import_object)?;
-        return Ok(instance.module());
+        return Ok(wasm_module_factory(wasm)?);
     } else {
         match data {
             WasmCallData::ZomeCall(d) => (d.context.clone(), d.call.zome_name),
@@ -49,10 +47,7 @@ fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
         .code
         .clone();
 
-    let import_object = imports! {};
-    let instance = instantiate(&wasm, &import_object)?;
-
-    Ok(instance.module())
+    Ok(wasm_module_factory(wasm)?)
 }
 
 /// Executes an exposed zome function in a wasm binary.
@@ -132,7 +127,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         Value::I64(runtime_value) => runtime_value,
         _ => {
             return Err(HolochainError::RibosomeFailed(
-                "WASM return value not I64".to_string()
+                "WASM return value not I64".to_string(),
             ))
         }
     } as RibosomeEncodingBits;

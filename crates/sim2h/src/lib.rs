@@ -1019,7 +1019,6 @@ impl Sim2h {
             }
         }
         if !wss_list.is_empty() {
-            //let job_send = self.pool.get_push_job_handle();
             let msg_send = self.msg_send.clone();
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(async move {
@@ -1033,13 +1032,25 @@ impl Sim2h {
                     open_lifecycle("adding conn job", &uuid, &url);
 
                     let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
-                    let job = Arc::new(Mutex::new(job));
+                    let mut job = Arc::new(Mutex::new(job));
 
-                    //job_send.send(Box::new(job.clone())).expect("send fail");
-                    let mut job_clone = job.clone();
+                    state
+                        .connection_states
+                        .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
+
+                    state.open_connections.insert(
+                        url,
+                        OpenConnectionItem {
+                            version: 1, // assume version 1 until we get a Hello
+                            uuid,
+                            job: job.clone(),
+                            sender: outgoing_send,
+                        },
+                    );
+
                     tokio::task::spawn(async move {
                         loop {
-                            let res = job_clone.run();
+                            let res = job.run();
                             if !res.cont {
                                 break;
                             }
@@ -1053,20 +1064,6 @@ impl Sim2h {
                             }
                         }
                     });
-
-                    state
-                        .connection_states
-                        .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
-
-                    state.open_connections.insert(
-                        url,
-                        OpenConnectionItem {
-                            version: 1, // assume version 1 until we get a Hello
-                            uuid,
-                            job,
-                            sender: outgoing_send,
-                        },
-                    );
                 }
             });
         }
@@ -1105,7 +1102,7 @@ impl Sim2h {
                             url
                         );
                         let payload: Opaque = b.into();
-                        Sim2h::verify_payload(self.sim2h_handle.clone(), url, payload);
+                        Sim2h::handle_payload(self.sim2h_handle.clone(), url, payload);
                     }
                     // TODO - we should use websocket ping/pong
                     //        instead of rolling our own on top of Binary
@@ -1331,9 +1328,9 @@ impl Sim2h {
         }
     }
 
-    fn verify_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
         tokio::task::spawn(async move {
-            let _m = sim2h_handle.metric_timer("sim2h-verify_payload");
+            let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
                 let signed_message = SignedWireMessage::try_from(payload.clone())?;
                 let result = signed_message.verify().unwrap();

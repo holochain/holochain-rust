@@ -73,24 +73,22 @@ impl ConnectionJob {
             }
             Err(crossbeam_channel::TryRecvError::Empty) => (),
         }
-        {
-            match self.wss.read(self.frame.as_mut().unwrap()) {
-                Ok(_) => {
-                    trace!(
-                        "run_result: read from {} in connection",
-                        self.wss.remote_url()
-                    );
-                    let frame = self.frame.take().unwrap();
-                    trace!("frame read from {} {:?}", self.wss.remote_url(), frame);
-                    self.report_msg(Ok(frame));
-                    // we got data this time, check again right away
-                    return Ok(JobResult::default());
-                }
-                Err(e) if e.would_block() => (),
-                Err(e) => {
-                    error!("error in read for {}: {:?}", self.wss.remote_url(), e,);
-                    return Err(e.into());
-                }
+        match self.wss.read(self.frame.as_mut().unwrap()) {
+            Ok(_) => {
+                trace!(
+                    "run_result: read from {} in connection",
+                    self.wss.remote_url()
+                );
+                let frame = self.frame.take().unwrap();
+                trace!("frame read from {} {:?}", self.wss.remote_url(), frame);
+                self.report_msg(Ok(frame));
+                // we got data this time, check again right away
+                return Ok(JobResult::default());
+            }
+            Err(e) if e.would_block() => (),
+            Err(e) => {
+                error!("error in read for {}: {:?}", self.wss.remote_url(), e,);
+                return Err(e.into());
             }
         }
         // no data this round, wait 5ms before checking again

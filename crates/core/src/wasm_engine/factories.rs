@@ -75,6 +75,7 @@ pub fn wasm_instance_factory(
     let (sender, receiver) = channel();
     let import_object = imports! {
         "env" => {
+            // https://github.com/wasmerio/wasmer/issues/1175#issuecomment-578344856
             "hc_debug" => func!(move |ctx: &mut Ctx, ptr: u32, len: u32| -> ZomeApiResult {
                 invoke_debug(runtime, try_parameters_json(runtime, ptr, len)?.try_into()?)
             }),

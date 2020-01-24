@@ -13,6 +13,7 @@ pub(crate) struct ConnectionJob {
     outgoing_recv: crossbeam_channel::Receiver<WsFrame>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl ConnectionJob {
     pub(crate) fn new(
         wss: TcpWss,
@@ -62,7 +63,7 @@ impl ConnectionJob {
         match self.outgoing_recv.try_recv() {
             Ok(frame) => {
                 if let Err(e) = self.wss.write(frame) {
-                    error!("WEBSOCKET ERROR-outgoing: {:?}", e);
+                    error!("error in write to {}: {:?}", self.wss.remote_url(), e);
                     return Err(e.into());
                 }
             }
@@ -74,15 +75,19 @@ impl ConnectionJob {
         }
         match self.wss.read(self.frame.as_mut().unwrap()) {
             Ok(_) => {
+                trace!(
+                    "run_result: read from {} in connection",
+                    self.wss.remote_url()
+                );
                 let frame = self.frame.take().unwrap();
-                trace!("frame read {:?}", frame);
+                trace!("frame read from {} {:?}", self.wss.remote_url(), frame);
                 self.report_msg(Ok(frame));
                 // we got data this time, check again right away
                 return Ok(JobResult::default());
             }
             Err(e) if e.would_block() => (),
             Err(e) => {
-                error!("WEBSOCKET ERROR-read: {:?}", e,);
+                error!("error in read for {}: {:?}", self.wss.remote_url(), e,);
                 return Err(e.into());
             }
         }

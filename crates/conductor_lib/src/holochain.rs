@@ -95,12 +95,9 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{
-        call_zome_function,
-        ribosome::{run_dna, WasmCallData},
-        ZomeFnCall,
-    },
+    nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
+    wasm_engine::{run_dna, WasmCallData},
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
@@ -126,6 +123,7 @@ pub struct Holochain {
     active: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Holochain {
     /// create a new Holochain instance.  Ensure that they are built w/ the same
     /// HDK Version, or log a warning.

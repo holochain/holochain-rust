@@ -356,6 +356,7 @@ impl Default for LessThanStatCheck {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl StatCheck for LessThanStatCheck {
     fn check(
         &self,
@@ -478,6 +479,7 @@ impl GroupingKey {
 #[shrinkwrap(mutable)]
 pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<GroupingKey, D>);
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();
@@ -537,17 +539,15 @@ impl<D: DescriptiveStats> Default for StatsByMetric<D> {
     }
 }
 
-impl StatsByMetric<StatsRecord> {
-    pub fn from_iter_with_stream_id<I: IntoIterator<Item = Metric>, S: Into<String>>(
-        source: I,
-        stream_id: S,
-    ) -> StatsByMetric<OnlineStats> {
-        let stream_id = stream_id.into();
+impl std::iter::FromIterator<Metric> for StatsByMetric<OnlineStats> {
+    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric<OnlineStats> {
         StatsByMetric(source.into_iter().fold(
             HashMap::new(),
             |mut stats_by_metric_name, metric| {
-                let entry =
-                    stats_by_metric_name.entry(GroupingKey::new(stream_id.clone(), metric.name));
+                let entry = stats_by_metric_name.entry(GroupingKey::new(
+                    metric.stream_id.unwrap_or_else(String::new),
+                    metric.name,
+                ));
 
                 let online_stats = entry.or_insert_with(OnlineStats::empty);
                 online_stats.add(metric.value);
@@ -610,12 +610,12 @@ mod tests {
     fn can_aggregate_stats_from_iterator() {
         let latency_data = vec![50.0, 100.0, 150.0]
             .into_iter()
-            .map(|x| Metric::new("latency", None, None, x));
+            .map(|x| Metric::new("latency", Some("test".into()), None, x));
         let size_data = vec![1.0, 10.0, 100.0]
             .into_iter()
-            .map(|x| Metric::new("size", None, None, x));
+            .map(|x| Metric::new("size", Some("test".into()), None, x));
         let all_data = latency_data.chain(size_data);
-        let stats = StatsByMetric::from_iter_with_stream_id(all_data, "test");
+        let stats = StatsByMetric::from_iter(all_data);
 
         let latency_stats = stats
             .get(&GroupingKey::new("test", "latency"))

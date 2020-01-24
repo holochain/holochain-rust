@@ -25,6 +25,7 @@ pub struct Space {
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Space {
     pub fn new(crypto: Box<dyn CryptoSystem>) -> Self {
         Space {
@@ -193,7 +194,12 @@ impl Space {
 // TODO: unify with AspectMap
 #[derive(Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl AspectList {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     /// Returns an AspectList list that contains every entry aspect
     /// in self that is not in other.
     pub fn diff(&self, other: &AspectList) -> AspectList {
@@ -208,10 +214,10 @@ impl AspectList {
     }
 
     pub fn add(&mut self, entry_address: EntryHash, aspect_address: AspectHash) {
-        self.0
-            .entry(entry_address)
-            .or_insert_with(Vec::new)
-            .push(aspect_address);
+        let list = self.0.entry(entry_address).or_insert_with(Vec::new);
+        if !list.contains(&aspect_address) {
+            list.push(aspect_address);
+        }
     }
 
     pub fn entry_addresses(&self) -> impl Iterator<Item = &EntryHash> {
@@ -304,6 +310,32 @@ mod tests {
     use lib3h_protocol::uri::Lib3hUri;
     use lib3h_sodium::SodiumCryptoSystem;
     use std::convert::TryFrom;
+
+    #[test]
+    fn aspect_list_holds_aspects() {
+        let mut list = AspectList::from(HashMap::new());
+        assert_eq!(list.pretty_string(), "");
+        let entry_hash = EntryHash::from("entry_hash_1");
+        let aspect_hash = AspectHash::from("aspect_hash_1");
+        list.add(entry_hash.clone(), aspect_hash.clone());
+        assert_eq!(list.pretty_string(), "entry_hash_1: [aspect_hash_1]");
+        // adding again doesn't cause duplication
+        list.add(entry_hash.clone(), aspect_hash);
+        assert_eq!(list.pretty_string(), "entry_hash_1: [aspect_hash_1]");
+
+        // add more entries and aspects
+        let aspect_hash = AspectHash::from("aspect_hash_1a");
+        list.add(entry_hash, aspect_hash);
+        let entry_hash = EntryHash::from("entry_hash_2");
+        let aspect_hash = AspectHash::from("aspect_hash_2");
+        list.add(entry_hash, aspect_hash);
+        assert!(list.pretty_string() == "entry_hash_2: [aspect_hash_2]\nentry_hash_1: [aspect_hash_1, aspect_hash_1a]" ||
+                list.pretty_string() == "entry_hash_1: [aspect_hash_1, aspect_hash_1a]\nentry_hash_2: [aspect_hash_2]");
+        assert_eq!(list.aspect_hashes().len(), 3);
+    }
+
+    #[test]
+    fn aspect_list_diffs_aspects() {}
 
     #[test]
     fn space_can_add_and_remove_agents() {

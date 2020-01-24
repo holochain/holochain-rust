@@ -1,19 +1,19 @@
 [package]
 name = "holochain_walkman"
-version = "0.0.42-alpha2"
+version = "0.0.42-alpha5"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-in_stream = { version = "=0.0.42-alpha2", path = "../in_stream" }
-lib3h_protocol = "=0.0.25"
+in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
+lib3h_protocol = "=0.0.31"
 structopt = "0.3.3"
 serde_derive = "=1.0.89"
 serde_millis = "0.1.1"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-sim2h = { version = "=0.0.42-alpha2", path = "../sim2h" }
-sim2h_client = { version = "=0.0.42-alpha2", path = "../sim2h_client" }
-holochain_walkman_types = { version = "=0.0.42-alpha2", path = "../walkman_types" }
+sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
+sim2h_client = { version = "=0.0.42-alpha5", path = "../sim2h_client" }
+holochain_walkman_types = { version = "=0.0.42-alpha5", path = "../walkman_types" }
 url = "=2.1.0"
 url2 = "=0.0.4"
 chrono = "=0.4.6"

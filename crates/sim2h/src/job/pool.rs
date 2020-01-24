@@ -1,4 +1,5 @@
 use crate::*;
+use holochain_metrics::{metrics::MetricPublisher, with_latency_publishing};
 
 /// a cpu-count pool of threads that can execute jobs
 pub(crate) struct Pool {
@@ -20,6 +21,7 @@ lazy_static! {
     };
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Pool {
     pub(crate) fn new() -> Self {
         // make sure if a thread panics, the whole process exits
@@ -37,12 +39,29 @@ impl Pool {
                     .name(format!("sim2h-pool-thread-{}", cpu_index))
                     .spawn(move || {
                         let mut parked_jobs = Vec::new();
+                        let metric_publisher: std::sync::Arc<
+                            std::sync::RwLock<holochain_metrics::logger::LoggerMetricPublisher>,
+                        > = Default::default();
                         loop {
                             {
                                 if !*cont.f_lock() {
                                     return;
                                 }
                             }
+
+                            let thread = std::thread::current();
+                            let thread_name = thread.name().unwrap_or_else(|| "sim2h-pool-thread");
+
+                            let parked_jobs_metric = holochain_metrics::Metric::new_timestamped_now(
+                                format!("{}.parked_jobs", thread_name),
+                                None,
+                                parked_jobs.len() as f64,
+                            );
+
+                            metric_publisher
+                                .write()
+                                .unwrap()
+                                .publish(&parked_jobs_metric);
 
                             let now = std::time::Instant::now();
                             let chk = parked_jobs.drain(..).collect::<Vec<_>>();
@@ -57,7 +76,11 @@ impl Pool {
                             if let Ok(mut job) =
                                 recv.recv_timeout(std::time::Duration::from_millis(5))
                             {
-                                let r = job.run();
+                                let r = with_latency_publishing!(
+                                    format!("{}.job", thread_name),
+                                    metric_publisher,
+                                    || job.run()
+                                );
                                 if r.cont {
                                     if r.wait_ms == 0 {
                                         send.f_send(job);

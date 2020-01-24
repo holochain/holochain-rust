@@ -23,7 +23,7 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    TcpWss, WireError, WireMessage,
+    TcpWss, WireError, WireMessage, WIRE_VERSION,
 };
 use std::{convert::TryFrom, time::Instant};
 use url::Url;
@@ -69,6 +69,7 @@ pub struct Sim2hWorker {
     is_full_sync_DHT: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Sim2hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
@@ -107,7 +108,7 @@ impl Sim2hWorker {
             is_full_sync_DHT: false,
         };
 
-        instance.send_wire_message(WireMessage::Status)?;
+        instance.send_wire_message(WireMessage::Hello(WIRE_VERSION))?;
         instance.check_reconnect();
         Ok(instance)
     }
@@ -455,6 +456,11 @@ impl Sim2hWorker {
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
             WireMessage::Pong => {}
             WireMessage::Lib3hToClient(m) => self.to_core.push(Lib3hServerProtocol::from(m)),
+            WireMessage::MultiSend(messages) => {
+                for m in messages.into_iter() {
+                    self.to_core.push(Lib3hServerProtocol::from(m));
+                }
+            }
             WireMessage::ClientToLib3hResponse(m) => {
                 self.to_core.push(Lib3hServerProtocol::from(m))
             }
@@ -479,11 +485,12 @@ impl Sim2hWorker {
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
             },
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
-            WireMessage::StatusResponse(response) => {
-                debug!("StatusResponse {:?}", response);
-                // TODO: negotiate version mesmatch
+            WireMessage::Hello(_) => error!("Got a Hello from the Sim2h server, weird! Ignoring"),
+            WireMessage::HelloResponse(response) => {
+                debug!("HelloResponse {:?}", response);
                 self.set_full_sync(response.redundant_count == 0);
             }
+            WireMessage::StatusResponse(_) => error!("Got a StatusResponse from the Sim2h server, weird! Ignoring (I use Hello not Status)"),
         };
         Ok(())
     }
@@ -501,6 +508,7 @@ impl Sim2hWorker {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine

@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    nucleus::ribosome::callback::{init::init, CallbackParams, CallbackResult},
+    wasm_engine::callback::{init::init, CallbackParams, CallbackResult},
 };
 use holochain_core_types::{
     dna::Dna,
@@ -9,6 +9,7 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn call_init(dna: Dna, context: &Arc<Context>) -> HcResult<()> {
     // map init across every zome. Find which zomes init callback errored, if any
     let errors: Vec<(String, String)> = dna

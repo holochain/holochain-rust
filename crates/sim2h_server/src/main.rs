@@ -1,9 +1,11 @@
 extern crate lib3h_sodium;
+extern crate newrelic;
 extern crate structopt;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::error;
+use log::{error, warn};
+use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
 use std::{path::PathBuf, process::exit};
 use structopt::StructOpt;
@@ -34,11 +36,14 @@ struct Cli {
     debug_dump: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
+    NewRelicConfig::default()
+        .logging(LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     env_logger::init();
-
     let args = Cli::from_args();
-
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
         .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
@@ -55,17 +60,22 @@ fn main() {
             redundant_count: args.sharding,
         });
     }
-
     loop {
         let result = sim2h.process();
-        if let Err(e) = result {
-            if e.to_string().contains("Bind error:") {
-                println!("{:?}", e);
-                exit(1)
-            } else {
-                error!("{}", e.to_string())
+        match result {
+            Err(e) => {
+                if e.to_string().contains("Bind error:") {
+                    println!("{:?}", e);
+                    exit(1)
+                } else {
+                    error!("{}", e.to_string())
+                }
             }
+            Ok(false) => {
+                // if no work sleep a little
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            _ => (),
         }
-        std::thread::sleep(std::time::Duration::from_millis(1));
     }
 }

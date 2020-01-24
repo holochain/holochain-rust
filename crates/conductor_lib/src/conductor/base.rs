@@ -49,7 +49,6 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
-    keystore::test_hash_config,
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
@@ -178,6 +177,7 @@ pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
@@ -244,7 +244,7 @@ impl Conductor {
             p2p_config: None,
             network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
-            hash_config: test_hash_config(),
+            hash_config: None,
             n3h_keepalive_network: None,
         }
     }
@@ -1521,6 +1521,7 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
 }
 
 #[allow(dead_code)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 fn with_port_heuristic<T, F: FnOnce() -> T>(
     wanted_port: u16,
     find_free_port: bool,
@@ -1536,6 +1537,7 @@ fn with_port_heuristic<T, F: FnOnce() -> T>(
     Ok(try_with_port(port, f))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 fn run_interface(
     interface_config: &InterfaceConfiguration,
     handler: IoHandler,

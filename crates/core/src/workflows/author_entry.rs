@@ -19,9 +19,10 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
 
-use crate::nucleus::ribosome::callback::links_utils::get_link_entries;
+use crate::wasm_engine::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_link_update_delete: Option<Address>,

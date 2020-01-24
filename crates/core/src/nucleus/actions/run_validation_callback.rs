@@ -1,10 +1,10 @@
 use crate::{
     context::Context,
     nucleus::{
-        ribosome::{self, runtime::WasmCallData},
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
+    wasm_engine::{self, runtime::WasmCallData},
 };
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
@@ -17,6 +17,7 @@ use holochain_metrics::with_latency_publishing;
 /// `zome_call`.
 /// Dispatches an `Action::ReturnValidationResult` after completion of the WASM call.
 /// Returns a future that waits for the result to appear in the nucleus state.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn run_validation_callback(
     _address: Address,
     call: CallbackFnCall,
@@ -33,7 +34,7 @@ pub async fn run_validation_callback(
         |()| {
             let cloned_context = context.clone();
 
-            match ribosome::run_dna(
+            match wasm_engine::run_dna(
                 Some(call.clone().parameters.to_bytes()),
                 WasmCallData::new_callback_call(cloned_context, call),
             ) {

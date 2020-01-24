@@ -3,6 +3,9 @@
 For recording and playing back sim2h sessions:
 
 ```bash
+# 0. Build walkman CLI (no nix command for this yet)
+cargo build --bin walkman
+
 # 1. Run a sim2h server with walkman logging turned on
 HOLOCHAIN_WALKMAN_SIM2H=1 sim2h_server -p 9000 |& tee sim2h.log
 

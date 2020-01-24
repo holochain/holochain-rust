@@ -19,6 +19,7 @@ detach = "=0.0.19"
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
+futures = "=0.3.1"
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"

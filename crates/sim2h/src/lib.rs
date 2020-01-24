@@ -1031,12 +1031,25 @@ impl Sim2h {
                     open_lifecycle("adding conn job", &uuid, &url);
 
                     let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
-                    let job = Arc::new(Mutex::new(job));
+                    let mut job = Arc::new(Mutex::new(job));
 
-                    let mut job_clone = job.clone();
+                    state
+                        .connection_states
+                        .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
+
+                    state.open_connections.insert(
+                        url,
+                        OpenConnectionItem {
+                            version: 1, // assume version 1 until we get a Hello
+                            uuid,
+                            job: job.clone(),
+                            sender: outgoing_send,
+                        },
+                    );
+
                     tokio::task::spawn(async move {
                         loop {
-                            let res = job_clone.run();
+                            let res = job.run();
                             if !res.cont {
                                 break;
                             }
@@ -1050,20 +1063,6 @@ impl Sim2h {
                             }
                         }
                     });
-
-                    state
-                        .connection_states
-                        .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
-
-                    state.open_connections.insert(
-                        url,
-                        OpenConnectionItem {
-                            version: 1, // assume version 1 until we get a Hello
-                            uuid,
-                            job,
-                            sender: outgoing_send,
-                        },
-                    );
                 }
             });
         }

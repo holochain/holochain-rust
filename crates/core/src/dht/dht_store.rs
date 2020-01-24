@@ -223,8 +223,10 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        self.add(header)?;
-        self.persistence_manager.eav().add_eavi(&eavi)?;
+        let cursor = self.persistence_manager.create_cursor()?;
+        cursor.add(header)?;
+        cursor.add_eavi(&eavi)?;
+        cursor.commit()?;
         Ok(())
     }
 

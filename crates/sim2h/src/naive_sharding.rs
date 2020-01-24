@@ -59,6 +59,7 @@ pub fn naive_sharding_should_store(
 mod tests {
     use super::*;
     use lib3h_sodium::SodiumCryptoSystem;
+    use log::*;
     const REDUNDANT_COUNT: u64 = 50;
 
     // generate a test agent id (HcS)
@@ -81,7 +82,7 @@ mod tests {
 
     #[test]
     fn it_should_safely_distribute_data() {
-        println!("starting test");
+        debug!("starting test");
 
         let thread_cont = std::sync::Arc::new(std::sync::Mutex::new(true));
         let mut hash_threads = Vec::new();
@@ -90,7 +91,7 @@ mod tests {
         let (addr_send, addr_recv) = crossbeam_channel::bounded::<Location>(100);
 
         for _ in 0..8 {
-            println!("starting hash thread");
+            debug!("starting hash thread");
 
             let id_send_clone = id_send.clone();
             let addr_send_clone = addr_send.clone();
@@ -140,18 +141,18 @@ mod tests {
 
         // simulate a 10,000 node network, growing 20 nodes at a time
         for top_loop in 0..500 {
-            println!("top loop: {}", top_loop);
+            debug!("top loop: {}", top_loop);
 
             for _ in 0..20 {
                 let id_loc = id_recv.recv().unwrap();
-                //println!("id: {}", *id_loc);
+                //debug!("id: {}", *id_loc);
                 nodes.push(id_loc);
             }
 
             // simulate storing 100 bits of data in this network
             for _ in 0..100 {
                 let data_loc = addr_recv.recv().unwrap();
-                //println!("data: {}", *data_loc);
+                //debug!("data: {}", *data_loc);
 
                 let mut store_count = 0_u64;
 
@@ -181,14 +182,14 @@ mod tests {
                             / (nodes.len() as f64 / REDUNDANT_COUNT as f64)
                             * 100.0
                             / ARC_LENGTH_MAX as f64;
-                        println!("-- NOT STORING ENOUGH --");
-                        println!("-- dist: {}% --", dist as u64);
-                        println!(
+                        debug!("-- NOT STORING ENOUGH --");
+                        debug!("-- dist: {}% --", dist as u64);
+                        debug!(
                             "-- data loc: {}% --",
                             u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX
                         );
                         for agent_loc in nodes.iter() {
-                            println!(
+                            debug!(
                                 "  - agent loc: {}% - {}",
                                 u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX,
                                 naive_sharding_should_store(
@@ -208,14 +209,14 @@ mod tests {
                             / (nodes.len() as f64 / REDUNDANT_COUNT as f64)
                             * 100.0
                             / ARC_LENGTH_MAX as f64;
-                        println!("-- STORING TOO MUCH --");
-                        println!("-- dist: {}% --", dist as u64);
-                        println!(
+                        debug!("-- STORING TOO MUCH --");
+                        debug!("-- dist: {}% --", dist as u64);
+                        debug!(
                             "-- data loc: {}% --",
                             u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX
                         );
                         for agent_loc in nodes.iter() {
-                            println!(
+                            debug!(
                                 "  - agent loc: {}% - {}",
                                 u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX,
                                 naive_sharding_should_store(
@@ -241,7 +242,7 @@ mod tests {
             }
         }
 
-        println!("shutting down threads");
+        debug!("shutting down threads");
 
         *thread_cont.lock().unwrap() = false;
 
@@ -254,7 +255,7 @@ mod tests {
         // min: 25
         // max: 78
         // mean: 49.99037148594384
-        println!(
+        debug!(
             "count: {}\nmin: {}\nmax: {}\nmean: {}",
             count, min, max, mean
         );

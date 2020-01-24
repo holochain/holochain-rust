@@ -1018,7 +1018,6 @@ impl Sim2h {
             }
         }
         if !wss_list.is_empty() {
-            //let job_send = self.pool.get_push_job_handle();
             let msg_send = self.msg_send.clone();
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(async move {
@@ -1034,7 +1033,6 @@ impl Sim2h {
                     let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
                     let job = Arc::new(Mutex::new(job));
 
-                    //job_send.send(Box::new(job.clone())).expect("send fail");
                     let mut job_clone = job.clone();
                     tokio::task::spawn(async move {
                         loop {
@@ -1104,7 +1102,7 @@ impl Sim2h {
                             url
                         );
                         let payload: Opaque = b.into();
-                        Sim2h::verify_payload(self.sim2h_handle.clone(), url, payload);
+                        Sim2h::handle_payload(self.sim2h_handle.clone(), url, payload);
                     }
                     // TODO - we should use websocket ping/pong
                     //        instead of rolling our own on top of Binary
@@ -1330,9 +1328,9 @@ impl Sim2h {
         }
     }
 
-    fn verify_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
         tokio::task::spawn(async move {
-            let _m = sim2h_handle.metric_timer("sim2h-verify_payload");
+            let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
                 let signed_message = SignedWireMessage::try_from(payload.clone())?;
                 let result = signed_message.verify().unwrap();

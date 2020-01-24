@@ -9,7 +9,8 @@ use std::{convert::TryFrom, str::FromStr};
 /// size of the integer that encodes ribosome codes
 pub type RibosomeEncodingBits = u64;
 /// size of the integer that wasm sees
-pub type RibosomeRuntimeBits = i64;
+pub type RibosomeRuntimeBits = u64;
+pub type RibosomeRuntimeArgBits = i64;
 /// size of the integer that represents a ribosome code
 pub type RibosomeCodeBits = u32;
 
@@ -66,11 +67,11 @@ impl From<RibosomeEncodedValue> for RibosomeEncodingBits {
     }
 }
 
-impl From<RibosomeEncodedValue> for RibosomeRuntimeBits {
-    fn from(ribosome_return_code: RibosomeEncodedValue) -> RibosomeRuntimeBits {
-        RibosomeEncodingBits::from(ribosome_return_code) as RibosomeRuntimeBits
-    }
-}
+// impl From<RibosomeEncodedValue> for RibosomeRuntimeBits {
+//     fn from(ribosome_return_code: RibosomeEncodedValue) -> RibosomeRuntimeBits {
+//         RibosomeEncodingBits::from(ribosome_return_code) as RibosomeRuntimeBits
+//     }
+// }
 
 impl From<RibosomeEncodingBits> for RibosomeEncodedValue {
     fn from(i: RibosomeEncodingBits) -> Self {

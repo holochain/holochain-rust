@@ -1,6 +1,5 @@
 use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use std::{thread, time::Duration};
-use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Sleep function code
 /// args: [0] encoded MemoryAllocation as u64

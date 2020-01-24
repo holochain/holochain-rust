@@ -12,7 +12,7 @@ use holochain_json_api::json::JsonString;
 
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, fmt, sync::Arc};
-use wasmer_runtime::{error::RuntimeError, Instance, Value};
+use wasmer_runtime::{error::RuntimeError, Instance};
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -96,7 +96,7 @@ pub struct Runtime {
     /// Memory state tracker between ribosome and wasm.
     pub memory_manager: WasmPageManager,
 
-    pub wasm_instance: Instance,
+    pub wasm_instance: Option<Instance>,
 
     /// data to be made available to the function at runtime
     pub data: WasmCallData,
@@ -168,7 +168,9 @@ impl Runtime {
             }
         };
 
-        let bin_arg = self.memory_manager.read(&self.wasm_instance, allocation);
+        let bin_arg = self
+            .memory_manager
+            .read(&self.wasm_instance.unwrap(), allocation);
 
         // convert complex argument
         JsonString::from_json(
@@ -189,11 +191,14 @@ impl Runtime {
         let mut s_bytes: Vec<_> = j.to_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
-        match self.memory_manager.write(&mut self.wasm_instance, &s_bytes) {
+        match self
+            .memory_manager
+            .write(&mut self.wasm_instance.unwrap(), &s_bytes)
+        {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(Some(Value::I64(RibosomeEncodingBits::from(
-                RibosomeEncodedValue::Allocation(allocation.into()),
-            ) as RibosomeRuntimeBits))),
+            Ok(allocation) => Ok(RibosomeEncodingBits::from(RibosomeEncodedValue::Allocation(
+                allocation.into(),
+            )) as RibosomeRuntimeBits),
         }
     }
 

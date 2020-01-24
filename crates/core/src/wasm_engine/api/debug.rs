@@ -1,6 +1,5 @@
 use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
-use wasmer_runtime::Value;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u64

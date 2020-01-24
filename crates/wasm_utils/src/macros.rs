@@ -14,11 +14,11 @@ macro_rules! zome_assert {
 #[macro_export]
 macro_rules! ribosome_success {
     () => {
-        Ok(Some(Value::I64(
+        Ok(
             $crate::holochain_core_types::error::RibosomeRuntimeBits::from(
                 $crate::holochain_core_types::error::RibosomeEncodedValue::Success,
             ),
-        )))
+        )
     };
 }
 
@@ -26,10 +26,8 @@ macro_rules! ribosome_success {
 #[macro_export]
 macro_rules! ribosome_error_code {
     ($s:ident) => {
-        Ok(Some(wasmer_runtime::Value::I64(
-            $crate::holochain_core_types::error::RibosomeErrorCode::$s
-                as $crate::holochain_core_types::error::RibosomeRuntimeBits,
-        )))
+        Ok($crate::holochain_core_types::error::RibosomeErrorCode::$s
+            as $crate::holochain_core_types::error::RibosomeRuntimeBits)
     };
 }
 

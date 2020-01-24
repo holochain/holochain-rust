@@ -62,10 +62,10 @@ use crate::wasm_engine::Defn;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 // use wasmer_runtime::{Value};
-use wasmer_runtime::{error::RuntimeError, Value};
+use wasmer_runtime::error::RuntimeError;
 // use holochain_core_types::error::HolochainError;
 
-pub type ZomeApiResult = Result<Option<Value>, RuntimeError>;
+pub type ZomeApiResult = Result<RibosomeEncodingBits, RuntimeError>;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS

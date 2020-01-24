@@ -3,7 +3,6 @@ use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
-use wasmer_runtime::Value;
 
 /// ZomeApiFunction::EmitSignal function code
 /// args: [0] encoded MemoryAllocation as u64

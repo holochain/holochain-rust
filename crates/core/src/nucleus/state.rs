@@ -237,7 +237,7 @@ impl ZomeFnCallState {
 #[cfg(test)]
 pub mod tests {
 
-    use super::{WasmApiFnCall, NucleusState, ZomeFnCallState};
+    use super::{NucleusState, WasmApiFnCall, ZomeFnCallState};
     use crate::wasm_engine::api::ZomeApiFunction;
 
     /// dummy nucleus state

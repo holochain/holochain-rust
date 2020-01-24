@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use holochain_core_types::error::{
-    HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+    HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeArgBits,
 };
 use holochain_json_api::json::JsonString;
 
@@ -55,25 +55,27 @@ fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
 /// panics if wasm binary isn't valid.
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
-    let wasm_instance = wasm_instance_factory(&wasm_module)?;
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
-    let fn_name = data.fn_name();
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         memory_manager: WasmPageManager::new(),
-        wasm_instance,
+        wasm_instance: None,
         data,
     };
 
     // Write input arguments in wasm memory
+    runtime.wasm_instance = Some(wasm_instance_factory(&mut runtime, &wasm_module)?);
+
+    let fn_name = data.fn_name();
+
     // scope for mutable borrow of runtime
     let encoded_allocation_of_input: RibosomeEncodingBits = {
         let maybe_allocation = runtime
             .memory_manager
-            .write(&mut runtime.wasm_instance, &input_parameters);
+            .write(&mut runtime.wasm_instance?, &input_parameters);
 
         match maybe_allocation {
             // No allocation to write is ok
@@ -96,17 +98,17 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         // HDK-rust implements a function __install_panic_handler that reroutes output of
         // PanicInfo to hdk::debug.
         // Try calling it but fail silently if this function is not there.
-        let _ = runtime.wasm_instance.call("__install_panic_handler", &[]);
+        let _ = runtime.wasm_instance?.call("__install_panic_handler", &[]);
 
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
         runtime
-            .wasm_instance
+            .wasm_instance?
             .call(
                 &fn_name,
                 &[Value::I64(
-                    encoded_allocation_of_input as RibosomeRuntimeBits,
+                    encoded_allocation_of_input as RibosomeRuntimeArgBits,
                 )],
             )
             .map_err(|err| {
@@ -172,7 +174,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 Ok(allocation) => {
                     let result = runtime
                         .memory_manager
-                        .read(&runtime.wasm_instance, allocation);
+                        .read(&runtime.wasm_instance?, allocation);
                     match String::from_utf8(result) {
                         Ok(json_string) => {
                             return_log_msg = json_string.clone();

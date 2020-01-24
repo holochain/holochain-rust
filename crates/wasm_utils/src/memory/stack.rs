@@ -184,7 +184,8 @@ pub mod memory_tests {
     #[test]
     fn allocate_test() {
         let mut stack = WasmStack::new();
-        let unaligned_allocation = WasmAllocation::new(Offset::from(10_u32), Length::from(10_u32)).unwrap();
+        let unaligned_allocation =
+            WasmAllocation::new(Offset::from(10_u32), Length::from(10_u32)).unwrap();
 
         assert_eq!(
             Err(AllocationError::BadStackAlignment),
@@ -217,7 +218,8 @@ pub mod memory_tests {
     #[test]
     fn deallocate_test() {
         let mut stack = WasmStack { top: Top(50) };
-        let unaligned_allocation = WasmAllocation::new(Offset::from(50_u32), Length::from(5_u32)).unwrap();
+        let unaligned_allocation =
+            WasmAllocation::new(Offset::from(50_u32), Length::from(5_u32)).unwrap();
         assert_eq!(
             Err(AllocationError::BadStackAlignment),
             stack.deallocate(unaligned_allocation),

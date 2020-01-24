@@ -58,7 +58,7 @@ impl From<usize> for Length {
 }
 
 impl From<*const u8> for Offset {
-    fn from (u: *const u8) -> Offset {
+    fn from(u: *const u8) -> Offset {
         (u as MemoryInt).into()
     }
 }
@@ -136,14 +136,20 @@ impl WasmAllocation {
 impl TryFrom<&str> for WasmAllocation {
     type Error = AllocationError;
     fn try_from(s: &str) -> Result<WasmAllocation, AllocationError> {
-        Ok(WasmAllocation::new(Offset::from(s.as_ptr()), Length::from(s.len()))?)
+        Ok(WasmAllocation::new(
+            Offset::from(s.as_ptr()),
+            Length::from(s.len()),
+        )?)
     }
 }
 
 impl TryFrom<String> for WasmAllocation {
     type Error = AllocationError;
     fn try_from(s: String) -> Result<WasmAllocation, AllocationError> {
-        Ok(WasmAllocation::new(Offset::from(s.as_ptr()), Length::from(s.len()))?)
+        Ok(WasmAllocation::new(
+            Offset::from(s.as_ptr()),
+            Length::from(s.len()),
+        )?)
     }
 }
 

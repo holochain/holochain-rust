@@ -162,7 +162,7 @@ pub mod tests {
     fn try_allocation_from_ribosome_allocation_test() {
         assert_eq!(
             Err(AllocationError::ZeroLength),
-            WasmAllocation::try_from(RibosomeEncodedAllocation::from(0)),
+            WasmAllocation::try_from(RibosomeEncodedAllocation::from(0_u64)),
         );
 
         assert_eq!(
@@ -175,8 +175,8 @@ pub mod tests {
 
         assert_eq!(
             Ok(WasmAllocation {
-                offset: Offset::from(4),
-                length: Length::from(8)
+                offset: Offset::from(4_u32),
+                length: Length::from(8_u32)
             }),
             WasmAllocation::try_from(RibosomeEncodedAllocation::from(
                 0b000000000000000000000000000000100_00000000000000000000000000001000
@@ -191,8 +191,8 @@ pub mod tests {
                 0b00000000000000000000000000000100_00000000000000000000000000001000
             ),
             RibosomeEncodedAllocation::from(WasmAllocation {
-                offset: Offset::from(4),
-                length: Length::from(8)
+                offset: Offset::from(4_u32),
+                length: Length::from(8_u32)
             }),
         );
     }
@@ -204,8 +204,8 @@ pub mod tests {
                 0b00000000000000000000000000000100_00000000000000000000000000001000
             )),
             RibosomeEncodedValue::from(WasmAllocation {
-                offset: Offset::from(4),
-                length: Length::from(8)
+                offset: Offset::from(4_u32),
+                length: Length::from(8_u32)
             }),
         );
     }
@@ -324,8 +324,8 @@ pub mod tests {
             return_code_for_allocation_result(Err(AllocationError::Serialization)),
         );
         let allocation = WasmAllocation {
-            offset: Offset::from(5),
-            length: Length::from(5),
+            offset: Offset::from(5_u32),
+            length: Length::from(5_u32),
         };
         assert_eq!(
             RibosomeEncodedValue::from(allocation),

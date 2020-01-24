@@ -150,8 +150,8 @@ pub mod memory_tests {
     fn next_allocation_test() {
         let mut stack = WasmStack::new();
 
-        let first_offset = Offset::from(0);
-        let first_length = Length::from(5);
+        let first_offset = Offset::from(0_u32);
+        let first_length = Length::from(5_u32);
         let first_allocation = stack.next_allocation(first_length);
 
         assert_eq!(
@@ -161,8 +161,8 @@ pub mod memory_tests {
 
         stack.allocate(first_allocation.unwrap()).ok();
 
-        let second_offset = Offset::from(5);
-        let second_length = Length::from(3);
+        let second_offset = Offset::from(5_u32);
+        let second_length = Length::from(3_u32);
         let second_allocation = stack.next_allocation(second_length);
 
         assert_eq!(
@@ -172,7 +172,7 @@ pub mod memory_tests {
 
         stack.allocate(second_allocation.unwrap()).ok();
 
-        let big_offset = Offset::from(8);
+        let big_offset = Offset::from(8_u32);
         let big_length = Length::from(U16_MAX * 2);
 
         assert_eq!(
@@ -184,17 +184,17 @@ pub mod memory_tests {
     #[test]
     fn allocate_test() {
         let mut stack = WasmStack::new();
-        let unaligned_allocation = WasmAllocation::new(Offset::from(10), Length::from(10)).unwrap();
+        let unaligned_allocation = WasmAllocation::new(Offset::from(10_u32), Length::from(10_u32)).unwrap();
 
         assert_eq!(
             Err(AllocationError::BadStackAlignment),
             stack.allocate(unaligned_allocation),
         );
 
-        let first_allocation = stack.next_allocation(Length::from(5));
+        let first_allocation = stack.next_allocation(Length::from(5_u32));
         stack.allocate(first_allocation.unwrap()).ok();
 
-        let second_allocation = stack.next_allocation(Length::from(8));
+        let second_allocation = stack.next_allocation(Length::from(8_u32));
 
         assert_eq!(stack.allocate(second_allocation.unwrap()), Ok(Top(5)),);
         assert_eq!(stack.top(), Top(13),);
@@ -217,7 +217,7 @@ pub mod memory_tests {
     #[test]
     fn deallocate_test() {
         let mut stack = WasmStack { top: Top(50) };
-        let unaligned_allocation = WasmAllocation::new(Offset::from(50), Length::from(5)).unwrap();
+        let unaligned_allocation = WasmAllocation::new(Offset::from(50_u32), Length::from(5_u32)).unwrap();
         assert_eq!(
             Err(AllocationError::BadStackAlignment),
             stack.deallocate(unaligned_allocation),
@@ -225,7 +225,7 @@ pub mod memory_tests {
 
         // can't test out of bounds for deallocate because unsigned integers don't go below min
 
-        let deallocation = WasmAllocation::new(Offset::from(20), Length::from(30)).unwrap();
+        let deallocation = WasmAllocation::new(Offset::from(20_u32), Length::from(30_u32)).unwrap();
         assert_eq!(stack.deallocate(deallocation), Ok(Top(50)),);
         assert_eq!(stack.top(), Top(20),);
     }
@@ -245,15 +245,15 @@ pub mod memory_tests {
             Err(AllocationError::OutOfBounds),
             WasmStack::try_from(WasmAllocation {
                 offset: Offset::from(std::u32::MAX),
-                length: Length::from(1)
+                length: Length::from(1_u32)
             }),
         );
 
         assert_eq!(
-            Ok(WasmStack { top: Top(60) }),
+            Ok(WasmStack { top: Top(60_u32) }),
             WasmStack::try_from(WasmAllocation {
-                offset: Offset::from(30),
-                length: Length::from(30)
+                offset: Offset::from(30_u32),
+                length: Length::from(30_u32)
             }),
         );
 

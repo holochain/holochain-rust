@@ -11,7 +11,7 @@ use holochain_wasm_utils::holochain_json_api::{
 };
 
 use holochain_wasm_utils::memory::stack::WasmStack;
-use holochain_wasm_utils::memory::allocation::AllocationError;
+// use holochain_wasm_utils::memory::allocation::AllocationError;
 
 use holochain_wasm_utils::{
     holochain_core_types::error::HolochainError,
@@ -47,29 +47,32 @@ struct OtherTestStruct {
 /// TODO #486
 //// Can't do zome_assert!() while testing write_json() since it internally uses write_json() !
 //// so using normal assert! even if we get unhelpful Trap::Unreachable error message.
-pub extern "C" fn store_string(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub extern "C" fn store_string(_ptr: *const u8, _len: usize) -> RibosomeEncodingBits {
 
     // start with an empty stack
-    let mut stack = WasmStack::default();
-    assert_eq!(
-        0 as MemoryInt,
-        MemoryInt::from(stack.top()),
-    );
+    // let mut stack = WasmStack::default();
+    // assert_eq!(
+    //     0 as MemoryInt,
+    //     MemoryInt::from(stack.top()),
+    // );
 
     // successfully allocate a written string
-    let s = "fish";
-    let allocation = match stack.write_string(s) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
-
-    assert_eq!(
-        4 as MemoryInt,
-        MemoryInt::from(stack.top()),
-    );
-
-    allocation.as_ribosome_encoding()
-
+    // let s = "fish";
+    // let allocation = match stack.write_string(s) {
+    //     Ok(allocation) => allocation,
+    //     Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    // };
+    //
+    // assert_eq!(
+    //     4 as MemoryInt,
+    //     MemoryInt::from(stack.top()),
+    // );
+    //
+    // allocation.as_ribosome_encoding()
+    match WasmAllocation::try_from("fish") {
+        Ok(allocation) => allocation.as_ribosome_encoding(),
+        Err(allocation_error) => allocation_error.as_ribosome_encoding(),
+    }
 }
 
 #[no_mangle]
@@ -93,27 +96,27 @@ pub extern "C" fn store_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingB
 
 #[no_mangle]
 // load the string from a previously stored string
-pub extern "C" fn load_string(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let encoded = store_string(0);
-
-    let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
-
-    let mut stack = match WasmStack::try_from(allocation) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
-
-    return_code_for_allocation_result(
-        stack.write_string(
-            &allocation.read_to_string()
-        )
-    )
-    .into()
-
-}
+// pub extern "C" fn load_string(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+//     let encoded = store_string(0);
+//
+//     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
+//         Ok(allocation) => allocation,
+//         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+//     };
+//
+//     let mut stack = match WasmStack::try_from(allocation) {
+//         Ok(allocation) => allocation,
+//         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+//     };
+//
+//     return_code_for_allocation_result(
+//         stack.write_string(
+//             &allocation.read_to_string()
+//         )
+//     )
+//     .into()
+//
+// }
 
 #[no_mangle]
 pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
@@ -152,54 +155,57 @@ pub extern "C" fn big_string_input(big_string: RibosomeEncodingBits) -> Ribosome
 #[no_mangle]
 pub extern "C" fn big_string_process_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
-    let mut stack = WasmStack::default();
-
-    let memory = match MemoryInstance::alloc(Pages(1), None) {
-        Ok(memory) => memory,
-        Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
-    };
-
-    if memory.grow(Pages(3)).is_err() {
-        return AllocationError::OutOfBounds.as_ribosome_encoding();
-    }
+    // let mut stack = WasmStack::default();
+    //
+    // let memory = match MemoryInstance::alloc(Pages(1), None) {
+    //     Ok(memory) => memory,
+    //     Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
+    // };
+    //
+    // if memory.grow(Pages(3)).is_err() {
+    //     return AllocationError::OutOfBounds.as_ribosome_encoding();
+    // }
 
     // @TODO we can't handle UTF-8 in wasm??
     // @see https://github.com/holochain/holochain-rust/issues/933
     // let input = "╰▐ ✖ 〜 ✖ ▐╯".repeat((U16_MAX * 1) as usize);
     let input = "foo".repeat((U16_MAX * 1) as usize);
 
-    let allocation = match stack.write_string(&input) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
-
-    assert_eq!(input, allocation.read_to_string());
-
-    allocation.as_ribosome_encoding()
-
-}
-
-#[no_mangle]
-pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-
-    let mut stack = WasmStack::default();
-
-    let memory = match MemoryInstance::alloc(Pages(1), None) {
-        Ok(memory) => memory,
-        Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
-    };
-
-    // face emoji is 11 bytes so we need 1 pages to hold U16_MAX faces
-    if memory.grow(Pages(11)).is_err() {
-        return AllocationError::OutOfBounds.as_ribosome_encoding();
-    };
-
-    match stack.write_string(&"(ಥ⌣ಥ)".repeat(U16_MAX as usize)) {
+    // let allocation = match stack.write_string(&input) {
+    //     Ok(allocation) => allocation,
+    //     Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    // };
+    //
+    // assert_eq!(input, allocation.read_to_string());
+    //
+    // allocation.as_ribosome_encoding()
+    match WasmAllocation::try_from(input) {
         Ok(allocation) => allocation.as_ribosome_encoding(),
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+        Err(allocation_error) => allocation_error.as_ribosome_encoding(),
     }
-
 }
+
+// #[no_mangle]
+// pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+//
+//     let mut stack = WasmStack::default();
+//
+//     let memory = match MemoryInstance::alloc(Pages(1), None) {
+//         Ok(memory) => memory,
+//         Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
+//     };
+//
+//     // face emoji is 11 bytes so we need 1 pages to hold U16_MAX faces
+//     if memory.grow(Pages(11)).is_err() {
+//         return AllocationError::OutOfBounds.as_ribosome_encoding();
+//     };
+//
+//     match stack.write_string(&"(ಥ⌣ಥ)".repeat(U16_MAX as usize)) {
+//         Ok(allocation) => allocation.as_ribosome_encoding(),
+//         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+//     }
+//
+// }
 
 #[no_mangle]
 /// thrash the allocation/deallocation logic a bit

@@ -237,7 +237,7 @@ impl ZomeFnCallState {
 #[cfg(test)]
 pub mod tests {
 
-    use super::{HdkFnCall, NucleusState, ZomeFnCallState};
+    use super::{WasmApiFnCall, NucleusState, ZomeFnCallState};
     use crate::wasm_engine::api::ZomeApiFunction;
 
     /// dummy nucleus state
@@ -248,11 +248,11 @@ pub mod tests {
     #[test]
     fn test_zome_fn_call_state() {
         let mut state = ZomeFnCallState::default();
-        let call1 = HdkFnCall {
+        let call1 = WasmApiFnCall {
             function: ZomeApiFunction::Call,
             parameters: "params1".into(),
         };
-        let call2 = HdkFnCall {
+        let call2 = WasmApiFnCall {
             function: ZomeApiFunction::Call,
             parameters: "params2".into(),
         };

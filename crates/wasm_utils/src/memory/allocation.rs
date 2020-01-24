@@ -1,5 +1,6 @@
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use std::convert::TryFrom;
 
 use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 
@@ -47,6 +48,18 @@ impl From<MemoryInt> for Length {
 impl From<Length> for usize {
     fn from(length: Length) -> Self {
         length.0 as usize
+    }
+}
+
+impl From<usize> for Length {
+    fn from(u: usize) -> Length {
+        (u as MemoryInt).into()
+    }
+}
+
+impl From<*const u8> for Offset {
+    fn from (u: *const u8) -> Offset {
+        (u as MemoryInt).into()
     }
 }
 
@@ -117,6 +130,20 @@ impl WasmAllocation {
 
     pub fn end(self) -> Offset {
         (MemoryInt::from(self.start()) + MemoryInt::from(self.length())).into()
+    }
+}
+
+impl TryFrom<&str> for WasmAllocation {
+    type Error = AllocationError;
+    fn try_from(s: &str) -> Result<WasmAllocation, AllocationError> {
+        Ok(WasmAllocation::new(Offset::from(s.as_ptr()), Length::from(s.len()))?)
+    }
+}
+
+impl TryFrom<String> for WasmAllocation {
+    type Error = AllocationError;
+    fn try_from(s: String) -> Result<WasmAllocation, AllocationError> {
+        Ok(WasmAllocation::new(Offset::from(s.as_ptr()), Length::from(s.len()))?)
     }
 }
 
@@ -223,24 +250,24 @@ pub mod tests {
     pub fn allocation_new_test() {
         assert_eq!(
             Err(AllocationError::OutOfBounds),
-            WasmAllocation::new(Offset::from(std::u32::MAX), Length::from(1)),
+            WasmAllocation::new(Offset::from(std::u32::MAX), Length::from(1_u32)),
         );
 
         assert_eq!(
             Err(AllocationError::ZeroLength),
-            WasmAllocation::new(Offset::from(1), Length::from(0)),
+            WasmAllocation::new(Offset::from(1_u32), Length::from(0_u32)),
         );
 
         assert_eq!(
             Ok(WasmAllocation {
-                offset: Offset::from(1),
-                length: Length::from(1)
+                offset: Offset::from(1_u32),
+                length: Length::from(1_u32)
             }),
-            WasmAllocation::new(Offset::from(1), Length::from(1)),
+            WasmAllocation::new(Offset::from(1_u32), Length::from(1_u32)),
         );
 
         // allocation larger than 1 wasm page
-        let big = U16_MAX * 2;
+        let big = U16_MAX * 2_u32;
         assert_eq!(
             Ok(WasmAllocation {
                 offset: Offset::from(big),
@@ -254,7 +281,7 @@ pub mod tests {
     pub fn allocation_offset_test() {
         assert_eq!(
             Offset::from(1),
-            WasmAllocation::new(Offset::from(1), Length::from(1))
+            WasmAllocation::new(Offset::from(1_u32), Length::from(1_u32))
                 .unwrap()
                 .offset(),
         );
@@ -263,8 +290,8 @@ pub mod tests {
     #[test]
     pub fn allocation_length_test() {
         assert_eq!(
-            Length::from(1),
-            WasmAllocation::new(Offset::from(1), Length::from(1))
+            Length::from(1_u32),
+            WasmAllocation::new(Offset::from(1_u32), Length::from(1_u32))
                 .unwrap()
                 .length(),
         );

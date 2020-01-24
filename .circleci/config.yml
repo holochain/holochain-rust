@@ -13,7 +13,9 @@ commands:
    - run:
       no_output_timeout: 45m
       command: ./docker/build << parameters.box >> $CIRCLE_BRANCH
-   - run: ./docker/push << parameters.box >> $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/push << parameters.box >> $CIRCLE_BRANCH
 
 jobs:
  # must be called build for local circle cli to work

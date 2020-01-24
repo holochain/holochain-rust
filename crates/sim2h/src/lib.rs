@@ -18,6 +18,7 @@ mod naive_sharding;
 pub mod cache;
 pub mod connection_state;
 pub mod crypto;
+pub mod demo_im_state;
 pub mod error;
 use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash};
 mod message_log;

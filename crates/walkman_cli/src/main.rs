@@ -5,7 +5,7 @@ extern crate url2;
 
 mod player;
 
-use crate::player::{Sim2hCassettePlayer, deserialize_message_data, get_wire_message};
+use crate::player::{deserialize_message_data, get_wire_message, Sim2hCassettePlayer};
 use holochain_walkman_types::{Cassette, WalkmanEvent, WalkmanSim2hEvent};
 use std::{fs::File, path::PathBuf};
 use structopt::StructOpt;

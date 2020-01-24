@@ -3,9 +3,11 @@ use in_stream::InStream;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use sim2h::{crypto::SignedWireMessage, wire_message::WireMessage};
 use sim2h_client::Sim2hClient;
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    convert::TryInto,
+};
 use url2::Url2;
-use std::convert::TryInto;
 
 #[derive(Default)]
 pub struct Sim2hCassettePlayer {}

@@ -1,6 +1,6 @@
 use crate::event::WalkmanLogItem;
 use regex::Regex;
-use std::io::{Read, BufRead};
+use std::io::{BufRead, Read};
 
 #[derive(Serialize, Deserialize)]
 pub struct Cassette {

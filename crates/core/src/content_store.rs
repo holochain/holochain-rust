@@ -20,10 +20,6 @@ pub trait GetContent {
     }
 }
 
-pub trait AddContent {
-    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()>;
-}
-
 use holochain_persistence_api::txn::CursorDyn;
 
 impl GetContent for dyn CursorDyn<Attribute> {

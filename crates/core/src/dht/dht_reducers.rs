@@ -249,7 +249,7 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        content_store::{AddContent, GetContent},
+        content_store::GetContent,
         dht::{
             dht_reducers::{
                 reduce, reduce_hold_aspect, reduce_queue_holding_workflow,
@@ -271,7 +271,7 @@ pub mod tests {
         link::{link_data::LinkData, Link, LinkActionKind},
         network::entry_aspect::EntryAspect,
     };
-    use holochain_persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::{cas::content::AddressableContent, txn::CursorProviderDyn};
     use std::{sync::Arc, time::SystemTime};
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
@@ -323,7 +323,9 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = (*store.dht()).clone().add(&entry);
+        let cursor = (*store.dht()).clone().create_cursor().unwrap();
+        cursor.add(&entry).unwrap();
+        cursor.commit().unwrap();
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(
@@ -367,7 +369,9 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let _ = (*store.dht()).clone().add(&entry);
+        let cursor = (*store.dht()).clone().create_cursor().unwrap();
+        cursor.add(&entry).unwrap();
+        cursor.commit().unwrap();
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
         let link = Link::new(

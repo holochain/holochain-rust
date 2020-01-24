@@ -1,4 +1,4 @@
-use crate::content_store::{AddContent, GetContent};
+use crate::content_store::GetContent;
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -189,14 +189,6 @@ impl ChainStore {
 impl GetContent for ChainStore {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
         Ok((*self.persistence_manager.cas()).fetch(address)?)
-    }
-}
-
-impl AddContent for ChainStore {
-    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        (*self.persistence_manager.cas())
-            .add(content)
-            .map_err(|e| e.into())
     }
 }
 

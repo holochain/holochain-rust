@@ -14,7 +14,7 @@ use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, Sim2h, WireMessage,
 };
 use std::{
     collections::{HashMap, VecDeque},
@@ -576,30 +576,33 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
+            let sim2h = Sim2h::new(
+                Box::new(SodiumCryptoSystem::new()),
+                Lib3hUri(url.into()),
+                DhtAlgorithm::FullSync,
+            );
 
             snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
             drop(snd1);
 
             let mut logger = None;
 
-            while *sim2h_cont_clone.lock().unwrap() {
-                std::thread::sleep(std::time::Duration::from_millis(1));
+            let mut rt = run_sim2h(sim2h);
+            rt.block_on(async move {
+                while *sim2h_cont_clone.lock().unwrap() {
+                    tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
 
-                if let Ok(l) = rcv2.try_recv() {
-                    logger.replace(l);
+                    if let Ok(l) = rcv2.try_recv() {
+                        logger.replace(l);
+                    }
+
+                    let start = std::time::Instant::now();
+
+                    if let Some(logger) = &mut logger {
+                        logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
+                    }
                 }
-
-                let start = std::time::Instant::now();
-
-                if let Err(e) = sim2h.process() {
-                    panic!("{:?}", e);
-                }
-
-                if let Some(logger) = &mut logger {
-                    logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
-                }
-            }
+            });
         }));
 
         let bound_uri = rcv1.recv().unwrap();

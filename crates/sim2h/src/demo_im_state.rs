@@ -107,73 +107,68 @@ impl Store {
     pub fn new() -> StoreHandle {
         let (send_mut, mut recv_mut) = tokio::sync::mpsc::unbounded_channel();
 
+        let ref_dummy = Arc::new(());
+
         let con_incr = Arc::new(AtomicU64::new(1));
-        let inner = Arc::new(tokio::sync::Mutex::new(Store {
+        let mut store = Store {
             all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
             uri_to_connection: im::HashMap::new(),
             holding: im::HashMap::new(),
             con_incr: con_incr.clone(),
-        }));
+        };
 
-        let weak_ref = Arc::downgrade(&inner);
+        let weak_ref_dummy = Arc::downgrade(&ref_dummy);
 
         tokio::task::spawn(async move {
             let mut should_end_task = false;
             loop {
-                match weak_ref.upgrade() {
-                    // no more references to us, let this task end
+                if let None = weak_ref_dummy.upgrade() {
+                    // there are no more references to us...
+                    // let this task end
+                    return;
+                }
+
+                match recv_mut.next().await {
+                    // broken channel, let this task end
                     None => return,
-                    Some(strong_ref) => {
-                        // it's fine to await while holding a strong_ref
-                        // just means we may delay a drop of the store
-                        // there is no locking problem
+                    Some(msg) => {
+                        let mut messages = vec![msg];
 
-                        match recv_mut.next().await {
-                            // broken channel, let this task end
-                            None => return,
-                            Some(msg) => {
-                                let mut messages = vec![msg];
-
-                                // if we're going to bother locking the mutex
-                                // let's get a few more messages and run
-                                // them all at once
-                                for _ in 0..100 {
-                                    match recv_mut.try_recv() {
-                                        Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
-                                        Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                                            should_end_task = true;
-                                            break;
-                                        }
-                                        Ok(msg) => messages.push(msg),
-                                    }
+                        // we've got some cpu time, process a batch of
+                        // messages all at once if any more are pending
+                        for _ in 0..100 {
+                            match recv_mut.try_recv() {
+                                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
+                                    should_end_task = true;
+                                    break;
                                 }
+                                Ok(msg) => messages.push(msg),
+                            }
+                        }
 
-                                // now get the lock and perform the mutations
-                                let mut store = strong_ref.lock().await;
-                                for msg in messages.drain(..) {
-                                    match msg {
-                                        StoreProto::GetClone(sender) => {
-                                            sender.send(store.clone()).unwrap();
-                                        }
-                                        StoreProto::Mutate(aol_entry) => {
-                                            store.mutate(aol_entry);
-                                        }
-                                    }
+                        for msg in messages.drain(..) {
+                            match msg {
+                                StoreProto::GetClone(sender) => {
+                                    sender.send(store.clone()).unwrap();
                                 }
-
-                                // if we got a Closed on our recv
-                                if should_end_task {
-                                    return;
+                                StoreProto::Mutate(aol_entry) => {
+                                    store.mutate(aol_entry);
                                 }
                             }
+                        }
+
+                        // if we got a Closed on our recv
+                        if should_end_task {
+                            return;
                         }
                     }
                 }
             }
         });
 
-        StoreHandle::new(inner, send_mut, con_incr)
+        StoreHandle::new(ref_dummy, send_mut, con_incr)
     }
 
     fn mutate(&mut self, aol_entry: AolEntry) {
@@ -327,21 +322,20 @@ impl std::borrow::Borrow<Store> for StoreRef {
 
 /// give us a cheaply clone-able async handle to the real store
 pub struct StoreHandle {
-    #[allow(dead_code)]
     // this is just used for ref-counting
-    inner: Arc<tokio::sync::Mutex<Store>>,
+    _ref_dummy: Arc<()>,
     send_mut: tokio::sync::mpsc::UnboundedSender<StoreProto>,
     con_incr: Arc<AtomicU64>,
 }
 
 impl StoreHandle {
     fn new(
-        inner: Arc<tokio::sync::Mutex<Store>>,
+        ref_dummy: Arc<()>,
         send_mut: tokio::sync::mpsc::UnboundedSender<StoreProto>,
         con_incr: Arc<AtomicU64>,
     ) -> Self {
         Self {
-            inner,
+            _ref_dummy: ref_dummy,
             send_mut,
             con_incr,
         }

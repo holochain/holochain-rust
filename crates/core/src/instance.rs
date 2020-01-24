@@ -6,7 +6,8 @@ use crate::{
         queue_holding_workflow::queue_holding_workflow,
         remove_queued_holding_workflow::remove_queued_holding_workflow,
     },
-    network,
+    network::{self, actions::initialize_network::initialize_network},
+    nucleus::actions::{call_init::call_init, initialize::initialize_chain},
     persister::Persister,
     scheduled_jobs,
     signal::Signal,
@@ -16,7 +17,6 @@ use crate::{
 #[cfg(test)]
 use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
-    nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -38,6 +38,9 @@ use std::{
     time::{Duration, Instant},
 };
 use crate::network::state::NetworkState;
+use crate::context::{ConductorContext, get_dna_and_agent};
+use crate::network::handler::create_handler;
+use bitflags::_core::sync::atomic::AtomicBool;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
@@ -50,13 +53,17 @@ pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<StateWrapper>>,
     network: Arc<NetworkState>,
-    action_channel: Option<Sender<ActionWrapper>>,
-    observer_channel: Option<Sender<Observer>>,
-    scheduler_handle: Option<Arc<ScheduleHandle>>,
-    persister: Option<Arc<RwLock<dyn Persister>>>,
+    action_channel: Sender<ActionWrapper>,
+    observer_channel: Sender<Observer>,
+    scheduler_handle: Arc<ScheduleHandle>,
+    persister: Arc<RwLock<dyn Persister>>,
     consistency_model: ConsistencyModel,
     kill_switch: Option<Sender<()>>,
     kill_switch_holding: Option<Sender<()>>,
+    conductor_context: Arc<ConductorContext>,
+    instance_is_alive: Arc<AtomicBool>,
+    redux_wants_write: Arc<AtomicBool>,
+
 }
 
 /// State Observer that executes a closure everytime the State changes.
@@ -67,11 +74,29 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 impl Instance {
-    /// This is initializing and starting the redux action loop and adding channels to dispatch
-    /// actions and observers to the context
-    pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
-        let (rx_action, rx_observer) = self.initialize_channels();
-        let context = self.initialize_context(context);
+
+    fn construct_instance(state: StateWrapper, conductor_context: Arc<ConductorContext>) -> Self {
+        let state = Arc::new(RwLock::new(state));
+        let network = Arc::new(NetworkState::new());
+        let instance_is_alive = Arc::new(AtomicBool::new(true));
+        let redux_wants_write = Arc::new(AtomicBool::new(false));
+
+        let (tx_action, rx_action) = unbounded::<ActionWrapper>();
+        let (tx_observer, rx_observer) = unbounded::<Observer>();
+
+        let context = Arc::new(Context {
+            state: state.clone(),
+            network: network.clone(),
+            action_channel: tx_action.clone(),
+            conductor_api: conductor_context.conductor_api.clone(),
+            signal_tx: conductor_context.signal_tx.clone(),
+            instance_is_alive: instance_is_alive.clone(),
+            state_dump_logging: conductor_context.state_dump_logging.clone(),
+            thread_pool: conductor_context.thread_pool.clone(),
+            redux_wants_write: redux_wants_write.clone(),
+            metric_publisher: conductor_context.metric_publisher.clone(),
+        });
+
         let mut scheduler = Scheduler::new();
         scheduler
             .every(10.seconds())
@@ -84,26 +109,121 @@ impl Instance {
             .run(scheduled_jobs::create_state_pruning_callback(
                 context.clone(),
             ));
-        self.scheduler_handle = Some(Arc::new(scheduler.watch_thread(Duration::from_millis(10))));
 
-        self.persister = Some(context.persister.clone());
+        let mut instance = Instance {
+            state: state.clone(),
+            network: Arc::new(NetworkState::new()),
+            action_channel: tx_action,
+            observer_channel: tx_observer,
+            scheduler_handle: Arc::new(scheduler.watch_thread(Duration::from_millis(10))),
+            persister: conductor_context.persister.clone(),
+            consistency_model: ConsistencyModel::new(context.clone()),
+            kill_switch: None,
+            kill_switch_holding: None,
+            conductor_context: conductor_context.clone(),
+            instance_is_alive: Arc::new(AtomicBool::new(true)),
+            redux_wants_write: Arc::new(AtomicBool::new(false)),
+        };
 
-        self.start_action_loop(context.clone(), rx_action, rx_observer);
-        self.start_holding_loop(context.clone());
+        instance.start_action_loop(context.clone(), rx_action, rx_observer);
+        instance.start_holding_loop(context.clone());
+        instance
+    }
 
-        context
+    pub fn new(conductor_context: Arc<ConductorContext>) -> Self {
+        Self::construct_instance(StateWrapper::new(conductor_context.clone()), conductor_context)
+    }
+
+    pub fn load(state: StateWrapper, conductor_context: Arc<ConductorContext>) -> Self {
+        Self::construct_instance(state, conductor_context)
+    }
+
+    pub fn context(self) -> Arc<Context> {
+        Arc::new(Context {
+            state: self.state.clone(),
+            network: self.network.clone(),
+            action_channel: self.action_channel.clone(),
+            conductor_api: self.conductor_context.conductor_api.clone(),
+            signal_tx: self.conductor_context.signal_tx.clone(),
+            instance_is_alive: self.instance_is_alive.clone(),
+            state_dump_logging: self.conductor_context.state_dump_logging.clone(),
+            thread_pool: self.conductor_context.thread_pool.clone(),
+            redux_wants_write: self.redux_wants_write.clone(),
+            metric_publisher: self.conductor_context.metric_publisher.clone(),
+        })
     }
 
     /// This is calling inner_setup and running the initialization workflow which makes sure that
     /// the chain gets initialized if dna is Some.
     /// If dna is None it is assumed the chain is already initialized, i.e. we are loading a chain.
-    pub fn initialize(
+    pub async fn initialize(
         &mut self,
-        dna: Option<Dna>,
-        context: Arc<Context>,
+        maybe_dna: Option<Dna>,
+        conductor_context: Arc<ConductorContext>,
     ) -> HcResult<Arc<Context>> {
-        let context = self.inner_setup(context);
-        context.block_on(application::initialize(self, dna, context.clone()))
+        let instance_context = self.inner_setup(conductor_context);
+
+        // This function is called in two different cases:
+        // 1. Initializing a brand new instance
+        // 2. Loading a persistent instance from storage
+        //
+        // In the first case, we definitely need maybe_dna to be Some, because that is the DNA
+        // that will seed this instance's Nucleus.
+        // If maybe_dna is None, we expect to find a DNA in the Nucleus (=in the state) already.
+        let dna = if let Some(dna) = maybe_dna {
+            // Ok, since maybe_dna is set, we are assuming to seed a new instance.
+            // To make sure that we are not running into a weird state, we are going
+            // to check here if we really deal with a fresh state and no DNA in the Nucleus already:
+            if instance_context.get_dna().is_some() {
+                panic!("Tried to initialize instance that already has a DNA in its Nucleus");
+            }
+            dna
+        } else {
+            // No DNA provided as parameter.
+            // This is the loading-case - we assume to find a DNA in the Nucleus state:
+            instance_context.get_dna().ok_or_else(|| {
+                log_error!(
+                instance_context,
+                "No DNA provided during loading and none found in state"
+            );
+                HolochainError::DnaMissing
+            })?
+        };
+
+        // 2. Initialize the local chain if not already
+        let first_initialization = match get_dna_and_agent(&instance_context).await {
+            Ok(_) => false,
+            Err(err) => {
+                log_debug!(
+                instance_context,
+                "dna/initialize: No DNA and agent in chain so assuming uninitialized: {:?}",
+                err
+            );
+                initialize_chain(dna.clone(), &instance_context).await?;
+                log_debug!(
+                instance_context,
+                "dna/initialize: Initializing new chain from given DNA..."
+            );
+                true
+            }
+        };
+
+        // 3. Initialize the network
+        let dna_address = dna.address();
+        initialize_network(
+            conductor_context.p2p_config.clone(),
+            dna_address.clone(),
+            conductor_context.agent_id.into(),
+            create_handler(instance_context.clone(), dna_address.into()),
+            &instance_context
+        ).await?;
+
+        // 4. (first initialization only) Call the init callbacks in the zomes
+        if first_initialization {
+            call_init(dna, &instance_context).await?;
+        }
+
+        Ok(instance_context)
     }
 
     /// This function is only needed in tests to create integration tests in which an instance
@@ -115,21 +235,20 @@ impl Instance {
         &mut self,
         dna: Dna,
         spoofed_dna_address: Address,
-        context: Arc<Context>,
+        conductor_context: Arc<ConductorContext>,
     ) -> HcResult<Arc<Context>> {
-        let context = self.inner_setup(context);
+        let instance_context = self.context();
         context.block_on(async {
             initialize_chain(dna.clone(), &context).await?;
-            initialize_network_with_spoofed_dna(spoofed_dna_address, &context).await
+            initialize_network_with_spoofed_dna(
+                conductor_context.p2p_config.clone(),
+                spoofed_dna_address,
+                conductor_context.agent_id.into(),
+                create_handler(context.clone(), dna_address.into()),
+                &instance_context
+            ).await
         })?;
         Ok(context)
-    }
-
-    /// Only needed in tests to check that the initialization (and other workflows) fail
-    /// with the right error message if no DNA is present.
-    #[cfg(test)]
-    pub fn initialize_without_dna(&mut self, context: Arc<Context>) -> Arc<Context> {
-        self.inner_setup(context)
     }
 
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
@@ -168,16 +287,6 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
-    pub fn initialize_context(self, context: Arc<Context>) -> Arc<Context> {
-        let mut sub_context = (*context).clone();
-        sub_context.set_instance(Arc::new(RwLock::new(self)))
-        sub_context.set_state(self.state.clone());
-        sub_context.action_channel = self.action_channel.clone();
-        sub_context.observer_channel = self.observer_channel.clone();
-        sub_context.network = self.network.clone();
-        Arc::new(sub_context)
-    }
-
     /// Start the Event Loop on a separate thread
     pub fn start_action_loop(
         &mut self,
@@ -188,7 +297,7 @@ impl Instance {
         self.stop_action_loop();
 
         let mut sync_self = self.clone();
-        let sub_context = self.initialize_context(context);
+        let sub_context = self.context();
 
         let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
         self.kill_switch = Some(kill_sender);
@@ -388,35 +497,6 @@ impl Instance {
                         );
                     });
             }
-        }
-    }
-
-    /// Creates a new Instance with no channels set up.
-    pub fn new(context: Arc<Context>) -> Self {
-        Instance {
-            state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
-            network: Arc::new(NetworkState::new()),
-            action_channel: None,
-            observer_channel: None,
-            scheduler_handle: None,
-            persister: None,
-            consistency_model: ConsistencyModel::new(context),
-            kill_switch: None,
-            kill_switch_holding: None,
-        }
-    }
-
-    pub fn from_state(state: State, context: Arc<Context>) -> Self {
-        Instance {
-            state: Arc::new(RwLock::new(StateWrapper::from(state))),
-            network: Arc::new(NetworkState::new()),
-            action_channel: None,
-            observer_channel: None,
-            scheduler_handle: None,
-            persister: None,
-            consistency_model: ConsistencyModel::new(context),
-            kill_switch: None,
-            kill_switch_holding: None,
         }
     }
 
@@ -718,7 +798,7 @@ pub mod tests {
     pub fn can_process_action() {
         let netname = Some("can_process_action");
         let mut instance = Instance::new(test_context("jason", netname));
-        let context = instance.initialize_context(test_context("jane", netname));
+        let context = instance.context();
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
@@ -837,7 +917,7 @@ pub mod tests {
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
-        let context = instance.initialize_context(context);
+        let context = instance.context();
         instance
             .process_action(&commit_action, &context)
             .expect("process_action should run without error");
@@ -862,7 +942,7 @@ pub mod tests {
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
-        let context = instance.initialize_context(context);
+        let context = instance.context();
         instance
             .process_action(&commit_agent_action, &context)
             .expect("process_action should run without error");
@@ -920,7 +1000,7 @@ pub mod tests {
 
         // Set up instance
         let instance = Instance::new(context.clone());
-        let context = instance.initialize_context(context);
+        let context = instance.context();
 
         fn test_entry(i: u32, reps: usize) -> Entry {
             let data: String = std::iter::repeat(format!("{}", i)).take(reps).collect();

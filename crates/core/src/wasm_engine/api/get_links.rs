@@ -109,7 +109,7 @@ pub mod tests {
             test_instance_and_context(dna, Some(netname)).expect("Could not create test instance");
         let (context, _) =
             test_context_and_logger_with_in_memory_network("joan", Some(netname2.as_str()));
-        let arc_context = instance.initialize_context(context);
+        let arc_context = instance.context();
         (instance, arc_context)
     }
 

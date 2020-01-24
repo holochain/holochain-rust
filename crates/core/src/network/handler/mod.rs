@@ -122,8 +122,7 @@ fn handle_failure_result(
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
-    let context = c.clone();
+pub fn create_handler(context: Arc<Context>, my_dna_address: String) -> NetHandler {
     NetHandler::new(Box::new(move |message| {
         if let Err(err) = message {
             log_warn!(

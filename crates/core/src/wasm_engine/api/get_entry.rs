@@ -200,7 +200,7 @@ pub mod tests {
         let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), (*wasm).clone());
         let (instance, context) = test_instance_and_context(dna.clone(), netname)
             .expect("Could not initialize test instance");
-        let context = instance.initialize_context(context);
+        let context = instance.context();
 
         println!("{:?}", instance.state().agent().top_chain_header());
         println!(

@@ -57,7 +57,7 @@ pub mod tests {
             ActionWrapper::new(Action::Commit((link_list_entry.clone(), None, vec![])));
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
-        let context = instance.initialize_context(context);
+        let context = instance.context();
         instance
             .process_action(&commit_action, &context)
             .expect("process_action should run without error");
@@ -85,7 +85,7 @@ pub mod tests {
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
-        let context = instance.initialize_context(context);
+        let context = instance.context();
         instance
             .process_action(&commit_action, &context)
             .expect("process_action should run without error");

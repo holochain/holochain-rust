@@ -89,6 +89,8 @@ pub struct ConductorContext {
     pub conductor_api: ConductorApi,
     pub state_dump_logging: bool,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+    pub(crate) signal_tx: Sender<Signal>,
+    pub thread_pool: ThreadPool,
 }
 
 impl ConductorContext {
@@ -127,7 +129,7 @@ impl ConductorContext {
         eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
-        signal_tx: Option<SignalSender>,
+        signal_tx: SignalSender,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
     ) -> Self {
@@ -145,6 +147,8 @@ impl ConductorContext {
             )),
             state_dump_logging,
             metric_publisher,
+            signal_tx,
+            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
         }
     }
 }
@@ -158,6 +162,7 @@ pub struct Context {
     state: Arc<RwLock<StateWrapper>>,
     pub network: Arc<NetworkState>,
     pub action_channel: Sender<ActionWrapper>,
+    pub observer_channel: Option<Sender<Observer>>,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Sender<Signal>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
@@ -209,24 +214,17 @@ impl Context {
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
     ) -> Self {
         Context {
-            instance_name: instance_name.to_owned(),
-            agent_id: agent_id.clone(),
-            persister,
             state: None,
             action_channel: None,
             signal_tx,
             observer_channel: None,
-            chain_storage,
-            dht_storage,
-            eav_storage: eav,
-            p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(
                 conductor_api,
                 agent_id,
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
+            thread_pool,
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
         }

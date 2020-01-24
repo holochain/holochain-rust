@@ -67,7 +67,7 @@ pub mod tests {
             netname,
         )
         .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test", netname));
+        let context = instance.context();
 
         if let CallbackResult::Fail(_) = receive(
             context,
@@ -89,7 +89,7 @@ pub mod tests {
         let netname = Some("implemented_with_null");
         let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0, netname)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test", netname));
+        let context = instance.context();
 
         let result = receive(
             context,

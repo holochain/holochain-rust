@@ -6,18 +6,23 @@ use crate::{
 };
 use futures::{task::Poll, Future};
 use holochain_core_types::error::HcResult;
-#[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
+use holochain_net::p2p_config::P2pConfig;
+use holochain_net::connection::net_connection::NetHandler;
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
-pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
-    let (dna_address, agent_id) = get_dna_and_agent(context).await?;
-    let handler = create_handler(&context, dna_address.to_string());
+pub async fn initialize_network(
+    p2p_config: P2pConfig,
+    dna_address: Address,
+    agent_id: String,
+    handler: NetHandler,
+    context: &Arc<Context>
+) -> HcResult<()> {
     let network_settings = NetworkSettings {
-        p2p_config: context.p2p_config.clone(),
+        p2p_config,
         dna_address,
-        agent_id: agent_id.clone(),
+        agent_id,
         handler,
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
@@ -34,13 +39,15 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
 
 #[cfg(test)]
 pub async fn initialize_network_with_spoofed_dna(
+    p2p_config: P2pConfig,
     dna_address: Address,
-    context: &Arc<Context>,
+    agent_id: String,
+    handler: NetHandler,
+    context: &Arc<Context>
 ) -> HcResult<()> {
     let (_, agent_id) = get_dna_and_agent(context).await?;
-    let handler = create_handler(&context, dna_address.to_string());
     let network_settings = NetworkSettings {
-        p2p_config: context.p2p_config.clone(),
+        p2p_config,
         dna_address,
         agent_id,
         handler,

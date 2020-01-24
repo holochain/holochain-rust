@@ -291,7 +291,7 @@ pub mod tests {
     fn call_ribosome_wrong_dna() {
         let netname = Some("call_ribosome_wrong_dna");
         let mut instance = Instance::new(test_context("janet", netname));
-        let context = instance.initialize_without_dna(test_context("jane", netname));
+        let context = instance.context();
 
         let call = ZomeFnCall::new(
             "test_zome",

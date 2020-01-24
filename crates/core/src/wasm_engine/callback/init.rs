@@ -32,7 +32,7 @@ pub mod tests {
         let netname = Some("init::pass");
         let instance = test_callback_instance(zome, Callback::Init.as_str(), 0, netname)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test", netname));
+        let context = instance.context();
 
         let result = init(context, zome, &CallbackParams::Init);
 
@@ -52,7 +52,7 @@ pub mod tests {
         )
         .expect("Test callback instance could not be initialized");
 
-        let context = instance.initialize_context(test_context("test", netname));
+        let context = instance.context();
 
         let result = init(context, zome, &CallbackParams::Init);
 

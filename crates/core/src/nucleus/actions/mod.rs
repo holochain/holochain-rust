@@ -97,7 +97,7 @@ pub mod tests {
     ) -> (Instance, Arc<Context>) {
         let (instance, context) = test_instance_and_context_by_name(dna, name, network_name)
             .expect("Could not create test instance");
-        let initialized_context = instance.initialize_context(context);
+        let initialized_context = instance.context();
         (instance, initialized_context)
     }
 
@@ -110,7 +110,7 @@ pub mod tests {
         let (instance, context) =
             test_instance_and_context_with_memory_network_nodes(dna, name, network_name)
                 .expect("Could not create test instance");
-        let initialized_context = instance.initialize_context(context);
+        let initialized_context = instance.context();
         (instance, initialized_context)
     }
 

@@ -7,7 +7,6 @@ use crate::{
     content_store::GetContent,
     context::Context,
     dht::dht_store::DhtStore,
-    network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
 };
 use holochain_conductor_lib_api::ConductorApi;
@@ -29,6 +28,7 @@ use holochain_persistence_api::{
 
 use crate::dht::dht_store::DhtStoreSnapshot;
 use std::{convert::TryInto, sync::Arc, time::SystemTime};
+use crate::context::ConductorContext;
 
 pub const ACTION_PRUNE_MS: u64 = 60000;
 
@@ -63,47 +63,47 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(context: Arc<Context>) -> Self {
+    pub fn new(conductor_context: Arc<ConductorContext>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let chain_cas = &(*context).chain_storage;
-        let dht_cas = &(*context).dht_storage;
-        let eav = context.eav_storage.clone();
+        let chain_cas = &(*conductor_context).chain_storage;
+        let dht_cas = &(*conductor_context).dht_storage;
+        let eav = conductor_context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(
                 ChainStore::new(chain_cas.clone()),
-                context.agent_id.address(),
+                conductor_context.agent_id.address(),
             )),
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
-            conductor_api: context.conductor_api.clone(),
+            conductor_api: conductor_context.conductor_api.clone(),
         }
     }
 
-    pub fn new_with_agent(context: Arc<Context>, agent_state: AgentState) -> Self {
-        Self::new_with_agent_and_nucleus(context, agent_state, NucleusState::new())
+    pub fn new_with_agent(conductor_context: Arc<ConductorContext>, agent_state: AgentState) -> Self {
+        Self::new_with_agent_and_nucleus(conductor_context, agent_state, NucleusState::new())
     }
 
     pub fn new_with_agent_and_nucleus(
-        context: Arc<Context>,
+        conductor_context: Arc<ConductorContext>,
         agent_state: AgentState,
         nucleus_state: NucleusState,
     ) -> Self {
-        let cas = context.dht_storage.clone();
-        let eav = context.eav_storage.clone();
+        let cas = conductor_context.dht_storage.clone();
+        let eav = conductor_context.eav_storage.clone();
 
         let dht_store = DhtStore::new(cas.clone(), eav.clone());
-        Self::new_with_agent_nucleus_dht(context, agent_state, nucleus_state, dht_store)
+        Self::new_with_agent_nucleus_dht(conductor_context, agent_state, nucleus_state, dht_store)
     }
 
     pub fn new_with_agent_nucleus_dht(
-        context: Arc<Context>,
+        conductor_context: Arc<ConductorContext>,
         agent_state: AgentState,
         mut nucleus_state: NucleusState,
         dht_store: DhtStore,
     ) -> Self {
-        let cas = context.dht_storage.clone();
+        let cas = conductor_context.dht_storage.clone();
         //let eav = context.eav_storage.clone();
 
         nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
@@ -112,7 +112,7 @@ impl State {
             nucleus: Arc::new(nucleus_state),
             agent: Arc::new(agent_state),
             dht: Arc::new(dht_store),
-            conductor_api: context.conductor_api.clone(),
+            conductor_api: conductor_context.conductor_api.clone(),
         }
     }
 
@@ -253,20 +253,20 @@ impl StateWrapper {
         self.state = None;
     }
 
-    pub fn new(context: Arc<Context>) -> Self {
+    pub fn new(context: Arc<ConductorContext>) -> Self {
         StateWrapper {
             state: Some(State::new(context)),
         }
     }
 
-    pub fn new_with_agent(context: Arc<Context>, agent_state: AgentState) -> Self {
+    pub fn new_with_agent(context: Arc<ConductorContext>, agent_state: AgentState) -> Self {
         StateWrapper {
             state: Some(State::new_with_agent(context, agent_state)),
         }
     }
 
     pub fn new_with_agent_and_nucleus(
-        context: Arc<Context>,
+        context: Arc<ConductorContext>,
         agent_state: AgentState,
         nucleus_state: NucleusState,
     ) -> Self {
@@ -336,6 +336,6 @@ impl From<State> for StateWrapper {
     }
 }
 
-pub fn test_store(context: Arc<Context>) -> State {
+pub fn test_store(context: Arc<ConductorContext>) -> State {
     State::new(context)
 }

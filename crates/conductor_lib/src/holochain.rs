@@ -127,9 +127,7 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance.  Ensure that they are built w/ the same
     /// HDK Version, or log a warning.
-    pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
-        let instance = Instance::new(context.clone());
-
+    pub fn new(dna: Dna, conductor_context: Arc<ConductorContext>) -> HolochainResult<Self> {
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
                 Some("{}".as_bytes().to_vec()),
@@ -150,23 +148,17 @@ impl Holochain {
             }
         }
 
-        Self::from_dna_and_context_and_instance(dna, context, instance)
-    }
+        let new_state = StateWrapper::new(conductor_context.clone());
+        let mut instance = Instance::new(new_state, conductor_context.clone());
 
-    fn from_dna_and_context_and_instance(
-        dna: Dna,
-        context: Arc<Context>,
-        mut instance: Instance,
-    ) -> HolochainResult<Self> {
-        let name = dna.name.clone();
-        let result = instance.initialize(Some(dna), context.clone());
+        let result = instance.initialize(Some(dna), conductor_context.clone());
 
         match result {
-            Ok(new_context) => {
+            Ok(instance_context) => {
                 log_debug!(context, "conductor: {} instantiated", name);
                 let hc = Holochain {
                     instance: Some(instance),
-                    context: Some(new_context),
+                    context: Some(instance_context),
                     active: false,
                 };
                 Ok(hc)
@@ -175,16 +167,18 @@ impl Holochain {
         }
     }
 
-    pub fn load(context: Arc<ConductorContext>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(context.dht_storage.clone());
-        let loaded_state = persister.load(context.clone())?.ok_or_else(|| {
+
+    pub fn load(conductor_context: Arc<ConductorContext>) -> Result<Self, HolochainError> {
+        let persister = SimplePersister::new(conductor_context.dht_storage.clone());
+        let loaded_state = persister.load(conductor_context.clone())?.ok_or_else(|| {
             HolochainError::ErrorGeneric("State could not be loaded due to NoneError".to_string())
         })?;
-        let mut instance = Instance::from_state(loaded_state, context.clone());
-        let new_context = instance.initialize(None, context)?;
+        let loaded_state = StateWrapper::from(loaded_state);
+        let mut instance = Instance::new(loaded_state, conductor_context.clone());
+        let instance_context = instance.initialize(None, conductor_context)?;
         Ok(Holochain {
             instance: Some(instance),
-            context: Some(new_context),
+            context: Some(instance_context),
             active: false,
         })
     }

@@ -17,6 +17,7 @@ use crate::{
     state::StateWrapper,
 };
 use std::sync::Arc;
+use crate::context::ConductorContext;
 
 /// trait that defines the persistence functionality that holochain_core requires
 pub trait Persister: Send + Sync {
@@ -25,7 +26,7 @@ pub trait Persister: Send + Sync {
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError>;
-    fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
+    fn load(&self, conductor_context: Arc<ConductorContext>) -> Result<Option<State>, HolochainError>;
 }
 
 #[derive(Clone)]
@@ -51,7 +52,7 @@ impl Persister for SimplePersister {
         store.add(&dht_store_snapshot)?;
         Ok(())
     }
-    fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
+    fn load(&self, conductor_context: Arc<ConductorContext>) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
         let store = lock.read().unwrap();
 
@@ -81,7 +82,7 @@ impl Persister for SimplePersister {
         }
 
         Ok(State::try_from_snapshots(
-            context,
+            conductor_context,
             agent_snapshot.unwrap(),
             nucleus_snapshot.unwrap(),
             dht_store_snapshot.unwrap(),

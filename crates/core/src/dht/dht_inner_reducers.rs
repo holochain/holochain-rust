@@ -1,4 +1,4 @@
-use crate::content_store::{AddContent, GetContent};
+use crate::content_store::GetContent;
 ///
 /// Inner DHT reducers are not pure functions but rather functions designed to make the required
 /// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
@@ -20,6 +20,7 @@ use holochain_core_types::{
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     eav::IndexFilter,
+    txn::CursorProviderDyn,
 };
 
 use std::{collections::BTreeSet, str::FromStr};
@@ -32,12 +33,25 @@ pub(crate) enum LinkModification {
 /// Used as the inner function for both commit and hold reducers
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
-    match store.add(entry) {
-        Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
-            store.add_eavi(&status_eav).map(|_| ()).map_err(|e| {
-                format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()
+    let cursor = store.create_cursor()?;
+    match cursor.add(entry) {
+        Ok(()) => {
+            let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)?;
+            cursor.add_eavi(&status_eav).map(|_| ()).map_err(|e| {
+                let e: HolochainError =
+                    format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into();
+                e
+            })?;
+            cursor.commit().map_err(|e| {
+                let e: HolochainError = format!(
+                    "err/dht: dht::reduce_store_entry_inner() commit FAILED {:?}",
+                    e
+                )
+                .into();
+                e
             })
-        })?,
+        }
+
         Err(e) => Err(format!("err/dht: dht::reduce_store_entry_inner() FAILED {:?}", e).into()),
     }
 }
@@ -49,7 +63,8 @@ pub(crate) fn reduce_add_remove_link_inner(
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    if store.contains(link.base())? {
+    let cursor = store.create_cursor()?;
+    if cursor.contains(link.base())? {
         let attr = match link_modification {
             LinkModification::Add => {
                 Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
@@ -59,7 +74,9 @@ pub(crate) fn reduce_add_remove_link_inner(
             }
         };
         let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
-        store.add_eavi(&eav)?;
+        let cursor = store.create_cursor()?;
+        cursor.add_eavi(&eav)?;
+        cursor.commit()?;
         Ok(link.base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(String::from(
@@ -76,11 +93,12 @@ pub(crate) fn reduce_update_entry_inner(
 ) -> HcResult<Address> {
     // Update crud-status
     let new_status_eav = create_crud_status_eav(old_address, CrudStatus::Modified)?;
-    store.add_eavi(&new_status_eav)?;
+    let cursor = store.create_cursor()?;
+    cursor.add_eavi(&new_status_eav)?;
     // add link from old to new
     let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
-    store.add_eavi(&crud_link_eav)?;
-
+    cursor.add_eavi(&crud_link_eav)?;
+    cursor.commit()?;
     Ok(new_address.clone())
 }
 
@@ -90,7 +108,8 @@ pub(crate) fn reduce_remove_entry_inner(
     latest_deleted_address: &Address,
     deletion_address: &Address,
 ) -> HcResult<Address> {
-    let entry = store
+    let cursor = store.create_cursor()?;
+    let entry = cursor
         .get(latest_deleted_address)?
         .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?;
 
@@ -126,12 +145,14 @@ pub(crate) fn reduce_remove_entry_inner(
     // Update crud-status
     let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted)
         .map_err(|_| HolochainError::ErrorGeneric("Could not create eav".into()))?;
-    store.add_eavi(&new_status_eav)?;
+
+    cursor.add_eavi(&new_status_eav)?;
 
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
         .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
-    store.add_eavi(&crud_link_eav)?;
+    cursor.add_eavi(&crud_link_eav)?;
 
+    cursor.commit()?;
     Ok(latest_deleted_address.clone())
 }

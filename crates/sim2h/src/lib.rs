@@ -6,7 +6,7 @@ extern crate lib3h_crypto_api;
 extern crate log;
 extern crate nanoid;
 extern crate num_cpus;
-extern crate threadpool;
+// extern crate threadpool;
 #[macro_use]
 extern crate serde;
 #[macro_use]
@@ -31,6 +31,13 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use debug::{DebugData, DebugLimboData};
+use holochain_locksmith::Mutex;
+use holochain_metrics::{
+    config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
+};
+use holochain_walkman_types::{walkman_log_sim2h, WalkmanSim2hEvent};
+use in_stream::*;
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
@@ -42,14 +49,6 @@ use lib3h_protocol::{
     types::SpaceHash,
     uri::Lib3hUri,
 };
-use url2::prelude::*;
-
-use debug::{DebugData, DebugLimboData};
-pub use wire_message::{
-    HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
-};
-
-use in_stream::*;
 use log::*;
 use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
@@ -59,14 +58,11 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-pub use wire_message::{StatusData, WireError, WireMessage, WIRE_VERSION};
-
-use holochain_locksmith::Mutex;
-use holochain_walkman_types::{walkman_log_sim2h, WalkmanSim2hEvent};
-use holochain_metrics::{
-    config::MetricPublisherConfig, with_latency_publishing, Metric, MetricPublisher,
-};
 use threadpool::ThreadPool;
+use url2::prelude::*;
+pub use wire_message::{
+    HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
+};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -815,7 +811,7 @@ impl Sim2h {
                     let uuid = nanoid::simple();
                     open_lifecycle("adding conn job", &uuid, &url);
                     self.state.write().open_connections.insert(
-                        url,
+                        url.clone(),
                         OpenConnectionItem {
                             version: 1, // assume version 1 until we get a Hello
                             uuid,
@@ -824,16 +820,13 @@ impl Sim2h {
                         },
                     );
                     self.pool.push_job(Box::new(job));
+                    walkman_log(|| WalkmanSim2hEvent::Connect(url.to_string()));
                     true
                 } else {
                     false
                 }
             }
-            walkman_log(|| WalkmanSim2hEvent::Connect(url.0.to_string()));
-            self.open_connections
-                .insert(url, (job.clone(), outgoing_send));
-            self.pool.push_job(Box::new(job));
-        }
+        )
     }
 
     /// we received some kind of error related to a stream/socket
@@ -876,10 +869,15 @@ impl Sim2h {
                                     Ok((source, wire_message)) => {
                                         walkman_log(|| {
                                             let signed_message =
-                                                SignedWireMessage::try_from(payload.clone()).unwrap();
-                                            let msg_serialized = serde_json::to_string(&signed_message)
-                                                .expect("SignedWireMessage serialized");
-                                            WalkmanSim2hEvent::Message(url.to_string(), msg_serialized)
+                                                SignedWireMessage::try_from(payload.clone())
+                                                    .unwrap();
+                                            let msg_serialized =
+                                                serde_json::to_string(&signed_message)
+                                                    .expect("SignedWireMessage serialized");
+                                            WalkmanSim2hEvent::Message(
+                                                url.to_string(),
+                                                msg_serialized,
+                                            )
                                         });
                                         if let Err(error) =
                                             self.handle_message(&url, wire_message, &source)
@@ -1141,28 +1139,17 @@ impl Sim2h {
         })
     }
 
-    fn get_status_data(&self) -> StatusData {
-        StatusData {
-            spaces: self.spaces.len(),
-            connections: self.open_connections.len(),
-            redundant_count: match self.dht_algorithm {
-                DhtAlgorithm::FullSync => 0,
-                DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
-            },
-            version: WIRE_VERSION,
-        }
-    }
-
     fn get_limbo_debug_data(&self) -> DebugLimboData {
         let mut total_connections = 0;
         let mut total_messages = 0;
         let mut max_messages = 0;
 
-        self.connection_states
+        self.state
             .read()
+            .connection_states
             .values()
             .for_each(|cs| match cs {
-                ConnectionState::Limbo(messages) => {
+                (_uuid, ConnectionState::Limbo(messages)) => {
                     let len = messages.len();
                     total_connections += 1;
                     total_messages += len;
@@ -1230,9 +1217,7 @@ impl Sim2h {
 
             if std::time::Instant::now() >= self.missing_aspects_resync {
                 self.missing_aspects_resync = std::time::Instant::now()
-                    .checked_add(std::time::Duration::from_millis(
-                        RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
-                    ))
+                    .checked_add(RETRY_FETCH_MISSING_ASPECTS_INTERVAL)
                     .expect("can add interval ms");
 
                 self.retry_sync_missing_aspects();

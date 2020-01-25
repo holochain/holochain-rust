@@ -4,17 +4,17 @@ use std::io::{BufRead, Read};
 
 #[derive(Serialize, Deserialize)]
 pub struct Cassette {
-    events: Vec<WalkmanLogItem>,
+    logs: Vec<WalkmanLogItem>,
 }
 
 impl Cassette {
-    pub fn events(&self) -> &Vec<WalkmanLogItem> {
-        self.events.as_ref()
+    pub fn logs(&self) -> &Vec<WalkmanLogItem> {
+        self.logs.as_ref()
     }
 
     pub fn from_log_data<R: Read>(reader: std::io::BufReader<R>) -> Cassette {
         Cassette {
-            events: reader
+            logs: reader
                 .lines()
                 .map(|line| line.expect("IO error while parsing log for walkman"))
                 .filter_map(parse_line)

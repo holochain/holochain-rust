@@ -183,13 +183,13 @@ impl Sim2hState {
     fn get_space(&self, space_address: &SpaceHash) -> &Space {
         self.spaces
             .get(space_address)
-            .expect("we should be able to get the space")
+            .expect("we should be able to get the space (immutably)")
     }
 
     fn get_space_mut(&mut self, space_address: &SpaceHash) -> &mut Space {
         self.spaces
             .get_mut(space_address)
-            .expect("we should be able to get the space")
+            .expect("we should be able to get the space (mutably)")
     }
 
     fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &mut Space {

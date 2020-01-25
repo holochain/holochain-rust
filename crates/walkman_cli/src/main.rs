@@ -22,7 +22,7 @@ pub fn main() {
             }
             OptCassette::Show(OptPath { path }) => {
                 let cassette = read_cassette(path);
-                for item in cassette.events() {
+                for item in cassette.logs() {
                     let time: chrono::DateTime<chrono::offset::Local> = item.time.into();
                     let WalkmanEvent::Sim2hEvent(event) = &item.event;
                     let line = match event {
@@ -50,7 +50,7 @@ pub fn main() {
                 } else {
                     read_cassette(playback.path)
                 };
-                Sim2hCassettePlayer::playback(&sim2h_url, cassette);
+                Sim2hCassettePlayer::new().playback(&sim2h_url, cassette);
             }
         },
     }

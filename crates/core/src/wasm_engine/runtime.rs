@@ -63,6 +63,16 @@ impl WasmCallData {
             WasmCallData::DirectCall(name, _) => name.to_string(),
         }
     }
+
+    pub fn context(&self) -> Result<Arc<Context>, RuntimeError> {
+        match &self {
+            WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
+            WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("context data: {:?}", &self).into_boxed_str(),
+            }),
+        }
+    }
 }
 
 impl fmt::Display for WasmCallData {
@@ -96,7 +106,7 @@ pub struct Runtime {
     /// Memory state tracker between ribosome and wasm.
     pub memory_manager: WasmPageManager,
 
-    pub wasm_instance: Option<Instance>,
+    pub wasm_instance: Instance,
 
     /// data to be made available to the function at runtime
     pub data: WasmCallData,
@@ -142,13 +152,7 @@ impl Runtime {
     }
 
     pub fn context(&self) -> Result<Arc<Context>, RuntimeError> {
-        match &self.data {
-            WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
-            WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
-            _ => Err(RuntimeError::Trap {
-                msg: format!("context data: {:?}", &self.data).into_boxed_str(),
-            }),
-        }
+        self.data.context()
     }
 
     /// Load a JsonString stored in wasm memory.
@@ -168,9 +172,7 @@ impl Runtime {
             }
         };
 
-        let bin_arg = self
-            .memory_manager
-            .read(&self.wasm_instance.unwrap(), allocation);
+        let bin_arg = self.memory_manager.read(&self.wasm_instance, allocation);
 
         // convert complex argument
         JsonString::from_json(
@@ -191,10 +193,7 @@ impl Runtime {
         let mut s_bytes: Vec<_> = j.to_bytes();
         s_bytes.push(0); // Add string terminate character (important)
 
-        match self
-            .memory_manager
-            .write(&mut self.wasm_instance.unwrap(), &s_bytes)
-        {
+        match self.memory_manager.write(&mut self.wasm_instance, &s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
             Ok(allocation) => Ok(RibosomeEncodingBits::from(RibosomeEncodedValue::Allocation(
                 allocation.into(),

@@ -1,12 +1,13 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{context::Context, wasm_engine::api::ZomeApiResult};
 use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
+use std::sync::Arc;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_debug(runtime: &mut Runtime, payload: WasmString) -> ZomeApiResult {
-    log_debug!(runtime.context()?, "dna: '{}'", payload.to_string());
+pub fn invoke_debug(context: Arc<Context>, payload: WasmString) -> ZomeApiResult {
+    log_debug!(context, "dna: '{}'", payload.to_string());
 
     ribosome_success!()
 }

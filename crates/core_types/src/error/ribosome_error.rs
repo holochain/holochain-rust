@@ -329,7 +329,7 @@ pub mod tests {
 
             let inner_code = RibosomeEncodedValue::from_error(err);
 
-            let _one_int: i64 = inner_code.clone().into();
+            let _one_int: u64 = inner_code.clone().into();
             let _another_int: u64 = inner_code.clone().into();
         }
     }

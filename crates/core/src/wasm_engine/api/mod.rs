@@ -32,7 +32,6 @@ use crate::wasm_engine::{
         capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
         commit::invoke_commit_app_entry,
         crypto::invoke_crypto,
-        debug::invoke_debug,
         emit_signal::invoke_emit_signal,
         entry_address::invoke_entry_address,
         get_entry::invoke_get_entry,
@@ -74,7 +73,7 @@ pub type ZomeApiResult = Result<RibosomeEncodingBits, RuntimeError>;
 link_zome_api! {
     /// send debug information to the log
     /// debug(s: String)
-    "hc_debug", Debug, invoke_debug;
+    // "hc_debug", Debug, invoke_debug;
 
     /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_value: String) -> Address

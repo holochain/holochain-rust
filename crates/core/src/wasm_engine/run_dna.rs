@@ -1,18 +1,14 @@
 use crate::{
     nucleus::ZomeFnResult,
-    wasm_engine::{
-        factories::wasm_instance_factory,
-        memory::WasmPageManager,
-        runtime::{Runtime, WasmCallData},
-    },
+    wasm_engine::{factories::wasm_instance_factory, runtime::WasmCallData},
 };
 use holochain_core_types::error::{
-    HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeArgBits,
+    HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits,
 };
 use holochain_json_api::json::JsonString;
 
 use crate::wasm_engine::factories::wasm_module_factory;
-use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
+use holochain_wasm_utils::memory::{allocation::WasmAllocation, MemoryInt};
 use std::convert::TryFrom;
 use wasmer_runtime::{Module, Value};
 
@@ -60,37 +56,46 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
-    let mut runtime = Runtime {
-        memory_manager: WasmPageManager::new(),
-        wasm_instance: None,
-        data,
-    };
-
-    // Write input arguments in wasm memory
-    runtime.wasm_instance = Some(wasm_instance_factory(&mut runtime, &wasm_module)?);
+    let mut wasm_instance = wasm_instance_factory(
+        data.context()
+            .map_err(|e| HolochainError::from(e.to_string()))?,
+        &wasm_module,
+    )?;
 
     let fn_name = data.fn_name();
 
     // scope for mutable borrow of runtime
-    let encoded_allocation_of_input: RibosomeEncodingBits = {
-        let maybe_allocation = runtime
-            .memory_manager
-            .write(&mut runtime.wasm_instance?, &input_parameters);
+    // let encoded_allocation_of_input: RibosomeEncodingBits = {
+    //     let maybe_allocation = runtime
+    //         .memory_manager
+    //         .write(&mut runtime.wasm_instance?, &input_parameters);
+    //
+    //     match maybe_allocation {
+    //         // No allocation to write is ok
+    //         Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
+    //         // Any other error is memory related
+    //         Err(err) => {
+    //             return Err(HolochainError::RibosomeFailed(format!(
+    //                 "WASM Memory issue: {:?}. data = {:?}",
+    //                 err, runtime.data
+    //             )));
+    //         }
+    //         // Write successful, encode allocation
+    //         Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
+    //     }
+    // };
 
-        match maybe_allocation {
-            // No allocation to write is ok
-            Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
-            // Any other error is memory related
-            Err(err) => {
-                return Err(HolochainError::RibosomeFailed(format!(
-                    "WASM Memory issue: {:?}. data = {:?}",
-                    err, runtime.data
-                )));
-            }
-            // Write successful, encode allocation
-            Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
-        }
-    };
+    for (byte, cell) in input_parameters
+        // .bytes()
+        .iter()
+        .zip(
+            wasm_instance.context_mut().memory(0).view()
+                [0 as usize..(input_parameters.len()) as usize]
+                .iter(),
+        )
+    {
+        cell.set(byte.to_owned())
+    }
 
     // scope for mutable borrow of runtime
     let returned_encoding = match {
@@ -98,30 +103,27 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         // HDK-rust implements a function __install_panic_handler that reroutes output of
         // PanicInfo to hdk::debug.
         // Try calling it but fail silently if this function is not there.
-        let _ = runtime.wasm_instance?.call("__install_panic_handler", &[]);
+        let _ = wasm_instance.call("__install_panic_handler", &[]);
 
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
-        runtime
-            .wasm_instance?
+        wasm_instance
             .call(
                 &fn_name,
-                &[Value::I64(
-                    encoded_allocation_of_input as RibosomeRuntimeArgBits,
-                )],
+                &[Value::I32(0), Value::I32(input_parameters.len() as _)],
             )
             .map_err(|err| {
                 HolochainError::RibosomeFailed(format!(
                     "WASM invocation failed: {}. data = {:?}",
-                    err, runtime.data
+                    err, data
                 ))
             })?
             .first()
             .ok_or_else(|| {
                 HolochainError::RibosomeFailed(format!(
                     "WASM return value missing. data = {:?}",
-                    runtime.data
+                    data
                 ))
             })?
             .to_owned()
@@ -158,7 +160,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 "err/nucleus/run_dna: Zome function failure: {}",
                 err_code.as_str()
             );
-            match &runtime.data {
+            match &data {
                 WasmCallData::ZomeCall(d) => {
                     log_info!(d.context, "{}, when calling: {:?}", log_message, d.call)
                 }
@@ -172,9 +174,12 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
             match WasmAllocation::try_from(ribosome_allocation) {
                 Ok(allocation) => {
-                    let result = runtime
-                        .memory_manager
-                        .read(&runtime.wasm_instance?, allocation);
+                    let memory = wasm_instance.context().memory(0);
+                    let result: Vec<_> = memory.view()[MemoryInt::from(allocation.start()) as usize
+                        ..MemoryInt::from(allocation.end()) as usize]
+                        .iter()
+                        .map(|cell| cell.get())
+                        .collect();
                     match String::from_utf8(result) {
                         Ok(json_string) => {
                             return_log_msg = json_string.clone();

@@ -1,29 +1,23 @@
-use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
-    workflows::author_entry::author_entry,
-};
+use crate::{context::Context, workflows::author_entry::author_entry};
 use holochain_core_types::error::HolochainError;
-
 use holochain_wasm_utils::api_serialization::commit_entry::{CommitEntryArgs, CommitEntryResult};
+use std::sync::Arc;
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: CommitEntryArg
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_commit_app_entry(
-    runtime: &mut Runtime,
+    context: Arc<Context>,
     commit_entry_arg: CommitEntryArgs,
-) -> ZomeApiResult {
+) -> Result<CommitEntryResult, HolochainError> {
     // Wait for future to be resolved
-    let task_result: Result<CommitEntryResult, HolochainError> =
-        runtime.context()?.block_on(author_entry(
-            &commit_entry_arg.entry(),
-            None,
-            &runtime.context()?,
-            &commit_entry_arg.options().provenance(),
-        ));
-
-    runtime.store_result(task_result)
+    context.block_on(author_entry(
+        &commit_entry_arg.entry(),
+        None,
+        &context,
+        &commit_entry_arg.options().provenance(),
+    ))
 }
 
 #[cfg(test)]

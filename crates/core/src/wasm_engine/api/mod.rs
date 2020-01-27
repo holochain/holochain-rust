@@ -30,7 +30,6 @@ use crate::wasm_engine::{
     api::{
         call::invoke_call,
         capabilities::{invoke_commit_capability_claim, invoke_commit_capability_grant},
-        commit::invoke_commit_app_entry,
         crypto::invoke_crypto,
         emit_signal::invoke_emit_signal,
         entry_address::invoke_entry_address,
@@ -77,7 +76,7 @@ link_zome_api! {
 
     /// Commit an app entry to source chain
     /// commit_entry(entry_type: String, entry_value: String) -> Address
-    "hc_commit_entry", CommitAppEntry, invoke_commit_app_entry;
+    // "hc_commit_entry", CommitAppEntry, invoke_commit_app_entry;
 
     /// Get an app entry from source chain by key (header hash)
     /// get_entry(address: Address) -> Entry

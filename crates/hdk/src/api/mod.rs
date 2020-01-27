@@ -12,8 +12,7 @@ use holochain_core_types::{
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
-    api_serialization::ZomeApiGlobals,
-    memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
+    api_serialization::ZomeApiGlobals, memory::ribosome::load_ribosome_encoded_json,
 };
 
 use crate::init_globals::init_globals;

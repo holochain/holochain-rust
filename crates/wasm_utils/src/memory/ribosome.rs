@@ -7,12 +7,13 @@ use holochain_core_types::{
         RibosomeErrorCode,
     },
 };
+use memory::handler::WasmMemoryHandler;
+// use memory::handler::WasmMemoryHandler;
 
 use holochain_json_api::json::JsonString;
 
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
-    stack::WasmStack,
     MemoryBits,
 };
 use std::convert::TryFrom;
@@ -85,25 +86,25 @@ impl WasmAllocation {
     }
 }
 
-impl WasmStack {
-    /// equivalent to TryFrom<RibosomeEncodingBits> for WasmStack
-    /// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple
-    /// stacks to ribosome encoding
-    /// wraps WasmAllocation::try_from_ribosome_encoding internally but has a "higher level"
-    /// return signature intended for direct use/return in/from ribosome fns
-    pub fn try_from_ribosome_encoding(
-        maybe_encoded_allocation: RibosomeEncodingBits,
-    ) -> Result<WasmStack, RibosomeEncodedValue> {
-        match WasmAllocation::try_from_ribosome_encoding(maybe_encoded_allocation) {
-            Err(allocation_error) => Err(allocation_error),
-            Ok(allocation) => match WasmStack::try_from(allocation) {
-                Err(allocation_error) => Err(allocation_error),
-                Ok(stack) => Ok(stack),
-            },
-        }
-        .map_err(|e| e.as_ribosome_encoding().into())
-    }
-}
+// impl WasmStack {
+//     /// equivalent to TryFrom<RibosomeEncodingBits> for WasmStack
+//     /// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple
+//     /// stacks to ribosome encoding
+//     /// wraps WasmAllocation::try_from_ribosome_encoding internally but has a "higher level"
+//     /// return signature intended for direct use/return in/from ribosome fns
+//     pub fn try_from_ribosome_encoding(
+//         maybe_encoded_allocation: RibosomeEncodingBits,
+//     ) -> Result<WasmStack, RibosomeEncodedValue> {
+//         match WasmAllocation::try_from_ribosome_encoding(maybe_encoded_allocation) {
+//             Err(allocation_error) => Err(allocation_error),
+//             Ok(allocation) => match WasmStack::try_from(allocation) {
+//                 Err(allocation_error) => Err(allocation_error),
+//                 Ok(stack) => Ok(stack),
+//             },
+//         }
+//         .map_err(|e| e.as_ribosome_encoding().into())
+//     }
+// }
 
 /// Equivalent to From<AllocationResult> for RibosomeEncodedValue
 /// not possible to implement the trait as Result and RibosomeEncodedValue from different crates
@@ -114,7 +115,8 @@ pub fn return_code_for_allocation_result(result: AllocationResult) -> RibosomeEn
     }
 }
 
-pub fn load_ribosome_encoded_string(
+pub fn load_ribosome_encoded_string<W: WasmMemoryHandler>(
+    wasm_memory_handler: &W,
     encoded_value: RibosomeEncodingBits,
 ) -> Result<String, HolochainError> {
     // almost the same as WasmAllocation::try_from_ribosome_encoding but maps to HolochainError
@@ -124,18 +126,19 @@ pub fn load_ribosome_encoded_string(
         )),
         RibosomeEncodedValue::Failure(err_code) => Err(HolochainError::Ribosome(err_code)),
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
-            Ok(WasmAllocation::try_from(ribosome_allocation)?.read_to_string())
+            Ok(WasmAllocation::try_from(ribosome_allocation)?.read_to_string(wasm_memory_handler))
         }
     }
 }
 
-pub fn load_ribosome_encoded_json<J: TryFrom<JsonString>>(
+pub fn load_ribosome_encoded_json<W: WasmMemoryHandler, J: TryFrom<JsonString>>(
+    wasm_memory_handler: &W,
     encoded_value: RibosomeEncodingBits,
 ) -> Result<J, HolochainError>
 where
     J::Error: Into<HolochainError>,
 {
-    let s = load_ribosome_encoded_string(encoded_value)?;
+    let s = load_ribosome_encoded_string(wasm_memory_handler, encoded_value)?;
     let j = JsonString::from_json(&s);
 
     J::try_from(j).map_err(|e| e.into())

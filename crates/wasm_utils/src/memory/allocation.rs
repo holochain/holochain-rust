@@ -1,67 +1,12 @@
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use memory::RESERVED;
 use std::convert::TryFrom;
 
 use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Offset(MemoryInt);
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Length(MemoryInt);
-
-impl From<Offset> for MemoryInt {
-    fn from(offset: Offset) -> Self {
-        offset.0
-    }
-}
-
-impl From<Offset> for MemoryBits {
-    fn from(offset: Offset) -> Self {
-        MemoryBits::from(offset.0)
-    }
-}
-
-impl From<MemoryInt> for Offset {
-    fn from(i: MemoryInt) -> Self {
-        Offset(i)
-    }
-}
-
-impl From<Length> for MemoryInt {
-    fn from(length: Length) -> Self {
-        length.0
-    }
-}
-
-impl From<Length> for MemoryBits {
-    fn from(length: Length) -> Self {
-        MemoryBits::from(length.0)
-    }
-}
-
-impl From<MemoryInt> for Length {
-    fn from(i: MemoryInt) -> Self {
-        Length(i)
-    }
-}
-
-impl From<Length> for usize {
-    fn from(length: Length) -> Self {
-        length.0 as usize
-    }
-}
-
-impl From<usize> for Length {
-    fn from(u: usize) -> Length {
-        (u as MemoryInt).into()
-    }
-}
-
-impl From<*const u8> for Offset {
-    fn from(u: *const u8) -> Offset {
-        (u as MemoryInt).into()
-    }
-}
+pub type Offset = MemoryInt;
+pub type Length = MemoryInt;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone, PartialEq)]
 pub enum AllocationError {
@@ -96,7 +41,9 @@ impl From<AllocationError> for HolochainError {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct WasmAllocation {
     // public fields to the crate for tests
-    pub(in crate::memory) offset: Offset,
+    /// raw offset is what is passed in but doesn't include reserved bytes at the start of memory
+    /// the real offset will be calculated by offset() method
+    pub(in crate::memory) raw_offset: Offset,
     pub(in crate::memory) length: Length,
 }
 
@@ -106,28 +53,34 @@ impl WasmAllocation {
         MEMORY_INT_MAX
     }
 
-    pub fn new(offset: Offset, length: Length) -> AllocationResult {
-        if (MemoryBits::from(offset) + MemoryBits::from(length)) > WasmAllocation::max() {
+    pub fn new(raw_offset: Offset, length: Length) -> AllocationResult {
+        if (MemoryBits::from(RESERVED) + MemoryBits::from(raw_offset) + MemoryBits::from(length))
+            > WasmAllocation::max()
+        {
             Err(AllocationError::OutOfBounds)
         } else if MemoryInt::from(length) == 0 {
             Err(AllocationError::ZeroLength)
         } else {
-            Ok(WasmAllocation { offset, length })
+            Ok(WasmAllocation { raw_offset, length })
         }
     }
 
+    ///
     pub fn offset(self) -> Offset {
-        self.offset
+        (RESERVED as MemoryInt + MemoryInt::from(self.raw_offset)).into()
     }
 
+    /// length in bytes
     pub fn length(self) -> Length {
         self.length
     }
 
+    /// alias for offset
     pub fn start(self) -> Offset {
         self.offset()
     }
 
+    /// start plus the length
     pub fn end(self) -> Offset {
         (MemoryInt::from(self.start()) + MemoryInt::from(self.length())).into()
     }
@@ -137,8 +90,8 @@ impl TryFrom<&str> for WasmAllocation {
     type Error = AllocationError;
     fn try_from(s: &str) -> Result<WasmAllocation, AllocationError> {
         Ok(WasmAllocation::new(
-            Offset::from(s.as_ptr()),
-            Length::from(s.len()),
+            s.as_ptr() as Offset,
+            s.len() as Length,
         )?)
     }
 }
@@ -147,8 +100,8 @@ impl TryFrom<String> for WasmAllocation {
     type Error = AllocationError;
     fn try_from(s: String) -> Result<WasmAllocation, AllocationError> {
         Ok(WasmAllocation::new(
-            Offset::from(s.as_ptr()),
-            Length::from(s.len()),
+            s.as_ptr() as Offset,
+            s.len() as Length,
         )?)
     }
 }

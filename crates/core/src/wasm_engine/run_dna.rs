@@ -65,37 +65,36 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     let fn_name = data.fn_name();
 
     // scope for mutable borrow of runtime
-    // let encoded_allocation_of_input: RibosomeEncodingBits = {
-    //     let maybe_allocation = runtime
-    //         .memory_manager
-    //         .write(&mut runtime.wasm_instance?, &input_parameters);
-    //
-    //     match maybe_allocation {
-    //         // No allocation to write is ok
-    //         Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
-    //         // Any other error is memory related
-    //         Err(err) => {
-    //             return Err(HolochainError::RibosomeFailed(format!(
-    //                 "WASM Memory issue: {:?}. data = {:?}",
-    //                 err, runtime.data
-    //             )));
-    //         }
-    //         // Write successful, encode allocation
-    //         Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
-    //     }
-    // };
+    let encoded_allocation_of_input: RibosomeEncodingBits = {
+        let maybe_allocation = runtime
+            .memory_manager
+            .write(&mut runtime.wasm_instance?, &input_parameters);
 
-    for (byte, cell) in input_parameters
-        // .bytes()
-        .iter()
-        .zip(
-            wasm_instance.context_mut().memory(0).view()
-                [0 as usize..(input_parameters.len()) as usize]
-                .iter(),
-        )
-    {
-        cell.set(byte.to_owned())
-    }
+        match maybe_allocation {
+            // No allocation to write is ok
+            Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
+            // Any other error is memory related
+            Err(err) => {
+                return Err(HolochainError::RibosomeFailed(format!(
+                    "WASM Memory issue: {:?}. data = {:?}",
+                    err, runtime.data
+                )));
+            }
+            // Write successful, encode allocation
+            Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
+        }
+    };
+
+    // for (byte, cell) in input_parameters
+    //     .iter()
+    //     .zip(
+    //         wasm_instance.context_mut().memory(0).view()
+    //             [0 as usize..(input_parameters.len()) as usize]
+    //             .iter(),
+    //     )
+    // {
+    //     cell.set(byte.to_owned())
+    // }
 
     // scope for mutable borrow of runtime
     let returned_encoding = match {
@@ -135,8 +134,6 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
             ))
         }
     } as RibosomeEncodingBits;
-
-    // let returned_encoding = returned_runtime_value as RibosomeEncodingBits;
 
     // Handle result returned by called zome function
     let return_code = RibosomeEncodedValue::from(returned_encoding);

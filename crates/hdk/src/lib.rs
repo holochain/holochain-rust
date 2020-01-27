@@ -31,9 +31,9 @@ pub mod utils;
 #[macro_use]
 pub mod entry_definition;
 pub mod error;
-pub mod global_fns;
 pub mod init_globals;
 pub mod macros;
+pub mod memory;
 
 pub use holochain_wasm_utils::api_serialization::{validation::*, THIS_INSTANCE};
 

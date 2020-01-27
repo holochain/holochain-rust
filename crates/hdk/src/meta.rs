@@ -30,6 +30,7 @@ use holochain_wasm_utils::{
     },
 };
 use std::{collections::BTreeMap, convert::TryFrom};
+use crate::memory::WasmMemory;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -75,19 +76,14 @@ extern "C" {
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    encoded_allocation_of_input: RibosomeEncodingBits,
+    offset: Offset,
+    length: Length,
 ) -> RibosomeEncodingBits {
-    let allocation = match crate::global_fns::init_global_memory_from_ribosome_encoding(
-        encoded_allocation_of_input,
-    ) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
+    let memory = WasmMemory::default();
+    let name = memory.read_to_string(offset, length);
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
-
-    let name = allocation.read_to_string();
 
     match zd
         .entry_types
@@ -98,14 +94,15 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         None => RibosomeEncodedValue::Failure(RibosomeErrorCode::CallbackFailed).into(),
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
-            return_code_for_allocation_result(crate::global_fns::write_json(package)).into()
+            return_code_for_allocation_result(memory.write_json(package)).into()
         }
     }
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(
-    encoded_allocation_of_input: RibosomeEncodingBits,
+    offset: Offset,
+    length: Length,
 ) -> RibosomeEncodingBits {
     if let Err(allocation_error) =
         crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)

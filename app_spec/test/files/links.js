@@ -1,6 +1,34 @@
-const { one, two } = require('../config')
+const { one, twoSame } = require('../config')
+const { Config } = require('@holochain/tryorama')
 
 module.exports = scenario => {
+
+  scenario('links propagate within a single conductor', async (s, t) => {
+    const { alice } = await s.players({alice: twoSame}, true)
+
+    const base = alice.info('app1').agentAddress
+
+    await alice.call('app1', 'simple', 'create_link',
+      { base, target: 'Posty' }
+    )
+
+    await s.consistency()
+
+    const posts1 = await alice.call('app2', 'simple', 'get_my_links',
+      { base, status_request: 'Live' }
+    )
+
+    const posts2 = await alice.call('app2', 'simple', 'get_my_links',
+      { base, status_request: 'Live' }
+    )
+
+    t.ok(posts1.Ok)
+    t.equal(posts1.Ok.links.length, 1)
+    t.ok(posts2.Ok)
+    t.equal(posts2.Ok.links.length, 1)
+
+  })
+
   scenario('delete_post', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 

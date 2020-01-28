@@ -29,6 +29,7 @@ pub struct Sim2hClient {
 }
 
 impl Sim2hClient {
+    #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
     pub fn new(connect_uri: &Url2) -> Result<Self, String> {
         let (pub_key, sec_key) = CRYPTO.with(|crypto| {
             let mut pub_key = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
@@ -59,7 +60,7 @@ impl Sim2hClient {
     pub fn agent_pubkey(&self) -> AgentPubKey {
         AgentPubKey::from(self.agent_pubkey.clone())
     }
-
+    
     pub fn await_msg<F>(&mut self, predicate: F) -> Result<WireMessage, String>
     where
         F: Fn(&WireMessage) -> bool,
@@ -125,6 +126,7 @@ fn pull_message_from_stream(connection: &mut Connection) -> Option<WireMessage> 
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(60000))

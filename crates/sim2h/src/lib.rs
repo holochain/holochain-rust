@@ -715,6 +715,11 @@ impl Sim2h {
                         extra: None,
                     }),
                 );
+                // versions do not match - disconnect them
+                if version != WIRE_VERSION {
+                    warn!("Disconnecting client for bad version this WIRE_VERSIO = {}, client WIRE_VERSION = {}", WIRE_VERSION, version);
+                    sim2h_handle.disconnect(vec![uri]);
+                }
             });
             return Ok(());
         }

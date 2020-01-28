@@ -5,6 +5,7 @@ use std::sync::{Arc, Weak};
 pub enum ConMgrEvent {
     Disconnect(Lib3hUri, Option<Sim2hError>),
     ReceiveData(Lib3hUri, WsFrame),
+    ConnectionCount(usize),
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -19,6 +20,8 @@ type EvtSend = tokio::sync::mpsc::UnboundedSender<ConMgrEvent>;
 type EvtRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrEvent>;
 type CmdSend = tokio::sync::mpsc::UnboundedSender<ConMgrCommand>;
 type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
+
+pub type ConnectionMgrEventRecv = EvtRecv;
 
 async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv) {
     let mut frame = None;
@@ -134,7 +137,7 @@ pub struct ConnectionMgr {
 }
 
 impl ConnectionMgr {
-    pub fn new() -> (ConnectionMgrHandle, EvtRecv) {
+    pub fn new() -> (ConnectionMgrHandle, ConnectionMgrEventRecv) {
         let (evt_p_send, evt_p_recv) = tokio::sync::mpsc::unbounded_channel();
         let (evt_c_send, evt_c_recv) = tokio::sync::mpsc::unbounded_channel();
         let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
@@ -244,6 +247,7 @@ impl ConnectionMgr {
     }
 }
 
+#[derive(Clone)]
 pub struct ConnectionMgrHandle {
     // just kept for reference counting
     _ref_dummy: Arc<()>,

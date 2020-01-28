@@ -27,17 +27,19 @@ impl Sim2hCassettePlayer {
             match log {
                 WalkmanLogItem { time, event } => {
                     match self.last_event {
-                        Some(t) => {
-                            match time.duration_since(t).ok() {
-                                Some(duration) => {
-                                    println!("sleeping for {:?}", duration);
-                                    thread::sleep(duration);
-                                    self.last_event = Some(time);
-                                }
-                                None => { println!("no delay"); }
+                        Some(t) => match time.duration_since(t).ok() {
+                            Some(duration) => {
+                                println!("sleeping for {:?}", duration);
+                                thread::sleep(duration);
+                                self.last_event = Some(time);
                             }
+                            None => {
+                                println!("no delay");
+                            }
+                        },
+                        None => {
+                            self.last_event = Some(time);
                         }
-                        None => { self.last_event = Some(time); }
                     }
                     self.playback_event(sim2h_url, event);
                 }

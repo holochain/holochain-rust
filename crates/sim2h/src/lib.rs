@@ -31,9 +31,7 @@ use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
 use holochain_locksmith::Mutex;
-use holochain_metrics::{
-    config::MetricPublisherConfig,  Metric
-};
+use holochain_metrics::{config::MetricPublisherConfig, Metric};
 use holochain_walkman_types::{walkman_log_sim2h, WalkmanSim2hEvent};
 use in_stream::*;
 use lib3h::rrdht_util::*;
@@ -109,7 +107,7 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
         }
     }
 }
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds   
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
     debug!(
@@ -798,16 +796,10 @@ impl Sim2h {
             })() {
                 Ok((source, wire_message)) => {
                     walkman_log(|| {
-                        let signed_message =
-                            SignedWireMessage::try_from(payload.clone())
-                                .unwrap();
-                        let msg_serialized =
-                            serde_json::to_string(&signed_message)
-                                .expect("SignedWireMessage serialized");
-                        WalkmanSim2hEvent::Message(
-                            url.to_string(),
-                            msg_serialized,
-                        )
+                        let signed_message = SignedWireMessage::try_from(payload.clone()).unwrap();
+                        let msg_serialized = serde_json::to_string(&signed_message)
+                            .expect("SignedWireMessage serialized");
+                        WalkmanSim2hEvent::Message(url.to_string(), msg_serialized)
                     });
                     sim2h_handle.handle_message(url, wire_message, source)
                 }

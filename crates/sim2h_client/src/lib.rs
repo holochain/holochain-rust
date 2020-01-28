@@ -60,7 +60,7 @@ impl Sim2hClient {
     pub fn agent_pubkey(&self) -> AgentPubKey {
         AgentPubKey::from(self.agent_pubkey.clone())
     }
-    
+
     pub fn await_msg<F>(&mut self, predicate: F) -> Result<WireMessage, String>
     where
         F: Fn(&WireMessage) -> bool,

@@ -1,5 +1,4 @@
 use crate::*;
-use lib3h::rrdht_util::*;
 use std::sync::Arc;
 
 pub(crate) struct Sim2hState {
@@ -102,6 +101,7 @@ impl Sim2hState {
                 }
             }
         }
+        walkman_log(|| WalkmanSim2hEvent::Disconnect(uri.0.to_string()));
         trace!("disconnect done");
     }
 

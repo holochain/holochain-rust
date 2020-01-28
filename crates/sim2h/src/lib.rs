@@ -38,7 +38,6 @@ use lib3h_protocol::{
     types::SpaceHash,
     uri::Lib3hUri,
 };
-//use url2::prelude::*;
 
 pub use wire_message::{
     HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
@@ -183,13 +182,8 @@ impl Drop for MetricsTimer {
 pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
 pub type TcpWss = InStreamWss<InStreamTcp>;
 
-#[allow(dead_code)]
 mod connection_mgr;
-#[allow(unused_imports)]
 use connection_mgr::*;
-
-//mod job;
-//use job::*;
 
 #[derive(Clone)]
 pub enum DhtAlgorithm {
@@ -259,13 +253,6 @@ impl Sim2hHandle {
     pub fn dht_algorithm(&self) -> &DhtAlgorithm {
         &self.dht_algorithm
     }
-
-    /*
-    /// access to our connection_mgr handle for sending / etc
-    pub fn connection_mgr(&self) -> &ConnectionMgrHandle {
-        &self.connection_mgr
-    }
-    */
 
     /// acquire a mutex lock to our state data
     pub async fn lock_state(&self) -> tokio::sync::MutexGuard<'_, Sim2hState> {
@@ -409,8 +396,6 @@ pub struct Sim2h {
     pub bound_uri: Option<Lib3hUri>,
     wss_send: crossbeam_channel::Sender<TcpWss>,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
-    //msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    //msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
     connection_mgr_evt_recv: ConnectionMgrEventRecv,
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
@@ -435,7 +420,6 @@ impl Sim2h {
         let (connection_mgr, connection_mgr_evt_recv) = ConnectionMgr::new();
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
-        //let (msg_send, msg_recv) = crossbeam_channel::unbounded();
         let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
@@ -467,8 +451,6 @@ impl Sim2h {
             bound_uri,
             wss_send,
             wss_recv,
-            //msg_send,
-            //msg_recv,
             connection_mgr_evt_recv,
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
@@ -510,43 +492,11 @@ impl Sim2h {
                     let uuid = nanoid::simple();
                     open_lifecycle("adding conn job", &uuid, &url);
 
-                    //let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
-                    //let mut job = Arc::new(Mutex::new(job));
-
                     state
                         .connection_states
                         .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
 
                     state.connection_mgr.connect(url, wss);
-
-                    /*
-                    state.open_connections.insert(
-                        url,
-                        OpenConnectionItem {
-                            version: 1, // assume version 1 until we get a Hello
-                            uuid,
-                            job: job.clone(),
-                            sender: outgoing_send,
-                        },
-                    );
-
-                    tokio::task::spawn(async move {
-                        loop {
-                            let res = job.run();
-                            if !res.cont {
-                                break;
-                            }
-                            if res.wait_ms == 0 {
-                                tokio::task::yield_now().await;
-                            } else {
-                                tokio::time::delay_for(std::time::Duration::from_millis(
-                                    res.wait_ms,
-                                ))
-                                .await;
-                            }
-                        }
-                    });
-                    */
                 }
             });
         }
@@ -598,44 +548,9 @@ impl Sim2h {
         }
 
         did_work
-        /*
-        let len = self.msg_recv.len();
-        if len > 0 {
-            debug!("Handling {} incoming messages", len);
-        }
-        let v: Vec<_> = self.msg_recv.try_iter().collect();
-        for (url, msg) in v {
-            let url: Lib3hUri = url::Url::from(url).into();
-            match msg {
-                Ok(frame) => match frame {
-                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                        url,
-                        format!("unexpected text message: {:?}", s).into(),
-                    ),
-                    WsFrame::Binary(b) => {
-                        trace!(
-                            "priv_check_incoming_messages: received a frame from {}",
-                            url
-                        );
-                        let payload: Opaque = b.into();
-                        Sim2h::handle_payload(self.sim2h_handle.clone(), url, payload);
-                    }
-                    // TODO - we should use websocket ping/pong
-                    //        instead of rolling our own on top of Binary
-                    WsFrame::Ping(_) => (),
-                    WsFrame::Pong(_) => (),
-                    WsFrame::Close(c) => {
-                        debug!("Disconnecting {} after connection reset {:?}", url, c);
-                        self.sim2h_handle.disconnect(vec![url]);
-                    }
-                },
-                Err(e) => self.priv_drop_connection_for_error(url, e),
-            }
-        }
-        false
-        */
     }
 
+    /// process an actual incoming message
     fn priv_handle_recv_data(&mut self, uri: Lib3hUri, data: WsFrame) {
         match data {
             WsFrame::Text(s) => self.priv_drop_connection_for_error(
@@ -788,11 +703,6 @@ impl Sim2h {
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(async move {
                 let state = sim2h_handle.lock_state().await;
-                /*
-                if let Some(conn) = state.open_connections.get_mut(&uri) {
-                    conn.version = version;
-                }
-                */
                 state.send(
                     signer.clone(),
                     uri.clone(),

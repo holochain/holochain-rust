@@ -1,6 +1,7 @@
 use crate::*;
 use std::sync::{Arc, Weak};
 
+/// incoming messages from websockets
 #[derive(Debug)]
 pub enum ConMgrEvent {
     Disconnect(Lib3hUri, Option<Sim2hError>),
@@ -8,6 +9,7 @@ pub enum ConMgrEvent {
     ConnectionCount(usize),
 }
 
+/// messages for controlling the connection manager
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 enum ConMgrCommand {
@@ -23,6 +25,7 @@ type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
 
 pub type ConnectionMgrEventRecv = EvtRecv;
 
+/// internal websocket polling loop
 async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv) {
     let mut frame = None;
 
@@ -32,7 +35,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
     loop {
         let mut did_work = false;
 
-        // collect commands
+        // first, process a batch of control commands
         for _ in 0..100 {
             match cmd_recv.try_recv() {
                 Ok(cmd) => {
@@ -66,6 +69,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
             }
         }
 
+        // next process a batch of incoming websocket frames
         for _ in 0..100 {
             if frame.is_none() {
                 frame = Some(WsFrame::default());
@@ -91,20 +95,24 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
             }
         }
 
+        // if we did work we might have more work to do,
+        // if not, let this task get parked for a time
         if did_work {
-            tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
-        } else {
             tokio::task::yield_now().await;
+        } else {
+            tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }
 }
 
+/// internal actually spawn the above wss_task into the tokio runtime
 fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
     tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv));
     cmd_send
 }
 
+/// internal result enum for connection mgr processing loop
 enum ConMgrResult {
     DidWork,
     NoWork,
@@ -113,6 +121,7 @@ enum ConMgrResult {
 
 use ConMgrResult::*;
 
+/// internal loop for processing the connection mgr
 async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
     loop {
         if let None = weak_ref_dummy.upgrade() {
@@ -128,6 +137,8 @@ async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
     }
 }
 
+/// ConnectionMgr tracks a set of open websocket connections
+/// allowing you to send data to them and checking them for incoming data
 pub struct ConnectionMgr {
     cmd_recv: CmdRecv,
     evt_send_to_parent: EvtSend,
@@ -137,6 +148,8 @@ pub struct ConnectionMgr {
 }
 
 impl ConnectionMgr {
+    /// spawn a new connection manager task, returning a handle for controlling it
+    /// and a receiving channel for any incoming data
     pub fn new() -> (ConnectionMgrHandle, ConnectionMgrEventRecv) {
         let (evt_p_send, evt_p_recv) = tokio::sync::mpsc::unbounded_channel();
         let (evt_c_send, evt_c_recv) = tokio::sync::mpsc::unbounded_channel();
@@ -159,9 +172,13 @@ impl ConnectionMgr {
         (ConnectionMgrHandle::new(ref_dummy, cmd_send), evt_p_recv)
     }
 
+    /// internal check our channels
     fn process(&mut self) -> ConMgrResult {
         let mut did_work = false;
 
+        let c_count = self.wss_map.len();
+
+        // first, if any of our handles sent commands / process a batch of them
         for _ in 0..100 {
             match self.cmd_recv.try_recv() {
                 Ok(cmd) => {
@@ -206,6 +223,9 @@ impl ConnectionMgr {
             }
         }
 
+        // next, if any of our child wss_tasks sent info, process it
+        // mostly we just need to know if any are disconnected.
+        // we forward all other messages
         for _ in 0..100 {
             match self.evt_recv_from_children.try_recv() {
                 Ok(evt) => {
@@ -239,6 +259,17 @@ impl ConnectionMgr {
             }
         }
 
+        let new_c_count = self.wss_map.len();
+        if new_c_count != c_count {
+            if let Err(_) = self
+                .evt_send_to_parent
+                .send(ConMgrEvent::ConnectionCount(new_c_count))
+            {
+                // channel broken, end task
+                return EndTask;
+            }
+        }
+
         if did_work {
             DidWork
         } else {
@@ -247,6 +278,8 @@ impl ConnectionMgr {
     }
 }
 
+/// when you create a ConnectionMgr - it is spawned/owned by a tokio task
+/// this handle that is returned allows you to send it messages
 #[derive(Clone)]
 pub struct ConnectionMgrHandle {
     // just kept for reference counting
@@ -255,6 +288,7 @@ pub struct ConnectionMgrHandle {
 }
 
 impl ConnectionMgrHandle {
+    /// private constructor - used by ConnectionMgr::new()
     fn new(ref_dummy: Arc<()>, send_cmd: CmdSend) -> Self {
         Self {
             _ref_dummy: ref_dummy,
@@ -262,18 +296,21 @@ impl ConnectionMgrHandle {
         }
     }
 
+    /// send in a websocket connection to be managed
     pub fn connect(&self, uri: Lib3hUri, wss: TcpWss) {
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Connect(uri, wss)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }
     }
 
+    /// send data to a managed websocket connection
     pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame) {
         if let Err(e) = self.send_cmd.send(ConMgrCommand::SendData(uri, frame)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }
     }
 
+    /// disconnect and forget about a managed websocket connection
     pub fn disconnect(&self, uri: Lib3hUri) {
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Disconnect(uri)) {
             error!("failed to send on channel - shutting down? {:?}", e);

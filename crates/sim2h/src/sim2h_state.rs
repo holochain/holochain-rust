@@ -4,21 +4,12 @@ use lib3h::rrdht_util::*;
 pub(crate) struct Sim2hState {
     pub(crate) crypto: Box<dyn CryptoSystem>,
     pub(crate) connection_states: HashMap<Lib3hUri, ConnectionStateItem>,
-    //pub(crate) open_connections: HashMap<Lib3hUri, OpenConnectionItem>,
     pub(crate) spaces: HashMap<SpaceHash, Space>,
     pub(crate) metric_gen: MetricsTimerGenerator,
     pub(crate) connection_mgr: ConnectionMgrHandle,
 }
 
 pub(crate) type ConnectionStateItem = (String, ConnectionState);
-/*
-pub(crate) struct OpenConnectionItem {
-    pub(crate) version: WireMessageVersion,
-    pub(crate) uuid: String,
-    pub(crate) job: Arc<Mutex<ConnectionJob>>,
-    pub(crate) sender: crossbeam_channel::Sender<WsFrame>,
-}
-*/
 
 impl Sim2hState {
     // find out if an agent is in a space or not and return its URI
@@ -84,18 +75,6 @@ impl Sim2hState {
         trace!("disconnect entered");
 
         self.connection_mgr.disconnect(uri.clone());
-        /*
-        if let Some(OpenConnectionItem {
-            version: _,
-            uuid,
-            job: con,
-            sender: _,
-        }) = self.open_connections.remove(uri)
-        {
-            open_lifecycle("disconnect", &uuid, uri);
-            con.f_lock().stop();
-        }
-        */
 
         if let Some((uuid, conn)) = self.connection_states.remove(uri) {
             conn_lifecycle("disconnect", &uuid, &conn, uri);
@@ -205,58 +184,15 @@ impl Sim2hState {
             }
         }
 
-        //let mut to_disconnect = Vec::new();
-
         let payload: Opaque = msg.clone().into();
         self.connection_mgr
             .send_data(uri, payload.as_bytes().into());
-        /*
-        match self.open_connections.get(&uri) {
-            None => {
-                error!("FAILED TO SEND, NO ROUTE: {}", uri);
-                return to_disconnect;
-            }
-            Some(OpenConnectionItem {
-                version,
-                uuid,
-                job: _,
-                sender: outgoing_send,
-            }) => {
-                open_lifecycle("send", uuid, &uri);
-
-                if (version > &mut 1)
-                    || match msg {
-                        WireMessage::MultiSend(_) => false,
-                        _ => true,
-                    }
-                {
-                    let payload: Opaque = msg.clone().into();
-
-                    if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                        // pass the back out to be disconnected
-                        to_disconnect.push(uri.clone());
-                    }
-                } else {
-                    // version 1 can't handle multi send so send them all individually
-                    if let WireMessage::MultiSend(messages) = msg {
-                        for msg in messages {
-                            let payload: Opaque = WireMessage::Lib3hToClient(msg.clone()).into();
-                            if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                                to_disconnect.push(uri.clone());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
 
         match msg {
             WireMessage::Ping | WireMessage::Pong => {}
             _ => debug!("sent."),
         }
 
-        //return to_disconnect;
         vec![]
     }
 

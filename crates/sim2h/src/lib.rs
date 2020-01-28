@@ -183,7 +183,9 @@ impl Drop for MetricsTimer {
 pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
 pub type TcpWss = InStreamWss<InStreamTcp>;
 
+#[allow(dead_code)]
 mod connection_mgr;
+#[allow(unused_imports)]
 use connection_mgr::*;
 
 mod job;

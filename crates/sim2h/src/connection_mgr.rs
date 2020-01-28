@@ -47,7 +47,7 @@ impl ConnectionMgr {
         let con_mgr = ConnectionMgr {
             send_event,
             recv_cmd,
-        }
+        };
 
         tokio::task::spawn(async move {
             let (send_raw_event, recv_raw_event) = tokio::sync::mpsc::unbounded_channel();
@@ -72,40 +72,32 @@ impl ConnectionMgr {
                 };
 
                 match msg {
-                    ConMgrBoth::Cmd(cmd) => {
-                        match cmd {
-                            ConMgrCommand::Connect(uri, wss) => {
-                                let send_raw_cmd = spawn_wss_task(
-                                    uri.clone(),
-                                    wss,
-                                );
-                                con_mgr.wss_map.insert(uri, WssMapItem {
-                                    send_raw_cmd,
-                                });
-                            }
-                            ConMgrCommand::Disconnect(uri) => {
-                                con_mgr.wss_map.remove(uri);
-                            }
+                    ConMgrBoth::Cmd(cmd) => match cmd {
+                        ConMgrCommand::Connect(uri, wss) => {
+                            let send_raw_cmd = spawn_wss_task(uri.clone(), wss);
+                            con_mgr.wss_map.insert(uri, WssMapItem { send_raw_cmd });
                         }
-                    }
-                    ConMgrBoth::Evt(evt) => {
-                        ConMgrEvent::Disconnect(uri, _maybe_err) => {
+                        ConMgrCommand::Disconnect(uri) => {
                             con_mgr.wss_map.remove(uri);
                         }
-                        ConMgrEvent::Receive(_uri, _frame) => {
-                            // these should never come here...
-                            // only send directly to our owner
-                            unreachable!();
+                    },
+                    ConMgrBoth::Evt(evt) => {
+                        match evt {
+                            ConMgrEvent::Disconnect(uri, _maybe_err) => {
+                                con_mgr.wss_map.remove(uri);
+                            }
+                            ConMgrEvent::Receive(_uri, _frame) => {
+                                // these should never come here...
+                                // only send directly to our owner
+                                unreachable!();
+                            }
                         }
                     }
                 }
             }
         });
 
-        (
-            ConnectionMgrHandle::new(ref_dummy, send_cmd),
-            recv_event,
-        )
+        (ConnectionMgrHandle::new(ref_dummy, send_cmd), recv_event)
     }
 }
 

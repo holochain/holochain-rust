@@ -42,7 +42,7 @@ parking_lot = "=0.8.0"
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = "=1.0.39"
-tokio = { version = "=0.2.10", features = ["full"] }
+tokio = { version = "=0.2.11", features = ["full"] }
 #tokio-tungstenite = { git = "https://github.com/snapview/tokio-tungstenite.git" }
 rand = "=0.7.2"
 base64 = "=0.10.1"

@@ -7,11 +7,16 @@ pub(crate) struct Sim2hState {
     pub(crate) spaces: HashMap<SpaceHash, Space>,
     pub(crate) metric_gen: MetricsTimerGenerator,
     pub(crate) connection_mgr: ConnectionMgrHandle,
+    pub(crate) sim2h_handle: Option<Sim2hHandle>,
 }
 
 pub(crate) type ConnectionStateItem = (String, ConnectionState);
 
 impl Sim2hState {
+    pub(crate) fn set_sim2h_handle(&mut self, sim2h_handle: Sim2hHandle) {
+        self.sim2h_handle = Some(sim2h_handle);
+    }
+
     // find out if an agent is in a space or not and return its URI
     pub(crate) fn lookup_joined(
         &self,
@@ -22,6 +27,7 @@ impl Sim2hState {
         self.spaces.get(space_address)?.agent_id_to_uri(agent_id)
     }
 
+    /*
     // removes an agent from a space
     pub(crate) fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
         let _m = self.metric_gen.timer("sim2h-state-leave");
@@ -41,6 +47,7 @@ impl Sim2hState {
             Err(format!("no agent found at {} ", &uri).into())
         }
     }
+    */
 
     pub(crate) fn get_space(&self, space_address: &SpaceHash) -> &Space {
         self.spaces
@@ -173,6 +180,12 @@ impl Sim2hState {
     }
 
     pub(crate) fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Vec<Lib3hUri> {
+        self.sim2h_handle.as_ref().unwrap().send(agent, uri, msg);
+        vec![]
+    }
+
+    /*
+    pub(crate) fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) -> Vec<Lib3hUri> {
         let _m = self.metric_gen.timer("sim2h-state-send");
 
         match msg {
@@ -195,6 +208,7 @@ impl Sim2hState {
 
         vec![]
     }
+    */
 
     pub(crate) fn retry_sync_missing_aspects(&mut self) {
         let _m = self
@@ -371,10 +385,12 @@ impl Sim2hState {
         disconnects
     }
 
+    /*
     // get the connection status of an agent
     pub(crate) fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionStateItem> {
         self.connection_states.get(uri).map(|ca| (*ca).clone())
     }
+    */
 
     pub(crate) fn build_handle_unseen_aspects(
         &self,

@@ -194,6 +194,9 @@ pub enum DhtAlgorithm {
 mod sim2h_state;
 pub(crate) use sim2h_state::*;
 
+#[allow(dead_code)]
+mod sim2h_im_state;
+
 #[derive(Debug)]
 struct Sim2hComHandleMessage {
     uri: Lib3hUri,
@@ -221,6 +224,7 @@ enum Sim2hCom {
 /// into `'static` async blocks && still be able to make sim2h calls
 struct Sim2hHandle {
     state: Arc<tokio::sync::Mutex<Sim2hState>>,
+    im_state: sim2h_im_state::StoreHandle,
     send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
     dht_algorithm: DhtAlgorithm,
     metric_gen: MetricsTimerGenerator,
@@ -229,6 +233,7 @@ struct Sim2hHandle {
 
 impl Sim2hHandle {
     pub fn new(
+        crypto: Box<dyn CryptoSystem>,
         state: Arc<tokio::sync::Mutex<Sim2hState>>,
         send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
         dht_algorithm: DhtAlgorithm,
@@ -237,6 +242,7 @@ impl Sim2hHandle {
     ) -> Self {
         Self {
             state,
+            im_state: sim2h_im_state::Store::new(crypto),
             send_com,
             dht_algorithm,
             metric_gen,
@@ -252,6 +258,22 @@ impl Sim2hHandle {
     /// get our current dht algorithm
     pub fn dht_algorithm(&self) -> &DhtAlgorithm {
         &self.dht_algorithm
+    }
+
+    /// send a message to another connected agent
+    pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+        debug!(">>OUT>> {} to {}", msg.message_type(), uri);
+        MESSAGE_LOGGER
+            .lock()
+            .log_out(agent, uri.clone(), msg.clone());
+        let payload: Opaque = msg.clone().into();
+        self.connection_mgr
+            .send_data(uri, payload.as_bytes().into());
+    }
+
+    /// get access to our im_state object
+    pub fn im_state(&self) -> &sim2h_im_state::StoreHandle {
+        &self.im_state
     }
 
     /// acquire a mutex lock to our state data
@@ -293,6 +315,9 @@ impl Sim2hHandle {
 
     /// disconnect an active connection
     pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
+        for d in disconnect.iter() {
+            self.im_state().drop_connection_by_uri(d.clone());
+        }
         self.send_com
             .send(Sim2hCom::Disconnect(disconnect))
             .expect("can send");
@@ -426,15 +451,21 @@ impl Sim2h {
             spaces: HashMap::new(),
             metric_gen: metric_gen.clone(),
             connection_mgr: connection_mgr.clone(),
+            sim2h_handle: None,
         }));
         let (send_com, recv_com) = tokio::sync::mpsc::unbounded_channel();
         let sim2h_handle = Sim2hHandle::new(
-            state,
+            crypto.box_clone(),
+            state.clone(),
             send_com,
             dht_algorithm.clone(),
             metric_gen.clone(),
             connection_mgr,
         );
+        state
+            .try_lock()
+            .unwrap()
+            .set_sim2h_handle(sim2h_handle.clone());
 
         let config = TcpBindConfig::default();
         //        let config = TlsBindConfig::new(config).dev_certificate();
@@ -617,6 +648,12 @@ impl Sim2h {
 
             *conn = new_conn;
 
+            sim2h_handle.im_state().new_connection(
+                data.space_address.clone(),
+                data.agent_id.clone(),
+                uri.clone(),
+            );
+
             if let Err(e) =
                 state.join_agent(&data.space_address, data.agent_id.clone(), uri.clone())
             {
@@ -666,13 +703,7 @@ impl Sim2h {
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
             debug!("Sending Pong in response to Ping");
-            let sim2h_handle = self.sim2h_handle.clone();
-            tokio::task::spawn(async move {
-                sim2h_handle
-                    .lock_state()
-                    .await
-                    .send(signer, uri, &WireMessage::Pong);
-            });
+            self.sim2h_handle.send(signer, uri, &WireMessage::Pong);
             return Ok(());
         }
         if let WireMessage::Status = message {
@@ -700,27 +731,23 @@ impl Sim2h {
         }
         if let WireMessage::Hello(version) = message {
             debug!("Sending HelloResponse in response to Hello({})", version);
-            let sim2h_handle = self.sim2h_handle.clone();
-            tokio::task::spawn(async move {
-                let state = sim2h_handle.lock_state().await;
-                state.send(
-                    signer.clone(),
-                    uri.clone(),
-                    &WireMessage::HelloResponse(HelloData {
-                        redundant_count: match sim2h_handle.dht_algorithm() {
-                            DhtAlgorithm::FullSync => 0,
-                            DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
-                        },
-                        version: WIRE_VERSION,
-                        extra: None,
-                    }),
-                );
-                // versions do not match - disconnect them
-                if version != WIRE_VERSION {
-                    warn!("Disconnecting client for bad version this WIRE_VERSIO = {}, client WIRE_VERSION = {}", WIRE_VERSION, version);
-                    sim2h_handle.disconnect(vec![uri]);
-                }
-            });
+            self.sim2h_handle.send(
+                signer,
+                uri.clone(),
+                &WireMessage::HelloResponse(HelloData {
+                    redundant_count: match self.sim2h_handle.dht_algorithm() {
+                        DhtAlgorithm::FullSync => 0,
+                        DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+                    },
+                    version: WIRE_VERSION,
+                    extra: None,
+                }),
+            );
+            // versions do not match - disconnect them
+            if version != WIRE_VERSION {
+                warn!("Disconnecting client for bad version this WIRE_VERSIO = {}, client WIRE_VERSION = {}", WIRE_VERSION, version);
+                self.sim2h_handle.disconnect(vec![uri]);
+            }
             return Ok(());
         }
 
@@ -940,7 +967,12 @@ impl Sim2h {
             WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => {
                 Err("join message should have been processed elsewhere and can't be proxied".into())
             }
-            WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(data)) => {
+            WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(_data)) => {
+                // TODO db - apparently we're disconnecting!?!
+                //           also removing connection from all spaces
+                //           (follow `leave` in old sim2h_state)
+                self.sim2h_handle.disconnect(vec![uri]);
+                /*
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
                     let mut state = sim2h_handle.lock_state().await;
@@ -949,6 +981,7 @@ impl Sim2h {
                         sim2h_handle.disconnect(vec![uri]);
                     }
                 });
+                */
                 Ok(())
             }
 
@@ -960,6 +993,10 @@ impl Sim2h {
                 }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
+                    let _to_url = sim2h_handle
+                        .im_state()
+                        .get_clone().await
+                        .lookup_joined(&space_address, &dm_data.to_agent_id);
                     let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
@@ -987,6 +1024,10 @@ impl Sim2h {
                 }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
+                    let _to_url = sim2h_handle
+                        .im_state()
+                        .get_clone().await
+                        .lookup_joined(&space_address, &dm_data.to_agent_id);
                     let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
@@ -1196,6 +1237,10 @@ impl Sim2h {
                     let msg_out = WireMessage::ClientToLib3hResponse(
                         ClientToLib3hResponse::QueryEntryResult(query_result),
                     );
+                    let _to_url = sim2h_handle
+                        .im_state()
+                        .get_clone().await
+                        .lookup_joined(&space_address, &req_agent_id);
                     let state = sim2h_handle.lock_state().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &req_agent_id)

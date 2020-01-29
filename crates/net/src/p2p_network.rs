@@ -249,10 +249,16 @@ mod tests {
 
         handler
             .to_owned()
-            .handle(Ok(ht::test_span().wrap(Lib3hServerProtocol::P2pReady).into()))
+            .handle(Ok(ht::test_span()
+                .wrap(Lib3hServerProtocol::P2pReady)
+                .into()))
             .unwrap();
-        res.send(ht::test_span().wrap(Lib3hClientProtocol::Connect(connect_data)).into())
-            .unwrap();
+        res.send(
+            ht::test_span()
+                .wrap(Lib3hClientProtocol::Connect(connect_data))
+                .into(),
+        )
+        .unwrap();
         res.stop();
     }
 }

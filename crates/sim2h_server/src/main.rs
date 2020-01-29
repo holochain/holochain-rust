@@ -1,19 +1,18 @@
 extern crate crossbeam_channel;
+extern crate holochain_tracing as ht;
 extern crate lib3h_sodium;
+extern crate log;
 extern crate newrelic;
 extern crate structopt;
-#[macro_use]
-extern crate log;
-extern crate holochain_tracing as ht;
 // #[macro_use]
 // extern crate holochain_tracing_macros;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::{error, warn};
+use log::*;
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
-use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
-use std::{path::PathBuf, process::exit};
+use sim2h::{run_sim2h, DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -86,28 +85,16 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri, tracer);
-    if args.sharding > 0 {
-        sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
+    let sim2h = Sim2h::new(
+        Box::new(SodiumCryptoSystem::new()),
+        uri,
+        DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,
-        });
-    }
-    loop {
-        let result = sim2h.process();
-        match result {
-            Err(e) => {
-                if e.to_string().contains("Bind error:") {
-                    println!("{:?}", e);
-                    exit(1)
-                } else {
-                    error!("{}", e.to_string())
-                }
-            }
-            Ok(false) => {
-                // if no work sleep a little
-                std::thread::sleep(std::time::Duration::from_millis(1));
-            }
-            _ => (),
-        }
-    }
+        },
+        tracer,
+    );
+
+    run_sim2h(sim2h)
+        // just park the main thread indefinitely...
+        .block_on(futures::future::pending::<()>());
 }

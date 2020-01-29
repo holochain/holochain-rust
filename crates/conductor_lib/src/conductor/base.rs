@@ -112,8 +112,17 @@ pub fn mount_conductor_from_config(config: Configuration) {
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
     instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,
-    trace_reporters:
-        Arc<RwLock<HashMap<String, (Receiver<ht::FinishedSpan>, ht::reporter::JaegerCompactReporter)>>>,
+    trace_reporters: Arc<
+        RwLock<
+            HashMap<
+                String,
+                (
+                    Receiver<ht::FinishedSpan>,
+                    ht::reporter::JaegerCompactReporter,
+                ),
+            >,
+        >,
+    >,
     agent_keys: HashMap<String, Arc<Mutex<Keystore>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,

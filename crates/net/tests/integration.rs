@@ -15,7 +15,7 @@ use lib3h_protocol::{
     uri::Lib3hUri,
 };
 use lib3h_sodium::SodiumCryptoSystem;
-use sim2h::Sim2h;
+use sim2h::{run_sim2h, DhtAlgorithm, Sim2h};
 use std::sync::Arc;
 
 #[test]
@@ -37,18 +37,22 @@ fn sim2h_worker_talks_to_sim2h() {
     let srv_cont = cont.clone();
     let sim2h_join = std::thread::spawn(move || {
         let url = url2!("ws://127.0.0.1:0");
-        let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()), None);
+        let sim2h = Sim2h::new(
+            Box::new(SodiumCryptoSystem::new()),
+            Lib3hUri(url.into()),
+            DhtAlgorithm::FullSync,
+            None,
+        );
 
         snd.send(sim2h.bound_uri.clone().unwrap()).unwrap();
         drop(snd);
 
-        while *srv_cont.lock().unwrap() {
-            if let Err(e) = sim2h.process() {
-                panic!("{:?}", e);
+        let mut rt = run_sim2h(sim2h);
+        rt.block_on(async move {
+            while *srv_cont.lock().unwrap() {
+                tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
             }
-
-            std::thread::yield_now();
-        }
+        });
     });
 
     let bound_uri = rcv.recv().unwrap();
@@ -151,37 +155,43 @@ fn sim2h_worker_talks_to_sim2h() {
     worker.set_full_sync(true);
 
     worker
-        .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(SpaceData {
-            agent_id: agent_id.clone().into(),
-            request_id: "".to_string(),
-            space_address: "BLA".to_string().into(),
-        })))
-        .unwrap();
-
-    worker
-        .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: "BLA".to_string().into(),
-            provider_agent_id: agent_id.clone().into(),
-            entry: EntryData {
-                entry_address: "BLA".to_string().into(),
-                aspect_list: vec![EntryAspectData {
-                    aspect_address: "BLA".to_string().into(),
-                    type_hint: "".to_string(),
-                    aspect: b"BLA".to_vec().into(),
-                    publish_ts: 0,
-                }],
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(
+            SpaceData {
+                agent_id: agent_id.clone().into(),
+                request_id: "".to_string(),
+                space_address: "BLA".to_string().into(),
             },
-        })))
+        )))
         .unwrap();
 
     worker
-        .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(DirectMessageData {
-            space_address: "BLA".to_string().into(),
-            request_id: "".to_string(),
-            to_agent_id: agent_id.clone().into(),
-            from_agent_id: agent_id.clone().into(),
-            content: b"BLA".to_vec().into(),
-        })))
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(
+            ProvidedEntryData {
+                space_address: "BLA".to_string().into(),
+                provider_agent_id: agent_id.clone().into(),
+                entry: EntryData {
+                    entry_address: "BLA".to_string().into(),
+                    aspect_list: vec![EntryAspectData {
+                        aspect_address: "BLA".to_string().into(),
+                        type_hint: "".to_string(),
+                        aspect: b"BLA".to_vec().into(),
+                        publish_ts: 0,
+                    }],
+                },
+            },
+        )))
+        .unwrap();
+
+    worker
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(
+            DirectMessageData {
+                space_address: "BLA".to_string().into(),
+                request_id: "".to_string(),
+                to_agent_id: agent_id.clone().into(),
+                from_agent_id: agent_id.clone().into(),
+                content: b"BLA".to_vec().into(),
+            },
+        )))
         .unwrap();
 
     for _ in 0..40 {

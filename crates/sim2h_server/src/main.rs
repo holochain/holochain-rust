@@ -1,9 +1,9 @@
 extern crate crossbeam_channel;
+extern crate holochain_tracing as ht;
 extern crate lib3h_sodium;
+extern crate log;
 extern crate newrelic;
 extern crate structopt;
-extern crate log;
-extern crate holochain_tracing as ht;
 // #[macro_use]
 // extern crate holochain_tracing_macros;
 

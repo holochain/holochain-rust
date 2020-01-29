@@ -155,37 +155,43 @@ fn sim2h_worker_talks_to_sim2h() {
     worker.set_full_sync(true);
 
     worker
-        .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(SpaceData {
-            agent_id: agent_id.clone().into(),
-            request_id: "".to_string(),
-            space_address: "BLA".to_string().into(),
-        })))
-        .unwrap();
-
-    worker
-        .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: "BLA".to_string().into(),
-            provider_agent_id: agent_id.clone().into(),
-            entry: EntryData {
-                entry_address: "BLA".to_string().into(),
-                aspect_list: vec![EntryAspectData {
-                    aspect_address: "BLA".to_string().into(),
-                    type_hint: "".to_string(),
-                    aspect: b"BLA".to_vec().into(),
-                    publish_ts: 0,
-                }],
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(
+            SpaceData {
+                agent_id: agent_id.clone().into(),
+                request_id: "".to_string(),
+                space_address: "BLA".to_string().into(),
             },
-        })))
+        )))
         .unwrap();
 
     worker
-        .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(DirectMessageData {
-            space_address: "BLA".to_string().into(),
-            request_id: "".to_string(),
-            to_agent_id: agent_id.clone().into(),
-            from_agent_id: agent_id.clone().into(),
-            content: b"BLA".to_vec().into(),
-        })))
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(
+            ProvidedEntryData {
+                space_address: "BLA".to_string().into(),
+                provider_agent_id: agent_id.clone().into(),
+                entry: EntryData {
+                    entry_address: "BLA".to_string().into(),
+                    aspect_list: vec![EntryAspectData {
+                        aspect_address: "BLA".to_string().into(),
+                        type_hint: "".to_string(),
+                        aspect: b"BLA".to_vec().into(),
+                        publish_ts: 0,
+                    }],
+                },
+            },
+        )))
+        .unwrap();
+
+    worker
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(
+            DirectMessageData {
+                space_address: "BLA".to_string().into(),
+                request_id: "".to_string(),
+                to_agent_id: agent_id.clone().into(),
+                from_agent_id: agent_id.clone().into(),
+                content: b"BLA".to_vec().into(),
+            },
+        )))
         .unwrap();
 
     for _ in 0..40 {

@@ -27,8 +27,15 @@ lazy_static! {
 
 type GuardsMap = HashMap<ProcessUniqueId, GuardTracker>;
 
-pub(crate) fn guards_guard<'a>() -> MutexGuard<'a, GuardsMap> {
+fn guards_guard<'a>() -> MutexGuard<'a, GuardsMap> {
     GUARDS
         .try_lock_for(Duration::from_secs(20))
         .expect("Guard-tracking mutex has been locked up for 20 seconds!")
+}
+
+pub(crate) fn with_guards_guard<'a, T, F: FnOnce(&mut MutexGuard<'a, GuardsMap>) -> T>(f: F) -> T {
+    let mut g = guards_guard();
+    let val = f(&mut g);
+    MutexGuard::unlock_fair(g);
+    val
 }

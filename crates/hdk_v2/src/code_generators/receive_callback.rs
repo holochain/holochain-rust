@@ -16,11 +16,11 @@ impl ZomeCodeDef {
         quote! {
             #(
                 #[no_mangle]
-                pub extern "C" fn receive(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
-                    let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
+                pub extern "C" fn receive(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
+                    let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
                     let allocation = match maybe_allocation {
                         Ok(allocation) => allocation,
-                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
+                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),
                     };
                     let init = hdk::global_fns::init_global_memory(allocation);
                     if init.is_err() {
@@ -30,7 +30,7 @@ impl ZomeCodeDef {
                     }
 
                     // Deserialize input
-                    let input = load_json!(encoded_allocation_of_input);
+                    let input = load_json!(input_allocation_int);
 
                     fn execute(input: hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams) -> String {
                         let #receive_from = input.from;

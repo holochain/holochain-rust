@@ -28,7 +28,7 @@ impl ToTokens for ZomeFunction {
 
         tokens.extend(quote!{
             #[no_mangle]
-            pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+            pub extern "C" fn #zome_function_name(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
                 use hdk::{
                     holochain_json_api::{
                         json::JsonString,
@@ -36,10 +36,10 @@ impl ToTokens for ZomeFunction {
                     },
                 };
 
-                let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
+                let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
                 let allocation = match maybe_allocation {
                     Ok(allocation) => allocation,
-                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
+                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),
                 };
                 let init = hdk::global_fns::init_global_memory(allocation);
                 if init.is_err() {
@@ -55,7 +55,7 @@ impl ToTokens for ZomeFunction {
                 }
 
                 // Deserialize input
-                let input: InputStruct = hdk::load_json!(encoded_allocation_of_input);
+                let input: InputStruct = hdk::load_json!(input_allocation_int);
 
                 // Macro'd function body
                 fn execute (params: InputStruct) #output_param_type {

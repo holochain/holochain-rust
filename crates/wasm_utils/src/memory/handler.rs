@@ -1,7 +1,7 @@
 use crate::memory::allocation::AllocationResult;
 use holochain_json_api::json::JsonString;
 use memory::{
-    allocation::{AllocationError, Length, Offset, WasmAllocation},
+    allocation::{AllocationError, Length, WasmAllocation},
     MemoryBits, MemoryInt, MEMORY_INT_MAX, RESERVED,
 };
 use std::convert::TryInto;
@@ -20,16 +20,16 @@ pub trait WasmMemoryHandler {
 
     /// Write in wasm memory according to stack state.
     fn write_bytes(&mut self, bytes: &[u8]) -> AllocationResult;
-    fn read_bytes(&self, offset: Offset, length: Length) -> &[u8];
+    fn read_bytes(&self, allocation: WasmAllocation) -> &[u8];
 
-    fn read_string(&self, offset: Offset, length: Length) -> String;
+    fn read_string(&self, allocation: WasmAllocation) -> String;
     /// Write a string in wasm memory according to stack state.
     fn write_string(&mut self, s: &str) -> AllocationResult {
         self.write_bytes(s.as_bytes())
     }
 
     fn get_top(&self) -> Top {
-        let (top_bytes, _) = self.read_bytes(0, RESERVED).split_at(RESERVED as usize);
+        let (top_bytes, _) = self.read_bytes(WasmAllocation::top()).split_at(RESERVED as usize);
         Top::from_le_bytes(top_bytes.try_into().unwrap())
     }
     fn set_top(&self, Top) -> Top;
@@ -91,5 +91,9 @@ pub trait WasmMemoryHandler {
         //     return Err(AllocationError::OutOfBounds);
         // }
         self.write_bytes(&json_bytes)
+    }
+
+    fn read_json<J: TryFrom<JsonString>>(&self, allocation: WasmAllocation) -> Result<J, AllocationError> {
+        let string = self.read_string(allocation);
     }
 }

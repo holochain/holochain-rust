@@ -100,7 +100,7 @@ The Development Kit should implement and export one function per each native fun
 In order to call these "external" functions, you will need to import them and provide their signature, but in a WASM import compatible way. In Rust, for example, this is simply:
 ```rust
 extern {
-  fn hc_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
+  fn hc_commit_entry(encoded_allocation_of_input: WasmAllocationInt) -> WasmAllocationInt;
 }
 ```
 

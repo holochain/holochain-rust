@@ -9,7 +9,7 @@ extern crate serde_json;
 use holochain_core_types::{
     entry::Entry,
     error::{
-        RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+        RibosomeReturnValue, WasmAllocationInt, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
     signature::Provenance
@@ -31,7 +31,7 @@ use std::convert::TryInto;
 //-------------------------------------------------------------------------------------------------
 
 extern "C" {
-    fn hc_debug(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
+    fn hc_debug(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt;
 }
 
 /// Call HC API DEBUG function with proper input struct: a string
@@ -55,13 +55,13 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
 //-------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance
-/// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
+/// input_allocation_int : encoded memory offset and length of the memory allocation
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_hello(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -70,17 +70,17 @@ pub extern "C" fn debug_hello(
         &mut mem_stack,
         &JsonString::from(RawString::from("Hello world!")),
     );
-    RibosomeEncodedValue::Success.into()
+    RibosomeReturnValue::Success.into()
 }
 
 /// Function called by Holochain Instance
-/// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
+/// input_allocation_int : encoded memory offset and length of the memory allocation
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_multiple(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -89,7 +89,7 @@ pub extern "C" fn debug_multiple(
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
 
-    RibosomeEncodedValue::Success.into()
+    RibosomeReturnValue::Success.into()
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -98,14 +98,14 @@ pub extern "C" fn debug_multiple(
 
 #[no_mangle]
 pub extern "C" fn debug_stacked_hello(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
     #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
     struct TestStruct {
         value: String,
     }
 
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -122,7 +122,7 @@ pub extern "C" fn debug_stacked_hello(
 //-------------------------------------------------------------------------------------------------
 
 extern "C" {
-    fn hc_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
+    fn hc_commit_entry(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt;
 }
 
 /// Call HC API COMMIT function with proper input struct
@@ -218,14 +218,14 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 //-------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance
-/// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
+/// input_allocation_int : encoded memory offset and length of the memory allocation
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn commit_test(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -236,14 +236,14 @@ pub extern "C" fn commit_test(
 }
 
 /// Function called by Holochain Instance
-/// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
+/// input_allocation_int : encoded memory offset and length of the memory allocation
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn commit_fail_test(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -255,16 +255,16 @@ pub extern "C" fn commit_fail_test(
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(
-    _encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+    _input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    RibosomeReturnValue::Success.into()
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    encoded_allocation_of_input: RibosomeEncodingBits,
+    input_allocation_int: WasmAllocationInt,
 ) -> RibosomeRuntimeBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -273,21 +273,21 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 }
 
 /// Function called by Holochain Instance
-/// encoded_allocation_of_input : encoded memory offset and length of the memory allocation
+/// input_allocation_int : encoded memory offset and length of the memory allocation
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn round_trip_test(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
-    let input = match load_ribosome_encoded_json(encoded_allocation_of_input) {
+    let input = match load_ribosome_encoded_json(input_allocation_int) {
         Ok(input) => input,
-        Err(e) => return RibosomeEncodedValue::from(e).into(),
+        Err(e) => return RibosomeReturnValue::from(e).into(),
     };
     let output = test_inner(input);
 

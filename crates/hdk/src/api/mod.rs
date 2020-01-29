@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 
 use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
-    error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
+    error::{RibosomeEncodedAllocation, WasmAllocationInt, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -101,9 +101,9 @@ macro_rules! def_api_fns {
                 let wasm_allocation = mem_stack.write_json(input)?;
 
                 // Call Ribosome's function
-                let encoded_input: RibosomeEncodingBits =
+                let encoded_input: WasmAllocationInt =
                     RibosomeEncodedAllocation::from(wasm_allocation).into();
-                let encoded_output: RibosomeEncodingBits = unsafe {
+                let encoded_output: WasmAllocationInt = unsafe {
                     (match self {
                         $(Dispatch::$enum_variant => $function_name),*
                     })(encoded_input)
@@ -134,10 +134,10 @@ macro_rules! def_api_fns {
         // WARNING All these fns need to be defined in wasms too @see the hdk integration_test.rs
         #[allow(dead_code)]
         extern "C" {
-            pub(crate) fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-            pub(crate) fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-            pub(crate) fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-            $( pub(crate) fn $function_name (_: RibosomeEncodingBits) -> RibosomeEncodingBits;) *
+            pub(crate) fn hc_property(_: WasmAllocationInt) -> WasmAllocationInt;
+            pub(crate) fn hc_start_bundle(_: WasmAllocationInt) -> WasmAllocationInt;
+            pub(crate) fn hc_close_bundle(_: WasmAllocationInt) -> WasmAllocationInt;
+            $( pub(crate) fn $function_name (_: WasmAllocationInt) -> WasmAllocationInt;) *
         }
 
         /// Add stubs for all core API functions when compiled in test mode.
@@ -154,11 +154,11 @@ macro_rules! def_api_fns {
         /// Hence the `#[cfg(test)]` which is really important!
         #[cfg(test)]
         mod tests {
-            use crate::holochain_core_types::error::{RibosomeEncodedValue, RibosomeEncodingBits};
+            use crate::holochain_core_types::error::{RibosomeReturnValue, WasmAllocationInt};
 
             $( #[no_mangle]
-                 pub fn $function_name(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-                     RibosomeEncodedValue::Success.into()
+                 pub fn $function_name(_: WasmAllocationInt) -> WasmAllocationInt {
+                     RibosomeReturnValue::Success.into()
                  }) *
         }
 

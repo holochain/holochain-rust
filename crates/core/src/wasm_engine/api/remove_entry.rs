@@ -14,7 +14,7 @@ use holochain_wasm_utils::api_serialization::get_entry::*;
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation
 /// Expected Address argument
-/// Stores/returns a RibosomeEncodedValue
+/// Stores/returns a RibosomeReturnValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, deleted_entry_address: Address) -> ZomeApiResult {
     // Get Current entry's latest version
     let get_args = GetEntryArgs {

@@ -34,7 +34,7 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
+        error::{RibosomeReturnValue, WasmAllocationInt, RibosomeErrorCode},
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
     },
@@ -106,9 +106,9 @@ pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
 
 #[no_mangle]
 pub extern "C" fn check_commit_entry(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input) {
+    input_allocation_int: WasmAllocationInt,
+) -> WasmAllocationInt {
+    let allocation = match WasmAllocation::try_from_ribosome_encoding(input_allocation_int) {
         Ok(allocation) => allocation,
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
@@ -119,11 +119,11 @@ pub extern "C" fn check_commit_entry(
     }
 
     // Deserialize and check for an encoded error
-    let entry: Entry = match load_ribosome_encoded_json(encoded_allocation_of_input) {
+    let entry: Entry = match load_ribosome_encoded_json(input_allocation_int) {
         Ok(entry) => entry,
         Err(hc_err) => {
             hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
-            return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed)
+            return RibosomeReturnValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed)
                 .into();
         }
     };
@@ -139,7 +139,7 @@ pub extern "C" fn check_commit_entry(
 
     let mut wasm_stack = match unsafe { G_MEM_STACK } {
         Some(wasm_stack) => wasm_stack,
-        None => return RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory).into(),
+        None => return RibosomeReturnValue::Failure(RibosomeErrorCode::OutOfMemory).into(),
     };
 
     return_code_for_allocation_result(wasm_stack.write_json(res_obj)).into()

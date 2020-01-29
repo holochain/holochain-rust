@@ -2,7 +2,6 @@ use holochain_core_types::bits_n_pieces::U32_MAX;
 
 pub mod allocation;
 pub mod handler;
-pub mod read;
 pub mod ribosome;
 pub mod stack;
 

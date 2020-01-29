@@ -4,7 +4,7 @@ use crate::{
     wasm_engine::{api::ZomeApiResult, memory::WasmPageManager},
 };
 use holochain_core_types::error::{
-    HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+    HolochainError, RibosomeReturnValue, WasmAllocationInt, RibosomeRuntimeBits,
     ZomeApiInternalResult,
 };
 
@@ -159,15 +159,15 @@ impl Runtime {
     /// Input RuntimeArgs should only have one input which is the encoded allocation holding
     /// the complex data as an utf8 string.
     /// Returns the utf8 string.
-    pub fn load_json_string_from_args(&self, encoded: RibosomeEncodingBits) -> JsonString {
+    pub fn load_json_string_from_args(&self, encoded: WasmAllocationInt) -> JsonString {
         // Read complex argument serialized in memory
-        let return_code = RibosomeEncodedValue::from(encoded);
+        let return_code = RibosomeReturnValue::from(encoded);
         let allocation = match return_code {
-            RibosomeEncodedValue::Success => return JsonString::null(),
-            RibosomeEncodedValue::Failure(_) => {
+            RibosomeReturnValue::Success => return JsonString::null(),
+            RibosomeReturnValue::Failure(_) => {
                 panic!("received error code instead of valid encoded allocation")
             }
-            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+            RibosomeReturnValue::Allocation(ribosome_allocation) => {
                 WasmAllocation::try_from(ribosome_allocation).unwrap()
             }
         };
@@ -195,7 +195,7 @@ impl Runtime {
 
         match self.memory_manager.write(&mut self.wasm_instance, &s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(RibosomeEncodingBits::from(RibosomeEncodedValue::Allocation(
+            Ok(allocation) => Ok(WasmAllocationInt::from(RibosomeReturnValue::Allocation(
                 allocation.into(),
             )) as RibosomeRuntimeBits),
         }

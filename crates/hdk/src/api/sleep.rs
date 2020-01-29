@@ -21,7 +21,7 @@ use std::time::Duration;
 /// ```
 pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
     let _: ZomeApiResult<()> = Dispatch::Sleep.with_input(JsonString::from(duration.as_nanos()));
-    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // internally returns RibosomeReturnValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
 }

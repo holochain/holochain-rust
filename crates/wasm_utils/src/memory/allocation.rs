@@ -43,7 +43,7 @@ pub struct WasmAllocation {
     // public fields to the crate for tests
     /// raw offset is what is passed in but doesn't include reserved bytes at the start of memory
     /// the real offset will be calculated by offset() method
-    pub(in crate::memory) raw_offset: Offset,
+    pub(in crate::memory) offset: Offset,
     pub(in crate::memory) length: Length,
 }
 
@@ -53,36 +53,50 @@ impl WasmAllocation {
         MEMORY_INT_MAX
     }
 
-    pub fn new(raw_offset: Offset, length: Length) -> AllocationResult {
-        if (MemoryBits::from(RESERVED) + MemoryBits::from(raw_offset) + MemoryBits::from(length))
+    pub fn min() -> MemoryInt {
+        RESERVED
+    }
+
+    pub fn new(offset: Offset, length: Length) -> AllocationResult {
+        // the first byte of the allocation cannot be less than the min memory offset
+        if offset < WasmAllocation::min() {
+            Err(AllocationError::OutOfBounds)
+        // the last byte of the allocation cannot be greater than the max memory size
+    } else if (offset + length) as MemoryBits
             > WasmAllocation::max()
         {
             Err(AllocationError::OutOfBounds)
-        } else if MemoryInt::from(length) == 0 {
+        // zero length allocations not supported
+        } else if length == 0 {
             Err(AllocationError::ZeroLength)
         } else {
-            Ok(WasmAllocation { raw_offset, length })
+            Ok(WasmAllocation { offset, length })
         }
     }
 
+    /// the allocation for the top integer is the reserved bytes at the start of memory
+    pub fn top() -> WasmAllocation {
+        WasmAllocation { offset: 0, length: RESERVED }
+    }
+
     ///
-    pub fn offset(self) -> Offset {
-        (RESERVED as MemoryInt + MemoryInt::from(self.raw_offset)).into()
+    pub fn offset(&self) -> Offset {
+        self.offset
     }
 
     /// length in bytes
-    pub fn length(self) -> Length {
+    pub fn length(&self) -> Length {
         self.length
     }
 
     /// alias for offset
-    pub fn start(self) -> Offset {
+    pub fn start(&self) -> Offset {
         self.offset()
     }
 
     /// start plus the length
-    pub fn end(self) -> Offset {
-        (MemoryInt::from(self.start()) + MemoryInt::from(self.length())).into()
+    pub fn end(&self) -> Offset {
+        self.start() + self.length()
     }
 }
 

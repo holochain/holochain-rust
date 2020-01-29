@@ -3,14 +3,14 @@
 //! It is automatically called at startup of each Zome function call.
 
 use crate::{api::Dispatch, error::ZomeApiResult};
-use holochain_core_types::error::RibosomeEncodingBits;
+use holochain_core_types::error::WasmAllocationInt;
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 
 #[allow(dead_code)]
 extern "C" {
     pub fn hc_init_globals(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
+        input_allocation_int: WasmAllocationInt,
+    ) -> WasmAllocationInt;
 }
 
 // HC INIT GLOBALS - Secret Api Function

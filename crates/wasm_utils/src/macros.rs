@@ -16,7 +16,7 @@ macro_rules! ribosome_success {
     () => {
         Ok(
             $crate::holochain_core_types::error::RibosomeRuntimeBits::from(
-                $crate::holochain_core_types::error::RibosomeEncodedValue::Success,
+                $crate::holochain_core_types::error::RibosomeReturnValue::Success,
             ),
         )
     };

@@ -17,7 +17,7 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
+    entry::Entry, error::RibosomeReturnValue, validation::ValidationPackageDefinition,
 };
 
 use holochain_json_api::{
@@ -151,19 +151,19 @@ impl From<JsonString> for CallbackResult {
     }
 }
 
-impl From<RibosomeEncodedValue> for CallbackResult {
-    fn from(ribosome_return_code: RibosomeEncodedValue) -> CallbackResult {
+impl From<RibosomeReturnValue> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeReturnValue) -> CallbackResult {
         match ribosome_return_code {
-            RibosomeEncodedValue::Failure(ribosome_error_code) => {
+            RibosomeReturnValue::Failure(ribosome_error_code) => {
                 CallbackResult::Fail(ribosome_error_code.to_string())
             }
-            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+            RibosomeReturnValue::Allocation(ribosome_allocation) => {
                 match WasmAllocation::try_from(ribosome_allocation) {
                     Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
                     Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
                 }
             }
-            RibosomeEncodedValue::Success => CallbackResult::Pass,
+            RibosomeReturnValue::Success => CallbackResult::Pass,
         }
     }
 }

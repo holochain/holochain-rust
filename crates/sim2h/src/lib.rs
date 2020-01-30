@@ -65,12 +65,15 @@ use std::{
     sync::Arc,
     time::Instant,
 };
+lazy_static! {
+    static ref HOLOCHAIN_WALKMAN_SIM2H: bool = std::env::var("HOLOCHAIN_WALKMAN_SIM2H").is_ok();
+}
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
 fn walkman_log<F: FnOnce() -> WalkmanSim2hEvent>(event: F) {
-    if std::env::var("HOLOCHAIN_WALKMAN_SIM2H").is_ok() {
+    if *HOLOCHAIN_WALKMAN_SIM2H {
         let log_item = event();
         let json =
             serde_json::to_string(&walkman_log_sim2h(log_item)).expect("Serialized walkman event");

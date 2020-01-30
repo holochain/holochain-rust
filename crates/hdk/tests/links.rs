@@ -437,17 +437,17 @@ fn can_roundtrip_links() {
 
     let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
         LinksResult {
-            address: entry_address_2.clone(),
-            headers: Vec::new(),
-            tag: "test-tag".into(),
-            status: CrudStatus::Live,
-        },
-        LinksResult {
             address: entry_address_3.clone(),
             headers: Vec::new(),
             tag: "test-tag".into(),
             status: CrudStatus::Live,
         },
+        LinksResult {
+            address: entry_address_2.clone(),
+            headers: Vec::new(),
+            tag: "test-tag".into(),
+            status: CrudStatus::Live,
+        }
     ]));
     let expected_links = JsonString::from(expected_links);
 
@@ -457,13 +457,13 @@ fn can_roundtrip_links() {
     let expected_links_reversed: Result<GetLinksResult, HolochainError> =
         Ok(GetLinksResult::new(vec![
             LinksResult {
-                address: entry_address_3.clone(),
+                address: entry_address_2.clone(),
                 headers: Vec::new(),
                 tag: "test-tag".into(),
                 status: CrudStatus::Live,
             },
             LinksResult {
-                address: entry_address_2.clone(),
+                address: entry_address_3.clone(),
                 headers: Vec::new(),
                 tag: "test-tag".into(),
                 status: CrudStatus::Live,

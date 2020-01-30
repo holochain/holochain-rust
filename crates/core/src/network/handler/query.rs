@@ -11,13 +11,14 @@ use crate::{
 };
 use holochain_core_types::{
     crud_status::CrudStatus, eav::Attribute, entry::EntryWithMetaAndHeader, error::HolochainError,
-    network::query::GetLinkFromRemoteData,
+    network::query::GetLinkFromRemoteData,network::query::Pagination
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
+
 
 pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -28,12 +29,12 @@ fn get_links(
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-    _headers: bool,
+    pagination: Option<Pagination>
 ) -> Result<Vec<GetLinkFromRemoteData>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
     Ok(dht_store
-        .get_links(base, link_type, tag, crud_status)
+        .get_links(base, link_type, tag, crud_status,pagination)
         .unwrap_or_default()
         .into_iter()
         .map(|(eavi, crud_status)| {
@@ -105,8 +106,8 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 tag.clone(),
                 options,
                 match query.clone() {
-                    GetLinksNetworkQuery::Links(get_headers) => get_headers.headers,
-                    _ => false,
+                    GetLinksNetworkQuery::Links(get_headers) => get_headers.pagination,
+                    _ => None,
                 },
             ) {
                 Ok(links) => {

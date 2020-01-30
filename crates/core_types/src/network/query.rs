@@ -2,9 +2,17 @@ use crate::{chain_header::ChainHeader, crud_status::CrudStatus, entry::EntryWith
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{cas::content::Address, eav::Value};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
+#[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
+pub struct Pagination
+{
+    pub page_number : usize,
+    pub page_size :  usize
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone,Default)]
 pub struct GetLinksQueryConfiguration {
     pub headers: bool,
+    pub pagination : Option<Pagination>
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

@@ -13,6 +13,7 @@ use holochain_core_types::{
     entry::Entry,
     error::{HcResult, HolochainError},
     network::entry_aspect::EntryAspect,
+    network::query::Pagination
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -155,11 +156,15 @@ impl DhtStore {
         link_type: String,
         tag: String,
         crud_filter: Option<CrudStatus>,
+        pagination : Option<Pagination>
     ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
+            .rev()
+            .skip(pagination.clone().map(|page|page.page_size * page.page_number).unwrap_or(0))
+            .take(pagination.map(|page|page.page_size).unwrap_or(std::usize::MAX)
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),

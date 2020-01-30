@@ -328,7 +328,7 @@ pub mod tests {
             options: Default::default(),
         };
 
-        let config = GetLinksQueryConfiguration { headers: false };
+        let config = GetLinksQueryConfiguration::default();
         let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
         let maybe_links = context2.block_on(query(context2.clone(), method, Default::default()));
 

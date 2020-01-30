@@ -1,10 +1,10 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use lib3h_zombie_actor::GhostMutex;
 use std::{
     collections::{hash_map::Entry, HashMap},
     io::{Read, Write},
 };
 use url2::prelude::*;
-use crate::NEW_RELIC_LICENSE_KEY;
 
 // -- mem listener -- //
 

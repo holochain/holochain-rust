@@ -1,6 +1,7 @@
 use crate::{
     config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration},
-    error::HolochainResult,NEW_RELIC_LICENSE_KEY
+    error::HolochainResult,
+    NEW_RELIC_LICENSE_KEY,
 };
 use hyper::{http::uri, Request};
 

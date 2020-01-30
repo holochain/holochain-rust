@@ -3,8 +3,7 @@
 use crate::{
     key_bundle,
     password_encryption::{self, PwHashConfig},
-    utils, CODEC_HCK0, CODEC_HCS0, SEED_SIZE, SIGNATURE_SIZE,
-    NEW_RELIC_LICENSE_KEY
+    utils, CODEC_HCK0, CODEC_HCS0, NEW_RELIC_LICENSE_KEY, SEED_SIZE, SIGNATURE_SIZE,
 };
 use hcid::*;
 use holochain_core_types::{agent::Base32, error::HcResult};

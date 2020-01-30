@@ -1,5 +1,5 @@
 //! encapsulates lib3h ghostmessage for sim2h including security challenge
-use crate::{error::Sim2hError,NEW_RELIC_LICENSE_KEY};
+use crate::{error::Sim2hError, NEW_RELIC_LICENSE_KEY};
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
 

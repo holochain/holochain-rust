@@ -14,7 +14,8 @@ use crate::{
         callback::{init::init, receive::receive},
         runtime::WasmCallData,
         Defn,
-    },NEW_RELIC_LICENSE_KEY
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,

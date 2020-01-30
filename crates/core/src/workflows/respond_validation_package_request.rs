@@ -5,7 +5,8 @@ use crate::{
     network::direct_message::DirectMessage,
     nucleus::actions::{
         build_validation_package::build_validation_package, get_entry::get_entry_from_agent_chain,
-    },NEW_RELIC_LICENSE_KEY
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_core_types::signature::Provenance;

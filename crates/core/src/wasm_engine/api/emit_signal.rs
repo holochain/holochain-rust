@@ -1,6 +1,7 @@
 use crate::{
     signal::{Signal, UserSignal},
-    wasm_engine::{api::ZomeApiResult, Runtime},NEW_RELIC_LICENSE_KEY
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use std::convert::TryFrom;

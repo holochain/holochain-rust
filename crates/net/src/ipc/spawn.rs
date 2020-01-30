@@ -3,9 +3,9 @@
 //! that we can process to know its launch state
 
 use crate::{
-    NEW_RELIC_LICENSE_KEY,
     connection::{net_connection::NetShutdown, NetResult},
     tweetlog::TWEETLOG,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use super::n3h::get_verify_n3h;

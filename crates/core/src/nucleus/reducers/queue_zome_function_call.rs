@@ -3,7 +3,7 @@ use crate::{
     nucleus::state::NucleusState,
     state::State,
     wasm_engine::MAX_ZOME_CALLS,
-    NEW_RELIC_LICENSE_KEY
+    NEW_RELIC_LICENSE_KEY,
 };
 
 /// Reduce AddPendingValidation Action.

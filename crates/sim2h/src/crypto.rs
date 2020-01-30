@@ -3,7 +3,7 @@
 use crate::{
     error::{Sim2hError, Sim2hResult},
     wire_message::WireMessage,
-    NEW_RELIC_LICENSE_KEY
+    NEW_RELIC_LICENSE_KEY,
 };
 use hcid::*;
 pub use holochain_core_types::signature::Provenance;

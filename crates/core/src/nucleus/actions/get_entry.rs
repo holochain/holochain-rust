@@ -1,9 +1,9 @@
-use crate::{content_store::GetContent, context::Context,NEW_RELIC_LICENSE_KEY};
+use crate::{content_store::GetContent, context::Context, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::{Entry, EntryWithMeta},
-    error::HolochainError
+    error::HolochainError,
 };
 use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};

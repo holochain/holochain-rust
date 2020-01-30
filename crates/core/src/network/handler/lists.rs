@@ -8,7 +8,8 @@ use crate::{
     network::{
         entry_aspect::EntryAspect,
         handler::{entry_to_meta_aspect, get_content_aspect},
-    },NEW_RELIC_LICENSE_KEY
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;

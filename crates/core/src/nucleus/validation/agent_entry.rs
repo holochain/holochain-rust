@@ -4,7 +4,8 @@ use crate::{
         actions::run_validation_callback::run_validation_callback,
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
-    },NEW_RELIC_LICENSE_KEY
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     agent::AgentId,

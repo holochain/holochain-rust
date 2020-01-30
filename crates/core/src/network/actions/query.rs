@@ -2,7 +2,8 @@ use crate::{
     action::{Action, ActionWrapper, GetEntryKey, GetLinksKey, QueryKey, QueryPayload},
     context::Context,
     instance::dispatch_action,
-    network::query::{GetLinksNetworkQuery, NetworkQueryResult},NEW_RELIC_LICENSE_KEY
+    network::query::{GetLinksNetworkQuery, NetworkQueryResult},
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 

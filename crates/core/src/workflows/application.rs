@@ -2,7 +2,8 @@ use crate::{
     context::{get_dna_and_agent, Context},
     instance::Instance,
     network::actions::initialize_network::initialize_network,
-    nucleus::actions::{call_init::call_init, initialize::initialize_chain},NEW_RELIC_LICENSE_KEY
+    nucleus::actions::{call_init::call_init, initialize::initialize_chain},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     dna::Dna,

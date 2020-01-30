@@ -1,4 +1,7 @@
-use crate::{agent::state::create_entry_with_header_for_header, content_store::GetContent,NEW_RELIC_LICENSE_KEY};
+use crate::{
+    agent::state::create_entry_with_header_for_header, content_store::GetContent,
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;

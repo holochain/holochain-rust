@@ -91,7 +91,10 @@
 //!
 //!```
 
-use crate::{error::{HolochainInstanceError, HolochainResult},NEW_RELIC_LICENSE_KEY};
+use crate::{
+    error::{HolochainInstanceError, HolochainResult},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core::{
     context::Context,
     instance::Instance,

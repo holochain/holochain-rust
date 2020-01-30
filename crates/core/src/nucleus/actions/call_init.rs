@@ -1,6 +1,7 @@
 use crate::{
     context::Context,
-    wasm_engine::callback::{init::init, CallbackParams, CallbackResult},NEW_RELIC_LICENSE_KEY
+    wasm_engine::callback::{init::init, CallbackParams, CallbackResult},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     dna::Dna,

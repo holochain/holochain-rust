@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     network::{self, actions::query::QueryMethod, query::NetworkQueryResult},
-    nucleus,NEW_RELIC_LICENSE_KEY
+    nucleus, NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 

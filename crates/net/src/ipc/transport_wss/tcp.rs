@@ -1,7 +1,7 @@
 //! abstraction for working with Websocket connections
 //! TcpStream specific functions
 
-use crate::{ipc::transport_wss::TransportWss,NEW_RELIC_LICENSE_KEY};
+use crate::{ipc::transport_wss::TransportWss, NEW_RELIC_LICENSE_KEY};
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl TransportWss<std::net::TcpStream> {

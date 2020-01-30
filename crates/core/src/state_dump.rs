@@ -3,7 +3,8 @@ use crate::{
     context::Context,
     dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
     network::direct_message::DirectMessage,
-    nucleus::{ZomeFnCall, ZomeFnCallState},NEW_RELIC_LICENSE_KEY
+    nucleus::{ZomeFnCall, ZomeFnCallState},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;

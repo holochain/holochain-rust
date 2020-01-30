@@ -4,6 +4,7 @@ extern crate structopt;
 #[macro_use(new_relic_setup)]
 extern crate holochain_common;
 
+use lazy_static::lazy_static;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::*;
@@ -11,7 +12,6 @@ use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use lazy_static::lazy_static;
 
 #[derive(StructOpt)]
 struct Cli {
@@ -42,9 +42,9 @@ new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 fn main() {
     //this set up new relic needs
     NewRelicConfig::default()
-    .logging(LogLevel::Error, LogOutput::StdErr)
-    .init()
-    .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
+        .logging(LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     env_logger::init();
     let args = Cli::from_args();
     let host = "ws://0.0.0.0/";

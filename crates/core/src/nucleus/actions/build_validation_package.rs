@@ -2,12 +2,12 @@ use crate::{
     agent::{self, find_chain_header},
     content_store::GetContent,
     context::Context,
-    NEW_RELIC_LICENSE_KEY,
     entry::CanPublish,
     state::{State, StateWrapper},
     wasm_engine::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,

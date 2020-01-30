@@ -4,10 +4,13 @@ use holochain_json_api::json::JsonString;
 
 use crate::ipc::{spawn, transport::TransportId, Transport, TransportEvent, TransportWss};
 
-use crate::{connection::{
-    net_connection::{NetHandler, NetShutdown, NetWorker},
-    NetResult,
-},NEW_RELIC_LICENSE_KEY};
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetShutdown, NetWorker},
+        NetResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
+};
 
 use lib3h_protocol::{
     data_types::ConnectData, protocol_client::Lib3hClientProtocol,

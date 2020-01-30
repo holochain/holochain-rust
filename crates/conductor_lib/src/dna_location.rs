@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use holochain_core_types::error::HolochainError;
 use reqwest::{self, Url};
 use serde::{
@@ -6,7 +7,6 @@ use serde::{
     Deserialize,
 };
 use std::{fmt, fs::File, io::Read, path::PathBuf};
-use crate::NEW_RELIC_LICENSE_KEY;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DnaLocation {

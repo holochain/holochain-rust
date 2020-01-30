@@ -1,7 +1,8 @@
 use crate::{
     context::Context,
     dht::pending_validations::PendingValidationWithTimeout,
-    state_dump::{address_to_content_and_type, StateDump},NEW_RELIC_LICENSE_KEY
+    state_dump::{address_to_content_and_type, StateDump},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::chain_header::ChainHeader;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};

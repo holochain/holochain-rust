@@ -1,4 +1,7 @@
-use crate::{websocket::{streams::WebsocketStreamState, BaseStream, TransportResult},NEW_RELIC_LICENSE_KEY};
+use crate::{
+    websocket::{streams::WebsocketStreamState, BaseStream, TransportResult},
+    NEW_RELIC_LICENSE_KEY,
+};
 
 /// Represents an individual connection
 #[derive(Debug)]

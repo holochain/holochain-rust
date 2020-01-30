@@ -8,7 +8,7 @@ use crate::{
     },
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
-    NEW_RELIC_LICENSE_KEY
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_core_types::{

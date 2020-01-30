@@ -1,4 +1,6 @@
-use crate::{action::ActionWrapper, network::state::NetworkState, NEW_RELIC_LICENSE_KEY,state::State};
+use crate::{
+    action::ActionWrapper, network::state::NetworkState, state::State, NEW_RELIC_LICENSE_KEY,
+};
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_resolve_direct_connection(

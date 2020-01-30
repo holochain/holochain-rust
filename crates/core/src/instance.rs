@@ -11,7 +11,8 @@ use crate::{
     scheduled_jobs,
     signal::Signal,
     state::{State, StateWrapper},
-    workflows::{application, run_holding_workflow},NEW_RELIC_LICENSE_KEY
+    workflows::{application, run_holding_workflow},
+    NEW_RELIC_LICENSE_KEY,
 };
 #[cfg(test)]
 use crate::{

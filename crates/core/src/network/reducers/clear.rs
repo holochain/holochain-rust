@@ -1,7 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
-    state::State,NEW_RELIC_LICENSE_KEY
+    state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

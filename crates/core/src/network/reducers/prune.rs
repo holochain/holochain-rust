@@ -1,7 +1,8 @@
 use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
-    state::{State, ACTION_PRUNE_MS},NEW_RELIC_LICENSE_KEY
+    state::{State, ACTION_PRUNE_MS},
+    NEW_RELIC_LICENSE_KEY,
 };
 use std::time::Duration;
 

@@ -1,4 +1,4 @@
-use crate::{config::*, port_utils::get_free_port,NEW_RELIC_LICENSE_KEY};
+use crate::{config::*, port_utils::get_free_port, NEW_RELIC_LICENSE_KEY};
 use boolinator::Boolinator;
 use std::collections::HashMap;
 

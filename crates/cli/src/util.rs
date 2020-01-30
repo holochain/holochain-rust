@@ -1,4 +1,4 @@
-use crate::{error::DefaultResult,NEW_RELIC_LICENSE_KEY};
+use crate::{error::DefaultResult, NEW_RELIC_LICENSE_KEY};
 use colored::*;
 pub use holochain_common::paths::DNA_EXTENSION;
 use std::{

@@ -1,8 +1,8 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
+use crate::NEW_RELIC_LICENSE_KEY;
 use failure::err_msg;
 use holochain_locksmith::Mutex;
 use holochain_logging::prelude::*;

@@ -74,6 +74,7 @@ exec tar xf "$@"
 /// if these aren't correct, download the pinned executable for our os/arch
 /// verify the hash and version
 /// return a pathbuf containing a runnable n3h executable path
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
     let mut path = std::path::PathBuf::new();
     path.push("n3h");
@@ -133,6 +134,7 @@ pub fn get_verify_n3h() -> NetResult<(std::path::PathBuf, Vec<String>)> {
     Ok((path, res))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
     let res = sub_check_n3h_version(&path, &["--version"]);
     if res.is_ok() {
@@ -149,6 +151,7 @@ fn check_n3h_version(path: &std::path::PathBuf) -> NetResult<Vec<String>> {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetResult<bool> {
     let res = exec_output(path, out_args, ".", false);
     if res.is_ok() {
@@ -174,6 +177,7 @@ fn sub_check_n3h_version(path: &std::path::PathBuf, out_args: &[&str]) -> NetRes
 }
 
 /// check our pinned n3h version urls / hashes for the current os/arch
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn get_artifact_info(os: &str, arch: &str, pkg_type: &str) -> NetResult<&'static Artifact> {
     let os = match os {
         "linux" => &N3H_INFO.artifacts.linux,
@@ -205,6 +209,7 @@ fn get_artifact_info(os: &str, arch: &str, pkg_type: &str) -> NetResult<&'static
 }
 
 /// run a command / capture the output
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn exec_output<P, S1, I, S2>(cmd: S1, args: I, dir: P, ignore_errors: bool) -> NetResult<String>
 where
     P: AsRef<std::path::Path>,
@@ -232,6 +237,7 @@ where
 }
 
 /// get the current os / arch
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn get_os_arch() -> NetResult<(&'static str, &'static str, &'static str)> {
     let linux_pkg_type = if std::env::var("NIX_STORE").is_ok() {
         "tar"
@@ -256,6 +262,7 @@ fn get_os_arch() -> NetResult<(&'static str, &'static str, &'static str)> {
 }
 
 /// extract a dmg archive
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn extract_dmg(file: &std::ffi::OsStr, dest: &std::path::PathBuf) -> NetResult<std::path::PathBuf> {
     let mut dest = dest.clone();
     dest.push("n3h.app");
@@ -322,6 +329,7 @@ fn set_executable(o: &mut std::fs::OpenOptions) {
 /// 1 - if file exists - check compare its hash
 /// 2 - if file doesn't exist, or hash check fails, download it
 /// 3 - compare downloaded file's hash
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 fn download(dest: &std::ffi::OsStr, url: &str, sha256: &str) -> NetResult<()> {
     if check_hash(dest, sha256) {
         return Ok(());

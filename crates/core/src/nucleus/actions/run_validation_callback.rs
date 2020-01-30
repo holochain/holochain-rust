@@ -17,6 +17,7 @@ use holochain_metrics::with_latency_publishing;
 /// `zome_call`.
 /// Dispatches an `Action::ReturnValidationResult` after completion of the WASM call.
 /// Returns a future that waits for the result to appear in the nucleus state.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn run_validation_callback(
     _address: Address,
     call: CallbackFnCall,

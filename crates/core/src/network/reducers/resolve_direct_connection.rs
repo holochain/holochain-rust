@@ -1,5 +1,6 @@
 use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_resolve_direct_connection(
     network_state: &mut NetworkState,
     _root_state: &State,

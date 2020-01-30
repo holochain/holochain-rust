@@ -37,6 +37,7 @@ fn dpki_cap_request(
     ))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl DpkiInstance for Holochain {
     /// wrapper for the dpki create_agent_key trait function
     fn dpki_create_agent_key(&mut self, agent_name: String) -> Result<(), HolochainError> {

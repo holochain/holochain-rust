@@ -14,6 +14,7 @@ use std::sync::Arc;
 /// handles receiving a message from an api send call
 /// call the receive call back, and sends the result back to the
 /// source of the send message which is in the from_agent_id param
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn handle_custom_direct_message(
     from_agent_id: Address,
     msg_id: String,

@@ -57,6 +57,7 @@ struct TransportInfo<T: Read + Write + std::fmt::Debug> {
     stateful_socket: WssStreamState<T>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl<T: Read + Write + std::fmt::Debug> TransportInfo<T> {
     pub fn close(&mut self) -> TransportResult<()> {
         if let WssStreamState::Ready(socket) = &mut self.stateful_socket {
@@ -80,6 +81,7 @@ pub struct TransportWss<T: Read + Write + std::fmt::Debug> {
     n_id: u64,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     /// connect to a remote websocket service
     fn connect(&mut self, uri: &str) -> TransportResult<TransportId> {
@@ -170,6 +172,7 @@ impl<T: Read + Write + std::fmt::Debug> Transport for TransportWss<T> {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl<T: Read + Write + std::fmt::Debug> TransportWss<T> {
     /// create a new websocket "Transport" instance of type T
     pub fn new(stream_factory: StreamFactory<T>) -> Self {

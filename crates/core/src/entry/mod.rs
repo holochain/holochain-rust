@@ -9,6 +9,7 @@ pub trait CanPublish {
     fn can_publish(&self, context: &Context) -> bool;
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl CanPublish for EntryType {
     fn can_publish(&self, context: &Context) -> bool {
         match self {

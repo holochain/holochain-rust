@@ -1107,7 +1107,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != agent_id) || (list_data.space_address != space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
+                //self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
                 for (entry_hash, aspects) in list_data.address_map {
                     self.sim2h_handle.im_state().agent_holds_aspects(
                         space_address.clone(),
@@ -1123,7 +1123,7 @@ impl Sim2h {
                 if (list_data.provider_agent_id != agent_id) || (list_data.space_address != space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
-                self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
+                //self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
                 for (entry_hash, aspects) in list_data.address_map.iter() {
                     self.sim2h_handle.im_state().agent_holds_aspects(
                         space_address.clone(),
@@ -1133,6 +1133,7 @@ impl Sim2h {
                         );
                 }
 
+                /*
                 let sim2h_handle = self.sim2h_handle.clone();
 
                 tokio::task::spawn(async move {
@@ -1203,6 +1204,7 @@ impl Sim2h {
                         }
                     }
                 });
+                */
 
                 Ok(())
             }
@@ -1211,6 +1213,7 @@ impl Sim2h {
                 if (fetch_result.provider_agent_id != agent_id) || (fetch_result.space_address != space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
+                /*
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {
                     debug!("Got FetchEntry result from {} without request id - must be from authoring list", agent_id);
@@ -1264,6 +1267,7 @@ impl Sim2h {
                         state.send(to_agent_id, url, &store_message);
                     });
                 }
+                */
 
                 Ok(())
             }
@@ -1321,6 +1325,7 @@ impl Sim2h {
         }
     }
 
+    /*
     fn handle_unseen_aspects(
         &self,
         uri: &Lib3hUri,
@@ -1343,6 +1348,7 @@ impl Sim2h {
             sim2h_handle.disconnect(disconnects);
         });
     }
+    */
 
     fn fetch_aspects_from_arbitrary_agent(
         sim2h_handle: Sim2hHandle,

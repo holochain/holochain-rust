@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
-    network::handler::create_handler,
+    network::handler::create_handler,NEW_RELIC_LICENSE_KEY
 };
 use futures::{task::Poll, Future};
 use holochain_core_types::error::HcResult;

@@ -6,7 +6,7 @@ use crate::{
         reducers::{publish::entry_data_to_entry_aspect_data, send},
         state::NetworkState,
     },
-    state::State,
+    state::State,NEW_RELIC_LICENSE_KEY
 };
 use holochain_core_types::error::HolochainError;
 

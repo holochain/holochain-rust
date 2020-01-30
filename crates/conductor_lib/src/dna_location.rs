@@ -6,6 +6,7 @@ use serde::{
     Deserialize,
 };
 use std::{fmt, fs::File, io::Read, path::PathBuf};
+use crate::NEW_RELIC_LICENSE_KEY;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DnaLocation {

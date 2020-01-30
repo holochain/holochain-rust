@@ -1,4 +1,4 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{wasm_engine::{api::ZomeApiResult, Runtime},NEW_RELIC_LICENSE_KEY};
 use holochain_json_api::json::*;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 use std::convert::TryFrom;

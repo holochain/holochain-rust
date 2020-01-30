@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper, DirectMessageData},
     context::Context,
     instance::dispatch_action,
-    network::direct_message::{CustomDirectMessage, DirectMessage},
+    network::direct_message::{CustomDirectMessage, DirectMessage},NEW_RELIC_LICENSE_KEY
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};

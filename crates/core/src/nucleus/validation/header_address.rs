@@ -1,4 +1,4 @@
-use crate::nucleus::validation::{ValidationError, ValidationResult};
+use crate::{nucleus::validation::{ValidationError, ValidationResult},NEW_RELIC_LICENSE_KEY};
 use boolinator::Boolinator;
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
 

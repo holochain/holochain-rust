@@ -4,6 +4,7 @@ use holochain_conductor_lib::conductor::Conductor;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde_json::Map;
 use std::path::PathBuf;
+use crate::NEW_RELIC_LICENSE_KEY;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn hash_dna(

@@ -7,6 +7,7 @@ use crate::{
         runtime::WasmCallData,
         Defn,
     },
+    NEW_RELIC_LICENSE_KEY
 };
 
 use holochain_json_api::{error::JsonError, json::JsonString};

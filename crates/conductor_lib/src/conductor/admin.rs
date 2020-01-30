@@ -6,6 +6,7 @@ use crate::{
     },
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    NEW_RELIC_LICENSE_KEY
 };
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::RwLock;

@@ -2,6 +2,7 @@ use crate::{
     agent::{self, find_chain_header},
     content_store::GetContent,
     context::Context,
+    NEW_RELIC_LICENSE_KEY,
     entry::CanPublish,
     state::{State, StateWrapper},
     wasm_engine::callback::{

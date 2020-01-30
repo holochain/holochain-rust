@@ -23,6 +23,8 @@ extern crate pretty_assertions;
 extern crate log;
 #[macro_use]
 extern crate holochain_logging;
+#[macro_use]
+extern crate holochain_common;
 
 #[macro_use]
 pub mod macros;
@@ -46,3 +48,7 @@ pub mod state;
 pub mod state_dump;
 pub mod wasm_engine;
 pub mod workflows;
+
+use lazy_static::lazy_static;
+
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");

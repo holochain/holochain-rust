@@ -6,7 +6,7 @@ use crate::{
         },
         validation::{entry_to_validation_data, ValidationError, ValidationResult},
         CallbackFnCall,
-    },
+    },NEW_RELIC_LICENSE_KEY
 };
 use holochain_core_types::{
     entry::{entry_type::AppEntryType, Entry},

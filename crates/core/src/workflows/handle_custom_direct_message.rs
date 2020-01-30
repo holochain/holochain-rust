@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    wasm_engine::callback::{receive::receive, CallbackParams, CallbackResult},
+    wasm_engine::callback::{receive::receive, CallbackParams, CallbackResult},NEW_RELIC_LICENSE_KEY
 };
 
 use holochain_core_types::error::HolochainError;

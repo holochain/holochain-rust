@@ -1,4 +1,4 @@
-use crate::websocket::{mem_stream::*, streams::*, tls::TlsConfig, wss_info::WssInfo};
+use crate::{websocket::{mem_stream::*, streams::*, tls::TlsConfig, wss_info::WssInfo},NEW_RELIC_LICENSE_KEY};
 use lib3h::transport::error::*;
 
 use url2::prelude::*;

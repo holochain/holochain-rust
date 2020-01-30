@@ -6,7 +6,7 @@ use crate::{
             GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
             NetworkQueryResult,
         },
-    },
+    },NEW_RELIC_LICENSE_KEY
 };
 
 use holochain_core_types::error::HolochainError;

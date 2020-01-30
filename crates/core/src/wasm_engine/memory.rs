@@ -4,6 +4,7 @@ use holochain_wasm_utils::memory::{
     MemoryBits, MemoryInt,
 };
 use wasmi::{MemoryRef, ModuleRef};
+use crate::NEW_RELIC_LICENSE_KEY;
 
 //--------------------------------------------------------------------------------------------------
 // WASM Memory Manager

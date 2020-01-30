@@ -1,4 +1,5 @@
 use std::{ops::Range, thread, time::Duration};
+use crate::NEW_RELIC_LICENSE_KEY;
 
 pub const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;
 pub const INTERFACE_CONNECT_INTERVAL: Duration = Duration::from_secs(1);

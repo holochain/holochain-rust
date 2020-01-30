@@ -1,5 +1,5 @@
 //! represents the state of connected agents
-use crate::wire_message::WireMessage;
+use crate::{wire_message::WireMessage,NEW_RELIC_LICENSE_KEY};
 use lib3h_protocol::types::{AgentPubKey, SpaceHash};
 pub type AgentId = AgentPubKey;
 

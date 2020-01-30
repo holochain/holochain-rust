@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::actions::NetworkActionResponse,
+    network::actions::NetworkActionResponse,NEW_RELIC_LICENSE_KEY
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;

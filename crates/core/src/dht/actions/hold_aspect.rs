@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::dispatch_action,
+    instance::dispatch_action,NEW_RELIC_LICENSE_KEY
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, network::entry_aspect::EntryAspect};

@@ -5,7 +5,7 @@ use crate::{
     network::state::NetworkState,
     persister::Persister,
     signal::{Signal, SignalSender},
-    state::StateWrapper,
+    state::StateWrapper,NEW_RELIC_LICENSE_KEY
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{

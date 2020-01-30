@@ -1,6 +1,7 @@
 use boolinator::Boolinator;
 use holochain_core_types::{agent::AgentId, error::HolochainError};
 use holochain_persistence_api::cas::content::AddressableContent;
+use crate::NEW_RELIC_LICENSE_KEY;
 
 // this could be used for a lot of external callbacks and can be moved to somewhere more general?
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]

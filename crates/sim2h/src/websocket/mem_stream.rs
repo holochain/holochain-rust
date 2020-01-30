@@ -4,6 +4,7 @@ use std::{
     io::{Read, Write},
 };
 use url2::prelude::*;
+use crate::NEW_RELIC_LICENSE_KEY;
 
 // -- mem listener -- //
 

@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    instance::dispatch_action,
+    instance::dispatch_action,NEW_RELIC_LICENSE_KEY
 };
 use crossbeam_channel::Sender;
 use futures::{future::Future, task::Poll};

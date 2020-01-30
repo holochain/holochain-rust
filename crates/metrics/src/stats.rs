@@ -1,6 +1,6 @@
 /// Provides statistical features over metric data.
 /// Extends the metric api with statistical aggregation functions
-use crate::metrics::Metric;
+use crate::{metrics::Metric,NEW_RELIC_LICENSE_KEY};
 use num_traits::float::Float;
 use stats::Commute;
 use std::{

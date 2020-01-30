@@ -1,9 +1,9 @@
 //! provides worker that makes use of sim1h
 
-use crate::connection::{
+use crate::{connection::{
     net_connection::{NetHandler, NetWorker},
     NetResult,
-};
+},NEW_RELIC_LICENSE_KEY};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::{
     data_types::{GenericResultData, Opaque},

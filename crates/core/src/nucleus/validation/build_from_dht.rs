@@ -1,6 +1,6 @@
 use crate::{
     context::Context, entry::CanPublish, network::entry_with_header::EntryWithHeader,
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_with_meta_workflow,NEW_RELIC_LICENSE_KEY
 };
 use holochain_core_types::{
     chain_header::ChainHeader,

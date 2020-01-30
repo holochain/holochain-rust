@@ -9,6 +9,7 @@ use sim2h::{
 };
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
+use crate::NEW_RELIC_LICENSE_KEY;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {

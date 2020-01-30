@@ -3,6 +3,7 @@
 //! that we can process to know its launch state
 
 use crate::{
+    NEW_RELIC_LICENSE_KEY,
     connection::{net_connection::NetShutdown, NetResult},
     tweetlog::TWEETLOG,
 };

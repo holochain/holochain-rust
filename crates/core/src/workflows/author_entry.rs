@@ -5,7 +5,7 @@ use crate::{
     network::actions::{publish::publish, publish_header_entry::publish_header_entry},
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
-    },
+    },NEW_RELIC_LICENSE_KEY
 };
 
 use holochain_core_types::{

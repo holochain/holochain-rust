@@ -1,4 +1,4 @@
-use crate::wasm_engine::api::ZomeApiFunction;
+use crate::{wasm_engine::api::ZomeApiFunction,NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::HolochainError;
 use std::{str::FromStr, sync::Arc};
 use wasmi::{

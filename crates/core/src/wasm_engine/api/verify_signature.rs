@@ -1,4 +1,4 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{wasm_engine::{api::ZomeApiResult, Runtime},NEW_RELIC_LICENSE_KEY};
 use holochain_dpki::utils::Verify;
 use holochain_wasm_utils::api_serialization::verify_signature::VerifySignatureArgs;
 use std::convert::TryFrom;

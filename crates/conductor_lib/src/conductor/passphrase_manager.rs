@@ -2,6 +2,7 @@ use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::Mutex;
 use lib3h_sodium::secbuf::SecBuf;
+use crate::NEW_RELIC_LICENSE_KEY;
 #[cfg(unix)]
 use log::Level;
 use std::{

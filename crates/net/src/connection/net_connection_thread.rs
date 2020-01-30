@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,

@@ -1,7 +1,7 @@
 extern crate native_tls;
 extern crate openssl;
 
-use crate::websocket::{FAKE_PASS, FAKE_PKCS12};
+use crate::{websocket::{FAKE_PASS, FAKE_PKCS12},NEW_RELIC_LICENSE_KEY};
 
 use lib3h::transport::error::TransportResult;
 

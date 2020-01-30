@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
-    state::State,
+    state::State,NEW_RELIC_LICENSE_KEY
 };
 
 /// Reduce ReturnInitializationResult Action

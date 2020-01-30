@@ -1,3 +1,5 @@
+use crate::NEW_RELIC_LICENSE_KEY;
+
 /// typedef for code clarity
 pub(crate) struct JobResult {
     pub(crate) cont: bool,

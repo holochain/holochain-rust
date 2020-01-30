@@ -1,9 +1,9 @@
 //! provides worker that makes use of lib3h
 
-use crate::connection::{
+use crate::{connection::{
     net_connection::{NetHandler, NetWorker},
     NetResult,
-};
+},NEW_RELIC_LICENSE_KEY};
 use lib3h::{
     dht::mirror_dht::MirrorDht,
     engine::{ghost_engine_wrapper::LegacyLib3h, EngineConfig, GhostEngine},

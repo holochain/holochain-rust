@@ -97,6 +97,7 @@ pub struct Entry {
 /// sim2h state storage
 pub struct Space {
     pub crypto: Box<dyn CryptoSystem>,
+    pub redundancy: u64,
     pub aspect_to_entry_hash: im::HashMap<MonoAspectHash, (MonoAspectHash, MonoEntryHash)>,
     pub entry_to_all_aspects: im::HashMap<MonoEntryHash, Entry>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
@@ -118,6 +119,7 @@ impl Clone for Space {
     fn clone(&self) -> Self {
         Self {
             crypto: self.crypto.box_clone(),
+            redundancy: self.redundancy,
             aspect_to_entry_hash: self.aspect_to_entry_hash.clone(),
             entry_to_all_aspects: self.entry_to_all_aspects.clone(),
             connections: self.connections.clone(),
@@ -127,9 +129,10 @@ impl Clone for Space {
 }
 
 impl Space {
-    fn new(crypto: Box<dyn CryptoSystem>) -> Space {
+    fn new(crypto: Box<dyn CryptoSystem>, redundancy: u64) -> Space {
         Space {
             crypto,
+            redundancy,
             aspect_to_entry_hash: im::HashMap::new(),
             entry_to_all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
@@ -142,6 +145,39 @@ impl Space {
             None => agent_id.clone().into(),
             Some(c) => c.agent_id.clone(),
         }
+    }
+
+    fn get_entry_location(&self, entry_hash: &EntryHash) -> Location {
+        if let Some(entry) = self.entry_to_all_aspects.get(entry_hash) {
+            return entry.entry_loc;
+        }
+        entry_location(&self.crypto, entry_hash)
+    }
+
+    fn get_agents_that_should_hold_entry(&self, entry_hash: &EntryHash) -> im::Vector<MonoAgentId> {
+        if self.redundancy == 0 {
+            // FULL SYNC
+            return self.connections.keys().cloned().collect();
+        }
+
+        let entry_loc = self.get_entry_location(entry_hash);
+
+        let mut out = im::Vector::new();
+
+        let agent_count = self.connections.len() as u64;
+
+        for (agent_id, con) in self.connections.iter() {
+            if naive_sharding::naive_sharding_should_store(
+                con.agent_loc,
+                entry_loc,
+                agent_count,
+                self.redundancy,
+            ) {
+                out.push_back(agent_id.clone());
+            }
+        }
+
+        out
     }
 
     fn check_insert_connection(&mut self, agent_id: &AgentId, uri: Lib3hUri) {
@@ -244,6 +280,7 @@ impl Space {
 
 pub struct Store {
     pub crypto: Box<dyn CryptoSystem>,
+    pub redundancy: u64,
     pub spaces: im::HashMap<MonoSpaceHash, Space>,
     pub con_incr: Arc<AtomicU64>,
 }
@@ -260,6 +297,7 @@ impl Clone for Store {
     fn clone(&self) -> Self {
         Self {
             crypto: self.crypto.box_clone(),
+            redundancy: self.redundancy,
             spaces: self.spaces.clone(),
             con_incr: self.con_incr.clone(),
         }
@@ -267,7 +305,7 @@ impl Clone for Store {
 }
 
 impl Store {
-    pub fn new(crypto: Box<dyn CryptoSystem>) -> StoreHandle {
+    pub fn new(crypto: Box<dyn CryptoSystem>, redundancy: u64) -> StoreHandle {
         let (send_mut, mut recv_mut) = tokio::sync::mpsc::unbounded_channel();
 
         let ref_dummy = Arc::new(());
@@ -278,6 +316,7 @@ impl Store {
 
         let mut store = Store {
             crypto,
+            redundancy,
             spaces: im::HashMap::new(),
             con_incr: con_incr.clone(),
         };
@@ -365,8 +404,10 @@ impl Store {
     fn get_space_mut(&mut self, space_hash: SpaceHash) -> &mut Space {
         if !self.spaces.contains_key(&space_hash) {
             let crypto = self.crypto.box_clone();
-            self.spaces
-                .insert(space_hash.clone().into(), Space::new(crypto));
+            self.spaces.insert(
+                space_hash.clone().into(),
+                Space::new(crypto, self.redundancy),
+            );
         }
 
         self.spaces.get_mut(&space_hash).unwrap()
@@ -420,12 +461,26 @@ impl Store {
             .agent_holds_aspects(&agent_id, &entry_hash, &aspects);
     }
 
+    /// how many spaces do we currently have registered?
+    pub fn spaces_count(&self) -> usize {
+        self.spaces.len()
+    }
+
     /// if we have an active connection for an agent_id - get the uri
     pub fn lookup_joined(&self, space_hash: &SpaceHash, agent_id: &AgentId) -> Option<&Lib3hUri> {
         let agent_id: MonoAgentId = agent_id.clone().into();
         let space = self.get_space(space_hash)?;
         let con = space.connections.get(&agent_id)?;
         Some(&con.uri)
+    }
+
+    pub fn get_agents_that_should_hold_entry(
+        &self,
+        space_hash: &SpaceHash,
+        entry_hash: &EntryHash,
+    ) -> Option<im::Vector<MonoAgentId>> {
+        let space = self.get_space(space_hash)?;
+        Some(space.get_agents_that_should_hold_entry(entry_hash))
     }
 
     /// return a mapping of all entry_hash/aspect_hashes

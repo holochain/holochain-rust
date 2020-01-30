@@ -244,9 +244,13 @@ impl Sim2hHandle {
         metric_gen: MetricsTimerGenerator,
         connection_mgr: ConnectionMgrHandle,
     ) -> Self {
+        let redundancy = match dht_algorithm {
+            DhtAlgorithm::FullSync => 0,
+            DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+        };
         Self {
             state,
-            im_state: sim2h_im_state::Store::new(crypto),
+            im_state: sim2h_im_state::Store::new(crypto, redundancy),
             send_com,
             dht_algorithm,
             metric_gen,
@@ -573,7 +577,8 @@ impl Sim2h {
                 }
                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                    panic!("connection mgr channel broken");
+                    error!("broken channel, shutting down?");
+                    return true;
                 }
             }
         }
@@ -712,16 +717,16 @@ impl Sim2h {
         }
         if let WireMessage::Status = message {
             debug!("Sending StatusResponse in response to Status");
+
             let sim2h_handle = self.sim2h_handle.clone();
             let connection_count = self.connection_count;
             tokio::task::spawn(async move {
-                let state = sim2h_handle.lock_state().await;
-                let spaces_len = state.spaces.len();
-                state.send(
+                let state = sim2h_handle.im_state().get_clone().await;
+                sim2h_handle.send(
                     signer.clone(),
                     uri.clone(),
                     &WireMessage::StatusResponse(StatusData {
-                        spaces: spaces_len,
+                        spaces: state.spaces_count(),
                         connections: connection_count,
                         redundant_count: match sim2h_handle.dht_algorithm() {
                             DhtAlgorithm::FullSync => 0,
@@ -731,6 +736,7 @@ impl Sim2h {
                     }),
                 );
             });
+
             return Ok(());
         }
         if let WireMessage::Hello(version) = message {
@@ -997,11 +1003,7 @@ impl Sim2h {
                 }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    let _to_url = sim2h_handle
-                        .im_state()
-                        .get_clone().await
-                        .lookup_joined(&space_address, &dm_data.to_agent_id);
-                    let state = sim2h_handle.lock_state().await;
+                    let state = sim2h_handle.im_state().get_clone().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
                     {
@@ -1011,10 +1013,10 @@ impl Sim2h {
                             return;
                         }
                     };
-                    state.send(
+                    sim2h_handle.send(
                         dm_data.to_agent_id.clone(),
-                        to_url,
-                        &WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data))
+                        to_url.clone(),
+                        &WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)),
                     );
                 });
                 Ok(())
@@ -1028,11 +1030,7 @@ impl Sim2h {
                 }
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
-                    let _to_url = sim2h_handle
-                        .im_state()
-                        .get_clone().await
-                        .lookup_joined(&space_address, &dm_data.to_agent_id);
-                    let state = sim2h_handle.lock_state().await;
+                    let state = sim2h_handle.im_state().get_clone().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &dm_data.to_agent_id)
                     {
@@ -1042,9 +1040,9 @@ impl Sim2h {
                             return;
                         }
                     };
-                    state.send(
+                    sim2h_handle.send(
                         dm_data.to_agent_id.clone(),
-                        to_url,
+                        to_url.clone(),
                         &WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data))
                     );
                 });
@@ -1055,12 +1053,53 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 let sim2h_handle = self.sim2h_handle.clone();
+                tokio::task::spawn(async move {
+                    let aspect_list: im::HashSet<AspectHash> = data.entry.aspect_list.iter().map(|a| {
+                        a.aspect_address.clone()
+                    }).collect();
+                    let mut multi_message = Vec::new();
+                    for aspect in data.entry.aspect_list {
+                        multi_message.push(Lib3hToClient::HandleStoreEntryAspect(
+                            StoreEntryAspectData {
+                                request_id: "".into(),
+                                space_address: space_address.clone(),
+                                provider_agent_id: agent_id.clone(),
+                                entry_address: data.entry.entry_address.clone(),
+                                entry_aspect: aspect,
+                            }
+                        ));
+                    }
+                    let multi_message = WireMessage::MultiSend(multi_message);
+
+                    let state = sim2h_handle.im_state().get_clone().await;
+                    let send_to = state.get_agents_that_should_hold_entry(
+                        &space_address,
+                        &data.entry.entry_address,
+                    ).unwrap(); // we know this space address exists
+
+                    for agent_id in send_to {
+                        sim2h_handle.send(
+                            (&*agent_id).clone(),
+                            state.lookup_joined(&space_address, &agent_id).unwrap().clone(),
+                            &multi_message,
+                        );
+                        sim2h_handle.im_state().agent_holds_aspects(
+                            space_address.clone(),
+                            (&*agent_id).clone(),
+                            data.entry.entry_address.clone(),
+                            aspect_list.clone(),
+                        );
+                    }
+                });
+                /*
+                let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(Sim2hState::handle_new_entry_data(
                     sim2h_handle,
                     data.entry,
                     space_address,
                     agent_id,
                 ));
+                */
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data)) => {
@@ -1069,6 +1108,14 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
+                for (entry_hash, aspects) in list_data.address_map {
+                    self.sim2h_handle.im_state().agent_holds_aspects(
+                        space_address.clone(),
+                        agent_id.clone(),
+                        entry_hash,
+                        aspects.into(),
+                        );
+                }
                 Ok(())
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data)) => {
@@ -1077,6 +1124,14 @@ impl Sim2h {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
                 self.handle_unseen_aspects(&uri, &space_address, &agent_id, &list_data);
+                for (entry_hash, aspects) in list_data.address_map.iter() {
+                    self.sim2h_handle.im_state().agent_holds_aspects(
+                        space_address.clone(),
+                        agent_id.clone(),
+                        entry_hash.clone(),
+                        aspects.clone().into(),
+                        );
+                }
 
                 let sim2h_handle = self.sim2h_handle.clone();
 
@@ -1241,11 +1296,7 @@ impl Sim2h {
                     let msg_out = WireMessage::ClientToLib3hResponse(
                         ClientToLib3hResponse::QueryEntryResult(query_result),
                     );
-                    let _to_url = sim2h_handle
-                        .im_state()
-                        .get_clone().await
-                        .lookup_joined(&space_address, &req_agent_id);
-                    let state = sim2h_handle.lock_state().await;
+                    let state = sim2h_handle.im_state().get_clone().await;
                     let to_url = match state
                         .lookup_joined(&space_address, &req_agent_id)
                     {
@@ -1255,9 +1306,9 @@ impl Sim2h {
                             return;
                         }
                     };
-                    state.send(
+                    sim2h_handle.send(
                         req_agent_id,
-                        to_url,
+                        to_url.clone(),
                         &msg_out,
                     );
                 });

@@ -13,13 +13,15 @@ repository = "https://github.com/holochain/sim2h"
 
 [dependencies]
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-holochain_tracing_macros = "0.0.13"
+holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
+holochain_tracing_macros = "0.0.14"
 newrelic="0.2"
 detach = "=0.0.19"
 futures = "=0.3.1"
 lib3h = "=0.0.31"
 lib3h_protocol = "=0.0.31"
 lib3h_sodium = "=0.0.31"
+lazy_static = "=1.4.0"
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"

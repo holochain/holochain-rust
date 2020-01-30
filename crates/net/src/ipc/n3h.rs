@@ -1,6 +1,6 @@
 //! check that n3h is in the path, or download it
 
-use crate::{connection::NetResult, tweetlog::TWEETLOG};
+use crate::{connection::NetResult, tweetlog::TWEETLOG, NEW_RELIC_LICENSE_KEY};
 use sha2::Digest;
 use std::io::Write;
 

@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::query::{GetLinksNetworkQuery, NetworkQueryResult},
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 

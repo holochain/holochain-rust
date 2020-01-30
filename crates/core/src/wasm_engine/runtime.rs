@@ -6,6 +6,7 @@ use crate::{
         memory::WasmPageManager,
         Defn,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::{
     HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,

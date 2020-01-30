@@ -1,4 +1,4 @@
-use crate::NetworkingType;
+use crate::{NetworkingType, NEW_RELIC_LICENSE_KEY};
 use cli;
 use colored::*;
 use error::DefaultResult;

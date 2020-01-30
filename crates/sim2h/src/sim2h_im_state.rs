@@ -72,38 +72,172 @@ enum StoreProto {
 /// represents an active connection
 #[derive(Debug, Clone)]
 pub struct ConnectionState {
+    agent_id: MonoAgentId,
     agent_loc: Location,
-    uri: Lib3hUri,
+    uri: MonoUri,
 }
 
-pub type MonoAgentId = MonoRef<String>;
-pub type MonoSpaceHash = MonoRef<String>;
-pub type MonoEntryHash = MonoRef<String>;
-pub type MonoAspectHash = MonoRef<String>;
+pub type MonoAgentId = MonoRef<AgentId>;
+pub type MonoSpaceHash = MonoRef<SpaceHash>;
+pub type MonoEntryHash = MonoRef<EntryHash>;
+pub type MonoAspectHash = MonoRef<AspectHash>;
+pub type MonoUri = MonoRef<Lib3hUri>;
+
+/// so we know who's holding what
+pub type Holding = im::HashMap<MonoAspectHash, im::HashSet<MonoAgentId>>;
 
 /// so we cache entry locations as well
 #[derive(Debug, Clone)]
 pub struct Entry {
-    entry_loc: Location,
-    aspects: im::HashSet<MonoAspectHash>,
+    pub entry_hash: MonoEntryHash,
+    pub entry_loc: Location,
+    pub aspects: Holding,
 }
 
 /// sim2h state storage
-#[derive(Debug, Clone)]
 pub struct Space {
-    pub all_aspects: im::HashMap<MonoEntryHash, Entry>,
+    pub crypto: Box<dyn CryptoSystem>,
+    pub aspect_to_entry_hash: im::HashMap<MonoAspectHash, (MonoAspectHash, MonoEntryHash)>,
+    pub entry_to_all_aspects: im::HashMap<MonoEntryHash, Entry>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
-    pub uri_to_connection: im::HashMap<Lib3hUri, MonoAgentId>,
-    pub holding: im::HashMap<MonoAspectHash, im::HashSet<MonoAgentId>>,
+    pub uri_to_connection: im::HashMap<MonoUri, MonoAgentId>,
+}
+
+impl std::fmt::Debug for Space {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Store")
+            .field("aspect_to_entry_hash", &self.aspect_to_entry_hash)
+            .field("entry_to_all_aspects", &self.entry_to_all_aspects)
+            .field("connections", &self.connections)
+            .field("uri_to_connection", &self.uri_to_connection)
+            .finish()
+    }
+}
+
+impl Clone for Space {
+    fn clone(&self) -> Self {
+        Self {
+            crypto: self.crypto.box_clone(),
+            aspect_to_entry_hash: self.aspect_to_entry_hash.clone(),
+            entry_to_all_aspects: self.entry_to_all_aspects.clone(),
+            connections: self.connections.clone(),
+            uri_to_connection: self.uri_to_connection.clone(),
+        }
+    }
 }
 
 impl Space {
-    fn new() -> Space {
+    fn new(crypto: Box<dyn CryptoSystem>) -> Space {
         Space {
-            all_aspects: im::HashMap::new(),
+            crypto,
+            aspect_to_entry_hash: im::HashMap::new(),
+            entry_to_all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
             uri_to_connection: im::HashMap::new(),
-            holding: im::HashMap::new(),
+        }
+    }
+
+    fn get_mono_agent_id(&self, agent_id: &AgentId) -> MonoAgentId {
+        match self.connections.get(agent_id) {
+            None => agent_id.clone().into(),
+            Some(c) => c.agent_id.clone(),
+        }
+    }
+
+    fn check_insert_connection(&mut self, agent_id: &AgentId, uri: Lib3hUri) {
+        let agent_id = self.get_mono_agent_id(agent_id);
+        let uri: MonoUri = uri.into();
+
+        let agent_loc =
+            match lib3h::rrdht_util::calc_location_for_id(&self.crypto, &agent_id.to_string()) {
+                Ok(loc) => loc,
+                Err(e) => {
+                    error!("FAILED to generate agent loc: {:?}", e);
+                    return;
+                }
+            };
+
+        // - add the main connection entry
+        match self.connections.entry(agent_id.clone()) {
+            im::hashmap::Entry::Occupied(mut entry) => {
+                let entry = entry.get_mut();
+                entry.agent_id = agent_id.clone();
+                entry.agent_loc = agent_loc;
+                entry.uri = uri.clone();
+            }
+            im::hashmap::Entry::Vacant(entry) => {
+                entry.insert(ConnectionState {
+                    agent_id: agent_id.clone(),
+                    agent_loc,
+                    uri: uri.clone(),
+                });
+            }
+        }
+
+        // - add entry to `uri_to_connection`
+        self.uri_to_connection.insert(uri, agent_id.clone());
+
+        // - clear all `holding` aspects
+        self.clear_holding(&agent_id);
+    }
+
+    fn priv_check_insert_entry_hash(&mut self, entry_hash: &EntryHash) -> MonoEntryHash {
+        if let Some(entry) = self.entry_to_all_aspects.get(entry_hash) {
+            return entry.entry_hash.clone();
+        }
+        let entry_hash: MonoEntryHash = entry_hash.clone().into();
+        let entry_loc = entry_location(&self.crypto, &entry_hash);
+        let entry = Entry {
+            entry_hash: entry_hash.clone(),
+            entry_loc,
+            aspects: im::HashMap::new(),
+        };
+        self.entry_to_all_aspects.insert(entry_hash.clone(), entry);
+        entry_hash
+    }
+
+    fn priv_check_insert_aspect_to_entry(
+        &mut self,
+        entry_hash: MonoEntryHash,
+        aspect_hash: &AspectHash,
+    ) -> MonoAspectHash {
+        if let Some((a, e)) = self.aspect_to_entry_hash.get(aspect_hash) {
+            if e != &entry_hash {
+                panic!("entry/aspect mismatch - corrupted data?");
+            }
+            return a.clone();
+        }
+        let aspect_hash: MonoAspectHash = aspect_hash.clone().into();
+        self.aspect_to_entry_hash
+            .insert(aspect_hash.clone(), (aspect_hash.clone(), entry_hash));
+        aspect_hash
+    }
+
+    fn agent_holds_aspects(
+        &mut self,
+        agent_id: &AgentId,
+        entry_hash: &EntryHash,
+        aspects: &im::HashSet<AspectHash>,
+    ) {
+        let agent_id = self.get_mono_agent_id(agent_id);
+        let entry_hash = self.priv_check_insert_entry_hash(entry_hash);
+        let mut mono_aspects = Vec::new();
+        for aspect_hash in aspects {
+            mono_aspects
+                .push(self.priv_check_insert_aspect_to_entry(entry_hash.clone(), aspect_hash));
+        }
+        let e = self.entry_to_all_aspects.get_mut(&entry_hash).unwrap();
+        for a in mono_aspects {
+            let holding = e.aspects.entry(a).or_default();
+            holding.insert(agent_id.clone());
+        }
+    }
+
+    fn clear_holding(&mut self, agent_id: &AgentId) {
+        for entry in self.entry_to_all_aspects.iter_mut() {
+            for holding_set in entry.aspects.iter_mut() {
+                holding_set.remove(agent_id);
+            }
         }
     }
 }
@@ -112,7 +246,6 @@ pub struct Store {
     pub crypto: Box<dyn CryptoSystem>,
     pub spaces: im::HashMap<MonoSpaceHash, Space>,
     pub con_incr: Arc<AtomicU64>,
-    mono_ref_cache: Option<MonoRefCache<String>>,
 }
 
 impl std::fmt::Debug for Store {
@@ -129,7 +262,6 @@ impl Clone for Store {
             crypto: self.crypto.box_clone(),
             spaces: self.spaces.clone(),
             con_incr: self.con_incr.clone(),
-            mono_ref_cache: self.mono_ref_cache.clone(),
         }
     }
 }
@@ -148,7 +280,6 @@ impl Store {
             crypto,
             spaces: im::HashMap::new(),
             con_incr: con_incr.clone(),
-            mono_ref_cache: Some(MonoRefCache::new()),
         };
 
         tokio::task::spawn(async move {
@@ -227,102 +358,41 @@ impl Store {
     }
 
     fn get_space(&self, space_hash: &SpaceHash) -> Option<&Space> {
-        let space_hash = self.mono_get(space_hash.clone().into());
+        let space_hash: MonoSpaceHash = space_hash.clone().into();
         self.spaces.get(&space_hash)
     }
 
     fn get_space_mut(&mut self, space_hash: SpaceHash) -> &mut Space {
-        let space_hash = self.mono_get(space_hash.into());
-        self.spaces
-            .entry(space_hash)
-            .or_insert_with(|| Space::new())
-    }
-
-    fn mono_get(&self, s: String) -> MonoRef<String> {
-        self.mono_ref_cache.as_ref().unwrap().get(s)
-    }
-
-    fn ensure_aspects(
-        &mut self,
-        space_hash: &SpaceHash,
-        entry_hash: &EntryHash,
-        aspects: &im::HashSet<AspectHash>,
-    ) {
-        let entry_hash = self.mono_get(entry_hash.clone().into());
-        let need_entry = {
-            let space = self.get_space_mut(space_hash.clone());
-            !space.all_aspects.contains_key(&entry_hash)
-        };
-
-        if need_entry {
-            let entry_loc = entry_location(&self.crypto, &entry_hash.as_entry_hash());
-            let space = self.get_space_mut(space_hash.clone());
-            space.all_aspects.insert(
-                entry_hash.clone(),
-                Entry {
-                    entry_loc,
-                    aspects: im::HashSet::new(),
-                },
-            );
+        if !self.spaces.contains_key(&space_hash) {
+            let crypto = self.crypto.box_clone();
+            self.spaces
+                .insert(space_hash.clone().into(), Space::new(crypto));
         }
 
-        let space = self.get_space_mut(space_hash.clone());
-        let e = space.all_aspects.get_mut(&entry_hash).unwrap();
-
-        for a in aspects {
-            e.aspects.insert(a.clone().into());
-        }
+        self.spaces.get_mut(&space_hash).unwrap()
     }
 
     fn new_connection(&mut self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
-        let agent_loc =
-            match lib3h::rrdht_util::calc_location_for_id(&self.crypto, &agent_id.to_string()) {
-                Ok(loc) => loc,
-                Err(e) => {
-                    error!("FAILED to generate agent loc: {:?}", e);
-                    return;
-                }
-            };
-        let agent_id = self.mono_get(agent_id.into());
-
-        let space = self.get_space_mut(space_hash);
-
-        // - set connections entry to is_connected=true
-        match space.connections.entry(agent_id.clone()) {
-            im::hashmap::Entry::Occupied(mut entry) => {
-                let entry = entry.get_mut();
-                entry.agent_loc = agent_loc;
-                entry.uri = uri.clone();
-            }
-            im::hashmap::Entry::Vacant(entry) => {
-                entry.insert(ConnectionState {
-                    agent_loc,
-                    uri: uri.clone(),
-                });
-            }
-        }
-
-        // - add entry to `uri_to_connection`
-        space.uri_to_connection.insert(uri, agent_id);
-        // - TODO clear `holding`?
+        self.get_space_mut(space_hash)
+            .check_insert_connection(&agent_id, uri);
     }
 
     fn drop_connection_inner(space: &mut Space, agent_id: MonoAgentId) {
-        // - mark connection as disconnected (tombstone)
-        let uri = match space.connections.entry(agent_id.clone()) {
+        // - clear all `holding` aspects (to prepare for another connection)
+        space.clear_holding(&agent_id);
+
+        // - remove main connection entry
+        let uri = match space.connections.entry(agent_id) {
             im::hashmap::Entry::Occupied(entry) => entry.remove().uri,
             _ => return,
         };
+
         // - remove the uri_to_connection entry
         space.uri_to_connection.remove(&uri);
-        // - clear all `holding` aspects (to prepare for another connection
-        for h in space.holding.iter_mut() {
-            h.remove(&agent_id);
-        }
     }
 
     fn drop_connection(&mut self, space_hash: SpaceHash, agent_id: AgentId) {
-        let agent_id = self.mono_get(agent_id.into());
+        let agent_id: MonoAgentId = agent_id.into();
 
         let space = self.get_space_mut(space_hash);
         Self::drop_connection_inner(space, agent_id);
@@ -346,26 +416,13 @@ impl Store {
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
     ) {
-        self.ensure_aspects(&space_hash, &entry_hash, &aspects);
-        let agent_id = self.mono_get(agent_id.into());
-
-        let space = self.get_space_mut(space_hash);
-
-        if !space.connections.contains_key(&agent_id) {
-            return;
-        }
-        for aspect in aspects {
-            space
-                .holding
-                .entry(aspect.into())
-                .or_default()
-                .insert(agent_id.clone());
-        }
+        self.get_space_mut(space_hash)
+            .agent_holds_aspects(&agent_id, &entry_hash, &aspects);
     }
 
     /// if we have an active connection for an agent_id - get the uri
     pub fn lookup_joined(&self, space_hash: &SpaceHash, agent_id: &AgentId) -> Option<&Lib3hUri> {
-        let agent_id = self.mono_get(agent_id.into());
+        let agent_id: MonoAgentId = agent_id.clone().into();
         let space = self.get_space(space_hash)?;
         let con = space.connections.get(&agent_id)?;
         Some(&con.uri)
@@ -385,19 +442,17 @@ impl Store {
             MonoAgentId,
             im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
         > = im::HashMap::new();
-        for (entry_hash, entry) in space.all_aspects.iter() {
-            for aspect in entry.aspects.iter() {
+        for (entry_hash, entry) in space.entry_to_all_aspects.iter() {
+            for (aspect_hash, holding) in entry.aspects.iter() {
                 for (agent_id, _) in space.connections.iter() {
-                    if let Some(set) = space.holding.get(aspect) {
-                        if set.contains(agent_id) {
-                            continue;
-                        }
+                    if holding.contains(agent_id) {
+                        continue;
                     }
                     out.entry(agent_id.clone())
                         .or_default()
                         .entry(entry_hash.clone())
                         .or_default()
-                        .insert(aspect.clone());
+                        .insert(aspect_hash.clone());
                 }
             }
         }

@@ -34,3 +34,14 @@ Steps 1-4 are the recording process, which only has to happen once. When iterati
 ```
 cargo install --force --path crates/walkman_cli
 ```
+## Editing
+If you would like to edit the cassette manually (e.g. change a timestamp) you will need to convert it to and from raw format.
+```bash
+# 1. Convert to raw
+walkman cassette raw --path sim2h.cassette > sim2h.txt
+
+# 2. Edit the text file.
+
+# 3. Compile the raw text file.
+walkman cassette compile-raw --path sim2h.txt > sim2h.cassette
+```

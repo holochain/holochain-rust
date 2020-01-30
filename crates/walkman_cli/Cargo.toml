@@ -17,6 +17,8 @@ holochain_walkman_types = { version = "=0.0.42-alpha5", path = "../walkman_types
 url = "=2.1.0"
 url2 = "=0.0.4"
 chrono = "=0.4.6"
+snap = "0.2"
+
 
 [[bin]]
 name = "walkman"

@@ -1,4 +1,4 @@
-use crate::sim2h_worker::Sim2hConfig;
+use crate::{sim2h_worker::Sim2hConfig, NEW_RELIC_LICENSE_KEY};
 use holochain_common::FakeSim1hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};

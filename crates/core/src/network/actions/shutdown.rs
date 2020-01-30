@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::ActionSender,
     instance::dispatch_action,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::{HcResult, HolochainError};

@@ -1,9 +1,8 @@
-extern crate holochain_json_api;
 #[macro_use]
 extern crate holochain_json_derive;
 #[macro_use]
 extern crate serde_derive;
-
+extern crate lazy_static;
 pub mod env_vars;
 pub mod paths;
 

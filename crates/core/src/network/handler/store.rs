@@ -4,6 +4,7 @@ use crate::{
         actions::queue_holding_workflow::dispatch_queue_holding_workflow,
         pending_validations::PendingValidationStruct,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;

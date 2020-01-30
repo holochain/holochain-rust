@@ -5,6 +5,7 @@ use crate::{
     network::handler::{
         get_content_aspect, get_meta_aspects_from_chain, get_meta_aspects_from_dht_eav,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use lib3h_protocol::data_types::FetchEntryData;

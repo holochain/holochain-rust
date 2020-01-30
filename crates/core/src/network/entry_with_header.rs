@@ -2,6 +2,7 @@ use crate::{
     agent::find_chain_header,
     content_store::GetContent,
     state::{State, StateWrapper},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};

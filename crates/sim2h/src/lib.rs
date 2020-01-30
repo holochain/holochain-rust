@@ -15,6 +15,9 @@ extern crate holochain_tracing as ht;
 extern crate holochain_tracing_macros;
 extern crate newrelic;
 
+#[macro_use]
+extern crate holochain_common;
+
 #[allow(dead_code)]
 mod naive_sharding;
 
@@ -64,6 +67,9 @@ use holochain_metrics::{config::MetricPublisherConfig, Metric};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
+
+//set up license_key
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 /// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {

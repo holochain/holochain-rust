@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_lib::{key_loaders::mock_passphrase_manager, keystore::Keystore};

@@ -6,6 +6,7 @@ use crate::{
         NetResult,
     },
     p2p_network::Lib3hClientProtocolWrapped,
+    NEW_RELIC_LICENSE_KEY,
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};

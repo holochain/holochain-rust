@@ -11,6 +11,7 @@ use crate::{
     in_memory::memory_worker::InMemoryWorker,
     p2p_config::*,
     tweetlog::*,
+    NEW_RELIC_LICENSE_KEY,
 };
 use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
